@@ -22,7 +22,6 @@ import {
   signInWithCredential,
   sendPasswordResetEmail,
   updatePassword,
-  signOut as firebaseSignOut,
   User as FirebaseUser,
   updateProfile,
   EmailAuthProvider,
@@ -50,7 +49,14 @@ import {
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-import { AuthError, BusinessError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
+import {
+  AuthError,
+  BusinessError,
+  PermissionError,
+  ValidationError,
+  ERROR_CODES,
+  isRetryableError,
+} from '@/errors';
 import { sanitizeInput, isSafeUrl } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from './sessionService';
@@ -119,6 +125,32 @@ function requireNativeEmailProvider() {
 }
 
 /**
+ * Dual SDK UID 불일치 검증 (네이티브 전용)
+ *
+ * 로그인/회원가입 성공 후 Native SDK와 Web SDK의 currentUser UID가 일치하는지 검증.
+ * 불일치 시 syncSignOut으로 양쪽 모두 로그아웃하여 데이터 정합성 보호.
+ */
+async function verifyDualSDKConsistency(context: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+
+  const nativeUid = getNativeAuth?.()?.currentUser?.uid;
+  const webUid = getFirebaseAuth().currentUser?.uid;
+
+  if (nativeUid && webUid && nativeUid !== webUid) {
+    logger.error('Dual SDK UID 불일치 감지 — 양쪽 로그아웃', {
+      component: 'authService',
+      context,
+      nativeUid,
+      webUid,
+    });
+    await syncSignOut();
+    throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      userMessage: '인증 상태가 일치하지 않습니다. 다시 로그인해주세요.',
+    });
+  }
+}
+
+/**
  * [H5] Phone-only 고아 계정 롤백 (Web/Native 공통)
  *
  * 회원가입 실패 시 phone-only 계정을 삭제하고, 실패 시 고아 계정으로 마킹.
@@ -130,36 +162,66 @@ export async function rollbackPhoneOnlyAccount(
 ): Promise<void> {
   logger.warn('phone-only 계정 롤백 시도', { uid, reason, component: 'authService' });
 
+  let deleted = false;
+
+  // 1차 시도: 현재 플랫폼 SDK로 삭제
   try {
     if (Platform.OS === 'web') {
       const webUser = getFirebaseAuth().currentUser;
       if (webUser && webUser.uid === uid) {
         await webDeleteUser(webUser);
+        deleted = true;
       }
     } else {
       const nativeAuth = getNativeAuth?.();
       const nativeUser = nativeAuth?.currentUser;
       if (nativeUser && nativeUser.uid === uid && nativeDeleteUser) {
         await nativeDeleteUser(nativeUser);
+        deleted = true;
       }
     }
-    logger.info('phone-only 고아 계정 삭제 완료', { uid });
-  } catch (deleteError) {
-    logger.error('phone-only 고아 계정 삭제 실패 - 고아 마킹', {
+  } catch (primaryError) {
+    logger.warn('phone-only 계정 1차 삭제 실패 — cross-platform fallback 시도', {
       uid,
-      error: deleteError,
+      platform: Platform.OS,
+      error: primaryError instanceof Error ? primaryError.message : String(primaryError),
     });
+
+    // 2차 시도: 반대쪽 SDK로 삭제 (Native 실패 → Web, Web 실패 → Native)
+    try {
+      if (Platform.OS !== 'web') {
+        const webUser = getFirebaseAuth().currentUser;
+        if (webUser && webUser.uid === uid) {
+          await webDeleteUser(webUser);
+          deleted = true;
+        }
+      } else {
+        const nativeAuth = getNativeAuth?.();
+        const nativeUser = nativeAuth?.currentUser;
+        if (nativeUser && nativeUser.uid === uid && nativeDeleteUser) {
+          await nativeDeleteUser(nativeUser);
+          deleted = true;
+        }
+      }
+    } catch (fallbackError) {
+      logger.error('phone-only 계정 cross-platform 삭제도 실패 — 고아 마킹', {
+        uid,
+        error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+      });
+    }
+  }
+
+  if (deleted) {
+    logger.info('phone-only 고아 계정 삭제 완료', { uid });
+  } else {
     await markOrphanAccount(uid, reason, phone);
   }
 
-  // Web SDK 세션 정리 (Platform 무관)
+  // SDK 세션 정리 (양쪽 모두 — syncSignOut이 Native+Web 동시 처리)
   try {
-    const auth = getFirebaseAuth();
-    if (auth.currentUser) {
-      await firebaseSignOut(auth);
-    }
+    await syncSignOut();
   } catch {
-    // Web SDK 정리 실패는 무시
+    // 세션 정리 실패는 무시
   }
 }
 
@@ -320,6 +382,9 @@ function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
  *
  * 서버사이드에서 전화번호 검증, XSS 검증, 중복 검사, Batch Write,
  * Custom Claims 설정, displayName 설정을 모두 처리합니다.
+ *
+ * 네트워크 에러에 한해 1회 재시도 (2초 대기).
+ * CF 내부 Transaction이 중복 실행을 방지하므로 재시도해도 데이터 무결성 보장.
  */
 async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<void> {
   const verifyAndSave = httpsCallable<VerifyAndSavePayload, { success: boolean; uid: string }>(
@@ -327,7 +392,18 @@ async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<
     'verifyAndSaveProfile'
   );
 
-  await verifyAndSave(payload);
+  try {
+    await verifyAndSave(payload);
+  } catch (error) {
+    if (!isRetryableError(error)) throw error;
+
+    logger.warn('verifyAndSaveProfile 네트워크 에러 - 2초 후 재시도', {
+      component: 'authService',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    await new Promise((r) => setTimeout(r, 2000));
+    await verifyAndSave(payload);
+  }
 }
 
 /** 회원가입 Analytics 이벤트 (Web/Native 공통) */
@@ -398,6 +474,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
         userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
       });
     }
+
+    // Dual SDK UID 불일치 검증 (네이티브)
+    await verifyDualSDKConsistency('login');
 
     logger.info('로그인 성공', { uid: userCredential.user.uid });
 
@@ -649,6 +728,9 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           userMessage: '프로필 저장 후 조회에 실패했습니다.',
         });
       }
+
+      // Dual SDK UID 불일치 검증 (네이티브)
+      await verifyDualSDKConsistency('signUp');
 
       logger.info('회원가입 성공', { uid: nativeUser.uid });
       trackSignupAnalytics(nativeUser.uid, 'staff');
@@ -1182,12 +1264,18 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // [H6] 4-B. 신규/미완성 사용자: Native SDK 동기화 시도 (best-effort)
-    // 실패해도 Web SDK fallback으로 전화번호 link 가능
+    //
+    // Apple credential은 1회용이므로 Web SDK가 소비하고, Native SDK는 Custom Token으로 별도 인증.
+    // Native sync 실패 시에도 Web SDK 인증이 유효하므로:
+    //   - PhoneVerification의 link 모드에서 Web SDK fallback으로 전화번호 연결 가능
+    //   - CF 호출(verifyAndSaveProfile)은 Web SDK 토큰으로 정상 진행
+    //   - 단, Native SDK 오프라인 기능(Firestore 캐시 등)은 사용 불가
     const nativeSyncSuccess = await syncNativeWithCustomToken(user.uid, '신규 사용자');
     if (!nativeSyncSuccess) {
-      logger.warn('Apple 로그인: Native SDK 동기화 최종 실패 - Web SDK fallback으로 진행', {
+      logger.warn('Apple 로그인: Native SDK 동기화 최종 실패 — Web SDK fallback으로 진행', {
         component: 'authService',
         uid: user.uid,
+        impact: 'PhoneVerification link 모드에서 Web SDK fallback 사용, 오프라인 기능 제한',
       });
     }
 

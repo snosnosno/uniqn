@@ -1,7 +1,7 @@
 /**
  * NotificationRouteMap 테스트
  *
- * @description 30개 알림 타입 전체 딥링크 매핑 테스트
+ * @description 33개 알림 타입 전체 딥링크 매핑 테스트
  */
 
 import { NotificationType } from '@/types/notification';
@@ -17,8 +17,8 @@ describe('NotificationRouteMap', () => {
     // NotificationType의 모든 값을 배열로 가져오기
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    it('30개 알림 타입이 모두 매핑되어 있어야 함', () => {
-      expect(allNotificationTypes.length).toBe(30);
+    it('33개 알림 타입이 모두 매핑되어 있어야 함', () => {
+      expect(allNotificationTypes.length).toBe(33);
 
       allNotificationTypes.forEach((type) => {
         expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -233,6 +233,37 @@ describe('NotificationRouteMap', () => {
     it('TOURNAMENT_APPROVAL_REQUEST → admin/tournaments', () => {
       const route = NOTIFICATION_ROUTE_MAP[NotificationType.TOURNAMENT_APPROVAL_REQUEST]();
       expect(route.name).toBe('admin/tournaments');
+    });
+  });
+
+  describe('리뷰/평가 관련 알림 (3개)', () => {
+    it('REVIEW_REQUEST → reviews/detail', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_REQUEST]({
+        workLogId: 'wl123',
+      });
+      expect(route.name).toBe('reviews/detail');
+      if (route.name === 'reviews/detail') {
+        expect(route.params.workLogId).toBe('wl123');
+      }
+    });
+
+    it('REVIEW_REQUEST (데이터 없음) → reviews/pending', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_REQUEST]();
+      expect(route.name).toBe('reviews/pending');
+    });
+
+    it('REVIEW_RECEIVED → reviews/detail', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_RECEIVED]({
+        workLogId: 'wl123',
+      });
+      expect(route.name).toBe('reviews/detail');
+    });
+
+    it('REVIEW_REMINDER → reviews/detail', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.REVIEW_REMINDER]({
+        workLogId: 'wl123',
+      });
+      expect(route.name).toBe('reviews/detail');
     });
   });
 

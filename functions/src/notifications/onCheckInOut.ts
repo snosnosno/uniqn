@@ -170,6 +170,55 @@ export const onCheckInOut = onDocumentUpdated(
             fcmSent: employerResult.fcmSent,
           });
         }
+
+        // 퇴근 시 평가 요청 알림 (양쪽에게) — 에러 격리: 출퇴근 알림에 영향 없음
+        if (!isIn) {
+          try {
+            const jobTitle = jobPosting?.title || "근무";
+
+            // 스태프에게: 구인자 평가 요청
+            await createAndSendNotification(
+              actualUserId,
+              "review_request",
+              "📝 평가를 남겨주세요",
+              `"${jobTitle}" 근무가 완료되었습니다. 구인자에 대한 평가를 남겨주세요.`,
+              {
+                link: `/reviews/${workLogId}`,
+                data: {
+                  workLogId,
+                  jobPostingId: after.jobPostingId,
+                  jobPostingTitle: jobTitle,
+                },
+              },
+            );
+
+            // 구인자에게: 스태프 평가 요청
+            if (employerId) {
+              await createAndSendNotification(
+                employerId,
+                "review_request",
+                "📝 평가를 남겨주세요",
+                `"${jobTitle}" 근무가 완료되었습니다. ${staffName}님에 대한 평가를 남겨주세요.`,
+                {
+                  link: `/reviews/${workLogId}`,
+                  data: {
+                    workLogId,
+                    jobPostingId: after.jobPostingId,
+                    jobPostingTitle: jobTitle,
+                    staffName,
+                  },
+                },
+              );
+            }
+
+            logger.info("평가 요청 알림 전송 완료", { workLogId });
+          } catch (reviewNotifError: unknown) {
+            handleTriggerError(reviewNotifError, {
+              operation: "퇴근 후 평가 요청 알림",
+              context: { workLogId },
+            });
+          }
+        }
       }
     } catch (error: unknown) {
       handleTriggerError(error, {

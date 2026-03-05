@@ -26,6 +26,7 @@ initSentry();
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
 export { retryFailedCounterOpsScheduled } from './scheduled/retryFailedCounterOps';
 export { cleanupExpiredTokensScheduled } from './scheduled/cleanupExpiredTokens';
+export { sendReviewRemindersScheduled } from './scheduled/sendReviewReminders';
 
 // --- Email Verification Functions ---
 export { checkEmailExists } from './auth/checkEmailExists';
@@ -51,6 +52,7 @@ export { onApplicationStatusChanged } from './notifications/onApplicationStatusC
 export { onWorkTimeChanged } from './notifications/onWorkTimeChanged';
 export { onScheduleCreated, onScheduleCancelled } from './notifications/onScheduleChanged';
 export { onCheckInOut } from './notifications/onCheckInOut';
+export { onReviewCreated } from './notifications/onReviewCreated';
 export { onJobPostingUpdated } from './notifications/onJobPostingUpdated';
 export { onJobPostingCancelled } from './notifications/onJobPostingCancelled';
 export { onNoShow } from './notifications/onNoShow';

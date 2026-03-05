@@ -168,7 +168,11 @@ export default function ProfileScreen() {
                     {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>
-                {bubbleScore && <BubbleScoreBadge score={bubbleScore.score} />}
+                {bubbleScore && (
+                  <Pressable onPress={() => router.push('/(app)/reviews/history')}>
+                    <BubbleScoreBadge score={bubbleScore.score} />
+                  </Pressable>
+                )}
               </View>
             </View>
             <EditIcon size={20} color="#9CA3AF" />

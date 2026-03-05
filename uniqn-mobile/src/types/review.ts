@@ -144,6 +144,11 @@ export const BUBBLE_SCORE = {
 } as const;
 
 /**
+ * 평가 가능한 WorkLog 상태
+ */
+export const REVIEWABLE_STATUSES: ReadonlySet<string> = new Set(['checked_out', 'completed']);
+
+/**
  * 평가 기한 (일)
  */
 export const REVIEW_DEADLINE_DAYS = 7;
@@ -286,11 +291,51 @@ export interface BubbleScoreColorRange {
 }
 
 export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
-  { min: 0, max: 30, bg: 'bg-red-500', darkBg: 'dark:bg-red-400', text: 'text-white', hex: '#EF4444', label: '주의' },
-  { min: 30, max: 45, bg: 'bg-orange-500', darkBg: 'dark:bg-orange-400', text: 'text-white', hex: '#F97316', label: '보통 이하' },
-  { min: 45, max: 55, bg: 'bg-yellow-500', darkBg: 'dark:bg-yellow-400', text: 'text-gray-900', hex: '#EAB308', label: '보통' },
-  { min: 55, max: 70, bg: 'bg-green-500', darkBg: 'dark:bg-green-400', text: 'text-white', hex: '#22C55E', label: '좋음' },
-  { min: 70, max: 100, bg: 'bg-primary-500', darkBg: 'dark:bg-primary-400', text: 'text-white', hex: '#6366F1', label: '우수' },
+  {
+    min: 0,
+    max: 30,
+    bg: 'bg-red-500',
+    darkBg: 'dark:bg-red-400',
+    text: 'text-white',
+    hex: '#EF4444',
+    label: '주의',
+  },
+  {
+    min: 30,
+    max: 45,
+    bg: 'bg-orange-500',
+    darkBg: 'dark:bg-orange-400',
+    text: 'text-white',
+    hex: '#F97316',
+    label: '보통 이하',
+  },
+  {
+    min: 45,
+    max: 55,
+    bg: 'bg-yellow-500',
+    darkBg: 'dark:bg-yellow-400',
+    text: 'text-gray-900',
+    hex: '#EAB308',
+    label: '보통',
+  },
+  {
+    min: 55,
+    max: 70,
+    bg: 'bg-green-500',
+    darkBg: 'dark:bg-green-400',
+    text: 'text-white',
+    hex: '#22C55E',
+    label: '좋음',
+  },
+  {
+    min: 70,
+    max: 100,
+    bg: 'bg-primary-500',
+    darkBg: 'dark:bg-primary-400',
+    text: 'text-white',
+    hex: '#6366F1',
+    label: '우수',
+  },
 ];
 
 /**
@@ -302,8 +347,9 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
 export function getBubbleScoreColor(score: number): BubbleScoreColorRange {
   const lastIdx = BUBBLE_SCORE_COLORS.length - 1;
   return (
-    BUBBLE_SCORE_COLORS.find((range, idx) =>
-      score >= range.min && (idx === lastIdx ? score <= range.max : score < range.max)
+    BUBBLE_SCORE_COLORS.find(
+      (range, idx) =>
+        score >= range.min && (idx === lastIdx ? score <= range.max : score < range.max)
     ) ?? BUBBLE_SCORE_COLORS[lastIdx]
   );
 }
@@ -336,7 +382,9 @@ export function calculateNewBubbleScore(
   const score = current?.score ?? BUBBLE_SCORE.INITIAL;
   const change = getSentimentScoreChange(sentiment);
   const factor = 10 ** BUBBLE_SCORE.DECIMAL_PLACES;
-  const newScore = Math.round(Math.max(BUBBLE_SCORE.MIN, Math.min(BUBBLE_SCORE.MAX, score + change)) * factor) / factor;
+  const newScore =
+    Math.round(Math.max(BUBBLE_SCORE.MIN, Math.min(BUBBLE_SCORE.MAX, score + change)) * factor) /
+    factor;
 
   return {
     score: newScore,

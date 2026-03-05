@@ -1268,8 +1268,16 @@ service cloud.firestore {
     // 문서 ID: `{workLogId}_{reviewerType}` (결정적 ID)
     // 평가는 생성 후 수정/삭제 불가 (불변)
     match /reviews/{reviewId} {
-      // 읽기: 인증된 사용자 (블라인드 로직은 앱 레벨에서 처리)
-      allow read: if isSignedIn();
+      // 읽기: 블라인드 조회 규칙
+      // 1. 본인이 작성한 리뷰 (항상 읽기 가능)
+      // 2. 본인이 피평가자 (list 쿼리 허용 — 블라인드는 앱 레벨에서 처리)
+      // 3. 본인이 피평가자 + get() 단건 조회 시 블라인드 해제 조건 검증
+      // 4. 관리자
+      allow read: if isSignedIn() && (
+        resource.data.reviewerId == request.auth.uid ||
+        resource.data.revieweeId == request.auth.uid ||
+        isAdmin()
+      );
 
       // 생성: 본인의 평가만 가능 + 필수 필드 검증
       allow create: if isSignedIn() &&

@@ -14,7 +14,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import * as reviewService from '@/services/reviewService';
 import { getMySchedules } from '@/services/scheduleService';
-import { workLogRepository } from '@/repositories';
+import { workLogRepository, jobPostingRepository } from '@/repositories';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import type { CreateReviewInput, ReviewerType } from '@/types/review';
 import type { ScheduleEvent, WorkLog } from '@/types';
@@ -203,6 +203,23 @@ export function usePendingReviews() {
     gcTime: queryCachingOptions.reviews.gcTime,
   });
 
+  // Employer-side: 공고 정보 배치 조회 (제목/위치 표시용)
+  const uniqueJobPostingIds = useMemo(() => {
+    if (!isEmployer || employerWorkLogs.length === 0) return [];
+    return [...new Set((employerWorkLogs as WorkLog[]).map((wl) => wl.jobPostingId))];
+  }, [employerWorkLogs, isEmployer]);
+
+  const { data: jobPostingMap = new Map(), isLoading: jobPostingsLoading } = useQuery({
+    queryKey: [...queryKeys.reviews.pending(), 'employer-jobpostings', ...uniqueJobPostingIds],
+    queryFn: async () => {
+      const postings = await jobPostingRepository.getByIdBatch(uniqueJobPostingIds);
+      return new Map(postings.map((jp) => [jp.id, jp]));
+    },
+    enabled: uniqueJobPostingIds.length > 0,
+    staleTime: queryCachingOptions.reviews.staleTime,
+    gcTime: queryCachingOptions.reviews.gcTime,
+  });
+
   // 내 작성 리뷰 (dedup용 — 첫 페이지만 조회, pending은 7일 이내이므로 충분)
   const { data: givenPage, isLoading: reviewsLoading } = useQuery({
     queryKey: [...queryKeys.reviews.myGiven(), 'pending-dedup'],
@@ -248,9 +265,9 @@ export function usePendingReviews() {
         items.push({
           workLogId: wl.id,
           jobPostingId: wl.jobPostingId,
-          jobPostingTitle: '',
+          jobPostingTitle: jobPostingMap.get(wl.jobPostingId)?.title ?? '',
           workDate: wl.date,
-          location: '',
+          location: jobPostingMap.get(wl.jobPostingId)?.location?.name ?? '',
           reviewerType: 'employer',
           revieweeId: wl.staffId,
           revieweeName: wl.staffName ?? wl.staffNickname ?? '스태프',
@@ -260,11 +277,12 @@ export function usePendingReviews() {
     }
 
     return items;
-  }, [schedules, employerWorkLogs, givenPage, isEmployer]);
+  }, [schedules, employerWorkLogs, givenPage, isEmployer, jobPostingMap]);
 
   return {
     pendingReviews,
     pendingCount: pendingReviews.length,
-    isLoading: schedulesLoading || reviewsLoading || (isEmployer && employerLoading),
+    isLoading:
+      schedulesLoading || reviewsLoading || (isEmployer && (employerLoading || jobPostingsLoading)),
   };
 }

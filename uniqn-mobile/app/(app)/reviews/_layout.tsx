@@ -19,14 +19,13 @@ export default function ReviewsLayout() {
           backgroundColor: getLayoutColor(isDark, 'header'),
         },
         headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerLeft: () => (
-          <HeaderBackButton tintColor={getLayoutColor(isDark, 'headerTint')} />
-        ),
+        headerLeft: () => <HeaderBackButton tintColor={getLayoutColor(isDark, 'headerTint')} />,
       }}
     >
       <Stack.Screen name="write" options={{ title: '평가 작성' }} />
       <Stack.Screen name="[workLogId]" options={{ title: '평가 상세' }} />
       <Stack.Screen name="pending" options={{ title: '미작성 평가' }} />
+      <Stack.Screen name="history" options={{ title: '평가 히스토리' }} />
     </Stack>
   );
 }

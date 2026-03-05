@@ -4,12 +4,13 @@
  * @description 감성 선택 + 태그 + 코멘트 통합 폼
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import SentimentSelector from './SentimentSelector';
 import ReviewTagSelector from './ReviewTagSelector';
+import { ConfirmModal } from '@/components/ui/Modal';
 import type { ReviewerType, ReviewSentiment, ReviewTag } from '@/types/review';
 import { REVIEW_COMMENT_MAX_LENGTH, REVIEW_TAG_LIMITS } from '@/types/review';
 import { reviewFormSchema, type ReviewFormSchema } from '@/schemas/review.schema';
@@ -68,6 +69,28 @@ export default function ReviewForm({
     [setValue]
   );
 
+  // 제출 확인 다이얼로그 상태
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingValues, setPendingValues] = useState<ReviewFormSchema | null>(null);
+
+  const handleFormSubmit = useCallback((values: ReviewFormSchema) => {
+    setPendingValues(values);
+    setShowConfirm(true);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (pendingValues) {
+      setShowConfirm(false);
+      onSubmit(pendingValues);
+      setPendingValues(null);
+    }
+  }, [pendingValues, onSubmit]);
+
+  const handleCancel = useCallback(() => {
+    setShowConfirm(false);
+    setPendingValues(null);
+  }, []);
+
   return (
     <View className="gap-6">
       {/* 감성 선택 */}
@@ -78,9 +101,7 @@ export default function ReviewForm({
         <Controller
           control={control}
           name="sentiment"
-          render={() => (
-            <SentimentSelector value={sentiment} onChange={handleSentimentChange} />
-          )}
+          render={() => <SentimentSelector value={sentiment} onChange={handleSentimentChange} />}
         />
         {errors.sentiment && (
           <Text className="mt-1 text-xs text-red-500">{errors.sentiment.message}</Text>
@@ -104,9 +125,7 @@ export default function ReviewForm({
               />
             )}
           />
-          {errors.tags && (
-            <Text className="mt-1 text-xs text-red-500">{errors.tags.message}</Text>
-          )}
+          {errors.tags && <Text className="mt-1 text-xs text-red-500">{errors.tags.message}</Text>}
         </View>
       )}
 
@@ -146,13 +165,14 @@ export default function ReviewForm({
       {/* 제출 안내 */}
       {sentiment && (
         <Text className="text-xs text-gray-500 dark:text-gray-400">
-          평가는 제출 후 수정할 수 없습니다. 상대방이 평가를 완료하면 서로의 평가를 확인할 수 있습니다.
+          평가는 제출 후 수정할 수 없습니다. 상대방이 평가를 완료하면 서로의 평가를 확인할 수
+          있습니다.
         </Text>
       )}
 
       {/* 제출 버튼 */}
       <Pressable
-        onPress={handleSubmit(onSubmit)}
+        onPress={handleSubmit(handleFormSubmit)}
         disabled={!isFormReady || isSubmitting}
         className={`items-center rounded-xl py-4 ${
           isFormReady && !isSubmitting
@@ -175,6 +195,17 @@ export default function ReviewForm({
           </Text>
         )}
       </Pressable>
+
+      {/* 제출 확인 다이얼로그 */}
+      <ConfirmModal
+        visible={showConfirm}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        title="평가 제출"
+        message="평가는 제출 후 수정할 수 없습니다. 제출하시겠습니까?"
+        confirmText="제출하기"
+        cancelText="취소"
+      />
     </View>
   );
 }

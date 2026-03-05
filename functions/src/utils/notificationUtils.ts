@@ -80,7 +80,10 @@ export type NotificationType =
   | "report_resolved"
   | "new_report"
   | "new_inquiry"
-  | "tournament_approval_request";
+  | "tournament_approval_request"
+  | "review_request"
+  | "review_received"
+  | "review_reminder";
 
 /** 알림 카테고리 */
 export type NotificationCategory =
@@ -89,7 +92,8 @@ export type NotificationCategory =
   | "settlement"
   | "job"
   | "system"
-  | "admin";
+  | "admin"
+  | "review";
 
 /** 알림 우선순위 */
 export type NotificationPriority = "low" | "normal" | "high" | "urgent";
@@ -242,6 +246,9 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   new_report: "admin",
   new_inquiry: "admin",
   tournament_approval_request: "admin",
+  review_request: "review",
+  review_received: "review",
+  review_reminder: "review",
 };
 
 /** 알림 타입 → Android 채널 매핑 */
@@ -276,6 +283,9 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   new_report: "default",
   new_inquiry: "default",
   tournament_approval_request: "default",
+  review_request: "default",
+  review_received: "default",
+  review_reminder: "reminders",
 };
 
 /**

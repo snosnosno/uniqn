@@ -15,6 +15,7 @@ import type { ReviewerType, ReviewSentiment } from '@/types/review';
 import {
   REVIEW_DEADLINE_DAYS,
   REVIEW_TAG_LIMITS,
+  REVIEWABLE_STATUSES,
   getAllowedTagKeys,
 } from '@/types/review';
 
@@ -61,9 +62,6 @@ export interface TagValidationResult {
 // Review Validator
 // ============================================================================
 
-/** 평가 가능한 WorkLog 상태 */
-const REVIEWABLE_STATUSES = new Set(['checked_out', 'completed']);
-
 /**
  * 리뷰 검증 클래스
  *
@@ -102,8 +100,7 @@ export class ReviewValidator {
     }
 
     // 2. 본인 평가 방지
-    const revieweeId =
-      reviewerType === 'employer' ? workLog.staffId : workLog.ownerId;
+    const revieweeId = reviewerType === 'employer' ? workLog.staffId : workLog.ownerId;
     if (reviewerId === revieweeId) {
       return {
         eligible: false,
@@ -151,9 +148,7 @@ export class ReviewValidator {
     }
 
     const completedDate =
-      completedAt instanceof Date
-        ? completedAt
-        : (completedAt as Timestamp).toDate();
+      completedAt instanceof Date ? completedAt : (completedAt as Timestamp).toDate();
 
     const deadline = new Date(completedDate);
     deadline.setDate(deadline.getDate() + REVIEW_DEADLINE_DAYS);
@@ -191,13 +186,29 @@ export class ReviewValidator {
     tags: string[]
   ): { consistent: boolean; warning?: string } {
     const negativeTagKeys = new Set([
-      'late', 'unprepared', 'unresponsive', 'careless',
-      'delayed_pay', 'poor_environment', 'unclear_instructions', 'disrespectful',
+      'late',
+      'unprepared',
+      'unresponsive',
+      'careless',
+      'delayed_pay',
+      'poor_environment',
+      'unclear_instructions',
+      'disrespectful',
     ]);
 
     const positiveTagKeys = new Set([
-      'punctual', 'skilled', 'polite', 'responsive', 'proactive', 'reliable',
-      'fair_pay', 'good_environment', 'clear_instructions', 'respectful', 'well_organized', 'supportive',
+      'punctual',
+      'skilled',
+      'polite',
+      'responsive',
+      'proactive',
+      'reliable',
+      'fair_pay',
+      'good_environment',
+      'clear_instructions',
+      'respectful',
+      'well_organized',
+      'supportive',
     ]);
 
     const hasNegativeTag = tags.some((t) => negativeTagKeys.has(t));

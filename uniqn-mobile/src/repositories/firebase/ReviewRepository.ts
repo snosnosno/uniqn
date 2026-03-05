@@ -26,14 +26,12 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import {
-  AlreadyReviewedError,
-  ReviewNotFoundError,
-} from '@/errors';
+import { AlreadyReviewedError, ReviewNotFoundError } from '@/errors';
 import { COLLECTIONS } from '@/constants';
 import {
   calculateNewBubbleScore,
   getSentimentScoreChange,
+  REVIEWABLE_STATUSES,
 } from '@/types/review';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import type {
@@ -56,7 +54,9 @@ import type {
 // ============================================================================
 
 /** Firestore DocumentSnapshot → Review 변환 */
-function toReview(docSnap: DocumentSnapshot<DocumentData> | QueryDocumentSnapshot<DocumentData>): Review {
+function toReview(
+  docSnap: DocumentSnapshot<DocumentData> | QueryDocumentSnapshot<DocumentData>
+): Review {
   const data = docSnap.data()!;
   return {
     workLogId: data.workLogId as string,
@@ -91,15 +91,11 @@ const DEFAULT_PAGE_SIZE = 20;
  * Firebase Review Repository
  */
 export class FirebaseReviewRepository implements IReviewRepository {
-
   // ==========================================================================
   // 조회 (Read)
   // ==========================================================================
 
-  async getByWorkLogAndType(
-    workLogId: string,
-    reviewerType: ReviewerType
-  ): Promise<Review | null> {
+  async getByWorkLogAndType(workLogId: string, reviewerType: ReviewerType): Promise<Review | null> {
     try {
       logger.info('리뷰 조회', { workLogId, reviewerType });
 
@@ -129,19 +125,25 @@ export class FirebaseReviewRepository implements IReviewRepository {
     try {
       logger.info('블라인드 리뷰 조회', { workLogId, myReviewerType });
 
-      const opponentType: ReviewerType =
-        myReviewerType === 'employer' ? 'staff' : 'employer';
+      const opponentType: ReviewerType = myReviewerType === 'employer' ? 'staff' : 'employer';
 
       const db = getFirebaseDb();
 
-      // 결정적 ID로 getDoc 2회 (쿼리 X, 인덱스 불필요)
-      const [mySnap, opponentSnap] = await Promise.all([
-        getDoc(doc(db, COLLECTIONS.REVIEWS, `${workLogId}_${myReviewerType}`)),
-        getDoc(doc(db, COLLECTIONS.REVIEWS, `${workLogId}_${opponentType}`)),
-      ]);
+      // 내 리뷰 조회 (항상 가능 — Rules: reviewerId == uid)
+      const mySnap = await getDoc(doc(db, COLLECTIONS.REVIEWS, `${workLogId}_${myReviewerType}`));
+
+      // 상대 리뷰 조회 (Rules에서 revieweeId == uid 허용 — 블라인드는 앱 레벨 처리)
+      let opponentSnap: DocumentSnapshot<DocumentData> | null = null;
+      try {
+        opponentSnap = await getDoc(doc(db, COLLECTIONS.REVIEWS, `${workLogId}_${opponentType}`));
+      } catch (error: unknown) {
+        // permission-denied 등 예상 가능한 에러 → 블라인드 상태로 처리
+        logger.warn('상대 리뷰 조회 실패 (블라인드 처리)', { workLogId, opponentType, error });
+        opponentSnap = null;
+      }
 
       const myReviewRaw = mySnap.exists() ? toReview(mySnap) : null;
-      const opponentReviewRaw = opponentSnap.exists() ? toReview(opponentSnap) : null;
+      const opponentReviewRaw = opponentSnap?.exists() ? toReview(opponentSnap) : null;
 
       // 현재 사용자의 리뷰인지 검증 (권한 체크)
       const isMyReview = myReviewRaw?.reviewerId === currentUserId;
@@ -269,6 +271,14 @@ export class FirebaseReviewRepository implements IReviewRepository {
           });
         }
 
+        const workLogData = workLogSnap.data();
+        if (!workLogData?.status || !REVIEWABLE_STATUSES.has(workLogData.status as string)) {
+          throw new ReviewNotFoundError({
+            userMessage: '평가 가능한 상태의 근무 기록이 아닙니다',
+            workLogId: input.workLogId,
+          });
+        }
+
         // 4. 쓰기: 리뷰 문서 생성
         const bubbleScoreChange = getSentimentScoreChange(input.sentiment);
 
@@ -304,10 +314,7 @@ export class FirebaseReviewRepository implements IReviewRepository {
         }
         if (userSnap.exists()) {
           const userData = userSnap.data();
-          const newScore = calculateNewBubbleScore(
-            userData?.bubbleScore,
-            input.sentiment
-          );
+          const newScore = calculateNewBubbleScore(userData?.bubbleScore, input.sentiment);
 
           transaction.update(userRef, {
             bubbleScore: {

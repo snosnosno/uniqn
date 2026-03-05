@@ -214,7 +214,7 @@ export async function getCompletedByOwnerId(ownerId: string): Promise<WorkLog[]>
 
     const q = new QueryBuilder(workLogsRef)
       .whereEqual(FIELDS.WORK_LOG.ownerId, ownerId)
-      .whereEqual(FIELDS.WORK_LOG.status, STATUS.WORK_LOG.CHECKED_OUT)
+      .whereIn(FIELDS.WORK_LOG.status, [STATUS.WORK_LOG.CHECKED_OUT, STATUS.WORK_LOG.COMPLETED])
       .orderByDesc(FIELDS.WORK_LOG.date)
       .limit(DEFAULT_PAGE_SIZE)
       .build();

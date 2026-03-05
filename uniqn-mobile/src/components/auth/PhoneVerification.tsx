@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Platform, useColorScheme } from 'react-native';
+import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import {
   signInWithPhoneNumber as webSignInWithPhoneNumber,
   RecaptchaVerifier,
@@ -23,13 +23,15 @@ import {
   linkWithCredential as webLinkWithCredential,
 } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { ShieldCheckIcon, CheckCircleIcon, XCircleIcon } from '@/components/icons';
+import { ShieldCheckIcon, XCircleIcon } from '@/components/icons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 import { formatPhoneNumber, cleanPhoneNumber, toE164, formatE164ToDisplay } from '@/utils/phone';
 import { checkPhoneExists } from '@/services/authService';
+import { getFirebasePhoneAuthErrorMessage, getFirebaseOTPErrorMessage } from './phoneAuthErrors';
+import { PhoneVerifiedView } from './PhoneVerifiedView';
 
 import {
   getNativeAuth,
@@ -116,14 +118,15 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
   // [M1 FIX] 재발송 쿨다운(60초)보다 약간 길게 설정 → 재발송 시 이전 리스너 확실히 종료
   const LISTENER_TIMEOUT_MS = (RESEND_COOLDOWN + 5) * 1000;
 
+  // [ISSUE #1 FIX] 함수 스코프로 호이스트 — 타임아웃/finally에서 접근 가능하도록
+  const settled = { current: false };
+  let listenerRef: { removeAllListeners(event: string): void } | null = null;
+
   const verificationPromise = new Promise<VerificationForLinkResult>((resolve, reject) => {
     if (!nativeVerifyPhoneNumber || !getNativeAuth) {
       reject(new Error('네이티브 Firebase Auth를 사용할 수 없습니다.'));
       return;
     }
-
-    const settled = { current: false };
-    let listenerRef: { removeAllListeners(event: string): void } | null = null;
 
     /** 공통: verificationId 검증 후 resolve */
     function resolveWithVid(
@@ -198,12 +201,19 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
   let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
+      // [ISSUE #1 FIX] 타임아웃 시 settled 마킹 — 좀비 콜백 방지
+      settled.current = true;
       reject(new Error('인증 요청 시간이 초과되었습니다. 다시 시도해주세요.'));
     }, LISTENER_TIMEOUT_MS);
   });
 
   return Promise.race([verificationPromise, timeoutPromise]).finally(() => {
     clearTimeout(timeoutId);
+    // [ISSUE #1 FIX] 어떤 경로든 settled 보장 + 리스너 구독 해제 (멱등 연산)
+    settled.current = true;
+    if (listenerRef) {
+      listenerRef.removeAllListeners('state_changed');
+    }
   });
 }
 
@@ -221,8 +231,6 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     compact = false,
     mode = 'signIn',
   }) => {
-    const colorScheme = useColorScheme();
-    const isDark = colorScheme === 'dark';
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
     const [phone, setPhone] = useState(
       initialPhone
@@ -248,6 +256,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     /** [C-1 FIX] PhoneAuthListener 정리용 — settled로 콜백 차단, unsubscribe로 구독 해제 */
     const phoneListenerSettledRef = useRef<{ current: boolean } | null>(null);
     const phoneListenerRef = useRef<{ removeAllListeners(event: string): void } | null>(null);
+    /** [ISSUE #4 FIX] OTP 요청 시점의 mode 기록 — 확인 시 mode 불일치 방어 */
+    const requestedModeRef = useRef<'signIn' | 'link'>(mode);
 
     // 타이머 관리
     const isTimerActive = timer > 0;
@@ -284,6 +294,19 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           if (!recaptchaVerifierRef.current) {
             recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
               size: 'invisible',
+              'expired-callback': () => {
+                logger.warn('reCAPTCHA 토큰 만료 — 재생성 필요', {
+                  component: 'PhoneVerification',
+                });
+                recaptchaVerifierRef.current = null;
+                setRecaptchaKey((prev) => prev + 1);
+              },
+              'error-callback': () => {
+                logger.error('reCAPTCHA 검증 에러', { component: 'PhoneVerification' });
+                setError('보안 검증에 실패했습니다. 다시 시도해주세요.');
+                recaptchaVerifierRef.current = null;
+                setRecaptchaKey((prev) => prev + 1);
+              },
             });
           }
           return webSignInWithPhoneNumber(auth, e164, recaptchaVerifierRef.current);
@@ -304,6 +327,19 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           if (!recaptchaVerifierRef.current) {
             recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
               size: 'invisible',
+              'expired-callback': () => {
+                logger.warn('reCAPTCHA 토큰 만료 — 재생성 필요', {
+                  component: 'PhoneVerification',
+                });
+                recaptchaVerifierRef.current = null;
+                setRecaptchaKey((prev) => prev + 1);
+              },
+              'error-callback': () => {
+                logger.error('reCAPTCHA 검증 에러', { component: 'PhoneVerification' });
+                setError('보안 검증에 실패했습니다. 다시 시도해주세요.');
+                recaptchaVerifierRef.current = null;
+                setRecaptchaKey((prev) => prev + 1);
+              },
             });
           }
           const phoneProvider = new WebPhoneAuthProvider(auth);
@@ -387,6 +423,15 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           setError('인증 상태가 불완전합니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
           return;
         }
+        // [ISSUE #3 FIX] Native SDK 미인증 — cross-SDK verificationId 사용 방지
+        if (!nativeUser && webUser) {
+          logger.warn('link 모드 SMS 요청 차단: Native SDK 미인증 (cross-SDK 방지)', {
+            platform: Platform.OS,
+            webUid: webUser.uid,
+          });
+          setError('인증 상태가 불완전합니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
+          return;
+        }
       }
 
       setIsLoading(true);
@@ -419,6 +464,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             return;
           }
         }
+
+        // [ISSUE #4 FIX] OTP 요청 시점의 mode 기록
+        requestedModeRef.current = mode;
 
         // 모드별 OTP 요청
         if (mode === 'link') {
@@ -477,6 +525,21 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     /** OTP 코드 확인 */
     const handleConfirmOTP = useCallback(async () => {
+      // [ISSUE #4 FIX] OTP 요청/확인 간 mode 불일치 방어
+      if (requestedModeRef.current !== mode) {
+        logger.error('OTP mode 불일치', {
+          requestedMode: requestedModeRef.current,
+          currentMode: mode,
+        });
+        setError('인증 상태가 변경되었습니다. 다시 인증해주세요.');
+        setStep('input');
+        setOtpCode('');
+        setOtpAttempts(0);
+        setConfirmation(null);
+        verificationIdRef.current = null;
+        return;
+      }
+
       // [M7] OTP 시도 횟수 제한
       if (otpAttempts >= MAX_OTP_ATTEMPTS) {
         setError('인증번호 입력 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.');
@@ -547,7 +610,13 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
               });
               await nativeLinkWithCredential(nativeUser, credential);
             } else {
-              // [C2 FIX] Native SDK 없음 → Web SDK fallback (Apple 로그인 후 Native sync 실패 시)
+              // [C2 FIX] Native SDK currentUser 없음 → Web SDK fallback
+              // 원인: Apple 로그인 시 Custom Token 기반 Native sync가 실패한 경우
+              // 제한: Native SDK 오프라인 Firestore 캐시 사용 불가 (로그인 완료 후 동기화됨)
+              // [ISSUE #3 FIX] handleRequestOTP 사전검증으로 이 경로는 도달 불가해야 함
+              logger.error('CRITICAL: cross-SDK fallback 도달 — 사전검증 우회됨', {
+                platform: Platform.OS,
+              });
               const webUser = getFirebaseAuth().currentUser;
               if (!webUser) {
                 logger.error('link 모드 OTP 실패: 양쪽 SDK 모두 사용자 없음');
@@ -586,7 +655,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         // ─── 디버깅 강화: Firebase 에러 코드 명시적 로깅 ───
         const firebaseCode = (err as { code?: string })?.code;
         const errorMessage = firebaseCode
-          ? getFirebaseOTPErrorMessage(err)
+          ? getFirebaseOTPErrorMessage(err, mode)
           : err instanceof Error
             ? err.message
             : '인증에 실패했습니다. 다시 시도해주세요.';
@@ -655,47 +724,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     // ========== 인증 완료 상태 ==========
     if (step === 'verified') {
-      return (
-        <View className="w-full">
-          {!compact && (
-            <View className="items-center mb-6">
-              <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-full items-center justify-center mb-3">
-                <CheckCircleIcon size={32} color="#22c55e" />
-              </View>
-              <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증 완료</Text>
-            </View>
-          )}
-
-          <View
-            className="rounded-xl p-4 border"
-            style={{
-              backgroundColor: isDark ? '#1f2937' : '#f0fdf4',
-              borderColor: isDark ? '#166534' : '#bbf7d0',
-            }}
-          >
-            <View className="flex-row items-center mb-3">
-              <CheckCircleIcon size={20} color="#22c55e" />
-              <Text className="ml-2 text-success-700 dark:text-success-400 font-semibold">
-                인증 완료
-              </Text>
-            </View>
-            <View
-              className="rounded-lg p-3"
-              style={{ backgroundColor: isDark ? '#374151' : '#ffffff' }}
-            >
-              <View className="flex-row justify-between">
-                <Text className="text-gray-500 dark:text-gray-400 text-sm">휴대폰</Text>
-                <Text className="text-gray-900 dark:text-white font-medium">{phone}</Text>
-              </View>
-            </View>
-            <Pressable onPress={handleReset} className="mt-4 py-2 items-center">
-              <Text className="text-sm text-gray-500 dark:text-gray-400 underline">
-                다시 인증하기
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      );
+      return <PhoneVerifiedView phone={phone} compact={compact} onReset={handleReset} />;
     }
 
     // ========== 전화번호 입력 + OTP 입력 ==========
@@ -833,47 +862,5 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 );
 
 PhoneVerification.displayName = 'PhoneVerification';
-
-// ============================================================================
-// Error Helpers
-// ============================================================================
-
-function getFirebasePhoneAuthErrorMessage(error: unknown): string {
-  const code = (error as { code?: string })?.code;
-  switch (code) {
-    case 'auth/invalid-phone-number':
-      return '올바른 전화번호 형식이 아닙니다.';
-    case 'auth/too-many-requests':
-      return '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.';
-    case 'auth/quota-exceeded':
-      return '일일 SMS 발송 한도를 초과했습니다.';
-    case 'auth/missing-phone-number':
-      return '전화번호를 입력해주세요.';
-    case 'auth/network-request-failed':
-      return '네트워크 연결을 확인해주세요.';
-    default:
-      return '인증번호 발송에 실패했습니다. 다시 시도해주세요.';
-  }
-}
-
-function getFirebaseOTPErrorMessage(error: unknown): string {
-  const code = (error as { code?: string })?.code;
-  switch (code) {
-    case 'auth/invalid-verification-code':
-      return '인증번호가 올바르지 않습니다.';
-    case 'auth/session-expired':
-      return '인증 시간이 만료되었습니다. 다시 요청해주세요.';
-    case 'auth/code-expired':
-      return '인증번호가 만료되었습니다. 다시 요청해주세요.';
-    case 'auth/credential-already-in-use':
-      return '이미 다른 계정에 등록된 전화번호입니다.';
-    case 'auth/provider-already-linked':
-      return '이미 전화번호가 연결되어 있습니다.';
-    case 'auth/requires-recent-login':
-      return '보안을 위해 다시 로그인이 필요합니다.';
-    default:
-      return '인증에 실패했습니다. 다시 시도해주세요.';
-  }
-}
 
 export default PhoneVerification;

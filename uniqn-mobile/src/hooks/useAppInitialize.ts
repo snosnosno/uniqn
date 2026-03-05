@@ -212,8 +212,8 @@ export function useAppInitialize(): UseAppInitializeReturn {
           await authUser.getIdToken(true);
 
           // 토큰 결과 확인 (Custom Claims 포함 여부)
-          const tokenResult = await authUser.getIdTokenResult();
-          const claims = tokenResult.claims;
+          let tokenResult = await authUser.getIdTokenResult();
+          let claims = tokenResult.claims;
 
           logger.info('토큰 강제 갱신 완료', {
             component: 'useAppInitialize',
@@ -224,22 +224,52 @@ export function useAppInitialize(): UseAppInitializeReturn {
             allClaims: JSON.stringify(claims),
           });
 
-          // Custom Claims가 없으면 경고
+          // Custom Claims 미설정 시 1초 대기 후 1회 재시도
           if (!claims.role) {
-            logger.warn(
-              'Custom Claims에 role이 없습니다! Firestore Rules에서 거부될 수 있습니다.',
-              {
-                component: 'useAppInitialize',
-                uid: authUser.uid,
+            logger.warn('Custom Claims 미설정 - 1초 후 재시도', {
+              component: 'useAppInitialize',
+              uid: authUser.uid,
+            });
+            await new Promise((r) => setTimeout(r, 1000));
+            try {
+              await authUser.getIdToken(true);
+              tokenResult = await authUser.getIdTokenResult();
+              if (tokenResult.claims.role) {
+                claims = tokenResult.claims;
+                logger.info('Custom Claims 재시도 성공', {
+                  component: 'useAppInitialize',
+                  role: tokenResult.claims.role,
+                });
+              } else {
+                logger.warn(
+                  'Custom Claims 재시도 후에도 미설정 - Firestore Rules에서 거부될 수 있습니다.',
+                  {
+                    component: 'useAppInitialize',
+                    uid: authUser.uid,
+                  }
+                );
               }
-            );
+            } catch {
+              logger.warn('Custom Claims 재시도 실패', {
+                component: 'useAppInitialize',
+              });
+            }
           }
 
           // Firestore에서 최신 프로필 가져오기 (setUser보다 먼저 — 부분 인증 상태 방지)
           logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
             component: 'useAppInitialize',
           });
-          const freshProfile = await getUserProfile(authUser.uid);
+          let freshProfile = await getUserProfile(authUser.uid);
+          // 일시적 Firestore 캐시 miss 대비: null 시 1.5초 후 1회 재시도
+          if (!freshProfile) {
+            logger.info('프로필 미발견 - 1.5초 후 재시도', {
+              component: 'useAppInitialize',
+              uid: authUser.uid,
+            });
+            await new Promise((r) => setTimeout(r, 1500));
+            freshProfile = await getUserProfile(authUser.uid);
+          }
           if (freshProfile) {
             // 소셜 로그인 미완성 프로필 → setProfile + setUser 후 useAuthGuard가 signup 리다이렉트
             if (freshProfile.socialProvider && !freshProfile.phoneVerified) {
