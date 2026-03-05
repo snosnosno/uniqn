@@ -13,7 +13,7 @@ import {
   updateUserRole,
   setUserActive,
   getSystemMetrics,
-} from '@/services/adminService';
+} from '@/services/admin';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';

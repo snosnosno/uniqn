@@ -16,7 +16,7 @@ import {
   getReportById,
   reviewReport,
   type ReportFilters,
-} from '@/services/reportService';
+} from '@/services/admin';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { toError } from '@/errors';

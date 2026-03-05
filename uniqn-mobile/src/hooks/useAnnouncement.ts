@@ -18,7 +18,7 @@ import {
   deleteAnnouncement,
   incrementViewCount,
   getAnnouncementCountByStatus,
-} from '@/services/announcementService';
+} from '@/services/admin';
 import { deleteMultipleAnnouncementImages } from '@/services/auth';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';

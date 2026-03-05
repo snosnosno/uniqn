@@ -23,7 +23,7 @@ import {
 import { InfoTab, WorkTab, SettlementTab } from './tabs';
 import { ReportModal, type ReportTarget } from '@/components/employer/ReportModal';
 import { getUserProfile } from '@/services/auth';
-import { createReport } from '@/services/reportService';
+import { createReport } from '@/services/admin';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';

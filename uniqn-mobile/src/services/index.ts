@@ -32,11 +32,8 @@ export {
   type NavigationContext,
 } from '@/shared/deeplink';
 
-// ============================================================================
-// 관리자 서비스 (Admin Services)
-// ============================================================================
-
-// Admin Service (관리자 대시보드 및 사용자 관리)
+// Admin Domain (admin, report, tournamentApproval, announcement)
+// Named exports to avoid collision (incrementViewCount exists in both jobs and admin domains)
 export {
   adminService,
   getDashboardStats,
@@ -45,10 +42,6 @@ export {
   updateUserRole,
   setUserActive,
   getSystemMetrics,
-} from './adminService';
-
-// Report Service (스태프 신고 관리)
-export {
   reportService,
   createReport,
   getReportsByJobPosting,
@@ -57,7 +50,8 @@ export {
   getReportById,
   reviewReport,
   getReportCountByStaff,
-} from './reportService';
+  getAllReports,
+} from './admin';
 
 // ============================================================================
 // 도메인 레이어 Re-export (Phase 7)
