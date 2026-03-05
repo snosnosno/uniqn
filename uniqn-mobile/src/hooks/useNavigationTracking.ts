@@ -15,9 +15,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { usePathname, useSegments } from 'expo-router';
 import { logger } from '@/utils/logger';
-import { analyticsService } from '@/services/analyticsService';
-import { crashlyticsService } from '@/services/crashlyticsService';
-import { recordNavigationTime } from '@/services/performanceService';
+import { analyticsService, crashlyticsService, recordNavigationTime } from '@/services/observability';
 
 // ============================================================================
 // Types

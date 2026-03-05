@@ -9,8 +9,7 @@ import { useState, useCallback } from 'react';
 import { Share, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { trackEvent } from '@/services/analyticsService';
-import { createJobDeepLink } from '@/services/deepLinkService';
+import { trackEvent, createJobDeepLink } from '@/services/observability';
 import { useToast } from '@/stores/toastStore';
 
 // ============================================================================

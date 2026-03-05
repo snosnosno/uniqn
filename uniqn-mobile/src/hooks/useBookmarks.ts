@@ -20,7 +20,7 @@ import {
   type BookmarkedJob,
 } from '@/stores/bookmarkStore';
 import { useToastStore } from '@/stores/toastStore';
-import { trackEvent } from '@/services/analyticsService';
+import { trackEvent } from '@/services/observability';
 
 // ============================================================================
 // Types

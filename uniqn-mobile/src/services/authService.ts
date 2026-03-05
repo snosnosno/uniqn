@@ -59,14 +59,14 @@ import {
 } from '@/errors';
 import { sanitizeInput, isSafeUrl } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
-import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from './sessionService';
+import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from '@/services/observability';
 import {
   trackLogin,
   trackSignup,
   trackLogout,
   setUserId,
   setUserProperties,
-} from './analyticsService';
+} from '@/services/observability';
 import type { FirestoreUserProfile, EditableProfileFields } from '@/types';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 

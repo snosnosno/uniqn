@@ -17,7 +17,7 @@ import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toDateString } from '@/utils/date';
-import { trackSettlementComplete } from './analyticsService';
+import { trackSettlementComplete } from '@/services/observability';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, type WorkLogStats } from '@/repositories';
 import type { WorkLog, PayrollStatus } from '@/types';

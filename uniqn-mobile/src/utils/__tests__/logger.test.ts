@@ -19,7 +19,7 @@ jest.mock('@/config/env', () => ({
 }));
 
 // Mock crashlyticsService (dynamic import used by logger)
-jest.mock('@/services/crashlyticsService', () => ({
+jest.mock('@/services/observability/crashlyticsService', () => ({
   crashlyticsService: {
     recordError: jest.fn(() => Promise.resolve()),
     recordAppError: jest.fn(() => Promise.resolve()),

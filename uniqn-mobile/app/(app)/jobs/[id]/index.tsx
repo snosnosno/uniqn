@@ -21,7 +21,7 @@ import { useJobDetail, useApplications, useAuth, useShare } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
-import { trackJobView } from '@/services/analyticsService';
+import { trackJobView } from '@/services/observability';
 
 // ============================================================================
 // Custom Header Component

@@ -221,51 +221,9 @@ export {
 } from './settlement';
 
 // ============================================================================
-// Analytics & Deep Link Services
+// Observability (분석/모니터링/세션)
 // ============================================================================
-
-// Analytics Service
-export {
-  analyticsService,
-  trackEvent,
-  trackScreenView,
-  setUserProperties,
-  setUserId,
-  setAnalyticsEnabled,
-  trackLogin,
-  trackSignup,
-  trackLogout,
-  trackJobView,
-  trackJobApply,
-  trackJobCreate,
-  trackCheckIn,
-  trackCheckOut,
-  trackSettlementComplete,
-  trackSearch,
-  trackError,
-  type AnalyticsEvent,
-  type AnalyticsEventParams,
-  type UserProperties as AnalyticsUserProperties,
-} from './analyticsService';
-
-// Deep Link Service
-export {
-  deepLinkService,
-  parseDeepLink,
-  navigateToDeepLink,
-  navigateFromNotification,
-  getRouteFromNotification,
-  validateNotificationLink,
-  createDeepLink,
-  createJobDeepLink,
-  setupDeepLinkListener,
-  getInitialDeepLink,
-  openExternalUrl,
-  APP_SCHEME,
-  WEB_DOMAIN,
-  type DeepLinkRoute,
-  type ParsedDeepLink,
-} from './deepLinkService';
+export * from './observability';
 
 // Deep Link Shared Module (v2.0)
 export {
@@ -277,103 +235,6 @@ export {
   isEmployerOnlyNotification,
   type NavigationContext,
 } from '@/shared/deeplink';
-
-// Crashlytics Service
-export {
-  crashlyticsService,
-  setEnabled as setCrashlyticsEnabled,
-  recordError,
-  recordFatalError,
-  recordAppError,
-  recordComponentError,
-  recordNetworkError,
-  log as crashlyticsLog,
-  setAttribute as setCrashlyticsAttribute,
-  setAttributes as setCrashlyticsAttributes,
-  setUserId as setCrashlyticsUserId,
-  setUser as setCrashlyticsUser,
-  clearUser as clearCrashlyticsUser,
-  setScreen as setCrashlyticsScreen,
-  getBreadcrumbs,
-  clearBreadcrumbs,
-  type CrashSeverity,
-  type CrashContext,
-  type CrashlyticsAttributes,
-  type CrashlyticsUser,
-} from './crashlyticsService';
-
-// Push Notification Service
-export {
-  pushNotificationService,
-  initialize as initializePushNotifications,
-  checkPermission as checkPushPermission,
-  requestPermission as requestPushPermission,
-  getToken as getPushToken,
-  registerToken as registerPushToken,
-  unregisterToken as unregisterPushToken,
-  getCurrentToken,
-  setBadge,
-  clearBadge,
-  getBadge,
-  scheduleLocalNotification,
-  cancelScheduledNotification,
-  cancelAllScheduledNotifications,
-  dismissAllNotifications,
-  setNotificationReceivedHandler,
-  setNotificationResponseHandler,
-  cleanup as cleanupPushNotifications,
-  DEFAULT_CHANNELS,
-  type NotificationPermissionStatus as PushPermissionStatus,
-  type PushTokenResult,
-  type NotificationPayload,
-  type NotificationReceivedHandler,
-  type NotificationResponseHandler,
-  type NotificationChannel,
-} from './pushNotificationService';
-
-// Session Service
-export {
-  sessionService,
-  initialize as initializeSession,
-  cleanup as cleanupSession,
-  recordActivity,
-  isSessionActive,
-  getSessionState,
-  refreshToken,
-  getValidToken,
-  checkLoginAttempts,
-  incrementLoginAttempts,
-  resetLoginAttempts,
-  getRemainingLoginAttempts,
-  type SessionState,
-  type LoginAttempts,
-} from './sessionService';
-
-// Feature Flag Service
-export {
-  featureFlagService,
-  whenEnabled,
-  selectByFlag,
-  type FeatureFlags,
-  type FeatureFlagKey,
-} from './featureFlagService';
-
-// Performance Service
-export {
-  performanceService,
-  startScreenTrace,
-  startApiTrace,
-  startTrace,
-  stopTrace,
-  recordMetric,
-  measureAsync,
-  measure,
-  recordNavigationTime,
-  recordRenderTime,
-  setPerformanceEnabled,
-  type PerformanceTrace,
-  type PerformanceMetrics,
-} from './performanceService';
 
 // Confirmed Staff Service (구인자용 확정 스태프 관리)
 export {

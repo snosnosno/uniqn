@@ -17,7 +17,7 @@ import {
   syncUnreadCounterFromServer,
 } from '@/services/notificationService';
 import { pushNotificationService } from '@/services/pushNotificationService';
-import * as tokenRefreshService from '@/services/tokenRefreshService';
+import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { queryClient, queryKeys } from '@/lib/queryClient';

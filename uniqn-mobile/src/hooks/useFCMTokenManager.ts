@@ -13,7 +13,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { Platform } from 'react-native';
 import { pushNotificationService } from '@/services/pushNotificationService';
-import * as tokenRefreshService from '@/services/tokenRefreshService';
+import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 

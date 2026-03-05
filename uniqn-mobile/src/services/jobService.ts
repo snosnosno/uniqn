@@ -15,7 +15,7 @@
 import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
-import { startApiTrace } from '@/services/performanceService';
+import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';

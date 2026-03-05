@@ -20,10 +20,10 @@ import {
   createJobDeepLink,
   type DeepLinkRoute,
   type ParsedDeepLink,
-} from '@/services/deepLinkService';
+} from '@/services/observability';
 import { RouteMapper } from '@/shared/deeplink';
 import { markAsRead } from '@/services/notificationService';
-import { trackEvent } from '@/services/analyticsService';
+import { trackEvent } from '@/services/observability';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import type { NotificationType, NotificationData } from '@/types/notification';

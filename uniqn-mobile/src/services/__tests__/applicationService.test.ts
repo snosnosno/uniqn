@@ -60,12 +60,12 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
   handleErrorWithDefault: jest.fn((_error: unknown, defaultValue: unknown) => defaultValue),
 }));
 
-jest.mock('../analyticsService', () => ({
+jest.mock('../observability/analyticsService', () => ({
   trackJobApply: jest.fn(),
   trackEvent: jest.fn(),
 }));
 
-jest.mock('../performanceService', () => ({
+jest.mock('../observability/performanceService', () => ({
   startApiTrace: jest.fn(() => ({
     putAttribute: jest.fn(),
     stop: jest.fn(),

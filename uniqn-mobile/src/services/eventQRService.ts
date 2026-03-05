@@ -27,7 +27,7 @@ import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { generateUUID } from '@/utils/generateId';
 import { InvalidQRCodeError } from '@/errors/BusinessErrors';
-import { trackCheckIn, trackCheckOut } from './analyticsService';
+import { trackCheckIn, trackCheckOut } from '@/services/observability';
 import { toISODateString } from '@/utils/date';
 import { eventQRRepository, workLogRepository } from '@/repositories';
 import type {

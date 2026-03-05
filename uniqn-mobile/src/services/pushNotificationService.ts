@@ -46,7 +46,7 @@ import * as Device from 'expo-device';
 import type * as NotificationsTypes from 'expo-notifications';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { crashlyticsService } from './crashlyticsService';
+import { crashlyticsService } from '@/services/observability';
 import { notificationRepository } from '@/repositories';
 
 // ============================================================================

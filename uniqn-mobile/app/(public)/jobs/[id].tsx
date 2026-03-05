@@ -17,7 +17,7 @@ import { useJobDetail, useApplications } from '@/hooks';
 import { useAuthStore, useThemeStore } from '@/stores';
 import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
-import { trackJobView } from '@/services/analyticsService';
+import { trackJobView } from '@/services/observability';
 import { logger } from '@/utils/logger';
 
 // ============================================================================

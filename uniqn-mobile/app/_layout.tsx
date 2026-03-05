@@ -33,7 +33,7 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
-import * as tokenRefreshService from '@/services/tokenRefreshService';
+import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { logger } from '@/utils/logger';
 
 // ============================================================================

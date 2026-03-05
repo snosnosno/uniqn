@@ -150,7 +150,7 @@ const output = (level: LogLevel, entry: LogEntry, skipCrashlytics = false): void
   // 프로덕션에서 error 레벨은 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
   // skipCrashlytics: appError()처럼 severity 기반으로 직접 전송을 제어하는 경우 true
   if (!skipCrashlytics && isProduction && level === 'error' && entry.error) {
-    import('@/services/crashlyticsService')
+    import('@/services/observability/crashlyticsService')
       .then(({ crashlyticsService }) => {
         crashlyticsService
           .recordError(entry.error!, {
@@ -351,7 +351,7 @@ export const logger = {
       if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
         // LogContext를 CrashContext-호환 형식으로 변환
         const crashContext = context ? toCrashContext(context) : undefined;
-        import('@/services/crashlyticsService')
+        import('@/services/observability/crashlyticsService')
           .then(({ crashlyticsService }) => {
             crashlyticsService.recordAppError(error, crashContext).catch(() => {
               // Crashlytics 전송 실패 시 무시 (무한 루프 방지)

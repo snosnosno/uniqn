@@ -101,7 +101,7 @@ jest.mock('@/schemas', () => ({
   parseWorkLogDocument: jest.fn((data: unknown) => data as WorkLog),
 }));
 
-jest.mock('@/services/analyticsService', () => ({
+jest.mock('@/services/observability/analyticsService', () => ({
   trackCheckIn: jest.fn(),
   trackCheckOut: jest.fn(),
 }));

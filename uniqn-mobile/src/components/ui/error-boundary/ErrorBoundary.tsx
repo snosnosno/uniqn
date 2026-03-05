@@ -10,7 +10,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { crashlyticsService } from '@/services/crashlyticsService';
+import { crashlyticsService } from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 import type { ErrorBoundaryProps, ErrorBoundaryState } from './types';

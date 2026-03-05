@@ -120,7 +120,7 @@ jest.mock('@/shared/cache/counterSyncCache', () => ({
   clearCounterSyncCache: jest.fn(),
 }));
 
-jest.mock('../analyticsService', () => ({
+jest.mock('../observability/analyticsService', () => ({
   trackLogin: jest.fn(),
   trackSignup: jest.fn(),
   trackLogout: jest.fn(),

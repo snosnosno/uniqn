@@ -17,7 +17,7 @@ import { View, Text, ScrollView, Pressable, RefreshControl, Platform } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { useAllFeatureFlags } from '@/hooks/useFeatureFlag';
-import { featureFlagService, type FeatureFlagKey } from '@/services/featureFlagService';
+import { featureFlagService, type FeatureFlagKey } from '@/services/observability';
 import { APP_VERSION, BUILD_NUMBER, ENVIRONMENT } from '@/constants/version';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/stores/toastStore';

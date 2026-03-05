@@ -46,7 +46,7 @@ const mockTrace = {
   start: jest.fn(),
 };
 
-jest.mock('@/services/performanceService', () => ({
+jest.mock('@/services/observability/performanceService', () => ({
   startApiTrace: jest.fn(() => mockTrace),
 }));
 
@@ -76,7 +76,7 @@ import {
 } from '../jobService';
 import { jobPostingRepository } from '@/repositories';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
-import { startApiTrace } from '@/services/performanceService';
+import { startApiTrace } from '@/services/observability/performanceService';
 import { toJobPostingCard } from '@/types';
 
 // Get typed mock references

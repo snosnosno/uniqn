@@ -17,7 +17,7 @@ import {
   featureFlagService,
   type FeatureFlagKey,
   type FeatureFlags,
-} from '@/services/featureFlagService';
+} from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 
