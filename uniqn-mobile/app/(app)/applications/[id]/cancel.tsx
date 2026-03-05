@@ -15,7 +15,7 @@ import { useApplications } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
-import { getApplicationById } from '@/services/applicationService';
+import { getApplicationById } from '@/services/jobs/applicationService';
 import type { Application } from '@/types';
 
 // ============================================================================

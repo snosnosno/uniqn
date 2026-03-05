@@ -5,7 +5,7 @@
  * @version 2.0.0 - Repository 패턴 기반
  */
 
-import { createMockApplication, resetCounters } from '../mocks/factories';
+import { createMockApplication, resetCounters } from '../../../__tests__/mocks/factories';
 
 // ============================================================================
 // Mock Repository
@@ -37,7 +37,7 @@ jest.mock('@/repositories', () => ({
 
 const mockConfirmApplicationWithHistory = jest.fn();
 
-jest.mock('@/services/applicationHistoryService', () => ({
+jest.mock('@/services/jobs/applicationHistoryService', () => ({
   confirmApplicationWithHistory: (...args: unknown[]) => mockConfirmApplicationWithHistory(...args),
 }));
 
@@ -173,7 +173,7 @@ import {
   bulkConfirmApplications,
   markApplicationAsRead,
   getApplicantStatsByRole,
-} from '@/services/applicantManagementService';
+} from '@/services/jobs/applicantManagementService';
 
 // ============================================================================
 // Test Utilities

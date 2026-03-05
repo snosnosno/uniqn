@@ -5,7 +5,7 @@
  * @version 2.0.0 - Repository 패턴 기반
  */
 
-import { createMockJobPosting, resetCounters } from '../mocks/factories';
+import { createMockJobPosting, resetCounters } from '../../../__tests__/mocks/factories';
 import type { CreateJobPostingInput, StaffRole } from '@/types';
 
 // ============================================================================
@@ -119,7 +119,7 @@ import {
   reopenJobPosting,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
-} from '@/services/jobManagementService';
+} from '@/services/jobs/jobManagementService';
 
 // ============================================================================
 // Test Utilities

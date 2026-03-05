@@ -12,7 +12,7 @@ import {
   saveTemplate,
   loadTemplate,
   deleteTemplate,
-} from '@/services/templateService';
+} from '@/services/jobs/templateService';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';

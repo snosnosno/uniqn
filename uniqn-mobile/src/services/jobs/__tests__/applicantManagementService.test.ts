@@ -40,7 +40,7 @@ jest.mock('@/repositories', () => ({
 
 const mockConfirmApplicationWithHistory = jest.fn();
 
-jest.mock('@/services/applicationHistoryService', () => ({
+jest.mock('@/services/jobs/applicationHistoryService', () => ({
   confirmApplicationWithHistory: (...args: unknown[]) => mockConfirmApplicationWithHistory(...args),
 }));
 
@@ -120,7 +120,7 @@ import {
   verifyJobPostingOwnership,
   subscribeToApplicants,
   subscribeToApplicantsAsync,
-} from '@/services/applicantManagementService';
+} from '@/services/jobs/applicantManagementService';
 
 // ============================================================================
 // Test Helpers

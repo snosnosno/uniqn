@@ -9,12 +9,12 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   confirmApplicationWithHistory,
   cancelConfirmation,
-} from '@/services/applicationHistoryService';
+} from '@/services/jobs/applicationHistoryService';
 import {
   convertApplicantToStaff,
   batchConvertApplicants,
   canConvertToStaff,
-} from '@/services/applicantConversionService';
+} from '@/services/jobs/applicantConversionService';
 import { queryKeys, cachingPolicies, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
