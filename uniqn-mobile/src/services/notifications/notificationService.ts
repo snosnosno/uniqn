@@ -14,11 +14,11 @@ import { Timestamp, type QueryDocumentSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
 import { getFirebaseFunctions } from '@/lib/firebase';
-import * as pushNotificationService from '@/services/pushNotificationService';
+import * as pushNotificationService from './pushNotificationService';
 import {
   type NotificationPayload,
   type NotificationPermissionStatus,
-} from '@/services/pushNotificationService';
+} from './pushNotificationService';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
 import { notificationRepository } from '@/repositories';

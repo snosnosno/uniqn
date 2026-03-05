@@ -27,7 +27,7 @@ import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { ensureDualSdkSync } from '@/lib/authBridge';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
-import { getUnreadCounterFromCache } from '@/services/notificationService';
+import { getUnreadCounterFromCache } from '@/services/notifications/notificationService';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/observability';
 import { getUserProfile, signOut as authSignOut } from '@/services/auth';

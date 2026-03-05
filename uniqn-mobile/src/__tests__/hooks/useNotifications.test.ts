@@ -47,7 +47,7 @@ const mockSaveNotificationSettings = jest.fn();
 const mockCheckNotificationPermission = jest.fn();
 const mockRequestNotificationPermission = jest.fn();
 
-jest.mock('@/services/notificationService', () => ({
+jest.mock('@/services/notifications/notificationService', () => ({
   fetchNotifications: (...args: unknown[]) => mockFetchNotifications(...args),
   markAsRead: (...args: unknown[]) => mockMarkAsReadService(...args),
   markAllAsRead: (...args: unknown[]) => mockMarkAllAsReadService(...args),
@@ -62,7 +62,7 @@ jest.mock('@/services/notificationService', () => ({
 const mockSyncMissedNotifications = jest.fn();
 const mockShouldSync = jest.fn();
 
-jest.mock('@/services/notificationSyncService', () => ({
+jest.mock('@/services/notifications/notificationSyncService', () => ({
   syncMissedNotifications: (...args: unknown[]) => mockSyncMissedNotifications(...args),
   shouldSync: (...args: unknown[]) => mockShouldSync(...args),
 }));

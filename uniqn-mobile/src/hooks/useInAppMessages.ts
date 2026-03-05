@@ -10,7 +10,7 @@ import { Platform, AppState, type AppStateStatus } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { fetchActiveMessages } from '@/repositories/firebase/InAppMessageRepository';
-import { processMessages } from '@/services/inAppMessageService';
+import { processMessages } from '@/services/notifications/inAppMessageService';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/utils/logger';
 

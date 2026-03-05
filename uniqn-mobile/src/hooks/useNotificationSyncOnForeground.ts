@@ -15,8 +15,8 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import {
   subscribeToUnreadCount,
   syncUnreadCounterFromServer,
-} from '@/services/notificationService';
-import { pushNotificationService } from '@/services/pushNotificationService';
+} from '@/services/notifications/notificationService';
+import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';

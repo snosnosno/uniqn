@@ -11,7 +11,7 @@ import {
   dismissCurrentMessage,
   dismissMessagePermanently,
   resetSession,
-} from '@/services/inAppMessageService';
+} from '@/services/notifications/inAppMessageService';
 import { useInAppMessages } from '@/hooks/useInAppMessages';
 import { InAppBanner } from './InAppBanner';
 import { InAppModal } from './InAppModal';

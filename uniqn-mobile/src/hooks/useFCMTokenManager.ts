@@ -12,7 +12,7 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { Platform } from 'react-native';
-import { pushNotificationService } from '@/services/pushNotificationService';
+import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';

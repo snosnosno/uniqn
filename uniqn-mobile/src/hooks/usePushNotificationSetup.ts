@@ -18,8 +18,8 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import {
   pushNotificationService,
   type NotificationPayload,
-} from '@/services/pushNotificationService';
-import { createNotificationFromFCM } from '@/services/notificationService';
+} from '@/services/notifications/pushNotificationService';
+import { createNotificationFromFCM } from '@/services/notifications/notificationService';
 import { navigateFromNotification, waitForNavigationReadyAsync, trackEvent } from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';

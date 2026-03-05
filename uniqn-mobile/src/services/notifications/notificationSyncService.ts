@@ -10,7 +10,7 @@
  * - 동기화 결과 통계
  */
 
-import { fetchNotifications } from '@/services/notificationService';
+import { fetchNotifications } from './notificationService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import type { NotificationData } from '@/types/notification';

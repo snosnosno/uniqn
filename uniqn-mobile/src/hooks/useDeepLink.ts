@@ -22,7 +22,7 @@ import {
   type ParsedDeepLink,
 } from '@/services/observability';
 import { RouteMapper } from '@/shared/deeplink';
-import { markAsRead } from '@/services/notificationService';
+import { markAsRead } from '@/services/notifications/notificationService';
 import { trackEvent } from '@/services/observability';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';

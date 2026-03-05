@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { NotificationPageCursor } from '@/services/notificationService';
+import type { NotificationPageCursor } from '@/services/notifications/notificationService';
 import {
   fetchNotifications,
   markAsRead as markAsReadService,
@@ -17,8 +17,8 @@ import {
   saveNotificationSettings,
   checkNotificationPermission,
   requestNotificationPermission,
-} from '@/services/notificationService';
-import { syncMissedNotifications, shouldSync } from '@/services/notificationSyncService';
+} from '@/services/notifications/notificationService';
+import { syncMissedNotifications, shouldSync } from '@/services/notifications/notificationSyncService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';

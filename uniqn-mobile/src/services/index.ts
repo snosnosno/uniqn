@@ -90,27 +90,8 @@ export {
 // Event QR 시스템을 사용하세요: eventQRService의 generateEventQR, validateEventQR 등
 // QR 관련 타입은 @/types에서 import: QRCodeAction, EventQRCode, EventQRDisplayData 등
 
-// Notification Service
-export {
-  notificationService,
-  fetchNotifications,
-  getUnreadCount,
-  getNotification,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteNotifications,
-  cleanupOldNotifications,
-  subscribeToNotifications,
-  subscribeToUnreadCount,
-  getNotificationSettings,
-  saveNotificationSettings,
-  checkNotificationPermission,
-  requestNotificationPermission,
-  registerFCMToken,
-  unregisterFCMToken,
-  unregisterAllFCMTokens,
-} from './notificationService';
+// Notifications Domain (notification, push, sync, inApp)
+export * from './notifications';
 
 // ============================================================================
 // 구인자용 서비스 (Employer Services)

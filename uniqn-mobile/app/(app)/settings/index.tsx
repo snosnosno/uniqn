@@ -19,7 +19,7 @@ import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
 import { BellIcon, BellSlashIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
-import { pushNotificationService } from '@/services/pushNotificationService';
+import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
 import { useAuthStore } from '@/stores/authStore';

@@ -42,7 +42,7 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('@/services/pushNotificationService', () => ({
+jest.mock('@/services/notifications/pushNotificationService', () => ({
   checkPermission: jest.fn(),
   requestPermission: jest.fn(),
 }));
@@ -71,7 +71,7 @@ import {
   unregisterAllFCMTokens,
 } from '../notificationService';
 import { notificationRepository } from '@/repositories';
-import * as pushNotificationService from '@/services/pushNotificationService';
+import * as pushNotificationService from '@/services/notifications/pushNotificationService';
 
 // Get typed mock references
 const mockRepo = notificationRepository as jest.Mocked<typeof notificationRepository>;
