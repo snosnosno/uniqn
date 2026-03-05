@@ -22,7 +22,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { createAnnouncementSchema } from '@/schemas/announcement.schema';
-import { uploadMultipleAnnouncementImages } from '@/services/storageService';
+import { uploadMultipleAnnouncementImages } from '@/services/auth';
 import { AnnouncementImagePicker } from './AnnouncementImagePicker';
 import { logger } from '@/utils/logger';
 import type {

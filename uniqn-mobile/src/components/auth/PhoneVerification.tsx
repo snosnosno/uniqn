@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 import { formatPhoneNumber, cleanPhoneNumber, toE164, formatE164ToDisplay } from '@/utils/phone';
-import { checkPhoneExists } from '@/services/authService';
+import { checkPhoneExists } from '@/services/auth';
 import { getFirebasePhoneAuthErrorMessage, getFirebaseOTPErrorMessage } from './phoneAuthErrors';
 import { PhoneVerifiedView } from './PhoneVerifiedView';
 

@@ -23,9 +23,9 @@ import {
   isBiometricEnabled,
   type BiometricStatus,
   type BiometricAuthResult,
-} from '@/services/biometricService';
+} from '@/services/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { getUserProfile } from '@/services/authService';
+import { getUserProfile } from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';

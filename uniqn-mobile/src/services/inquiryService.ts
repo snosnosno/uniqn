@@ -12,7 +12,7 @@ import { logger } from '@/utils/logger';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { inquiryRepository } from '@/repositories';
-import { requireCurrentUser } from './authService';
+import { requireCurrentUser } from '@/services/auth';
 import { createInquirySchema, respondInquirySchema } from '@/schemas';
 import type {
   Inquiry,

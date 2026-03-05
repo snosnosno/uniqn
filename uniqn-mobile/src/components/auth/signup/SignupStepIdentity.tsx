@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
-import { getLinkedPhoneNumber, unlinkPhoneProvider } from '@/services/authService';
+import { getLinkedPhoneNumber, unlinkPhoneProvider } from '@/services/auth';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';

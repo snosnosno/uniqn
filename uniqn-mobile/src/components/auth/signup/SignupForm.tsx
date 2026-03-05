@@ -16,7 +16,7 @@ import {
   checkNicknameExists,
   rollbackPhoneOnlyAccount,
   getCurrentUserUid,
-} from '@/services/authService';
+} from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';

@@ -31,7 +31,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth } from '@/hooks';
-import { updateMarketingConsent } from '@/services/authService';
+import { updateMarketingConsent } from '@/services/auth';
 import { logger } from '@/utils/logger';
 
 // 태양 아이콘 (다크모드용)

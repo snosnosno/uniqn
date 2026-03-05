@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import { InfoTab, WorkTab, SettlementTab } from './tabs';
 import { ReportModal, type ReportTarget } from '@/components/employer/ReportModal';
-import { getUserProfile } from '@/services/authService';
+import { getUserProfile } from '@/services/auth';
 import { createReport } from '@/services/reportService';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';

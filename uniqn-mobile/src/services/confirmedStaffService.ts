@@ -21,7 +21,7 @@ import type { Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { confirmedStaffRepository, userRepository } from '@/repositories';
-import { requireCurrentUser } from './authService';
+import { requireCurrentUser } from '@/services/auth';
 import {
   workLogToConfirmedStaff,
   groupStaffByDate,

@@ -28,7 +28,7 @@ import {
 import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
-import { signOut } from '@/services/authService';
+import { signOut } from '@/services/auth';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';

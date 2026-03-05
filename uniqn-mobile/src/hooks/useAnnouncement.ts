@@ -19,7 +19,7 @@ import {
   incrementViewCount,
   getAnnouncementCountByStatus,
 } from '@/services/announcementService';
-import { deleteMultipleAnnouncementImages } from '@/services/storageService';
+import { deleteMultipleAnnouncementImages } from '@/services/auth';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';

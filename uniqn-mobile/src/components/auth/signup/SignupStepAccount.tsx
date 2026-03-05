@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { signUpAccountSchema, type SignUpAccountData } from '@/schemas';
-import { checkEmailExists } from '@/services/authService';
+import { checkEmailExists } from '@/services/auth';
 import { logger } from '@/utils/logger';
 
 // ============================================================================

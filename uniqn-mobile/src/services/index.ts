@@ -4,35 +4,8 @@
  * @version 1.0.0
  */
 
-// Auth Service
-export {
-  login,
-  signUp,
-  signOut,
-  resetPassword,
-  getUserProfile,
-  updateUserProfile,
-  reauthenticate,
-  getCurrentUser,
-  onAuthStateChanged,
-  signInWithApple,
-  signInWithGoogle,
-  signInWithKakao,
-  completeSocialProfile,
-  changePassword,
-  updateProfilePhotoURL,
-  type UserProfile,
-  type AuthResult,
-  type SocialProfileData,
-} from './authService';
-
-// Storage Service
-export {
-  uploadProfileImage,
-  deleteProfileImage,
-  replaceProfileImage,
-  type UploadResult,
-} from './storageService';
+// Auth Domain (auth, storage, accountDeletion, biometric)
+export * from './auth';
 
 // Job Service
 export {
@@ -83,21 +56,6 @@ export {
   type BulkConversionResult,
   type ConversionOptions,
 } from './applicantConversionService';
-
-// Account Deletion Service
-export {
-  requestAccountDeletion,
-  cancelAccountDeletion,
-  getMyData,
-  updateMyData,
-  exportMyData,
-  getDeletionStatus,
-  DELETION_REASONS,
-  type DeletionReason,
-  type DeletionRequest,
-  type UserData, // @deprecated - FirestoreUserProfile 사용 권장
-  type UserDataExport,
-} from './accountDeletionService';
 
 // Schedule Service
 export {

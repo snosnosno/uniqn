@@ -16,7 +16,7 @@ import { Button, Card, Loading } from '@/components';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
-import { registerAsEmployer } from '@/services/authService';
+import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 

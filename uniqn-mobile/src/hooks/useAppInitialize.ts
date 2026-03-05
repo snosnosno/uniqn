@@ -30,7 +30,7 @@ import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { getUnreadCounterFromCache } from '@/services/notificationService';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/observability';
-import { getUserProfile, signOut as authSignOut } from '@/services/authService';
+import { getUserProfile, signOut as authSignOut } from '@/services/auth';
 import { toStoreProfile } from '@/utils/profileConverter';
 import {
   checkForceUpdate,
