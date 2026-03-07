@@ -32,6 +32,8 @@ interface SignupStepIdentityProps {
   phoneMode?: 'signIn' | 'link';
   /** Apple 소셜 로그인 사용자 여부 (이름 미제공 시 안내 메시지 표시) */
   isAppleUser?: boolean;
+  /** 제출 버튼 텍스트 (기본: '다음') */
+  submitLabel?: string;
 }
 
 // ============================================================================
@@ -45,6 +47,7 @@ export function SignupStepIdentity({
   isLoading = false,
   phoneMode = 'signIn',
   isAppleUser = false,
+  submitLabel = '다음',
 }: SignupStepIdentityProps) {
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
@@ -182,7 +185,7 @@ export function SignupStepIdentity({
       {/* 버튼 영역 */}
       <View className="mt-4 flex-col gap-3">
         <Button onPress={handleSubmit(onSubmit)} disabled={isLoading} fullWidth>
-          다음
+          {submitLabel}
         </Button>
 
         <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>

@@ -92,6 +92,7 @@ export function useAuthGuard(): void {
   // 무한 루프 방지: profile 객체 대신 필요한 원시값만 추출
   const socialProvider = profile?.socialProvider ?? null;
   const phoneVerified = profile?.phoneVerified ?? null;
+  const profileCompleted = profile?.profileCompleted ?? null;
 
   // router를 ref로 저장하여 의존성 배열에서 제외 (안정적인 참조)
   const routerRef = useRef(router);
@@ -151,6 +152,19 @@ export function useAuthGuard(): void {
       }
     }
 
+    // 인증됨 + 프로필 미완성 → profile-setup 화면으로 이동
+    if (isAuthenticated && profileCompleted === false) {
+      const isOnProfileSetup = pathname === '/(app)/profile-setup';
+      if (!isOnProfileSetup) {
+        logger.debug('프로필 미완성 - profile-setup으로 리다이렉트', {
+          component: 'useAuthGuard',
+          pathname,
+        });
+        routerRef.current.replace('/(app)/profile-setup');
+        return;
+      }
+    }
+
     // 인증 필요 라우트 체크
     if (config.requiredAuth && !isAuthenticated) {
       logger.debug('인증 필요 - 로그인으로 리다이렉트', {
@@ -185,7 +199,16 @@ export function useAuthGuard(): void {
     // router를 의존성에서 제외하여 무한 루프 방지
     // user 변경 시 isAuthenticated도 재계산됨
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isLoading, userRole, socialProvider, phoneVerified, segments, pathname]);
+  }, [
+    user,
+    isLoading,
+    userRole,
+    socialProvider,
+    phoneVerified,
+    profileCompleted,
+    segments,
+    pathname,
+  ]);
 }
 
 // ============================================================================

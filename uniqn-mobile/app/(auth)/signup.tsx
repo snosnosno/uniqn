@@ -1,10 +1,11 @@
 /**
  * UNIQN Mobile - SignUp Screen
- * 4단계 회원가입 화면
+ * 3단계 회원가입 화면
  *
- * @description 약관동의 → 계정 → 본인인증 → 프로필
- *              소셜 모드: 약관동의 → 본인인증 → 프로필 (계정 생략)
- * @version 2.1.0
+ * @description 약관동의 → 계정 → 본인인증 → 가입완료
+ *              소셜 모드: 약관동의 → 본인인증 → 가입완료 (계정 생략)
+ *              프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
+ * @version 3.0.0
  */
 
 import { useState, useCallback } from 'react';
@@ -73,11 +74,6 @@ export default function SignUpScreen() {
           birthDate: data.birthDate,
           gender: data.gender,
           phone: data.verifiedPhone || '',
-          nickname: data.nickname,
-          region: data.region,
-          experienceYears: data.experienceYears,
-          career: data.career,
-          note: data.note,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           marketingAgreed: data.marketingAgreed,

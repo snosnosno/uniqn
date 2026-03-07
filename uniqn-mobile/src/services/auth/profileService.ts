@@ -269,3 +269,77 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
     });
   }
 }
+
+// ============================================================================
+// Profile Completion (회원가입 후 프로필 완성)
+// ============================================================================
+
+/**
+ * 프로필 완성 데이터
+ */
+export interface CompleteProfileData {
+  nickname: string;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
+}
+
+/**
+ * 프로필 완성 (회원가입 후 첫 진입 시)
+ *
+ * @description
+ * - 닉네임 필수 + 선택 필드 업데이트
+ * - profileCompleted = true로 전환
+ * - Firebase Auth displayName 업데이트
+ */
+export async function completeProfile(data: CompleteProfileData): Promise<void> {
+  const currentUser = requireCurrentUser();
+  const uid = currentUser.uid;
+
+  try {
+    logger.info('프로필 완성 시도', { uid, nickname: data.nickname });
+
+    // 1. Firebase Auth displayName 업데이트
+    await updateProfile(currentUser, { displayName: data.nickname });
+
+    // 2. Firestore 업데이트 (실패 시 Auth 롤백)
+    const firestoreUpdates: Record<string, unknown> = {
+      nickname: data.nickname,
+      profileCompleted: true,
+    };
+    if (data.region !== undefined) firestoreUpdates.region = data.region;
+    if (data.experienceYears !== undefined) firestoreUpdates.experienceYears = data.experienceYears;
+    if (data.career !== undefined) firestoreUpdates.career = data.career;
+    if (data.note !== undefined) firestoreUpdates.note = data.note;
+
+    try {
+      await userRepository.updateFields(uid, firestoreUpdates);
+    } catch (firestoreError) {
+      // Firestore 실패 시 Auth displayName 롤백
+      const previousDisplayName = currentUser.displayName;
+      logger.warn('Firestore 프로필 완성 실패 - Auth 롤백 시도', {
+        uid,
+        error: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
+      });
+      try {
+        await updateProfile(currentUser, { displayName: previousDisplayName });
+        logger.info('Auth displayName 롤백 완료', { uid });
+      } catch (rollbackError) {
+        logger.error('Auth displayName 롤백 실패 - 수동 복구 필요', {
+          uid,
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        });
+      }
+      throw firestoreError;
+    }
+
+    logger.info('프로필 완성 성공', { uid, nickname: data.nickname });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '프로필 완성',
+      component: 'profileService',
+      context: { uid },
+    });
+  }
+}

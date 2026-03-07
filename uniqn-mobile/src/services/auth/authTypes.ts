@@ -30,22 +30,17 @@ export interface AuthResult {
 /**
  * 소셜 로그인 프로필 완성 데이터
  *
- * Apple 로그인 후 기존 회원가입 Step 2→3→4 데이터로 프로필 업데이트
+ * 소셜 로그인 후 본인인증 + 약관 데이터로 프로필 업데이트
+ * 프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
  */
 export interface SocialProfileData {
-  // Step 2: 본인인증
+  // 본인인증
   name: string;
   birthDate: string;
   gender: 'male' | 'female';
   /** 전화번호 (E.164 형식: +821012345678) */
   phone: string;
-  // Step 3: 프로필
-  nickname: string;
-  region?: string;
-  experienceYears?: number;
-  career?: string;
-  note?: string;
-  // Step 4: 약관
+  // 약관
   termsAgreed: boolean;
   privacyAgreed: boolean;
   marketingAgreed?: boolean;
@@ -61,7 +56,7 @@ export interface VerifyAndSavePayload {
   name: string;
   birthDate: string;
   gender: 'male' | 'female';
-  nickname: string;
+  nickname?: string;
   region?: string;
   experienceYears?: number;
   career?: string;

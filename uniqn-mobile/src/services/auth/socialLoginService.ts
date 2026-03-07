@@ -514,16 +514,12 @@ export async function completeSocialProfile(
     logger.info('소셜 프로필 완성 시도', { uid });
 
     // 공통 CF 호출: 서버사이드 phone 검증 + Firestore 저장 + Claims 설정
+    // 프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
     await callVerifyAndSaveProfile({
       verifiedPhone: data.phone,
       name: data.name,
       birthDate: data.birthDate,
       gender: data.gender,
-      nickname: data.nickname,
-      region: data.region,
-      experienceYears: data.experienceYears,
-      career: data.career,
-      note: data.note,
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
       marketingAgreed: data.marketingAgreed ?? false,

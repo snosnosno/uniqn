@@ -97,6 +97,13 @@ export default function AppLayout() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
+          name="profile-setup"
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // 뒤로가기 제스처 차단
+          }}
+        />
+        <Stack.Screen
           name="notifications"
           options={{
             presentation: 'card',

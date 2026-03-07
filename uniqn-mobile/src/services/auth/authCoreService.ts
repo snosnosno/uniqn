@@ -30,7 +30,7 @@ import {
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
+import { AuthError, ERROR_CODES } from '@/errors';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
   checkLoginAttempts,
@@ -115,24 +115,18 @@ async function verifyDualSDKConsistency(context: string): Promise<void> {
   }
 }
 
-/** SignUpFormData → VerifyAndSavePayload 변환 */
+/** SignUpFormData → VerifyAndSavePayload 변환 (프로필 필드 제외 — 가입 후 별도 입력) */
 function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
   return {
     verifiedPhone: data.verifiedPhone,
     name: data.name,
     birthDate: data.birthDate,
     gender: data.gender,
-    nickname: data.nickname,
     termsAgreed: data.termsAgreed,
     privacyAgreed: data.privacyAgreed,
     marketingAgreed: data.marketingAgreed,
     email: data.email,
     mode: 'signup',
-    // 선택 필드: undefined/null 제외하여 Firebase 직렬화 시 null 변환 방지
-    ...(data.region != null && { region: data.region }),
-    ...(data.experienceYears != null && { experienceYears: data.experienceYears }),
-    ...(data.career != null && { career: data.career }),
-    ...(data.note != null && { note: data.note }),
   };
 }
 
@@ -509,16 +503,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
     logger.info('회원가입 시도', {
       email: maskEmail(data.email),
-      role: data.role,
       platform: Platform.OS,
     });
-
-    // 클라이언트 role 사전 검증 (서버에서도 하드코딩하므로 방어적 체크)
-    if (data.role !== 'staff') {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '잘못된 역할입니다. 다시 시도해주세요.',
-      });
-    }
 
     if (Platform.OS === 'web') {
       // ===== Web Platform =====
@@ -664,7 +650,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     throw handleServiceError(error, {
       operation: '회원가입',
       component: 'authService',
-      context: { email: maskEmail(data.email), role: data.role },
+      context: { email: maskEmail(data.email) },
     });
   }
 }

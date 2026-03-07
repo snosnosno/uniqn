@@ -1,33 +1,26 @@
 /**
- * UNIQN Mobile - 4단계 회원가입 폼 컴포넌트
+ * UNIQN Mobile - 3단계 회원가입 폼 컴포넌트
  *
- * @description 플로우: 약관동의 → 계정 → 본인인증 → 프로필
+ * @description 플로우: 약관동의 → 계정 → 본인인증 → 가입완료
+ *              프로필(닉네임 등)은 가입 후 앱 첫 진입 시 별도 화면에서 입력
  *              개인정보보호법 제15조에 따라 약관동의를 최우선 단계로 배치
- * @version 2.0.0
+ * @version 3.0.0
  */
 
 import React, { useState, useCallback } from 'react';
 import { View, Platform } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { StepIndicator, SIGNUP_STEPS, type StepInfo } from '@/components/auth/StepIndicator';
-import {
-  checkEmailExists,
-  checkNicknameExists,
-  rollbackPhoneOnlyAccount,
-  getCurrentUserUid,
-} from '@/services/auth';
+import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
+import { checkEmailExists } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
-import { useModalStore } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
 import { SignupStepAccount } from './SignupStepAccount';
 import { SignupStepIdentity } from './SignupStepIdentity';
-import { SignupStepProfile } from './SignupStepProfile';
 import { SignupStepTerms } from './SignupStepTerms';
 import type {
   SignUpAccountData,
   SignUpIdentityData,
-  SignUpProfileData,
   SignUpTermsData,
   SignUpFormData,
 } from '@/schemas';
@@ -45,18 +38,23 @@ interface SignupFormProps {
   socialData?: { name?: string; socialProvider?: string };
 }
 
-/** 소셜 모드 스텝 (계정정보 생략: 약관 → 본인인증 → 프로필) */
+/** 일반 회원가입 스텝 (3단계: 약관 → 계정 → 본인인증) */
+const DEFAULT_SIGNUP_STEPS: StepInfo[] = [
+  { label: '약관동의', shortLabel: '약관' },
+  { label: '계정정보', shortLabel: '계정' },
+  { label: '본인인증', shortLabel: '인증' },
+];
+
+/** 소셜 모드 스텝 (계정정보 생략: 약관 → 본인인증) */
 const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
   { label: '약관동의', shortLabel: '약관' },
   { label: '본인인증', shortLabel: '인증' },
-  { label: '프로필', shortLabel: '프로필' },
 ];
 
 interface FormDataState {
   terms?: SignUpTermsData; // Step 1: 약관동의
   account?: SignUpAccountData; // Step 2: 계정정보 (소셜 모드에서 생략)
   identity?: SignUpIdentityData; // Step 3: 본인인증
-  profile?: SignUpProfileData; // Step 4: 프로필
 }
 
 // ============================================================================
@@ -74,10 +72,9 @@ export function SignupForm({
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormDataState>({});
   const toast = useToast();
-  const showConfirm = useModalStore((s) => s.showConfirm);
 
-  // 소셜 모드: Step 2(계정) 건너뛰므로 displayStep 조정 (1→1, 3→2, 4→3)
-  const steps = isSocial ? SOCIAL_SIGNUP_STEPS : SIGNUP_STEPS;
+  // 소셜 모드: Step 2(계정) 건너뛰므로 displayStep 조정 (1→1, 3→2)
+  const steps = isSocial ? SOCIAL_SIGNUP_STEPS : DEFAULT_SIGNUP_STEPS;
   const displayStep = isSocial && currentStep >= 3 ? currentStep - 1 : currentStep;
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -107,61 +104,19 @@ export function SignupForm({
   }, []);
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Step 3: 본인인증
+  // Step 3: 본인인증 (최종 제출)
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleIdentityNext = useCallback((data: SignUpIdentityData) => {
-    setFormData((prev) => ({ ...prev, identity: data }));
-    setCurrentStep(4);
-  }, []);
+  const handleIdentityNext = useCallback(
+    async (data: SignUpIdentityData) => {
+      const updatedFormData = { ...formData, identity: data };
+      setFormData(updatedFormData);
 
-  // phone-only 계정 정리 (본인인증 단계에서 생성된 Firebase Auth 계정)
-  const cleanupPhoneAccount = useCallback(async () => {
-    const uid = getCurrentUserUid();
-    if (!uid) return;
-    await rollbackPhoneOnlyAccount(uid, 'identity_back_cleanup');
-  }, []);
-
-  const handleIdentityBack = useCallback(async () => {
-    if (isSocial) {
-      // 소셜 모드: identity 데이터 보존 (phone link 상태 유지)
-      // 재진입 시 useEffect auto-detect로 자동 복구됨
-      setCurrentStep(1);
-      return;
-    }
-
-    // 현재 인증된 계정이 있는지 확인
-    const hasPhoneAccount = !!getCurrentUserUid();
-
-    const goBack = async () => {
-      await cleanupPhoneAccount();
-      setFormData((prev) => ({ ...prev, identity: undefined }));
-      setCurrentStep(2); // 계정정보로 이동
-    };
-
-    if (hasPhoneAccount) {
-      showConfirm(
-        '전화번호 인증 취소',
-        '이전 단계로 돌아가면 전화번호 인증을 다시 해야 합니다. 돌아가시겠습니까?',
-        goBack
-      );
-    } else {
-      setFormData((prev) => ({ ...prev, identity: undefined }));
-      setCurrentStep(2); // 계정정보로 이동
-    }
-  }, [cleanupPhoneAccount, showConfirm, isSocial]);
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Step 4: 프로필 (최종 제출)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  const handleProfileSubmit = useCallback(
-    async (data: SignUpProfileData) => {
       // 소셜 모드에서는 이메일 중복 체크 불필요 (계정정보 없음)
       if (!isSocial) {
         // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
         try {
-          const emailExists = await checkEmailExists(formData.account!.email);
+          const emailExists = await checkEmailExists(updatedFormData.account!.email);
           if (emailExists) {
             toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
             setCurrentStep(2); // 계정정보(Step 2)로 이동
@@ -174,24 +129,8 @@ export function SignupForm({
         }
       }
 
-      // 닉네임 Race Condition 방지: 제출 직전 닉네임 중복 재검증
-      try {
-        const nicknameExists = await checkNicknameExists(data.nickname);
-        if (nicknameExists) {
-          toast.error('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.');
-          return;
-        }
-      } catch {
-        logger.warn('최종 제출 전 닉네임 재검증 실패');
-        toast.error('닉네임 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
-        return;
-      }
-
-      const updatedFormData = { ...formData, profile: data };
-      setFormData(updatedFormData);
-
-      // [S4] 필수 폼 데이터 방어적 체크
-      if (!updatedFormData.identity || !updatedFormData.terms) {
+      // 필수 폼 데이터 방어적 체크
+      if (!updatedFormData.terms) {
         logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
         toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
         setCurrentStep(1);
@@ -205,24 +144,17 @@ export function SignupForm({
         return;
       }
 
-      // 전체 데이터 조합
+      // 전체 데이터 조합 (프로필 필드 제외 — 가입 후 별도 입력)
       const completeData: SignUpFormData = {
         // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
         email: isSocial ? '' : updatedFormData.account!.email,
         password: isSocial ? '' : updatedFormData.account!.password,
         // 본인인증
-        name: updatedFormData.identity.name,
-        birthDate: updatedFormData.identity.birthDate,
-        gender: updatedFormData.identity.gender,
-        phoneVerified: updatedFormData.identity.phoneVerified as true, // Step 3 Zod 검증 통과 후 항상 true
-        verifiedPhone: updatedFormData.identity.verifiedPhone,
-        // 프로필
-        nickname: data.nickname,
-        role: data.role,
-        region: data.region,
-        experienceYears: data.experienceYears,
-        career: data.career,
-        note: data.note,
+        name: data.name,
+        birthDate: data.birthDate,
+        gender: data.gender,
+        phoneVerified: data.phoneVerified as true,
+        verifiedPhone: data.verifiedPhone,
         // 약관동의
         termsAgreed: updatedFormData.terms.termsAgreed,
         privacyAgreed: updatedFormData.terms.privacyAgreed,
@@ -234,9 +166,16 @@ export function SignupForm({
     [formData, onSubmit, toast, isSocial]
   );
 
-  const handleProfileBack = useCallback(() => {
-    setCurrentStep(3);
-  }, []);
+  const handleIdentityBack = useCallback(() => {
+    if (isSocial) {
+      // 소셜 모드: identity 데이터 보존 (phone link 상태 유지)
+      setCurrentStep(1);
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, identity: undefined }));
+    setCurrentStep(2); // 계정정보로 이동
+  }, [isSocial]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Render
@@ -261,7 +200,7 @@ export function SignupForm({
             isLoading={isLoading}
           />
         );
-      case 3: // 본인인증
+      case 3: // 본인인증 (최종 제출)
         return (
           <SignupStepIdentity
             onNext={handleIdentityNext}
@@ -272,15 +211,7 @@ export function SignupForm({
             isLoading={isLoading}
             phoneMode={isSocial ? 'link' : 'signIn'}
             isAppleUser={isSocial && socialData?.socialProvider === 'apple'}
-          />
-        );
-      case 4: // 프로필 (최종 제출)
-        return (
-          <SignupStepProfile
-            onNext={handleProfileSubmit}
-            onBack={handleProfileBack}
-            initialData={formData.profile}
-            isLoading={isLoading}
+            submitLabel={isSocial ? undefined : '가입완료'}
           />
         );
       default:

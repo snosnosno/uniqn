@@ -52,6 +52,8 @@ export {
   changePassword,
   registerAsEmployer,
   updateProfilePhotoURL,
+  completeProfile,
+  type CompleteProfileData,
 } from './profileService';
 
 // ============================================================================

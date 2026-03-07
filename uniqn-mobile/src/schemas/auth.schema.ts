@@ -276,10 +276,9 @@ export const signUpSchema = z.object({
     error: '전화번호 인증이 필요합니다',
   }),
   verifiedPhone: phoneSchema,
-  // 프로필
-  ...signUpProfileSchema.shape,
   // 약관 동의
   ...signUpTermsSchema.shape,
+  // 프로필은 가입 후 별도 화면에서 입력 (profileCompleted 플래그로 관리)
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;

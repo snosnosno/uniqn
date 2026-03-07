@@ -97,6 +97,10 @@ export interface UserProfile<T = Date> {
     lastUpdatedAt: T;
   };
 
+  // 프로필 상태
+  /** 프로필 완성 여부 (닉네임 등 필수 프로필 입력 완료) */
+  profileCompleted?: boolean;
+
   // 메타데이터
   /** 활성 상태 (Firestore 전용, Store에서는 optional) */
   isActive?: boolean;

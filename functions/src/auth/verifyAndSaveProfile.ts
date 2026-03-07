@@ -45,8 +45,8 @@ interface VerifyAndSaveProfileData {
   birthDate: string;
   /** 성별 */
   gender: "male" | "female";
-  /** 닉네임 */
-  nickname: string;
+  /** 닉네임 (프로필 완성 시 제공, 초기 가입 시 생략 가능) */
+  nickname?: string;
   /** 지역 (선택) */
   region?: string;
   /** 경력 연수 (선택) */
@@ -160,10 +160,11 @@ export const verifyAndSaveProfile = onCall(
         max: 20,
         pattern: /^[가-힣a-zA-Z\s]+$/,
       });
-      const nickname = validateString(data.nickname, "닉네임", {
-        min: 2,
-        max: 15,
-      });
+      // nickname은 선택 — 초기 가입 시 생략 가능 (프로필 완성 화면에서 입력)
+      const nickname = data.nickname
+        ? validateString(data.nickname, "닉네임", { min: 2, max: 15 })
+        : undefined;
+      const hasNickname = !!nickname;
       const birthDate = validateString(data.birthDate, "생년월일", {
         min: 8,
         max: 8,
@@ -330,13 +331,18 @@ export const verifyAndSaveProfile = onCall(
         birthDate,
         gender: data.gender,
         phone: clientPhoneE164,
-        nickname,
         role,
         status: 'active' as const,
         phoneVerified: true,
         isActive: true,
+        profileCompleted: hasNickname,
         updatedAt: now,
       };
+
+      // nickname이 제공된 경우에만 저장
+      if (nickname) {
+        profileData.nickname = nickname;
+      }
 
       // 선택 필드
       if (email) profileData.email = email;
@@ -373,7 +379,12 @@ export const verifyAndSaveProfile = onCall(
 
       await db.runTransaction(async (transaction) => {
         // Transaction 내 읽기 — 모든 읽기를 쓰기 전에 완료 (Firestore 규칙)
-        const [freshDoc, phoneSnap, nicknameSnap] = await Promise.all([
+        // Transaction 내 읽기: nickname이 있을 때만 닉네임 중복 쿼리 포함
+        const readPromises: [
+          Promise<FirebaseFirestore.DocumentSnapshot>,
+          Promise<FirebaseFirestore.QuerySnapshot>,
+          ...Promise<FirebaseFirestore.QuerySnapshot>[],
+        ] = [
           transaction.get(userDocRef),
           transaction.get(
             db
@@ -381,13 +392,20 @@ export const verifyAndSaveProfile = onCall(
               .where("phone", "==", clientPhoneE164)
               .limit(1),
           ),
-          transaction.get(
-            db
-              .collection("users")
-              .where("nickname", "==", nickname)
-              .limit(1),
-          ),
-        ]);
+        ];
+        if (hasNickname) {
+          readPromises.push(
+            transaction.get(
+              db
+                .collection("users")
+                .where("nickname", "==", nickname)
+                .limit(1),
+            ),
+          );
+        }
+
+        const [freshDoc, phoneSnap, ...rest] = await Promise.all(readPromises);
+        const nicknameSnap = rest[0] ?? null;
 
         // 전화번호 중복 검사
         if (!phoneSnap.empty) {
@@ -404,8 +422,8 @@ export const verifyAndSaveProfile = onCall(
           }
         }
 
-        // 닉네임 중복 검사
-        if (!nicknameSnap.empty) {
+        // 닉네임 중복 검사 (nickname 제공 시에만)
+        if (nicknameSnap && !nicknameSnap.empty) {
           const nicknameOwner = nicknameSnap.docs[0];
           if (nicknameOwner.id !== uid) {
             logger.warn("verifyAndSaveProfile: 닉네임 중복", {
@@ -469,7 +487,10 @@ export const verifyAndSaveProfile = onCall(
       // ── 8. displayName 설정 (서버사이드) ──────────────────────────────
 
       try {
-        await admin.auth().updateUser(uid, { displayName: nickname });
+        // nickname이 있으면 닉네임, 없으면 실명을 displayName으로 설정
+        await admin.auth().updateUser(uid, {
+          displayName: nickname ?? name,
+        });
       } catch (displayErr) {
         logger.warn(
           "verifyAndSaveProfile: displayName 업데이트 실패 (무시)",
