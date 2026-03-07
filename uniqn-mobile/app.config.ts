@@ -21,6 +21,7 @@ const DOMAIN = 'uniqn.app';
 const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';
 
 const BRAND_BG_COLOR = '#1a1625';
+const SPLASH_BG_COLOR = '#0D0B14'; // surface.dark — 아이콘 이미지 배경(~#0d0d0d)과 거의 일치
 const BRAND_ACCENT_COLOR = '#A855F7';
 const APP_ICON = './assets/1024.png';
 
@@ -164,9 +165,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         image: APP_ICON,
         imageWidth: 200,
-        backgroundColor: BRAND_BG_COLOR,
+        backgroundColor: SPLASH_BG_COLOR,
         dark: {
-          backgroundColor: BRAND_BG_COLOR,
+          backgroundColor: SPLASH_BG_COLOR,
           image: APP_ICON,
         },
       },

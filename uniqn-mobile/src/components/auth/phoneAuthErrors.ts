@@ -20,7 +20,10 @@ export function getFirebasePhoneAuthErrorMessage(error: unknown): string {
     case 'auth/network-request-failed':
       return '네트워크 연결을 확인해주세요.';
     default:
-      return '인증번호 발송에 실패했습니다. 다시 시도해주세요.';
+      // TODO: 디버깅 완료 후 에러 코드 노출 제거
+      return code
+        ? `인증번호 발송에 실패했습니다. [${code}]`
+        : '인증번호 발송에 실패했습니다. 다시 시도해주세요.';
   }
 }
 
@@ -46,6 +49,9 @@ export function getFirebaseOTPErrorMessage(
     case 'auth/requires-recent-login':
       return '보안을 위해 다시 로그인이 필요합니다.';
     default:
-      return '인증에 실패했습니다. 다시 시도해주세요.';
+      // TODO: 디버깅 완료 후 에러 코드 노출 제거
+      return code
+        ? `인증에 실패했습니다. [${code}]`
+        : '인증에 실패했습니다. 다시 시도해주세요.';
   }
 }

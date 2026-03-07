@@ -508,13 +508,18 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           }
           setRecaptchaKey((prev) => prev + 1);
         }
+        const firebaseCode = (err as { code?: string })?.code;
         const errorMessage = getFirebasePhoneAuthErrorMessage(err);
-        setError(errorMessage);
+        // TODO: 디버깅 완료 후 원본 에러 메시지 노출 제거
+        const debugMessage = !firebaseCode && err instanceof Error
+          ? `${errorMessage} (${err.message})`
+          : errorMessage;
+        setError(debugMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
         logger.error('SMS 인증 요청 실패', {
           error: err,
           mode,
-          firebaseCode: (err as { code?: string })?.code ?? 'unknown',
+          firebaseCode: firebaseCode ?? 'unknown',
         });
       } finally {
         setIsLoading(false);
