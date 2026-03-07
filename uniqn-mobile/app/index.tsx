@@ -1,14 +1,19 @@
 /**
  * UNIQN Mobile - Splash Screen
- * 앱 시작 스플래시 화면
+ * 앱 시작 스플래시 화면 (네이티브 스플래시 → 이 화면 → 로그인/메인)
  */
 
 import { useEffect } from 'react';
 import { View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { Loading } from '@/components/ui';
 import { router } from 'expo-router';
 import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
+import { APP_VERSION } from '@/constants/version';
 import { logger } from '@/utils/logger';
+
+const LOGO_SOURCE = require('../assets/1024.png');
+const LOGO_SIZE = 160;
 
 export default function SplashScreen() {
   const hasHydrated = useAuthStore(selectHasHydrated);
@@ -39,21 +44,29 @@ export default function SplashScreen() {
   }, [hasHydrated, user]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-      <View className="mb-12 items-center">
-        <Text className="text-5xl font-extrabold tracking-wider text-primary-600 dark:text-primary-400">
+    <View className="flex-1 items-center justify-center bg-surface-dark">
+      <View className="items-center">
+        <Image
+          source={LOGO_SOURCE}
+          style={{ width: LOGO_SIZE, height: LOGO_SIZE }}
+          contentFit="contain"
+        />
+
+        <Text className="mt-5 text-lg font-bold tracking-widest text-primary-400">
           UNIQN
         </Text>
-        <Text className="mt-2 text-base text-gray-500 dark:text-gray-400">
+        <Text className="mt-1 text-sm text-gray-500">
           홀덤 스태프 매칭 플랫폼
         </Text>
       </View>
 
-      <View className="my-6">
+      <View className="mt-10">
         <Loading size="large" />
       </View>
 
-      <Text className="absolute bottom-12 text-sm text-gray-400 dark:text-gray-500">v1.0.0</Text>
+      <Text className="absolute bottom-12 text-xs text-gray-600">
+        v{APP_VERSION}
+      </Text>
     </View>
   );
 }
