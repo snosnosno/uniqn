@@ -55,15 +55,80 @@ export const DELETION_REASONS: Record<DeletionReason, string> = {
 };
 
 // ============================================================================
+// Types
+// ============================================================================
+
+/** 회원탈퇴 결과 (Apple 토큰 파기 상태 포함) */
+export interface DeletionResult {
+  deletionRequest: DeletionRequest;
+  appleTokenRevoked: boolean;
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Apple 토큰 파기 시도
+ *
+ * @returns 파기 성공 여부
+ */
+async function tryRevokeAppleToken(authorizationCode: string, userId: string): Promise<boolean> {
+  try {
+    const { httpsCallable } = await import('firebase/functions');
+    const { getFirebaseFunctions } = await import('@/lib/firebase');
+    const revokeAppleTokenFn = httpsCallable<{ authorizationCode: string }, { success: boolean }>(
+      getFirebaseFunctions(),
+      'revokeAppleToken'
+    );
+    await revokeAppleTokenFn({ authorizationCode });
+    logger.info('Apple 토큰 파기 완료', { userId });
+    return true;
+  } catch (revokeError) {
+    logger.warn('Apple 토큰 파기 실패', {
+      userId,
+      error: revokeError instanceof Error ? revokeError.message : String(revokeError),
+    });
+    return false;
+  }
+}
+
+// ============================================================================
 // Service Functions
 // ============================================================================
+
+/**
+ * Apple 토큰 파기 재시도 (회원탈퇴 후 사용자 요청 시)
+ *
+ * Apple 재인증 다이얼로그를 다시 표시하고 토큰 파기를 재시도한다.
+ *
+ * @returns 파기 성공 여부
+ */
+export async function retryAppleTokenRevocation(): Promise<boolean> {
+  const currentUser = getFirebaseAuth().currentUser;
+  if (!currentUser) return false;
+
+  const AppleAuthentication = await import('expo-apple-authentication');
+  const { generateNonce, sha256 } = await import('@/utils/appleAuth');
+  const rawNonce = generateNonce();
+  const hashedNonce = await sha256(rawNonce);
+
+  const appleCredential = await AppleAuthentication.signInAsync({
+    requestedScopes: [],
+    nonce: hashedNonce,
+  });
+
+  if (!appleCredential.authorizationCode) return false;
+
+  return tryRevokeAppleToken(appleCredential.authorizationCode, currentUser.uid);
+}
 
 /**
  * 회원탈퇴 요청
  *
  * @description Repository 패턴 사용
  *
- * 1. 비밀번호 재인증 (보안) - 서비스에서 처리
+ * 1. 재인증 (Apple: 네이티브 다이얼로그 / 이메일: 비밀번호) - 서비스에서 처리
  * 2. 계정 비활성화 (즉시) - Repository를 통해 처리
  * 3. 30일 후 완전 삭제 예약
  */
@@ -71,10 +136,10 @@ export async function requestAccountDeletion(
   reason: DeletionReason,
   password?: string,
   reasonDetail?: string
-): Promise<DeletionRequest> {
+): Promise<DeletionResult> {
   const currentUser = getFirebaseAuth().currentUser;
 
-  if (!currentUser || !currentUser.email) {
+  if (!currentUser) {
     throw new AuthError('E2001', {
       userMessage: '로그인이 필요합니다',
     });
@@ -84,7 +149,9 @@ export async function requestAccountDeletion(
     logger.info('회원탈퇴 요청 시작', { userId: currentUser.uid, reason });
 
     // 1. 재인증 (Apple 사용자 vs 이메일 사용자 분기)
-    const isAppleUser = currentUser.providerData.some((p) => p.providerId === 'apple.com');
+    const isAppleUser =
+      currentUser.providerData?.some((p) => p.providerId === 'apple.com') ?? false;
+    let appleTokenRevoked = false;
 
     if (isAppleUser && Platform.OS === 'ios') {
       // Apple 재인증: Apple Sign In 다이얼로그 → OAuthProvider credential
@@ -116,33 +183,29 @@ export async function requestAccountDeletion(
 
       // Apple Token Revocation (App Store 심사 필수 요구사항)
       if (appleCredential.authorizationCode) {
-        try {
-          const { httpsCallable } = await import('firebase/functions');
-          const { getFirebaseFunctions } = await import('@/lib/firebase');
-          const revokeAppleTokenFn = httpsCallable<
-            { authorizationCode: string },
-            { success: boolean }
-          >(getFirebaseFunctions(), 'revokeAppleToken');
-          await revokeAppleTokenFn({ authorizationCode: appleCredential.authorizationCode });
-          logger.info('Apple 토큰 파기 완료', { userId: currentUser.uid });
-        } catch (revokeError) {
-          // 파기 실패해도 탈퇴는 계속 진행 (non-fatal)
-          logger.warn('Apple 토큰 파기 실패 (탈퇴는 계속 진행)', {
-            userId: currentUser.uid,
-            error: revokeError instanceof Error ? revokeError.message : String(revokeError),
-          });
-        }
+        appleTokenRevoked = await tryRevokeAppleToken(
+          appleCredential.authorizationCode,
+          currentUser.uid
+        );
       }
     } else if (isAppleUser) {
       // Apple 사용자가 비-iOS 플랫폼에서 탈퇴 시도
       throw new AuthError('E2002', {
-        userMessage: 'Apple 계정 탈퇴는 iOS 기기에서만 가능합니다.',
+        userMessage:
+          'Apple 계정 탈퇴는 iOS 기기에서만 가능합니다.\n\n' +
+          'uniqnkorea@gmail.com으로 [계정 삭제 요청] 메일을 보내주시면 ' +
+          '본인 확인 후 7일 이내에 처리해드립니다.',
       });
     } else {
       // 이메일 사용자: 비밀번호 재인증
       if (!password) {
         throw new AuthError('E2002', {
           userMessage: '비밀번호를 입력해주세요.',
+        });
+      }
+      if (!currentUser.email) {
+        throw new AuthError('E2002', {
+          userMessage: '이메일 정보가 없습니다. 고객센터에 문의해주세요.',
         });
       }
       const credential = EmailAuthProvider.credential(currentUser.email, password);
@@ -178,7 +241,10 @@ export async function requestAccountDeletion(
 
     // 4. 로그아웃은 호출자에서 처리
 
-    return deletionRequest;
+    return {
+      deletionRequest,
+      appleTokenRevoked: isAppleUser ? appleTokenRevoked : true,
+    };
   } catch (error) {
     logger.error('회원탈퇴 요청 실패', toError(error), {
       userId: currentUser.uid,

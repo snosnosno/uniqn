@@ -42,7 +42,7 @@ interface SignupFormProps {
   /** 모드: default(일반 회원가입), social(소셜 로그인 후 프로필 완성) */
   mode?: 'default' | 'social';
   /** 소셜 로그인에서 받은 데이터 (이름 pre-fill 등) */
-  socialData?: { name?: string };
+  socialData?: { name?: string; socialProvider?: string };
 }
 
 /** 소셜 모드 스텝 (계정정보 생략: 약관 → 본인인증 → 프로필) */
@@ -271,6 +271,7 @@ export function SignupForm({
             }
             isLoading={isLoading}
             phoneMode={isSocial ? 'link' : 'signIn'}
+            isAppleUser={isSocial && socialData?.socialProvider === 'apple'}
           />
         );
       case 4: // 프로필 (최종 제출)

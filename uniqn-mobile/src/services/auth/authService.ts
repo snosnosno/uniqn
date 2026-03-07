@@ -59,7 +59,11 @@ import {
 } from '@/errors';
 import { sanitizeInput, isSafeUrl } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
-import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from '@/services/observability';
+import {
+  checkLoginAttempts,
+  incrementLoginAttempts,
+  resetLoginAttempts,
+} from '@/services/observability';
 import {
   trackLogin,
   trackSignup,
@@ -1171,14 +1175,20 @@ export async function signInWithApple(): Promise<AuthResult> {
     const rawNonce = generateNonce();
     const hashedNonce = await sha256(rawNonce);
 
-    // 2. Apple 네이티브 인증 다이얼로그
-    const appleCredential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      nonce: hashedNonce,
-    });
+    // 2. Apple 네이티브 인증 다이얼로그 (30초 타임아웃)
+    const { withTimeout } = await import('@/utils/timeout');
+    const APPLE_SIGN_IN_TIMEOUT_MS = 30_000;
+    const appleCredential = await withTimeout(
+      AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      }),
+      APPLE_SIGN_IN_TIMEOUT_MS,
+      'Apple 로그인 응답 시간이 초과되었습니다. 네트워크를 확인하고 다시 시도해주세요.'
+    );
 
     const { identityToken } = appleCredential;
     if (!identityToken) {
@@ -1338,16 +1348,20 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // Apple 인증 실패 (다이얼로그 표시 전 거부)
-    // 원인: 기기 과열(thermal throttling), Apple ID 미설정, 2FA 미활성화 등
+    // 주요 원인: Apple ID 미로그인, 2FA 미활성화, iCloud Keychain 비활성화, 네트워크 문제
     if (errorCode === 'ERR_REQUEST_UNKNOWN') {
       logger.warn('Apple 인증 거부 (ERR_REQUEST_UNKNOWN)', {
         component: 'authService',
         platform: Platform.OS,
-        hint: 'thermal_state/memory 부족 또는 Apple ID 설정 문제 가능',
+        hint: 'Apple ID 설정 문제 또는 네트워크 오류 가능',
       });
       throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
         userMessage:
-          'Apple 로그인에 실패했습니다. 기기가 과열 상태이거나 Apple ID 설정에 문제가 있을 수 있습니다. 잠시 후 다시 시도해주세요.',
+          'Apple 로그인에 실패했습니다. 다음을 확인해주세요:\n' +
+          '• 설정 > Apple ID에 로그인되어 있는지\n' +
+          '• 이중 인증(2FA)이 활성화되어 있는지\n' +
+          '• 네트워크 연결이 정상인지\n\n' +
+          '문제가 계속되면 잠시 후 다시 시도해주세요.',
         metadata: { errorCode, provider: 'apple' },
       });
     }

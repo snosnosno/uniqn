@@ -126,7 +126,11 @@ export default function SignUpScreen() {
         onSubmit={isSocialMode ? handleSocialSignUp : handleSignUp}
         isLoading={isLoading}
         mode={isSocialMode ? 'social' : 'default'}
-        socialData={isSocialMode ? { name: profile?.name } : undefined}
+        socialData={
+          isSocialMode
+            ? { name: profile?.name, socialProvider: profile?.socialProvider }
+            : undefined
+        }
       />
     </SafeAreaView>
   );

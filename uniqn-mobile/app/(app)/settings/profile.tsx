@@ -171,6 +171,11 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile.email ?? user?.email ?? '-'}
                 </Text>
+                {(profile.email ?? user?.email ?? '').endsWith('@privaterelay.apple.com') && (
+                  <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    (Apple 비공개 이메일)
+                  </Text>
+                )}
               </View>
             </View>
 

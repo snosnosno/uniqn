@@ -60,6 +60,7 @@ export {
 // ============================================================================
 export {
   requestAccountDeletion,
+  retryAppleTokenRevocation,
   cancelAccountDeletion,
   getMyData,
   updateMyData,
@@ -69,6 +70,7 @@ export {
   DELETION_REASONS,
   type DeletionReason,
   type DeletionRequest,
+  type DeletionResult,
   type UserData,
   type UserDataExport,
 } from './accountDeletionService';

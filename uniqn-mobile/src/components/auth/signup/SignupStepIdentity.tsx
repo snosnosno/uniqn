@@ -30,6 +30,8 @@ interface SignupStepIdentityProps {
   isLoading?: boolean;
   /** PhoneVerification 모드: signIn(기본)=새 계정 생성, link=기존 계정에 링크 */
   phoneMode?: 'signIn' | 'link';
+  /** Apple 소셜 로그인 사용자 여부 (이름 미제공 시 안내 메시지 표시) */
+  isAppleUser?: boolean;
 }
 
 // ============================================================================
@@ -42,6 +44,7 @@ export function SignupStepIdentity({
   initialData,
   isLoading = false,
   phoneMode = 'signIn',
+  isAppleUser = false,
 }: SignupStepIdentityProps) {
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
@@ -60,7 +63,7 @@ export function SignupStepIdentity({
       name: initialData?.name || '',
       birthDate: initialData?.birthDate || '',
       gender: initialData?.gender,
-      phoneVerified: initialData?.phoneVerified || (false),
+      phoneVerified: initialData?.phoneVerified || false,
       verifiedPhone: initialData?.verifiedPhone || '',
     },
   });
@@ -135,6 +138,14 @@ export function SignupStepIdentity({
             />
           )}
         />
+        {isAppleUser && !initialData?.name && (
+          <View className="mt-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+            <Text className="text-xs text-blue-700 dark:text-blue-300">
+              Apple은 최초 로그인 시에만 이름을 제공합니다. 이전에 이름 공유를 거부했거나 앱을
+              재설치한 경우 직접 입력해주세요.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* 생년월일 입력 */}

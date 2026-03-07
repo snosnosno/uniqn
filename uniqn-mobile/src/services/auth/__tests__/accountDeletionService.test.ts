@@ -77,6 +77,7 @@ const mockReauthenticateWithCredential = reauthenticateWithCredential as jest.Mo
 const mockCurrentUser = {
   uid: 'user123',
   email: 'test@example.com',
+  providerData: [{ providerId: 'password' }],
 };
 
 const mockAuth = {
@@ -190,8 +191,8 @@ describe('accountDeletionService', () => {
           status: STATUS.DELETION_REQUEST.PENDING,
         })
       );
-      expect(result.userId).toBe('user123');
-      expect(result.reason).toBe('no_longer_needed');
+      expect(result.deletionRequest.userId).toBe('user123');
+      expect(result.deletionRequest.reason).toBe('no_longer_needed');
     });
 
     it('상세 사유와 함께 탈퇴 요청을 처리해야 함', async () => {
@@ -208,7 +209,7 @@ describe('accountDeletionService', () => {
           reasonDetail,
         })
       );
-      expect(result.reasonDetail).toBe(reasonDetail);
+      expect(result.deletionRequest.reasonDetail).toBe(reasonDetail);
     });
 
     it('30일 유예 기간을 설정해야 함', async () => {
@@ -217,7 +218,7 @@ describe('accountDeletionService', () => {
 
       const result = await requestAccountDeletion('no_longer_needed', 'password123');
 
-      const scheduledDate = result.scheduledDeletionAt.toDate();
+      const scheduledDate = result.deletionRequest.scheduledDeletionAt.toDate();
       const expectedDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       const diffInDays =
         Math.abs(scheduledDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -282,7 +283,7 @@ describe('accountDeletionService', () => {
           reason as keyof typeof DELETION_REASONS,
           'password123'
         );
-        expect(result.reason).toBe(reason);
+        expect(result.deletionRequest.reason).toBe(reason);
       }
     });
   });

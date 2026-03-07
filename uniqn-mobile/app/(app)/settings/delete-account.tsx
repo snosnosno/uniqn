@@ -2,10 +2,14 @@
  * UNIQN Mobile - 회원탈퇴 화면
  *
  * @description 회원탈퇴 요청 화면 (법적 필수)
- * @version 1.0.0
+ * @version 2.0.0
+ *
+ * Apple 사용자와 이메일 사용자의 재인증 방식이 다름:
+ * - Apple: Apple Sign In 다이얼로그 (비밀번호 불필요)
+ * - 이메일: 비밀번호 재입력
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +18,14 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
-import { requestAccountDeletion, signOut, DELETION_REASONS, type DeletionReason } from '@/services';
+import {
+  requestAccountDeletion,
+  retryAppleTokenRevocation,
+  signOut,
+  DELETION_REASONS,
+  type DeletionReason,
+} from '@/services';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
 
@@ -88,7 +99,61 @@ export default function DeleteAccountScreen() {
   const [reasonDetail, setReasonDetail] = useState('');
   const [password, setPassword] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showRevokeRetryModal, setShowRevokeRetryModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Apple 사용자 여부 확인
+  const isAppleUser = useMemo(() => {
+    const currentUser = getFirebaseAuth().currentUser;
+    return currentUser?.providerData?.some((p) => p.providerId === 'apple.com') ?? false;
+  }, []);
+
+  // Apple 토큰 파기 재시도
+  const handleRetryRevocation = useCallback(async () => {
+    setIsRetrying(true);
+    try {
+      const success = await retryAppleTokenRevocation();
+      if (success) {
+        addToast({ type: 'success', message: 'Apple 계정 연결이 해제되었습니다.' });
+      } else {
+        addToast({
+          type: 'warning',
+          message: 'Apple 토큰 파기에 실패했습니다. Apple ID 설정에서 수동으로 해제해주세요.',
+        });
+      }
+    } catch {
+      addToast({
+        type: 'warning',
+        message: 'Apple 토큰 파기에 실패했습니다. Apple ID 설정에서 수동으로 해제해주세요.',
+      });
+    } finally {
+      setIsRetrying(false);
+      setShowRevokeRetryModal(false);
+      // 탈퇴 완료 처리
+      await signOut();
+      addToast({
+        type: 'success',
+        message: `회원탈퇴가 요청되었습니다. ${DELETION_GRACE_PERIOD_DAYS}일 후 완전히 삭제됩니다.`,
+      });
+      router.replace('/(auth)/login');
+    }
+  }, [addToast]);
+
+  // 재시도 건너뛰기
+  const handleSkipRevocation = useCallback(async () => {
+    setShowRevokeRetryModal(false);
+    addToast({
+      type: 'info',
+      message: 'Apple ID > 설정 > 로그인 및 보안에서 앱 연결을 수동으로 해제해주세요.',
+    });
+    await signOut();
+    addToast({
+      type: 'success',
+      message: `회원탈퇴가 요청되었습니다. ${DELETION_GRACE_PERIOD_DAYS}일 후 완전히 삭제됩니다.`,
+    });
+    router.replace('/(auth)/login');
+  }, [addToast]);
 
   // 탈퇴 요청 처리
   const handleRequestDeletion = useCallback(async () => {
@@ -97,7 +162,8 @@ export default function DeleteAccountScreen() {
       return;
     }
 
-    if (!password) {
+    // 이메일 사용자만 비밀번호 필요
+    if (!isAppleUser && !password) {
       addToast({ type: 'error', message: '비밀번호를 입력해주세요' });
       return;
     }
@@ -107,11 +173,19 @@ export default function DeleteAccountScreen() {
     try {
       logger.info('회원탈퇴 요청', { reason: selectedReason });
 
-      await requestAccountDeletion(
+      const result = await requestAccountDeletion(
         selectedReason,
-        password,
+        isAppleUser ? undefined : password,
         selectedReason === 'other' ? reasonDetail : undefined
       );
+
+      setShowConfirmModal(false);
+
+      // Apple 토큰 파기 실패 시 재시도 옵션 제공
+      if (!result.appleTokenRevoked) {
+        setShowRevokeRetryModal(true);
+        return;
+      }
 
       // 로그아웃
       await signOut();
@@ -133,10 +207,10 @@ export default function DeleteAccountScreen() {
       setIsSubmitting(false);
       setShowConfirmModal(false);
     }
-  }, [selectedReason, password, reasonDetail, addToast]);
+  }, [selectedReason, password, reasonDetail, isAppleUser, addToast]);
 
-  // 탈퇴 버튼 활성화 여부
-  const canSubmit = selectedReason && password.length >= 8;
+  // 탈퇴 버튼 활성화 여부 (Apple: 사유만, 이메일: 사유+비밀번호)
+  const canSubmit = selectedReason && (isAppleUser || password.length >= 8);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -192,20 +266,32 @@ export default function DeleteAccountScreen() {
           </View>
         )}
 
-        {/* 비밀번호 확인 */}
-        <View className="mb-6">
-          <Input
-            label="비밀번호 확인"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="현재 비밀번호를 입력해주세요"
-            secureTextEntry
-            autoComplete="password"
-          />
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            본인 확인을 위해 비밀번호를 입력해주세요
-          </Text>
-        </View>
+        {/* 비밀번호 확인 (이메일 사용자만) */}
+        {!isAppleUser && (
+          <View className="mb-6">
+            <Input
+              label="비밀번호 확인"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="현재 비밀번호를 입력해주세요"
+              secureTextEntry
+              autoComplete="password"
+            />
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              본인 확인을 위해 비밀번호를 입력해주세요
+            </Text>
+          </View>
+        )}
+
+        {/* Apple 사용자 안내 */}
+        {isAppleUser && (
+          <View className="mb-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4">
+            <Text className="text-sm text-blue-700 dark:text-blue-300">
+              Apple 계정으로 로그인하셨습니다.{'\n'}
+              탈퇴 시 Apple 재인증 다이얼로그가 표시됩니다.
+            </Text>
+          </View>
+        )}
 
         {/* 데이터 확인 링크 */}
         <Pressable onPress={() => router.push('/(app)/settings/my-data')} className="mb-6">
@@ -257,6 +343,41 @@ export default function DeleteAccountScreen() {
 
             <Button onPress={() => setShowConfirmModal(false)} fullWidth disabled={isSubmitting}>
               취소
+            </Button>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Apple 토큰 파기 재시도 모달 */}
+      <Modal
+        visible={showRevokeRetryModal}
+        onClose={() => {
+          /* 모달 닫기 방지 — 반드시 선택해야 함 */
+        }}
+        title="Apple 계정 연결 해제"
+      >
+        <View className="p-4">
+          <Text className="text-gray-700 dark:text-gray-300 text-center mb-4">
+            Apple 계정 연결 해제에 실패했습니다.{'\n'}
+            재시도하시겠습니까?
+          </Text>
+          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+            건너뛰면 탈퇴는 진행되지만, Apple ID 설정에서{'\n'}
+            수동으로 앱 연결을 해제해야 할 수 있습니다.
+          </Text>
+
+          <View className="flex-col gap-3">
+            <Button onPress={handleRetryRevocation} fullWidth disabled={isRetrying}>
+              {isRetrying ? <ActivityIndicator size="small" color="#ffffff" /> : '재시도'}
+            </Button>
+
+            <Button
+              onPress={handleSkipRevocation}
+              variant="outline"
+              fullWidth
+              disabled={isRetrying}
+            >
+              건너뛰기
             </Button>
           </View>
         </View>
