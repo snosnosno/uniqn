@@ -102,6 +102,9 @@ export function SignupStepIdentity({
         await unlinkPhoneProvider();
       } catch (error) {
         logger.warn('phone provider unlink 실패', { error });
+        // unlink 실패 시 Firebase Auth와 일관성 유지: 로컬 상태 초기화하지 않음
+        phoneManuallyReset.current = false;
+        return;
       }
     }
     setVerifiedPhone(null);

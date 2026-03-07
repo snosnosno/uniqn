@@ -2,11 +2,16 @@
  * UNIQN Mobile - Auth 도메인 배럴 Export
  *
  * @description 인증 관련 서비스 (auth, accountDeletion, storage, biometric)
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // ============================================================================
-// Auth Service
+// Auth Types (공유 타입)
+// ============================================================================
+export { type UserProfile, type AuthResult, type SocialProfileData } from './authTypes';
+
+// ============================================================================
+// Auth Core Service (로그인, 회원가입, 세션)
 // ============================================================================
 export {
   login,
@@ -14,31 +19,40 @@ export {
   signOut,
   resetPassword,
   getUserProfile,
-  updateUserProfile,
   reauthenticate,
   getCurrentUser,
   requireCurrentUser,
   onAuthStateChanged,
-  signInWithApple,
-  signInWithGoogle,
-  signInWithKakao,
-  completeSocialProfile,
-  changePassword,
-  updateProfilePhotoURL,
   checkEmailExists,
   checkNicknameExists,
   checkPhoneExists,
-  registerAsEmployer,
-  updateMarketingConsent,
   rollbackPhoneOnlyAccount,
   getCurrentUserUid,
   getLinkedPhoneNumber,
   unlinkPhoneProvider,
   markOrphanAccount,
-  type UserProfile,
-  type AuthResult,
-  type SocialProfileData,
-} from './authService';
+} from './authCoreService';
+
+// ============================================================================
+// Social Login Service (Apple, Google, 카카오)
+// ============================================================================
+export {
+  signInWithApple,
+  signInWithGoogle,
+  signInWithKakao,
+  completeSocialProfile,
+} from './socialLoginService';
+
+// ============================================================================
+// Profile Service (프로필, 비밀번호, 구인자 등록)
+// ============================================================================
+export {
+  updateUserProfile,
+  updateMarketingConsent,
+  changePassword,
+  registerAsEmployer,
+  updateProfilePhotoURL,
+} from './profileService';
 
 // ============================================================================
 // Storage Service

@@ -4,20 +4,26 @@
  */
 
 import { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { Loading } from '@/components/ui';
 import { router } from 'expo-router';
 import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { APP_VERSION } from '@/constants/version';
 import { logger } from '@/utils/logger';
 
 const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
 
+const SPINNER_COLOR = {
+  light: '#A855F7',
+  dark: '#C084FC',
+} as const;
+
 export default function SplashScreen() {
   const hasHydrated = useAuthStore(selectHasHydrated);
   const user = useAuthStore((state) => state.user);
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   useEffect(() => {
     if (!hasHydrated) {
@@ -58,10 +64,12 @@ export default function SplashScreen() {
         <Text className="mt-1 text-sm text-gray-500">
           홀덤 스태프 매칭 플랫폼
         </Text>
-      </View>
 
-      <View className="mt-10">
-        <Loading size="large" />
+        <ActivityIndicator
+          size="large"
+          color={isDarkMode ? SPINNER_COLOR.dark : SPINNER_COLOR.light}
+          className="mt-8"
+        />
       </View>
 
       <Text className="absolute bottom-12 text-xs text-gray-600">

@@ -6,14 +6,8 @@
  */
 
 import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import {
-  login,
-  signUp,
-  signOut,
-  getUserProfile,
-  updateUserProfile,
-  checkEmailExists,
-} from '../authService';
+import { login, signUp, signOut, getUserProfile, checkEmailExists } from '../authCoreService';
+import { updateUserProfile } from '../profileService';
 
 // ============================================================================
 // Mock 변수 선언

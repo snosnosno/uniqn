@@ -3,7 +3,7 @@
  * 프로필 수정 화면
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,7 @@ import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
-import { updateUserProfile } from '@/services';
+import { updateUserProfile, checkNicknameExists } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
 import { formatBirthDate } from '@/utils/formatters';
@@ -51,14 +51,20 @@ export default function ProfileEditScreen() {
  *
  * profile을 defaultValues로 직접 설정하여 useEffect + reset() 타이밍 문제 방지
  */
+type NicknameStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUser | null }) {
   const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
   const [isSaving, setIsSaving] = useState(false);
+  const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
+  const lastCheckedNickname = useRef(profile.nickname ?? '');
 
   const {
     control,
     handleSubmit,
+    setError,
+    getValues,
     formState: { errors, isDirty },
   } = useForm<UpdateProfileData>({
     resolver: zodResolver(updateProfileSchema),
@@ -70,6 +76,53 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
       note: profile.note ?? '',
     },
   });
+
+  /** 닉네임 blur 시 중복 검사 (SignupStepProfile 패턴 재사용) */
+  const handleNicknameBlur = useCallback(
+    async (formOnBlur: () => void) => {
+      formOnBlur();
+      const nickname = (getValues('nickname') ?? '').trim();
+      const currentNickname = (profile.nickname ?? '').trim();
+
+      // 현재 닉네임과 동일하면 검사 불필요
+      if (nickname === currentNickname) {
+        setNicknameStatus('idle');
+        return;
+      }
+
+      if (nickname.length < 2 || nickname === lastCheckedNickname.current) return;
+
+      setNicknameStatus('checking');
+      try {
+        const exists = await checkNicknameExists(nickname, user?.uid);
+        lastCheckedNickname.current = nickname;
+        if (exists) {
+          setNicknameStatus('taken');
+          setError('nickname', {
+            type: 'manual',
+            message: '이미 사용 중인 닉네임입니다',
+          });
+        } else {
+          setNicknameStatus('available');
+        }
+      } catch (error) {
+        logger.warn('닉네임 중복 확인 실패', { error });
+        setNicknameStatus('idle');
+      }
+    },
+    [getValues, setError, profile.nickname, user?.uid]
+  );
+
+  /** 닉네임 변경 시 상태 리셋 */
+  const handleNicknameChange = useCallback(
+    (formOnChange: (value: string) => void, text: string) => {
+      formOnChange(text);
+      if (nicknameStatus !== 'idle') {
+        setNicknameStatus('idle');
+      }
+    },
+    [nicknameStatus]
+  );
 
   // 프로필 이미지 변경 핸들러 (ProfileImagePicker가 내부적으로 처리)
   const handleImageUpdated = (imageUrl: string | null) => {
@@ -87,7 +140,32 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
       const updates: Partial<UpdateProfileData> = {};
       const normalize = (v: string | undefined) => v || '';
 
-      if (normalize(data.nickname) !== normalize(profile.nickname)) {
+      const nicknameChanged = normalize(data.nickname) !== normalize(profile.nickname);
+      if (nicknameChanged) {
+        // blur 미실행 또는 이후 재입력된 경우 제출 전 중복 검사 실행
+        if (nicknameStatus !== 'available') {
+          const trimmed = (data.nickname ?? '').trim();
+          if (trimmed.length >= 2) {
+            setNicknameStatus('checking');
+            try {
+              const exists = await checkNicknameExists(trimmed, user.uid);
+              lastCheckedNickname.current = trimmed;
+              if (exists) {
+                setNicknameStatus('taken');
+                setError('nickname', {
+                  type: 'manual',
+                  message: '이미 사용 중인 닉네임입니다',
+                });
+                return;
+              }
+              setNicknameStatus('available');
+            } catch (error) {
+              logger.warn('닉네임 중복 확인 실패 (저장)', { error });
+              addToast({ type: 'error', message: '닉네임 확인 중 오류가 발생했습니다' });
+              return;
+            }
+          }
+        }
         updates.nickname = data.nickname;
       }
       if (normalize(data.region) !== normalize(profile.region)) {
@@ -221,24 +299,36 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 control={control}
                 name="nickname"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
-                      errors.nickname
-                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
-                    }`}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="닉네임을 입력해주세요 (2-15자)"
-                    placeholderTextColor="#9CA3AF"
-                    autoCapitalize="none"
-                    maxLength={15}
-                  />
+                  <View className="flex-row items-center">
+                    <View className="flex-1">
+                      <TextInput
+                        className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                          errors.nickname
+                            ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
+                            : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                        }`}
+                        value={value}
+                        onChangeText={(text) => handleNicknameChange(onChange, text)}
+                        onBlur={() => handleNicknameBlur(onBlur)}
+                        placeholder="닉네임을 입력해주세요 (2-15자)"
+                        placeholderTextColor="#9CA3AF"
+                        autoCapitalize="none"
+                        maxLength={15}
+                      />
+                    </View>
+                    {nicknameStatus === 'checking' && (
+                      <ActivityIndicator size="small" className="ml-2" />
+                    )}
+                  </View>
                 )}
               />
               {errors.nickname && (
                 <Text className="mt-1 text-sm text-error-500">{errors.nickname.message}</Text>
+              )}
+              {nicknameStatus === 'available' && !errors.nickname && (
+                <Text className="mt-1 text-xs text-green-600 dark:text-green-400">
+                  사용 가능한 닉네임입니다
+                </Text>
               )}
             </View>
 
@@ -385,9 +475,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
           {/* 저장 버튼 */}
           <Pressable
             onPress={handleSubmit(onSubmit)}
-            disabled={isSaving || !isDirty}
+            disabled={isSaving || !isDirty || nicknameStatus === 'taken'}
             className={`rounded-lg py-4 ${
-              isSaving || !isDirty
+              isSaving || !isDirty || nicknameStatus === 'taken'
                 ? 'bg-gray-300 dark:bg-surface'
                 : 'bg-primary-600 active:bg-primary-700'
             }`}

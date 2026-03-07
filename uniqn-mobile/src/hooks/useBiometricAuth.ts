@@ -294,38 +294,43 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         return false;
       }
 
-      // 5. 토큰 갱신 및 프로필 로드
+      // 5. 토큰 갱신 (실패 시 세션 만료 처리)
       try {
         await currentUser.getIdToken(true);
-
-        // Firestore에서 최신 프로필 가져오기
-        const profile = await getUserProfile(currentUser.uid);
-        if (profile) {
-          useAuthStore.getState().setUser(currentUser);
-          useAuthStore.getState().setProfile({
-            ...profile,
-            createdAt: profile.createdAt?.toDate?.() ?? new Date(),
-            updatedAt: profile.updatedAt?.toDate?.() ?? new Date(),
-            employerAgreements: profile.employerAgreements
-              ? {
-                  termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                  liabilityWaiverAgreedAt:
-                    profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
-                }
-              : undefined,
-            employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
-            bubbleScore: profile.bubbleScore
-              ? {
-                  ...profile.bubbleScore,
-                  lastUpdatedAt:
-                    profile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
-                }
-              : undefined,
-          });
-        }
       } catch (tokenError) {
-        logger.warn('토큰 갱신 실패', { error: tokenError });
-        // 토큰 갱신 실패해도 기존 세션은 유효할 수 있으므로 계속 진행
+        logger.error('토큰 갱신 실패 - 세션 만료', toError(tokenError));
+        useToastStore
+          .getState()
+          .error('인증 세션이 만료되었습니다. 비밀번호로 다시 로그인해주세요.');
+        await clearBiometricCredentials();
+        await setBiometricEnabled(false);
+        queryClient.invalidateQueries({ queryKey: biometricQueryKeys.enabled });
+        return false;
+      }
+
+      // 6. Firestore에서 최신 프로필 로드
+      const profile = await getUserProfile(currentUser.uid);
+      if (profile) {
+        useAuthStore.getState().setUser(currentUser);
+        useAuthStore.getState().setProfile({
+          ...profile,
+          createdAt: profile.createdAt?.toDate?.() ?? new Date(),
+          updatedAt: profile.updatedAt?.toDate?.() ?? new Date(),
+          employerAgreements: profile.employerAgreements
+            ? {
+                termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                liabilityWaiverAgreedAt:
+                  profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+              }
+            : undefined,
+          employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
+          bubbleScore: profile.bubbleScore
+            ? {
+                ...profile.bubbleScore,
+                lastUpdatedAt: profile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+              }
+            : undefined,
+        });
       }
 
       useToastStore.getState().success('로그인되었습니다');

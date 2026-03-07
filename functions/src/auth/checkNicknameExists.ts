@@ -2,11 +2,13 @@
  * 닉네임 중복 확인 Cloud Function
  *
  * @description
- * 회원가입 프로필 단계에서 닉네임 중복을 실시간 확인합니다.
+ * 회원가입 프로필 단계 및 프로필 수정 시 닉네임 중복을 실시간 확인합니다.
  * 인증 없이 호출 가능 (회원가입 전이므로).
  * IP Rate Limiting + reCAPTCHA v3 (웹) 적용.
  *
- * @version 1.1.0
+ * excludeUid: 프로필 수정 시 자기 자신의 닉네임을 제외하기 위한 선택 파라미터
+ *
+ * @version 1.2.0
  */
 
 import { onCall } from "firebase-functions/v2/https";
@@ -80,19 +82,31 @@ export const checkNicknameExists = onCall(
           });
         }
 
-        // 2. Firestore에서 닉네임 중복 확인
+        // 2. excludeUid 파라미터 (프로필 수정 시 자기 자신 제외)
+        const excludeUid =
+          typeof req.data?.excludeUid === "string" && req.data.excludeUid.length > 0
+            ? req.data.excludeUid
+            : undefined;
+
+        // 3. Firestore에서 닉네임 중복 확인
         const snapshot = await admin
           .firestore()
           .collection("users")
           .where("nickname", "==", nickname)
-          .limit(1)
+          .limit(excludeUid ? 2 : 1)
           .get();
 
-        const exists = !snapshot.empty;
+        let exists: boolean;
+        if (excludeUid && !snapshot.empty) {
+          exists = snapshot.docs.some((doc) => doc.id !== excludeUid);
+        } else {
+          exists = !snapshot.empty;
+        }
 
         logger.info("닉네임 중복 확인 완료", {
           nickname,
           exists,
+          excludeUid: excludeUid ?? null,
         });
 
         return { exists };
