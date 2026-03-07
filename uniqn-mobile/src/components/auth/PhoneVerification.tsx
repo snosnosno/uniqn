@@ -510,17 +510,13 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
         const firebaseCode = (err as { code?: string })?.code;
         const errorMessage = getFirebasePhoneAuthErrorMessage(err);
-        // TODO: 디버깅 완료 후 원본 에러 메시지 노출 제거
-        const debugMessage = !firebaseCode && err instanceof Error
-          ? `${errorMessage} (${err.message})`
-          : errorMessage;
-        setError(debugMessage);
+        setError(errorMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
-        logger.error('SMS 인증 요청 실패', {
-          error: err,
-          mode,
-          firebaseCode: firebaseCode ?? 'unknown',
-        });
+        logger.error(
+          'SMS 인증 요청 실패',
+          err instanceof Error ? err : new Error(errorMessage),
+          { mode, firebaseCode: firebaseCode ?? 'unknown' }
+        );
       } finally {
         setIsLoading(false);
       }
@@ -667,15 +663,17 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         setError(errorMessage);
         setOtpAttempts((prev) => prev + 1);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
-        logger.error('OTP 확인 실패', {
-          error: err,
-          mode,
-          firebaseCode: firebaseCode ?? 'non-firebase-error',
-          errorMessage: err instanceof Error ? err.message : String(err),
-          hasNativeUser: Platform.OS !== 'web' ? !!getNativeAuth?.()?.currentUser : undefined,
-          hasWebUser: !!getFirebaseAuth().currentUser,
-          hasVerificationId: !!verificationIdRef.current,
-        });
+        logger.error(
+          'OTP 확인 실패',
+          err instanceof Error ? err : new Error(errorMessage),
+          {
+            mode,
+            firebaseCode: firebaseCode ?? 'non-firebase-error',
+            hasNativeUser: Platform.OS !== 'web' ? !!getNativeAuth?.()?.currentUser : undefined,
+            hasWebUser: !!getFirebaseAuth().currentUser,
+            hasVerificationId: !!verificationIdRef.current,
+          }
+        );
       } finally {
         setIsLoading(false);
       }

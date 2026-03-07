@@ -225,6 +225,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     // RNFirebase non-modular header 에러 수정 (useFrameworks: 'static' 사용 시 필요)
     './plugins/withNonModularHeaders',
+    // Firebase Phone Auth용 reCAPTCHA Enterprise SDK (iOS)
+    './plugins/withRecaptchaEnterprise',
   ],
 
   // 추가 설정
