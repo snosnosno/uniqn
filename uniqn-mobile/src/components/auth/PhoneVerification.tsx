@@ -717,7 +717,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         phoneListenerRef.current.removeAllListeners('state_changed');
         phoneListenerRef.current = null;
       }
-      lastCheckedPhoneRef.current = null;
+      // lastCheckedPhoneRef는 유지: 같은 번호 재인증 시 중복 체크 스킵
+      // (signIn 모드에서 이미 Auth 계정이 생성된 상태이므로 재체크 시 false positive 방지)
       // [M2 FIX] 부모 컴포넌트에 인증 해제 알림 (verifiedPhone 상태 동기화)
       onReset?.();
     }, [onReset]);
