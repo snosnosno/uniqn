@@ -28,8 +28,6 @@ import { useOTPVerification } from '@/hooks/auth/useOTPVerification';
 export interface PhoneVerificationProps {
   /** 인증 완료 콜백 (인증된 전화번호 전달) */
   onVerified: (phone: string) => void;
-  /** 인증 초기화 콜백 ("다시 인증하기" 클릭 시 부모 상태 동기화) */
-  onReset?: () => void;
   /** 인증 실패 콜백 */
   onError?: (error: Error) => void;
   /** 초기 전화번호 (뒤로갔다 돌아올 때) */
@@ -58,7 +56,6 @@ const RESEND_COOLDOWN = 60;
 export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
   ({
     onVerified,
-    onReset,
     onError,
     initialPhone = '',
     disabled = false,
@@ -70,7 +67,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // ─── Hooks ───
-    const { recaptchaKey, getOrCreateVerifier, resetVerifier, cleanupOnError } = useRecaptcha(
+    const { recaptchaKey, getOrCreateVerifier, cleanupOnError } = useRecaptcha(
       (msg) => smsHook.setError(msg)
     );
 
@@ -162,23 +159,13 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       }
     }, [otpHook]);
 
-    /** 재인증 (초기화) */
-    const handleReset = useCallback(() => {
-      setStep('input');
-      setTimer(0);
-      otpHook.resetOTP();
-      smsHook.resetState();
-      resetVerifier();
-      onReset?.();
-    }, [otpHook, smsHook, resetVerifier, onReset]);
-
     // 통합 에러 (SMS 또는 OTP)
     const displayError = step === 'otp' ? (otpHook.error ?? smsHook.error) : smsHook.error;
     const isLoading = smsHook.isRequesting || otpHook.isVerifying;
 
     // ========== 인증 완료 상태 ==========
     if (step === 'verified') {
-      return <PhoneVerifiedView phone={smsHook.phone} compact={compact} onReset={handleReset} />;
+      return <PhoneVerifiedView phone={smsHook.phone} compact={compact} />;
     }
 
     // ========== 전화번호 입력 + OTP 입력 ==========

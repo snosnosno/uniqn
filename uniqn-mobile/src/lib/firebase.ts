@@ -17,7 +17,7 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { initializeAuth, getAuth, Auth } from 'firebase/auth';
+import { initializeAuth, getAuth, Auth, browserLocalPersistence } from 'firebase/auth';
 // @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
 import { getReactNativePersistence } from 'firebase/auth';
 import {
@@ -153,16 +153,24 @@ export function getFirebaseApp(): FirebaseApp {
 
 /**
  * Firebase Auth 인스턴스 반환
- * React Native에서 세션 지속성을 위해 AsyncStorage 사용
+ *
+ * 플랫폼별 persistence:
+ * - Web: browserLocalPersistence (IndexedDB/localStorage)
+ * - Native: getReactNativePersistence(AsyncStorage)
+ *
+ * getReactNativePersistence는 React Native 전용이므로
+ * 웹에서 사용 시 auth 상태가 유실될 수 있음
  */
 export function getFirebaseAuth(): Auth {
   if (!firebaseAuth) {
     const app = initializeFirebaseApp();
     // initializeAuth는 한 번만 호출 가능, 이미 초기화된 경우 getAuth 사용
     try {
-      firebaseAuth = initializeAuth(app, {
-        persistence: getReactNativePersistence(AsyncStorage),
-      });
+      const persistence =
+        Platform.OS === 'web'
+          ? browserLocalPersistence
+          : getReactNativePersistence(AsyncStorage);
+      firebaseAuth = initializeAuth(app, { persistence });
     } catch {
       // 이미 초기화된 경우 기존 인스턴스 반환
       firebaseAuth = getAuth(app);

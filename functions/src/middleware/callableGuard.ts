@@ -84,20 +84,14 @@ export async function withCallableGuard<T>(
       });
     }
 
-    // 2. reCAPTCHA v3 검증 (웹 요청만, 네이티브는 스킵)
+    // 2. reCAPTCHA v3 검증 (토큰이 있을 때만, 네이티브는 항상 스킵)
+    // 웹에서 토큰 미제공 시: Rate Limiting으로 보호 (Phone Auth 흐름에서 RecaptchaVerifier와 충돌 방지)
     if (requireRecaptcha) {
-      const platform = request.data?.platform as string | undefined;
       const recaptchaToken = request.data?.recaptchaToken as
         | string
         | undefined;
 
-      if (platform === "web" || (!platform && recaptchaToken)) {
-        if (!recaptchaToken) {
-          throw new ValidationError(ERROR_CODES.AUTH_CAPTCHA_FAILED, {
-            userMessage:
-              "보안 검증에 실패했습니다. 페이지를 새로고침하고 다시 시도해주세요.",
-          });
-        }
+      if (recaptchaToken) {
         const isValid = await verifyRecaptchaToken(recaptchaToken);
         if (!isValid) {
           throw new ValidationError(ERROR_CODES.AUTH_CAPTCHA_FAILED, {

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
 import { CheckCircleIcon } from '@/components/icons';
 
 interface PhoneVerifiedViewProps {
@@ -14,12 +14,10 @@ interface PhoneVerifiedViewProps {
   phone: string;
   /** 컴팩트 모드 (헤더/아이콘 숨김) */
   compact: boolean;
-  /** "다시 인증하기" 콜백 */
-  onReset: () => void;
 }
 
 export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
-  ({ phone, compact, onReset }) => {
+  ({ phone, compact }) => {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
 
@@ -56,11 +54,6 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
               <Text className="text-gray-900 dark:text-white font-medium">{phone}</Text>
             </View>
           </View>
-          <Pressable onPress={onReset} className="mt-4 py-2 items-center">
-            <Text className="text-sm text-gray-500 dark:text-gray-400 underline">
-              다시 인증하기
-            </Text>
-          </Pressable>
         </View>
       </View>
     );

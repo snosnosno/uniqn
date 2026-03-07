@@ -123,15 +123,16 @@ function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
     birthDate: data.birthDate,
     gender: data.gender,
     nickname: data.nickname,
-    region: data.region,
-    experienceYears: data.experienceYears,
-    career: data.career,
-    note: data.note,
     termsAgreed: data.termsAgreed,
     privacyAgreed: data.privacyAgreed,
     marketingAgreed: data.marketingAgreed,
     email: data.email,
     mode: 'signup',
+    // 선택 필드: undefined/null 제외하여 Firebase 직렬화 시 null 변환 방지
+    ...(data.region != null && { region: data.region }),
+    ...(data.experienceYears != null && { experienceYears: data.experienceYears }),
+    ...(data.career != null && { career: data.career }),
+    ...(data.note != null && { note: data.note }),
   };
 }
 
@@ -424,8 +425,14 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   try {
     logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
-    const { getRecaptchaToken } = await import('@/utils/recaptcha');
-    const recaptchaToken = await getRecaptchaToken('check_email');
+    // 웹: reCAPTCHA v3 스크립트 로드를 스킵하여 Firebase RecaptchaVerifier(Enterprise)와의 충돌 방지
+    // (v3 api.js가 window.grecaptcha를 선점하면 후속 Phone Auth Enterprise 토큰이 무효화됨)
+    let recaptchaToken: string | undefined;
+    if (Platform.OS !== 'web') {
+      const { getRecaptchaToken } = await import('@/utils/recaptcha');
+      const token = await getRecaptchaToken('check_email');
+      recaptchaToken = token || undefined;
+    }
 
     const functions = getFirebaseFunctions();
     const checkEmail = httpsCallable<
@@ -460,8 +467,13 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function checkNicknameExists(nickname: string, excludeUid?: string): Promise<boolean> {
   try {
-    const { getRecaptchaToken } = await import('@/utils/recaptcha');
-    const recaptchaToken = await getRecaptchaToken('check_nickname');
+    // 웹: reCAPTCHA v3 스크립트 로드를 스킵 (Phone Auth Enterprise 스크립트와의 충돌 방지)
+    let recaptchaToken: string | undefined;
+    if (Platform.OS !== 'web') {
+      const { getRecaptchaToken } = await import('@/utils/recaptcha');
+      const token = await getRecaptchaToken('check_nickname');
+      recaptchaToken = token || undefined;
+    }
     const checkNickname = httpsCallable<
       { nickname: string; excludeUid?: string; recaptchaToken?: string; platform?: string },
       { exists: boolean }
@@ -777,8 +789,15 @@ export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void
  */
 export async function checkPhoneExists(phone: string): Promise<boolean> {
   try {
-    const { getRecaptchaToken } = await import('@/utils/recaptcha');
-    const recaptchaToken = await getRecaptchaToken('check_phone');
+    // 웹: reCAPTCHA v3 스크립트 로드를 스킵하여 Firebase RecaptchaVerifier와의 충돌 방지
+    // (v3 스크립트가 window.grecaptcha를 선점하면 Phone Auth 토큰이 무효화됨)
+    // 웹에서는 후속 signInWithPhoneNumber의 RecaptchaVerifier가 봇 보호를 담당
+    let recaptchaToken: string | undefined;
+    if (Platform.OS !== 'web') {
+      const { getRecaptchaToken } = await import('@/utils/recaptcha');
+      const token = await getRecaptchaToken('check_phone');
+      recaptchaToken = token || undefined;
+    }
 
     const checkPhone = httpsCallable<
       { phone: string; recaptchaToken?: string; platform?: string },
@@ -786,7 +805,7 @@ export async function checkPhoneExists(phone: string): Promise<boolean> {
     >(getFirebaseFunctions(), 'checkPhoneExists');
     const result = await checkPhone({
       phone,
-      recaptchaToken: recaptchaToken || undefined,
+      recaptchaToken,
       platform: Platform.OS,
     });
     return result.data.exists;

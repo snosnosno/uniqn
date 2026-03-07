@@ -264,7 +264,7 @@ export const verifyAndSaveProfile = onCall(
       }
 
       let experienceYears: number | undefined;
-      if (data.experienceYears !== undefined) {
+      if (data.experienceYears != null) {
         if (
           typeof data.experienceYears !== "number" ||
           data.experienceYears < 0 ||
@@ -332,6 +332,7 @@ export const verifyAndSaveProfile = onCall(
         phone: clientPhoneE164,
         nickname,
         role,
+        status: 'active' as const,
         phoneVerified: true,
         isActive: true,
         updatedAt: now,

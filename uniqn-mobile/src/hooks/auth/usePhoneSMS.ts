@@ -56,7 +56,7 @@ interface VerificationForLinkResult {
 
 export interface UsePhoneSMSOptions {
   mode: 'signIn' | 'link';
-  getOrCreateVerifier: () => RecaptchaVerifier | null;
+  getOrCreateVerifier: () => Promise<RecaptchaVerifier | null>;
   cleanupOnError: () => void;
   onError?: (error: Error) => void;
 }
@@ -233,7 +233,7 @@ export function usePhoneSMS({
   const requestOtpForSignIn = useCallback(
     async (e164: string): Promise<ConfirmationResultLike> => {
       if (Platform.OS === 'web') {
-        const verifier = getOrCreateVerifier();
+        const verifier = await getOrCreateVerifier();
         if (!verifier) {
           throw new Error('reCAPTCHA verifier를 생성할 수 없습니다.');
         }
@@ -251,7 +251,7 @@ export function usePhoneSMS({
   const requestOtpForLink = useCallback(
     async (e164: string): Promise<{ autoCompleted: boolean }> => {
       if (Platform.OS === 'web') {
-        const verifier = getOrCreateVerifier();
+        const verifier = await getOrCreateVerifier();
         if (!verifier) {
           throw new Error('reCAPTCHA verifier를 생성할 수 없습니다.');
         }

@@ -5,7 +5,7 @@
  * @version 4.1.0
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
-import { getLinkedPhoneNumber, unlinkPhoneProvider } from '@/services/auth';
+import { getLinkedPhoneNumber } from '@/services/auth';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
@@ -49,8 +49,6 @@ export function SignupStepIdentity({
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
-  // "다시 인증하기" 클릭 시 true → useEffect 자동 복원 방지
-  const phoneManuallyReset = useRef(false);
 
   const {
     control,
@@ -78,9 +76,8 @@ export function SignupStepIdentity({
   );
 
   // 소셜 모드: 이미 link된 전화번호 자동 감지 (중단 복구 / 뒤로가기 후 재진입)
-  // "다시 인증하기"로 명시적 리셋된 경우에는 자동 복원하지 않음
   useEffect(() => {
-    if (phoneMode !== 'link' || phoneManuallyReset.current) return;
+    if (phoneMode !== 'link') return;
 
     const linkedPhone = getLinkedPhoneNumber();
     if (linkedPhone) {
@@ -91,25 +88,6 @@ export function SignupStepIdentity({
       setValue('phoneVerified', true);
       setValue('verifiedPhone', linkedPhone);
     }
-  }, [phoneMode, setValue]);
-
-  /** [M2 FIX] "다시 인증하기" 시 부모 상태 + phone provider 초기화 */
-  const handlePhoneReset = useCallback(async () => {
-    phoneManuallyReset.current = true;
-    // link 모드에서는 Firebase Auth에서 phone provider 해제 (재인증 허용)
-    if (phoneMode === 'link') {
-      try {
-        await unlinkPhoneProvider();
-      } catch (error) {
-        logger.warn('phone provider unlink 실패', { error });
-        // unlink 실패 시 Firebase Auth와 일관성 유지: 로컬 상태 초기화하지 않음
-        phoneManuallyReset.current = false;
-        return;
-      }
-    }
-    setVerifiedPhone(null);
-    setValue('phoneVerified', false);
-    setValue('verifiedPhone', '');
   }, [phoneMode, setValue]);
 
   const onSubmit = useCallback(
@@ -188,7 +166,6 @@ export function SignupStepIdentity({
         </Text>
         <PhoneVerification
           onVerified={handleVerified}
-          onReset={handlePhoneReset}
           onError={(error) =>
             logger.error('전화번호 인증 오류', { component: 'SignupStepIdentity', error })
           }
