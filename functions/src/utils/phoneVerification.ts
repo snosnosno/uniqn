@@ -21,6 +21,10 @@ import { ValidationError, ERROR_CODES } from "../errors/AppError";
 export interface VerifyOTPResult {
   /** 검증된 전화번호 (E.164 형식) */
   phoneNumber: string;
+  /** REST API가 생성/반환한 사용자 UID (orphan 정리용) */
+  localId: string;
+  /** 신규 생성된 사용자인지 여부 */
+  isNewUser: boolean;
 }
 
 interface FirebaseAuthErrorResponse {
@@ -113,7 +117,11 @@ export async function verifyOTPServerSide(
     });
   }
 
-  const result = (await response.json()) as { phoneNumber?: string };
+  const result = (await response.json()) as {
+    phoneNumber?: string;
+    localId?: string;
+    isNewUser?: boolean;
+  };
 
   if (!result.phoneNumber) {
     logger.error("서버사이드 OTP 검증: 응답에 phoneNumber 없음", {
@@ -130,5 +138,9 @@ export async function verifyOTPServerSide(
     phone: `${result.phoneNumber.slice(0, 4)}****`,
   });
 
-  return { phoneNumber: result.phoneNumber };
+  return {
+    phoneNumber: result.phoneNumber,
+    localId: result.localId ?? "",
+    isNewUser: result.isNewUser ?? false,
+  };
 }

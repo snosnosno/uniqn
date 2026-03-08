@@ -211,8 +211,12 @@ export const signUpIdentitySchema = z.object({
   }),
   verifiedPhone: phoneSchema,
   /** 서버사이드 OTP 검증용 (소셜 로그인 link 모드) */
-  verificationId: z.string().optional(),
-  otpCode: z.string().optional(),
+  verificationId: z.string().min(1).max(2000).optional(),
+  otpCode: z
+    .string()
+    .length(6, { message: '인증번호는 6자리입니다' })
+    .regex(/^\d{6}$/, { message: '숫자 6자리를 입력해주세요' })
+    .optional(),
 });
 
 export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;

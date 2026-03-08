@@ -299,12 +299,40 @@ export const verifyAndSaveProfile = onCall(
 
           const clientPhoneE164 = toE164(verifiedPhone);
 
-          if (data.verificationId && data.otpCode) {
+          // H3: 불완전 OTP 데이터 체크 (한쪽만 있는 경우 명시적 에러)
+          const hasVerificationId =
+            typeof data.verificationId === "string" &&
+            data.verificationId.length > 0;
+          const hasOtpCode =
+            typeof data.otpCode === "string" && data.otpCode.length > 0;
+
+          if (hasVerificationId !== hasOtpCode) {
+            throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+              userMessage:
+                "전화번호 인증 정보가 불완전합니다. 다시 시도해주세요.",
+            });
+          }
+
+          let authPhoneSet = false;
+
+          if (hasVerificationId && hasOtpCode) {
             // ── 2a. 서버사이드 OTP 검증 모드 (소셜 로그인) ──────────────────
             //
             // 클라이언트가 verificationId + otpCode를 전달한 경우,
             // 서버에서 직접 OTP를 검증하고 phoneNumber를 설정합니다.
             // linkWithCredential 의존성을 제거하여 Apple 로그인 호환성을 보장합니다.
+
+            // H1: 입력값 검증 (길이 + 형식)
+            const validatedVerificationId = validateString(
+              data.verificationId,
+              "인증 세션 ID",
+              { min: 1, max: 2000 },
+            );
+            const validatedOtpCode = validateString(data.otpCode, "인증번호", {
+              min: 6,
+              max: 6,
+              pattern: /^\d{6}$/,
+            });
 
             const apiKey = process.env.WEB_API_KEY;
             if (!apiKey) {
@@ -318,8 +346,8 @@ export const verifyAndSaveProfile = onCall(
 
             // OTP 검증 → 전화번호 확인
             const otpResult = await verifyOTPServerSide(
-              data.verificationId,
-              data.otpCode,
+              validatedVerificationId,
+              validatedOtpCode,
               apiKey,
             );
 
@@ -335,11 +363,35 @@ export const verifyAndSaveProfile = onCall(
               });
             }
 
+            // C1: REST API(signInWithPhoneNumber)가 생성한 orphan 사용자 정리
+            // signInWithPhoneNumber는 OTP 검증과 동시에 새 사용자를 생성하므로,
+            // 실제 사용자(uid)와 다른 orphan은 즉시 삭제합니다.
+            if (
+              otpResult.isNewUser &&
+              otpResult.localId &&
+              otpResult.localId !== uid
+            ) {
+              try {
+                await admin.auth().deleteUser(otpResult.localId);
+                logger.info(
+                  "verifyAndSaveProfile: OTP orphan 사용자 정리 완료",
+                  { uid, orphanUid: otpResult.localId },
+                );
+              } catch (cleanupError) {
+                // orphan 정리 실패는 치명적이지 않음 — 로그만 남기고 진행
+                logger.warn(
+                  "verifyAndSaveProfile: orphan 사용자 정리 실패 (무시)",
+                  { uid, orphanUid: otpResult.localId, error: cleanupError },
+                );
+              }
+            }
+
             // Firebase Auth에 전화번호 설정 (admin SDK)
             try {
               await admin.auth().updateUser(uid, {
                 phoneNumber: clientPhoneE164,
               });
+              authPhoneSet = true;
             } catch (updateError) {
               const errorCode = (updateError as { code?: string })?.code;
               if (errorCode === "auth/phone-number-already-exists") {
@@ -451,99 +503,122 @@ export const verifyAndSaveProfile = onCall(
           const consentRef = userDocRef.collection("consents").doc("current");
           const consentHistoryRef = userDocRef.collection("consents").doc();
 
-          await db.runTransaction(async (transaction) => {
-            // Transaction 내 읽기 — 모든 읽기를 쓰기 전에 완료 (Firestore 규칙)
-            // Transaction 내 읽기: nickname이 있을 때만 닉네임 중복 쿼리 포함
-            const readPromises: [
-              Promise<FirebaseFirestore.DocumentSnapshot>,
-              Promise<FirebaseFirestore.QuerySnapshot>,
-              ...Promise<FirebaseFirestore.QuerySnapshot>[],
-            ] = [
-              transaction.get(userDocRef),
-              transaction.get(
-                db
-                  .collection("users")
-                  .where("phone", "==", clientPhoneE164)
-                  .limit(1),
-              ),
-            ];
-            if (hasNickname) {
-              readPromises.push(
+          try {
+            await db.runTransaction(async (transaction) => {
+              // Transaction 내 읽기 — 모든 읽기를 쓰기 전에 완료 (Firestore 규칙)
+              // Transaction 내 읽기: nickname이 있을 때만 닉네임 중복 쿼리 포함
+              const readPromises: [
+                Promise<FirebaseFirestore.DocumentSnapshot>,
+                Promise<FirebaseFirestore.QuerySnapshot>,
+                ...Promise<FirebaseFirestore.QuerySnapshot>[],
+              ] = [
+                transaction.get(userDocRef),
                 transaction.get(
                   db
                     .collection("users")
-                    .where("nickname", "==", nickname)
+                    .where("phone", "==", clientPhoneE164)
                     .limit(1),
                 ),
-              );
-            }
-
-            const [freshDoc, phoneSnap, ...rest] =
-              await Promise.all(readPromises);
-            const nicknameSnap = rest[0] ?? null;
-
-            // 전화번호 중복 검사
-            if (!phoneSnap.empty) {
-              const existingUser = phoneSnap.docs[0];
-              if (existingUser.id !== uid) {
-                logger.warn("verifyAndSaveProfile: 전화번호 중복", {
-                  uid,
-                  existingUid: existingUser.id,
-                  phone: maskPhone(clientPhoneE164),
-                });
-                throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-                  userMessage: "이미 등록된 전화번호입니다.",
-                });
+              ];
+              if (hasNickname) {
+                readPromises.push(
+                  transaction.get(
+                    db
+                      .collection("users")
+                      .where("nickname", "==", nickname)
+                      .limit(1),
+                  ),
+                );
               }
-            }
 
-            // 닉네임 중복 검사 (nickname 제공 시에만)
-            if (nicknameSnap && !nicknameSnap.empty) {
-              const nicknameOwner = nicknameSnap.docs[0];
-              if (nicknameOwner.id !== uid) {
-                logger.warn("verifyAndSaveProfile: 닉네임 중복", {
-                  uid,
-                  existingUid: nicknameOwner.id,
-                  nickname,
-                });
-                throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-                  userMessage:
-                    "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
-                });
+              const [freshDoc, phoneSnap, ...rest] =
+                await Promise.all(readPromises);
+              const nicknameSnap = rest[0] ?? null;
+
+              // 전화번호 중복 검사
+              if (!phoneSnap.empty) {
+                const existingUser = phoneSnap.docs[0];
+                if (existingUser.id !== uid) {
+                  logger.warn("verifyAndSaveProfile: 전화번호 중복", {
+                    uid,
+                    existingUid: existingUser.id,
+                    phone: maskPhone(clientPhoneE164),
+                  });
+                  throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+                    userMessage: "이미 등록된 전화번호입니다.",
+                  });
+                }
               }
-            }
 
-            // 이미 완전한 프로필이 존재하는 경우 (중복 제출 방지)
-            if (
-              freshDoc.exists &&
-              freshDoc.data()?.phoneVerified === true &&
-              freshDoc.data()?.role === "staff"
-            ) {
-              logger.info(
-                "verifyAndSaveProfile: 이미 완료된 프로필 — 업데이트",
-                {
-                  uid,
-                },
-              );
-            }
+              // 닉네임 중복 검사 (nickname 제공 시에만)
+              if (nicknameSnap && !nicknameSnap.empty) {
+                const nicknameOwner = nicknameSnap.docs[0];
+                if (nicknameOwner.id !== uid) {
+                  logger.warn("verifyAndSaveProfile: 닉네임 중복", {
+                    uid,
+                    existingUid: nicknameOwner.id,
+                    nickname,
+                  });
+                  throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+                    userMessage:
+                      "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
+                  });
+                }
+              }
 
-            // 신규 사용자에만 createdAt 설정 (기존 사용자의 createdAt 보존)
-            if (!freshDoc.exists) {
-              profileData.createdAt = now;
-            }
+              // 이미 완전한 프로필이 존재하는 경우 (중복 제출 방지)
+              if (
+                freshDoc.exists &&
+                freshDoc.data()?.phoneVerified === true &&
+                freshDoc.data()?.role === "staff"
+              ) {
+                logger.info(
+                  "verifyAndSaveProfile: 이미 완료된 프로필 — 업데이트",
+                  {
+                    uid,
+                  },
+                );
+              }
 
-            // 프로필 저장
-            transaction.set(userDocRef, profileData, { merge: true });
+              // 신규 사용자에만 createdAt 설정 (기존 사용자의 createdAt 보존)
+              if (!freshDoc.exists) {
+                profileData.createdAt = now;
+              }
 
-            // 약관 동의 — 최신 상태 (current)
-            transaction.set(consentRef, consentData, { merge: true });
+              // 프로필 저장
+              transaction.set(userDocRef, profileData, { merge: true });
 
-            // 약관 이력 보존 (버전별 스냅샷)
-            transaction.set(consentHistoryRef, {
-              ...consentData,
-              createdAt: now,
+              // 약관 동의 — 최신 상태 (current)
+              transaction.set(consentRef, consentData, { merge: true });
+
+              // 약관 이력 보존 (버전별 스냅샷)
+              transaction.set(consentHistoryRef, {
+                ...consentData,
+                createdAt: now,
+              });
             });
-          });
+          } catch (txError) {
+            // H2: Transaction 실패 시 Auth phone 롤백 (서버사이드 OTP로 설정한 경우만)
+            if (authPhoneSet) {
+              try {
+                await admin.auth().updateUser(uid, { phoneNumber: null });
+                logger.warn(
+                  "verifyAndSaveProfile: Transaction 실패 → Auth phone 롤백",
+                  { uid },
+                );
+              } catch (rollbackError) {
+                logger.error(
+                  "verifyAndSaveProfile: Auth phone 롤백 실패 — 수동 확인 필요",
+                  {
+                    uid,
+                    phone: maskPhone(clientPhoneE164),
+                    error: rollbackError,
+                  },
+                );
+              }
+            }
+            throw txError;
+          }
 
           // ── 7. Custom Claims (Transaction 외부 — eventual consistency) ──────
 
