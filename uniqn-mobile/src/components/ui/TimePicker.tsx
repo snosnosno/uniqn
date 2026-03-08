@@ -291,18 +291,4 @@ export const TimePicker = memo(function TimePicker({
   );
 });
 
-// ============================================================================
-// TimePickerGrid (deprecated - 호환성 유지용)
-// ============================================================================
-
-export interface TimePickerGridProps extends TimePickerProps {
-  /** @deprecated 사용되지 않음 */
-  columns?: number;
-}
-
-/**
- * @deprecated TimePicker를 사용하세요
- */
-export const TimePickerGrid = TimePicker;
-
 export default TimePicker;

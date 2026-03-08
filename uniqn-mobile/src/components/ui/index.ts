@@ -90,12 +90,7 @@ export {
   type DateRangePickerProps,
 } from './DatePicker';
 export { CalendarPicker, type CalendarPickerProps } from './CalendarPicker';
-export {
-  TimePicker,
-  TimePickerGrid,
-  type TimePickerProps,
-  type TimePickerGridProps,
-} from './TimePicker';
+export { TimePicker, type TimePickerProps } from './TimePicker';
 export { TimeWheelPicker, type TimeWheelPickerProps, type TimeValue } from './TimeWheelPicker';
 
 // ============================================================================

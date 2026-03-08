@@ -47,6 +47,7 @@ export function toStoreProfile(profile: {
   experienceYears?: number;
   career?: string;
   note?: string;
+  profileCompleted?: boolean;
   isActive?: boolean;
   createdAt: unknown;
   updatedAt: unknown;
@@ -83,6 +84,7 @@ export function toStoreProfile(profile: {
     experienceYears: profile.experienceYears,
     career: profile.career,
     note: profile.note,
+    profileCompleted: profile.profileCompleted,
     isActive: profile.isActive,
     createdAt: toDate(profile.createdAt),
     updatedAt: toDate(profile.updatedAt),

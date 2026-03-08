@@ -4,6 +4,8 @@
  * @version 1.0.0
  */
 
+import { USER_ROLE_LABELS, STAFF_ROLE_LABELS } from '@/types/role';
+
 // ============================================================================
 // 앱 버전 정보 (version.ts에서 재export)
 // ============================================================================
@@ -240,36 +242,33 @@ export const FILE = {
 } as const;
 
 // ============================================================================
-// 역할 라벨 (Single Source of Truth)
+// 역할 라벨 (types/role.ts의 정본 라벨 합성)
 // ============================================================================
 
 /**
  * 역할 ID → 표시명 매핑
  *
- * @description 모든 역할 표시명의 단일 소스
+ * @description types/role.ts의 USER_ROLE_LABELS + STAFF_ROLE_LABELS를 합성
  * - 영문 키와 한글 키 모두 지원 (역호환성)
- * - 새 역할 추가 시 이 매핑만 수정하면 전체 앱에 반영
+ * - 새 역할 추가 시 types/role.ts 수정 → 여기에 자동 반영
  */
 export const ROLE_LABELS: Record<string, string> = {
-  // 사용자 역할 (UserRole)
-  admin: '관리자',
-  employer: '구인자',
+  // 사용자 역할 + 스태프 역할 (types/role.ts에서 합성)
+  ...USER_ROLE_LABELS,
+  ...STAFF_ROLE_LABELS,
+  // staff 키 충돌 해결: UserRole.staff('스태프')와 StaffRole.staff('직원')가 겹침
+  // → ROLE_LABELS에서는 UserRole 기준 '일반'을 사용 (기존 동작 유지)
   staff: '일반',
-  // 스태프 역할 (StaffRole - 직무)
-  dealer: '딜러',
-  floor: '플로어',
-  serving: '서빙',
-  manager: '매니저',
-  supervisor: '슈퍼바이저',
-  other: '기타',
+  // 추가 매핑 (types/role.ts에 없는 키)
   user: '일반 사용자',
+  supervisor: '슈퍼바이저', // 레거시 역호환 (StaffRole에서 제거되었지만 기존 데이터 존재)
   // 한글 키 (역호환성 - 기존 데이터 지원)
   딜러: '딜러',
   플로어: '플로어',
   서빙: '서빙',
   매니저: '매니저',
   직원: '직원',
-  슈퍼바이저: '슈퍼바이저',
+  슈퍼바이저: '슈퍼바이저', // 레거시 역호환
   관리자: '관리자',
   어드민: '관리자',
   기타: '기타',

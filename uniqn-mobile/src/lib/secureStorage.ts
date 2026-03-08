@@ -89,25 +89,34 @@ function getWebStorage(key: string): Storage {
 // Platform-specific Imports
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let SecureStore: any = null;
+/**
+ * expo-secure-store에서 사용하는 메서드 인터페이스 (Expo SDK 54 기준)
+ * 동적 require로 로드하므로 직접 import 대신 인터페이스 정의
+ */
+interface SecureStoreModule {
+  setItem(key: string, value: string, options?: { keychainAccessible?: number }): void;
+  getItem(key: string): string | null;
+  deleteItemAsync(key: string): Promise<void>;
+}
+
+let secureStoreModule: SecureStoreModule | null = null;
 
 /**
  * SecureStore 모듈 로드 (네이티브 전용)
  */
-function loadSecureStore(): typeof SecureStore {
+function loadSecureStore(): SecureStoreModule | null {
   if (Platform.OS === 'web') {
     return null;
   }
 
-  if (SecureStore) {
-    return SecureStore;
+  if (secureStoreModule) {
+    return secureStoreModule;
   }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    SecureStore = require('expo-secure-store');
-    return SecureStore;
+    secureStoreModule = require('expo-secure-store') as SecureStoreModule;
+    return secureStoreModule;
   } catch (error) {
     logger.warn('expo-secure-store 로드 실패, MMKV 폴백 사용', { error });
     return null;
@@ -310,7 +319,7 @@ export async function clearAll(): Promise<void> {
  */
 function getSecureStoreAccessible(
   accessible: KeychainAccessible
-): import('expo-secure-store').SecureStoreOptions['keychainAccessible'] {
+): number {
   const mapping: Record<KeychainAccessible, number> = {
     AFTER_FIRST_UNLOCK: 0,
     AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1,

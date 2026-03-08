@@ -35,6 +35,7 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
           navigation.dispatch(e.data.action);
         }
       } else {
+        // Alert.alert 예외: 확인/취소 버튼이 필요한 확인 다이얼로그 (toast는 버튼 미지원)
         Alert.alert(
           '변경사항 저장 안 됨',
           '저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?',

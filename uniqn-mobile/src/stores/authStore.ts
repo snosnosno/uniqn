@@ -22,24 +22,16 @@ import { mmkvStorage } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole, UserProfile } from '@/types';
+import type { AuthUser, AuthStatus } from '@/types/auth';
 import { RoleResolver } from '@/shared/role';
 
 export type { UserRole, UserProfile };
+// AuthUser, AuthStatus의 정본(SSOT)은 types/auth.ts
+export type { AuthUser, AuthStatus } from '@/types/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface AuthUser {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  emailVerified: boolean;
-  phoneNumber: string | null;
-}
-
-export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
 interface AuthState {
   // 상태

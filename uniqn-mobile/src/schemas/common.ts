@@ -190,9 +190,11 @@ export const optionalMetadataSchema = metadataSchema.optional();
 export const documentIdSchema = z.string().min(1).max(128);
 
 /**
- * 이메일 스키마
+ * 기본 이메일 스키마 (최소 검증)
+ *
+ * @description 상세 검증이 필요한 경우 auth.schema.ts의 emailSchema를 사용하세요.
  */
-export const emailSchema = z.string().email('올바른 이메일 형식이 아닙니다');
+export const baseEmailSchema = z.string().email('올바른 이메일 형식이 아닙니다');
 
 /**
  * 한국 전화번호 스키마

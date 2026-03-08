@@ -18,7 +18,7 @@ export {
   optionalMetadataSchema,
   // Common field schemas
   documentIdSchema,
-  emailSchema as commonEmailSchema,
+  baseEmailSchema as commonEmailSchema,
   phoneSchema as commonPhoneSchema,
   dateStringSchema,
   timeStringSchema,
