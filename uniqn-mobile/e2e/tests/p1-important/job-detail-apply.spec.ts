@@ -44,12 +44,17 @@ test.describe('공고 상세 & 지원', () => {
     const page = await context.newPage();
 
     await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
 
-    const isError = await page.getByText('오류가 발생했습니다').isVisible();
+    // 공고 내용 또는 에러 상태가 나타날 때까지 대기
+    const applyButton = page.getByRole('button', { name: /지원하기/ });
+    const errorState = page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first();
+    const contentOrError = applyButton.or(errorState);
+    await expect(contentOrError.first()).toBeVisible({ timeout: 15_000 });
+
+    // 에러가 아닌 경우에만 버튼 검증
+    const isError = await errorState.isVisible().catch(() => false);
     if (!isError) {
-      const applyButton = page.getByRole('button', { name: /지원하기/ });
-      await expect(applyButton).toBeVisible({ timeout: 5_000 });
+      await expect(applyButton).toBeVisible();
       await expect(applyButton).toBeEnabled();
     }
 
@@ -65,12 +70,16 @@ test.describe('공고 상세 & 지원', () => {
       const page = await context.newPage();
 
       await page.goto(`/jobs/${closedJob.id}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(5_000);
 
-      const isError = await page.getByText('오류가 발생했습니다').isVisible();
+      // 마감 버튼 또는 에러 상태가 나타날 때까지 대기
+      const closedButton = page.getByRole('button', { name: /마감된 공고/ });
+      const errorState = page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first();
+      const contentOrError = closedButton.or(errorState);
+      await expect(contentOrError.first()).toBeVisible({ timeout: 15_000 });
+
+      const isError = await errorState.isVisible().catch(() => false);
       if (!isError) {
-        const closedButton = page.getByRole('button', { name: /마감된 공고/ });
-        await expect(closedButton).toBeVisible({ timeout: 5_000 });
+        await expect(closedButton).toBeVisible();
         await expect(closedButton).toBeDisabled();
       }
 
@@ -141,7 +150,7 @@ test.describe('공고 상세 & 지원', () => {
       await page.waitForTimeout(5_000);
 
       // 이미 지원 메시지 또는 다른 상태
-      const alreadyApplied = page.getByText(/이미 지원한 공고|지원하기|오류/);
+      const alreadyApplied = page.getByText(/이미 지원한 공고|지원하기|오류/).first();
       await expect(alreadyApplied).toBeVisible({ timeout: 10_000 });
 
       await context.close();
@@ -181,7 +190,7 @@ test.describe('공고 상세 & 지원', () => {
     await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(5_000);
 
-    const isError = await page.getByText('오류가 발생했습니다').isVisible();
+    const isError = await page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first().isVisible().catch(() => false);
     if (!isError) {
       // 공유 버튼이 존재하는지 확인
       const shareButton = page.locator('[aria-label="공고 공유하기"]');

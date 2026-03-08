@@ -119,10 +119,13 @@ let emulatorFunctionsConnected = false;
 
 /**
  * 에뮬레이터 사용 여부 확인
- * __DEV__ 가드로 프로덕션 빌드에서는 절대 에뮬레이터에 연결하지 않음
+ * EXPO_PUBLIC_USE_EMULATOR 환경변수로만 판단
+ * (E2E 정적 빌드에서는 __DEV__=false이므로 __DEV__ 가드 제거)
+ *
+ * 안전성: EXPO_PUBLIC_USE_EMULATOR는 빌드 시점에 임베딩되므로
+ * 일반 프로덕션 빌드에서는 undefined → false 반환
  */
 function shouldUseEmulator(): boolean {
-  if (!__DEV__) return false;
   return process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
 }
 

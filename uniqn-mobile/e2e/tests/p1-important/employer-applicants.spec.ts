@@ -45,7 +45,7 @@ test.describe('구인자 지원자 관리', () => {
     // 공고 상세 로드 대기 (관리 섹션 또는 에러 상태)
     const managementOrError = detailPage.getManagementSection()
       .or(detailPage.getErrorState());
-    await expect(managementOrError).toBeVisible({ timeout: 30_000 });
+    await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
     const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
     if (hasError) {
@@ -90,7 +90,7 @@ test.describe('구인자 지원자 관리', () => {
       const applicantOrEmpty = page
         .getByText('목록테스트_지원자')
         .or(page.getByText(/지원자가 없습니다|데이터가 없습니다|지원자 목록을 불러오는 중/));
-      await expect(applicantOrEmpty).toBeVisible({ timeout: 15_000 });
+      await expect(applicantOrEmpty.first()).toBeVisible({ timeout: 15_000 });
     } finally {
       await deleteDocument(
         `jobPostings/${testJob.id}/applications`,
@@ -136,7 +136,7 @@ test.describe('구인자 지원자 관리', () => {
         }
 
         const confirmOrReject = confirmButton.or(rejectButton);
-        await expect(confirmOrReject).toBeVisible({ timeout: 5_000 });
+        await expect(confirmOrReject.first()).toBeVisible({ timeout: 5_000 });
       }
     } finally {
       await deleteDocument(

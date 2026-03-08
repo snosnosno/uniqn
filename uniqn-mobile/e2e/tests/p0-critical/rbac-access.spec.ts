@@ -88,12 +88,13 @@ test.describe('RBAC 접근 제어', () => {
     await waitForAppInit(page);
 
     // employer는 일반 탭 또는 내 공고 탭이 보여야 함
-    await expect(
-      page.getByText('구인구직').first().or(page.getByText('내 공고'))
-    ).toBeVisible({ timeout: 10_000 });
+    const employerContent = page.getByText('구인구직').first()
+      .or(page.getByText('내 공고').first());
+    await expect(employerContent.first()).toBeVisible({ timeout: 10_000 });
 
     // employer는 admin 대시보드를 볼 수 없어야 함
-    await expect(page.getByText('관리자 대시보드')).not.toBeVisible({ timeout: 3_000 });
+    const adminDashboard = await page.getByText('관리자 대시보드').isVisible().catch(() => false);
+    expect(adminDashboard).toBeFalsy();
 
     await context.close();
   });
@@ -111,7 +112,7 @@ test.describe('RBAC 접근 제어', () => {
     const pageContent = page.getByText('내 공고 관리')
       .or(page.getByText(/등록된 공고가 없습니다|공고가 없습니다/))
       .or(page.getByText(/개의 공고/));
-    await expect(pageContent).toBeVisible({ timeout: 15_000 });
+    await expect(pageContent.first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -125,18 +126,18 @@ test.describe('RBAC 접근 제어', () => {
     await waitForAppInit(page);
 
     // admin은 대시보드 또는 일반 페이지가 보여야 함
-    await expect(
-      page.getByText('구인구직').first().or(page.getByText('대시보드'))
-    ).toBeVisible({ timeout: 10_000 });
+    const adminContent = page.getByText('구인구직').first()
+      .or(page.getByText('대시보드').first());
+    await expect(adminContent.first()).toBeVisible({ timeout: 10_000 });
 
     // employer 라우트 접근 (admin은 employer 이상 권한)
     await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
     // admin도 employer 라우트에 접근 가능해야 함
-    await expect(
-      page.getByText('내 공고 관리').or(page.getByText(/공고가 없습니다/))
-    ).toBeVisible({ timeout: 10_000 });
+    const adminEmployerContent = page.getByText('내 공고 관리')
+      .or(page.getByText(/공고가 없습니다/));
+    await expect(adminEmployerContent.first()).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });

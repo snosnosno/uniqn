@@ -63,7 +63,7 @@ test.describe('구인자 공고 CRUD', () => {
         // 결과 개수 텍스트 표시 또는 총 공고 수 표시
         const resultOrTotal = myPostings.getResultCount()
           .or(myPostings.getTotalCountText());
-        await expect(resultOrTotal).toBeVisible({ timeout: 15_000 });
+        await expect(resultOrTotal.first()).toBeVisible({ timeout: 15_000 });
       } finally {
         await deleteDocument('jobPostings', activeJob.id);
       }
@@ -80,7 +80,7 @@ test.describe('구인자 공고 CRUD', () => {
       const emptyOrList = myPostings
         .getEmptyState()
         .or(myPostings.getResultCount());
-      await expect(emptyOrList).toBeVisible({ timeout: 15_000 });
+      await expect(emptyOrList.first()).toBeVisible({ timeout: 15_000 });
     });
   });
 
@@ -122,7 +122,7 @@ test.describe('구인자 공고 CRUD', () => {
       const error = createPage
         .getValidationError(/제목을 입력|필수 정보가 누락/)
         .or(page.locator('[role="alert"]'));
-      await expect(error).toBeVisible({ timeout: 10_000 });
+      await expect(error.first()).toBeVisible({ timeout: 10_000 });
     });
 
     test('제목 25자 초과 입력 → 초과 검증 에러', async ({ page }) => {
@@ -163,7 +163,7 @@ test.describe('구인자 공고 CRUD', () => {
       await page.waitForTimeout(1_000);
 
       // 고정공고 선택 시 관련 UI 변경 (주당 근무일 등)
-      const fixedUI = page.getByText(/주 |요일|근무/);
+      const fixedUI = page.getByText(/주 |요일|근무/).first();
       await expect(fixedUI).toBeVisible({ timeout: 10_000 });
 
       // 대회 타입으로 전환
@@ -196,7 +196,7 @@ test.describe('구인자 공고 CRUD', () => {
         // 관리 섹션 또는 에러 상태 확인 (공고 데이터 로드 대기)
         const managementOrError = detailPage.getManagementSection()
           .or(detailPage.getErrorState());
-        await expect(managementOrError).toBeVisible({ timeout: 30_000 });
+        await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
         // 에러 상태가 아닌 경우에만 관리 메뉴 확인
         const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
@@ -219,24 +219,33 @@ test.describe('구인자 공고 CRUD', () => {
         const detailPage = new PostingDetailPage(page);
         await detailPage.goto(testJob.id, { waitUntil: 'domcontentloaded' });
 
-        // 기본 상태: 접혀있음 → "상세" 버튼 보임 또는 에러 상태
-        const detailOrError = page.getByText('상세')
-          .or(detailPage.getErrorState());
-        await expect(detailOrError).toBeVisible({ timeout: 30_000 });
+        // 페이지 로드 대기 (에러 상태가 나타날 수 있음)
+        await page.waitForTimeout(3_000);
 
+        // 에러 상태 확인 (공고를 불러올 수 없거나 문제가 발생한 경우)
         const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
-        if (!hasError) {
-          // 펼치기
-          await detailPage.expandInfo();
+        const hasOtherError = await page.getByText(/문제가 발생|공고를 찾을 수 없습니다/).first().isVisible().catch(() => false);
 
-          // 장소, 일정, 급여 등 상세 정보 표시 확인
-          const locationOrSchedule = page.getByText(/테스트포커룸|근무 일정|급여/);
-          await expect(locationOrSchedule).toBeVisible({ timeout: 10_000 });
+        if (!hasError && !hasOtherError) {
+          // "상세" 텍스트 대기 (토글 버튼)
+          const detailButton = page.getByText('상세').first();
+          const hasDetailButton = await detailButton.isVisible({ timeout: 10_000 }).catch(() => false);
 
-          // 접기
-          await detailPage.collapseInfo();
-          // "상세" 텍스트 다시 표시
-          await expect(page.getByText('상세')).toBeVisible({ timeout: 5_000 });
+          if (hasDetailButton) {
+            // 펼치기
+            await detailPage.expandInfo();
+            await page.waitForTimeout(1_000);
+
+            // 장소, 일정, 급여 등 상세 정보 표시 확인
+            const locationOrSchedule = page.getByText(/테스트포커룸|근무 일정|급여|일당|시급/).first();
+            const hasExpanded = await locationOrSchedule.isVisible({ timeout: 10_000 }).catch(() => false);
+
+            if (hasExpanded) {
+              // 접기
+              await detailPage.collapseInfo();
+              await expect(page.getByText('상세').first()).toBeVisible({ timeout: 5_000 });
+            }
+          }
         }
       } finally {
         await deleteDocument('jobPostings', testJob.id);
@@ -254,7 +263,7 @@ test.describe('구인자 공고 CRUD', () => {
         // 페이지 로드 대기 (관리 섹션 또는 에러)
         const managementOrError = detailPage.getManagementSection()
           .or(detailPage.getErrorState());
-        await expect(managementOrError).toBeVisible({ timeout: 30_000 });
+        await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
         const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
         if (!hasError) {

@@ -460,6 +460,22 @@ async function seedReports(db: Firestore): Promise<void> {
 }
 
 /**
+ * 알림 카운터 문서 시딩 (users/{uid}/counters/notifications)
+ * 이 문서가 없으면 앱 초기화 시 initializeUnreadCounter Cloud Function을 호출하여
+ * Functions 에뮬레이터에서 응답하지 않아 무한 대기 발생
+ */
+async function seedNotificationCounters(db: Firestore): Promise<void> {
+  const batch = db.batch();
+  for (const [, account] of Object.entries(TEST_ACCOUNTS)) {
+    batch.set(
+      db.collection('users').doc(account.uid).collection('counters').doc('notifications'),
+      { unreadCount: 0 }
+    );
+  }
+  await batch.commit();
+}
+
+/**
  * 모든 테스트 데이터 시딩
  */
 async function seedTestData(db: Firestore): Promise<void> {
@@ -467,6 +483,7 @@ async function seedTestData(db: Firestore): Promise<void> {
   await seedApplications(db);
   await seedWorkLogs(db);
   await seedNotifications(db);
+  await seedNotificationCounters(db);
   await seedAnnouncements(db);
   await seedReviews(db);
   await seedReports(db);

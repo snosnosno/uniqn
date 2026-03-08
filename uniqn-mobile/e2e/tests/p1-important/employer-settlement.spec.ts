@@ -63,7 +63,7 @@ test.describe('구인자 정산 관리', () => {
     // 공고 상세 로드 대기 (관리 섹션 또는 에러 상태)
     const managementOrError = detailPage.getManagementSection()
       .or(detailPage.getErrorState());
-    await expect(managementOrError).toBeVisible({ timeout: 30_000 });
+    await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
     const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
     if (hasError) {

@@ -45,29 +45,32 @@ test.describe('에러 핸들링', () => {
     await page.goto('/settings/change-password', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
 
-    // 빈 폼 제출 시도 (비밀번호 정책 표시)
-    const policyText = page.getByText('최소 8자 이상');
-    await expect(policyText).toBeVisible();
+    // 페이지 로드 대기
+    await page.waitForTimeout(3_000);
+
+    // 비밀번호 정책 표시 확인 (bullet "•" 접두사 포함 가능)
+    const policyText = page.getByText(/최소 8자 이상/);
+    await expect(policyText.first()).toBeVisible({ timeout: 10_000 });
 
     // 약한 비밀번호 입력
-    const newPw = page.getByPlaceholder('새 비밀번호').first();
+    const newPw = page.getByPlaceholder(/새 비밀번호/).first();
     const hasField = await newPw.isVisible().catch(() => false);
 
     if (hasField) {
       await newPw.fill('123');
       await newPw.blur();
 
-      // 비밀번호 정책 체크 표시 확인
+      // 비밀번호 정책 체크 표시 확인 (exact: false로 부분 매칭)
       const policies = [
-        '최소 8자 이상',
-        '대문자 1개 이상 포함',
-        '소문자 1개 이상 포함',
-        '숫자 1개 이상 포함',
-        '특수문자 1개 이상 포함',
+        /최소 8자 이상/,
+        /대문자 1개 이상 포함/,
+        /소문자 1개 이상 포함/,
+        /숫자 1개 이상 포함/,
+        /특수문자 1개 이상 포함/,
       ];
 
       for (const policy of policies) {
-        await expect(page.getByText(policy)).toBeVisible();
+        await expect(page.getByText(policy).first()).toBeVisible();
       }
     }
   });

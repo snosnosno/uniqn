@@ -15,7 +15,7 @@ export class EmployerTabPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.headerTitle = page.getByText('내 공고');
+    this.headerTitle = page.getByText('내 공고').first();
     this.createPostingButton = page.getByRole('button', { name: /새 공고 작성/ });
     this.registerEmployerButton = page.getByRole('button', { name: /구인자로 등록하기/ });
   }

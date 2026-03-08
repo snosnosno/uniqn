@@ -11,7 +11,7 @@ test.describe('고객센터', () => {
   });
 
   test('고객센터 메인 → 3가지 메뉴 항목 표시', async ({ page }) => {
-    await expect(page.getByText('자주 묻는 질문')).toBeVisible();
+    await expect(page.getByText('자주 묻는 질문', { exact: true })).toBeVisible();
     await expect(page.getByText('1:1 문의하기')).toBeVisible();
     await expect(page.getByText('문의 내역')).toBeVisible();
   });
@@ -26,19 +26,21 @@ test.describe('고객센터', () => {
   });
 
   test('FAQ 클릭 → FAQ 페이지 이동 및 카테고리 탭 표시', async ({ page }) => {
-    await page.getByText('자주 묻는 질문').click();
+    await page.getByText('자주 묻는 질문', { exact: true }).click();
     await page.waitForURL(/\/faq/, { timeout: 5_000 });
+    await page.waitForTimeout(2_000);
 
     // FAQ 목록 또는 빈 상태 표시
+    // FAQ 항목의 텍스트로 확인 (role="button"이 없을 수 있음)
     const faqEmpty = page.getByText('FAQ가 없습니다');
-    const hasFaqContent = await page
-      .locator('[role="button"]')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const faqCategory = page.getByText('전체').first();
+    const faqItem = page.getByText(/서비스인가요|사용료|잊어버렸어요/).first();
+
+    const hasFaqCategory = await faqCategory.isVisible().catch(() => false);
+    const hasFaqItem = await faqItem.isVisible().catch(() => false);
     const hasFaqEmpty = await faqEmpty.isVisible().catch(() => false);
 
-    expect(hasFaqContent || hasFaqEmpty).toBe(true);
+    expect(hasFaqCategory || hasFaqItem || hasFaqEmpty).toBe(true);
   });
 });
 

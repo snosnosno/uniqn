@@ -55,8 +55,8 @@ export class PostingDetailPage extends BasePage {
     this.pendingCount = page.getByText('대기중').locator('..');
   }
 
-  async goto(postingId: string): Promise<void> {
-    await this.page.goto(`/my-postings/${postingId}`, { waitUntil: 'domcontentloaded' });
+  async goto(postingId: string, options?: { waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit' }): Promise<void> {
+    await this.page.goto(`/my-postings/${postingId}`, { waitUntil: options?.waitUntil ?? 'domcontentloaded' });
     await this.waitForReady();
   }
 
@@ -169,6 +169,6 @@ export class PostingDetailPage extends BasePage {
    * - message: "공고 정보를 찾을 수 없습니다."
    */
   getErrorState(): Locator {
-    return this.page.getByText(/공고를 불러올 수 없습니다|공고 정보를 찾을 수 없습니다/);
+    return this.page.getByText('공고를 불러올 수 없습니다');
   }
 }

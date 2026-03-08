@@ -31,7 +31,7 @@ export function createTestWorkLog(options: WorkLogFactoryOptions = {}) {
     staffName: options.staffName ?? '테스트스태프',
     staffPhone: '+82101234567',
     role: options.role ?? 'dealer',
-    customRole: options.customRole,
+    ...(options.customRole !== undefined && { customRole: options.customRole }),
     workDate,
     checkInTime: options.checkInTime ?? `${workDate}T18:00:00+09:00`,
     checkOutTime: options.checkOutTime ?? `${workDate}T02:00:00+09:00`,
