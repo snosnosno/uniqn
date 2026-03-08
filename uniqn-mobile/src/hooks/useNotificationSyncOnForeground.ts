@@ -29,6 +29,15 @@ import { queryClient, queryKeys } from '@/lib/queryClient';
 /** onSnapshot 값을 무시하는 유예 기간 (로컬 변경 직후) */
 const LOCAL_UPDATE_GRACE_PERIOD_MS = 3000;
 
+/** 최대 재시도 횟수 */
+const MAX_RETRY_COUNT = 3;
+
+/** 기본 재시도 대기 시간 (ms) */
+const BASE_RETRY_DELAY_MS = 1000;
+
+/** 최대 재시도 대기 시간 (ms) */
+const MAX_RETRY_DELAY_MS = 30_000;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -110,19 +119,26 @@ export function useNotificationSyncOnForeground(
     return () => subscription.remove();
   }, [clearBadge, isTokenRegistered, userId, registerToken]);
 
-  // Effect 7: 실시간 미읽음 카운터 구독 (Race Condition 방지 포함)
+  // Effect 7: 실시간 미읽음 카운터 구독 (Race Condition 방지 + Exponential Backoff)
   useEffect(() => {
     if (!userId || !isAuthenticated) return;
 
+    let isMounted = true;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
-    let hasRetried = false;
+    let retryCount = 0;
     let currentUnsubscribe: (() => void) | null = null;
+
+    const getRetryDelay = (attempt: number): number =>
+      Math.min(BASE_RETRY_DELAY_MS * Math.pow(2, attempt), MAX_RETRY_DELAY_MS);
 
     const subscribe = (): (() => void) => {
       return subscribeToUnreadCount(
         userId,
         (count) => {
-          hasRetried = false;
+          if (!isMounted) return;
+
+          // 성공 시 재시도 카운트 리셋
+          retryCount = 0;
 
           // Race Condition 방지: 최근 로컬 변경이 있었으면 서버 값 무시
           const lastLocalUpdate = useNotificationStore.getState().lastCounterLocalUpdate;
@@ -135,24 +151,32 @@ export function useNotificationSyncOnForeground(
           useNotificationStore.getState().setUnreadCount(count);
         },
         (error) => {
+          if (!isMounted) return;
+
           logger.warn('실시간 미읽음 카운터 구독 에러', { error: error.message });
 
           if (isAppError(error) && !error.isRetryable) return;
 
-          if (!hasRetried) {
-            hasRetried = true;
+          if (retryCount < MAX_RETRY_COUNT) {
+            const delay = getRetryDelay(retryCount);
+            retryCount++;
+
+            logger.info('카운터 구독 재시도 예약', { retryCount, delayMs: delay });
+
             retryTimeout = setTimeout(() => {
+              if (!isMounted) return;
               currentUnsubscribe?.();
               currentUnsubscribe = subscribe();
-            }, 10_000);
+            }, delay);
+          } else {
+            logger.warn('카운터 구독 최대 재시도 초과', { retryCount });
           }
 
-          // C3: forceSync로 서버 카운터 가져와서 Store 업데이트
+          // forceSync로 서버 카운터 가져와서 Store 업데이트
           syncUnreadCounterFromServer(userId, true)
             .then((count) => {
-              if (count !== null) {
-                useNotificationStore.getState().setUnreadCount(count);
-              }
+              if (!isMounted || count === null) return;
+              useNotificationStore.getState().setUnreadCount(count);
             })
             .catch((e) => logger.warn('forceSync 카운터 동기화 실패', { error: String(e) }));
         }
@@ -165,16 +189,16 @@ export function useNotificationSyncOnForeground(
     if (useNotificationStore.getState().needsServerSync) {
       syncUnreadCounterFromServer(userId, true)
         .then((count) => {
-          if (count !== null) {
-            const store = useNotificationStore.getState();
-            store.setUnreadCount(count);
-            store.setNeedsServerSync(false);
-          }
+          if (!isMounted || count === null) return;
+          const store = useNotificationStore.getState();
+          store.setUnreadCount(count);
+          store.setNeedsServerSync(false);
         })
         .catch((e) => logger.warn('캐시 정합성 동기화 실패', { error: String(e) }));
     }
 
     return () => {
+      isMounted = false;
       currentUnsubscribe?.();
       if (retryTimeout) clearTimeout(retryTimeout);
     };

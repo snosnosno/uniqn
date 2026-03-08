@@ -30,6 +30,7 @@ import {
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
+import { RealtimeManager } from '@/shared/realtime';
 import { AuthError, ERROR_CODES } from '@/errors';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
@@ -665,7 +666,10 @@ export async function signOut(): Promise<void> {
   try {
     logger.info('로그아웃 시도');
 
-    // 전역 캐시 정리 (메모리 누수 방지)
+    // 모든 Firestore 실시간 구독 해제 (메모리 누수 방지)
+    RealtimeManager.unsubscribeAll();
+
+    // 전역 캐시 정리
     clearCounterSyncCache();
 
     // Native + Web SDK 동시 로그아웃

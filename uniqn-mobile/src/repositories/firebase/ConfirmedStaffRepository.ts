@@ -21,6 +21,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   runTransaction,
   onSnapshot,
   Timestamp,
@@ -483,7 +484,8 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     const q = query(
       workLogsRef,
       where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
-      orderBy(FIELDS.WORK_LOG.date, 'asc')
+      orderBy(FIELDS.WORK_LOG.date, 'asc'),
+      limit(500)
     );
 
     const unsubscribe = onSnapshot(

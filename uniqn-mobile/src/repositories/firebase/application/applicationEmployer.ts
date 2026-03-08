@@ -12,6 +12,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -156,7 +157,8 @@ export function subscribeByJobPosting(
   const q = query(
     applicationsRef,
     where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
-    orderBy(FIELDS.APPLICATION.createdAt, 'desc')
+    orderBy(FIELDS.APPLICATION.createdAt, 'desc'),
+    limit(300)
   );
 
   // 공고 정보 캐싱 (소유권 확인 및 지원자 데이터에 포함)
