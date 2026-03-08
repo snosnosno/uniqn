@@ -21,25 +21,17 @@ import {
 } from '@/components/employer/job-form';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { STAFF_ROLES } from '@/constants';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import {
+  type SectionErrors,
+  validateAllSections,
+  getFirstErrorSection,
+} from '@/utils/job-posting/validation';
 import type { UpdateJobPostingInput, JobPostingFormData, FormRoleWithCount } from '@/types';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface SectionErrors {
-  basicInfo: Record<string, string>;
-  schedule: Record<string, string>;
-  roles: Record<string, string>;
-  salary: Record<string, string>;
-  preQuestions: Record<string, string>;
-}
 
 // ============================================================================
 // Helpers
@@ -73,144 +65,6 @@ function convertRolesToFormRolesWithSalary(
       ? { type: r.salary.type as 'hourly' | 'daily' | 'monthly' | 'other', amount: r.salary.amount }
       : undefined,
   }));
-}
-
-// ============================================================================
-// Validation Functions
-// ============================================================================
-
-function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  if (!data.postingType) {
-    errors.postingType = '공고 타입을 선택해주세요';
-  }
-  if (!data.title?.trim()) {
-    errors.title = '제목을 입력해주세요';
-  } else if (data.title.trim().length < 2) {
-    errors.title = '제목은 최소 2자 이상 입력해주세요';
-  }
-  if (!data.location) {
-    errors.location = '근무지를 선택해주세요';
-  }
-
-  return errors;
-}
-
-function validateSchedule(data: JobPostingFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  // v2.0: dateSpecificRequirements 기반 검증
-  const hasDateRequirements =
-    data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0;
-
-  switch (data.postingType) {
-    case 'regular':
-    case 'urgent':
-    case 'tournament':
-      // v2.0: dateSpecificRequirements 기반 검증
-      if (hasDateRequirements) {
-        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
-        const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
-          return (
-            !req.timeSlots ||
-            req.timeSlots.length === 0 ||
-            req.timeSlots.some((slot) => !slot.roles || slot.roles.length === 0)
-          );
-        });
-        if (hasIncomplete) {
-          errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
-        }
-      } else {
-        // 하위호환성: 이전 필드 검증
-        if (!data.workDate) {
-          errors.workDate = '근무 날짜를 선택해주세요';
-        }
-        if (!data.startTime) {
-          errors.startTime = '출근 시간을 선택해주세요';
-        }
-      }
-      break;
-    case 'fixed':
-      // daysPerWeek: 0 = 협의, 1-7 = 일수 (모두 유효)
-      if (data.daysPerWeek === undefined || data.daysPerWeek < 0 || data.daysPerWeek > 7) {
-        errors.daysPerWeek = '주 출근일수를 선택해주세요';
-      }
-      // 출근 시간: 협의가 아닌 경우에만 필수
-      if (!data.isStartTimeNegotiable && !data.startTime) {
-        errors.startTime = '출근 시간을 선택해주세요';
-      }
-      break;
-  }
-
-  return errors;
-}
-
-function validateRoles(data: JobPostingFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  // fixed 타입만 RolesSection 사용 (다른 타입은 TimeSlot 내 역할 관리)
-  if (data.postingType === 'fixed') {
-    if (!data.roles || data.roles.length === 0) {
-      errors.roles = '최소 1개 이상의 역할을 추가해주세요';
-    } else {
-      const totalCount = data.roles.reduce((sum, r) => sum + r.count, 0);
-      if (totalCount === 0) {
-        errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
-      }
-      const hasEmptyName = data.roles.some((r) => r.isCustom && !r.name.trim());
-      if (hasEmptyName) {
-        errors.roles = '모든 역할의 이름을 입력해주세요';
-      }
-    }
-  }
-
-  return errors;
-}
-
-function validateSalary(data: JobPostingFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  // v2.0: roles[].salary 기반 검증
-  // 역할별 급여 검증 (한글 displayName으로 에러 표시)
-  const rolesWithoutSalary: string[] = [];
-
-  data.roles.forEach((role) => {
-    const staffRole = STAFF_ROLES.find((sr) => sr.name === role.name || sr.key === role.name);
-    const displayName = staffRole?.name || role.name;
-    const roleSalary = role.salary;
-
-    // 협의(other)가 아닌 경우 금액 필수
-    if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
-      rolesWithoutSalary.push(displayName);
-    }
-  });
-
-  if (rolesWithoutSalary.length > 0) {
-    errors.roleSalary = `${rolesWithoutSalary.join(', ')}의 급여를 입력해주세요`;
-  }
-
-  return errors;
-}
-
-function validatePreQuestions(data: JobPostingFormData): Record<string, string> {
-  const errors: Record<string, string> = {};
-
-  if (data.usesPreQuestions) {
-    const hasEmptyQuestion = data.preQuestions.some((q) => !q.question.trim());
-    if (hasEmptyQuestion) {
-      errors.preQuestions = '질문 내용을 입력해주세요';
-    }
-
-    const hasEmptyOption = data.preQuestions.some(
-      (q) => q.type === 'select' && q.options?.some((opt) => !opt.trim())
-    );
-    if (hasEmptyOption) {
-      errors.preQuestions = '선택지 내용을 입력해주세요';
-    }
-  }
-
-  return errors;
 }
 
 // ============================================================================
@@ -320,27 +174,25 @@ export default function EditJobPostingScreen() {
   const validateAll = useCallback((): boolean => {
     if (!formData) return false;
 
-    const newErrors: SectionErrors = {
-      basicInfo: validateBasicInfo(formData),
-      // 확정된 지원자가 있으면 일정/역할 검증 스킵
-      schedule: hasConfirmedApplicants ? {} : validateSchedule(formData),
-      roles: hasConfirmedApplicants ? {} : validateRoles(formData),
-      salary: validateSalary(formData),
-      preQuestions: validatePreQuestions(formData),
-    };
+    const skipSections: (keyof SectionErrors)[] = hasConfirmedApplicants
+      ? ['schedule', 'roles']
+      : [];
+
+    const newErrors = validateAllSections(formData, {
+      allowLegacyFallback: true,
+      skipSections,
+    });
 
     setErrors(newErrors);
 
     // 에러가 있는 첫 번째 섹션으로 스크롤
-    const sections = ['basicInfo', 'schedule', 'roles', 'salary', 'preQuestions'] as const;
-    for (const section of sections) {
-      if (Object.keys(newErrors[section]).length > 0) {
-        const position = sectionPositions.current[section];
-        if (position !== undefined && scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ y: position - 20, animated: true });
-        }
-        return false;
+    const firstError = getFirstErrorSection(newErrors);
+    if (firstError) {
+      const position = sectionPositions.current[firstError];
+      if (position !== undefined && scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: position - 20, animated: true });
       }
+      return false;
     }
 
     return true;

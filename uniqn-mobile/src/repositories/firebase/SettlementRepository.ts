@@ -15,6 +15,7 @@
  */
 
 import {
+  arrayUnion,
   doc,
   runTransaction,
   serverTimestamp,
@@ -526,6 +527,57 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         operation: '정산 상태 변경',
         component: 'SettlementRepository',
         context: { workLogId, status, ownerId },
+      });
+    }
+  }
+
+  // ==========================================================================
+  // Custom Settlement Settings (WorkLog)
+  // ==========================================================================
+
+  async updateWorkLogCustomSettlement(
+    workLogId: string,
+    data: {
+      customSalaryInfo: { type: string; amount: number };
+      customAllowances?: Record<string, unknown>;
+      customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+      modificationEntry: Record<string, unknown>;
+    },
+    ownerId: string
+  ): Promise<void> {
+    try {
+      logger.info('개인 정산 설정 저장 시작', { workLogId, ownerId });
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const { workLogRef } = await this.validateWorkLogOwnership(
+          transaction,
+          workLogId,
+          ownerId,
+          '정산 설정 수정'
+        );
+
+        const updateData: Record<string, unknown> = {
+          customSalaryInfo: data.customSalaryInfo,
+          customAllowances: data.customAllowances,
+          customTaxSettings: data.customTaxSettings,
+          updatedAt: serverTimestamp(),
+        };
+
+        updateData.settlementModificationHistory = arrayUnion(data.modificationEntry);
+
+        transaction.update(workLogRef, updateData);
+      });
+
+      logger.info('개인 정산 설정 저장 완료', { workLogId });
+    } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
+
+      throw handleServiceError(error, {
+        operation: '개인 정산 설정 저장',
+        component: 'SettlementRepository',
+        context: { workLogId, ownerId },
       });
     }
   }

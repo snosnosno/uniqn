@@ -10,93 +10,18 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeftIcon, ShareIcon } from '@/components/icons';
-import { JobDetail } from '@/components/jobs';
+import { JobDetail, JobDetailHeader } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
-import { Loading } from '@/components/ui';
+import { Loading, ErrorState } from '@/components/ui';
 import { useJobDetail, useApplications, useAuth, useShare } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/observability';
-
-// ============================================================================
-// Custom Header Component
-// ============================================================================
-
-interface CustomHeaderProps {
-  title?: string;
-  onShare?: () => void;
-  isSharing?: boolean;
-}
-
-function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
-  const { isDarkMode } = useThemeStore();
-
-  return (
-    <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-surface-overlay">
-      <Pressable
-        onPress={() => router.back()}
-        className="p-2 -ml-2 mr-2"
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <ChevronLeftIcon size={24} color={isDarkMode ? '#ffffff' : '#1A1625'} />
-      </Pressable>
-      <Text className="text-base font-semibold text-gray-900 dark:text-white">공고 상세</Text>
-      {title && (
-        <>
-          <Text className="mx-2 text-gray-400 dark:text-gray-500">|</Text>
-          <Text className="flex-1 text-base text-gray-600 dark:text-gray-400" numberOfLines={1}>
-            {title}
-          </Text>
-        </>
-      )}
-      {/* 공유 버튼 */}
-      {onShare && (
-        <Pressable
-          onPress={onShare}
-          disabled={isSharing}
-          className="p-2 -mr-2 ml-2"
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          accessibilityLabel="공고 공유하기"
-          accessibilityRole="button"
-        >
-          <ShareIcon size={22} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
-        </Pressable>
-      )}
-    </View>
-  );
-}
-
-// ============================================================================
-// Loading Component
-// ============================================================================
-
-function LoadingState() {
-  return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
-}
-
-// ============================================================================
-// Error Component
-// ============================================================================
-
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
-      <Text className="text-4xl mb-4">😢</Text>
-      <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        오류가 발생했습니다
-      </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{message}</Text>
-      <Button onPress={onRetry} variant="outline">
-        다시 시도
-      </Button>
-    </View>
-  );
-}
+import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
 
 // ============================================================================
 // Screen Component
@@ -151,8 +76,8 @@ export default function AuthenticatedJobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <CustomHeader />
-        <LoadingState />
+        <JobDetailHeader />
+        <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
   }
@@ -161,7 +86,7 @@ export default function AuthenticatedJobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <CustomHeader />
+        <JobDetailHeader />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
       </SafeAreaView>
     );
@@ -171,25 +96,6 @@ export default function AuthenticatedJobDetailScreen() {
   const alreadyApplied = hasApplied(job.id);
   const applicationStatus = getApplicationStatus(job.id);
 
-  // 지원 상태별 메시지
-  const getStatusMessage = () => {
-    if (!applicationStatus) return null;
-
-    switch (applicationStatus.status) {
-      case STATUS.APPLICATION.APPLIED:
-      case STATUS.APPLICATION.PENDING:
-        return '지원 완료 - 검토 중';
-      case STATUS.APPLICATION.CONFIRMED:
-        return '지원 승인됨';
-      case STATUS.APPLICATION.REJECTED:
-        return '지원이 거절되었습니다';
-      case STATUS.APPLICATION.CANCELLED:
-        return '지원이 취소되었습니다';
-      default:
-        return null;
-    }
-  };
-
   // 취소 요청 가능 여부 (확정된 지원만)
   const canRequestCancel =
     applicationStatus?.status === STATUS.APPLICATION.CONFIRMED &&
@@ -198,7 +104,7 @@ export default function AuthenticatedJobDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <CustomHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+      <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
 
       <ScrollView
         className="flex-1"
@@ -221,7 +127,7 @@ export default function AuthenticatedJobDetailScreen() {
           {alreadyApplied ? (
             <View className="items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {getStatusMessage()}
+                {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
               <View className="flex-row w-full">
                 <View className="flex-1 mr-2">

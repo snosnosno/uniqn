@@ -221,6 +221,29 @@ export interface IJobPostingRepository {
   ): Promise<number>;
 
   // ==========================================================================
+  // Settlement Settings
+  // ==========================================================================
+
+  /**
+   * 정산 설정 업데이트
+   *
+   * @description 공고의 역할별 급여, 수당, 세금 설정 저장 (트랜잭션)
+   * - 소유권 검증
+   *
+   * @throws BusinessError 공고를 찾을 수 없는 경우
+   * @throws PermissionError 소유권이 없는 경우
+   */
+  updateSettlementSettings(
+    jobPostingId: string,
+    data: {
+      roles: Record<string, unknown>[];
+      allowances: Record<string, unknown>;
+      taxSettings: { type: string; value: number; taxableItems?: string[] };
+    },
+    ownerId: string
+  ): Promise<void>;
+
+  // ==========================================================================
   // 대회공고 (Tournament)
   // ==========================================================================
 

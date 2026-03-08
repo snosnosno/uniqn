@@ -461,6 +461,66 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
   }
 }
 
+export async function updateSettlementSettings(
+  jobPostingId: string,
+  data: {
+    roles: Record<string, unknown>[];
+    allowances: Record<string, unknown>;
+    taxSettings: { type: string; value: number; taxableItems?: string[] };
+  },
+  ownerId: string
+): Promise<void> {
+  try {
+    logger.info('정산 설정 저장', { jobPostingId, ownerId });
+
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
+      }
+
+      const currentData = parseJobPostingDocument({
+        id: jobDoc.id,
+        ...jobDoc.data(),
+      });
+      if (!currentData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
+
+      if (currentData.ownerId !== ownerId) {
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 수정할 수 있습니다',
+        });
+      }
+
+      transaction.update(jobRef, {
+        roles: data.roles,
+        allowances: data.allowances,
+        taxSettings: data.taxSettings,
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    logger.info('정산 설정 저장 완료', { jobPostingId });
+  } catch (error) {
+    if (isAppError(error)) {
+      throw error;
+    }
+    logger.error('정산 설정 저장 실패', toError(error), { jobPostingId });
+    throw handleServiceError(error, {
+      operation: '정산 설정 저장',
+      component: 'JobPostingRepository',
+      context: { jobPostingId, ownerId },
+    });
+  }
+}
+
 export async function getStatsByOwnerId(ownerId: string): Promise<JobPostingStats> {
   try {
     logger.info('소유자별 공고 통계 조회', { ownerId });

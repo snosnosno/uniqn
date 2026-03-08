@@ -24,6 +24,7 @@ import {
   reopenWithTransaction,
   getStatsByOwnerId,
   bulkUpdateStatus,
+  updateSettlementSettings,
 } from './jobPostingTransactions';
 
 import {
@@ -62,6 +63,9 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
   reopenWithTransaction = reopenWithTransaction;
   getStatsByOwnerId = getStatsByOwnerId;
   bulkUpdateStatus = bulkUpdateStatus;
+
+  // Settlement Settings
+  updateSettlementSettings = updateSettlementSettings;
 
   // Utility
   verifyOwnership = verifyOwnership;

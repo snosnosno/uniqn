@@ -163,9 +163,10 @@ describe('validateDateCount', () => {
     expect(validateDateCount('tournament', 31)).toBe(false);
   });
 
-  it('fixed 타입은 false를 반환한다', () => {
-    expect(validateDateCount('fixed', 0)).toBe(false);
-    expect(validateDateCount('fixed', 1)).toBe(false);
+  it('fixed 타입은 날짜 수와 무관하게 true를 반환한다', () => {
+    expect(validateDateCount('fixed', 0)).toBe(true);
+    expect(validateDateCount('fixed', 1)).toBe(true);
+    expect(validateDateCount('fixed', 10)).toBe(true);
   });
 });
 

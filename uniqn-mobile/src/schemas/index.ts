@@ -103,7 +103,6 @@ export type {
 export {
   applicationStatusSchema,
   staffRoleSchema,
-  applicationMessageSchema as createApplicationMessageSchema,
   applicationFilterSchema,
   confirmApplicationSchema,
   rejectApplicationSchema,

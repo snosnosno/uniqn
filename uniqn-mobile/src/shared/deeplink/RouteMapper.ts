@@ -75,6 +75,14 @@ export class RouteMapper {
       case 'employer/settlement':
         return EXPO_ROUTES.postingSettlements.replace('[id]', route.params.jobId);
 
+      // === 리뷰/평가 라우트 ===
+      // TODO: 리뷰 페이지 구현 시 실제 경로로 교체 필요
+      case 'reviews/detail':
+        return EXPO_ROUTES.reviewDetail;
+
+      case 'reviews/pending':
+        return EXPO_ROUTES.reviewsPending;
+
       // === 관리자 라우트 ===
       case 'admin/dashboard':
         return EXPO_ROUTES.adminDashboard;
@@ -120,6 +128,7 @@ export class RouteMapper {
   static getRequiredRole(routeName: DeepLinkRoute['name']): UserRole | null {
     if (routeName.startsWith('employer/')) return 'employer';
     if (routeName.startsWith('admin/')) return 'admin';
+    // 리뷰 라우트는 인증만 필요 (특정 역할 불필요)
     return null;
   }
 

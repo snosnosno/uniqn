@@ -64,6 +64,7 @@ export {
   reopenJobPosting,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
+  updateJobPostingSettlementSettings,
   type CreateJobPostingResult,
   type JobPostingStats,
 } from './jobManagementService';

@@ -7,7 +7,7 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { RoleResolver } from '@/shared/role';
-import { formatCurrency } from '@/utils/salary';
+import { formatNumber } from '@/utils/salary';
 import { SALARY_TYPES } from './constants';
 import type { RoleSalaryInputProps } from './types';
 
@@ -95,7 +95,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
             placeholder="0"
             placeholderTextColor="#9CA3AF"
             value={
-              roleSalary?.amount && roleSalary.amount > 0 ? formatCurrency(roleSalary.amount) : ''
+              roleSalary?.amount && roleSalary.amount > 0 ? formatNumber(roleSalary.amount) : ''
             }
             onChangeText={(v) => onSalaryAmountChange(index, v)}
             keyboardType="numeric"

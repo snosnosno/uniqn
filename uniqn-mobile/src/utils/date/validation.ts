@@ -61,7 +61,8 @@ export function validateDateCount(
   if (postingType === 'tournament') {
     return count >= 1 && count <= 30;
   }
-  return false;
+  // fixed 타입은 날짜 기반이 아니므로 날짜 수 검증을 건너뜀
+  return true;
 }
 
 /**

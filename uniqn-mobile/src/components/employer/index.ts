@@ -85,3 +85,7 @@ export type { ReportModalProps } from './ReportModal';
 
 // 스태프 프로필
 export { StaffProfileModal } from './applicants/StaffProfileModal';
+
+// 공고 카드/뷰
+export { JobPostingCard, type JobPostingCardProps } from './posting/JobPostingCard';
+export { NonEmployerView } from './posting/NonEmployerView';

@@ -2,7 +2,7 @@
  * costCalculator 테스트
  *
  * @description 급여 비용 계산 유틸리티 테스트
- * - formatCurrency: 숫자 → 통화 포맷
+ * - formatNumber: 숫자 → 통화 포맷
  * - parseCurrency: 통화 문자열 → 숫자
  * - calculateEstimatedCost: 1일 기준 예상 비용
  * - calculateTotalSalary: 급여 총합 (시간 환산 없이)
@@ -10,7 +10,7 @@
  */
 
 import {
-  formatCurrency,
+  formatNumber,
   parseCurrency,
   calculateEstimatedCost,
   calculateTotalSalary,
@@ -19,28 +19,28 @@ import {
 import type { FormRoleWithCount } from '@/types';
 
 // ============================================================================
-// formatCurrency
+// formatNumber
 // ============================================================================
 
-describe('formatCurrency', () => {
+describe('formatNumber', () => {
   it('1000 단위로 쉼표를 추가한다', () => {
-    expect(formatCurrency(15000)).toBe('15,000');
+    expect(formatNumber(15000)).toBe('15,000');
   });
 
   it('0을 포맷한다', () => {
-    expect(formatCurrency(0)).toBe('0');
+    expect(formatNumber(0)).toBe('0');
   });
 
   it('큰 숫자를 올바르게 포맷한다', () => {
-    expect(formatCurrency(1234567890)).toBe('1,234,567,890');
+    expect(formatNumber(1234567890)).toBe('1,234,567,890');
   });
 
   it('1000 미만 숫자는 쉼표 없이 반환한다', () => {
-    expect(formatCurrency(999)).toBe('999');
+    expect(formatNumber(999)).toBe('999');
   });
 
   it('음수도 포맷한다', () => {
-    const result = formatCurrency(-15000);
+    const result = formatNumber(-15000);
     expect(result).toBe('-15,000');
   });
 });

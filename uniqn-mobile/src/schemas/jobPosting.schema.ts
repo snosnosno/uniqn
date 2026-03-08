@@ -189,16 +189,9 @@ export const jobFilterSchema = z.object({
 
 export type JobFilterData = z.infer<typeof jobFilterSchema>;
 
-/**
- * 지원 메시지 스키마
- */
-export const applicationMessageSchema = z
-  .string()
-  .max(200, { message: '메시지는 200자를 초과할 수 없습니다' })
-  .refine(xssValidation, {
-    message: '위험한 문자열이 포함되어 있습니다',
-  })
-  .optional();
+// applicationMessageSchema는 application.schema.ts에서 정의됨
+// 하위 호환성을 위해 re-export
+export { applicationMessageSchema } from './application.schema';
 
 // ============================================================================
 // Firestore 문서 검증 스키마 (런타임 타입 검증)

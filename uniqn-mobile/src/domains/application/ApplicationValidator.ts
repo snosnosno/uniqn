@@ -282,16 +282,24 @@ export class ApplicationValidator {
       });
     }
 
-    // 4. 역할별 정원 확인 (첫 번째 Assignment의 첫 번째 역할)
-    const firstAssignmentRole = assignments[0]?.roleIds?.[0];
-    if (firstAssignmentRole) {
-      const roleCapacity = this.checkRoleCapacity(jobData, firstAssignmentRole);
-      if (!roleCapacity.available) {
-        errors.push({
-          code: 'ROLE_CAPACITY_REACHED',
-          message: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',
-          field: 'assignments[0].roleIds[0]',
-        });
+    // 4. 역할별 정원 확인 (모든 Assignment의 모든 roleId)
+    for (let i = 0; i < assignments.length; i++) {
+      const roleIds = assignments[i]?.roleIds;
+      if (!roleIds?.length) continue;
+
+      for (let j = 0; j < roleIds.length; j++) {
+        const roleId = roleIds[j];
+        if (!roleId) continue;
+
+        const roleCapacity = this.checkRoleCapacity(jobData, roleId);
+        if (!roleCapacity.available) {
+          errors.push({
+            code: 'ROLE_CAPACITY_REACHED',
+            message: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',
+            field: `assignments[${i}].roleIds[${j}]`,
+          });
+          break; // 같은 assignment 내 다른 역할도 이미 마감이면 첫 번째만 보고
+        }
       }
     }
 

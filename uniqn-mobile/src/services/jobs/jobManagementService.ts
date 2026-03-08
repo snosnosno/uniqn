@@ -570,3 +570,32 @@ export async function bulkUpdateJobPostingStatus(
     });
   }
 }
+
+/**
+ * 공고 정산 설정 업데이트
+ *
+ * @description 역할별 급여, 수당, 세금 설정 저장 (Repository 패턴 사용)
+ */
+export async function updateJobPostingSettlementSettings(
+  jobPostingId: string,
+  data: {
+    roles: Record<string, unknown>[];
+    allowances: Record<string, unknown>;
+    taxSettings: { type: string; value: number; taxableItems?: string[] };
+  },
+  ownerId: string
+): Promise<void> {
+  try {
+    logger.info('공고 정산 설정 저장 시작', { jobPostingId, ownerId });
+
+    await jobPostingRepository.updateSettlementSettings(jobPostingId, data, ownerId);
+
+    logger.info('공고 정산 설정 저장 완료', { jobPostingId });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '공고 정산 설정 저장',
+      component: 'jobManagementService',
+      context: { jobPostingId, ownerId },
+    });
+  }
+}

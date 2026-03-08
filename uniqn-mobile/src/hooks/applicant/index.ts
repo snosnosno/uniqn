@@ -10,6 +10,7 @@
  * - import { useApplicantManagement } from '@/hooks'
  */
 
+import { useCallback, useMemo } from 'react';
 import type { ApplicantWithDetails } from '@/services';
 import { STATUS } from '@/constants';
 
@@ -116,70 +117,85 @@ export function useApplicantManagement(
   const batchConvertToStaffMutation = useBatchConvertToStaff();
 
   // 지원자 목록 추출 (ApplicantListResult에서 applicants 배열 추출)
-  const applicants = applicantsQuery.data?.applicants ?? [];
+  const applicants = useMemo(
+    () => applicantsQuery.data?.applicants ?? [],
+    [applicantsQuery.data?.applicants]
+  );
 
   // 지원자 필터링 헬퍼
-  const filterApplicants = (filters: ApplicantFilters): ApplicantWithDetails[] => {
-    let result = [...applicants];
+  const filterApplicants = useCallback(
+    (filters: ApplicantFilters): ApplicantWithDetails[] => {
+      let result = [...applicants];
 
-    if (filters.status) {
-      result = result.filter((a) => a.status === filters.status);
-    }
+      if (filters.status) {
+        result = result.filter((a) => a.status === filters.status);
+      }
 
-    if (filters.role) {
-      // 역할 필터링: assignments 기반 (appliedRole 제거됨)
-      result = result.filter((a) => {
-        const primaryRole = getPrimaryRoleId(a.assignments);
-        // 표준 역할 매칭
-        if (primaryRole === filters.role) return true;
-        // 커스텀 역할 매칭: primaryRole이 'other'이고 customRole이 filters.role과 일치
-        if (primaryRole === 'other' && a.customRole === filters.role) return true;
-        return false;
-      });
-    }
+      if (filters.role) {
+        // 역할 필터링: assignments 기반 (appliedRole 제거됨)
+        result = result.filter((a) => {
+          const primaryRole = getPrimaryRoleId(a.assignments);
+          // 표준 역할 매칭
+          if (primaryRole === filters.role) return true;
+          // 커스텀 역할 매칭: primaryRole이 'other'이고 customRole이 filters.role과 일치
+          if (primaryRole === 'other' && a.customRole === filters.role) return true;
+          return false;
+        });
+      }
 
-    if (filters.sortBy) {
-      result = result.sort((a, b) => {
-        let comparison = 0;
-        switch (filters.sortBy) {
-          case 'appliedAt': {
-            const aTime = a.createdAt
-              ? (typeof a.createdAt === 'string'
-                  ? new Date(a.createdAt)
-                  : a.createdAt instanceof Date
-                    ? a.createdAt
-                    : a.createdAt.toDate()
-                ).getTime()
-              : 0;
-            const bTime = b.createdAt
-              ? (typeof b.createdAt === 'string'
-                  ? new Date(b.createdAt)
-                  : b.createdAt instanceof Date
-                    ? b.createdAt
-                    : b.createdAt.toDate()
-                ).getTime()
-              : 0;
-            comparison = aTime - bTime;
-            break;
+      if (filters.sortBy) {
+        result = result.sort((a, b) => {
+          let comparison = 0;
+          switch (filters.sortBy) {
+            case 'appliedAt': {
+              const aTime = a.createdAt
+                ? (typeof a.createdAt === 'string'
+                    ? new Date(a.createdAt)
+                    : a.createdAt instanceof Date
+                      ? a.createdAt
+                      : a.createdAt.toDate()
+                  ).getTime()
+                : 0;
+              const bTime = b.createdAt
+                ? (typeof b.createdAt === 'string'
+                    ? new Date(b.createdAt)
+                    : b.createdAt instanceof Date
+                      ? b.createdAt
+                      : b.createdAt.toDate()
+                  ).getTime()
+                : 0;
+              comparison = aTime - bTime;
+              break;
+            }
+            case 'name':
+              comparison = (a.applicantName || '').localeCompare(b.applicantName || '');
+              break;
+            case 'status':
+              comparison = (a.status || '').localeCompare(b.status || '');
+              break;
           }
-          case 'name':
-            comparison = (a.applicantName || '').localeCompare(b.applicantName || '');
-            break;
-          case 'status':
-            comparison = (a.status || '').localeCompare(b.status || '');
-            break;
-        }
-        return filters.sortOrder === 'desc' ? -comparison : comparison;
-      });
+          return filters.sortOrder === 'desc' ? -comparison : comparison;
+        });
+      }
+
+      return result;
+    },
+    [applicants]
+  );
+
+  // 상태별 지원자 수 (메모이제이션)
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const a of applicants) {
+      counts[a.status] = (counts[a.status] || 0) + 1;
     }
+    return counts;
+  }, [applicants]);
 
-    return result;
-  };
-
-  // 상태별 지원자 수
-  const countByStatus = (status: string): number => {
-    return applicants.filter((a) => a.status === status).length;
-  };
+  const countByStatus = useCallback(
+    (status: string): number => statusCounts[status] || 0,
+    [statusCounts]
+  );
 
   return {
     // 지원자 목록

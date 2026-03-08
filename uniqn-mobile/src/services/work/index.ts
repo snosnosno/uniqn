@@ -104,4 +104,5 @@ export {
   type JobPostingSettlementSummary,
   type UpdateWorkTimeInput,
   type SettlementFilters,
+  updateWorkLogCustomSettlement,
 } from './settlement';

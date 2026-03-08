@@ -80,6 +80,11 @@ export const EXPO_ROUTES = {
   adminStats: '/(admin)/stats',
   adminSettings: '/(admin)/settings',
 
+  // === 리뷰 (app) - 인증 필요 ===
+  // TODO: 리뷰 페이지 구현 시 실제 경로로 교체 필요
+  reviewDetail: '/(app)/(tabs)/schedule',
+  reviewsPending: '/(app)/(tabs)/schedule',
+
   // === 공개 (public) ===
   publicJobs: '/(public)/jobs',
   publicJobDetail: '/(public)/jobs/[id]',
@@ -117,6 +122,8 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingApplicants',
   'postingSettlements',
   'postingCancellationRequests',
+  'reviewDetail',
+  'reviewsPending',
 ];
 
 /**

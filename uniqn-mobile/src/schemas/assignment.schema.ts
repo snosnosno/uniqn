@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { xssValidation } from '@/utils/security';
 import { VALID_STAFF_ROLES } from '@/types/role';
 
 /**
@@ -82,7 +83,10 @@ export const assignmentSchema = z.object({
   /** 시간 미정 여부 */
   isTimeToBeAnnounced: z.boolean().optional(),
   /** 미정 사유 */
-  tentativeDescription: z.string().optional(),
+  tentativeDescription: z
+    .string()
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type AssignmentFormData = z.infer<typeof assignmentSchema>;
@@ -102,7 +106,11 @@ export type AssignmentsArrayData = z.infer<typeof assignmentsArraySchema>;
 export const createApplicationV2Schema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
   assignments: assignmentsArraySchema,
-  message: z.string().max(200, { message: '메시지는 200자를 초과할 수 없습니다' }).optional(),
+  message: z
+    .string()
+    .max(200, { message: '메시지는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type CreateApplicationV2FormData = z.infer<typeof createApplicationV2Schema>;
@@ -114,7 +122,11 @@ export const confirmApplicationV2Schema = z.object({
   applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
   /** 확정할 assignments (미지정 시 전체 확정) */
   selectedAssignments: assignmentsArraySchema.optional(),
-  notes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' }).optional(),
+  notes: z
+    .string()
+    .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type ConfirmApplicationV2Data = z.infer<typeof confirmApplicationV2Schema>;
@@ -127,6 +139,7 @@ export const cancelConfirmationSchema = z.object({
   cancelReason: z
     .string()
     .max(200, { message: '취소 사유는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
 });
 

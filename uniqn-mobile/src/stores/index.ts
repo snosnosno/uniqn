@@ -72,11 +72,3 @@ export {
 } from './bookmarkStore';
 export type { BookmarkedJob } from './bookmarkStore';
 
-// Tab Filters Store
-export {
-  useTabFiltersStore,
-  useJobFilters,
-  useEmployerFilters,
-  useScheduleFilters,
-} from './tabFiltersStore';
-export type { JobTabFilters, EmployerTabFilters, ScheduleTabFilters } from './tabFiltersStore';

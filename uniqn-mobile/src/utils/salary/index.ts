@@ -10,7 +10,7 @@ export type { ExtractedRole } from './roleExtractor';
 
 // Cost Calculator
 export {
-  formatCurrency,
+  formatNumber,
   parseCurrency,
   calculateEstimatedCost,
   calculateTotalSalary,

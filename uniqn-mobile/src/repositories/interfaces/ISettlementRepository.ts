@@ -157,4 +157,29 @@ export interface ISettlementRepository {
     status: PayrollStatus,
     ownerId: string
   ): Promise<void>;
+
+  // ==========================================================================
+  // Custom Settlement Settings
+  // ==========================================================================
+
+  /**
+   * WorkLog 개인 정산 설정 수정
+   *
+   * @description 개별 근무 기록의 커스텀 급여/수당/세금 설정 저장 (트랜잭션)
+   * - 소유권 검증
+   * - 수정 이력 기록 (arrayUnion)
+   *
+   * @throws BusinessError 근무 기록/공고를 찾을 수 없는 경우
+   * @throws PermissionError 소유권이 없는 경우
+   */
+  updateWorkLogCustomSettlement(
+    workLogId: string,
+    data: {
+      customSalaryInfo: { type: string; amount: number };
+      customAllowances?: Record<string, unknown>;
+      customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+      modificationEntry: Record<string, unknown>;
+    },
+    ownerId: string
+  ): Promise<void>;
 }

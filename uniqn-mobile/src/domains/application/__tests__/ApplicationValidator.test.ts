@@ -522,6 +522,34 @@ describe('ApplicationValidator', () => {
       expect(result.errors.some((e) => e.code === 'ROLE_CAPACITY_REACHED')).toBe(true);
     });
 
+    it('여러 assignment의 모든 roleId에 대해 정원을 검증한다', () => {
+      const jobData = createJobPosting({
+        status: 'active',
+        dateSpecificRequirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [
+              {
+                roles: [
+                  { role: 'dealer', headcount: 3, filled: 1 },
+                  { role: 'floor', headcount: 2, filled: 2 },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      const assignments = [
+        createAssignment({ roleIds: ['dealer'] }),
+        createAssignment({ roleIds: ['floor'] }),
+      ];
+
+      const result = validator.validateApplication(jobData, assignments);
+      expect(result.errors.some((e) => e.code === 'ROLE_CAPACITY_REACHED')).toBe(true);
+      const roleErr = result.errors.find((e) => e.code === 'ROLE_CAPACITY_REACHED');
+      expect(roleErr?.field).toBe('assignments[1].roleIds[0]');
+    });
+
     it('사전질문 미답변 시 MISSING_PRE_QUESTION_ANSWERS 에러', () => {
       const jobData = createJobPosting({
         status: 'active',

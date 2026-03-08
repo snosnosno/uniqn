@@ -127,6 +127,32 @@ export async function bulkSettlement(
 }
 
 // ============================================================================
+// Custom Settlement Settings (WorkLog)
+// ============================================================================
+
+/**
+ * WorkLog 개인 정산 설정 수정
+ *
+ * @description 개별 근무 기록의 커스텀 급여/수당/세금 설정 저장
+ */
+export async function updateWorkLogCustomSettlement(
+  workLogId: string,
+  data: {
+    customSalaryInfo: { type: string; amount: number };
+    customAllowances?: Record<string, unknown>;
+    customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+    modificationEntry: Record<string, unknown>;
+  },
+  ownerId: string
+): Promise<void> {
+  logger.info('개인 정산 설정 저장 시작', { workLogId, ownerId });
+
+  await settlementRepository.updateWorkLogCustomSettlement(workLogId, data, ownerId);
+
+  logger.info('개인 정산 설정 저장 완료', { workLogId });
+}
+
+// ============================================================================
 // Status Update
 // ============================================================================
 

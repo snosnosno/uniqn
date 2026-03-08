@@ -9,7 +9,7 @@ import { View, Text, Switch, TextInput } from 'react-native';
 import { Card } from '@/components';
 import { GiftIcon } from '@/components/icons';
 import { PROVIDED_FLAG } from '@/utils/settlement';
-import { formatCurrency } from '@/utils/salary';
+import { formatNumber } from '@/utils/salary';
 import { ALLOWANCE_TYPES } from './constants';
 import type { AllowanceInputProps } from './types';
 
@@ -106,7 +106,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                   <TextInput
                     placeholder={allowance.placeholder}
                     placeholderTextColor="#9CA3AF"
-                    value={value && value > 0 ? formatCurrency(value) : ''}
+                    value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
                     className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"

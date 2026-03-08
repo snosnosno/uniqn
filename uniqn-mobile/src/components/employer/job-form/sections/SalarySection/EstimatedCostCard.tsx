@@ -6,7 +6,7 @@
 
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
-import { formatCurrency } from '@/utils/salary';
+import { formatNumber } from '@/utils/salary';
 import type { EstimatedCostCardProps } from './types';
 
 /**
@@ -32,7 +32,7 @@ export const EstimatedCostCard = memo(function EstimatedCostCard({
         예상 총 인건비 (1일 기준)
       </Text>
       <Text className="text-2xl font-bold text-primary-900 dark:text-primary-100">
-        {formatCurrency(estimatedCost)}원
+        {formatNumber(estimatedCost)}원
       </Text>
       <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1">
         {totalCount}명 기준 (시급은 8시간 환산)

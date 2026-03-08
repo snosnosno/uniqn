@@ -28,7 +28,6 @@ import {
   cancelWithTransaction,
   requestCancellationWithTransaction,
   reviewCancellationWithTransaction,
-  confirmWithTransaction,
   rejectWithTransaction,
   markAsRead,
 } from './applicationTransactions';
@@ -72,7 +71,6 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
   cancelWithTransaction = cancelWithTransaction;
   requestCancellationWithTransaction = requestCancellationWithTransaction;
   reviewCancellationWithTransaction = reviewCancellationWithTransaction;
-  confirmWithTransaction = confirmWithTransaction;
   rejectWithTransaction = rejectWithTransaction;
   markAsRead = markAsRead;
 

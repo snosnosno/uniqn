@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
@@ -329,17 +330,8 @@ export default function MyPostingsPage() {
       </View>
 
       {/* 목록 */}
-      <ScrollView
-        className="flex-1 px-4"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={() => refetch()}
-            tintColor="#A855F7"
-          />
-        }
-      >
-        {filteredPostings.length === 0 ? (
+      {filteredPostings.length === 0 ? (
+        <View className="flex-1 px-4">
           <EmptyState
             title={
               selectedFilter === 'all'
@@ -359,17 +351,27 @@ export default function MyPostingsPage() {
             actionLabel={selectedFilter === 'all' ? '새 공고 작성' : undefined}
             onAction={selectedFilter === 'all' ? handleCreatePress : undefined}
           />
-        ) : (
-          filteredPostings.map((posting) => (
-            <PostingCard
-              key={posting.id}
-              posting={posting}
-              onPress={() => handlePostingPress(posting.id)}
+        </View>
+      ) : (
+        <FlashList
+          data={filteredPostings}
+          renderItem={({ item }) => (
+            <PostingCard posting={item} onPress={() => handlePostingPress(item.id)} />
+          )}
+          keyExtractor={(item) => item.id}
+          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+          estimatedItemSize={200}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => refetch()}
+              tintColor="#A855F7"
             />
-          ))
-        )}
-        <View className="h-8" />
-      </ScrollView>
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }

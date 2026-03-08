@@ -414,13 +414,13 @@ export function ApplicationForm({
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={4}
-            maxLength={500}
+            maxLength={200}
             editable={!isSubmitting}
             className="bg-gray-50 dark:bg-surface rounded-lg p-4 text-gray-900 dark:text-white text-base min-h-[120px]"
             textAlignVertical="top"
           />
           <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
-            {message.length}/500
+            {message.length}/200
           </Text>
         </View>
 

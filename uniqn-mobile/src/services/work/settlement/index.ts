@@ -57,6 +57,7 @@ export {
   settleWorkLog,
   bulkSettlement,
   updateSettlementStatus,
+  updateWorkLogCustomSettlement,
 } from './settlementMutation';
 
 // ============================================================================

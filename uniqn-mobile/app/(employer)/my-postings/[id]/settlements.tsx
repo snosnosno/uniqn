@@ -10,7 +10,12 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { doc, updateDoc, serverTimestamp, arrayUnion, getFirebaseDb } from '@/lib/firebase';
+import {
+  updateWorkLogCustomSettlement,
+  updateJobPostingSettlementSettings,
+  reportService,
+  markAsNoShow,
+} from '@/services';
 import {
   SettlementList,
   WorkTimeEditor,
@@ -29,8 +34,9 @@ import { Loading, ErrorState } from '@/components';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { useSettlementModals } from '@/hooks/useSettlementModals';
 import { useToastStore } from '@/stores/toastStore';
-import { reportService, markAsNoShow } from '@/services';
+import { useThemeStore } from '@/stores/themeStore';
 import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
@@ -43,22 +49,13 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import type {
-  WorkLog,
-  Allowances,
-  ConfirmedStaff,
-  CreateReportInput,
-  GroupedSettlement,
-} from '@/types';
+import type { WorkLog, Allowances, CreateReportInput } from '@/types';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 type TabType = 'staff' | 'settlement';
-
-/** SheetModal 닫기 애니메이션(250ms) + 여유(50ms) 후 다음 모달 열기 */
-const MODAL_TRANSITION_DELAY_MS = 300;
 
 // ============================================================================
 // Types
@@ -121,6 +118,11 @@ interface TabHeaderProps {
 }
 
 function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
+  const { isDarkMode } = useThemeStore();
+  const inactiveColor = isDarkMode ? '#9CA3AF' : '#6B7280';
+  const activeBadgeBg = isDarkMode ? '#312E81' : '#EEF2FF';
+  const inactiveBadgeBg = isDarkMode ? '#374151' : '#F3F4F6';
+
   return (
     <View className="flex-row bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
       <Pressable
@@ -131,11 +133,11 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           borderBottomColor: '#4F46E5',
         }}
       >
-        <UsersIcon size={20} color={activeTab === 'staff' ? '#9333EA' : '#6B7280'} />
+        <UsersIcon size={20} color={activeTab === 'staff' ? '#9333EA' : inactiveColor} />
         <Text
           className="ml-2 text-base font-medium"
           style={{
-            color: activeTab === 'staff' ? '#4F46E5' : '#6B7280',
+            color: activeTab === 'staff' ? '#4F46E5' : inactiveColor,
           }}
         >
           스태프 관리
@@ -144,13 +146,13 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           <View
             className="ml-2 px-2 py-0.5 rounded-full"
             style={{
-              backgroundColor: activeTab === 'staff' ? '#EEF2FF' : '#F3F4F6',
+              backgroundColor: activeTab === 'staff' ? activeBadgeBg : inactiveBadgeBg,
             }}
           >
             <Text
               className="text-xs font-medium"
               style={{
-                color: activeTab === 'staff' ? '#4F46E5' : '#6B7280',
+                color: activeTab === 'staff' ? '#4F46E5' : inactiveColor,
               }}
             >
               {staffCount}
@@ -167,11 +169,11 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           borderBottomColor: '#4F46E5',
         }}
       >
-        <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#9333EA' : '#6B7280'} />
+        <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#9333EA' : inactiveColor} />
         <Text
           className="ml-2 text-base font-medium"
           style={{
-            color: activeTab === 'settlement' ? '#4F46E5' : '#6B7280',
+            color: activeTab === 'settlement' ? '#4F46E5' : inactiveColor,
           }}
         >
           정산
@@ -180,13 +182,13 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           <View
             className="ml-2 px-2 py-0.5 rounded-full"
             style={{
-              backgroundColor: activeTab === 'settlement' ? '#EEF2FF' : '#F3F4F6',
+              backgroundColor: activeTab === 'settlement' ? activeBadgeBg : inactiveBadgeBg,
             }}
           >
             <Text
               className="text-xs font-medium"
               style={{
-                color: activeTab === 'settlement' ? '#4F46E5' : '#6B7280',
+                color: activeTab === 'settlement' ? '#4F46E5' : inactiveColor,
               }}
             >
               {settlementCount}
@@ -230,45 +232,8 @@ export default function StaffSettlementsScreen() {
     isBulkSettling: _isBulkSettling,
   } = useSettlement(jobPostingId || '');
 
-  // 시간 수정 모달 상태
-  const [selectedWorkLog, setSelectedWorkLog] = useState<WorkLog | null>(null);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-
-  // 정산 상세 모달 상태
-  const [selectedWorkLogForDetail, setSelectedWorkLogForDetail] = useState<WorkLog | null>(null);
-  const [selectedGroupForDetail, setSelectedGroupForDetail] = useState<GroupedSettlement | null>(
-    null
-  );
-  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-
-  // 정산 확인 모달 상태
-  const [settleConfirm, setSettleConfirm] = useState<{
-    visible: boolean;
-    workLog: WorkLog | null;
-    workLogs: WorkLog[];
-    amount: number;
-    isBulk: boolean;
-  }>({
-    visible: false,
-    workLog: null,
-    workLogs: [],
-    amount: 0,
-    isBulk: false,
-  });
-
-  // 모달 상태 (스태프 관리)
-  const [showEventQRModal, setShowEventQRModal] = useState(false);
-  const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-
-  // 정산 금액 수정 모달 상태
-  const [isEditAmountModalVisible, setIsEditAmountModalVisible] = useState(false);
-  const [selectedWorkLogForEdit, setSelectedWorkLogForEdit] = useState<WorkLog | null>(null);
-
-  // 정산 설정 모달 상태
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+  // 모달 상태 관리
+  const modals = useSettlementModals();
 
   // 급여 설정 (v2.0 - 역할별 급여, 수당 포함)
   const salaryConfig = useMemo<SalaryConfig>(
@@ -308,20 +273,6 @@ export default function StaffSettlementsScreen() {
   // 스태프 관리 핸들러
   // ============================================================================
 
-  const handleShowEventQR = useCallback(() => {
-    setShowEventQRModal(true);
-  }, []);
-
-  const handleShowRoleChange = useCallback((staff: ConfirmedStaff) => {
-    setSelectedStaff(staff);
-    setShowRoleChangeModal(true);
-  }, []);
-
-  const handleShowReport = useCallback((staff: ConfirmedStaff) => {
-    setSelectedStaff(staff);
-    setShowReportModal(true);
-  }, []);
-
   const handleRoleChangeSave = useCallback(
     async (data: { staffId: string; workLogId: string; newRole: string; reason: string }) => {
       try {
@@ -334,8 +285,7 @@ export default function StaffSettlementsScreen() {
           type: 'success',
           message: '역할이 변경되었습니다.',
         });
-        setShowRoleChangeModal(false);
-        setSelectedStaff(null);
+        modals.closeRoleChangeModal();
       } catch {
         addToast({
           type: 'error',
@@ -343,12 +293,12 @@ export default function StaffSettlementsScreen() {
         });
       }
     },
-    [changeRole, addToast]
+    [changeRole, addToast, modals]
   );
 
   const handleReportSubmit = useCallback(
     async (input: CreateReportInput) => {
-      setIsSubmittingReport(true);
+      modals.setIsSubmittingReport(true);
       try {
         // 신고 생성
         await reportService.createReport(input);
@@ -362,8 +312,7 @@ export default function StaffSettlementsScreen() {
           type: 'success',
           message: '신고가 접수되었습니다.',
         });
-        setShowReportModal(false);
-        setSelectedStaff(null);
+        modals.closeReportModal();
       } catch (error) {
         logger.error('신고 접수 실패', error as Error, {
           type: input.type,
@@ -388,65 +337,28 @@ export default function StaffSettlementsScreen() {
           });
         }
       } finally {
-        setIsSubmittingReport(false);
+        modals.setIsSubmittingReport(false);
       }
     },
-    [addToast]
+    [addToast, modals]
   );
 
   // ============================================================================
   // 정산 관리 핸들러
   // ============================================================================
 
-  // 근무기록 클릭 → 상세 모달 열기 (그룹 정보 포함)
-  const handleWorkLogPress = useCallback((workLog: WorkLog, group: GroupedSettlement) => {
-    setSelectedWorkLogForDetail(workLog);
-    setSelectedGroupForDetail(group);
-    setIsDetailModalVisible(true);
-  }, []);
-
-  // 날짜 변경 핸들러 (상세 모달 내 날짜 네비게이션)
-  const handleDateChange = useCallback((workLog: WorkLog) => {
-    setSelectedWorkLogForDetail(workLog);
-    // selectedGroupForDetail은 유지 (같은 그룹 내 이동)
-  }, []);
-
-  // 시간 수정 클릭 (상세 모달에서)
-  const handleEditTimeFromDetail = useCallback((workLog: WorkLog) => {
-    // 상세 모달 닫기
-    setIsDetailModalVisible(false);
-    setSelectedWorkLogForDetail(null);
-    // 닫기 애니메이션(250ms) 완료 후 시간 수정 모달 열기
-    setTimeout(() => {
-      setSelectedWorkLog(workLog);
-      setIsEditModalVisible(true);
-    }, MODAL_TRANSITION_DELAY_MS);
-  }, []);
-
   // 정산하기 클릭 (상세 모달에서)
   const handleSettleFromDetail = useCallback(
     (workLog: WorkLog) => {
-      // 상세 모달 닫기
-      setIsDetailModalVisible(false);
-      setSelectedWorkLogForDetail(null);
-      // 닫기 애니메이션(250ms) 완료 후 정산 확인 모달 열기
-      setTimeout(() => {
-        const amount = calculateWorkLogAmount(
-          workLog,
-          rolesForList,
-          salaryConfig.defaultSalary,
-          salaryConfig.allowances
-        );
-        setSettleConfirm({
-          visible: true,
-          workLog,
-          workLogs: [],
-          amount,
-          isBulk: false,
-        });
-      }, MODAL_TRANSITION_DELAY_MS);
+      const amount = calculateWorkLogAmount(
+        workLog,
+        rolesForList,
+        salaryConfig.defaultSalary,
+        salaryConfig.allowances
+      );
+      modals.openSettleFromDetail(workLog, amount);
     },
-    [salaryConfig, rolesForList]
+    [salaryConfig, rolesForList, modals]
   );
 
   // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
@@ -458,7 +370,7 @@ export default function StaffSettlementsScreen() {
         salaryConfig.defaultSalary,
         salaryConfig.allowances
       );
-      setSettleConfirm({
+      modals.openSettleConfirm({
         visible: true,
         workLog,
         workLogs: [],
@@ -466,7 +378,7 @@ export default function StaffSettlementsScreen() {
         isBulk: false,
       });
     },
-    [salaryConfig, rolesForList]
+    [salaryConfig, rolesForList, modals]
   );
 
   // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
@@ -486,7 +398,7 @@ export default function StaffSettlementsScreen() {
         );
       }, 0);
 
-      setSettleConfirm({
+      modals.openSettleConfirm({
         visible: true,
         workLog: null,
         workLogs: selectedWorkLogs,
@@ -494,125 +406,77 @@ export default function StaffSettlementsScreen() {
         isBulk: true,
       });
     },
-    [salaryConfig, rolesForList]
+    [salaryConfig, rolesForList, modals]
   );
-
-  // 정산 확인 모달 닫기
-  const handleCloseSettleConfirm = useCallback(() => {
-    setSettleConfirm({
-      visible: false,
-      workLog: null,
-      workLogs: [],
-      amount: 0,
-      isBulk: false,
-    });
-  }, []);
 
   // 정산 확인 모달에서 확인 클릭
   const handleConfirmSettle = useCallback(() => {
-    if (settleConfirm.isBulk) {
+    if (modals.settleConfirm.isBulk) {
       // 일괄 정산
-      const workLogIds = settleConfirm.workLogs.map((log) => log.id);
+      const workLogIds = modals.settleConfirm.workLogs.map((log) => log.id);
       bulkSettle({ workLogIds });
-    } else if (settleConfirm.workLog) {
+    } else if (modals.settleConfirm.workLog) {
       // 개별 정산
       settleWorkLog({
-        workLogId: settleConfirm.workLog.id,
-        amount: settleConfirm.amount,
+        workLogId: modals.settleConfirm.workLog.id,
+        amount: modals.settleConfirm.amount,
       });
     }
-    handleCloseSettleConfirm();
-  }, [settleConfirm, bulkSettle, settleWorkLog, handleCloseSettleConfirm]);
+    modals.closeSettleConfirm();
+  }, [modals, bulkSettle, settleWorkLog]);
 
   // 시간 수정 저장
   const handleSaveTimeEdit = useCallback(
     (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
-      if (!selectedWorkLog) return;
+      if (!modals.selectedWorkLog) return;
 
       updateWorkTime({
-        workLogId: selectedWorkLog.id,
+        workLogId: modals.selectedWorkLog.id,
         checkInTime: data.startTime,
         checkOutTime: data.endTime,
         reason: data.reason,
       });
 
-      setIsEditModalVisible(false);
-      setSelectedWorkLog(null);
+      modals.closeEditModal();
     },
-    [selectedWorkLog, updateWorkTime]
+    [modals, updateWorkTime]
   );
-
-  // 시간 수정 모달 닫기
-  const handleCloseEditModal = useCallback(() => {
-    setIsEditModalVisible(false);
-    setSelectedWorkLog(null);
-  }, []);
 
   // ============================================================================
   // 정산 설정/금액 수정 핸들러
   // ============================================================================
 
-  // 정산 설정 모달 열기
-  const handleOpenSettings = useCallback(() => {
-    setIsSettingsModalVisible(true);
-  }, []);
-
-  // 금액 수정 (상세 모달에서)
-  const handleEditAmountFromDetail = useCallback((workLog: WorkLog) => {
-    // 상세 모달 닫기
-    setIsDetailModalVisible(false);
-    setSelectedWorkLogForDetail(null);
-    // 닫기 애니메이션(250ms) 완료 후 금액 수정 모달 열기
-    setTimeout(() => {
-      setSelectedWorkLogForEdit(workLog);
-      setIsEditAmountModalVisible(true);
-    }, MODAL_TRANSITION_DELAY_MS);
-  }, []);
-
   // 금액 수정 저장 (개인설정 - workLog에 저장)
   const handleSaveAmountEdit = useCallback(
     async (data: SettlementEditData) => {
-      if (!selectedWorkLogForEdit) return;
+      const workLogForEdit = modals.selectedWorkLogForEdit;
+      if (!workLogForEdit || !posting?.ownerId) return;
 
       const { salaryInfo, allowances: customAllowances, taxSettings, reason } = data;
 
       try {
-        logger.info('개인 정산 설정 저장 시작', {
-          workLogId: selectedWorkLogForEdit.id,
-          salaryInfo,
-        });
-
-        const workLogRef = doc(getFirebaseDb(), 'workLogs', selectedWorkLogForEdit.id);
-
         // 이전 값 저장 (수정 이력용)
         const previousSalaryInfo =
-          (selectedWorkLogForEdit as WorkLog & { customSalaryInfo?: SalaryInfo })
+          (workLogForEdit as WorkLog & { customSalaryInfo?: SalaryInfo })
             .customSalaryInfo ||
           getEffectiveSalaryInfoFromRoles(
-            selectedWorkLogForEdit,
+            workLogForEdit,
             rolesForList,
             salaryConfig.defaultSalary
           );
         const previousAllowances =
-          (selectedWorkLogForEdit as WorkLog & { customAllowances?: Allowances })
+          (workLogForEdit as WorkLog & { customAllowances?: Allowances })
             .customAllowances || salaryConfig.allowances;
 
         // 수정 이력 생성 (Firebase는 undefined를 허용하지 않으므로 필터링)
         const modificationEntry: Record<string, unknown> = {
           modifiedAt: new Date().toISOString(),
-          modifiedBy: posting?.ownerId || 'unknown',
+          modifiedBy: posting.ownerId,
           reason: reason || '정산 금액 수정',
-          newSalaryInfo: {
-            type: salaryInfo.type,
-            amount: salaryInfo.amount,
-          },
-          newTaxSettings: {
-            type: taxSettings.type,
-            value: taxSettings.value,
-          },
+          newSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
+          newTaxSettings: { type: taxSettings.type, value: taxSettings.value },
         };
 
-        // 이전 값이 있는 경우에만 추가 (undefined 방지)
         if (previousSalaryInfo) {
           modificationEntry.previousSalaryInfo = {
             type: previousSalaryInfo.type,
@@ -626,33 +490,30 @@ export default function StaffSettlementsScreen() {
           modificationEntry.newAllowances = customAllowances;
         }
 
-        await updateDoc(workLogRef, {
-          customSalaryInfo: {
-            type: salaryInfo.type,
-            amount: salaryInfo.amount,
+        await updateWorkLogCustomSettlement(
+          workLogForEdit.id,
+          {
+            customSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
+            customAllowances: customAllowances as Record<string, unknown> | undefined,
+            customTaxSettings: {
+              type: taxSettings.type,
+              value: taxSettings.value,
+              ...(Array.isArray(taxSettings.taxableItems) && { taxableItems: taxSettings.taxableItems }),
+            },
+            modificationEntry,
           },
-          customAllowances: customAllowances,
-          customTaxSettings: {
-            type: taxSettings.type,
-            value: taxSettings.value,
-            ...(taxSettings.taxableItems && { taxableItems: taxSettings.taxableItems }),
-          },
-          settlementModificationHistory: arrayUnion(modificationEntry),
-          updatedAt: serverTimestamp(),
-        });
-
-        logger.info('개인 정산 설정 저장 완료', { workLogId: selectedWorkLogForEdit.id });
+          posting.ownerId
+        );
 
         addToast({
           type: 'success',
           message: '정산 금액이 수정되었습니다.',
         });
-        setIsEditAmountModalVisible(false);
-        setSelectedWorkLogForEdit(null);
+        modals.closeEditAmountModal();
         refresh();
       } catch (error) {
         logger.error('개인 정산 설정 저장 실패', error as Error, {
-          workLogId: selectedWorkLogForEdit.id,
+          workLogId: workLogForEdit.id,
         });
         addToast({
           type: 'error',
@@ -660,37 +521,27 @@ export default function StaffSettlementsScreen() {
         });
       }
     },
-    [selectedWorkLogForEdit, rolesForList, salaryConfig, posting?.ownerId, addToast, refresh]
+    [modals, rolesForList, salaryConfig, posting?.ownerId, addToast, refresh]
   );
 
   // 정산 설정 저장 (v2.0 - roles[] 구조) - jobPosting에 저장
   const handleSaveSettings = useCallback(
     async (data: SettlementSettingsData) => {
-      if (!jobPostingId) return;
+      if (!jobPostingId || !posting?.ownerId) return;
 
       const { roles: updatedRoles, allowances: updatedAllowances, taxSettings } = data;
 
       try {
-        logger.info('정산 설정 저장 시작', {
-          jobPostingId,
-          rolesCount: updatedRoles.length,
-        });
-
-        const jobPostingRef = doc(getFirebaseDb(), 'jobPostings', jobPostingId);
-
         // 기존 roles 정보에 급여 정보만 업데이트
         // posting.roles의 count, filled 값은 유지하고 salary만 업데이트
         const mergedRoles =
           posting?.roles?.map((existingRole) => {
-            // 역할 키 추출 (커스텀 역할 지원)
-            // StaffRole 타입에 'other'가 없으므로 string으로 캐스팅
             const roleStr = existingRole.role as string;
             const existingRoleKey =
               roleStr === 'other' && existingRole.customRole
                 ? existingRole.customRole
                 : existingRole.role;
 
-            // updatedRoles에서 매칭되는 역할 찾기
             const updatedRole = updatedRoles.find((r) => {
               const updatedRoleKey =
                 r.role === 'other' && r.customRole ? r.customRole : r.role || r.name;
@@ -710,27 +561,25 @@ export default function StaffSettlementsScreen() {
             salary: r.salary,
           }));
 
-        // Firebase에 저장 (새 형식 TaxSettings 사용)
-        await updateDoc(jobPostingRef, {
-          roles: mergedRoles,
-          allowances: updatedAllowances,
-          // TaxSettings 저장 (type, value, taxableItems 포함)
-          taxSettings: {
-            type: taxSettings.type,
-            value: taxSettings.value,
-            ...(taxSettings.taxableItems && { taxableItems: taxSettings.taxableItems }),
+        await updateJobPostingSettlementSettings(
+          jobPostingId,
+          {
+            roles: mergedRoles as Record<string, unknown>[],
+            allowances: updatedAllowances as Record<string, unknown>,
+            taxSettings: {
+              type: taxSettings.type,
+              value: taxSettings.value,
+              ...(Array.isArray(taxSettings.taxableItems) && { taxableItems: taxSettings.taxableItems }),
+            },
           },
-          updatedAt: serverTimestamp(),
-        });
-
-        logger.info('정산 설정 저장 완료', { jobPostingId });
+          posting.ownerId
+        );
 
         addToast({
           type: 'success',
           message: '정산 설정이 저장되었습니다.',
         });
-        setIsSettingsModalVisible(false);
-        // 공고 정보와 정산 목록 모두 갱신
+        modals.closeSettingsModal();
         await refreshJobDetail();
         refresh();
       } catch (error) {
@@ -741,7 +590,7 @@ export default function StaffSettlementsScreen() {
         });
       }
     },
-    [jobPostingId, posting?.roles, addToast, refresh, refreshJobDetail]
+    [jobPostingId, posting?.roles, posting?.ownerId, addToast, refresh, refreshJobDetail, modals]
   );
 
   // ============================================================================
@@ -794,9 +643,9 @@ export default function StaffSettlementsScreen() {
         <StaffManagementTab
           jobPostingId={jobPostingId || ''}
           jobPosting={posting ?? undefined}
-          onShowEventQR={handleShowEventQR}
-          onShowRoleChange={handleShowRoleChange}
-          onShowReport={handleShowReport}
+          onShowEventQR={modals.openEventQRModal}
+          onShowRoleChange={modals.openRoleChangeModal}
+          onShowReport={modals.openReportModal}
         />
       ) : (
         <SettlementList
@@ -809,11 +658,11 @@ export default function StaffSettlementsScreen() {
           error={error}
           onRefresh={() => refresh()}
           isRefreshing={isRefreshing}
-          onWorkLogPress={handleWorkLogPress}
+          onWorkLogPress={modals.openDetailModal}
           onSettle={handleSettle}
           onBulkSettle={handleBulkSettle}
           showBulkActions={true}
-          onOpenSettings={handleOpenSettings}
+          onOpenSettings={modals.openSettingsModal}
           enableGrouping={true}
         />
       )}
@@ -822,20 +671,17 @@ export default function StaffSettlementsScreen() {
 
       {/* 현장 QR 모달 */}
       <EventQRModal
-        visible={showEventQRModal}
-        onClose={() => setShowEventQRModal(false)}
+        visible={modals.showEventQRModal}
+        onClose={modals.closeEventQRModal}
         jobPostingId={jobPostingId || ''}
         jobTitle={posting?.title}
       />
 
       {/* 역할 변경 모달 */}
       <RoleChangeModal
-        visible={showRoleChangeModal}
-        onClose={() => {
-          setShowRoleChangeModal(false);
-          setSelectedStaff(null);
-        }}
-        staff={selectedStaff}
+        visible={modals.showRoleChangeModal}
+        onClose={modals.closeRoleChangeModal}
+        staff={modals.selectedStaff}
         jobPosting={posting}
         availableRoles={availableRoles}
         onSave={handleRoleChangeSave}
@@ -843,61 +689,54 @@ export default function StaffSettlementsScreen() {
 
       {/* 신고 모달 */}
       <ReportModal
-        visible={showReportModal}
-        onClose={() => {
-          setShowReportModal(false);
-          setSelectedStaff(null);
-        }}
-        staff={selectedStaff}
+        visible={modals.showReportModal}
+        onClose={modals.closeReportModal}
+        staff={modals.selectedStaff}
         jobPostingId={jobPostingId || ''}
         jobPostingTitle={posting?.title}
         onSubmit={handleReportSubmit}
-        isLoading={isSubmittingReport}
+        isLoading={modals.isSubmittingReport}
       />
 
       {/* 정산 상세 모달 */}
       <SettlementDetailModal
-        visible={isDetailModalVisible}
-        onClose={() => {
-          setIsDetailModalVisible(false);
-          setSelectedWorkLogForDetail(null);
-          setSelectedGroupForDetail(null);
-        }}
-        workLog={selectedWorkLogForDetail}
-        groupedSettlement={selectedGroupForDetail ?? undefined}
-        onDateChange={handleDateChange}
+        visible={modals.isDetailModalVisible}
+        onClose={modals.closeDetailModal}
+        workLog={modals.selectedWorkLogForDetail}
+        groupedSettlement={modals.selectedGroupForDetail ?? undefined}
+        onDateChange={modals.handleDateChange}
         salaryInfo={getEffectiveSalaryInfoFromRoles(
-          selectedWorkLogForDetail || {},
+          modals.selectedWorkLogForDetail || {},
           rolesForList,
           salaryConfig.defaultSalary
         )}
-        allowances={getEffectiveAllowances(selectedWorkLogForDetail || {}, salaryConfig.allowances)}
-        taxSettings={getEffectiveTaxSettings(selectedWorkLogForDetail || {}, posting?.taxSettings)}
-        onEditTime={handleEditTimeFromDetail}
-        onEditAmount={handleEditAmountFromDetail}
+        allowances={getEffectiveAllowances(modals.selectedWorkLogForDetail || {}, salaryConfig.allowances)}
+        taxSettings={getEffectiveTaxSettings(modals.selectedWorkLogForDetail || {}, posting?.taxSettings)}
+        onEditTime={modals.openEditTimeFromDetail}
+        onEditAmount={modals.openEditAmountFromDetail}
         onSettle={handleSettleFromDetail}
         jobPostingTitle={posting?.title}
       />
 
       {/* 시간 수정 모달 (정산 탭용) */}
       <WorkTimeEditor
-        workLog={selectedWorkLog}
-        visible={isEditModalVisible}
-        onClose={handleCloseEditModal}
+        workLog={modals.selectedWorkLog}
+        visible={modals.isEditModalVisible}
+        onClose={modals.closeEditModal}
         onSave={handleSaveTimeEdit}
         isLoading={isUpdating}
       />
 
       {/* 정산 확인 모달 */}
       <ConfirmModal
-        visible={settleConfirm.visible}
-        onClose={handleCloseSettleConfirm}
+        visible={modals.settleConfirm.visible}
+        onClose={modals.closeSettleConfirm}
         onConfirm={handleConfirmSettle}
-        title={settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
+        title={modals.settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
         message={
-          settleConfirm.isBulk
-            ? `${settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${settleConfirm.amount.toLocaleString()}원`
-            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${settleConfirm.amount.toLocaleString()}원`
+          modals.settleConfirm.isBulk
+            ? `${modals.settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${modals.settleConfirm.amount.toLocaleString()}원`
+            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${modals.settleConfirm.amount.toLocaleString()}원`
         }
         confirmText="정산하기"
         cancelText="취소"
@@ -905,26 +744,23 @@ export default function StaffSettlementsScreen() {
 
       {/* 정산 금액 수정 모달 */}
       <SettlementEditModal
-        visible={isEditAmountModalVisible}
-        onClose={() => {
-          setIsEditAmountModalVisible(false);
-          setSelectedWorkLogForEdit(null);
-        }}
-        workLog={selectedWorkLogForEdit}
+        visible={modals.isEditAmountModalVisible}
+        onClose={modals.closeEditAmountModal}
+        workLog={modals.selectedWorkLogForEdit}
         salaryInfo={getEffectiveSalaryInfoFromRoles(
-          selectedWorkLogForEdit || {},
+          modals.selectedWorkLogForEdit || {},
           rolesForList,
           salaryConfig.defaultSalary
         )}
-        allowances={getEffectiveAllowances(selectedWorkLogForEdit || {}, salaryConfig.allowances)}
-        taxSettings={getEffectiveTaxSettings(selectedWorkLogForEdit || {}, posting?.taxSettings)}
+        allowances={getEffectiveAllowances(modals.selectedWorkLogForEdit || {}, salaryConfig.allowances)}
+        taxSettings={getEffectiveTaxSettings(modals.selectedWorkLogForEdit || {}, posting?.taxSettings)}
         onSave={handleSaveAmountEdit}
       />
 
       {/* 정산 설정 모달 */}
       <SettlementSettingsModal
-        visible={isSettingsModalVisible}
-        onClose={() => setIsSettingsModalVisible(false)}
+        visible={modals.isSettingsModalVisible}
+        onClose={modals.closeSettingsModal}
         roles={rolesForList}
         allowances={salaryConfig.allowances || {}}
         taxSettings={posting?.taxSettings}
