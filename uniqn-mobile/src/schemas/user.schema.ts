@@ -117,7 +117,11 @@ export const employerProfileSchema = z.object({
       message: '사업자등록번호 형식이 올바르지 않습니다 (예: 123-45-67890)',
     })
     .optional(),
-  address: z.string().max(200, { message: '주소는 200자를 초과할 수 없습니다' }).optional(),
+  address: z
+    .string()
+    .max(200, { message: '주소는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
   description: z
     .string()
     .max(500, { message: '업체 설명은 500자를 초과할 수 없습니다' })

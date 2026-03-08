@@ -9,7 +9,7 @@
  * - 이메일: 비밀번호 재입력
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ import {
   DELETION_REASONS,
   type DeletionReason,
 } from '@/services';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { useIsAppleUser } from '@/hooks/auth/useCurrentUser';
 import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
 
@@ -93,10 +93,7 @@ export default function DeleteAccountScreen() {
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Apple 사용자 여부 확인
-  const isAppleUser = useMemo(() => {
-    const currentUser = getFirebaseAuth().currentUser;
-    return currentUser?.providerData?.some((p) => p.providerId === 'apple.com') ?? false;
-  }, []);
+  const isAppleUser = useIsAppleUser();
 
   // Apple 토큰 파기 재시도
   const handleRetryRevocation = useCallback(async () => {

@@ -10,7 +10,7 @@ import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { ConfirmationHistoryEntry, OriginalApplication, Assignment } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { Timestamp } from '@/lib/firebase';
+import { formatDateTime, toDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -44,25 +44,6 @@ interface OriginalApplicationItemProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-const formatDateTime = (timestamp: Timestamp | { seconds: number }): string => {
-  let date: Date;
-  if (timestamp instanceof Timestamp) {
-    date = timestamp.toDate();
-  } else if ('seconds' in timestamp) {
-    date = new Date(timestamp.seconds * 1000);
-  } else {
-    return '날짜 없음';
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${year}.${month}.${day} ${hours}:${minutes}`;
-};
 
 const formatAssignmentsSummary = (assignments: Assignment[]): string => {
   if (!assignments.length) return '정보 없음';
@@ -216,8 +197,8 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
   const displayHistory = useMemo(() => {
     if (!history?.length) return [];
     const sorted = [...history].sort((a, b) => {
-      const timeA = a.confirmedAt.toMillis();
-      const timeB = b.confirmedAt.toMillis();
+      const timeA = toDate(a.confirmedAt)?.getTime() ?? 0;
+      const timeB = toDate(b.confirmedAt)?.getTime() ?? 0;
       return timeA - timeB;
     });
     return maxDisplay ? sorted.slice(0, maxDisplay) : sorted;

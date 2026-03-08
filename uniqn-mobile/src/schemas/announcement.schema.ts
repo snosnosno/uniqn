@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { xssValidation } from '@/utils/security';
+import { xssValidation, isSafeUrl } from '@/utils/security';
 
 // ============================================================================
 // 기본 스키마
@@ -119,7 +119,12 @@ export const createAnnouncementSchema = z.object({
   priority: announcementPrioritySchema.optional().default(0),
   isPinned: z.boolean().optional().default(false),
   targetAudience: targetAudienceSchema,
-  imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
+  imageUrl: z
+    .string()
+    .url('올바른 이미지 URL이 아닙니다')
+    .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' })
+    .optional()
+    .nullable(),
   imageStoragePath: z.string().optional().nullable(),
   images: z
     .array(announcementImageSchema)
@@ -143,7 +148,12 @@ export const updateAnnouncementSchema = z.object({
   priority: announcementPrioritySchema.optional(),
   isPinned: z.boolean().optional(),
   targetAudience: targetAudienceSchema.optional(),
-  imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
+  imageUrl: z
+    .string()
+    .url('올바른 이미지 URL이 아닙니다')
+    .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' })
+    .optional()
+    .nullable(),
   imageStoragePath: z.string().optional().nullable(),
   images: z
     .array(announcementImageSchema)

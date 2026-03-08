@@ -11,7 +11,6 @@ import React, { memo, useMemo, useState, useCallback } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
-import { Timestamp } from '@/lib/firebase';
 import { getRoleDisplayName } from '@/types/unified';
 import {
   groupRequirementsToDateRanges,
@@ -48,7 +47,7 @@ interface TimeSlotCompat {
 
 // DateSpecificRequirement 호환 타입
 interface DateSpecificRequirementCompat {
-  date: string | Timestamp | { seconds: number };
+  date: string | { toDate?: () => Date } | { seconds: number };
   timeSlots: TimeSlotCompat[];
   /** 그룹화 여부 (연속 날짜 그룹 표시용) */
   isGrouped?: boolean;

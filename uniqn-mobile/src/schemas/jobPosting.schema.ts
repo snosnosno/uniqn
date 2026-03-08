@@ -146,7 +146,9 @@ export const createJobPostingSchema = basicInfoSchema
     salary: salaryInfoSchema,
     allowances: allowancesSchema,
     isUrgent: z.boolean().optional().default(false),
-    tags: z.array(z.string()).optional(),
+    tags: z
+      .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
+      .optional(),
   })
   .refine(
     (data) => {

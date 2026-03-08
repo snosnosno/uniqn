@@ -8,7 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import { Timestamp } from '@/lib/firebase';
+import { toDateString } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 
 // 역할 요구사항 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
@@ -34,7 +34,7 @@ interface TimeSlotCompat {
 
 // DateSpecificRequirement 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface DateSpecificRequirementCompat {
-  date: string | Timestamp | { seconds: number };
+  date: string | { toDate?: () => Date } | { seconds: number };
   timeSlots: TimeSlotCompat[];
 }
 
@@ -71,22 +71,6 @@ interface RoleDisplayProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * 날짜 문자열 추출
- */
-function getDateString(dateInput: string | Timestamp | { seconds: number }): string {
-  if (typeof dateInput === 'string') {
-    return dateInput;
-  }
-  if (dateInput instanceof Timestamp) {
-    return dateInput.toDate().toISOString().split('T')[0] ?? '';
-  }
-  if ('seconds' in dateInput) {
-    return new Date(dateInput.seconds * 1000).toISOString().split('T')[0] ?? '';
-  }
-  return '';
-}
 
 /**
  * 날짜 포맷 (M/D(요일))
@@ -188,7 +172,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
   compact = false,
   // index는 더 이상 사용하지 않음 (Day N 표시 제거)
 }: DateRequirementDisplayProps) {
-  const dateStr = useMemo(() => getDateString(requirement.date), [requirement.date]);
+  const dateStr = useMemo(() => toDateString(requirement.date), [requirement.date]);
 
   const formattedDate = useMemo(() => formatDate(dateStr), [dateStr]);
 

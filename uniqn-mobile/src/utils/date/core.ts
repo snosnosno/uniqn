@@ -10,8 +10,13 @@ import { Timestamp } from 'firebase/firestore';
 
 /**
  * Date 또는 Timestamp를 Date로 변환
+ *
+ * Firestore Timestamp, Date, ISO 문자열, { seconds } 덕 타입 모두 지원.
+ * 직렬화된 Timestamp 객체({ seconds, nanoseconds })도 안전하게 처리합니다.
  */
-export function toDate(value: Date | Timestamp | string | undefined | null): Date | null {
+export function toDate(
+  value: Date | Timestamp | string | { seconds: number } | undefined | null
+): Date | null {
   if (!value) return null;
 
   if (value instanceof Date) return value;
@@ -19,6 +24,9 @@ export function toDate(value: Date | Timestamp | string | undefined | null): Dat
   if (typeof value === 'string') {
     const parsed = parseISO(value);
     return isNaN(parsed.getTime()) ? null : parsed;
+  }
+  if (typeof value === 'object' && 'seconds' in value) {
+    return new Date(value.seconds * 1000);
   }
 
   return null;
