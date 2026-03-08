@@ -22,6 +22,7 @@ import {
   requestAccountDeletion,
   retryAppleTokenRevocation,
   signOut,
+  DELETION_GRACE_PERIOD_DAYS,
   DELETION_REASONS,
   type DeletionReason,
 } from '@/services';
@@ -29,15 +30,7 @@ import { getFirebaseAuth } from '@/lib/firebase';
 import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const DELETION_GRACE_PERIOD_DAYS = 30;
-
-// ============================================================================
 // Reason Select Component
-// ============================================================================
 
 interface ReasonSelectProps {
   selectedReason: DeletionReason | null;
@@ -85,10 +78,6 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
     </View>
   );
 }
-
-// ============================================================================
-// Screen Component
-// ============================================================================
 
 export default function DeleteAccountScreen() {
   const { isDarkMode } = useThemeStore();

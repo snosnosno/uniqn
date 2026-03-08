@@ -1,7 +1,7 @@
 /**
- * UNIQN Mobile - accountDeletionService 테스트
+ * accountDeletionService 테스트
  *
- * @description 회원탈퇴 및 개인정보 관리 서비스 테스트
+ * 회원탈퇴 및 개인정보 관리 서비스 테스트
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -11,9 +11,7 @@ import {
   requestAccountDeletion,
   cancelAccountDeletion,
   getMyData,
-  updateMyData,
   exportMyData,
-  permanentlyDeleteAccount,
   getDeletionStatus,
   DELETION_REASONS,
 } from '../accountDeletionService';
@@ -21,10 +19,6 @@ import { AuthError } from '@/errors';
 import { STATUS } from '@/constants';
 import type { FirestoreUserProfile } from '@/types';
 import type { DeletionRequest, UserDataExport } from '@/repositories';
-
-// ============================================================================
-// Mocks
-// ============================================================================
 
 // Firebase Auth Mock
 jest.mock('@/lib/firebase', () => ({
@@ -40,21 +34,17 @@ jest.mock('firebase/auth', () => ({
 
 // Repository Mock
 const mockGetById = jest.fn();
-const mockUpdateProfile = jest.fn();
 const mockRequestDeletion = jest.fn();
 const mockCancelDeletion = jest.fn();
 const mockGetExportData = jest.fn();
-const mockPermanentlyDeleteWithBatch = jest.fn();
 const mockGetDeletionStatus = jest.fn();
 
 jest.mock('@/repositories', () => ({
   userRepository: {
     getById: (...args: unknown[]) => mockGetById(...args),
-    updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
     requestDeletion: (...args: unknown[]) => mockRequestDeletion(...args),
     cancelDeletion: (...args: unknown[]) => mockCancelDeletion(...args),
     getExportData: (...args: unknown[]) => mockGetExportData(...args),
-    permanentlyDeleteWithBatch: (...args: unknown[]) => mockPermanentlyDeleteWithBatch(...args),
     getDeletionStatus: (...args: unknown[]) => mockGetDeletionStatus(...args),
   },
 }));
@@ -84,10 +74,7 @@ const mockAuth = {
   currentUser: mockCurrentUser,
 };
 
-// ============================================================================
 // Test Data
-// ============================================================================
-
 const mockUserProfile: FirestoreUserProfile = {
   uid: 'user123',
   email: 'test@example.com',
@@ -130,26 +117,16 @@ const mockExportData: UserDataExport = {
   exportedAt: new Date().toISOString(),
 };
 
-// ============================================================================
-// Tests
-// ============================================================================
-
 describe('accountDeletionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetFirebaseAuth.mockReturnValue(mockAuth as unknown as ReturnType<typeof getFirebaseAuth>);
     mockGetById.mockReset();
-    mockUpdateProfile.mockReset();
     mockRequestDeletion.mockReset();
     mockCancelDeletion.mockReset();
     mockGetExportData.mockReset();
-    mockPermanentlyDeleteWithBatch.mockReset();
     mockGetDeletionStatus.mockReset();
   });
-
-  // ==========================================================================
-  // DELETION_REASONS
-  // ==========================================================================
 
   describe('DELETION_REASONS', () => {
     it('모든 탈퇴 사유가 한글 레이블을 가져야 함', () => {
@@ -171,10 +148,6 @@ describe('accountDeletionService', () => {
       expect(DELETION_REASONS.other).toBe('기타');
     });
   });
-
-  // ==========================================================================
-  // requestAccountDeletion
-  // ==========================================================================
 
   describe('requestAccountDeletion', () => {
     it('비밀번호 재인증 후 탈퇴 요청을 처리해야 함', async () => {
@@ -288,10 +261,6 @@ describe('accountDeletionService', () => {
     });
   });
 
-  // ==========================================================================
-  // cancelAccountDeletion
-  // ==========================================================================
-
   describe('cancelAccountDeletion', () => {
     it('탈퇴 요청을 취소해야 함', async () => {
       mockCancelDeletion.mockResolvedValue(undefined);
@@ -315,10 +284,6 @@ describe('accountDeletionService', () => {
       expect(mockCancelDeletion).toHaveBeenCalledWith('differentUser456');
     });
   });
-
-  // ==========================================================================
-  // getMyData
-  // ==========================================================================
 
   describe('getMyData', () => {
     it('사용자 프로필을 조회해야 함', async () => {
@@ -344,53 +309,6 @@ describe('accountDeletionService', () => {
       await expect(getMyData('user123')).rejects.toThrow();
     });
   });
-
-  // ==========================================================================
-  // updateMyData
-  // ==========================================================================
-
-  describe('updateMyData', () => {
-    it('닉네임을 수정해야 함', async () => {
-      mockUpdateProfile.mockResolvedValue(undefined);
-
-      await updateMyData('user123', { nickname: '새닉네임' });
-
-      expect(mockUpdateProfile).toHaveBeenCalledWith('user123', {
-        nickname: '새닉네임',
-      });
-    });
-
-    it('여러 필드를 동시에 수정해야 함', async () => {
-      mockUpdateProfile.mockResolvedValue(undefined);
-
-      const updates = {
-        nickname: '새닉네임',
-        photoURL: 'https://example.com/photo.jpg',
-      };
-
-      await updateMyData('user123', updates);
-
-      expect(mockUpdateProfile).toHaveBeenCalledWith('user123', updates);
-    });
-
-    it('빈 업데이트도 처리해야 함', async () => {
-      mockUpdateProfile.mockResolvedValue(undefined);
-
-      await updateMyData('user123', {});
-
-      expect(mockUpdateProfile).toHaveBeenCalledWith('user123', {});
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockUpdateProfile.mockRejectedValue(new Error('Update failed'));
-
-      await expect(updateMyData('user123', { nickname: '새닉네임' })).rejects.toThrow();
-    });
-  });
-
-  // ==========================================================================
-  // exportMyData
-  // ==========================================================================
 
   describe('exportMyData', () => {
     it('사용자 데이터를 내보내야 함', async () => {
@@ -458,38 +376,6 @@ describe('accountDeletionService', () => {
       await expect(exportMyData('user123')).rejects.toThrow();
     });
   });
-
-  // ==========================================================================
-  // permanentlyDeleteAccount
-  // ==========================================================================
-
-  describe('permanentlyDeleteAccount', () => {
-    it('계정을 완전히 삭제해야 함', async () => {
-      mockPermanentlyDeleteWithBatch.mockResolvedValue(undefined);
-
-      await permanentlyDeleteAccount('user123');
-
-      expect(mockPermanentlyDeleteWithBatch).toHaveBeenCalledWith('user123');
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockPermanentlyDeleteWithBatch.mockRejectedValue(new Error('Delete failed'));
-
-      await expect(permanentlyDeleteAccount('user123')).rejects.toThrow();
-    });
-
-    it('다른 사용자 ID로도 삭제 가능해야 함', async () => {
-      mockPermanentlyDeleteWithBatch.mockResolvedValue(undefined);
-
-      await permanentlyDeleteAccount('anotherUser789');
-
-      expect(mockPermanentlyDeleteWithBatch).toHaveBeenCalledWith('anotherUser789');
-    });
-  });
-
-  // ==========================================================================
-  // getDeletionStatus
-  // ==========================================================================
 
   describe('getDeletionStatus', () => {
     it('탈퇴 요청 상태를 조회해야 함', async () => {

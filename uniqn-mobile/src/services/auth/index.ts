@@ -27,9 +27,7 @@ export {
   checkNicknameExists,
   checkPhoneExists,
   rollbackPhoneOnlyAccount,
-  getCurrentUserUid,
   getLinkedPhoneNumber,
-  unlinkPhoneProvider,
   markOrphanAccount,
 } from './authCoreService';
 
@@ -71,23 +69,19 @@ export {
   type UploadResult,
 } from './storageService';
 
-// ============================================================================
 // Account Deletion Service
-// ============================================================================
 export {
   requestAccountDeletion,
   retryAppleTokenRevocation,
   cancelAccountDeletion,
   getMyData,
-  updateMyData,
   exportMyData,
-  permanentlyDeleteAccount,
   getDeletionStatus,
+  DELETION_GRACE_PERIOD_DAYS,
   DELETION_REASONS,
   type DeletionReason,
   type DeletionRequest,
   type DeletionResult,
-  type UserData,
   type UserDataExport,
 } from './accountDeletionService';
 

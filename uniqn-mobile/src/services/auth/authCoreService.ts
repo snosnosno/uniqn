@@ -31,7 +31,7 @@ import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RealtimeManager } from '@/shared/realtime';
-import { AuthError, ERROR_CODES } from '@/errors';
+import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
   checkLoginAttempts,
@@ -210,7 +210,17 @@ export async function rollbackPhoneOnlyAccount(
   if (deleted) {
     logger.info('phone-only 고아 계정 삭제 완료', { uid });
   } else {
-    await markOrphanAccount(uid, reason, phone);
+    try {
+      await markOrphanAccount(uid, reason, phone);
+    } catch (orphanError) {
+      logger.error('고아 계정 마킹 실패 — 수동 정리 필요', {
+        uid,
+        reason,
+        phone: phone ? maskValue(phone, 'phone') : undefined,
+        error: orphanError instanceof Error ? orphanError.message : String(orphanError),
+        component: 'authService',
+      });
+    }
   }
 
   // SDK 세션 정리 (양쪽 모두 — syncSignOut이 Native+Web 동시 처리)
@@ -219,16 +229,6 @@ export async function rollbackPhoneOnlyAccount(
   } catch {
     // 세션 정리 실패는 무시
   }
-}
-
-/**
- * 현재 로그인된 사용자의 UID 반환 (Web/Native 공통)
- */
-export function getCurrentUserUid(): string | null {
-  if (Platform.OS === 'web') {
-    return getFirebaseAuth().currentUser?.uid ?? null;
-  }
-  return getNativeAuth?.()?.currentUser?.uid ?? null;
 }
 
 /**
@@ -242,51 +242,6 @@ export function getLinkedPhoneNumber(): string | null {
   // phoneNumber는 providerData와 Auth 레코드 양쪽에 존재할 수 있음
   const phoneProvider = user.providerData.find((p) => p.providerId === 'phone');
   return phoneProvider?.phoneNumber ?? user.phoneNumber ?? null;
-}
-
-/**
- * 현재 사용자의 phone provider 연결 해제
- *
- * 소셜 모드에서 "다시 인증하기" 시 호출하여
- * 이전 전화번호 link를 제거한 후 새 번호로 재인증할 수 있도록 합니다.
- */
-export async function unlinkPhoneProvider(): Promise<void> {
-  try {
-    if (Platform.OS === 'web') {
-      const user = getFirebaseAuth().currentUser;
-      if (!user) {
-        throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-          userMessage: '인증 세션이 만료되었습니다. 다시 로그인해주세요.',
-        });
-      }
-      const hasPhone = user.providerData.some((p) => p.providerId === 'phone');
-      if (hasPhone) {
-        await webUnlink(user, 'phone');
-      }
-    } else {
-      const nativeAuth = getNativeAuth?.();
-      const nativeUser = nativeAuth?.currentUser;
-      if (!nativeUser) {
-        throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-          userMessage: '인증 세션이 만료되었습니다. 다시 로그인해주세요.',
-        });
-      }
-      if (nativeUnlink) {
-        const hasPhone = nativeUser.providerData.some(
-          (p: { providerId: string }) => p.providerId === 'phone'
-        );
-        if (hasPhone) {
-          await nativeUnlink(nativeUser, 'phone');
-        }
-      }
-    }
-  } catch (error) {
-    // auth/no-such-provider는 이미 unlink된 상태 → 무시
-    const code = (error as { code?: string })?.code;
-    if (code !== 'auth/no-such-provider') {
-      throw error;
-    }
-  }
 }
 
 /**
@@ -438,11 +393,25 @@ export async function checkEmailExists(email: string): Promise<boolean> {
       { exists: boolean }
     >(functions, 'checkEmailExists');
 
-    const result = await checkEmail({
+    const payload = {
       email: email.trim().toLowerCase(),
       recaptchaToken: recaptchaToken || undefined,
       platform: Platform.OS,
-    });
+    };
+
+    let result;
+    try {
+      result = await checkEmail(payload);
+    } catch (cfError) {
+      if (!isRetryableError(cfError)) throw cfError;
+
+      logger.warn('이메일 중복 확인 네트워크 에러 — 2초 후 재시도', {
+        component: 'authService',
+        error: cfError instanceof Error ? cfError.message : String(cfError),
+      });
+      await new Promise((r) => setTimeout(r, 2000));
+      result = await checkEmail(payload);
+    }
 
     logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists: result.data.exists });
 
@@ -599,10 +568,13 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         }
       }
 
-      // 3. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
+      // 3. Dual SDK UID 불일치 검증 (CF 호출 전 — 불일치 시 프로필 저장 방지)
+      await verifyDualSDKConsistency('signUp');
+
+      // 4. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
       await callVerifyAndSaveProfile(toVerifyPayload(data));
 
-      // 4. Custom Claims 갱신 (syncToWebAuth 성공 후 webUser는 반드시 존재)
+      // 5. Custom Claims 갱신 (syncToWebAuth 성공 후 webUser는 반드시 존재)
       const webUser = getFirebaseAuth().currentUser;
       if (!webUser) {
         throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -611,16 +583,13 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       }
       await webUser.getIdToken(true);
 
-      // 5. 저장된 프로필 조회
+      // 6. 저장된 프로필 조회
       const profile = await getUserProfile(nativeUser.uid);
       if (!profile) {
         throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
           userMessage: '프로필 저장 후 조회에 실패했습니다.',
         });
       }
-
-      // Dual SDK UID 불일치 검증 (네이티브)
-      await verifyDualSDKConsistency('signUp');
 
       logger.info('회원가입 성공', { uid: nativeUser.uid });
       trackSignupAnalytics(nativeUser.uid, 'staff');

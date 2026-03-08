@@ -355,17 +355,32 @@ export async function signInWithApple(): Promise<AuthResult> {
       const now = Timestamp.now();
 
       // Firestore에 저장할 데이터 (serverTimestamp 사용)
-      await userRepository.createOrMerge(user.uid, {
-        uid: user.uid,
-        email: user.email || '',
-        name: appleName,
-        role: 'staff',
-        socialProvider: 'apple',
-        phoneVerified: false,
-        isActive: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      try {
+        await userRepository.createOrMerge(user.uid, {
+          uid: user.uid,
+          email: user.email || '',
+          name: appleName,
+          role: 'staff',
+          socialProvider: 'apple',
+          phoneVerified: false,
+          isActive: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      } catch (createError) {
+        // 프로필 생성 실패 시 부분 인증 상태 정리 (로그인됐지만 프로필 없는 상태 방지)
+        logger.error('Apple 신규 프로필 생성 실패 — 세션 정리', {
+          component: 'authService',
+          uid: user.uid,
+          error: createError instanceof Error ? createError.message : String(createError),
+        });
+        try {
+          await syncSignOut();
+        } catch {
+          // 정리 실패 무시
+        }
+        throw createError;
+      }
 
       // 프로필 생성 후 best-effort 토큰 갱신 (onUserRoleChange 트리거가 Claims 설정)
       try {

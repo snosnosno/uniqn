@@ -76,6 +76,9 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
         onPress={() => !disabled && onChange(!checked)}
         disabled={disabled}
         className="flex-row items-center flex-1"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked, disabled: !!disabled }}
+        accessibilityLabel={`${required ? '필수' : '선택'} ${label}`}
       >
         <View
           className={`
@@ -148,6 +151,9 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
       <Pressable
         onPress={handleAllAgree}
         disabled={isLoading}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: allChecked, disabled: isLoading }}
+        accessibilityLabel="전체 동의하기"
         className={`
           flex-row items-center p-4 rounded-lg
           bg-gray-50 dark:bg-surface

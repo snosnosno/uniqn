@@ -45,6 +45,12 @@ yarn-error.*
 # Testing
 coverage/
 
+# Playwright E2E
+e2e/test-results/
+e2e/fixtures/storage-states/
+playwright-report/
+blob-report/
+
 # Misc
 .DS_Store
 *.pem

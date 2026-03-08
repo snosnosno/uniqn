@@ -122,6 +122,7 @@ module.exports = [
       'coverage/',
       'functions/',
       'scripts/',
+      'e2e/',
     ],
   },
 ];

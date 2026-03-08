@@ -17,11 +17,18 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { initializeAuth, getAuth, Auth, browserLocalPersistence } from 'firebase/auth';
+import {
+  initializeAuth,
+  getAuth,
+  Auth,
+  browserLocalPersistence,
+  connectAuthEmulator,
+} from 'firebase/auth';
 // @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
 import { getReactNativePersistence } from 'firebase/auth';
 import {
   getFirestore,
+  connectFirestoreEmulator,
   Firestore,
   Timestamp,
   doc,
@@ -44,7 +51,7 @@ import {
   increment,
 } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getFunctions, Functions } from 'firebase/functions';
+import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
 import {
   getRemoteConfig,
   fetchAndActivate,
@@ -93,6 +100,31 @@ let firebaseRemoteConfig: RemoteConfig | null = null;
  */
 let isInitialized = false;
 let initializationError: Error | null = null;
+
+/**
+ * 에뮬레이터 호스트/포트 상수 (개발 환경 전용)
+ */
+const EMULATOR_AUTH_URL = 'http://localhost:9099';
+const EMULATOR_FIRESTORE_HOST = 'localhost';
+const EMULATOR_FIRESTORE_PORT = 8080;
+const EMULATOR_FUNCTIONS_HOST = 'localhost';
+const EMULATOR_FUNCTIONS_PORT = 5001;
+
+/**
+ * 에뮬레이터 연결 상태 플래그 (중복 연결 방지)
+ */
+let emulatorAuthConnected = false;
+let emulatorFirestoreConnected = false;
+let emulatorFunctionsConnected = false;
+
+/**
+ * 에뮬레이터 사용 여부 확인
+ * __DEV__ 가드로 프로덕션 빌드에서는 절대 에뮬레이터에 연결하지 않음
+ */
+function shouldUseEmulator(): boolean {
+  if (!__DEV__) return false;
+  return process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
+}
 
 /**
  * Firebase 앱 초기화 (내부용)
@@ -175,6 +207,12 @@ export function getFirebaseAuth(): Auth {
       // 이미 초기화된 경우 기존 인스턴스 반환
       firebaseAuth = getAuth(app);
     }
+
+    // E2E 테스트용 에뮬레이터 연결
+    if (shouldUseEmulator() && !emulatorAuthConnected) {
+      connectAuthEmulator(firebaseAuth, EMULATOR_AUTH_URL, { disableWarnings: true });
+      emulatorAuthConnected = true;
+    }
   }
   return firebaseAuth;
 }
@@ -186,6 +224,12 @@ export function getFirebaseDb(): Firestore {
   if (!firebaseDb) {
     const app = initializeFirebaseApp();
     firebaseDb = getFirestore(app);
+
+    // E2E 테스트용 에뮬레이터 연결
+    if (shouldUseEmulator() && !emulatorFirestoreConnected) {
+      connectFirestoreEmulator(firebaseDb, EMULATOR_FIRESTORE_HOST, EMULATOR_FIRESTORE_PORT);
+      emulatorFirestoreConnected = true;
+    }
   }
   return firebaseDb;
 }
@@ -209,6 +253,12 @@ export function getFirebaseFunctions(): Functions {
     const app = initializeFirebaseApp();
     const region = getEnv().EXPO_PUBLIC_FIREBASE_REGION;
     firebaseFunctions = getFunctions(app, region);
+
+    // E2E 테스트용 에뮬레이터 연결
+    if (shouldUseEmulator() && !emulatorFunctionsConnected) {
+      connectFunctionsEmulator(firebaseFunctions, EMULATOR_FUNCTIONS_HOST, EMULATOR_FUNCTIONS_PORT);
+      emulatorFunctionsConnected = true;
+    }
   }
   return firebaseFunctions;
 }

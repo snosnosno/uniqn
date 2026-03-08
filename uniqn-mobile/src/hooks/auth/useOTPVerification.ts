@@ -14,6 +14,7 @@ import { checkPhoneExists } from '@/services/auth';
 import { getFirebaseOTPErrorMessage } from '@/components/auth/phoneAuthErrors';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { getNativeAuth } from '@/lib/nativeAuth';
+import { getMMKVInstance } from '@/lib/mmkvStorage';
 import type { ConfirmationResultLike } from './usePhoneSMS';
 
 // ============================================================================
@@ -47,6 +48,8 @@ export interface UseOTPVerificationReturn {
 
 const OTP_LENGTH = 6;
 const MAX_OTP_ATTEMPTS = 5;
+/** OTP 시도 횟수 자동 리셋 쿨다운 (5분) */
+const OTP_ATTEMPTS_COOLDOWN_MS = 5 * 60 * 1000;
 
 // ============================================================================
 // Hook
@@ -62,9 +65,45 @@ export function useOTPVerification({
   onError,
 }: UseOTPVerificationOptions): UseOTPVerificationReturn {
   const [otpCode, setOtpCode] = useState('');
-  const [otpAttempts, setOtpAttempts] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // OTP 시도 횟수를 MMKV에 저장하여 컴포넌트 unmount/remount 시에도 제한 유지
+  const otpAttemptsKey = `otp_attempts_${cleanPhoneNumber(phone)}`;
+
+  const getPersistedAttempts = useCallback((): number => {
+    try {
+      const mmkv = getMMKVInstance();
+      const stored = mmkv.getString(otpAttemptsKey);
+      if (!stored) return 0;
+      const { count, timestamp } = JSON.parse(stored) as { count: number; timestamp: number };
+      if (Date.now() - timestamp > OTP_ATTEMPTS_COOLDOWN_MS) {
+        mmkv.delete(otpAttemptsKey);
+        return 0;
+      }
+      return count;
+    } catch {
+      return 0;
+    }
+  }, [otpAttemptsKey]);
+
+  const setPersistedAttempts = useCallback(
+    (count: number) => {
+      try {
+        const mmkv = getMMKVInstance();
+        if (count === 0) {
+          mmkv.delete(otpAttemptsKey);
+        } else {
+          mmkv.set(otpAttemptsKey, JSON.stringify({ count, timestamp: Date.now() }));
+        }
+      } catch {
+        // MMKV 저장 실패는 무시 (메모리 카운터는 유지됨)
+      }
+    },
+    [otpAttemptsKey]
+  );
+
+  const [otpAttempts, setOtpAttempts] = useState(getPersistedAttempts);
 
   /** OTP 코드 입력 핸들러 (숫자만, 6자리 제한) */
   const handleOtpChange = useCallback((text: string) => {
@@ -82,6 +121,7 @@ export function useOTPVerification({
       setError('인증 상태가 변경되었습니다. 다시 인증해주세요.');
       setOtpCode('');
       setOtpAttempts(0);
+      setPersistedAttempts(0);
       return 'reset';
     }
 
@@ -89,6 +129,7 @@ export function useOTPVerification({
     if (otpAttempts >= MAX_OTP_ATTEMPTS) {
       setError('인증번호 입력 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.');
       setOtpAttempts(0);
+      setPersistedAttempts(0);
       setOtpCode('');
       return 'reset';
     }
@@ -138,7 +179,15 @@ export function useOTPVerification({
 
         // linkWithCredential 호출 없이 otpData를 콜백으로 전달
         // CF(verifyAndSaveProfile)가 서버에서 OTP 검증 + phoneNumber 설정 처리
-        onVerified(toE164(phone), { verificationId: vid, otpCode });
+        try {
+          onVerified(toE164(phone), { verificationId: vid, otpCode });
+        } catch (callbackError) {
+          logger.error('onVerified 콜백 실행 실패', {
+            error: callbackError instanceof Error ? callbackError.message : String(callbackError),
+            mode,
+          });
+          throw callbackError;
+        }
         logger.info('SMS 인증 완료 (서버사이드 검증 모드)', {
           phone: maskValue(phone, 'phone'),
           mode,
@@ -152,7 +201,15 @@ export function useOTPVerification({
       }
       await confirmation.confirm(otpCode);
 
-      onVerified(toE164(phone));
+      try {
+        onVerified(toE164(phone));
+      } catch (callbackError) {
+        logger.error('onVerified 콜백 실행 실패', {
+          error: callbackError instanceof Error ? callbackError.message : String(callbackError),
+          mode,
+        });
+        throw callbackError;
+      }
       logger.info('SMS 인증 완료', { phone: maskValue(phone, 'phone'), mode });
       return 'verified';
     } catch (err) {
@@ -163,7 +220,11 @@ export function useOTPVerification({
           ? err.message
           : '인증에 실패했습니다. 다시 시도해주세요.';
       setError(errorMessage);
-      setOtpAttempts((prev) => prev + 1);
+      setOtpAttempts((prev) => {
+        const next = prev + 1;
+        setPersistedAttempts(next);
+        return next;
+      });
       onError?.(err instanceof Error ? err : new Error(errorMessage));
       logger.error('OTP 확인 실패', err instanceof Error ? err : new Error(errorMessage), {
         mode,
@@ -186,14 +247,16 @@ export function useOTPVerification({
     otpAttempts,
     verificationIdRef,
     requestedModeRef,
+    setPersistedAttempts,
   ]);
 
   /** OTP 상태 초기화 */
   const resetOTP = useCallback(() => {
     setOtpCode('');
     setOtpAttempts(0);
+    setPersistedAttempts(0);
     setError(null);
-  }, []);
+  }, [setPersistedAttempts]);
 
   return {
     otpCode,

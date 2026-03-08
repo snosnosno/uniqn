@@ -29,6 +29,9 @@ const CURRENT_ONBOARDING_VERSION = 1;
 /**
  * UID를 해싱하여 스토리지 키에 사용
  * 보안상 원본 UID를 로컬 스토리지에 노출하지 않기 위함
+ *
+ * SYNC: e2e/global-setup.ts hashUID()와 동일 알고리즘 유지 필수
+ * 어느 한쪽을 변경하면 다른 쪽도 반드시 동기화할 것
  */
 function hashUID(uid: string): string {
   let hash = 0;

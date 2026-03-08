@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Platform } from 'react-native';
 import {
   signInWithPhoneNumber as webSignInWithPhoneNumber,
@@ -15,7 +15,13 @@ import {
 import { getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
-import { formatPhoneNumber, cleanPhoneNumber, toE164, formatE164ToDisplay } from '@/utils/phone';
+import {
+  formatPhoneNumber,
+  cleanPhoneNumber,
+  toE164,
+  formatE164ToDisplay,
+  isValidKoreanPhone,
+} from '@/utils/phone';
 import { checkPhoneExists } from '@/services/auth';
 import { getFirebasePhoneAuthErrorMessage } from '@/components/auth/phoneAuthErrors';
 import {
@@ -305,7 +311,7 @@ export function usePhoneSMS({
       onAutoCompleted: (otpData?: { verificationId: string; otpCode: string }) => void
     ): Promise<'otp' | 'autoCompleted' | null> => {
       const cleaned = cleanPhoneNumber(phone);
-      if (cleaned.length < 10 || cleaned.length > 11) {
+      if (!isValidKoreanPhone(cleaned)) {
         setError('올바른 전화번호를 입력해주세요');
         return null;
       }
@@ -408,6 +414,20 @@ export function usePhoneSMS({
       phoneListenerRef.current.removeAllListeners('state_changed');
       phoneListenerRef.current = null;
     }
+  }, []);
+
+  // 컴포넌트 언마운트 시 리스너 정리 (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      if (phoneListenerSettledRef.current) {
+        phoneListenerSettledRef.current.current = true;
+        phoneListenerSettledRef.current = null;
+      }
+      if (phoneListenerRef.current) {
+        phoneListenerRef.current.removeAllListeners('state_changed');
+        phoneListenerRef.current = null;
+      }
+    };
   }, []);
 
   return {

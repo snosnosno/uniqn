@@ -260,14 +260,20 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
           return;
         }
 
-        // Auth 상태 변경 리스너로 세션 복원 대기
+        // Auth 상태 변경 리스너로 세션 복원 대기 (settled 플래그로 이중 resolve 방지)
+        let settled = false;
         const unsubscribe = auth.onAuthStateChanged((user) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
           unsubscribe();
           resolve(user);
         });
 
         // 타임아웃 (2초)
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+          if (settled) return;
+          settled = true;
           unsubscribe();
           resolve(null);
         }, 2000);
@@ -308,9 +314,9 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         return false;
       }
 
-      // 6. Firestore에서 최신 프로필 로드
+      // 6. Firestore에서 최신 프로필 로드 (필수 필드 검증 포함)
       const profile = await getUserProfile(currentUser.uid);
-      if (profile) {
+      if (profile && profile.uid && profile.role) {
         useAuthStore.getState().setUser(currentUser);
         useAuthStore.getState().setProfile({
           ...profile,
@@ -330,6 +336,11 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
                 lastUpdatedAt: profile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
               }
             : undefined,
+        });
+      } else if (profile) {
+        logger.warn('생체 인증: 불완전한 프로필 구조 감지', {
+          uid: currentUser.uid,
+          hasRole: !!profile.role,
         });
       }
 
