@@ -121,12 +121,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     staff.date,
   ]);
 
-  // 출퇴근 시간: 실제 checkIn/checkOut 상태 표시 (미정 시 '미정')
-  const startTimeStr = timeInfo.checkIn;
-  const endTimeStr = timeInfo.checkOut;
+  // 통합 시간: 실제 > timeSlot 파싱 > '미정'
+  const startTimeStr = timeInfo.effectiveStart;
+  const endTimeStr = timeInfo.effectiveEnd;
 
-  // 근무 시간 계산 (실제 시간 기반, 없으면 '-')
-  const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;
+  // 근무 시간 계산 (effective 시간 기반)
+  const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
 
   // 액션 버튼 표시 조건
   const canEditTime =
@@ -223,7 +223,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               <View className="flex-1">
                 <View className="flex-row items-center">
                   <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {timeInfo.isActualTime ? '출근' : '예정'}
+                    {timeInfo.isEffectiveStartActual ? '출근' : '예정'}
                   </Text>
                   {isCheckedIn && (
                     <View className="ml-1">
@@ -237,7 +237,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
-                  {timeInfo.isActualTime ? '퇴근' : '예정'}
+                  {timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
                 </Text>
                 <Text className="text-sm font-medium text-gray-900 dark:text-white">
                   {endTimeStr}

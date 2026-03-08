@@ -119,10 +119,10 @@ export interface ConfirmedStaff {
   /** 퇴근 시간 (QR 퇴근 또는 관리자 수정, null이면 미정) */
   checkOutTime?: TimeInput;
 
-  /** 예정 출근 시간 */
+  /** @deprecated checkInTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
   scheduledStartTime?: Timestamp | string;
 
-  /** 예정 퇴근 시간 */
+  /** @deprecated checkOutTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
   scheduledEndTime?: Timestamp | string;
 
   /** 정산 상태 */

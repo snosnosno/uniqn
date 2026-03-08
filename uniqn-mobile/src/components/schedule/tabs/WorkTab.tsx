@@ -5,15 +5,15 @@
  * @version 1.0.0
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Button, Badge } from '@/components/ui';
-import { formatTime, calculateDuration } from '../helpers/timeHelpers';
 import { BriefcaseIcon, ClockIcon, QrCodeIcon, PhoneIcon } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
+import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { formatPhoneNumber } from '@/utils/phone';
@@ -75,8 +75,10 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
     onQRScan?.();
   }, [onQRScan]);
 
-  // 실제 출퇴근 시간이 있는지 확인
-  const hasActualTimes = schedule.checkInTime || schedule.checkOutTime;
+  // 통합 시간 표시 (실제 > timeSlot 파싱 > '미정')
+  const timeInfo = useMemo(() => {
+    return WorkTimeDisplay.getDisplayInfo(schedule);
+  }, [schedule]);
 
   // QR 버튼 표시 조건: 확정 상태 + workLogId 있음
   const canShowQRButton =
@@ -161,23 +163,23 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           </Badge>
         </View>
 
-        {hasActualTimes ? (
-          <View className="flex-row gap-2">
-            <TimeBox label="출근" value={formatTime(schedule.checkInTime)} />
-            <TimeBox label="퇴근" value={formatTime(schedule.checkOutTime)} />
+        <View className="flex-row gap-2">
+          <TimeBox
+            label={timeInfo.isEffectiveStartActual ? '출근' : '예정'}
+            value={timeInfo.effectiveStart}
+          />
+          <TimeBox
+            label={timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
+            value={timeInfo.effectiveEnd}
+          />
+          {timeInfo.duration !== '-' && (
             <TimeBox
               label="근무시간"
-              value={calculateDuration(schedule.checkInTime, schedule.checkOutTime)}
-              isHighlight
+              value={timeInfo.duration}
+              isHighlight={timeInfo.hasActualTime}
             />
-          </View>
-        ) : (
-          <View className="bg-gray-50 dark:bg-surface/50 rounded-xl p-4">
-            <Text className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              아직 출퇴근 기록이 없습니다
-            </Text>
-          </View>
-        )}
+          )}
+        </View>
       </View>
 
 

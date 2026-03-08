@@ -231,12 +231,10 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           modifiedAt: Timestamp.now(),
         });
 
-        // 업데이트 데이터 구성
+        // 업데이트 데이터 구성 (scheduledStartTime/scheduledEndTime은 checkInTime의 중복이므로 제거)
         const updateData: Record<string, unknown> = {
           checkInTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
           checkOutTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
-          scheduledStartTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
-          scheduledEndTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
           modificationHistory,
           updatedAt: serverTimestamp(),
         };

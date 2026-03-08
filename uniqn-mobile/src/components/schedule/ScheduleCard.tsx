@@ -144,10 +144,10 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     return WorkTimeDisplay.getDisplayInfo(schedule);
   }, [schedule]);
 
-  // 확정 상태 시간 표시 (예정 시간)
+  // 확정 상태 시간 표시 (실제 > timeSlot 파싱 > '미정')
   const confirmedTimeDisplay = useMemo(() => {
     if (schedule.type !== STATUS.SCHEDULE.CONFIRMED) return null;
-    return `${timeDisplayInfo.scheduledStart} - ${timeDisplayInfo.scheduledEnd}`;
+    return `${timeDisplayInfo.effectiveStart} - ${timeDisplayInfo.effectiveEnd}`;
   }, [schedule.type, timeDisplayInfo]);
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;

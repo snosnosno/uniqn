@@ -8,6 +8,7 @@ import type { SettlementBreakdown } from '@/types/schedule';
 import type { JobPostingCard, SalaryInfo } from '@/types/jobPosting';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { SettlementCalculator } from '@/domains/settlement';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from './constants';
 import { type TaxSettings, DEFAULT_TAX_SETTINGS, calculateTaxAmountByItems } from './tax';
 
@@ -497,8 +498,14 @@ export function calculateSettlementBreakdown(
   workLogData: {
     checkInTime?: TimeInput;
     checkOutTime?: TimeInput;
+    /** @deprecated scheduledStartTime은 checkInTime의 중복. timeSlot 사용 권장 */
     scheduledStartTime?: TimeInput;
+    /** @deprecated scheduledEndTime은 checkOutTime의 중복. timeSlot 사용 권장 */
     scheduledEndTime?: TimeInput;
+    /** timeSlot 문자열 (예: "09:00~18:00") - 예정 시간 폴백용 */
+    timeSlot?: string;
+    /** 날짜 (YYYY-MM-DD) - timeSlot 파싱에 필요 */
+    date?: string;
     role?: string;
     customRole?: string;
     customSalaryInfo?: SalaryInfo;
@@ -507,9 +514,21 @@ export function calculateSettlementBreakdown(
   },
   jobPostingCard?: JobPostingCard
 ): SettlementBreakdown | null {
-  // 1. 시간 결정 (checkIn/checkOut 우선, 없으면 scheduled)
-  const startTime = workLogData.checkInTime || workLogData.scheduledStartTime;
-  const endTime = workLogData.checkOutTime || workLogData.scheduledEndTime;
+  // 1. 시간 결정 (checkIn/checkOut 우선, 없으면 timeSlot 파싱, legacy scheduledTime 폴백)
+  let startTime: TimeInput | undefined = workLogData.checkInTime;
+  let endTime: TimeInput | undefined = workLogData.checkOutTime;
+
+  // timeSlot 파싱 폴백
+  if ((!startTime || !endTime) && workLogData.timeSlot && workLogData.date) {
+    const parsed = parseTimeSlotToDate(workLogData.timeSlot, workLogData.date);
+    if (!startTime && parsed.startTime) startTime = parsed.startTime;
+    if (!endTime && parsed.endTime) endTime = parsed.endTime;
+  }
+
+  // legacy 폴백 (기존 데이터 호환)
+  if (!startTime) startTime = workLogData.scheduledStartTime;
+  if (!endTime) endTime = workLogData.scheduledEndTime;
+
   const isEstimate = !workLogData.checkInTime || !workLogData.checkOutTime;
 
   // 시간 정보가 없으면 계산 불가

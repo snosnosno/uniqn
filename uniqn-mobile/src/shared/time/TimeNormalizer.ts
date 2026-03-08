@@ -29,7 +29,8 @@ export class TimeNormalizer {
    * @returns 정규화된 근무 시간
    */
   static normalize(input: TimeFieldsInput): NormalizedWorkTime {
-    // 예정 시간 정규화
+    // @deprecated scheduledStartTime/scheduledEndTime은 checkInTime의 중복값
+    // 향후 제거 예정. timeSlot 파싱으로 예정 시간을 구하세요.
     const scheduledStart = this.parseTime(input.scheduledStartTime);
     const scheduledEnd = this.parseTime(input.scheduledEndTime);
 

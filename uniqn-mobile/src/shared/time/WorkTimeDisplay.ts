@@ -2,19 +2,20 @@
  * WorkTimeDisplay - 근무 시간 표시 통합 유틸리티
  *
  * @description 구인자/직원 화면 간 시간 표시 일관성 확보
- * @version 1.1.0
+ * @version 2.0.0
  *
  * 표시 우선순위:
  * 1. 실제 시간 (checkInTime/checkOutTime)
- * 2. 예정 시간 (startTime/endTime 또는 scheduledStartTime/scheduledEndTime)
+ * 2. timeSlot 파싱 (예정 시간)
  * 3. '미정' 표시
  *
- * NOTE: timeSlot 폴백은 사용하지 않음 (checkInTime이 null이면 "미정" 표시)
+ * NOTE: scheduledStartTime/scheduledEndTime은 deprecated (유령 필드).
+ *       예정 시간은 timeSlot 문자열 파싱으로 통합.
  */
 
 import { TimeNormalizer } from './TimeNormalizer';
 import type { TimeInput } from './types';
-import { STATUS } from '@/constants';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 
 // ============================================================================
 // Types
@@ -28,17 +29,17 @@ export interface WorkTimeSource {
   checkInTime?: TimeInput;
   /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
   checkOutTime?: TimeInput;
-  /** 예정 시작 시간 (공고에서 설정) */
+  /** @deprecated startTime은 scheduledStartTime의 alias. timeSlot 사용 권장 */
   startTime?: TimeInput;
-  /** 예정 종료 시간 (공고에서 설정) */
+  /** @deprecated endTime은 scheduledEndTime의 alias. timeSlot 사용 권장 */
   endTime?: TimeInput;
-  /** 예정 시작 시간 (WorkLog에서 사용) */
+  /** @deprecated checkInTime과 동일값. 향후 제거 예정 */
   scheduledStartTime?: TimeInput;
-  /** 예정 종료 시간 (WorkLog에서 사용) */
+  /** @deprecated checkOutTime과 동일값. 향후 제거 예정 */
   scheduledEndTime?: TimeInput;
-  /** 시간대 문자열 (예: "18:00~02:00") - rawTimeSlot 결과에 전달용 */
+  /** 시간대 문자열 (예: "18:00~02:00") - 예정 시간의 단일 진실 소스 */
   timeSlot?: string;
-  /** 날짜 */
+  /** 날짜 (YYYY-MM-DD) - timeSlot 파싱에 필요 */
   date?: string;
   /** JobPostingCard (rawTimeSlot 참조용) */
   jobPostingCard?: {
@@ -54,17 +55,25 @@ export interface WorkTimeDisplayResult {
   checkIn: string;
   /** 실제 퇴근 시간 (HH:mm) 또는 '미정' */
   checkOut: string;
-  /** 예정 출근 시간 (HH:mm) 또는 '미정' */
+  /** 예정 출근 시간 (HH:mm) 또는 '미정' - timeSlot 파싱 기반 */
   scheduledStart: string;
-  /** 예정 퇴근 시간 (HH:mm) 또는 '미정' */
+  /** 예정 퇴근 시간 (HH:mm) 또는 '미정' - timeSlot 파싱 기반 */
   scheduledEnd: string;
+  /** 통합 표시용 시작 시간 (실제 > timeSlot 파싱 > '미정') */
+  effectiveStart: string;
+  /** 통합 표시용 종료 시간 (실제 > timeSlot 파싱 > '미정') */
+  effectiveEnd: string;
+  /** effectiveStart가 실제 시간인지 여부 (라벨 결정용: true → '출근', false → '예정') */
+  isEffectiveStartActual: boolean;
+  /** effectiveEnd가 실제 시간인지 여부 (라벨 결정용: true → '퇴근', false → '예정') */
+  isEffectiveEndActual: boolean;
   /** 실제 출퇴근 기록 유무 */
   hasActualTime: boolean;
   /** 근무 시간 (X시간 X분) 또는 '-' */
   duration: string;
-  /** 실제 시간 사용 여부 (출근/퇴근 둘 중 하나라도 있으면 true) */
+  /** @deprecated hasActualTime 사용. 동일한 값 */
   isActualTime: boolean;
-  /** 원본 timeSlot 문자열 (참조용, 폴백에 사용되지 않음) */
+  /** 원본 timeSlot 문자열 (참조용) */
   rawTimeSlot: string | null;
 }
 
@@ -100,23 +109,29 @@ export class WorkTimeDisplay {
     const actualStart = TimeNormalizer.parseTime(source.checkInTime);
     const actualEnd = TimeNormalizer.parseTime(source.checkOutTime);
 
-    // 2. 예정 시간 파싱 (startTime 우선, scheduledStartTime 폴백, timeSlot 폴백 없음)
+    // 2. 예정 시간 파싱 (timeSlot 파싱 우선, legacy 필드 폴백)
+    const timeSlotStr = source.timeSlot || source.jobPostingCard?.timeSlot;
+    const timeSlotParsed = parseTimeSlotToDate(timeSlotStr ?? null, source.date ?? '');
     const scheduledStart =
+      timeSlotParsed.startTime ??
       TimeNormalizer.parseTime(source.startTime) ??
       TimeNormalizer.parseTime(source.scheduledStartTime);
     const scheduledEnd =
-      TimeNormalizer.parseTime(source.endTime) ?? TimeNormalizer.parseTime(source.scheduledEndTime);
+      timeSlotParsed.endTime ??
+      TimeNormalizer.parseTime(source.endTime) ??
+      TimeNormalizer.parseTime(source.scheduledEndTime);
 
     // 3. 실제 시간 유무 확인
     const hasActualTime = actualStart !== null || actualEnd !== null;
 
-    // 4. 근무 시간 계산 (실제 시간 우선, 없으면 예정 시간)
-    const duration = this.calculateDuration(
-      actualStart ?? scheduledStart,
-      actualEnd ?? scheduledEnd
-    );
+    // 4. 통합 표시 시간 (실제 > 예정 > '미정')
+    const effectiveStartDate = actualStart ?? scheduledStart;
+    const effectiveEndDate = actualEnd ?? scheduledEnd;
 
-    // 5. 예정 시간 문자열 결정
+    // 5. 근무 시간 계산 (effective 시간 기반)
+    const duration = this.calculateDuration(effectiveStartDate, effectiveEndDate);
+
+    // 6. 예정 시간 문자열 결정
     const scheduledStartStr = this.formatTimeOrDefault(scheduledStart);
     const scheduledEndStr = this.formatTimeOrDefault(scheduledEnd);
 
@@ -125,42 +140,15 @@ export class WorkTimeDisplay {
       checkOut: this.formatTimeOrDefault(actualEnd),
       scheduledStart: scheduledStartStr,
       scheduledEnd: scheduledEndStr,
+      effectiveStart: this.formatTimeOrDefault(effectiveStartDate),
+      effectiveEnd: this.formatTimeOrDefault(effectiveEndDate),
+      isEffectiveStartActual: actualStart !== null,
+      isEffectiveEndActual: actualEnd !== null,
       hasActualTime,
       duration,
       isActualTime: hasActualTime,
-      rawTimeSlot: (source.timeSlot || source.jobPostingCard?.timeSlot) ?? null,
+      rawTimeSlot: timeSlotStr ?? null,
     };
-  }
-
-  /**
-   * 상태에 따른 시간 범위 표시
-   *
-   * @param source 시간 필드를 가진 객체
-   * @param status 스케줄 상태 ('applied' | 'confirmed' | 'completed' | 'cancelled' | 'scheduled')
-   * @returns "HH:mm - HH:mm" 형식 문자열
-   *
-   * @example
-   * // completed 상태: 실제 시간 반환
-   * WorkTimeDisplay.getTimeRangeForStatus(schedule, 'completed')
-   * // => "09:05 - 18:30"
-   *
-   * // confirmed 상태: 예정 시간 반환
-   * WorkTimeDisplay.getTimeRangeForStatus(schedule, 'confirmed')
-   * // => "09:00 - 18:00"
-   */
-  static getTimeRangeForStatus(
-    source: WorkTimeSource,
-    status: 'applied' | 'confirmed' | 'completed' | 'cancelled' | 'scheduled'
-  ): string {
-    const info = this.getDisplayInfo(source);
-
-    // completed 상태이고 실제 시간이 있으면 실제 시간 반환
-    if (status === STATUS.WORK_LOG.COMPLETED && info.hasActualTime) {
-      return `${info.checkIn} - ${info.checkOut}`;
-    }
-
-    // 그 외: 예정 시간 반환
-    return `${info.scheduledStart} - ${info.scheduledEnd}`;
   }
 
   /**
@@ -173,17 +161,6 @@ export class WorkTimeDisplay {
     const info = this.getDisplayInfo(source);
     if (!info.hasActualTime) return null;
     return `${info.checkIn} - ${info.checkOut}`;
-  }
-
-  /**
-   * 예정 시간 범위 문자열
-   *
-   * @param source 시간 필드를 가진 객체
-   * @returns "HH:mm - HH:mm" 형식 문자열
-   */
-  static getScheduledTimeRange(source: WorkTimeSource): string {
-    const info = this.getDisplayInfo(source);
-    return `${info.scheduledStart} - ${info.scheduledEnd}`;
   }
 
   // ==========================================================================

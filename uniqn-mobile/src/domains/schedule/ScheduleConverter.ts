@@ -21,6 +21,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { normalizeTimestamp } from '@/utils/firestore';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { StatusMapper } from '@/shared/status';
 import { STATUS } from '@/constants';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
@@ -78,6 +79,8 @@ export class ScheduleConverter {
         checkOutTime: workLog.checkOutTime,
         scheduledStartTime: workLog.scheduledStartTime,
         scheduledEndTime: workLog.scheduledEndTime,
+        timeSlot: workLog.timeSlot,
+        date: workLog.date,
         role: workLog.role,
         customRole: workLog.customRole,
         customSalaryInfo: workLog.customSalaryInfo,
@@ -91,12 +94,21 @@ export class ScheduleConverter {
     const jobPostingId = workLog.jobPostingId || '';
     const jobPostingName = cardInfo?.title || '이벤트';
 
+    // startTime: timeSlot 파싱 우선, legacy scheduledStartTime 폴백
+    const timeSlotParsed = parseTimeSlotToDate(workLog.timeSlot ?? null, workLog.date);
+    const startTimeFromTimeSlot = timeSlotParsed.startTime
+      ? Timestamp.fromDate(timeSlotParsed.startTime)
+      : null;
+    const endTimeFromTimeSlot = timeSlotParsed.endTime
+      ? Timestamp.fromDate(timeSlotParsed.endTime)
+      : null;
+
     return {
       id: workLog.id,
       type,
       date: workLog.date,
-      startTime: normalizeTimestamp(workLog.scheduledStartTime),
-      endTime: normalizeTimestamp(workLog.scheduledEndTime),
+      startTime: startTimeFromTimeSlot ?? normalizeTimestamp(workLog.scheduledStartTime),
+      endTime: endTimeFromTimeSlot ?? normalizeTimestamp(workLog.scheduledEndTime),
       checkInTime: normalizeTimestamp(workLog.checkInTime),
       checkOutTime: normalizeTimestamp(workLog.checkOutTime),
       jobPostingId,

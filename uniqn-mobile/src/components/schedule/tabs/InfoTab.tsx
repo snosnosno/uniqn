@@ -53,13 +53,14 @@ export interface InfoTabProps {
 // ============================================================================
 
 /**
- * 예정 시간 표시 (WorkTimeDisplay 사용)
+ * 통합 시간 표시 (WorkTimeDisplay 사용)
  *
  * @description 구인자 화면과 일관성 확보
- * 우선순위: startTime/endTime → scheduledStartTime/scheduledEndTime → '미정'
+ * 우선순위: checkInTime > timeSlot 파싱 > '미정'
  */
 function getTimeDisplay(schedule: ScheduleEvent): string {
-  return WorkTimeDisplay.getScheduledTimeRange(schedule);
+  const info = WorkTimeDisplay.getDisplayInfo(schedule);
+  return `${info.effectiveStart} - ${info.effectiveEnd}`;
 }
 
 /**
