@@ -506,10 +506,10 @@ async function seedTestData(db: Firestore): Promise<void> {
 // ============================================================================
 
 /**
- * useOnboarding.ts의 hashUID와 동일한 해싱 함수
- * localStorage에 온보딩 완료 플래그를 저장할 때 사용
+ * src/utils/hash.ts의 hashUID와 동일한 해싱 함수
+ * localStorage에 온보딩/튜토리얼 완료 플래그를 저장할 때 사용
  *
- * SYNC: src/hooks/useOnboarding.ts:33-41 hashUID()와 동일 알고리즘 유지 필수
+ * SYNC: src/utils/hash.ts hashUID()와 동일 알고리즘 유지 필수
  * 어느 한쪽을 변경하면 다른 쪽도 반드시 동기화할 것
  */
 function hashUID(uid: string): string {
@@ -599,10 +599,20 @@ async function generateStorageStates(apiKey: string): Promise<void> {
       signInData, account, apiKey
     );
 
-    // 3. 온보딩 완료 플래그 생성 (알림 권한 모달 방지)
+    // 3. 온보딩/튜토리얼 완료 플래그 생성 (모달 방지)
     const userHash = hashUID(account.uid);
     const onboardingKey = `onboarding:notification_permission:${userHash}`;
     const onboardingVersionKey = `onboarding:version:${userHash}`;
+
+    // 튜토리얼 완료 플래그
+    // SYNC: src/types/tutorial.ts TUTORIAL_KEY_MAP (키)
+    // SYNC: src/constants/tutorials/index.ts TUTORIAL_VERSIONS (버전)
+    // 버전 변경 시 여기도 반드시 업데이트할 것
+    const tutorialTypes = ['app_intro', 'posting_guide', 'settlement', 'qr_checkin'] as const;
+    const tutorialEntries = tutorialTypes.flatMap((type) => [
+      { name: `tutorial:${type}:${userHash}`, value: 'true' },
+      { name: `tutorial:version:${type}:${userHash}`, value: '1' },
+    ]);
 
     // 4. Zustand auth-storage 사전 설정 (hydration 가속)
     const authStorageValue = {
@@ -650,6 +660,7 @@ async function generateStorageStates(apiKey: string): Promise<void> {
             { name: 'auth-storage', value: JSON.stringify(authStorageValue) },
             { name: onboardingKey, value: 'true' },
             { name: onboardingVersionKey, value: '1' },
+            ...tutorialEntries,
             { name: 'uniqn_secure_autoLoginEnabled', value: autoLoginStorageValue },
           ],
         },

@@ -50,6 +50,9 @@ import {
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput } from '@/types';
+import { useTutorial } from '@/hooks/useTutorial';
+import { TutorialOverlay } from '@/components/tutorial';
+import { SETTLEMENT_EMPLOYER_TUTORIAL } from '@/constants/tutorials';
 
 // ============================================================================
 // Constants
@@ -207,6 +210,13 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
+
+  // 튜토리얼
+  const {
+    needsTutorial,
+    completeTutorial,
+    isLoading: isTutorialLoading,
+  } = useTutorial('settlement');
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabType>('staff');
@@ -457,16 +467,11 @@ export default function StaffSettlementsScreen() {
       try {
         // 이전 값 저장 (수정 이력용)
         const previousSalaryInfo =
-          (workLogForEdit as WorkLog & { customSalaryInfo?: SalaryInfo })
-            .customSalaryInfo ||
-          getEffectiveSalaryInfoFromRoles(
-            workLogForEdit,
-            rolesForList,
-            salaryConfig.defaultSalary
-          );
+          (workLogForEdit as WorkLog & { customSalaryInfo?: SalaryInfo }).customSalaryInfo ||
+          getEffectiveSalaryInfoFromRoles(workLogForEdit, rolesForList, salaryConfig.defaultSalary);
         const previousAllowances =
-          (workLogForEdit as WorkLog & { customAllowances?: Allowances })
-            .customAllowances || salaryConfig.allowances;
+          (workLogForEdit as WorkLog & { customAllowances?: Allowances }).customAllowances ||
+          salaryConfig.allowances;
 
         // 수정 이력 생성 (Firebase는 undefined를 허용하지 않으므로 필터링)
         const modificationEntry: Record<string, unknown> = {
@@ -498,7 +503,9 @@ export default function StaffSettlementsScreen() {
             customTaxSettings: {
               type: taxSettings.type,
               value: taxSettings.value,
-              ...(Array.isArray(taxSettings.taxableItems) && { taxableItems: taxSettings.taxableItems }),
+              ...(Array.isArray(taxSettings.taxableItems) && {
+                taxableItems: taxSettings.taxableItems,
+              }),
             },
             modificationEntry,
           },
@@ -569,7 +576,9 @@ export default function StaffSettlementsScreen() {
             taxSettings: {
               type: taxSettings.type,
               value: taxSettings.value,
-              ...(Array.isArray(taxSettings.taxableItems) && { taxableItems: taxSettings.taxableItems }),
+              ...(Array.isArray(taxSettings.taxableItems) && {
+                taxableItems: taxSettings.taxableItems,
+              }),
             },
           },
           posting.ownerId
@@ -710,8 +719,14 @@ export default function StaffSettlementsScreen() {
           rolesForList,
           salaryConfig.defaultSalary
         )}
-        allowances={getEffectiveAllowances(modals.selectedWorkLogForDetail || {}, salaryConfig.allowances)}
-        taxSettings={getEffectiveTaxSettings(modals.selectedWorkLogForDetail || {}, posting?.taxSettings)}
+        allowances={getEffectiveAllowances(
+          modals.selectedWorkLogForDetail || {},
+          salaryConfig.allowances
+        )}
+        taxSettings={getEffectiveTaxSettings(
+          modals.selectedWorkLogForDetail || {},
+          posting?.taxSettings
+        )}
         onEditTime={modals.openEditTimeFromDetail}
         onEditAmount={modals.openEditAmountFromDetail}
         onSettle={handleSettleFromDetail}
@@ -752,8 +767,14 @@ export default function StaffSettlementsScreen() {
           rolesForList,
           salaryConfig.defaultSalary
         )}
-        allowances={getEffectiveAllowances(modals.selectedWorkLogForEdit || {}, salaryConfig.allowances)}
-        taxSettings={getEffectiveTaxSettings(modals.selectedWorkLogForEdit || {}, posting?.taxSettings)}
+        allowances={getEffectiveAllowances(
+          modals.selectedWorkLogForEdit || {},
+          salaryConfig.allowances
+        )}
+        taxSettings={getEffectiveTaxSettings(
+          modals.selectedWorkLogForEdit || {},
+          posting?.taxSettings
+        )}
         onSave={handleSaveAmountEdit}
       />
 
@@ -766,6 +787,13 @@ export default function StaffSettlementsScreen() {
         taxSettings={posting?.taxSettings}
         onSave={handleSaveSettings}
       />
+
+      {/* 튜토리얼 오버레이 */}
+      {needsTutorial && !isTutorialLoading && (
+        <View className="absolute inset-0 z-10">
+          <TutorialOverlay config={SETTLEMENT_EMPLOYER_TUTORIAL} onComplete={completeTutorial} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

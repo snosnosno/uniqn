@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Keyboard } from 'react-native';
+import { View, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -18,8 +18,17 @@ import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 import { searchJobPostings, convertToCard, trackSearch } from '@/services';
 import { queryKeys } from '@/lib/queryClient';
 import type { PostingType, JobPostingFilters } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { useTutorial } from '@/hooks/useTutorial';
+import { TutorialOverlay } from '@/components/tutorial';
+import { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from '@/constants/tutorials';
 
 export default function JobsScreen() {
+  // 튜토리얼
+  const { isEmployer } = useAuth();
+  const { needsTutorial, completeTutorial, isLoading: isTutorialLoading } = useTutorial('appIntro');
+  const tutorialConfig = isEmployer ? APP_INTRO_EMPLOYER : APP_INTRO_STAFF;
+
   // 필터 상태 (기본: null, 자동 선택 후 설정됨)
   const [selectedType, setSelectedType] = useState<PostingType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -166,6 +175,12 @@ export default function JobsScreen() {
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
         />
+      )}
+      {/* 튜토리얼 오버레이 */}
+      {needsTutorial && !isTutorialLoading && (
+        <View className="absolute inset-0 z-10">
+          <TutorialOverlay config={tutorialConfig} onComplete={completeTutorial} />
+        </View>
       )}
     </SafeAreaView>
   );

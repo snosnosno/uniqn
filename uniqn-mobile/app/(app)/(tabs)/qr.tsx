@@ -15,12 +15,22 @@ import { QRCodeScanner } from '@/components/qr';
 import { ScanIcon, CheckCircleIcon, ClockIcon } from '@/components/icons';
 import { useQRCodeScanner, useCurrentWorkStatus } from '@/hooks';
 import type { QRCodeAction, QRCodeScanResult } from '@/types';
+import { useTutorial } from '@/hooks/useTutorial';
+import { TutorialOverlay } from '@/components/tutorial';
+import { QR_CHECKIN_TUTORIAL } from '@/constants/tutorials';
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
 export default function QRScreen() {
+  // 튜토리얼
+  const {
+    needsTutorial,
+    completeTutorial,
+    isLoading: isTutorialLoading,
+  } = useTutorial('qrCheckIn');
+
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<QRCodeAction>('checkIn');
 
@@ -170,6 +180,12 @@ export default function QRScreen() {
         scanError={lastError}
         onClearError={clearError}
       />
+      {/* 튜토리얼 오버레이 */}
+      {needsTutorial && !isTutorialLoading && (
+        <View className="absolute inset-0 z-10">
+          <TutorialOverlay config={QR_CHECKIN_TUTORIAL} onComplete={completeTutorial} />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
