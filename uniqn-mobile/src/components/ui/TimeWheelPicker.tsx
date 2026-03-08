@@ -21,10 +21,12 @@ import {
 } from 'react-native';
 import { AlertCircleIcon } from '../icons';
 import { isWeb } from '@/utils/platform';
-
-// 웹에서만 react-dom 사용 (Portal용)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const ReactDOM = Platform.OS === 'web' ? require('react-dom') : null;
+import { WebPortal } from '@/components/ui/WebPortal';
+import {
+  generateHours,
+  generateMinutes,
+  normalizeMinute as normalizeMinuteUtil,
+} from '@/utils/timePickerUtils';
 
 // ============================================================================
 // Types
@@ -80,30 +82,14 @@ function WebTimePicker({
   const hourListRef = useRef<FlatList>(null);
   const minuteListRef = useRef<FlatList>(null);
 
-  // 분 값을 interval에 맞게 정규화
-  const normalizeMinute = useCallback(
-    (minute: number) => {
-      return Math.round(minute / minuteInterval!) * minuteInterval!;
-    },
-    [minuteInterval]
-  );
-
   useEffect(() => {
     setSelectedHour(value.hour);
-    setSelectedMinute(normalizeMinute(value.minute));
-  }, [value, normalizeMinute]);
+    setSelectedMinute(normalizeMinuteUtil(value.minute, minuteInterval!));
+  }, [value, minuteInterval]);
 
-  // 시간 배열 생성 (0~47)
-  const hours = useMemo(
-    () => Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
-    [minHour, maxHour]
-  );
-
-  // 분 배열 생성 (interval 단위)
-  const minutes = useMemo(
-    () => Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
-    [minuteInterval]
-  );
+  // 시간/분 배열 (공유 유틸리티 사용)
+  const hours = useMemo(() => generateHours(minHour!, maxHour!), [minHour, maxHour]);
+  const minutes = useMemo(() => generateMinutes(minuteInterval!), [minuteInterval]);
 
   // 확인
   const handleConfirm = useCallback(() => {
@@ -304,22 +290,14 @@ function NativeWheelPicker({
   const [selectedHour, setSelectedHour] = useState(value.hour);
   const [selectedMinute, setSelectedMinute] = useState(value.minute);
 
-  // 시간 배열 생성 (0~47)
-  const hours = useMemo(
-    () => Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
-    [minHour, maxHour]
-  );
+  // 시간/분 배열 (공유 유틸리티 사용)
+  const hours = useMemo(() => generateHours(minHour!, maxHour!), [minHour, maxHour]);
+  const minutes = useMemo(() => generateMinutes(minuteInterval!), [minuteInterval]);
 
-  // 분 배열 생성 (5분 단위: 0, 5, 10, ... 55)
-  const minutes = useMemo(
-    () => Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
-    [minuteInterval]
-  );
-
-  // 분 값을 interval에 맞게 정규화
+  // 분 값을 interval에 맞게 정규화 (공유 유틸리티)
   const normalizeMinute = useCallback(
     (minute: number) => {
-      return Math.round(minute / minuteInterval!) * minuteInterval!;
+      return normalizeMinuteUtil(minute, minuteInterval!);
     },
     [minuteInterval]
   );
@@ -591,12 +569,7 @@ function WebOverlay({
     </div>
   );
 
-  // Portal을 사용해서 document.body에 직접 렌더링
-  if (typeof document !== 'undefined' && ReactDOM) {
-    return ReactDOM.createPortal(content, document.body);
-  }
-
-  return null;
+  return <WebPortal>{content}</WebPortal>;
 }
 
 export function TimeWheelPicker({

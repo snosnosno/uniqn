@@ -16,21 +16,17 @@ import {
   Platform,
   Switch,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { z } from 'zod';
 import { useThemeStore } from '@/stores/themeStore';
-import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore } from '@/stores/authStore';
 import { createAnnouncementSchema } from '@/schemas/announcement.schema';
-import { uploadMultipleAnnouncementImages } from '@/services/auth';
 import { AnnouncementImagePicker } from './AnnouncementImagePicker';
-import { logger } from '@/utils/logger';
+import { useAnnouncementImages } from '@/hooks/useAnnouncementImages';
 import type {
   CreateAnnouncementInput,
   AnnouncementCategory,
   AnnouncementPriority,
-  TargetAudience,
   AnnouncementImage,
+  TargetAudience,
 } from '@/types';
 import {
   ANNOUNCEMENT_CATEGORIES,
@@ -59,8 +55,6 @@ export function AnnouncementForm({
   submitLabel = '저장',
 }: AnnouncementFormProps) {
   const { isDarkMode } = useThemeStore();
-  const { addToast } = useToastStore();
-  const { user } = useAuthStore();
 
   // Form State
   const [title, setTitle] = useState(initialData?.title ?? '');
@@ -76,26 +70,20 @@ export function AnnouncementForm({
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Image State (다중 이미지)
-  const [images, setImages] = useState<AnnouncementImage[]>(() => {
-    // 기존 images 배열 또는 단일 imageUrl 호환성 처리
-    if (initialData?.images && initialData.images.length > 0) {
-      return initialData.images;
-    }
-    if (initialData?.imageUrl) {
-      return [
-        {
-          id: 'legacy-0',
-          url: initialData.imageUrl,
-          storagePath: initialData.imageStoragePath ?? '',
-          order: 0,
-        },
-      ];
-    }
-    return [];
+  // Image State (커스텀 Hook으로 분리)
+  const {
+    images,
+    uploadingIndex,
+    uploadProgress,
+    isUploading,
+    handleAddImages,
+    handleRemoveImage,
+    handleReorderImages,
+  } = useAnnouncementImages({
+    initialImages: initialData?.images,
+    legacyImageUrl: initialData?.imageUrl,
+    legacyStoragePath: initialData?.imageStoragePath,
   });
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Validation
   const validateField = useCallback((field: string, value: unknown) => {
@@ -116,132 +104,16 @@ export function AnnouncementForm({
     }
   }, []);
 
-  // Toggle role selection
-  const toggleRole = useCallback((role: UserRole) => {
+  // 단순 핸들러 (useCallback 불필요)
+  const toggleRole = (role: UserRole) => {
     setTargetRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
-  }, []);
+  };
 
-  // Category selection handler
-  const handleCategorySelect = useCallback((cat: AnnouncementCategory) => {
-    setCategory(cat);
-  }, []);
-
-  // Priority selection handler
-  const handlePrioritySelect = useCallback((p: AnnouncementPriority) => {
-    setPriority(p);
-  }, []);
-
-  // Target type handlers
-  const handleTargetTypeAll = useCallback(() => {
-    setTargetType('all');
-  }, []);
-
-  const handleTargetTypeRoles = useCallback(() => {
-    setTargetType('roles');
-  }, []);
-
-  // Image Add Handler (다중 선택 지원)
-  const handleAddImages = useCallback(async () => {
-    if (!user || uploadingIndex !== null) return;
-
-    // 추가 가능한 이미지 수 확인
-    const remainingSlots = MAX_ANNOUNCEMENT_IMAGES - images.length;
-    if (remainingSlots <= 0) {
-      addToast({
-        type: 'warning',
-        message: `이미지는 최대 ${MAX_ANNOUNCEMENT_IMAGES}장까지 첨부할 수 있습니다`,
-      });
-      return;
-    }
-
-    try {
-      // 권한 요청
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        addToast({ type: 'error', message: '사진 접근 권한이 필요합니다' });
-        return;
-      }
-
-      // 이미지 선택 (다중)
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: remainingSlots,
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
-
-      const selectedCount = result.assets.length;
-      logger.info('공지사항 이미지 업로드 시작', { uid: user.uid, count: selectedCount });
-
-      // 업로드 시작 - 첫 번째 이미지 인덱스를 uploading으로 설정
-      const startIndex = images.length;
-      setUploadingIndex(startIndex);
-      setUploadProgress(0);
-
-      // 다중 업로드 실행
-      const uris = result.assets.map((asset) => asset.uri);
-      const uploadedImages = await uploadMultipleAnnouncementImages(
-        user.uid,
-        uris,
-        (index, progress) => {
-          setUploadingIndex(startIndex + index);
-          setUploadProgress(progress);
-        }
-      );
-
-      if (uploadedImages.length > 0) {
-        // 기존 이미지에 새 이미지 추가 (order 재할당)
-        setImages((prev) => {
-          const newImages = [...prev];
-          uploadedImages.forEach((img, idx) => {
-            newImages.push({
-              ...img,
-              order: prev.length + idx,
-            });
-          });
-          return newImages;
-        });
-
-        if (uploadedImages.length === selectedCount) {
-          addToast({
-            type: 'success',
-            message: `${uploadedImages.length}장의 이미지가 업로드되었습니다`,
-          });
-        } else {
-          addToast({
-            type: 'warning',
-            message: `${uploadedImages.length}/${selectedCount}장 업로드 완료 (일부 실패)`,
-          });
-        }
-      } else {
-        addToast({ type: 'error', message: '이미지 업로드에 실패했습니다' });
-      }
-    } catch (error) {
-      logger.error('공지사항 이미지 업로드 실패', error as Error);
-      addToast({ type: 'error', message: '이미지 업로드에 실패했습니다' });
-    } finally {
-      setUploadingIndex(null);
-      setUploadProgress(0);
-    }
-  }, [user, uploadingIndex, images.length, addToast]);
-
-  // Image Remove Handler
-  const handleRemoveImage = useCallback((id: string) => {
-    setImages((prev) => {
-      const filtered = prev.filter((img) => img.id !== id);
-      // order 재할당
-      return filtered.map((img, index) => ({ ...img, order: index }));
-    });
-  }, []);
-
-  // Image Reorder Handler
-  const handleReorderImages = useCallback((reorderedImages: AnnouncementImage[]) => {
-    setImages(reorderedImages);
-  }, []);
+  const handleTargetTypeChange = (type: 'all' | 'roles') => {
+    setTargetType(type);
+  };
 
   // Submit
   const handleSubmit = useCallback(() => {
@@ -281,7 +153,6 @@ export function AnnouncementForm({
     onSubmit(formData);
   }, [title, content, category, priority, isPinned, targetType, targetRoles, images, onSubmit]);
 
-  const isUploading = uploadingIndex !== null;
   const isValid =
     title.length >= 2 &&
     content.length >= 10 &&
@@ -335,7 +206,7 @@ export function AnnouncementForm({
             {ANNOUNCEMENT_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.key}
-                onPress={() => handleCategorySelect(cat.key)}
+                onPress={() => setCategory(cat.key)}
                 className={`px-4 py-2 rounded-lg border ${
                   category === cat.key
                     ? 'bg-primary-600 border-primary-600'
@@ -410,7 +281,7 @@ export function AnnouncementForm({
             {([0, 1, 2] as AnnouncementPriority[]).map((p) => (
               <Pressable
                 key={p}
-                onPress={() => handlePrioritySelect(p)}
+                onPress={() => setPriority(p)}
                 className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                   priority === p
                     ? p === 2
@@ -456,7 +327,7 @@ export function AnnouncementForm({
           {/* Target Type */}
           <View className="flex-row gap-2 mb-3">
             <Pressable
-              onPress={handleTargetTypeAll}
+              onPress={() => handleTargetTypeChange('all')}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'all'
                   ? 'bg-primary-600 border-primary-600'
@@ -474,7 +345,7 @@ export function AnnouncementForm({
               </Text>
             </Pressable>
             <Pressable
-              onPress={handleTargetTypeRoles}
+              onPress={() => handleTargetTypeChange('roles')}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'roles'
                   ? 'bg-primary-600 border-primary-600'

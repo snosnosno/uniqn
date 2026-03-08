@@ -151,49 +151,7 @@ jest.mock('firebase/auth', () => ({
 // Firebase Firestore Mock (with class-based Timestamp for instanceof support)
 // ============================================================================
 
-// MockTimestamp 클래스 정의 (instanceof 체크 지원)
-class MockTimestamp {
-  constructor(seconds, nanoseconds = 0) {
-    this._seconds = seconds;
-    this._nanoseconds = nanoseconds;
-  }
-
-  get seconds() {
-    return this._seconds;
-  }
-
-  get nanoseconds() {
-    return this._nanoseconds;
-  }
-
-  toDate() {
-    return new Date(this._seconds * 1000 + this._nanoseconds / 1000000);
-  }
-
-  toMillis() {
-    return this._seconds * 1000 + this._nanoseconds / 1000000;
-  }
-
-  isEqual(other) {
-    return this._seconds === other._seconds && this._nanoseconds === other._nanoseconds;
-  }
-
-  static now() {
-    const now = Date.now();
-    return new MockTimestamp(Math.floor(now / 1000), (now % 1000) * 1000000);
-  }
-
-  static fromDate(date) {
-    const ms = date.getTime();
-    return new MockTimestamp(Math.floor(ms / 1000), (ms % 1000) * 1000000);
-  }
-
-  static fromMillis(milliseconds) {
-    return new MockTimestamp(Math.floor(milliseconds / 1000), (milliseconds % 1000) * 1000000);
-  }
-}
-
-// 전역으로 MockTimestamp 노출 (테스트에서 참조 가능)
+const MockTimestamp = require('./src/__tests__/mocks/MockTimestamp');
 global.MockTimestamp = MockTimestamp;
 
 jest.mock('firebase/firestore', () => ({
@@ -296,31 +254,28 @@ jest.mock('@tanstack/react-query', () => ({
   })),
 }));
 
-// Mock @sentry/react-native
-jest.mock('@sentry/react-native', () => ({
-  init: jest.fn(),
-  wrap: jest.fn((component) => component),
-  withScope: jest.fn((callback) => callback({
-    setTag: jest.fn(),
-    setLevel: jest.fn(),
-    setExtra: jest.fn(),
-    setContext: jest.fn(),
-  })),
-  captureException: jest.fn(),
-  captureMessage: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  setTag: jest.fn(),
-  setUser: jest.fn(),
-  setExtra: jest.fn(),
-  setContext: jest.fn(),
-  startTransaction: jest.fn(() => ({
-    finish: jest.fn(),
-    setTag: jest.fn(),
-    setData: jest.fn(),
-  })),
-  ReactNativeTracing: jest.fn(),
-  ReactNavigationInstrumentation: jest.fn(),
-}));
+// Mock @sentry/react-native (간소화)
+jest.mock('@sentry/react-native', () => {
+  const noop = jest.fn();
+  const noopWithCallback = jest.fn(
+    (cb) => cb && cb({ setTag: noop, setLevel: noop, setExtra: noop, setContext: noop })
+  );
+  return {
+    init: noop,
+    wrap: jest.fn((component) => component),
+    withScope: noopWithCallback,
+    captureException: noop,
+    captureMessage: noop,
+    addBreadcrumb: noop,
+    setTag: noop,
+    setUser: noop,
+    setExtra: noop,
+    setContext: noop,
+    startTransaction: jest.fn(() => ({ finish: noop, setTag: noop, setData: noop })),
+    ReactNativeTracing: noop,
+    ReactNavigationInstrumentation: noop,
+  };
+});
 
 // Mock zustand persist middleware
 jest.mock('zustand/middleware', () => ({
@@ -349,10 +304,7 @@ beforeAll(() => {
   };
 
   console.error = (...args) => {
-    if (
-      args[0]?.includes?.('Warning:') ||
-      args[0]?.includes?.('act()')
-    ) {
+    if (args[0]?.includes?.('Warning:') || args[0]?.includes?.('act()')) {
       return;
     }
     originalError.apply(console, args);
@@ -364,46 +316,5 @@ afterAll(() => {
   console.error = originalError;
 });
 
-// Global test utilities
-global.testUtils = {
-  // Wait for async operations
-  flushPromises: () => new Promise((resolve) => setImmediate(resolve)),
-
-  // Create mock user
-  createMockUser: (overrides = {}) => ({
-    uid: 'test-user-id',
-    email: 'test@example.com',
-    displayName: 'Test User',
-    phoneNumber: '+821012345678',
-    ...overrides,
-  }),
-
-  // Create mock staff
-  createMockStaff: (overrides = {}) => ({
-    id: 'staff-id-1',
-    userId: 'test-user-id',
-    name: '테스트 스태프',
-    role: 'staff',
-    email: 'staff@example.com',
-    phone: '010-1234-5678',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    ...overrides,
-  }),
-
-  // Create mock job posting (v2.0 - roles[].salary 구조)
-  createMockJobPosting: (overrides = {}) => ({
-    id: 'job-id-1',
-    title: '테스트 공고',
-    description: '테스트 설명',
-    location: '서울',
-    defaultSalary: { type: 'daily', amount: 150000 },
-    roles: [
-      { role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } },
-    ],
-    date: new Date().toISOString(),
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    ...overrides,
-  }),
-};
+// Global test utilities (별도 파일에서 로드)
+global.testUtils = require('./src/__tests__/testUtils');

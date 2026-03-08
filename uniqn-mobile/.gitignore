@@ -29,7 +29,11 @@ ios/
 
 # Firebase config
 # google-services.json, GoogleService-Info.plist는 EAS Build에 필요하므로 git에 포함
+# TODO: EAS Secrets로 전환 후 git에서 제거 예정
 firebase.json
+
+# Credentials (NEVER commit)
+playstore-credentials.json
 
 # Editor
 .vscode/
@@ -55,6 +59,9 @@ blob-report/
 .DS_Store
 *.pem
 *.log
+
+# Reports & Artifacts
+.reports/
 
 # Sentry
 sentry.properties

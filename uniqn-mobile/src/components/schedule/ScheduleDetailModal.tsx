@@ -108,26 +108,22 @@ export function ScheduleDetailModal({
     return index >= 0 ? index : 0;
   }, [isGroupMode, groupedSchedule, schedule]);
 
-  // 이전/다음 날짜로 이동
-  const handlePrevDate = useCallback(() => {
-    if (!isGroupMode || currentDateIndex === 0 || !groupedSchedule) return;
-    const prevDate = groupedSchedule.dateRange.dates[currentDateIndex - 1];
-    const prevSchedule = groupedSchedule.originalEvents.find((e) => e.date === prevDate);
-    if (prevSchedule && onDateChange) {
-      onDateChange(prevDate, prevSchedule);
-    }
-  }, [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]);
+  // 날짜 이동 (이전/다음 통합)
+  const handleDateChange = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (!isGroupMode || !groupedSchedule) return;
+      const totalDates = groupedSchedule.dateRange.dates.length;
+      const targetIndex = direction === 'prev' ? currentDateIndex - 1 : currentDateIndex + 1;
+      if (targetIndex < 0 || targetIndex >= totalDates) return;
 
-  const handleNextDate = useCallback(() => {
-    if (!isGroupMode || !groupedSchedule) return;
-    const totalDates = groupedSchedule.dateRange.dates.length;
-    if (currentDateIndex >= totalDates - 1) return;
-    const nextDate = groupedSchedule.dateRange.dates[currentDateIndex + 1];
-    const nextSchedule = groupedSchedule.originalEvents.find((e) => e.date === nextDate);
-    if (nextSchedule && onDateChange) {
-      onDateChange(nextDate, nextSchedule);
-    }
-  }, [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]);
+      const targetDate = groupedSchedule.dateRange.dates[targetIndex];
+      const targetSchedule = groupedSchedule.originalEvents.find((e) => e.date === targetDate);
+      if (targetSchedule && onDateChange) {
+        onDateChange(targetDate, targetSchedule);
+      }
+    },
+    [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]
+  );
 
   // 쿨다운을 적용한 리페치 함수
   const triggerRefresh = useCallback(() => {
@@ -214,11 +210,11 @@ export function ScheduleDetailModal({
     }
   }, [schedule, addToast]);
 
-  // 신고 모달 닫기
-  const handleCloseReportModal = useCallback(() => {
+  // 신고 모달 닫기 (단순 setState이므로 useCallback 불필요)
+  const handleCloseReportModal = () => {
     setIsReportModalVisible(false);
     setReportTarget(null);
-  }, []);
+  };
 
   // 신고 제출
   const handleReportSubmit = useCallback(
@@ -227,7 +223,8 @@ export function ScheduleDetailModal({
       try {
         await createReport(input);
         addToast({ type: 'success', message: '신고가 접수되었습니다.' });
-        handleCloseReportModal();
+        setIsReportModalVisible(false);
+        setReportTarget(null);
       } catch (error) {
         const err = error as Error & { code?: string; message?: string };
         logger.error('Failed to submit report', err, {
@@ -240,7 +237,7 @@ export function ScheduleDetailModal({
         setIsReportLoading(false);
       }
     },
-    [addToast, handleCloseReportModal]
+    [addToast]
   );
 
   // 탭 설정 (상태에 따라 동적으로 구성)
@@ -278,7 +275,7 @@ export function ScheduleDetailModal({
         <View className="flex-row items-center justify-between bg-primary-50 dark:bg-primary-900/20 rounded-xl px-3 py-2 mb-3">
           {/* 이전 버튼 */}
           <TouchableOpacity
-            onPress={handlePrevDate}
+            onPress={() => handleDateChange('prev')}
             disabled={currentDateIndex === 0}
             style={{
               width: 32,
@@ -309,7 +306,7 @@ export function ScheduleDetailModal({
 
           {/* 다음 버튼 */}
           <TouchableOpacity
-            onPress={handleNextDate}
+            onPress={() => handleDateChange('next')}
             disabled={currentDateIndex >= groupedSchedule.dateRange.totalDays - 1}
             style={{
               width: 32,

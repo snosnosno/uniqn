@@ -345,22 +345,14 @@ export {
   PRIMARY_COLORS,
   // Badge colors (v1.1.0)
   type BadgeVariant,
-  BADGE_COLORS,
   BADGE_CLASSES,
-  getBadgeColor,
   getBadgeClasses,
   // Text colors (v1.1.0)
-  TEXT_COLORS,
   TEXT_CLASSES,
-  getTextColor,
   // Card colors (v1.1.0)
-  CARD_COLORS,
   CARD_CLASSES,
-  getCardColor,
   // Border colors (v1.1.0)
-  BORDER_COLORS,
   BORDER_CLASSES,
-  getBorderColor,
 } from './colors';
 
 // ============================================================================

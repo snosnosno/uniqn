@@ -31,10 +31,7 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
   // Test file patterns
-  testMatch: [
-    '**/__tests__/**/*.test.[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)',
-  ],
+  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
 
   // Coverage configuration
   collectCoverageFrom: [
@@ -46,27 +43,26 @@ module.exports = {
   ],
 
   // Coverage thresholds
-  // MVP 단계: 현실적 임계값 설정 (점진적으로 올릴 예정)
-  // 현재 수준: global ~14%, utils ~17%, services ~43%
+  // 현재 수준 대비 +3~5% 상향 (점진적으로 올릴 예정)
   // 목표 [P2]: global 60%, utils 80%, services 70% 달성
   coverageThreshold: {
     global: {
-      branches: 7,
-      functions: 9,
-      lines: 14,
-      statements: 13,
+      branches: 10,
+      functions: 12,
+      lines: 18,
+      statements: 16,
     },
     './src/utils/': {
-      branches: 14,
-      functions: 14,
-      lines: 15,
-      statements: 15,
+      branches: 18,
+      functions: 18,
+      lines: 20,
+      statements: 20,
     },
     './src/services/': {
-      branches: 30,
-      functions: 30,
-      lines: 40,
-      statements: 40,
+      branches: 35,
+      functions: 35,
+      lines: 45,
+      statements: 45,
     },
   },
 
@@ -89,13 +85,10 @@ module.exports = {
   testTimeout: 10000,
 
   // Ignore patterns
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.expo/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/.expo/', '/e2e/'],
 
   // Watch plugins
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+  watchPlugins: ['jest-watch-typeahead/filename', 'jest-watch-typeahead/testname'],
 
   // Globals for TypeScript
   globals: {

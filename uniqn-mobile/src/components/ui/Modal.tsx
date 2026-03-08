@@ -27,8 +27,7 @@ import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
-// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
-import { createPortal } from 'react-dom';
+import { WebPortal } from '@/components/ui/WebPortal';
 
 // ============================================================================
 // Types
@@ -55,16 +54,6 @@ const MODAL_SIZES = {
   lg: 'w-[400px]',
   full: 'w-full mx-4',
 };
-
-// ============================================================================
-// Web Modal Portal (DOM 최상위에 렌더링)
-// ============================================================================
-
-function WebModalPortal({ children }: { children: React.ReactNode }) {
-  // SSR 안전 체크 및 document.body에 Portal 렌더링
-  if (typeof document === 'undefined') return <>{children}</>;
-  return createPortal(children, document.body);
-}
 
 // ============================================================================
 // Web Modal Component
@@ -148,7 +137,7 @@ function WebModal({
   };
 
   return (
-    <WebModalPortal>
+    <WebPortal>
       <View
         style={[
           StyleSheet.absoluteFill,
@@ -227,7 +216,7 @@ function WebModal({
           </View>
         </View>
       </View>
-    </WebModalPortal>
+    </WebPortal>
   );
 }
 

@@ -147,8 +147,6 @@ jobs:
 
       - name: EAS Build Dry Run (iOS)
         run: eas build --platform ios --profile preview --non-interactive --dry-run
-        continue-on-error: true
 
       - name: EAS Build Dry Run (Android)
         run: eas build --platform android --profile preview --non-interactive --dry-run
-        continue-on-error: true

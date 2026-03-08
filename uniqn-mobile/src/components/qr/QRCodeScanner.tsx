@@ -13,8 +13,7 @@ import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
-// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
-import { createPortal } from 'react-dom';
+import { WebPortal } from '@/components/ui/WebPortal';
 import type { QRCodeScanResult, QRCodeAction, QRScanError } from '@/types';
 
 // ============================================================================
@@ -40,16 +39,6 @@ interface QRCodeScannerProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
-
-// ============================================================================
-// Web Portal (다른 모달보다 높은 z-index로 렌더링)
-// ============================================================================
-
-function WebModalPortal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
-  if (!visible) return null;
-  if (typeof document === 'undefined') return <>{children}</>;
-  return createPortal(children, document.body);
-}
 
 // ============================================================================
 // Component
@@ -265,7 +254,7 @@ export function QRCodeScanner({
   // 웹: Portal로 z-index 99999에 렌더링 (다른 모달보다 위)
   if (isWeb) {
     return (
-      <WebModalPortal visible={visible}>
+      <WebPortal visible={visible}>
         <View
           style={[
             StyleSheet.absoluteFill,
@@ -275,7 +264,7 @@ export function QRCodeScanner({
         >
           {renderContent()}
         </View>
-      </WebModalPortal>
+      </WebPortal>
     );
   }
 

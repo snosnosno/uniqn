@@ -28,8 +28,7 @@ import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
-// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
-import { createPortal } from 'react-dom';
+import { WebPortal } from '@/components/ui/WebPortal';
 
 // ============================================================================
 // Types
@@ -46,15 +45,6 @@ export interface SheetModalProps {
   showCloseButton?: boolean;
   /** 로딩 중 닫기 방지 */
   isLoading?: boolean;
-}
-
-// ============================================================================
-// Web Modal Portal
-// ============================================================================
-
-function WebModalPortal({ children }: { children: React.ReactNode }) {
-  if (typeof document === 'undefined') return <>{children}</>;
-  return createPortal(children, document.body);
 }
 
 // ============================================================================
@@ -124,7 +114,7 @@ function WebSheetModal({
   };
 
   return (
-    <WebModalPortal>
+    <WebPortal>
       <View
         style={[
           StyleSheet.absoluteFill,
@@ -199,7 +189,7 @@ function WebSheetModal({
           </View>
         </View>
       </View>
-    </WebModalPortal>
+    </WebPortal>
   );
 }
 

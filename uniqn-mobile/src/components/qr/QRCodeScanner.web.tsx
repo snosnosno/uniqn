@@ -12,8 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
-// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
-import { createPortal } from 'react-dom';
+import { WebPortal } from '@/components/ui/WebPortal';
 import type { QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
@@ -39,16 +38,6 @@ const SCAN_AREA_SIZE = Math.min(SCREEN_WIDTH * 0.7, 280);
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
 const SCAN_INTERVAL = 200; // 200ms마다 스캔
-
-// ============================================================================
-// Portal Wrapper (다른 모달보다 높은 z-index로 렌더링)
-// ============================================================================
-
-function WebModalPortal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
-  if (!visible) return null;
-  if (typeof document === 'undefined') return <>{children}</>;
-  return createPortal(children, document.body);
-}
 
 // ============================================================================
 // Component
@@ -368,11 +357,11 @@ export function QRCodeScanner({
   } as const;
 
   return (
-    <WebModalPortal visible={visible}>
+    <WebPortal visible={visible}>
       <View style={portalStyle as unknown as import('react-native').ViewStyle}>
         {renderContent()}
       </View>
-    </WebModalPortal>
+    </WebPortal>
   );
 }
 

@@ -5,8 +5,10 @@
  */
 
 describe('Jest Setup', () => {
-  it('should run a basic test', () => {
-    expect(true).toBe(true);
+  it('should have MockTimestamp available globally', () => {
+    expect(global.MockTimestamp).toBeDefined();
+    expect(typeof global.MockTimestamp.now).toBe('function');
+    expect(typeof global.MockTimestamp.fromDate).toBe('function');
   });
 
   it('should have access to global test utilities', () => {
@@ -38,9 +40,9 @@ describe('Jest Setup', () => {
     });
 
     expect(mockJob.id).toBe('job-id-1');
-    expect((mockJob as unknown as { defaultSalary: { amount: number } }).defaultSalary.amount).toBe(
-      200000
-    );
+    expect(
+      (mockJob as unknown as { defaultSalary: { amount: number } }).defaultSalary.amount
+    ).toBe(200000);
     expect(mockJob.status).toBe('active');
   });
 });

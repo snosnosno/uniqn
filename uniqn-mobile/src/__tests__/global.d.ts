@@ -43,9 +43,24 @@ interface TestUtils {
   createMockJobPosting: (overrides?: Partial<MockJobPosting>) => MockJobPosting;
 }
 
+interface MockTimestampInstance {
+  seconds: number;
+  nanoseconds: number;
+  toDate: () => Date;
+  toMillis: () => number;
+  isEqual: (other: MockTimestampInstance) => boolean;
+}
+
+interface MockTimestampStatic {
+  new (seconds: number, nanoseconds?: number): MockTimestampInstance;
+  now: () => MockTimestampInstance;
+  fromDate: (date: Date) => MockTimestampInstance;
+  fromMillis: (milliseconds: number) => MockTimestampInstance;
+}
+
 declare global {
-  // eslint-disable-next-line no-var
   var testUtils: TestUtils;
+  var MockTimestamp: MockTimestampStatic;
 }
 
 export {};

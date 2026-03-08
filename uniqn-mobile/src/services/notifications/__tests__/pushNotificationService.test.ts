@@ -514,24 +514,30 @@ describe('pushNotificationService', () => {
   describe('Event Handlers', () => {
     it('수신 핸들러를 설정할 수 있어야 함', () => {
       const mockHandler = jest.fn();
-      pushNotificationService.setNotificationReceivedHandler(mockHandler);
-      expect(true).toBe(true); // 에러 없으면 성공
+      // 에러 없이 핸들러가 설정되는지 확인
+      expect(() => {
+        pushNotificationService.setNotificationReceivedHandler(mockHandler);
+      }).not.toThrow();
     });
 
     it('수신 핸들러를 제거할 수 있어야 함', () => {
-      pushNotificationService.setNotificationReceivedHandler(null);
-      expect(true).toBe(true);
+      // null로 핸들러 제거 시 에러가 발생하지 않는지 확인
+      expect(() => {
+        pushNotificationService.setNotificationReceivedHandler(null);
+      }).not.toThrow();
     });
 
     it('응답 핸들러를 설정할 수 있어야 함', () => {
       const mockHandler = jest.fn();
-      pushNotificationService.setNotificationResponseHandler(mockHandler);
-      expect(true).toBe(true);
+      expect(() => {
+        pushNotificationService.setNotificationResponseHandler(mockHandler);
+      }).not.toThrow();
     });
 
     it('응답 핸들러를 제거할 수 있어야 함', () => {
-      pushNotificationService.setNotificationResponseHandler(null);
-      expect(true).toBe(true);
+      expect(() => {
+        pushNotificationService.setNotificationResponseHandler(null);
+      }).not.toThrow();
     });
   });
 
