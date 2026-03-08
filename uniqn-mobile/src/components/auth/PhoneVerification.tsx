@@ -26,8 +26,8 @@ import { useOTPVerification } from '@/hooks/auth/useOTPVerification';
 // ============================================================================
 
 export interface PhoneVerificationProps {
-  /** 인증 완료 콜백 (인증된 전화번호 전달) */
-  onVerified: (phone: string) => void;
+  /** 인증 완료 콜백 (인증된 전화번호 + 서버사이드 OTP 검증 데이터 전달) */
+  onVerified: (phone: string, otpData?: { verificationId: string; otpCode: string }) => void;
   /** 인증 실패 콜백 */
   onError?: (error: Error) => void;
   /** 초기 전화번호 (뒤로갔다 돌아올 때) */
@@ -67,8 +67,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // ─── Hooks ───
-    const { recaptchaKey, getOrCreateVerifier, cleanupOnError } = useRecaptcha(
-      (msg) => smsHook.setError(msg)
+    const { recaptchaKey, getOrCreateVerifier, cleanupOnError } = useRecaptcha((msg) =>
+      smsHook.setError(msg)
     );
 
     const smsHook = usePhoneSMS({
@@ -132,10 +132,10 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     /** 인증번호 요청 */
     const handleRequestOTP = useCallback(async () => {
-      const result = await smsHook.requestSMS(() => {
-        // auto-completed callback
+      const result = await smsHook.requestSMS((otpData) => {
+        // auto-completed callback (Android 자동인증)
         setStep('verified');
-        onVerified(toE164(smsHook.phone));
+        onVerified(toE164(smsHook.phone), otpData);
       });
 
       if (result === 'otp') {

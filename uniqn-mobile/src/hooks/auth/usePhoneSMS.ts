@@ -22,8 +22,6 @@ import {
   getNativeAuth,
   nativeSignInWithPhoneNumber,
   nativeVerifyPhoneNumber,
-  NativePhoneAuthProvider,
-  nativeLinkWithCredential,
 } from '@/lib/nativeAuth';
 
 // ============================================================================
@@ -76,7 +74,9 @@ export interface UsePhoneSMSReturn {
   phoneListenerRef: React.MutableRefObject<{ removeAllListeners(event: string): void } | null>;
   /** OTP 요청 시점의 mode 기록 */
   requestedModeRef: React.MutableRefObject<'signIn' | 'link'>;
-  requestSMS: (onAutoCompleted: () => void) => Promise<'otp' | 'autoCompleted' | null>;
+  requestSMS: (
+    onAutoCompleted: (otpData?: { verificationId: string; otpCode: string }) => void
+  ) => Promise<'otp' | 'autoCompleted' | null>;
   resetState: () => void;
 }
 
@@ -249,7 +249,12 @@ export function usePhoneSMS({
 
   /** link 모드: verifyPhoneNumber로 OTP 요청 (기존 세션 보존) */
   const requestOtpForLink = useCallback(
-    async (e164: string): Promise<{ autoCompleted: boolean }> => {
+    async (
+      e164: string
+    ): Promise<{
+      autoCompleted: boolean;
+      autoOtpData?: { verificationId: string; otpCode: string };
+    }> => {
       if (Platform.OS === 'web') {
         const verifier = await getOrCreateVerifier();
         if (!verifier) {
@@ -276,29 +281,18 @@ export function usePhoneSMS({
       phoneListenerRef.current = linkResult.listener;
       setConfirmation(null);
 
-      // Android 자동인증 처리
-      if (
-        linkResult.autoCode &&
-        NativePhoneAuthProvider &&
-        nativeLinkWithCredential &&
-        getNativeAuth
-      ) {
-        const nativeUser = getNativeAuth().currentUser;
-        if (nativeUser) {
-          try {
-            const credential = NativePhoneAuthProvider.credential(
-              linkResult.verificationId,
-              linkResult.autoCode
-            );
-            await nativeLinkWithCredential(nativeUser, credential);
-            logger.info('Android 자동인증: linkWithCredential 성공', { uid: nativeUser.uid });
-            return { autoCompleted: true };
-          } catch (autoLinkErr) {
-            logger.warn('Android 자동인증 linkWithCredential 실패, 수동 입력 전환', {
-              error: autoLinkErr,
-            });
-          }
-        }
+      // Android 자동인증: linkWithCredential 대신 otpData를 서버에 전달
+      if (linkResult.autoCode) {
+        logger.info('Android 자동인증: 서버사이드 검증 모드로 전달', {
+          hasAutoCode: true,
+        });
+        return {
+          autoCompleted: true,
+          autoOtpData: {
+            verificationId: linkResult.verificationId,
+            otpCode: linkResult.autoCode,
+          },
+        };
       }
       return { autoCompleted: false };
     },
@@ -307,38 +301,24 @@ export function usePhoneSMS({
 
   /** 인증번호 요청 (SMS 발송) */
   const requestSMS = useCallback(
-    async (onAutoCompleted: () => void): Promise<'otp' | 'autoCompleted' | null> => {
+    async (
+      onAutoCompleted: (otpData?: { verificationId: string; otpCode: string }) => void
+    ): Promise<'otp' | 'autoCompleted' | null> => {
       const cleaned = cleanPhoneNumber(phone);
       if (cleaned.length < 10 || cleaned.length > 11) {
         setError('올바른 전화번호를 입력해주세요');
         return null;
       }
 
-      // link 모드: currentUser 사전 검증
-      if (mode === 'link' && Platform.OS !== 'web') {
-        const nativeUser = getNativeAuth?.()?.currentUser;
+      // link 모드: Web SDK currentUser만 확인
+      // 서버사이드 OTP 검증으로 전환했으므로 Native SDK 상태는 불필요
+      if (mode === 'link') {
         const webUser = getFirebaseAuth().currentUser;
-        if (!nativeUser && !webUser) {
-          logger.error('link 모드 SMS 요청 실패: 양쪽 SDK 모두 사용자 없음', {
+        if (!webUser) {
+          logger.error('link 모드 SMS 요청 실패: Web SDK 사용자 없음', {
             platform: Platform.OS,
           });
           setError('인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
-          return null;
-        }
-        if (nativeUser && !webUser) {
-          logger.warn('link 모드 SMS 요청 실패: Native SDK만 인증됨 (Web SDK 없음)', {
-            platform: Platform.OS,
-            nativeUid: nativeUser.uid,
-          });
-          setError('인증 상태가 불완전합니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
-          return null;
-        }
-        if (!nativeUser && webUser) {
-          logger.warn('link 모드 SMS 요청 차단: Native SDK 미인증 (cross-SDK 방지)', {
-            platform: Platform.OS,
-            webUid: webUser.uid,
-          });
-          setError('인증 상태가 불완전합니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
           return null;
         }
       }
@@ -379,9 +359,9 @@ export function usePhoneSMS({
 
         // 모드별 OTP 요청
         if (mode === 'link') {
-          const { autoCompleted } = await requestOtpForLink(e164);
+          const { autoCompleted, autoOtpData } = await requestOtpForLink(e164);
           if (autoCompleted) {
-            onAutoCompleted();
+            onAutoCompleted(autoOtpData);
             return 'autoCompleted';
           }
         } else {

@@ -44,6 +44,10 @@ export interface SocialProfileData {
   termsAgreed: boolean;
   privacyAgreed: boolean;
   marketingAgreed?: boolean;
+  /** 서버사이드 OTP 검증용 verificationId (소셜 로그인 시) */
+  verificationId?: string;
+  /** 서버사이드 OTP 검증용 인증번호 (소셜 로그인 시) */
+  otpCode?: string;
 }
 
 // ============================================================================
@@ -66,6 +70,10 @@ export interface VerifyAndSavePayload {
   marketingAgreed: boolean;
   email?: string;
   mode: 'signup' | 'social';
+  /** 서버사이드 OTP 검증용 verificationId (소셜 로그인 시) */
+  verificationId?: string;
+  /** 서버사이드 OTP 검증용 인증번호 (소셜 로그인 시) */
+  otpCode?: string;
 }
 
 /**

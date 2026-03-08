@@ -231,13 +231,16 @@ export function getCurrentUserUid(): string | null {
 }
 
 /**
- * 현재 사용자에게 link된 전화번호 반환 (phone provider)
+ * 현재 사용자에게 설정된 전화번호 반환
+ *
+ * admin.auth().updateUser로 설정된 phoneNumber도 포함
  */
 export function getLinkedPhoneNumber(): string | null {
   const user = getFirebaseAuth().currentUser;
   if (!user) return null;
+  // phoneNumber는 providerData와 Auth 레코드 양쪽에 존재할 수 있음
   const phoneProvider = user.providerData.find((p) => p.providerId === 'phone');
-  return phoneProvider?.phoneNumber ?? null;
+  return phoneProvider?.phoneNumber ?? user.phoneNumber ?? null;
 }
 
 /**

@@ -70,10 +70,14 @@ export function SignupStepIdentity({
   });
 
   const handleVerified = useCallback(
-    (phone: string) => {
+    (phone: string, otpData?: { verificationId: string; otpCode: string }) => {
       setVerifiedPhone(phone);
       setValue('phoneVerified', true);
       setValue('verifiedPhone', phone);
+      if (otpData) {
+        setValue('verificationId', otpData.verificationId);
+        setValue('otpCode', otpData.otpCode);
+      }
     },
     [setValue]
   );

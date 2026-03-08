@@ -77,6 +77,8 @@ export default function SignUpScreen() {
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           marketingAgreed: data.marketingAgreed,
+          verificationId: data.verificationId,
+          otpCode: data.otpCode,
         });
 
         if (result.user) {
