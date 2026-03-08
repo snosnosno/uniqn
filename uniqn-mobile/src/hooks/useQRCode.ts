@@ -7,7 +7,7 @@
  * @note QR 생성은 useEventQR 훅 사용 (구인자용)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { processEventQRCheckIn } from '@/services/work/eventQRService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -45,12 +45,20 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastError, setLastError] = useState<QRScanError | null>(null);
+  const lastScanTimeRef = useRef(0);
+  const QR_SCAN_THROTTLE_MS = 5000; // 5초 throttle
 
   const clearError = useCallback(() => setLastError(null), []);
 
-  // QR 스캔 결과 처리 (Event QR 시스템 통합)
+  // QR 스캔 결과 처리 (Event QR 시스템 통합, 5초 throttle 적용)
   const handleScanResult = useCallback(
     async (result: QRCodeScanResult) => {
+      // throttle: 5초 이내 중복 스캔 방지
+      const now = Date.now();
+      if (now - lastScanTimeRef.current < QR_SCAN_THROTTLE_MS) {
+        return;
+      }
+      lastScanTimeRef.current = now;
       if (!result.success) {
         addToast({
           type: 'error',

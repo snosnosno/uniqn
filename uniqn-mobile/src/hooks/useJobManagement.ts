@@ -6,6 +6,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
   createJobPosting,
   updateJobPosting,
@@ -410,8 +411,8 @@ export function useJobManagement() {
     stats: statsQuery.data,
     isLoadingStats: statsQuery.isLoading,
 
-    // 공고 CRUD
-    createJobPosting: createMutation.mutate,
+    // 공고 CRUD - 1초 throttle
+    createJobPosting: useThrottledCallback(createMutation.mutate, 1000),
     createJobPostingAsync: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
 
@@ -419,7 +420,7 @@ export function useJobManagement() {
     updateJobPostingAsync: updateMutation.mutateAsync,
     isUpdating: updateMutation.isPending,
 
-    deleteJobPosting: deleteMutation.mutate,
+    deleteJobPosting: useThrottledCallback(deleteMutation.mutate, 1000),
     isDeleting: deleteMutation.isPending,
 
     // 상태 변경

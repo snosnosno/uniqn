@@ -6,6 +6,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
   getMyApplications,
   applyToJobV2,
@@ -235,8 +236,8 @@ export function useApplications() {
     isRefreshing: myApplicationsQuery.isRefetching,
     error: myApplicationsQuery.error,
 
-    // 지원 제출 (v2.0: Assignment + PreQuestion)
-    submitApplication: submitV2Mutation.mutate,
+    // 지원 제출 (v2.0: Assignment + PreQuestion) - 1초 throttle
+    submitApplication: useThrottledCallback(submitV2Mutation.mutate, 1000),
     isSubmitting: submitV2Mutation.isPending,
 
     // 지원 취소

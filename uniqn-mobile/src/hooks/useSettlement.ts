@@ -6,6 +6,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
   getWorkLogsByJobPosting,
   calculateSettlement,
@@ -409,13 +410,13 @@ export function useSettlement(jobPostingId: string) {
     updateWorkTime: updateTimeMutation.mutate,
     isUpdatingTime: updateTimeMutation.isPending,
 
-    // 개별 정산
-    settleWorkLog: settleMutation.mutate,
+    // 개별 정산 - 2초 throttle
+    settleWorkLog: useThrottledCallback(settleMutation.mutate, 2000),
     settleWorkLogAsync: settleMutation.mutateAsync,
     isSettling: settleMutation.isPending,
 
-    // 일괄 정산
-    bulkSettle: bulkSettleMutation.mutate,
+    // 일괄 정산 - 2초 throttle
+    bulkSettle: useThrottledCallback(bulkSettleMutation.mutate, 2000),
     bulkSettleAsync: bulkSettleMutation.mutateAsync,
     isBulkSettling: bulkSettleMutation.isPending,
     bulkSettleResult: bulkSettleMutation.data,

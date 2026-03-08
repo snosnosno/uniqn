@@ -145,15 +145,21 @@ export async function searchJobPostings(
   pageSize: number = DEFAULT_PAGE_SIZE
 ): Promise<JobPosting[]> {
   try {
+    // 최소 검색어 길이 2글자 (노이즈 제거)
+    const trimmed = searchTerm.trim();
+    if (trimmed.length < 2) {
+      return [];
+    }
+
     // 지연 로딩으로 순환 참조 방지
     const { ClientSideSearchProvider } = await import('./searchService');
 
     const searchProvider = new ClientSideSearchProvider(async () => {
-      const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE }, 100);
+      const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE }, 300);
       return items;
     });
 
-    const result = await searchProvider.search(searchTerm, {
+    const result = await searchProvider.search(trimmed, {
       limit: pageSize,
       fields: ['title', 'location.name', 'description', 'ownerName'],
     });

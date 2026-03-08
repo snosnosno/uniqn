@@ -7,6 +7,7 @@
 
 import { useMemo } from 'react';
 import { useQuery, useInfiniteQuery, useMutation } from '@tanstack/react-query';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { queryKeys, queryCachingOptions } from '@/lib/queryClient';
 import { invalidateRelated } from '@/lib/invalidationStrategy';
 import { useAuthStore } from '@/stores/authStore';
@@ -95,7 +96,7 @@ export function useCreateReview() {
   const addToast = useToastStore((s) => s.addToast);
   const profile = useAuthStore((s) => s.profile);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (input: CreateReviewInput) => {
       if (!profile?.uid) {
         return Promise.reject(new Error('로그인이 필요합니다'));
@@ -115,6 +116,12 @@ export function useCreateReview() {
     },
     onError: errorHandlerPresets.review(addToast),
   });
+
+  return {
+    ...mutation,
+    // 1초 throttle 적용 (useThrottledCallback은 callbackRef 패턴으로 안정적)
+    mutate: useThrottledCallback(mutation.mutate, 1000),
+  };
 }
 
 // ============================================================================

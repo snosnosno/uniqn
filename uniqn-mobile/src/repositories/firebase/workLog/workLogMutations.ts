@@ -259,6 +259,25 @@ export async function processQRCheckInOutTransaction(
         });
       }
 
+      // 공고 상태 확인 (트랜잭션 내부에서 TOCTOU 방지)
+      const jobPostingRef = doc(db, COLLECTIONS.JOB_POSTINGS, jobPostingId);
+      const jobPostingDoc = await transaction.get(jobPostingRef);
+
+      if (!jobPostingDoc.exists()) {
+        throw new InvalidQRCodeError({
+          message: '공고가 존재하지 않습니다',
+          userMessage: '공고를 찾을 수 없습니다',
+        });
+      }
+
+      const jobPostingStatus = jobPostingDoc.data()?.status;
+      if (jobPostingStatus !== 'active') {
+        throw new InvalidQRCodeError({
+          message: `공고 상태가 ${jobPostingStatus}입니다`,
+          userMessage: '활성 상태가 아닌 공고입니다',
+        });
+      }
+
       // 방어적 검증: staffId 일치 확인
       if (workLog.staffId !== staffId) {
         throw new InvalidQRCodeError({
@@ -272,6 +291,21 @@ export async function processQRCheckInOutTransaction(
         throw new InvalidQRCodeError({
           message: 'WorkLog jobPostingId 불일치',
           userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
+        });
+      }
+
+      // 방어적 검증: QR date와 WorkLog date 일치 확인
+      if (workLog.date !== date) {
+        throw new InvalidQRCodeError({
+          message: `QR date(${date})와 WorkLog date(${workLog.date}) 불일치`,
+          userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
+        });
+      }
+
+      // 정산 완료된 근무는 출퇴근 처리 불가
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무는 출퇴근 처리할 수 없습니다',
         });
       }
 

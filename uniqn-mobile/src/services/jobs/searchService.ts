@@ -81,8 +81,13 @@ export class ClientSideSearchProvider implements SearchProvider<JobPosting> {
         return searchableText.includes(normalizedQuery);
       });
 
-      // 정렬
-      const sortedItems = this.sortResults(filteredItems, options?.sortBy);
+      // 정렬 (relevance 시 검색어 기반 가중치 정렬)
+      const sortedItems = this.sortResults(
+        filteredItems,
+        options?.sortBy,
+        normalizedQuery,
+        options?.fields
+      );
 
       const searchTime = Date.now() - startTime;
       logger.info('클라이언트 사이드 검색 완료', {
@@ -137,14 +142,50 @@ export class ClientSideSearchProvider implements SearchProvider<JobPosting> {
     return current;
   }
 
-  /** 결과 정렬 */
-  private sortResults(items: JobPosting[], sortBy?: SearchOptions['sortBy']): JobPosting[] {
-    if (!sortBy || sortBy === 'relevance') {
-      // 기본: 원본 순서 유지 (이미 필터링됨)
-      return items;
+  /** 필드별 가중치 기반 relevance 점수 계산 */
+  private getRelevanceScore(item: JobPosting, query: string, fields?: string[]): number {
+    const q = query.toLowerCase();
+    let score = 0;
+
+    const fieldWeights: Record<string, number> = {
+      title: 10,
+      'location.name': 5,
+      description: 2,
+      ownerName: 1,
+    };
+
+    const targetFields = fields ?? Object.keys(fieldWeights);
+
+    for (const field of targetFields) {
+      const value = this.getNestedValue(item, field);
+      if (typeof value === 'string' && value.toLowerCase().includes(q)) {
+        score += fieldWeights[field] ?? 1;
+      }
     }
 
+    return score;
+  }
+
+  /** 결과 정렬 */
+  private sortResults(
+    items: JobPosting[],
+    sortBy?: SearchOptions['sortBy'],
+    query?: string,
+    fields?: string[]
+  ): JobPosting[] {
     const sorted = [...items];
+
+    if (!sortBy || sortBy === 'relevance') {
+      // 가중치 기반 relevance 정렬 (title > location > description > ownerName)
+      if (query) {
+        return sorted.sort((a, b) => {
+          const scoreA = this.getRelevanceScore(a, query, fields);
+          const scoreB = this.getRelevanceScore(b, query, fields);
+          return scoreB - scoreA;
+        });
+      }
+      return sorted;
+    }
 
     switch (sortBy) {
       case 'date':

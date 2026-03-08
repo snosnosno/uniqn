@@ -233,6 +233,7 @@ export async function processEventQRCheckIn(
     const checkTime = new Date();
 
     // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리) - Repository 사용
+    //    공고 상태 확인도 트랜잭션 내부에서 수행 (TOCTOU 방지)
     const result = await workLogRepository.processQRCheckInOutTransaction(
       workLogId,
       staffId,
@@ -242,7 +243,7 @@ export async function processEventQRCheckIn(
       date!
     );
 
-    // 4. Analytics (트랜잭션 외부 - 실패해도 출퇴근은 성공)
+    // 4. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)
     if (result.action === 'checkIn') {
       trackCheckIn(toISODateString(checkTime) || '');
       logger.info('QR 출근 처리 완료', {
