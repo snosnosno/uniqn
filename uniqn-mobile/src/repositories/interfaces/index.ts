@@ -115,3 +115,6 @@ export type {
   ReviewPaginationCursor,
   PaginatedReviews,
 } from './IReviewRepository';
+
+// Template Repository
+export type { ITemplateRepository } from './ITemplateRepository';

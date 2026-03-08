@@ -8,8 +8,6 @@ import {
   formatNumber,
   formatCurrency,
   formatCurrencyShort,
-  formatPhone,
-  maskPhone,
   maskName,
   maskEmail,
   formatPositions,
@@ -79,47 +77,6 @@ describe('Formatters', () => {
     it('should handle null/undefined', () => {
       expect(formatCurrencyShort(null)).toBe('0원');
       expect(formatCurrencyShort(undefined)).toBe('0원');
-    });
-  });
-
-  describe('formatPhone', () => {
-    it('should format 11-digit phone numbers', () => {
-      expect(formatPhone('01012345678')).toBe('010-1234-5678');
-      expect(formatPhone('01098765432')).toBe('010-9876-5432');
-    });
-
-    it('should format 10-digit phone numbers', () => {
-      expect(formatPhone('0101234567')).toBe('010-123-4567');
-    });
-
-    it('should handle already formatted numbers', () => {
-      expect(formatPhone('010-1234-5678')).toBe('010-1234-5678');
-    });
-
-    it('should return empty string for null/undefined', () => {
-      expect(formatPhone(null)).toBe('');
-      expect(formatPhone(undefined)).toBe('');
-    });
-
-    it('should return original for invalid formats', () => {
-      expect(formatPhone('123')).toBe('123');
-      expect(formatPhone('invalid')).toBe('invalid');
-    });
-  });
-
-  describe('maskPhone', () => {
-    it('should mask middle part of phone number', () => {
-      expect(maskPhone('01012345678')).toBe('010-****-5678');
-      expect(maskPhone('010-1234-5678')).toBe('010-****-5678');
-    });
-
-    it('should return empty string for null/undefined', () => {
-      expect(maskPhone(null)).toBe('');
-      expect(maskPhone(undefined)).toBe('');
-    });
-
-    it('should return original for invalid formats', () => {
-      expect(maskPhone('123')).toBe('123');
     });
   });
 

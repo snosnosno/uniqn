@@ -39,6 +39,7 @@ import {
   FirebaseInquiryRepository,
   FirebaseAdminRepository,
   FirebaseReviewRepository,
+  FirebaseTemplateRepository,
 } from './firebase';
 
 // ============================================================================
@@ -120,6 +121,8 @@ export type {
   CreateReviewContext,
   ReviewPaginationCursor,
   PaginatedReviews,
+  // Template
+  ITemplateRepository,
 } from './interfaces';
 
 // ============================================================================
@@ -140,6 +143,7 @@ export {
   FirebaseInquiryRepository,
   FirebaseAdminRepository,
   FirebaseReviewRepository,
+  FirebaseTemplateRepository,
 } from './firebase';
 
 // ============================================================================
@@ -412,3 +416,24 @@ export const adminRepository = new FirebaseAdminRepository();
  * ```
  */
 export const reviewRepository = new FirebaseReviewRepository();
+
+/**
+ * Template Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { templateRepository } from '@/repositories';
+ *
+ * // 목록 조회
+ * const templates = await templateRepository.getTemplates(userId);
+ *
+ * // 저장
+ * const templateId = await templateRepository.saveTemplate(input, userId);
+ *
+ * // 불러오기
+ * const template = await templateRepository.loadTemplate(templateId);
+ * ```
+ */
+export const templateRepository = new FirebaseTemplateRepository();

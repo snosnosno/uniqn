@@ -41,41 +41,6 @@ export const formatCurrencyShort = (value: number | undefined | null): string =>
 };
 
 /**
- * 전화번호 포맷 (010-1234-5678)
- */
-export const formatPhone = (phone: string | undefined | null): string => {
-  if (!phone) return '';
-
-  const cleaned = phone.replace(/\D/g, '');
-
-  if (cleaned.length === 11) {
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
-  }
-
-  if (cleaned.length === 10) {
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-  }
-
-  return phone;
-};
-
-/**
- * 전화번호 마스킹 (010-****-5678)
- */
-export const maskPhone = (phone: string | undefined | null): string => {
-  if (!phone) return '';
-
-  const formatted = formatPhone(phone);
-  const parts = formatted.split('-');
-
-  if (parts.length === 3) {
-    return `${parts[0]}-****-${parts[2]}`;
-  }
-
-  return phone;
-};
-
-/**
  * 이름 마스킹 (홍*동, 김**)
  */
 export const maskName = (name: string | undefined | null): string => {
