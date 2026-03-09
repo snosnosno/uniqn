@@ -83,6 +83,10 @@ export async function updateUserProfile(
     const hasAuthUpdates = Object.keys(authUpdates).length > 0;
 
     // 1. Auth 먼저 업데이트 (이전 값 백업하여 롤백 대비)
+    // 백업: updateProfile() 호출 후 currentUser 프로퍼티가 새 값으로 변경되므로 사전 백업 필수
+    const previousPhotoURL = currentUser.photoURL;
+    const previousDisplayName = currentUser.displayName;
+
     if (hasAuthUpdates) {
       await updateProfile(currentUser, authUpdates);
       logger.info('Firebase Auth 프로필 업데이트', {
@@ -97,8 +101,8 @@ export async function updateUserProfile(
     } catch (firestoreError) {
       if (hasAuthUpdates) {
         const previousAuth: { photoURL?: string; displayName?: string } = {};
-        if ('photoURL' in updates) previousAuth.photoURL = currentUser.photoURL ?? undefined;
-        if ('nickname' in updates) previousAuth.displayName = currentUser.displayName ?? undefined;
+        if ('photoURL' in updates) previousAuth.photoURL = previousPhotoURL ?? undefined;
+        if ('nickname' in updates) previousAuth.displayName = previousDisplayName ?? undefined;
 
         logger.warn('Firestore 프로필 업데이트 실패 - Auth 롤백 시도', {
           uid,
@@ -301,6 +305,8 @@ export async function completeProfile(data: CompleteProfileData): Promise<void> 
     logger.info('프로필 완성 시도', { uid, nickname: data.nickname });
 
     // 1. Firebase Auth displayName 업데이트
+    // 백업: updateProfile() 호출 후 currentUser.displayName이 새 값으로 변경되므로 사전 백업 필수
+    const previousDisplayName = currentUser.displayName;
     await updateProfile(currentUser, { displayName: data.nickname });
 
     // 2. Firestore 업데이트 (실패 시 Auth 롤백)
@@ -317,7 +323,6 @@ export async function completeProfile(data: CompleteProfileData): Promise<void> 
       await userRepository.updateFields(uid, firestoreUpdates);
     } catch (firestoreError) {
       // Firestore 실패 시 Auth displayName 롤백
-      const previousDisplayName = currentUser.displayName;
       logger.warn('Firestore 프로필 완성 실패 - Auth 롤백 시도', {
         uid,
         error: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),

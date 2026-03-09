@@ -24,6 +24,8 @@ import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole, UserProfile } from '@/types';
 import type { AuthUser, AuthStatus } from '@/types/auth';
 import { RoleResolver } from '@/shared/role';
+import { RealtimeManager } from '@/shared/realtime';
+import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 
 export type { UserRole, UserProfile };
 // AuthUser, AuthStatus의 정본(SSOT)은 types/auth.ts
@@ -198,6 +200,11 @@ export const useAuthStore = create<AuthState>()(
       // 자동 로그인 비활성화 시 사용 - Firebase 로그아웃 없이 UI 상태만 초기화
       // Firebase Auth 세션은 유지되므로 다음 로그인 시 빠르게 복원 가능
       clearAuthState: () => {
+        // Firestore 실시간 리스너 해제 (데이터 수신 차단)
+        RealtimeManager.unsubscribeAll();
+        // 전역 캐시 정리
+        clearCounterSyncCache();
+
         set({
           user: null,
           profile: null,
@@ -209,7 +216,9 @@ export const useAuthStore = create<AuthState>()(
           isInitialized: true, // 초기화는 완료된 상태
           error: null,
         });
-        logger.info('자동 로그인 비활성화 - 인증 상태 초기화', { component: 'authStore' });
+        logger.info('자동 로그인 비활성화 - 인증 상태 초기화 (리스너/캐시 정리 완료)', {
+          component: 'authStore',
+        });
       },
     }),
     {

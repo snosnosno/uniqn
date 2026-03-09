@@ -407,6 +407,14 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // 기존 프로필 있지만 phoneVerified=false (이전에 중단된 가입)
+    // 비활성화된 계정 체크 (명시적으로 false인 경우만)
+    if (existingProfile.isActive === false) {
+      await syncSignOut();
+      throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
+        userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
+      });
+    }
+
     await user.getIdToken(true);
     logger.info('Apple 로그인 성공 (미완성 프로필)', { uid: user.uid });
     return { user, profile: existingProfile };

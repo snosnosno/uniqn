@@ -69,7 +69,9 @@ export function useOTPVerification({
   const [error, setError] = useState<string | null>(null);
 
   // OTP 시도 횟수를 MMKV에 저장하여 컴포넌트 unmount/remount 시에도 제한 유지
-  const otpAttemptsKey = `otp_attempts_${cleanPhoneNumber(phone)}`;
+  // E.164 정규화로 모든 포맷(010-1234-5678, +821012345678 등)이 동일 키를 사용
+  const normalizedPhone = toE164(phone).replace(/\+/g, '');
+  const otpAttemptsKey = `otp_attempts_${normalizedPhone}`;
 
   const getPersistedAttempts = useCallback((): number => {
     try {

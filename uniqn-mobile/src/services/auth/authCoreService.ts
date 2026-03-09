@@ -299,6 +299,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
     // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
     await userCredential.user.getIdToken(true);
 
+    // Dual SDK UID 불일치 검증 (네이티브) — Firestore 쿼리 전에 SDK 정합성 확인
+    await verifyDualSDKConsistency('login');
+
     // 사용자 프로필 가져오기
     const profile = await getUserProfile(userCredential.user.uid);
 
@@ -314,9 +317,6 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
         userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
       });
     }
-
-    // Dual SDK UID 불일치 검증 (네이티브)
-    await verifyDualSDKConsistency('login');
 
     logger.info('로그인 성공', { uid: userCredential.user.uid });
 

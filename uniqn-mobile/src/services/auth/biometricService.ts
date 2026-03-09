@@ -52,10 +52,13 @@ export interface BiometricAuthResult {
 
 /**
  * 저장된 자격 증명
+ *
+ * refreshToken은 SecureStore에서만 관리 (MMKV 평문 저장 방지)
+ * MMKV에는 메타데이터(userId, savedAt)만 저장
  */
 export interface BiometricCredentials {
   userId: string;
-  refreshToken: string;
+  refreshToken?: string;
   savedAt: number;
 }
 
@@ -312,18 +315,13 @@ export async function saveBiometricCredentials(
   refreshToken: string
 ): Promise<void> {
   try {
-    const credentials: BiometricCredentials = {
-      userId,
-      refreshToken,
-      savedAt: Date.now(),
-    };
-
-    // SecureStore에 암호화 저장
+    // SecureStore에 refreshToken 암호화 저장 (민감 데이터)
     await authStorage.setRefreshToken(refreshToken);
 
-    // MMKV에 메타데이터 저장
+    // MMKV에는 메타데이터만 저장 (refreshToken 제외 — 평문 저장 방지)
+    const metaData = { userId, savedAt: Date.now() };
     const { setItem } = await import('@/lib/secureStorage');
-    await setItem(BIOMETRIC_CREDENTIALS_KEY, credentials);
+    await setItem(BIOMETRIC_CREDENTIALS_KEY, metaData);
 
     logger.info('생체 인증 자격 증명 저장 완료', { userId });
   } catch (error) {

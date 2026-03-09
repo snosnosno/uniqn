@@ -115,20 +115,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       };
     }, [isTimerActive]);
 
-    // PhoneAuthListener cleanup on unmount
-    useEffect(() => {
-      return () => {
-        if (smsHook.phoneListenerSettledRef.current) {
-          smsHook.phoneListenerSettledRef.current.current = true;
-          smsHook.phoneListenerSettledRef.current = null;
-        }
-        if (smsHook.phoneListenerRef.current) {
-          smsHook.phoneListenerRef.current.removeAllListeners('state_changed');
-          smsHook.phoneListenerRef.current = null;
-        }
-      };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // PhoneAuthListener cleanup은 usePhoneSMS 훅이 전담 (소유권 단일화)
 
     /** 인증번호 요청 */
     const handleRequestOTP = useCallback(async () => {
