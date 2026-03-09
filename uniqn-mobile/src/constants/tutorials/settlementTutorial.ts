@@ -99,7 +99,6 @@ const STAFF_PAGES: readonly TutorialPage[] = [
 
 export const SETTLEMENT_EMPLOYER_TUTORIAL: TutorialConfig = {
   type: 'settlement',
-  version: 1,
   accentColor: STATUS_COLORS.success,
   ctaText: '정산 시작하기',
   pages: EMPLOYER_PAGES,
@@ -107,7 +106,6 @@ export const SETTLEMENT_EMPLOYER_TUTORIAL: TutorialConfig = {
 
 export const SETTLEMENT_STAFF_TUTORIAL: TutorialConfig = {
   type: 'settlement',
-  version: 1,
   accentColor: STATUS_COLORS.success,
   ctaText: '확인했어요',
   pages: STAFF_PAGES,

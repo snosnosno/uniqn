@@ -63,6 +63,11 @@ export type AnalyticsEvent =
   | 'filter_apply'
   // 에러
   | 'error'
+  // 튜토리얼
+  | 'tutorial_start'
+  | 'tutorial_complete'
+  | 'tutorial_skip'
+  | 'tutorial_timeout'
   // 커스텀
   | string;
 
@@ -106,6 +111,11 @@ export interface AnalyticsEventParams {
   error_code?: string;
   error_message?: string;
   error_category?: string;
+
+  // 튜토리얼
+  tutorial_type?: string;
+  tutorial_page?: number;
+  tutorial_total_pages?: number;
 
   // 추가 파라미터
   [key: string]: string | number | boolean | undefined;
@@ -432,6 +442,30 @@ export function trackError(errorCode: string, errorMessage: string, category?: s
   });
 }
 
+/** 튜토리얼 시작 추적 */
+export function trackTutorialStart(type: string, totalPages: number): void {
+  trackEvent('tutorial_start', { tutorial_type: type, tutorial_total_pages: totalPages });
+}
+
+/** 튜토리얼 완료 추적 */
+export function trackTutorialComplete(type: string): void {
+  trackEvent('tutorial_complete', { tutorial_type: type });
+}
+
+/** 튜토리얼 건너뛰기 추적 (현재 페이지 번호 포함) */
+export function trackTutorialSkip(type: string, currentPage: number, totalPages: number): void {
+  trackEvent('tutorial_skip', {
+    tutorial_type: type,
+    tutorial_page: currentPage,
+    tutorial_total_pages: totalPages,
+  });
+}
+
+/** 튜토리얼 타임아웃 추적 */
+export function trackTutorialTimeout(type: string): void {
+  trackEvent('tutorial_timeout', { tutorial_type: type });
+}
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -459,6 +493,10 @@ export const analyticsService = {
   trackSettlementComplete,
   trackSearch,
   trackError,
+  trackTutorialStart,
+  trackTutorialComplete,
+  trackTutorialSkip,
+  trackTutorialTimeout,
 };
 
 export default analyticsService;

@@ -29,7 +29,8 @@ export default function QRScreen() {
     needsTutorial,
     completeTutorial,
     isLoading: isTutorialLoading,
-  } = useTutorial('qrCheckIn');
+    timeoutMs: tutorialTimeoutMs,
+  } = useTutorial('qrCheckIn', { pageCount: QR_CHECKIN_TUTORIAL.pages.length });
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<QRCodeAction>('checkIn');
@@ -183,7 +184,11 @@ export default function QRScreen() {
       {/* 튜토리얼 오버레이 */}
       {needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
-          <TutorialOverlay config={QR_CHECKIN_TUTORIAL} onComplete={completeTutorial} />
+          <TutorialOverlay
+            config={QR_CHECKIN_TUTORIAL}
+            onComplete={completeTutorial}
+            timeoutMs={tutorialTimeoutMs}
+          />
         </View>
       )}
     </SafeAreaView>

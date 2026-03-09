@@ -14,11 +14,30 @@ export { SETTLEMENT_EMPLOYER_TUTORIAL, SETTLEMENT_STAFF_TUTORIAL } from './settl
 export { QR_CHECKIN_TUTORIAL } from './qrCheckInTutorial';
 
 // ============================================================================
+// MMKV 키 상수
+// ============================================================================
+
+/** 튜토리얼 MMKV 키 접두사 (단일 소스) */
+export const TUTORIAL_STORAGE_PREFIX = 'tutorial';
+
+// ============================================================================
+// MMKV 키 매핑
+// ============================================================================
+
+/** 튜토리얼 MMKV 키에 사용하는 매핑 (TutorialType → storage key) */
+export const TUTORIAL_KEY_MAP: Readonly<Record<TutorialType, string>> = {
+  appIntro: 'app_intro',
+  postingGuide: 'posting_guide',
+  settlement: 'settlement',
+  qrCheckIn: 'qr_checkin',
+} as const;
+
+// ============================================================================
 // 버전 관리
 // ============================================================================
 
 /**
- * 각 튜토리얼의 현재 버전
+ * 각 튜토리얼의 현재 버전 (단일 소스)
  *
  * 튜토리얼 내용 변경 시 해당 버전을 증가시키면
  * 이미 완료한 사용자에게도 다시 표시됨

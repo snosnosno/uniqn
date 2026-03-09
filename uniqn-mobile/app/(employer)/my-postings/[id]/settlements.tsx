@@ -216,7 +216,8 @@ export default function StaffSettlementsScreen() {
     needsTutorial,
     completeTutorial,
     isLoading: isTutorialLoading,
-  } = useTutorial('settlement');
+    timeoutMs: tutorialTimeoutMs,
+  } = useTutorial('settlement', { pageCount: SETTLEMENT_EMPLOYER_TUTORIAL.pages.length });
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabType>('staff');
@@ -791,7 +792,11 @@ export default function StaffSettlementsScreen() {
       {/* 튜토리얼 오버레이 */}
       {needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
-          <TutorialOverlay config={SETTLEMENT_EMPLOYER_TUTORIAL} onComplete={completeTutorial} />
+          <TutorialOverlay
+            config={SETTLEMENT_EMPLOYER_TUTORIAL}
+            onComplete={completeTutorial}
+            timeoutMs={tutorialTimeoutMs}
+          />
         </View>
       )}
     </SafeAreaView>

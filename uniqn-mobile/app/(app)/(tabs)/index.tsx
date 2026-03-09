@@ -26,8 +26,13 @@ import { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from '@/constants/tutorials';
 export default function JobsScreen() {
   // 튜토리얼
   const { isEmployer } = useAuth();
-  const { needsTutorial, completeTutorial, isLoading: isTutorialLoading } = useTutorial('appIntro');
   const tutorialConfig = isEmployer ? APP_INTRO_EMPLOYER : APP_INTRO_STAFF;
+  const {
+    needsTutorial,
+    completeTutorial,
+    isLoading: isTutorialLoading,
+    timeoutMs: tutorialTimeoutMs,
+  } = useTutorial('appIntro', { pageCount: tutorialConfig.pages.length, delayMs: 1500 });
 
   // 필터 상태 (기본: null, 자동 선택 후 설정됨)
   const [selectedType, setSelectedType] = useState<PostingType | null>(null);
@@ -179,7 +184,11 @@ export default function JobsScreen() {
       {/* 튜토리얼 오버레이 */}
       {needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
-          <TutorialOverlay config={tutorialConfig} onComplete={completeTutorial} />
+          <TutorialOverlay
+            config={tutorialConfig}
+            onComplete={completeTutorial}
+            timeoutMs={tutorialTimeoutMs}
+          />
         </View>
       )}
     </SafeAreaView>

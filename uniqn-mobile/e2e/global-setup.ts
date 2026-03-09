@@ -254,10 +254,7 @@ async function seedNotifications(db: Firestore): Promise<void> {
   const staffBatch = db.batch();
   for (const notification of staffNotifications) {
     const { id, ...data } = notification;
-    staffBatch.set(
-      db.collection('users').doc(staffUid).collection('notifications').doc(id),
-      data
-    );
+    staffBatch.set(db.collection('users').doc(staffUid).collection('notifications').doc(id), data);
   }
   await staffBatch.commit();
 
@@ -467,10 +464,9 @@ async function seedReports(db: Firestore): Promise<void> {
 async function seedNotificationCounters(db: Firestore): Promise<void> {
   const batch = db.batch();
   for (const [, account] of Object.entries(TEST_ACCOUNTS)) {
-    batch.set(
-      db.collection('users').doc(account.uid).collection('counters').doc('notifications'),
-      { unreadCount: 0 }
-    );
+    batch.set(db.collection('users').doc(account.uid).collection('counters').doc('notifications'), {
+      unreadCount: 0,
+    });
   }
   await batch.commit();
 }
@@ -509,17 +505,25 @@ async function seedTestData(db: Firestore): Promise<void> {
  * src/utils/hash.ts의 hashUID와 동일한 해싱 함수
  * localStorage에 온보딩/튜토리얼 완료 플래그를 저장할 때 사용
  *
+ * 이중 해시(djb2a 변형)로 ~64비트 공간 확보하여 충돌 저항성 강화
+ *
  * SYNC: src/utils/hash.ts hashUID()와 동일 알고리즘 유지 필수
  * 어느 한쪽을 변경하면 다른 쪽도 반드시 동기화할 것
  */
 function hashUID(uid: string): string {
-  let hash = 0;
+  if (!uid) {
+    throw new Error('hashUID: uid must be non-empty');
+  }
+
+  let hash1 = 5381;
+  let hash2 = 52711;
   for (let i = 0; i < uid.length; i++) {
     const char = uid.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
+    hash1 = ((hash1 << 5) + hash1) ^ char;
+    hash2 = ((hash2 << 5) + hash2) ^ char;
   }
-  return Math.abs(hash).toString(36);
+
+  return `${Math.abs(hash1).toString(36)}_${Math.abs(hash2).toString(36)}`;
 }
 
 // ============================================================================
@@ -529,9 +533,7 @@ function hashUID(uid: string): string {
 function readFirebaseApiKey(): string {
   const envPath = path.join(__dirname, '..', '.env.local');
   if (!fs.existsSync(envPath)) {
-    throw new Error(
-      '.env.local 파일이 없습니다. .env.example을 참고하여 생성하세요.'
-    );
+    throw new Error('.env.local 파일이 없습니다. .env.example을 참고하여 생성하세요.');
   }
   const content = fs.readFileSync(envPath, 'utf-8');
   for (const line of content.split('\n')) {
@@ -571,8 +573,7 @@ async function generateStorageStates(apiKey: string): Promise<void> {
 
   for (const [roleName, account] of Object.entries(TEST_ACCOUNTS)) {
     // 1. Firebase Auth Emulator REST API로 로그인
-    const signInUrl =
-      `http://${AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
+    const signInUrl = `http://${AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
 
     const response = await fetch(signInUrl, {
       method: 'POST',
@@ -586,18 +587,14 @@ async function generateStorageStates(apiKey: string): Promise<void> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Firebase Auth 로그인 실패 (${roleName}): ${response.status} ${errorText}`
-      );
+      throw new Error(`Firebase Auth 로그인 실패 (${roleName}): ${response.status} ${errorText}`);
     }
 
     const signInData = (await response.json()) as SignInResponse;
 
     // 2. Firebase Auth localStorage 엔트리 구성
     const firebaseAuthKey = `firebase:authUser:${apiKey}:[DEFAULT]`;
-    const firebaseAuthValue = buildFirebaseAuthEntry(
-      signInData, account, apiKey
-    );
+    const firebaseAuthValue = buildFirebaseAuthEntry(signInData, account, apiKey);
 
     // 3. 온보딩/튜토리얼 완료 플래그 생성 (모달 방지)
     const userHash = hashUID(account.uid);
@@ -605,10 +602,10 @@ async function generateStorageStates(apiKey: string): Promise<void> {
     const onboardingVersionKey = `onboarding:version:${userHash}`;
 
     // 튜토리얼 완료 플래그
-    // SYNC: src/types/tutorial.ts TUTORIAL_KEY_MAP (키)
-    // SYNC: src/constants/tutorials/index.ts TUTORIAL_VERSIONS (버전)
-    // 버전 변경 시 여기도 반드시 업데이트할 것
+    // SYNC: src/constants/tutorials/index.ts TUTORIAL_KEY_MAP (키) + TUTORIAL_VERSIONS (버전)
+    // 키 또는 버전 변경 시 여기도 반드시 업데이트할 것
     const tutorialTypes = ['app_intro', 'posting_guide', 'settlement', 'qr_checkin'] as const;
+    // 현재 모든 튜토리얼 버전은 1 — TUTORIAL_VERSIONS 변경 시 동기화 필요
     const tutorialEntries = tutorialTypes.flatMap((type) => [
       { name: `tutorial:${type}:${userHash}`, value: 'true' },
       { name: `tutorial:version:${type}:${userHash}`, value: '1' },
@@ -672,11 +669,7 @@ async function generateStorageStates(apiKey: string): Promise<void> {
   }
 }
 
-function buildFirebaseAuthEntry(
-  signInData: SignInResponse,
-  account: TestAccount,
-  apiKey: string,
-) {
+function buildFirebaseAuthEntry(signInData: SignInResponse, account: TestAccount, apiKey: string) {
   return {
     uid: signInData.localId,
     email: signInData.email,
@@ -732,8 +725,8 @@ async function globalSetup() {
   } catch (error) {
     throw new Error(
       `Firebase Emulator에 연결할 수 없습니다.\n` +
-      `먼저 에뮬레이터를 시작하세요: firebase emulators:start\n` +
-      `원본 에러: ${error}`
+        `먼저 에뮬레이터를 시작하세요: firebase emulators:start\n` +
+        `원본 에러: ${error}`
     );
   }
 

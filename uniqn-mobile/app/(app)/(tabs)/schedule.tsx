@@ -14,7 +14,10 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { useTutorial } from '@/hooks/useTutorial';
 import { usePendingReviews } from '@/hooks/useReviews';
+import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
+import { SETTLEMENT_STAFF_TUTORIAL } from '@/constants/tutorials';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
@@ -206,6 +209,14 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
 export default function ScheduleScreen() {
   const isDark = useThemeStore((s) => s.isDarkMode);
+
+  // 스태프 정산 튜토리얼
+  const {
+    needsTutorial: needsSettlementTutorial,
+    completeTutorial: completeSettlementTutorial,
+    isLoading: isTutorialLoading,
+    timeoutMs: tutorialTimeoutMs,
+  } = useTutorial('settlement', { pageCount: SETTLEMENT_STAFF_TUTORIAL.pages.length });
 
   // 뷰 모드 상태 (list | calendar) - 캘린더가 기본
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
@@ -557,6 +568,17 @@ export default function ScheduleScreen() {
         onDateChange={handleModalDateChange}
         onRefreshSchedule={refresh}
       />
+
+      {/* 스태프 정산 튜토리얼 */}
+      {needsSettlementTutorial && !isTutorialLoading && (
+        <View className="absolute inset-0 z-10">
+          <TutorialOverlay
+            config={SETTLEMENT_STAFF_TUTORIAL}
+            onComplete={completeSettlementTutorial}
+            timeoutMs={tutorialTimeoutMs}
+          />
+        </View>
+      )}
 
       {/* QR 스캐너 */}
       <QRCodeScanner

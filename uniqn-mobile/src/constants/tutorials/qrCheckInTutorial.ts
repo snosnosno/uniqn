@@ -49,7 +49,6 @@ const PAGES: readonly TutorialPage[] = [
 
 export const QR_CHECKIN_TUTORIAL: TutorialConfig = {
   type: 'qrCheckIn',
-  version: 1,
   accentColor: PRIMARY_COLORS[700],
   ctaText: 'QR 스캔 시작',
   pages: PAGES,

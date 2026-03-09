@@ -38,7 +38,8 @@ export default function CreateJobPostingScreen() {
     needsTutorial,
     completeTutorial,
     isLoading: isTutorialLoading,
-  } = useTutorial('postingGuide');
+    timeoutMs: tutorialTimeoutMs,
+  } = useTutorial('postingGuide', { pageCount: POSTING_GUIDE_TUTORIAL.pages.length });
 
   // Form State
   const [formData, setFormData] = useState<JobPostingFormData>(INITIAL_JOB_POSTING_FORM_DATA);
@@ -199,7 +200,11 @@ export default function CreateJobPostingScreen() {
       {/* 튜토리얼 오버레이 */}
       {needsTutorial && !isTutorialLoading && (
         <View className="absolute inset-0 z-10">
-          <TutorialOverlay config={POSTING_GUIDE_TUTORIAL} onComplete={completeTutorial} />
+          <TutorialOverlay
+            config={POSTING_GUIDE_TUTORIAL}
+            onComplete={completeTutorial}
+            timeoutMs={tutorialTimeoutMs}
+          />
         </View>
       )}
     </SafeAreaView>

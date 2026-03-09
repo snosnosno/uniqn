@@ -110,7 +110,6 @@ const EMPLOYER_PAGES: readonly TutorialPage[] = [
 
 export const APP_INTRO_STAFF: TutorialConfig = {
   type: 'appIntro',
-  version: 1,
   accentColor: PRIMARY_COLORS[500],
   ctaText: '공고 둘러보기',
   pages: STAFF_PAGES,
@@ -118,7 +117,6 @@ export const APP_INTRO_STAFF: TutorialConfig = {
 
 export const APP_INTRO_EMPLOYER: TutorialConfig = {
   type: 'appIntro',
-  version: 1,
   accentColor: PRIMARY_COLORS[500],
   ctaText: '공고 작성하기',
   pages: EMPLOYER_PAGES,

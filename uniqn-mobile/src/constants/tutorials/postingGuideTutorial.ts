@@ -73,7 +73,6 @@ const PAGES: readonly TutorialPage[] = [
 
 export const POSTING_GUIDE_TUTORIAL: TutorialConfig = {
   type: 'postingGuide',
-  version: 1,
   accentColor: ACCENT_COLORS[500],
   ctaText: '공고 작성 시작',
   pages: PAGES,

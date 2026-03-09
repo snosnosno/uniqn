@@ -23,14 +23,6 @@ export interface IconProps {
 /** 튜토리얼 식별자 */
 export type TutorialType = 'appIntro' | 'postingGuide' | 'settlement' | 'qrCheckIn';
 
-/** 튜토리얼 MMKV 키에 사용하는 매핑 */
-export const TUTORIAL_KEY_MAP: Readonly<Record<TutorialType, string>> = {
-  appIntro: 'app_intro',
-  postingGuide: 'posting_guide',
-  settlement: 'settlement',
-  qrCheckIn: 'qr_checkin',
-} as const;
-
 // ============================================================================
 // 튜토리얼 페이지
 // ============================================================================
@@ -49,10 +41,9 @@ export interface TutorialPage {
 // 튜토리얼 설정
 // ============================================================================
 
-/** 튜토리얼 구성 */
+/** 튜토리얼 구성 (version은 TUTORIAL_VERSIONS에서 단일 관리) */
 export interface TutorialConfig {
   readonly type: TutorialType;
-  readonly version: number;
   readonly accentColor: string;
   readonly ctaText: string;
   readonly pages: readonly TutorialPage[];
@@ -71,4 +62,6 @@ export interface UseTutorialReturn {
   readonly resetTutorial: () => void;
   /** 로딩 중 */
   readonly isLoading: boolean;
+  /** 자동 닫힘 타임아웃 (ms). TutorialOverlay 카운트다운용 */
+  readonly timeoutMs: number;
 }
