@@ -201,6 +201,23 @@ export function useOTPVerification({
       if (!confirmation) {
         throw new Error('인증 세션이 만료되었습니다.');
       }
+
+      // TOCTOU 방지: signIn 전 전화번호 중복 재검증 (UX용, 서버사이드가 최종 보호)
+      try {
+        const phoneStillAvailable = !(await checkPhoneExists(cleanPhoneNumber(phone)));
+        if (!phoneStillAvailable) {
+          setError('이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.');
+          setIsVerifying(false);
+          return null;
+        }
+      } catch (checkError) {
+        logger.warn('OTP 확인 전 전화번호 재검증 실패 — Firebase 검증으로 진행', {
+          component: 'useOTPVerification',
+          mode,
+          error: checkError instanceof Error ? checkError.message : String(checkError),
+        });
+      }
+
       await confirmation.confirm(otpCode);
 
       try {

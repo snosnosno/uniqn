@@ -32,6 +32,7 @@ import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RealtimeManager } from '@/shared/realtime';
 import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
+import { createClientRateLimiter } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
   checkLoginAttempts,
@@ -57,6 +58,11 @@ import {
 
 /** 이메일 마스킹 (로깅용) - maskValue 래퍼 */
 const maskEmail = (email: string) => maskValue(email, 'email');
+
+/** Email Enumeration 완화: 분당 5회 제한 (클라이언트측) */
+const emailCheckLimiter = createClientRateLimiter(5, 60_000);
+/** Email 존재 확인 최소 응답 시간 (타이밍 공격 완화) */
+const EMAIL_CHECK_MIN_RESPONSE_MS = 300;
 
 /**
  * [H3] Native Auth 안전 가드
@@ -207,19 +213,39 @@ export async function rollbackPhoneOnlyAccount(
     }
   }
 
+  let orphanMarkingFailed: Error | null = null;
+
   if (deleted) {
     logger.info('phone-only 고아 계정 삭제 완료', { uid });
   } else {
     try {
       await markOrphanAccount(uid, reason, phone);
     } catch (orphanError) {
-      logger.error('고아 계정 마킹 실패 — 수동 정리 필요', {
+      orphanMarkingFailed =
+        orphanError instanceof Error ? orphanError : new Error(String(orphanError));
+
+      // CRITICAL: 삭제도 실패, 마킹도 실패 — 수동 개입 필수
+      logger.error('CRITICAL: 고아 계정 삭제+마킹 모두 실패 — 수동 정리 필요', orphanMarkingFailed, {
         uid,
         reason,
         phone: phone ? maskValue(phone, 'phone') : undefined,
-        error: orphanError instanceof Error ? orphanError.message : String(orphanError),
         component: 'authService',
+        orphanFailure: true,
       });
+
+      // Sentry에 명시적으로 전송
+      try {
+        const { recordError } = await import('@/services/observability/crashlyticsService');
+        await recordError(orphanMarkingFailed, {
+          component: 'authService',
+          action: 'rollbackPhoneOnlyAccount',
+          orphanFailure: true,
+          uid,
+          reason,
+        });
+      } catch {
+        // Sentry 전송 실패 시에도 에러는 반드시 throw
+      }
     }
   }
 
@@ -228,6 +254,15 @@ export async function rollbackPhoneOnlyAccount(
     await syncSignOut();
   } catch {
     // 세션 정리 실패는 무시
+  }
+
+  // 삭제도 마킹도 실패한 경우 호출자에게 전파
+  if (orphanMarkingFailed) {
+    throw new AuthError(ERROR_CODES.UNKNOWN, {
+      userMessage: '계정 정리 중 오류가 발생했습니다. 고객센터에 문의해주세요.',
+      originalError: orphanMarkingFailed,
+      metadata: { orphanFailure: true, uid, reason },
+    });
   }
 }
 
@@ -375,6 +410,16 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
  * @returns 이메일이 이미 존재하면 true, 없으면 false
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
+  // 클라이언트측 Rate Limit (자동화 공격 난이도 증가)
+  if (!emailCheckLimiter.tryAcquire()) {
+    throw new AuthError(ERROR_CODES.AUTH_RATE_LIMITED, {
+      userMessage: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
+      metadata: { waitMs: emailCheckLimiter.getWaitTime() },
+    });
+  }
+
+  const startTime = Date.now();
+
   try {
     logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
@@ -415,8 +460,18 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 
     logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists: result.data.exists });
 
+    // 타이밍 공격 완화: exists=true/false 응답 시간 차이로 이메일 존재 여부 추론 방지
+    const elapsed = Date.now() - startTime;
+    if (elapsed < EMAIL_CHECK_MIN_RESPONSE_MS) {
+      await new Promise((r) => setTimeout(r, EMAIL_CHECK_MIN_RESPONSE_MS - elapsed));
+    }
+
     return result.data.exists;
   } catch (error) {
+    // Rate limit 에러는 그대로 전파
+    if (error instanceof AuthError && error.code === ERROR_CODES.AUTH_RATE_LIMITED) {
+      throw error;
+    }
     throw handleServiceError(error, {
       operation: '이메일 중복 확인',
       component: 'authService',
@@ -524,11 +579,21 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         } catch {
           // unlink 실패 시 무시 — rollback에서 전체 삭제
         }
-        await rollbackPhoneOnlyAccount(
-          currentUser.uid,
-          'web_signup_rollback_failed',
-          data.verifiedPhone
-        );
+        try {
+          await rollbackPhoneOnlyAccount(
+            currentUser.uid,
+            'web_signup_rollback_failed',
+            data.verifiedPhone
+          );
+        } catch (rollbackError) {
+          // 롤백 실패는 원래 에러보다 심각 — 롤백 에러를 전파
+          logger.error('회원가입 실패 후 롤백도 실패', {
+            component: 'authService',
+            originalError: innerError instanceof Error ? innerError.message : String(innerError),
+            uid: currentUser.uid,
+          });
+          throw rollbackError;
+        }
         throw innerError;
       }
     }
@@ -612,11 +677,21 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       } catch {
         // unlink 실패 시 무시 — rollback에서 전체 삭제
       }
-      await rollbackPhoneOnlyAccount(
-        nativeUser.uid,
-        'native_signup_rollback_failed',
-        data.verifiedPhone
-      );
+      try {
+        await rollbackPhoneOnlyAccount(
+          nativeUser.uid,
+          'native_signup_rollback_failed',
+          data.verifiedPhone
+        );
+      } catch (rollbackError) {
+        // 롤백 실패는 원래 에러보다 심각 — 롤백 에러를 전파
+        logger.error('회원가입 실패 후 롤백도 실패', {
+          component: 'authService',
+          originalError: innerError instanceof Error ? innerError.message : String(innerError),
+          uid: nativeUser.uid,
+        });
+        throw rollbackError;
+      }
       throw innerError;
     }
   } catch (error) {

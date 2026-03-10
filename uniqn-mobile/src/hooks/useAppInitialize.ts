@@ -41,6 +41,8 @@ import {
   type VersionCheckResult,
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
+import { retryWithBackoff } from '@/utils/retry';
+import { useToastStore } from '@/stores/toastStore';
 
 // ============================================================================
 // Types
@@ -224,53 +226,135 @@ export function useAppInitialize(): UseAppInitializeReturn {
             allClaims: JSON.stringify(claims),
           });
 
-          // Custom Claims 미설정 시 1초 대기 후 1회 재시도
+          // Custom Claims 미설정 시 지수 백오프 재시도 (1s/2s/4s)
+          let shouldLoadProfile = true;
+
           if (!claims.role) {
-            logger.warn('Custom Claims 미설정 - 1초 후 재시도', {
+            logger.warn('Custom Claims 미설정 - 재시도 시작', {
               component: 'useAppInitialize',
               uid: authUser.uid,
             });
-            await new Promise((r) => setTimeout(r, 1000));
+
             try {
-              await authUser.getIdToken(true);
-              tokenResult = await authUser.getIdTokenResult();
-              if (tokenResult.claims.role) {
-                claims = tokenResult.claims;
-                logger.info('Custom Claims 재시도 성공', {
-                  component: 'useAppInitialize',
-                  role: tokenResult.claims.role,
-                });
-              } else {
-                logger.warn(
-                  'Custom Claims 재시도 후에도 미설정 - Firestore Rules에서 거부될 수 있습니다.',
-                  {
-                    component: 'useAppInitialize',
-                    uid: authUser.uid,
+              const claimsResult = await retryWithBackoff(
+                async () => {
+                  await authUser.getIdToken(true);
+                  const result = await authUser.getIdTokenResult();
+                  if (!result.claims.role) {
+                    throw new Error('Custom Claims role 미설정');
                   }
-                );
-              }
-            } catch {
-              logger.warn('Custom Claims 재시도 실패', {
+                  return result.claims;
+                },
+                {
+                  maxRetries: 3,
+                  initialDelayMs: 1000,
+                  backoffMultiplier: 2,
+                  component: 'useAppInitialize',
+                  operationName: 'Custom Claims 조회',
+                },
+              );
+              claims = claimsResult.data;
+              logger.info('Custom Claims 재시도 후 성공', {
                 component: 'useAppInitialize',
+                role: claims.role,
+                attempts: claimsResult.attempts,
               });
+            } catch {
+              // 모든 재시도 실패 — 강제 로그아웃
+              logger.error('Custom Claims 모든 재시도 실패 - 강제 로그아웃', {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+              });
+
+              useToastStore.getState().error(
+                '권한 정보를 가져올 수 없습니다. 다시 로그인해주세요.',
+                { duration: 5000 },
+              );
+
+              await authSignOut();
+              useAuthStore.getState().reset();
+              shouldLoadProfile = false;
             }
           }
 
           // Firestore에서 최신 프로필 가져오기 (setUser보다 먼저 — 부분 인증 상태 방지)
-          logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
-            component: 'useAppInitialize',
-          });
-          let freshProfile = await getUserProfile(authUser.uid);
-          // 일시적 Firestore 캐시 miss 대비: null 시 1.5초 후 1회 재시도
-          if (!freshProfile) {
-            logger.info('프로필 미발견 - 1.5초 후 재시도', {
+          let freshProfile: Awaited<ReturnType<typeof getUserProfile>> = null;
+
+          if (shouldLoadProfile) {
+            logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
               component: 'useAppInitialize',
-              uid: authUser.uid,
             });
-            await new Promise((r) => setTimeout(r, 1500));
-            freshProfile = await getUserProfile(authUser.uid);
+
+            // 지수 백오프 재시도 (1s/2s/4s) — 일시적 Firestore 캐시 miss 대비
+            try {
+              const profileResult = await retryWithBackoff(
+                async () => {
+                  const profile = await getUserProfile(authUser.uid);
+                  if (!profile) {
+                    throw new Error('프로필 미발견');
+                  }
+                  return profile;
+                },
+                {
+                  maxRetries: 3,
+                  initialDelayMs: 1000,
+                  backoffMultiplier: 2,
+                  component: 'useAppInitialize',
+                  operationName: '프로필 조회',
+                },
+              );
+              freshProfile = profileResult.data;
+
+              if (profileResult.attempts > 1) {
+                logger.info('프로필 조회 재시도 후 성공', {
+                  component: 'useAppInitialize',
+                  attempts: profileResult.attempts,
+                  uid: authUser.uid,
+                });
+              }
+            } catch (retryError) {
+              // 모든 재시도 실패 — freshProfile은 null, 아래 고아 계정 처리로 진행
+              logger.warn('프로필 조회 모든 재시도 실패', {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+                error: retryError instanceof Error ? retryError.message : String(retryError),
+              });
+            }
           }
+
           if (freshProfile) {
+            // Auth ↔ Firestore 프로필 불일치 감지 시 Firestore 기준으로 Auth 동기화
+            const needsReconciliation =
+              (freshProfile.nickname != null && authUser.displayName !== freshProfile.nickname) ||
+              (authUser.photoURL !== (freshProfile.photoURL ?? null));
+
+            if (needsReconciliation) {
+              logger.warn('Auth ↔ Firestore 프로필 불일치 감지 — Firestore 기준으로 Auth 동기화', {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+                authDisplayName: authUser.displayName,
+                firestoreNickname: freshProfile.nickname,
+              });
+
+              try {
+                const { updateProfile } = await import('firebase/auth');
+                await updateProfile(authUser, {
+                  displayName: freshProfile.nickname || authUser.displayName,
+                  photoURL: freshProfile.photoURL !== undefined ? freshProfile.photoURL : undefined,
+                });
+                logger.info('Auth 프로필 정합성 복구 완료', {
+                  component: 'useAppInitialize',
+                  uid: authUser.uid,
+                });
+              } catch (reconcileError) {
+                // 정합성 복구 실패는 non-fatal — 로그만 남기고 계속
+                logger.warn('Auth 프로필 정합성 복구 실패', {
+                  component: 'useAppInitialize',
+                  error: reconcileError instanceof Error ? reconcileError.message : String(reconcileError),
+                });
+              }
+            }
+
             // 소셜 로그인 미완성 프로필 → setProfile + setUser 후 useAuthGuard가 signup 리다이렉트
             if (freshProfile.socialProvider && !freshProfile.phoneVerified) {
               logger.info('소셜 로그인 미완성 프로필 감지 - signup 리다이렉트 대기', {
@@ -293,7 +377,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
                 nickname: freshProfile.nickname,
               });
             }
-          } else {
+          } else if (shouldLoadProfile) {
             // Firestore 프로필 문서 없는 고아 계정 → 로그아웃 처리
             logger.warn('Firestore 프로필 문서 없음 (고아 계정) - 로그아웃 처리', {
               component: 'useAppInitialize',

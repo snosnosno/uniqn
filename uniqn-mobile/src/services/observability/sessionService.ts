@@ -31,6 +31,9 @@ void userSessionStorage;
 /** 세션 타임아웃 (30분) */
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 
+/** 세션 만료 경고 버퍼 (5분) */
+const SESSION_WARNING_BUFFER = 5 * 60 * 1000;
+
 /** 토큰 갱신 간격 (50분 - Firebase ID 토큰은 1시간 유효) */
 const TOKEN_REFRESH_INTERVAL = 50 * 60 * 1000;
 
@@ -66,6 +69,7 @@ export interface LoginAttempts {
 let isInitialized = false;
 let lastActivity: number = Date.now();
 let sessionTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let sessionWarningTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let tokenRefreshIntervalId: ReturnType<typeof setInterval> | null = null;
 let appStateSubscription: { remove: () => void } | null = null;
 let authUnsubscribe: (() => void) | null = null;
@@ -95,6 +99,7 @@ export function initialize(): void {
  */
 export function cleanup(): void {
   clearSessionTimeout();
+  clearSessionWarning();
   clearTokenRefreshInterval();
 
   if (appStateSubscription) {
@@ -126,6 +131,7 @@ function handleAppStateChange(state: AppStateStatus): void {
   } else if (state === 'background') {
     // 백그라운드로 갈 때 타이머 정지
     clearSessionTimeout();
+    clearSessionWarning();
     logger.debug('앱 백그라운드 전환 - 세션 타이머 중지');
   }
 }
@@ -182,6 +188,14 @@ function checkSession(): void {
   if (inactive > SESSION_TIMEOUT) {
     // 세션 만료
     expireSession('세션이 만료되었습니다');
+  } else if (inactive > SESSION_TIMEOUT - SESSION_WARNING_BUFFER) {
+    // 경고 구간 (25~30분): 경고 표시 + 남은 시간만큼 만료 타이머 설정
+    showSessionWarning();
+    clearSessionTimeout();
+    clearSessionWarning();
+    sessionTimeoutId = setTimeout(() => {
+      expireSession('비활성으로 인해 세션이 만료되었습니다');
+    }, SESSION_TIMEOUT - inactive);
   } else {
     // 타이머 재설정
     resetActivityTimer();
@@ -196,7 +210,14 @@ function checkSession(): void {
  */
 function resetActivityTimer(): void {
   clearSessionTimeout();
+  clearSessionWarning();
 
+  // 25분 경고 타이머
+  sessionWarningTimeoutId = setTimeout(() => {
+    showSessionWarning();
+  }, SESSION_TIMEOUT - SESSION_WARNING_BUFFER);
+
+  // 30분 만료 타이머
   sessionTimeoutId = setTimeout(() => {
     expireSession('비활성으로 인해 세션이 만료되었습니다');
   }, SESSION_TIMEOUT);
@@ -210,6 +231,31 @@ function clearSessionTimeout(): void {
     clearTimeout(sessionTimeoutId);
     sessionTimeoutId = null;
   }
+}
+
+/**
+ * 세션 경고 타이머 클리어
+ */
+function clearSessionWarning(): void {
+  if (sessionWarningTimeoutId) {
+    clearTimeout(sessionWarningTimeoutId);
+    sessionWarningTimeoutId = null;
+  }
+}
+
+/**
+ * 세션 만료 경고 표시
+ */
+function showSessionWarning(): void {
+  const currentUser = getFirebaseAuth().currentUser;
+  if (!currentUser) return;
+
+  logger.info('세션 만료 경고', { component: 'sessionService' });
+
+  useToastStore.getState().addToast({
+    type: 'warning',
+    message: '세션이 5분 후 만료됩니다. 활동을 계속하면 자동 연장됩니다.',
+  });
 }
 
 /**

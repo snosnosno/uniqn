@@ -14,7 +14,7 @@ import {
 import { getFirebaseAuth } from '@/lib/firebase';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
-import { AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
+import { AppError, AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isSafeUrl } from '@/utils/security';
 import { setUserProperties } from '@/services/observability';
@@ -115,6 +115,15 @@ export async function updateUserProfile(
           logger.error('Auth 프로필 롤백 실패 - 수동 복구 필요', {
             uid,
             error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+          });
+          // Auth가 이제 Firestore와 불일치 — rollbackFailed 컨텍스트와 함께 전파
+          throw new AppError({
+            code: ERROR_CODES.FIREBASE_SYNC_FAILED,
+            category: 'firebase',
+            severity: 'high',
+            userMessage: '프로필 업데이트에 실패했습니다. 앱을 재시작해주세요.',
+            originalError: firestoreError instanceof Error ? firestoreError : new Error(String(firestoreError)),
+            metadata: { rollbackFailed: true, uid },
           });
         }
       }
@@ -260,6 +269,15 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
           uid,
           error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
         });
+        // Auth가 이제 Firestore와 불일치 — rollbackFailed 컨텍스트와 함께 전파
+        throw new AppError({
+          code: ERROR_CODES.FIREBASE_SYNC_FAILED,
+          category: 'firebase',
+          severity: 'high',
+          userMessage: '프로필 사진 업데이트에 실패했습니다. 앱을 재시작해주세요.',
+          originalError: firestoreError instanceof Error ? firestoreError : new Error(String(firestoreError)),
+          metadata: { rollbackFailed: true, uid },
+        });
       }
       throw firestoreError;
     }
@@ -334,6 +352,15 @@ export async function completeProfile(data: CompleteProfileData): Promise<void> 
         logger.error('Auth displayName 롤백 실패 - 수동 복구 필요', {
           uid,
           error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        });
+        // Auth가 이제 Firestore와 불일치 — rollbackFailed 컨텍스트와 함께 전파
+        throw new AppError({
+          code: ERROR_CODES.FIREBASE_SYNC_FAILED,
+          category: 'firebase',
+          severity: 'high',
+          userMessage: '프로필 완성에 실패했습니다. 앱을 재시작해주세요.',
+          originalError: firestoreError instanceof Error ? firestoreError : new Error(String(firestoreError)),
+          metadata: { rollbackFailed: true, uid },
         });
       }
       throw firestoreError;

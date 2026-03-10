@@ -417,6 +417,60 @@ export function getPasswordStrength(password: string): {
 }
 
 // ============================================================================
+// Client-side Rate Limiter
+// ============================================================================
+
+interface ClientRateLimiter {
+  /** 요청 가능 여부 확인 + 가능하면 기록 */
+  tryAcquire: () => boolean;
+  /** 남은 대기 시간 (ms). 0이면 즉시 가능 */
+  getWaitTime: () => number;
+  /** 테스트용 리셋 */
+  reset: () => void;
+}
+
+/**
+ * 클라이언트측 Rate Limiter 팩토리 (슬라이딩 윈도우 기반)
+ *
+ * 서버측 Rate Limiting 보조용. 자동화 공격의 난이도를 높이는 역할.
+ *
+ * @param maxRequests - 윈도우 내 최대 요청 수
+ * @param windowMs - 슬라이딩 윈도우 크기 (밀리초)
+ */
+export function createClientRateLimiter(
+  maxRequests: number,
+  windowMs: number,
+): ClientRateLimiter {
+  const timestamps: number[] = [];
+
+  function pruneExpired(): void {
+    const now = Date.now();
+    while (timestamps.length > 0 && timestamps[0]! < now - windowMs) {
+      timestamps.shift();
+    }
+  }
+
+  return {
+    tryAcquire(): boolean {
+      pruneExpired();
+      if (timestamps.length >= maxRequests) {
+        return false;
+      }
+      timestamps.push(Date.now());
+      return true;
+    },
+    getWaitTime(): number {
+      pruneExpired();
+      if (timestamps.length < maxRequests) return 0;
+      return timestamps[0]! + windowMs - Date.now();
+    },
+    reset(): void {
+      timestamps.length = 0;
+    },
+  };
+}
+
+// ============================================================================
 // Logging Masking Utilities
 // ============================================================================
 

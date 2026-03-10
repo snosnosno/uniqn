@@ -70,6 +70,7 @@ export const ERROR_CODES = {
   AUTH_RATE_LIMITED: 'E2011',
   AUTH_REQUIRED: 'E2012',
   AUTH_CAPTCHA_FAILED: 'E2013',
+  AUTH_CLAIMS_NOT_SET: 'E2014',
 
   // 검증 에러 (E3xxx)
   VALIDATION_REQUIRED: 'E3001',
@@ -84,6 +85,7 @@ export const ERROR_CODES = {
   FIREBASE_QUOTA_EXCEEDED: 'E4003',
   FIREBASE_UNAVAILABLE: 'E4004',
   FIREBASE_ABORTED: 'E4005',
+  FIREBASE_SYNC_FAILED: 'E4006',
 
   // 보안 에러 (E5xxx)
   SECURITY_XSS_DETECTED: 'E5001',
@@ -159,6 +161,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN]: '보안을 위해 다시 로그인해주세요',
   [ERROR_CODES.AUTH_RATE_LIMITED]: '로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요',
   [ERROR_CODES.AUTH_REQUIRED]: '로그인이 필요합니다',
+  [ERROR_CODES.AUTH_CLAIMS_NOT_SET]: '권한 정보를 가져올 수 없습니다. 다시 로그인해주세요',
 
   // 검증
   [ERROR_CODES.VALIDATION_REQUIRED]: '필수 입력 항목입니다',
@@ -173,6 +176,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.FIREBASE_QUOTA_EXCEEDED]: '요청 한도를 초과했습니다',
   [ERROR_CODES.FIREBASE_UNAVAILABLE]: '서비스를 일시적으로 사용할 수 없습니다',
   [ERROR_CODES.FIREBASE_ABORTED]: '작업이 중단되었습니다',
+  [ERROR_CODES.FIREBASE_SYNC_FAILED]: '데이터 동기화에 실패했습니다. 앱을 재시작해주세요',
 
   // 보안
   [ERROR_CODES.SECURITY_XSS_DETECTED]: '잘못된 입력이 감지되었습니다',

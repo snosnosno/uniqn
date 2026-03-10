@@ -17,6 +17,7 @@ import { Platform } from 'react-native';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirebaseAuth } from './firebase';
 import { logger } from '@/utils/logger';
+import { maskValue } from '@/errors/serviceErrorHandler';
 
 import { getNativeAuth, nativeSignOut } from './nativeAuth';
 
@@ -112,8 +113,22 @@ export async function ensureDualSdkSync(): Promise<void> {
     const nativeLoggedIn = !!nativeUser;
     const webLoggedIn = !!webUser;
 
-    if (nativeLoggedIn === webLoggedIn) {
-      return; // 양쪽 일치 (둘 다 로그인 또는 둘 다 로그아웃)
+    // 둘 다 로그아웃 → 정상
+    if (!nativeLoggedIn && !webLoggedIn) {
+      return;
+    }
+
+    // 둘 다 로그인 → UID 비교
+    if (nativeLoggedIn && webLoggedIn) {
+      if (nativeUser!.uid !== webUser!.uid) {
+        logger.error('Dual SDK UID 불일치 감지 — 양쪽 로그아웃으로 복구', {
+          component: 'authBridge',
+          nativeUid: maskValue(nativeUser!.uid, 'id'),
+          webUid: maskValue(webUser!.uid, 'id'),
+        });
+        await syncSignOut();
+      }
+      return;
     }
 
     // Web SDK만 로그인된 경우 허용 (Apple 소셜 로그인은 Web SDK만 인증)
