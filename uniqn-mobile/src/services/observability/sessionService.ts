@@ -13,8 +13,11 @@
 
 import { AppState, type AppStateStatus } from 'react-native';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { authStorage, userSessionStorage } from '@/lib/secureStorage';
+import { syncSignOut } from '@/lib/authBridge';
+import { authStorage, userSessionStorage, getItem, setItem, deleteItem } from '@/lib/secureStorage';
 import { logger } from '@/utils/logger';
+import { RealtimeManager } from '@/shared/realtime';
+import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -270,9 +273,11 @@ async function expireSession(message: string): Promise<void> {
     message: message + ' 다시 로그인해주세요.',
   });
 
-  // 로그아웃
+  // Firestore 실시간 구독 해제 및 캐시 정리 후 로그아웃
   try {
-    await getFirebaseAuth().signOut();
+    RealtimeManager.unsubscribeAll();
+    clearCounterSyncCache();
+    await syncSignOut();
     useAuthStore.getState().reset();
   } catch (error) {
     logger.error('세션 만료 - 로그아웃 실패', toError(error));
@@ -407,7 +412,6 @@ export async function checkLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const { getItem, deleteItem } = await import('@/lib/secureStorage');
     const attempts = await getItem<LoginAttempts>(key);
     if (!attempts) return;
 
@@ -437,7 +441,6 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const { getItem, setItem } = await import('@/lib/secureStorage');
     const current = (await getItem<LoginAttempts>(key)) ?? {
       count: 0,
       lockUntil: null,
@@ -470,7 +473,6 @@ export async function resetLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const { deleteItem } = await import('@/lib/secureStorage');
     await deleteItem(key);
     logger.debug('로그인 시도 횟수 초기화', { email: email.substring(0, 3) + '***' });
   } catch (error) {
@@ -485,7 +487,6 @@ export async function getRemainingLoginAttempts(email: string): Promise<number> 
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const { getItem } = await import('@/lib/secureStorage');
     const attempts = await getItem<LoginAttempts>(key);
     if (!attempts) return MAX_LOGIN_ATTEMPTS;
 

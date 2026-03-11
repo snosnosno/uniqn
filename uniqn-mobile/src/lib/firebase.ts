@@ -202,9 +202,7 @@ export function getFirebaseAuth(): Auth {
     // initializeAuth는 한 번만 호출 가능, 이미 초기화된 경우 getAuth 사용
     try {
       const persistence =
-        Platform.OS === 'web'
-          ? browserLocalPersistence
-          : getReactNativePersistence(AsyncStorage);
+        Platform.OS === 'web' ? browserLocalPersistence : getReactNativePersistence(AsyncStorage);
       firebaseAuth = initializeAuth(app, { persistence });
     } catch {
       // 이미 초기화된 경우 기존 인스턴스 반환

@@ -42,6 +42,7 @@ import {
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
 import { retryWithBackoff } from '@/utils/retry';
+import { sessionService } from '@/services/observability';
 import { useToastStore } from '@/stores/toastStore';
 
 // ============================================================================
@@ -163,6 +164,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
       // 7. Dual SDK 상태 일치 확인 (native ↔ web)
       await ensureDualSdkSync();
 
+      // 7.5. 세션 매니저 초기화 (타임아웃 관리, 토큰 자동 갱신)
+      sessionService.initialize();
+
       // 8. 인증 상태 초기화 (복원된 상태 활용)
       // getState()로 안정적인 함수 참조 획득
       await useAuthStore.getState().initialize();
@@ -251,7 +255,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
                   backoffMultiplier: 2,
                   component: 'useAppInitialize',
                   operationName: 'Custom Claims 조회',
-                },
+                }
               );
               claims = claimsResult.data;
               logger.info('Custom Claims 재시도 후 성공', {
@@ -266,10 +270,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
                 uid: authUser.uid,
               });
 
-              useToastStore.getState().error(
-                '권한 정보를 가져올 수 없습니다. 다시 로그인해주세요.',
-                { duration: 5000 },
-              );
+              useToastStore
+                .getState()
+                .error('권한 정보를 가져올 수 없습니다. 다시 로그인해주세요.', { duration: 5000 });
 
               await authSignOut();
               useAuthStore.getState().reset();
@@ -301,7 +304,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
                   backoffMultiplier: 2,
                   component: 'useAppInitialize',
                   operationName: '프로필 조회',
-                },
+                }
               );
               freshProfile = profileResult.data;
 
@@ -325,8 +328,10 @@ export function useAppInitialize(): UseAppInitializeReturn {
           if (freshProfile) {
             // Auth ↔ Firestore 프로필 불일치 감지 시 Firestore 기준으로 Auth 동기화
             const needsReconciliation =
-              (freshProfile.nickname != null && authUser.displayName !== freshProfile.nickname) ||
-              (authUser.photoURL !== (freshProfile.photoURL ?? null));
+              (freshProfile.nickname !== null &&
+                freshProfile.nickname !== undefined &&
+                authUser.displayName !== freshProfile.nickname) ||
+              authUser.photoURL !== (freshProfile.photoURL ?? null);
 
             if (needsReconciliation) {
               logger.warn('Auth ↔ Firestore 프로필 불일치 감지 — Firestore 기준으로 Auth 동기화', {
@@ -350,7 +355,10 @@ export function useAppInitialize(): UseAppInitializeReturn {
                 // 정합성 복구 실패는 non-fatal — 로그만 남기고 계속
                 logger.warn('Auth 프로필 정합성 복구 실패', {
                   component: 'useAppInitialize',
-                  error: reconcileError instanceof Error ? reconcileError.message : String(reconcileError),
+                  error:
+                    reconcileError instanceof Error
+                      ? reconcileError.message
+                      : String(reconcileError),
                 });
               }
             }
@@ -624,6 +632,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
       subscription.remove();
     };
   }, [state.isInitialized]);
+
+  // 세션 매니저 정리 (앱 언마운트 시)
+  useEffect(() => {
+    return () => {
+      sessionService.cleanup();
+    };
+  }, []);
 
   return {
     ...state,

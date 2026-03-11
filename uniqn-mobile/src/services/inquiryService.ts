@@ -213,10 +213,7 @@ export async function respondToInquiry(
 /**
  * 문의 상태 변경 (관리자)
  */
-export async function updateInquiryStatus(
-  inquiryId: string,
-  status: InquiryStatus
-): Promise<void> {
+export async function updateInquiryStatus(inquiryId: string, status: InquiryStatus): Promise<void> {
   requireCurrentUser();
   try {
     await inquiryRepository.updateStatus(inquiryId, status);

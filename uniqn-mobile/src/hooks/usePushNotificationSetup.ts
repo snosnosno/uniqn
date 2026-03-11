@@ -20,7 +20,11 @@ import {
   type NotificationPayload,
 } from '@/services/notifications/pushNotificationService';
 import { createNotificationFromFCM } from '@/services/notifications/notificationService';
-import { navigateFromNotification, waitForNavigationReadyAsync, trackEvent } from '@/services/observability';
+import {
+  navigateFromNotification,
+  waitForNavigationReadyAsync,
+  trackEvent,
+} from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { queryClient, queryKeys } from '@/lib/queryClient';

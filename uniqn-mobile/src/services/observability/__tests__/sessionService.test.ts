@@ -10,114 +10,94 @@ import { sessionService } from '../sessionService';
 // AuthError type is used via mock
 
 // ============================================================================
-// Mocks
+// Mocks (모든 jest.mock은 inline jest.fn() 사용 - jest-expo 호이스팅 호환)
 // ============================================================================
 
-// Firebase Auth 모킹
-const mockSignOut = jest.fn();
-const mockGetIdToken = jest.fn();
-const mockGetIdTokenResult = jest.fn();
-const mockOnAuthStateChanged = jest.fn();
+// Firebase Auth 모킹 (싱글턴 객체 - 테스트에서 currentUser 조작 가능)
+jest.mock('@/lib/firebase', () => {
+  const auth = {
+    currentUser: {
+      getIdToken: jest.fn(),
+      getIdTokenResult: jest.fn(),
+      uid: 'test-user-id',
+    },
+    signOut: jest.fn(),
+    onAuthStateChanged: jest.fn(),
+  };
+  return { getFirebaseAuth: jest.fn(() => auth) };
+});
 
-const mockCurrentUser = {
-  getIdToken: mockGetIdToken,
-  getIdTokenResult: mockGetIdTokenResult,
-  uid: 'test-user-id',
-};
-
-const mockAuth: {
-  currentUser: typeof mockCurrentUser | null;
-  signOut: jest.Mock;
-  onAuthStateChanged: jest.Mock;
-} = {
-  currentUser: mockCurrentUser,
-  signOut: mockSignOut,
-  onAuthStateChanged: mockOnAuthStateChanged,
-};
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(() => mockAuth),
-}));
-
-// authStorage 모킹
-const mockSetAuthToken = jest.fn();
-const mockDeleteAuthToken = jest.fn();
-
+// secureStorage 모킹
 jest.mock('@/lib/secureStorage', () => ({
   authStorage: {
-    setAuthToken: mockSetAuthToken,
-    deleteAuthToken: mockDeleteAuthToken,
+    setAuthToken: jest.fn(),
+    deleteAuthToken: jest.fn(),
   },
   userSessionStorage: {},
-}));
-
-// secureStorage (동적 import) 모킹
-const mockGetItem = jest.fn();
-const mockSetItem = jest.fn();
-const mockDeleteItem = jest.fn();
-
-jest.mock('@/lib/secureStorage', () => ({
-  authStorage: {
-    setAuthToken: mockSetAuthToken,
-    deleteAuthToken: mockDeleteAuthToken,
-  },
-  userSessionStorage: {},
-  getItem: mockGetItem,
-  setItem: mockSetItem,
-  deleteItem: mockDeleteItem,
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  deleteItem: jest.fn(),
 }));
 
 // router 모킹
-const mockRouterReplace = jest.fn();
-
 jest.mock('expo-router', () => ({
   router: {
-    replace: mockRouterReplace,
+    replace: jest.fn(),
   },
 }));
 
-// authStore 모킹
-const mockAuthStoreReset = jest.fn();
-const mockAuthStoreGetState = jest.fn(() => ({ reset: mockAuthStoreReset }));
+// authStore 모킹 (싱글턴 - reset 함수 참조 안정)
+jest.mock('@/stores/authStore', () => {
+  const reset = jest.fn();
+  return {
+    useAuthStore: {
+      getState: jest.fn(() => ({ reset })),
+    },
+  };
+});
 
-jest.mock('@/stores/authStore', () => ({
-  useAuthStore: {
-    getState: mockAuthStoreGetState,
-  },
-}));
-
-// toastStore 모킹
-const mockAddToast = jest.fn();
-const mockToastStoreGetState = jest.fn(() => ({ addToast: mockAddToast }));
-
-jest.mock('@/stores/toastStore', () => ({
-  useToastStore: {
-    getState: mockToastStoreGetState,
-  },
-}));
+// toastStore 모킹 (싱글턴 - addToast 함수 참조 안정)
+jest.mock('@/stores/toastStore', () => {
+  const addToast = jest.fn();
+  return {
+    useToastStore: {
+      getState: jest.fn(() => ({ addToast })),
+    },
+  };
+});
 
 // logger 모킹
-const mockLoggerInfo = jest.fn();
-const mockLoggerWarn = jest.fn();
-const mockLoggerError = jest.fn();
-const mockLoggerDebug = jest.fn();
-
 jest.mock('@/utils/logger', () => ({
   logger: {
-    info: mockLoggerInfo,
-    warn: mockLoggerWarn,
-    error: mockLoggerError,
-    debug: mockLoggerDebug,
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
 // crashlyticsService 모킹
-const mockRecordError = jest.fn();
-
 jest.mock('../crashlyticsService', () => ({
   crashlyticsService: {
-    recordError: mockRecordError,
+    recordError: jest.fn(),
   },
+}));
+
+// authBridge 모킹
+jest.mock('@/lib/authBridge', () => ({
+  syncSignOut: jest.fn().mockResolvedValue(undefined),
+}));
+
+// RealtimeManager 모킹
+jest.mock('@/shared/realtime', () => ({
+  RealtimeManager: {
+    unsubscribeAll: jest.fn(),
+  },
+}));
+
+// counterSyncCache 모킹
+jest.mock('@/shared/cache/counterSyncCache', () => ({
+  clearCounterSyncCache: jest.fn(),
 }));
 
 // errors 모킹
@@ -144,6 +124,67 @@ jest.mock('@/errors', () => ({
     return error instanceof Error && 'code' in error;
   },
 }));
+
+// ============================================================================
+// Mock 참조 획득 (require로 hoisting 문제 우회)
+// ============================================================================
+
+const { getFirebaseAuth } = require('@/lib/firebase') as {
+  getFirebaseAuth: jest.Mock;
+};
+const mockAuth = getFirebaseAuth() as {
+  currentUser: {
+    getIdToken: jest.Mock;
+    getIdTokenResult: jest.Mock;
+    uid: string;
+  } | null;
+  signOut: jest.Mock;
+  onAuthStateChanged: jest.Mock;
+};
+const mockCurrentUser = mockAuth.currentUser!;
+const mockGetIdToken = mockCurrentUser.getIdToken;
+const mockGetIdTokenResult = mockCurrentUser.getIdTokenResult;
+const mockOnAuthStateChanged = mockAuth.onAuthStateChanged;
+
+const mockSecureStorage = require('@/lib/secureStorage') as {
+  authStorage: { setAuthToken: jest.Mock; deleteAuthToken: jest.Mock };
+  getItem: jest.Mock;
+  setItem: jest.Mock;
+  deleteItem: jest.Mock;
+};
+const mockSetAuthToken = mockSecureStorage.authStorage.setAuthToken;
+const mockGetItem = mockSecureStorage.getItem;
+const mockSetItem = mockSecureStorage.setItem;
+const mockDeleteItem = mockSecureStorage.deleteItem;
+
+const { router: mockRouter } = require('expo-router') as {
+  router: { replace: jest.Mock };
+};
+const mockRouterReplace = mockRouter.replace;
+
+// authStore mock은 jest.mock factory 내에서 자체 완결 (외부 참조 불필요)
+
+const { useToastStore: mockToastStore } = require('@/stores/toastStore') as {
+  useToastStore: { getState: jest.Mock };
+};
+const mockAddToast = (mockToastStore.getState() as { addToast: jest.Mock }).addToast;
+
+const { logger: mockLogger } = require('@/utils/logger') as {
+  logger: { info: jest.Mock; warn: jest.Mock; error: jest.Mock; debug: jest.Mock };
+};
+const { crashlyticsService: mockCrashlyticsService } = require('../crashlyticsService') as {
+  crashlyticsService: { recordError: jest.Mock };
+};
+const { syncSignOut: mockSyncSignOut } = require('@/lib/authBridge') as {
+  syncSignOut: jest.Mock;
+};
+const { RealtimeManager: mockRealtimeManager } = require('@/shared/realtime') as {
+  RealtimeManager: { unsubscribeAll: jest.Mock };
+};
+const { clearCounterSyncCache: mockClearCounterSyncCache } =
+  require('@/shared/cache/counterSyncCache') as {
+    clearCounterSyncCache: jest.Mock;
+  };
 
 // ============================================================================
 // Test Helpers
@@ -186,7 +227,7 @@ describe('sessionService', () => {
       sessionService.initialize();
 
       expect(mockAddEventListener).toHaveBeenCalledWith('change', expect.any(Function));
-      expect(mockLoggerInfo).toHaveBeenCalledWith('세션 매니저 초기화 완료');
+      expect(mockLogger.info).toHaveBeenCalledWith('세션 매니저 초기화 완료');
     });
 
     it('Firebase Auth 상태 변경 리스너를 등록해야 함', () => {
@@ -202,7 +243,7 @@ describe('sessionService', () => {
       sessionService.initialize();
 
       expect(mockOnAuthStateChanged).not.toHaveBeenCalled();
-      expect(mockLoggerInfo).not.toHaveBeenCalled();
+      expect(mockLogger.info).not.toHaveBeenCalled();
     });
   });
 
@@ -218,7 +259,7 @@ describe('sessionService', () => {
 
       expect(mockRemove).toHaveBeenCalled();
       expect(mockUnsubscribe).toHaveBeenCalled();
-      expect(mockLoggerInfo).toHaveBeenCalledWith('세션 매니저 정리 완료');
+      expect(mockLogger.info).toHaveBeenCalledWith('세션 매니저 정리 완료');
     });
   });
 
@@ -305,7 +346,7 @@ describe('sessionService', () => {
       // 백그라운드 → 포그라운드
       appStateCallback?.('active');
 
-      expect(mockLoggerDebug).toHaveBeenCalledWith('앱 포그라운드 복귀 - 세션 체크');
+      expect(mockLogger.debug).toHaveBeenCalledWith('앱 포그라운드 복귀 - 세션 체크');
     });
 
     it('백그라운드 전환 시 타이머를 중지해야 함', () => {
@@ -322,7 +363,7 @@ describe('sessionService', () => {
       // 포그라운드 → 백그라운드
       appStateCallback?.('background');
 
-      expect(mockLoggerDebug).toHaveBeenCalledWith('앱 백그라운드 전환 - 세션 타이머 중지');
+      expect(mockLogger.debug).toHaveBeenCalledWith('앱 백그라운드 전환 - 세션 타이머 중지');
     });
   });
 
@@ -336,19 +377,19 @@ describe('sessionService', () => {
 
       sessionService.initialize();
 
-      // 로그인 시뮬레이션
+      // 로그인 시뮬레이션 (async 핸들러 → microtask 플러시 필요)
       authCallback?.(mockCurrentUser);
+      await jest.runOnlyPendingTimersAsync();
 
       // 타이머가 설정되었는지 확인하기 위해 30분 경과
-      jest.advanceTimersByTime(30 * 60 * 1000 + 1000);
+      await jest.advanceTimersByTimeAsync(30 * 60 * 1000 + 1000);
 
-      // Promise 처리를 위해 대기
-      await jest.runAllTimersAsync();
-
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockRealtimeManager.unsubscribeAll).toHaveBeenCalled();
+      expect(mockClearCounterSyncCache).toHaveBeenCalled();
+      expect(mockSyncSignOut).toHaveBeenCalled();
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'warning',
-        message: expect.stringContaining('비활성으로 인해 세션이 만료'),
+        message: expect.stringContaining('다시 로그인해주세요'),
       });
       expect(mockRouterReplace).toHaveBeenCalledWith('/(auth)/login');
     });
@@ -369,7 +410,7 @@ describe('sessionService', () => {
       expect(result).toBe(newToken);
       expect(mockGetIdToken).toHaveBeenCalledWith(true); // force refresh
       expect(mockSetAuthToken).toHaveBeenCalledWith(newToken);
-      expect(mockLoggerInfo).toHaveBeenCalledWith('토큰 갱신 성공');
+      expect(mockLogger.info).toHaveBeenCalledWith('토큰 갱신 성공');
     });
 
     it('로그인되지 않았으면 null을 반환해야 함', async () => {
@@ -378,7 +419,7 @@ describe('sessionService', () => {
       const result = await sessionService.refreshToken();
 
       expect(result).toBeNull();
-      expect(mockLoggerWarn).toHaveBeenCalledWith('토큰 갱신 실패 - 로그인 필요');
+      expect(mockLogger.warn).toHaveBeenCalledWith('토큰 갱신 실패 - 로그인 필요');
     });
 
     it('토큰 갱신 실패 시 세션을 만료시켜야 함', async () => {
@@ -387,13 +428,13 @@ describe('sessionService', () => {
       const result = await sessionService.refreshToken();
 
       expect(result).toBeNull();
-      expect(mockLoggerError).toHaveBeenCalled();
-      expect(mockRecordError).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(mockCrashlyticsService.recordError).toHaveBeenCalled();
 
       // Promise 처리를 위해 대기
       await jest.runAllTimersAsync();
 
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockSyncSignOut).toHaveBeenCalled();
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'warning',
         message: expect.stringContaining('인증 토큰 갱신에 실패'),
@@ -436,7 +477,7 @@ describe('sessionService', () => {
       const result = await sessionService.getValidToken();
 
       expect(result).toBeNull();
-      expect(mockLoggerError).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 
@@ -450,14 +491,12 @@ describe('sessionService', () => {
 
       sessionService.initialize();
 
-      // 로그인 시뮬레이션
+      // 로그인 시뮬레이션 (async 핸들러 → microtask 플러시 필요)
       authCallback?.(mockCurrentUser);
-
-      // Promise 처리를 위해 대기
-      await jest.runAllTimersAsync();
+      await jest.runOnlyPendingTimersAsync();
 
       expect(mockGetIdToken).toHaveBeenCalledWith(true);
-      expect(mockLoggerDebug).toHaveBeenCalledWith('토큰 강제 갱신 완료 (Custom Claims 로드)');
+      expect(mockLogger.debug).toHaveBeenCalledWith('토큰 강제 갱신 완료 (Custom Claims 로드)');
     });
 
     it('50분마다 토큰을 갱신해야 함', async () => {
@@ -469,16 +508,14 @@ describe('sessionService', () => {
 
       sessionService.initialize();
 
-      // 로그인 시뮬레이션
+      // 로그인 시뮬레이션 (async 핸들러 플러시)
       authCallback?.(mockCurrentUser);
+      await jest.runOnlyPendingTimersAsync();
 
       jest.clearAllMocks();
 
-      // 50분 경과
-      jest.advanceTimersByTime(50 * 60 * 1000);
-
-      // Promise 처리
-      await jest.runAllTimersAsync();
+      // 50분 경과 (interval 포함하므로 advanceTimersByTimeAsync 사용)
+      await jest.advanceTimersByTimeAsync(50 * 60 * 1000);
 
       expect(mockGetIdTokenResult).toHaveBeenCalled();
     });
@@ -527,7 +564,7 @@ describe('sessionService', () => {
       mockGetItem.mockRejectedValue(new Error('Storage error'));
 
       await expect(sessionService.checkLoginAttempts(testEmail)).resolves.toBeUndefined();
-      expect(mockLoggerError).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 
@@ -586,7 +623,7 @@ describe('sessionService', () => {
           lockUntil: expect.any(Number),
         })
       );
-      expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         '로그인 시도 횟수 초과 - 계정 잠금',
         expect.objectContaining({ email: expect.stringContaining('***') })
       );
@@ -596,7 +633,7 @@ describe('sessionService', () => {
       mockGetItem.mockRejectedValue(new Error('Storage error'));
 
       await expect(sessionService.incrementLoginAttempts(testEmail)).resolves.toBeUndefined();
-      expect(mockLoggerError).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 
@@ -609,7 +646,7 @@ describe('sessionService', () => {
       await sessionService.resetLoginAttempts(testEmail);
 
       expect(mockDeleteItem).toHaveBeenCalledWith(`login_attempts_${testEmail}`);
-      expect(mockLoggerDebug).toHaveBeenCalledWith(
+      expect(mockLogger.debug).toHaveBeenCalledWith(
         '로그인 시도 횟수 초기화',
         expect.objectContaining({ email: expect.stringContaining('***') })
       );
@@ -619,7 +656,7 @@ describe('sessionService', () => {
       mockDeleteItem.mockRejectedValue(new Error('Storage error'));
 
       await expect(sessionService.resetLoginAttempts(testEmail)).resolves.toBeUndefined();
-      expect(mockLoggerError).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 

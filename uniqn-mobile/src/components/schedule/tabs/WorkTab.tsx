@@ -182,7 +182,6 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         </View>
       </View>
 
-
       {/* QR 스캔 버튼 */}
       {canShowQRButton && (
         <Button

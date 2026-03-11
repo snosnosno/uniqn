@@ -91,7 +91,10 @@ export const createReviewInputSchema = z.object({
     .refine((arr) => new Set(arr).size === arr.length, '중복된 태그가 있습니다'),
   comment: z
     .string()
-    .max(REVIEW_COMMENT_MAX_LENGTH, `코멘트는 최대 ${REVIEW_COMMENT_MAX_LENGTH}자까지 입력 가능합니다`)
+    .max(
+      REVIEW_COMMENT_MAX_LENGTH,
+      `코멘트는 최대 ${REVIEW_COMMENT_MAX_LENGTH}자까지 입력 가능합니다`
+    )
     .refine((val) => !val || xssValidation(val), '잘못된 입력이 감지되었습니다')
     .optional(),
 });
@@ -110,7 +113,10 @@ export const reviewFormSchema = z.object({
     .refine((arr) => new Set(arr).size === arr.length, '중복된 태그가 있습니다'),
   comment: z
     .string()
-    .max(REVIEW_COMMENT_MAX_LENGTH, `코멘트는 최대 ${REVIEW_COMMENT_MAX_LENGTH}자까지 입력 가능합니다`)
+    .max(
+      REVIEW_COMMENT_MAX_LENGTH,
+      `코멘트는 최대 ${REVIEW_COMMENT_MAX_LENGTH}자까지 입력 가능합니다`
+    )
     .refine((val) => !val || xssValidation(val), '잘못된 입력이 감지되었습니다')
     .optional(),
 });

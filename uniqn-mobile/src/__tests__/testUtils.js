@@ -37,9 +37,7 @@ module.exports = {
     description: '테스트 설명',
     location: '서울',
     defaultSalary: { type: 'daily', amount: 150000 },
-    roles: [
-      { role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } },
-    ],
+    roles: [{ role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } }],
     date: new Date().toISOString(),
     status: 'active',
     createdAt: new Date().toISOString(),

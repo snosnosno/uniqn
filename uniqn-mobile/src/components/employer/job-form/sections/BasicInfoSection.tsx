@@ -104,7 +104,11 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   return (
     <View>
       {/* 공고 타입 선택 */}
-      <PostingTypeSelector value={data.postingType} onChange={handlePostingTypeChange} disabled={isEdit} />
+      <PostingTypeSelector
+        value={data.postingType}
+        onChange={handlePostingTypeChange}
+        disabled={isEdit}
+      />
 
       {/* 제목 */}
       <FormField label="공고 제목" required error={errors.title} className="mt-4">

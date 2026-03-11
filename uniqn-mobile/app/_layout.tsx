@@ -4,7 +4,7 @@
  */
 
 import '../global.css';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, LogBox } from 'react-native';
@@ -34,6 +34,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
 import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
+import { recordActivity } from '@/services/observability';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -82,9 +83,22 @@ if (__DEV__) {
  * 메인 네비게이션 컴포넌트
  * 초기화 완료 후 렌더링되므로 useAuthGuard 안전하게 호출 가능
  */
+/** 터치 활동 쓰로틀 간격 (5초) */
+const TOUCH_THROTTLE_MS = 5_000;
+
 function MainNavigator() {
   const { mode, isDarkMode } = useThemeStore();
   const isDark = isDarkMode;
+
+  // 세션 활동 기록: 터치 이벤트 기반 (5초 쓰로틀)
+  const lastTouchRef = useRef(0);
+  const handleTouchActivity = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTouchRef.current > TOUCH_THROTTLE_MS) {
+      lastTouchRef.current = now;
+      recordActivity();
+    }
+  }, []);
 
   // 마운트 시 NativeWind colorScheme 확실히 적용
   // (themeStore hydration 타이밍 이슈 해결)
@@ -129,7 +143,7 @@ function MainNavigator() {
   }, [isOnline]);
 
   return (
-    <>
+    <View style={{ flex: 1 }} onTouchStart={handleTouchActivity}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <OfflineBanner variant="banner" />
       <Stack
@@ -151,7 +165,7 @@ function MainNavigator() {
       <InAppMessageManager />
       <ToastManager />
       <ModalManager />
-    </>
+    </View>
   );
 }
 

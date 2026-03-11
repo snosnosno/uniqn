@@ -76,9 +76,8 @@ export class RouteMapper {
         return EXPO_ROUTES.postingSettlements.replace('[id]', route.params.jobId);
 
       // === 리뷰/평가 라우트 ===
-      // TODO: 리뷰 페이지 구현 시 실제 경로로 교체 필요
       case 'reviews/detail':
-        return EXPO_ROUTES.reviewDetail;
+        return EXPO_ROUTES.reviewDetail.replace('[workLogId]', route.params.workLogId);
 
       case 'reviews/pending':
         return EXPO_ROUTES.reviewsPending;

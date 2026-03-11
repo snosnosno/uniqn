@@ -317,9 +317,7 @@ export async function clearAll(): Promise<void> {
 /**
  * expo-secure-store accessible 옵션 변환
  */
-function getSecureStoreAccessible(
-  accessible: KeychainAccessible
-): number {
+function getSecureStoreAccessible(accessible: KeychainAccessible): number {
   const mapping: Record<KeychainAccessible, number> = {
     AFTER_FIRST_UNLOCK: 0,
     AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1,

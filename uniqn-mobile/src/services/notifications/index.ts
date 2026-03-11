@@ -79,11 +79,7 @@ export {
 // Notification Sync Service
 // ============================================================================
 
-export {
-  syncMissedNotifications,
-  shouldSync,
-  type SyncResult,
-} from './notificationSyncService';
+export { syncMissedNotifications, shouldSync, type SyncResult } from './notificationSyncService';
 
 // ============================================================================
 // In-App Message Service

@@ -444,7 +444,8 @@ export const queryKeys = {
     myGiven: () => [...queryKeys.reviews.all, 'myGiven'] as const,
     myReceived: () => [...queryKeys.reviews.all, 'myReceived'] as const,
     bubbleScore: (userId: string) => [...queryKeys.reviews.all, 'bubbleScore', userId] as const,
-    eligibility: (workLogId: string) => [...queryKeys.reviews.all, 'eligibility', workLogId] as const,
+    eligibility: (workLogId: string) =>
+      [...queryKeys.reviews.all, 'eligibility', workLogId] as const,
     pending: () => [...queryKeys.reviews.all, 'pending'] as const,
   },
 

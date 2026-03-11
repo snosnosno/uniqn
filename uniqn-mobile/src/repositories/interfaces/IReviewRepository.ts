@@ -127,8 +127,5 @@ export interface IReviewRepository {
    * @throws AlreadyReviewedError (이미 평가함)
    * @throws ReviewNotFoundError (WorkLog 없음)
    */
-  createWithTransaction(
-    input: CreateReviewInput,
-    context: CreateReviewContext
-  ): Promise<string>;
+  createWithTransaction(input: CreateReviewInput, context: CreateReviewContext): Promise<string>;
 }

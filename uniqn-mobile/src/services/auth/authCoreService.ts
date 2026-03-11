@@ -225,13 +225,17 @@ export async function rollbackPhoneOnlyAccount(
         orphanError instanceof Error ? orphanError : new Error(String(orphanError));
 
       // CRITICAL: 삭제도 실패, 마킹도 실패 — 수동 개입 필수
-      logger.error('CRITICAL: 고아 계정 삭제+마킹 모두 실패 — 수동 정리 필요', orphanMarkingFailed, {
-        uid,
-        reason,
-        phone: phone ? maskValue(phone, 'phone') : undefined,
-        component: 'authService',
-        orphanFailure: true,
-      });
+      logger.error(
+        'CRITICAL: 고아 계정 삭제+마킹 모두 실패 — 수동 정리 필요',
+        orphanMarkingFailed,
+        {
+          uid,
+          reason,
+          phone: phone ? maskValue(phone, 'phone') : undefined,
+          component: 'authService',
+          orphanFailure: true,
+        }
+      );
 
       // Sentry에 명시적으로 전송
       try {
@@ -468,6 +472,12 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 
     return result.data.exists;
   } catch (error) {
+    // 타이밍 공격 완화: 에러 경로에서도 최소 응답 시간 보장
+    const elapsed = Date.now() - startTime;
+    if (elapsed < EMAIL_CHECK_MIN_RESPONSE_MS) {
+      await new Promise((r) => setTimeout(r, EMAIL_CHECK_MIN_RESPONSE_MS - elapsed));
+    }
+
     // Rate limit 에러는 그대로 전파
     if (error instanceof AuthError && error.code === ERROR_CODES.AUTH_RATE_LIMITED) {
       throw error;

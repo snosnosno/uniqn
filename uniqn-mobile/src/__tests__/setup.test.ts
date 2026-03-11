@@ -40,9 +40,9 @@ describe('Jest Setup', () => {
     });
 
     expect(mockJob.id).toBe('job-id-1');
-    expect(
-      (mockJob as unknown as { defaultSalary: { amount: number } }).defaultSalary.amount
-    ).toBe(200000);
+    expect((mockJob as unknown as { defaultSalary: { amount: number } }).defaultSalary.amount).toBe(
+      200000
+    );
     expect(mockJob.status).toBe('active');
   });
 });

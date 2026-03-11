@@ -41,10 +41,7 @@ class MockTimestamp {
   }
 
   static fromMillis(milliseconds) {
-    return new MockTimestamp(
-      Math.floor(milliseconds / 1000),
-      (milliseconds % 1000) * 1000000
-    );
+    return new MockTimestamp(Math.floor(milliseconds / 1000), (milliseconds % 1000) * 1000000);
   }
 }
 

@@ -18,7 +18,10 @@ import {
   checkNotificationPermission,
   requestNotificationPermission,
 } from '@/services/notifications/notificationService';
-import { syncMissedNotifications, shouldSync } from '@/services/notifications/notificationSyncService';
+import {
+  syncMissedNotifications,
+  shouldSync,
+} from '@/services/notifications/notificationSyncService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';

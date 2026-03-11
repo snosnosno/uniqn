@@ -19,6 +19,8 @@ export interface RetryOptions {
   initialDelayMs?: number;
   /** 대기 시간 배수 (기본 2) */
   backoffMultiplier?: number;
+  /** 최대 대기 시간 ms (기본 30000) */
+  maxDelayMs?: number;
   /** 로깅 컴포넌트명 */
   component?: string;
   /** 작업 설명 (로그용) */
@@ -47,12 +49,13 @@ export interface RetryResult<T> {
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {},
+  options: RetryOptions = {}
 ): Promise<RetryResult<T>> {
   const {
     maxRetries = 3,
     initialDelayMs = 1000,
     backoffMultiplier = 2,
+    maxDelayMs = 30_000,
     component = 'retry',
     operationName = 'operation',
     shouldRetry = () => true,
@@ -71,18 +74,15 @@ export async function retryWithBackoff<T>(
         break;
       }
 
-      const delayMs = initialDelayMs * Math.pow(backoffMultiplier, attempt);
+      const delayMs = Math.min(initialDelayMs * Math.pow(backoffMultiplier, attempt), maxDelayMs);
 
-      logger.info(
-        `${operationName} 실패 - ${delayMs}ms 후 재시도 (${attempt + 1}/${maxRetries})`,
-        {
-          component,
-          attempt: attempt + 1,
-          maxRetries,
-          delayMs,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      );
+      logger.info(`${operationName} 실패 - ${delayMs}ms 후 재시도 (${attempt + 1}/${maxRetries})`, {
+        component,
+        attempt: attempt + 1,
+        maxRetries,
+        delayMs,
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }

@@ -37,9 +37,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
       {/* 헤더 */}
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
-          <View
-            className={`rounded-full px-2.5 py-1 ${colors.bg} ${colors.darkBg}`}
-          >
+          <View className={`rounded-full px-2.5 py-1 ${colors.bg} ${colors.darkBg}`}>
             <Text className={`text-xs font-medium ${colors.text}`}>
               {SENTIMENT_EMOJI[review.sentiment]} {SENTIMENT_LABELS[review.sentiment]}
             </Text>
@@ -61,10 +59,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
       {/* 태그 */}
       <View className="mb-2 flex-row flex-wrap gap-1.5">
         {review.tags.map((tagKey) => (
-          <View
-            key={tagKey}
-            className="rounded-full bg-gray-100 px-2.5 py-1 dark:bg-gray-700"
-          >
+          <View key={tagKey} className="rounded-full bg-gray-100 px-2.5 py-1 dark:bg-gray-700">
             <Text className="text-xs text-gray-600 dark:text-gray-300">
               {tagMap.get(tagKey) ?? tagKey}
             </Text>
@@ -75,7 +70,9 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
       {/* 코멘트 */}
       {review.comment && (
         <Text className="text-sm text-gray-600 dark:text-gray-400">
-          {'\u201C'}{review.comment}{'\u201D'}
+          {'\u201C'}
+          {review.comment}
+          {'\u201D'}
         </Text>
       )}
 

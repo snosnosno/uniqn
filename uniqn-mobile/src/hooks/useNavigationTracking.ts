@@ -15,7 +15,12 @@ import { useEffect, useRef, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { usePathname, useSegments } from 'expo-router';
 import { logger } from '@/utils/logger';
-import { analyticsService, crashlyticsService, recordNavigationTime } from '@/services/observability';
+import {
+  analyticsService,
+  crashlyticsService,
+  recordNavigationTime,
+  recordActivity,
+} from '@/services/observability';
 
 // ============================================================================
 // Types
@@ -241,6 +246,9 @@ export function useNavigationTracking(): void {
     // 로깅 및 Analytics
     logNavigation(screenInfo, previousPath, pathname);
     trackScreenView(screenInfo, pathname);
+
+    // 세션 활동 기록 (세션 타임아웃 리셋)
+    recordActivity();
   }, [pathname, segments, logNavigation, trackScreenView]);
 }
 

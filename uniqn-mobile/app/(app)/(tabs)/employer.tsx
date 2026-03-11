@@ -60,9 +60,7 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             onPress={() => onChange(option.value)}
             className="flex-1 items-center justify-center rounded-md py-2"
             style={{
-              backgroundColor: isSelected
-                ? isDarkMode ? '#1F2937' : '#FFFFFF'
-                : 'transparent',
+              backgroundColor: isSelected ? (isDarkMode ? '#1F2937' : '#FFFFFF') : 'transparent',
             }}
             accessibilityLabel={`${option.label} 공고 ${count}건`}
             accessibilityRole="tab"

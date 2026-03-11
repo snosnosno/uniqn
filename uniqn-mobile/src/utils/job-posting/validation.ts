@@ -164,7 +164,9 @@ export function validatePreQuestions(data: JobPostingFormData): Record<string, s
       errors.preQuestions = '질문 내용을 입력해주세요';
     }
 
-    const hasXssQuestion = data.preQuestions.some((q) => q.question.trim() && !xssValidation(q.question));
+    const hasXssQuestion = data.preQuestions.some(
+      (q) => q.question.trim() && !xssValidation(q.question)
+    );
     if (hasXssQuestion) {
       errors.preQuestions = '위험한 문자열이 포함되어 있습니다';
     }
@@ -209,7 +211,13 @@ export function validateAllSections(
  * 에러가 있는 첫 번째 섹션 키 반환
  */
 export function getFirstErrorSection(errors: SectionErrors): keyof SectionErrors | null {
-  const sections: (keyof SectionErrors)[] = ['basicInfo', 'schedule', 'roles', 'salary', 'preQuestions'];
+  const sections: (keyof SectionErrors)[] = [
+    'basicInfo',
+    'schedule',
+    'roles',
+    'salary',
+    'preQuestions',
+  ];
   for (const section of sections) {
     if (Object.keys(errors[section]).length > 0) {
       return section;

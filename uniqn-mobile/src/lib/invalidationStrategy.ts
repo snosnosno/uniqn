@@ -310,14 +310,24 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 정산 목록
    * - 근무기록 (상태 업데이트)
    */
-  'settlement.process': ['settlement.byJobPosting', 'settlement.all', 'workLogs.all', 'reviews.pending'],
+  'settlement.process': [
+    'settlement.byJobPosting',
+    'settlement.all',
+    'workLogs.all',
+    'reviews.pending',
+  ],
 
   /**
    * 일괄 정산
    * - 정산 전체
    * - 근무기록
    */
-  'settlement.bulkProcess': ['settlement.all', 'settlement.byJobPosting', 'workLogs.all', 'reviews.pending'],
+  'settlement.bulkProcess': [
+    'settlement.all',
+    'settlement.byJobPosting',
+    'workLogs.all',
+    'reviews.pending',
+  ],
 
   // ========================================
   // 알림 이벤트

@@ -103,6 +103,28 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSPhotoLibraryUsageDescription: PERMISSION_MESSAGES.photoLibrary,
       NSFaceIDUsageDescription: PERMISSION_MESSAGES.faceId,
     },
+    // Apple Required Reason API 선언 (iOS 17+, App Store 필수)
+    // 각 reason code는 node_modules/*/ios/PrivacyInfo.xcprivacy에서 수집
+    privacyManifests: {
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+          NSPrivacyAccessedAPITypeReasons: ['C617.1', '0A2A.1', '3B52.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+          NSPrivacyAccessedAPITypeReasons: ['E174.1', '85F4.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+          NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+        },
+      ],
+    },
     // Universal Links (production 빌드에서만 활성화 - AASA에 production bundleID만 등록)
     ...(environment === 'production' ? {
       associatedDomains: [

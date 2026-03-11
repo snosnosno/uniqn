@@ -71,4 +71,3 @@ export {
   selectBookmarkIds,
 } from './bookmarkStore';
 export type { BookmarkedJob } from './bookmarkStore';
-

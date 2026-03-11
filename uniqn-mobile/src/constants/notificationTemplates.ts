@@ -275,14 +275,16 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
 
   [NotificationType.REVIEW_REQUEST]: {
     title: '평가를 남겨주세요',
-    body: (d) => `"${d.jobTitle}" 근무가 완료되었습니다. ${d.revieweeName}님에 대한 평가를 남겨주세요.`,
+    body: (d) =>
+      `"${d.jobTitle}" 근무가 완료되었습니다. ${d.revieweeName}님에 대한 평가를 남겨주세요.`,
     link: (d) => `/reviews/${d.workLogId}`,
     icon: '📝',
   },
 
   [NotificationType.REVIEW_RECEIVED]: {
     title: '새로운 평가 도착',
-    body: (d) => `"${d.jobTitle}" 근무에 대한 평가가 도착했습니다. 내 평가를 작성하면 확인할 수 있습니다.`,
+    body: (d) =>
+      `"${d.jobTitle}" 근무에 대한 평가가 도착했습니다. 내 평가를 작성하면 확인할 수 있습니다.`,
     link: (d) => `/reviews/${d.workLogId}`,
     icon: '⭐',
   },

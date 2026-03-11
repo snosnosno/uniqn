@@ -58,12 +58,8 @@ export default function SplashScreen() {
           contentFit="contain"
         />
 
-        <Text className="mt-5 text-lg font-bold tracking-widest text-primary-400">
-          UNIQN
-        </Text>
-        <Text className="mt-1 text-sm text-gray-500">
-          홀덤 스태프 매칭 플랫폼
-        </Text>
+        <Text className="mt-5 text-lg font-bold tracking-widest text-primary-400">UNIQN</Text>
+        <Text className="mt-1 text-sm text-gray-500">홀덤 스태프 매칭 플랫폼</Text>
 
         <ActivityIndicator
           size="large"
@@ -72,9 +68,7 @@ export default function SplashScreen() {
         />
       </View>
 
-      <Text className="absolute bottom-12 text-xs text-gray-600">
-        v{APP_VERSION}
-      </Text>
+      <Text className="absolute bottom-12 text-xs text-gray-600">v{APP_VERSION}</Text>
     </View>
   );
 }

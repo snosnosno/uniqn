@@ -693,7 +693,9 @@ export const isAlreadyReviewedError = (error: unknown): error is AlreadyReviewed
 };
 
 export const isReviewPeriodExpiredError = (error: unknown): error is ReviewPeriodExpiredError => {
-  return error instanceof ReviewPeriodExpiredError || hasErrorName(error, 'ReviewPeriodExpiredError');
+  return (
+    error instanceof ReviewPeriodExpiredError || hasErrorName(error, 'ReviewPeriodExpiredError')
+  );
 };
 
 export const isCannotReviewSelfError = (error: unknown): error is CannotReviewSelfError => {

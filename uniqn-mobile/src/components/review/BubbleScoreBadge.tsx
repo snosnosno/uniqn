@@ -13,10 +13,7 @@ interface BubbleScoreBadgeProps {
   size?: 'sm' | 'md';
 }
 
-export default React.memo(function BubbleScoreBadge({
-  score,
-  size = 'sm',
-}: BubbleScoreBadgeProps) {
+export default React.memo(function BubbleScoreBadge({ score, size = 'sm' }: BubbleScoreBadgeProps) {
   const colorRange = useMemo(() => getBubbleScoreColor(score), [score]);
 
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
@@ -26,9 +23,7 @@ export default React.memo(function BubbleScoreBadge({
     <View
       className={`flex-row items-center gap-1 rounded-full ${sizeClasses} ${colorRange.bg} ${colorRange.darkBg}`}
     >
-      <Text className={`font-semibold ${textClasses} ${colorRange.text}`}>
-        {score.toFixed(1)}
-      </Text>
+      <Text className={`font-semibold ${textClasses} ${colorRange.text}`}>{score.toFixed(1)}</Text>
     </View>
   );
 });

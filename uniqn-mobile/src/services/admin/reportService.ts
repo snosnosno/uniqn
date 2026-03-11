@@ -18,11 +18,7 @@ import type { ReportFilters, FetchReportsResult } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 import { ValidationError, ERROR_CODES, toError } from '@/errors';
 import { requireCurrentUser } from '@/services/auth';
-import type {
-  Report,
-  CreateReportInput,
-  ReviewReportInput,
-} from '@/types/report';
+import type { Report, CreateReportInput, ReviewReportInput } from '@/types/report';
 
 // ============================================================================
 // Types (Repository에서 재사용)

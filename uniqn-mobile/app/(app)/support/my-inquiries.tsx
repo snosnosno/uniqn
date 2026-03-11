@@ -14,8 +14,15 @@ import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
 
 export default function MyInquiriesScreen() {
-  const { inquiries, isLoading, isRefreshing, isFetchingNextPage, hasMore, fetchNextPage, refetch } =
-    useMyInquiries();
+  const {
+    inquiries,
+    isLoading,
+    isRefreshing,
+    isFetchingNextPage,
+    hasMore,
+    fetchNextPage,
+    refetch,
+  } = useMyInquiries();
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
     router.push(`/(app)/support/inquiry/${inquiry.id}`);

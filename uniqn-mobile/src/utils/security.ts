@@ -437,10 +437,7 @@ interface ClientRateLimiter {
  * @param maxRequests - 윈도우 내 최대 요청 수
  * @param windowMs - 슬라이딩 윈도우 크기 (밀리초)
  */
-export function createClientRateLimiter(
-  maxRequests: number,
-  windowMs: number,
-): ClientRateLimiter {
+export function createClientRateLimiter(maxRequests: number, windowMs: number): ClientRateLimiter {
   const timestamps: number[] = [];
 
   function pruneExpired(): void {

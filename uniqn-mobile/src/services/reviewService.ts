@@ -179,7 +179,11 @@ export async function getReviewsWithBlindCheck(
   currentUserId: string
 ): Promise<ReviewBlindResult> {
   try {
-    return await reviewRepository.getReviewsWithBlindCheck(workLogId, myReviewerType, currentUserId);
+    return await reviewRepository.getReviewsWithBlindCheck(
+      workLogId,
+      myReviewerType,
+      currentUserId
+    );
   } catch (error) {
     throw handleServiceError(error, {
       operation: '블라인드 리뷰 조회',

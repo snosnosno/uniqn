@@ -5,7 +5,11 @@
  * @version 2.0.0 - Repository 패턴 기반
  */
 
-import { createMockJobPosting, createMockWorkLog, resetCounters } from '../../../__tests__/mocks/factories';
+import {
+  createMockJobPosting,
+  createMockWorkLog,
+  resetCounters,
+} from '../../../__tests__/mocks/factories';
 
 // ============================================================================
 // Mock Repository

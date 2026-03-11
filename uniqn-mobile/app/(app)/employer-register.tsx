@@ -154,8 +154,7 @@ export default function EmployerRegisterScreen() {
         bubbleScore: updatedProfile.bubbleScore
           ? {
               ...updatedProfile.bubbleScore,
-              lastUpdatedAt:
-                updatedProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+              lastUpdatedAt: updatedProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
             }
           : undefined,
       });

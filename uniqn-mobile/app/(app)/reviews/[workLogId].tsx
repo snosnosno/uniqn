@@ -15,16 +15,23 @@ import { REVIEWER_TYPES } from '@/types/review';
 import type { ReviewerType } from '@/types/review';
 
 export default function ReviewDetailScreen() {
-  const { workLogId, reviewerType, revieweeId, revieweeName, jobPostingId, jobPostingTitle, workDate } =
-    useLocalSearchParams<{
-      workLogId: string;
-      reviewerType: string;
-      revieweeId: string;
-      revieweeName: string;
-      jobPostingId: string;
-      jobPostingTitle: string;
-      workDate: string;
-    }>();
+  const {
+    workLogId,
+    reviewerType,
+    revieweeId,
+    revieweeName,
+    jobPostingId,
+    jobPostingTitle,
+    workDate,
+  } = useLocalSearchParams<{
+    workLogId: string;
+    reviewerType: string;
+    revieweeId: string;
+    revieweeName: string;
+    jobPostingId: string;
+    jobPostingTitle: string;
+    workDate: string;
+  }>();
   const { profile } = useAuth();
 
   const myReviewerType: ReviewerType =
@@ -74,9 +81,7 @@ export default function ReviewDetailScreen() {
               }
               className="items-center rounded-xl border border-dashed border-gray-300 bg-white py-8 active:opacity-80 dark:border-gray-600 dark:bg-gray-800"
             >
-              <Text className="text-sm text-primary-500 dark:text-primary-400">
-                평가 작성하기
-              </Text>
+              <Text className="text-sm text-primary-500 dark:text-primary-400">평가 작성하기</Text>
             </Pressable>
           )}
         </View>
