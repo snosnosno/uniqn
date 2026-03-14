@@ -11,14 +11,17 @@
 
 | 항목 | 필수 | 금지 |
 |------|------|------|
-| 로깅 | `logger.info()` | `console.log()` |
+| 로깅 | 앱 런타임은 `logger.info()` | 앱 런타임의 `console.log()` |
 | 타입 | 명시적 타입 선언 | `any` 타입 |
 | 다크모드 | `dark:` 클래스 항상 적용 | 라이트 모드만 |
 | 경로 | `@/` 절대 경로 (같은 폴더 내는 `./` 허용) | 시스템 절대 경로 |
-| 알림 | `toast.success()` | `alert()` |
+| 알림 | 일반 피드백은 `toast.success()`, 확인 다이얼로그는 `Alert.alert()` / `window.confirm()` | 단순 안내에 `alert()` |
 | 필드명 | camelCase (`staffId`) | snake_case (`staff_id`) |
-| 리스트 | `FlashList` (데이터 목록) | `FlatList` (picker 등 소형 제외) |
+| 리스트 | `FlashList` (대형 데이터 목록), `FlatList` (picker/소형 고정 그리드) | 대형 스크롤 목록의 `FlatList` |
 | 이미지 | `expo-image` | `<Image>` (RN 기본) |
+
+예외:
+- `functions/*.js` 같은 CLI/운영 스크립트는 사용자 콘솔 출력 목적으로 `console.log()` 허용
 
 ---
 
@@ -45,8 +48,11 @@ Presentation (app/, components/)
 
 **의존성 규칙**:
 - Firestore 데이터 접근: Service → Repository → Firebase (필수)
-- Firebase Auth만 예외 (authService에서 직접 호출 허용)
-- Presentation/Hooks에서 Firebase 직접 호출 금지
+- Firebase Auth는 예외 (authService + 인증/부트스트랩 전용 hook에서 직접 호출 허용)
+- Firebase Functions 초기화/호출도 앱 초기화·인증 연동용 hook에서는 예외 허용
+- TanStack Query 데이터 소스 hook의 읽기 전용 조회는 Repository 직접 호출 허용
+- 버전 체크/관측성 같은 인프라성 Service는 Firebase SDK 직접 호출 허용
+- Presentation/Hooks에서 Firestore 직접 호출 금지
 - 상위 → 하위 의존만 허용, 역방향 금지
 
 ---
@@ -115,4 +121,4 @@ eas build --platform ios|android
 
 ---
 
-*마지막 업데이트: 2026-02-24*
+*마지막 업데이트: 2026-03-14*
