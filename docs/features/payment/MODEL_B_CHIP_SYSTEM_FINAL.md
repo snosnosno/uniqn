@@ -2,8 +2,10 @@
 
 **최종 업데이트**: 2026년 2월 1일
 **버전**: v2.0.0 (하트/다이아 포인트 시스템)
-**상태**: ✅ **최종 확정**
+**상태**: 📋 **기획 확정 / 미구현**
 
+> ⚠️ 이 문서는 제품 기획 기준 문서입니다. 현재 저장소의 런타임 구현 완료를 의미하지 않습니다.
+>
 > 📋 **관련 문서 (역할별 참조)**:
 > - 🔧 **기술 아키텍처/API**: [PAYMENT_SYSTEM_DEVELOPMENT.md](./PAYMENT_SYSTEM_DEVELOPMENT.md) (개발자용)
 > - 💻 **구현 가이드/코드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) (개발자용)

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * T-HOLDEM 문서 자동 업데이트 스크립트
+ * [레거시] app2 문서 워크플로우용 유틸리티
  * 
  * 기능:
  * - package.json의 버전과 문서 버전 동기화

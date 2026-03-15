@@ -400,22 +400,22 @@ After applying all fixes:
 
 1. **Run P0 tests**:
    ```bash
-   npm run test:e2e -- tests/p0-critical/
+   npm run e2e -- tests/p0-critical/
    ```
 
 2. **Run P1 tests**:
    ```bash
-   npm run test:e2e -- tests/p1-important/
+   npm run e2e -- tests/p1-important/
    ```
 
 3. **Run P2 tests**:
    ```bash
-   npm run test:e2e -- tests/p2-standard/
+   npm run e2e -- tests/p2-standard/
    ```
 
 4. **Run full suite**:
    ```bash
-   npm run test:e2e
+   npm run e2e
    ```
 
 5. **Check for remaining issues**:

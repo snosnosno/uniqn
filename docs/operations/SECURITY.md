@@ -1,15 +1,14 @@
 # 🛡️ UNIQN 보안 가이드라인
 
-**최종 업데이트**: 2026년 2월 1일
+**최종 업데이트**: 2026년 3월 14일
 **상태**: 🚀 **Production Ready**
-**버전**: v1.1.0 (모바일앱 중심 + RevenueCat 연동)
+**버전**: v1.1.0 (모바일앱 중심)
 
 > **참고**: 이 문서는 Firebase 백엔드 및 공통 보안 가이드라인입니다.
 > 모바일앱(uniqn-mobile/) 보안은 [CLAUDE.md](../../CLAUDE.md)의 "보안 규칙" 섹션을 참조하세요.
 >
 > **모바일앱 보안 추가 사항**:
 > - expo-secure-store: 민감 데이터 암호화 저장
-> - RevenueCat: 결제 보안 (App Store/Google Play 정책 준수)
 > - Zod 스키마: 입력 검증 및 XSS 방지
 
 ## 📋 목차
@@ -232,7 +231,7 @@ const useSessionManagement = () => {
 // functions/index.js
 const functions = require('firebase-functions');
 const cors = require('cors')({
-  origin: ['https://tholdem-ebc18.web.app', 'https://tholdem-ebc18.firebaseapp.com'],
+  origin: ['https://uniqn.app', 'https://www.uniqn.app', 'https://uniqn-app.pages.dev'],
   credentials: true
 });
 
@@ -561,13 +560,15 @@ export class InputValidator {
 
 #### 네트워크 요청 보안 강화
 ```typescript
-// src/utils/secureHttpClient.ts
+// src/config/env.ts의 API 설정 사용
+import { env } from '@/config/env';
+
 class SecureHttpClient {
   private baseURL: string;
   private defaultHeaders: Record<string, string>;
   
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_BASE_URL || '';
+    this.baseURL = env.api.baseUrl;
     this.defaultHeaders = {
       'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
@@ -960,7 +961,7 @@ export const useSecurityMonitoring = () => {
   "scripts": {
     "security:audit": "npm audit --audit-level moderate",
     "security:fix": "npm audit fix",
-    "security:check": "npm audit --audit-level high --production",
+    "security:high": "npm audit --audit-level high",
     "security:report": "npm audit --json > security-audit.json"
   },
   "devDependencies": {
@@ -990,13 +991,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18'
+          node-version: '22'
           
       - name: Install dependencies
-        run: npm ci
+        run: cd uniqn-mobile && npm ci
         
       - name: Run security audit
-        run: npm run security:check
+        run: cd uniqn-mobile && npm audit
         
       - name: Run OWASP Dependency Check
         uses: dependency-check/Dependency-Check_Action@main

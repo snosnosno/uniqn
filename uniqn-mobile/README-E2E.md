@@ -11,7 +11,7 @@ Playwright 기반 E2E 테스트 스위트. Firebase Emulator 위에서 Expo Web 
 ## 사전 요구사항
 
 ```bash
-# Node.js 20+
+# Node.js 22
 node --version
 
 # Java 17+ (Firebase Emulator)
@@ -24,6 +24,20 @@ firebase --version
 npm run e2e:setup
 ```
 
+## 환경 변수
+
+`uniqn-mobile/.env.local`이 필요합니다. 최소한 아래 값이 있어야 합니다.
+
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tholdem-ebc18.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=tholdem-ebc18
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tholdem-ebc18.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id_here
+EXPO_PUBLIC_USE_EMULATOR=true
+```
+
 ## 빠른 시작
 
 ```bash
@@ -31,16 +45,20 @@ npm run e2e:setup
 cd ..
 firebase emulators:start --only auth,firestore
 
-# 2. E2E 테스트 실행 (uniqn-mobile 에서)
+# 2. 웹 빌드 생성 (uniqn-mobile 에서)
+cd uniqn-mobile
+npm run build:web
+
+# 3. E2E 테스트 실행
 npm run e2e
 
-# 3. UI 모드로 실행 (디버깅용)
+# 4. UI 모드로 실행 (디버깅용)
 npm run e2e:ui
 
-# 4. 브라우저 표시 모드
+# 5. 브라우저 표시 모드
 npm run e2e:headed
 
-# 5. 리포트 확인
+# 6. 리포트 확인
 npm run e2e:report
 ```
 

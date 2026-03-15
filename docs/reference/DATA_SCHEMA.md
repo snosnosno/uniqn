@@ -1,13 +1,14 @@
 # 📊 T-HOLDEM 데이터 스키마 가이드
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v3.1.0 (💎 하트/다이아 포인트 시스템 추가)
+**버전**: v3.1.0
 **상태**: 🚀 **Production Ready**
 
-> [!SUCCESS]
-> **v3.1 변경사항**: 💎 하트/다이아 포인트 시스템 스키마 추가 (heartBatches, pointTransactions, purchases)
+> [!NOTE]
+> 이 문서에는 현재 코드 스키마와 함께 향후 설계 스키마가 섞여 있을 수 있습니다.
+> `purchases`, `heartBatches`, `pointTransactions` 같은 포인트 결제 관련 항목은 현재 런타임 구현이 아니라 설계 범주로 봐야 합니다.
 >
-> **v3.0 변경사항**: 모바일앱(uniqn-mobile) 스키마와 완전 동기화, Assignment 기반 지원 시스템, 역할 체계 개편(employer 추가), 알림 컬렉션 스키마 추가
+> 모바일앱 실제 필드는 `uniqn-mobile/src/schemas/`, `uniqn-mobile/src/types/`, `functions/src/`를 우선 기준으로 확인하세요.
 
 ## 📋 목차
 
@@ -43,7 +44,7 @@ Firebase Firestore
 ├── reports               # 신고 (양방향) ✅ v3.0 추가
 ├── tournaments           # 토너먼트
 ├── inquiries             # 문의/신고
-├── purchases             # RevenueCat 구매 기록 ✅ v3.1 추가
+├── purchases             # 향후 결제 구매 기록 설계
 │
 └── users/{userId}/       # 사용자별 서브컬렉션
     ├── heartBatches      # 💖 하트 배치 (만료일별) ✅ v3.1 추가
@@ -848,14 +849,14 @@ Document ID: Auto-generated
 
 ### 💎 포인트 시스템 컬렉션 (v3.1 추가)
 
-#### purchases (RevenueCat 구매 기록)
+#### purchases (향후 결제 구매 기록 설계)
 
 ```typescript
 Collection: "purchases"
-Document ID: RevenueCat transaction_id
+Document ID: 외부 결제 transaction_id
 
 {
-  "transactionId": string,         // RevenueCat 트랜잭션 ID
+  "transactionId": string,         // 외부 결제 트랜잭션 ID
   "userId": string,                // 구매자 ID
   "productId": string,             // 상품 ID (e.g., "diamond_starter")
   "store": "app_store" | "play_store",  // 스토어

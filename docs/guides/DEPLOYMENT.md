@@ -1,318 +1,198 @@
-# 🚀 T-HOLDEM 배포 가이드
+# T-HOLDEM 배포 가이드
 
-**최종 업데이트**: 2026년 2월 1일
-**상태**: 🚀 **Production Ready**
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**최종 업데이트**: 2026년 3월 14일
+**기준 코드**: `uniqn-mobile/`, `functions/`, `firebase.json`, `uniqn-mobile/wrangler.toml`
 
-> **참고**: 이 문서는 레거시 웹앱(app2/) 및 Firebase 배포 가이드입니다.
-> 모바일앱(uniqn-mobile/) 빌드 및 배포는 [CLAUDE.md](../../CLAUDE.md)의 "개발 명령어" 섹션을 참조하세요.
->
-> **모바일앱 배포 명령어**:
-> ```bash
-> cd uniqn-mobile
-> eas build --platform ios     # iOS 빌드
-> eas build --platform android # Android 빌드
-> ```
+현재 배포 경로는 세 갈래입니다.
 
-## 📋 목차
+- 모바일 앱: Expo EAS Build / Submit
+- 웹 앱: Cloudflare Pages
+- 백엔드: Firebase Functions / Firestore Rules / Storage Rules
 
-1. [사전 요구사항](#사전-요구사항)
-2. [로컬 개발 환경 설정](#로컬-개발-환경-설정)
-3. [프로덕션 배포](#프로덕션-배포)
-4. [환경 변수 설정](#환경-변수-설정)
-5. [Firebase 설정](#firebase-설정)
-6. [배포 체크리스트](#배포-체크리스트)
-7. [롤백 절차](#롤백-절차)
+`app2/` 기준 Firebase Hosting 배포는 현재 기본 배포 경로가 아닙니다.
 
-## 🔧 사전 요구사항
+## 사전 요구사항
 
-### 필수 소프트웨어
-- **Node.js**: 18.0.0 이상
-- **npm**: 9.0.0 이상
-- **Firebase CLI**: 13.0.0 이상
-- **Git**: 2.30.0 이상
-
-### 설치 명령어
 ```bash
-# Firebase CLI 설치
+# 공통
+Node.js 22
+npm
+git
+
+# 모바일 빌드
+eas-cli
+
+# 웹 배포
+wrangler
+
+# 백엔드 배포
+firebase-tools
+```
+
+권장 설치:
+
+```bash
+npm install -g eas-cli
 npm install -g firebase-tools
-
-# Firebase 로그인
-firebase login
-
-# 프로젝트 선택
-firebase use tholdem-ebc18
+npm install -g wrangler
 ```
 
-## 💻 로컬 개발 환경 설정
+## 1. 모바일 앱 배포
 
-### 1. 프로젝트 클론
-```bash
-git clone https://github.com/your-repo/t-holdem.git
-cd t-holdem
-```
+모바일 앱 설정은 [`uniqn-mobile/eas.json`](../../uniqn-mobile/eas.json)과 [`uniqn-mobile/app.config.ts`](../../uniqn-mobile/app.config.ts)에 정의되어 있습니다.
 
-### 2. 의존성 설치
+### 로컬 확인
+
 ```bash
-cd app2
+cd uniqn-mobile
 npm install
+npm run quality
+npm test
 ```
 
-### 3. 환경 변수 설정
+### EAS 빌드
+
 ```bash
-# .env 파일 생성 (아래 환경 변수 섹션 참조)
+cd uniqn-mobile
+
+# 개발 빌드
+eas build --profile development --platform ios
+eas build --profile development --platform android
+
+# 스테이징 / 내부 테스트
+eas build --profile preview --platform all
+
+# 출시 빌드
+eas build --profile production --platform all
+```
+
+### 제출
+
+```bash
+cd uniqn-mobile
+eas submit --platform ios --latest
+eas submit --platform android --latest
+```
+
+### 모바일 환경 변수
+
+로컬은 `uniqn-mobile/.env.local`, CI/EAS는 EAS Secrets를 사용합니다.
+
+필수:
+
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+```
+
+선택:
+
+```env
+EXPO_PUBLIC_RELEASE_CHANNEL=production
+EXPO_PUBLIC_SENTRY_DSN=
+EXPO_PUBLIC_RECAPTCHA_SITE_KEY=
+EXPO_PUBLIC_FIREBASE_REGION=asia-northeast3
+```
+
+EAS 프로파일별 `APP_ENV`, `EXPO_PUBLIC_RELEASE_CHANNEL`, `SENTRY_ORG`, `SENTRY_PROJECT`는 이미 [`uniqn-mobile/eas.json`](../../uniqn-mobile/eas.json)에 정의되어 있습니다.
+
+## 2. 웹 배포
+
+웹 빌드는 Expo Web export를 사용하고, 배포는 Cloudflare Pages를 사용합니다.
+배포 스크립트는 [`uniqn-mobile/scripts/deploy-cloudflare.js`](../../uniqn-mobile/scripts/deploy-cloudflare.js), 설정은 [`uniqn-mobile/wrangler.toml`](../../uniqn-mobile/wrangler.toml)에 있습니다.
+
+### 웹 빌드
+
+```bash
+cd uniqn-mobile
+npm run build:web
+```
+
+### Cloudflare 배포
+
+```bash
+cd uniqn-mobile
+npm run deploy:cloudflare
+```
+
+커밋되지 않은 변경사항이 있어도 강제로 배포하려면:
+
+```bash
+cd uniqn-mobile
+npm run deploy:cloudflare -- --force
+```
+
+## 3. Firebase 백엔드 배포
+
+Firebase 설정은 루트 [`firebase.json`](../../firebase.json)에 있습니다.
+현재 Firebase는 Hosting이 아니라 Functions / Firestore / Storage / Emulator 중심으로 사용합니다.
+
+### Functions 준비
+
+```bash
+cd functions
+npm install
 cp .env.example .env
-# .env 파일 편집하여 실제 값 입력
 ```
 
-### 4. 개발 서버 실행
-```bash
-# 기본 개발 서버
-npm start
+필수 변수:
 
-# Firebase 에뮬레이터와 함께 실행
-npm run dev
+```env
+RECAPTCHA_SECRET_KEY=
+WEB_API_KEY=
 ```
 
-### 5. Firebase 에뮬레이터 설정
+### Functions 배포
+
 ```bash
-# 에뮬레이터 시작
-firebase emulators:start
-
-# 포트 정보
-# - Auth: http://localhost:9099
-# - Firestore: http://localhost:8080
-# - Functions: http://localhost:5001
-# - Emulator UI: http://localhost:4000
-```
-
-## 🚀 프로덕션 배포
-
-### 1. 빌드 준비
-```bash
-cd app2
-
-# 타입 체크
-npm run type-check
-
-# 린트 검사
-npm run lint
-
-# 테스트 실행
-npm test -- --watchAll=false
-
-# 프로덕션 빌드
-npm run build
-```
-
-### 2. Firebase 배포
-
-#### 전체 배포
-```bash
-# 모든 서비스 배포 (Hosting, Functions, Firestore Rules)
-npm run deploy:all
-
-# 또는
-firebase deploy
-```
-
-#### 개별 서비스 배포
-```bash
-# Hosting만 배포
-firebase deploy --only hosting
-
-# Firestore Rules만 배포
-firebase deploy --only firestore:rules
-
-# Functions만 배포
+cd ..
 firebase deploy --only functions
+```
 
-# Storage Rules만 배포
+`firebase.json`의 `predeploy`로 인해 배포 전에 `functions` 빌드가 자동 실행됩니다.
+
+### 규칙 배포
+
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
 firebase deploy --only storage
 ```
 
-### 3. 배포 확인
+### 전체 Firebase 배포가 필요한 경우
+
 ```bash
-# 배포된 URL 확인
-firebase hosting:sites:list
-
-# 프로덕션 URL
-# https://tholdem-ebc18.web.app
-# https://tholdem-ebc18.firebaseapp.com
+firebase deploy
 ```
 
-## 🔐 환경 변수 설정
+## 4. 배포 전 체크리스트
 
-### .env 파일 구조
-```env
-# Firebase 설정
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=tholdem-ebc18.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=tholdem-ebc18
-REACT_APP_FIREBASE_STORAGE_BUCKET=tholdem-ebc18.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
-REACT_APP_FIREBASE_MEASUREMENT_ID=your-measurement-id
+### 모바일
 
-# Sentry 설정 (선택사항)
-REACT_APP_SENTRY_DSN=your-sentry-dsn
+- `cd uniqn-mobile && npm run quality`
+- `cd uniqn-mobile && npm test`
+- `.env.local` 또는 EAS Secrets 확인
+- `google-services.json`, `GoogleService-Info.plist` 존재 확인
 
-# 기타 설정
-REACT_APP_ENV=production
-```
+### 웹
 
-### 환경별 설정
-- **개발**: `.env.development`
-- **스테이징**: `.env.staging`
-- **프로덕션**: `.env.production`
+- `cd uniqn-mobile && npm run build:web`
+- `cd uniqn-mobile && npm run deploy:cloudflare`
 
-## 🔥 Firebase 설정
+### 백엔드
 
-### firebase.json 구조
-```json
-{
-  "hosting": {
-    "public": "app2/build",
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "/static/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000"
-          }
-        ]
-      }
-    ]
-  },
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  },
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs22"
-  }
-}
-```
+- `cd functions && npm run build`
+- `cd functions && npm test`
+- `functions/.env` 확인
+- `firebase deploy --only functions` 전 로그 확인
 
-### Firestore 보안 규칙
-```javascript
-// firestore.rules
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // 인증된 사용자만 접근
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
-```
+## 5. 관련 문서
 
-## ✅ 배포 체크리스트
-
-### 배포 전
-- [ ] 코드 리뷰 완료
-- [ ] 모든 테스트 통과
-- [ ] TypeScript 에러 0개
-- [ ] ESLint 에러 해결
-- [ ] 환경 변수 확인
-- [ ] 빌드 성공 확인
-- [ ] 번들 크기 확인 (<300KB)
-
-### 배포 중
-- [ ] 빌드 아티팩트 생성
-- [ ] Firebase 배포 명령 실행
-- [ ] 배포 로그 확인
-- [ ] 에러 없음 확인
-
-### 배포 후
-- [ ] 프로덕션 URL 접속 확인
-- [ ] 주요 기능 테스트
-- [ ] 성능 모니터링 확인
-- [ ] Sentry 에러 모니터링
-- [ ] 사용자 피드백 수집
-
-## 🔄 롤백 절차
-
-### 1. 이전 버전 확인
-```bash
-# 배포 히스토리 확인
-firebase hosting:releases:list
-
-# 특정 버전 정보 확인
-firebase hosting:releases:show VERSION_ID
-```
-
-### 2. 롤백 실행
-```bash
-# 이전 버전으로 롤백
-firebase hosting:rollback
-
-# 특정 버전으로 롤백
-firebase hosting:clone VERSION_ID:live
-```
-
-### 3. 롤백 확인
-- 프로덕션 URL 접속
-- 버전 확인
-- 기능 정상 작동 확인
-
-## 🐛 문제 해결
-
-### 빌드 실패
-```bash
-# 캐시 클리어
-rm -rf node_modules package-lock.json
-npm install
-npm run build
-```
-
-### 배포 실패
-```bash
-# Firebase 재인증
-firebase login --reauth
-
-# 프로젝트 재설정
-firebase use --clear
-firebase use tholdem-ebc18
-```
-
-### 환경 변수 문제
-```bash
-# 환경 변수 확인
-npm run env:check
-
-# .env 파일 권한 확인
-ls -la .env*
-```
-
-## 📊 성능 모니터링
-
-### Firebase Performance
-- 자동 페이지 로드 추적
-- 네트워크 요청 모니터링
-- 커스텀 트레이스 설정
-
-### Web Vitals
-- LCP (Largest Contentful Paint): < 2.5s
-- FID (First Input Delay): < 100ms
-- CLS (Cumulative Layout Shift): < 0.1
-
-## 🔗 유용한 링크
-
-- [Firebase Console](https://console.firebase.google.com/project/tholdem-ebc18)
-- [배포된 사이트](https://tholdem-ebc18.web.app)
-- [Firebase 문서](https://firebase.google.com/docs)
-- [프로젝트 GitHub](https://github.com/your-repo/t-holdem)
-
----
-
-*배포 관련 문의는 프로젝트 관리자에게 연락하세요.*
+- [`CLAUDE.md`](../../CLAUDE.md)
+- [`uniqn-mobile/docs/EAS_BUILD_GUIDE.md`](../../uniqn-mobile/docs/EAS_BUILD_GUIDE.md)
+- [`uniqn-mobile/README-E2E.md`](../../uniqn-mobile/README-E2E.md)
+- [`ROLLBACK_PROCEDURES.md`](./ROLLBACK_PROCEDURES.md)

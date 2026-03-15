@@ -11,7 +11,7 @@
 | Firebase 설정 (Android) | ✅ | google-services.json |
 | Firebase 설정 (iOS) | ✅ | GoogleService-Info.plist |
 | expo-notifications | ✅ | 플러그인 활성화됨 |
-| @react-native-firebase | ✅ | crashlytics, analytics 설치됨 |
+| 모니터링 | ✅ | Sentry + Expo plugin 사용 |
 
 ---
 
@@ -20,6 +20,12 @@
 ### 1.1 EAS CLI 설치
 ```bash
 npm install -g eas-cli
+```
+
+### 1.1.1 Node 버전
+```bash
+# 권장: Node.js 22
+node --version
 ```
 
 ### 1.2 Expo 계정 로그인
@@ -140,16 +146,26 @@ eas submit --platform android --latest
 ### 4.3 환경 변수 설정
 ```bash
 # .env.local 또는 EAS Secrets에 등록
-APPLE_ID=your-apple-id@email.com
-ASC_APP_ID=1234567890
-APPLE_TEAM_ID=XXXXXXXXXX
+EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tholdem-ebc18.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=tholdem-ebc18
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tholdem-ebc18.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id_here
+EXPO_PUBLIC_SENTRY_DSN=your_sentry_dsn
+EXPO_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
+SENTRY_ORG=your_sentry_org
+SENTRY_PROJECT=uniqn-mobile
 ```
 
 EAS Secrets 등록:
 ```bash
-eas secret:create --name APPLE_ID --value "your-apple-id@email.com"
-eas secret:create --name ASC_APP_ID --value "1234567890"
-eas secret:create --name APPLE_TEAM_ID --value "XXXXXXXXXX"
+eas secret:create --name EXPO_PUBLIC_FIREBASE_API_KEY --value "..."
+eas secret:create --name EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN --value "tholdem-ebc18.firebaseapp.com"
+eas secret:create --name EXPO_PUBLIC_FIREBASE_PROJECT_ID --value "tholdem-ebc18"
+eas secret:create --name EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET --value "tholdem-ebc18.firebasestorage.app"
+eas secret:create --name EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID --value "..."
+eas secret:create --name EXPO_PUBLIC_FIREBASE_APP_ID --value "..."
 ```
 
 ---
@@ -159,8 +175,8 @@ eas secret:create --name APPLE_TEAM_ID --value "XXXXXXXXXX"
 ### 5.1 현재 설치된 Firebase 패키지
 - `firebase` (12.6.0) - Modular API
 - `@react-native-firebase/app` - 네이티브 코어
-- `@react-native-firebase/crashlytics` - 크래시 리포팅
-- `@react-native-firebase/analytics` - 이벤트 분석
+- `@react-native-firebase/auth` - 네이티브 Auth 연동
+- `@sentry/react-native` - 크래시/에러 모니터링
 
 ### 5.2 Firebase Console 설정
 1. [Firebase Console](https://console.firebase.google.com) 접속
@@ -223,8 +239,8 @@ eas update --branch production --message "버그 수정"
 ## 8. 체크리스트
 
 ### 빌드 전 확인사항
-- [ ] `npm run type-check` 통과
-- [ ] `npm run lint` 통과
+- [ ] `npm run quality` 통과
+- [ ] `npm test` 통과
 - [ ] Firebase 설정 파일 존재 확인
 - [ ] 앱 버전 및 빌드 번호 확인 (app.config.ts)
 

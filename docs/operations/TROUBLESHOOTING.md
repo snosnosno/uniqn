@@ -1,784 +1,154 @@
-# 🔧 UNIQN 문제 해결 가이드
+# 문제 해결 가이드
 
-**최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
-**상태**: 🚀 **Production Ready**
+**최종 업데이트**: 2026년 3월 14일
+**상태**: 현재 코드 기준
 
-> **참고**: 이 문서는 레거시 웹앱(app2/) 문제 해결 가이드입니다.
-> 모바일앱(uniqn-mobile/) 문제 해결은 다음을 참조하세요:
-> - 에러 처리: [CLAUDE.md](../../CLAUDE.md)의 "에러 처리 체계" 섹션
-> - 빌드 오류: `npm run type-check && npm run lint`
-> - Expo 이슈: `npx expo doctor`
+이 문서는 `uniqn-mobile/`과 `functions/`에서 실제 자주 맞닥뜨리는 문제만 정리합니다.
 
-## 📋 목차
+## 1. 앱이 시작되지 않음
 
-1. [해결된 주요 이슈](#-해결된-주요-이슈)
-2. [자주 발생하는 문제](#-자주-발생하는-문제)
-3. [개발 환경 문제](#-개발-환경-문제)
-4. [Firebase 관련 이슈](#-firebase-관련-이슈)
-5. [성능 최적화 이슈](#-성능-최적화-이슈)
-6. [UI/UX 문제](#-uiux-문제)
-7. [배포 관련 문제](#-배포-관련-문제)
-8. [긴급 상황 대응](#-긴급-상황-대응)
+### 증상
 
-## 🛠️ 주요 개발 이슈 및 해결 현황
+- `npm start` 직후 env 오류
+- Firebase 설정 누락 메시지
 
-### 🚀 v0.2.2 신규 해결된 이슈
+### 확인
 
-#### 🎯 UnifiedDataContext 성능 최적화 (완전 해결)
+- `uniqn-mobile/.env.local` 존재 여부
+- `uniqn-mobile/src/lib/env.ts`의 필수 키 충족 여부
 
-**문제**: 5개의 개별 Firebase 구독으로 인한 불필요한 리렌더링과 성능 저하
+필수 키:
 
-**해결 방법**:
-```typescript
-// ✅ 5개 구독을 1개로 통합
-const useUnifiedData = () => {
-  const [state, setState] = useState({
-    staff: [],
-    workLogs: [],
-    applications: [],
-    jobPostings: [],
-    attendanceRecords: []
-  });
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
 
-  // 단일 구독으로 통합 관리
-  useEffect(() => {
-    const unsubscribes = [
-      onSnapshot(collection(db, 'staff'), (snapshot) => {
-        setState(prev => ({ ...prev, staff: snapshot.docs.map(doc => doc.data()) }));
-      })
-      // ... 기타 컬렉션
-    ];
-    return () => unsubscribes.forEach(unsubscribe => unsubscribe());
-  }, []);
-};
-```
+## 2. 품질 검사 실패
 
-**결과**:
-- ✅ 92% 캐시 적중률 달성
-- ✅ 렌더링 횟수 65% 감소
-- ✅ 메모리 사용량 40% 절약
+### 기본 점검
 
-#### 🎯 Web Worker 급여 계산 시스템 (완전 해결)
-
-**문제**: 복잡한 급여 계산으로 인한 메인 스레드 블로킹
-
-**해결 방법**:
-```typescript
-// EnhancedPayrollTab.tsx - Web Worker 통합
-const calculatePayrollInWorker = async (workLogs, payrollData) => {
-  return new Promise((resolve) => {
-    const worker = new Worker('/payroll-worker.js');
-    worker.postMessage({ workLogs, payrollData });
-    worker.onmessage = (e) => {
-      resolve(e.data);
-      worker.terminate();
-    };
-  });
-};
-```
-
-**결과**:
-- ✅ UI 블로킹 현상 100% 해결
-- ✅ 급여 계산 속도 3배 향상
-- ✅ 대용량 데이터 처리 가능
-
-#### 🎯 인증 시스템 고도화 (완전 해결)
-
-**문제**: 기본적인 로그인 시스템의 보안 취약점
-
-**해결 방법**:
-```typescript
-// 2단계 인증 (2FA) 구현
-const enableTwoFactorAuth = async (phoneNumber) => {
-  const recaptchaVerifier = new RecaptchaVerifier('recaptcha', {}, auth);
-  const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-  return confirmationResult;
-};
-
-// 세션 관리 강화
-const checkSessionValidity = async () => {
-  const user = auth.currentUser;
-  if (user) {
-    const tokenResult = await user.getIdTokenResult();
-    const authTime = new Date(tokenResult.authTime).getTime();
-    if (Date.now() - authTime > SESSION_TIMEOUT) {
-      await logout();
-    }
-  }
-};
-```
-
-**결과**:
-- ✅ 2FA 지원으로 보안 강화
-- ✅ Google OAuth 완전 통합
-- ✅ 세션 관리 고도화
-
-#### 🎯 국제화(i18n) 시스템 구현 (완전 해결)
-
-**문제**: 하드코딩된 한국어 텍스트로 인한 글로벌 서비스 제약
-
-**해결 방법**:
-```typescript
-// i18n 시스템 구현
-const useTranslation = (namespace = 'common') => {
-  const { language } = useLanguage();
-  const t = (key, options = {}) => {
-    return getTranslation(language, namespace, key, options);
-  };
-  return { t };
-};
-
-// 동적 언어 전환
-const LanguageSelector = () => {
-  const { language, setLanguage } = useLanguage();
-  return (
-    <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-      <option value="ko">한국어</option>
-      <option value="en">English</option>
-    </select>
-  );
-};
-```
-
-**결과**:
-- ✅ 한국어/영어 완전 지원
-- ✅ 동적 언어 전환
-- ✅ 글로벌 서비스 준비 완료
-
-#### 🎯 신고 및 고객지원 시스템 (완전 해결)
-
-**문제**: 문제 상황 발생 시 대응 시스템 부재
-
-**해결 방법**:
-```typescript
-// 신고 시스템 구현
-const ReportModal = ({ targetId, reporterType }) => {
-  const submitReport = async (reportData) => {
-    await addDoc(collection(db, 'reports'), {
-      targetId,
-      reporterType,
-      reportType: reportData.type,
-      description: reportData.description,
-      timestamp: serverTimestamp()
-    });
-  };
-};
-
-// 고객지원 시스템
-const SupportPage = () => {
-  return (
-    <div>
-      <FAQSection />
-      <ContactForm />
-      <MyInquiries />
-    </div>
-  );
-};
-```
-
-**결과**:
-- ✅ 양방향 신고 시스템 구현
-- ✅ FAQ 및 문의 시스템 완성
-- ✅ 고객 만족도 향상
-
-### 🎯 스태프 삭제 시 인원 카운트 미반영 문제 (완전 해결)
-
-**문제**: 스태프 삭제 시 JobPosting의 confirmedStaff에서 제거되지 않아 인원 카운트가 정확하지 않은 문제
-
-**원인**: 
-```typescript
-// ❌ 문제 코드 - staffId와 userId 매칭 실패
-const filteredStaff = confirmedStaff.filter(
-  staff => !(staff.userId === staffId && staff.date === date)
-);
-// staffId: "abc123_0", staff.userId: "abc123" → 매칭 실패
-```
-
-**해결 방법**:
-```typescript
-// ✅ 해결 코드 - baseStaffId 추출 로직 추가
-const baseStaffId = staffId.replace(/_\d+$/, ''); // "_0", "_1" 등 제거
-
-const filteredStaff = confirmedStaff.filter(staff => {
-  const staffUserId = staff.userId || staff.staffId;
-  return !(staffUserId === baseStaffId && staff.date === date);
-});
-```
-
-**결과**: 
-- ✅ confirmedStaff 정확한 삭제
-- ✅ JobPostingCard 인원 카운트 실시간 반영
-- ✅ 사용자 피드백 개선 (예: "플로어 10:00: 5 → 4명")
-
-### 🎉 WorkLog 중복 생성 문제 (완전 해결)
-
-**문제**: 시간 수정 + 출석 상태 변경 시 WorkLog가 2개 생성되는 문제
-
-**해결 방법**:
-```typescript
-// 1. 스태프 확정 시 WorkLog 사전 생성 (useApplicantActions.ts)
-const createWorkLogForConfirmedStaff = async (staffData) => {
-  const workLogId = `${eventId}_${staffId}_0_${date}`;
-  
-  // 중복 방지를 위한 ID 패턴 통일
-  await addDoc(collection(db, 'workLogs'), {
-    id: workLogId,
-    staffId: staffData.staffId,
-    eventId: eventId,
-    // ... 기타 필드
-  });
-};
-
-// 2. 출석 상태 변경 시 기존 WorkLog만 업데이트
-const updateExistingWorkLog = async (workLogId, updates) => {
-  const workLogRef = doc(db, 'workLogs', workLogId);
-  await updateDoc(workLogRef, updates);
-};
-```
-
-**결과**: ✅ WorkLog 중복 생성 100% 해결
-
-### 🎉 데이터 표시 일관성 문제 (완전 해결)
-
-**문제**: 지원자 탭과 내 지원 현황 탭 간 데이터 표시 불일치
-
-**해결 방법**:
-```typescript
-// AssignmentDisplay 컴포넌트 통합 사용
-const AssignmentDisplay = ({ assignments, showGroupLabel = false }) => {
-  const hasGroupSelection = assignments?.some(a => a.checkMethod === 'group');
-  
-  return (
-    <div className="flex flex-wrap gap-1">
-      {hasGroupSelection && showGroupLabel && (
-        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-          그룹선택
-        </span>
-      )}
-      {assignments?.map((assignment, index) => (
-        <span key={index} className="px-2 py-1 bg-gray-100 rounded text-sm">
-          {assignment.date} - {assignment.role}
-        </span>
-      ))}
-    </div>
-  );
-};
-```
-
-**결과**: ✅ 탭 간 데이터 표시 일관성 100% 확보
-
-### 🎉 무한 로딩 문제 (완전 해결)
-
-**문제**: `loading` 상태 관리 오류로 인한 무한 로딩
-
-**해결 방법**:
-```typescript
-// ❌ 문제가 있던 코드
-if (loading) return <div>로딩중...</div>;
-
-// ✅ 올바른 해결법
-const { loading } = useUnifiedData();
-if (loading.initial) return <div>로딩중...</div>;
-
-// loading 상태 구조
-interface LoadingState {
-  initial: boolean;    // 초기 로딩
-  refreshing: boolean; // 새로고침
-  updating: boolean;   // 업데이트
-}
-```
-
-**결과**: ✅ 무한 로딩 문제 100% 해결
-
-### 🎉 동기화 문제 (완전 해결)
-
-**문제**: 지원서 제출 후 관리자 패널에서 데이터가 표시되지 않음
-
-**해결 방법**:
-```typescript
-// 1. transformApplicationData에서 eventId 보장
-const transformApplicationData = (doc: DocumentData): Application => ({
-  id: doc.id,
-  eventId: doc.eventId || doc.postId || '', // ✅ eventId 필드 보장
-  // ... 기타 필드
-});
-
-// 2. 사용자별 권한 기반 데이터 필터링
-const applicationsQuery = this.isAdmin() 
-  ? query(collection(db, 'applications'))  // 관리자: 모든 데이터
-  : query(collection(db, 'applications'),   // 사용자: 개인 데이터만
-          where('applicantId', '==', this.currentUserId));
-```
-
-**결과**: ✅ 실시간 동기화 100% 정상화
-
-## 🚨 자주 발생하는 문제
-
-### 1. 개발 서버 시작 실패
-
-**증상**: `npm start` 실행 시 포트 충돌 또는 의존성 오류
-
-**해결법**:
 ```bash
-# 1. 포트 충돌 해결
-lsof -ti:3000 | xargs kill -9  # macOS/Linux
-netstat -ano | findstr :3000   # Windows (프로세스 ID 확인 후 종료)
+cd uniqn-mobile
+npm run type-check
+npm run lint
+npm run test
+npm run quality
+```
 
-# 2. 의존성 재설치
-rm -rf node_modules package-lock.json
+### 추가 점검
+
+```bash
+npx expo doctor
+```
+
+## 3. 관리자 화면 접근 불가
+
+### 확인 포인트
+
+- 로그인 상태인지
+- 사용자 역할이 `admin`인지
+- `uniqn-mobile/app/(admin)/_layout.tsx`의 가드에 걸리지 않는지
+
+비관리자 계정은 관리자 라우트에서 일반 앱 홈으로 리다이렉트됩니다.
+
+## 4. 구인자 화면 접근 불가
+
+### 확인 포인트
+
+- 사용자 역할이 `employer` 이상인지
+- `uniqn-mobile/app/(employer)/_layout.tsx` 가드에 걸리지 않는지
+
+## 5. 알림이 오지 않음
+
+### 확인 포인트
+
+- 기기 알림 권한 허용 여부
+- 설정 화면의 푸시 알림 토글 상태
+- `expo-notifications` 토큰 등록 실패 로그
+- Functions 알림 생성 여부
+
+관련 파일:
+
+- `uniqn-mobile/app/(app)/settings/index.tsx`
+- `uniqn-mobile/src/services/notifications/pushNotificationService.ts`
+- `functions/src/utils/notificationUtils.ts`
+
+## 6. Feature Flag가 갱신되지 않음
+
+### 확인 포인트
+
+- 관리자 설정 화면에서 캐시 새로고침 실행
+- Remote Config 값 반영 여부
+- 네이티브 환경에서는 기본값 폴백 중인지 확인
+
+관련 파일:
+
+- `uniqn-mobile/src/services/observability/featureFlagService.ts`
+- `uniqn-mobile/app/(admin)/settings.tsx`
+
+## 7. Functions 빌드 또는 실행 오류
+
+```bash
+cd functions
 npm install
-
-# 3. 캐시 클리어
-npm start -- --reset-cache
-```
-
-### 2. TypeScript 컴파일 에러
-
-**증상**: 빌드 시 TypeScript 에러 발생
-
-**해결법**:
-```bash
-# 1. 타입 체크 실행
-npm run type-check
-
-# 2. 일반적인 에러 해결
-# - any 타입 사용 금지
-# - 표준 필드명 사용 (staffId, eventId)
-# - optional 체이닝 활용
-
-// ❌ 문제 코드
-const name = staff.name;
-
-// ✅ 해결 코드
-const name = staff?.name || 'Unknown';
-```
-
-### 3. Firebase 연결 실패
-
-**증상**: Firebase 초기화 오류 또는 권한 거부
-
-**해결법**:
-```typescript
-// 1. 환경 변수 확인
-console.log('Firebase Config:', {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  // ... 기타 설정
-});
-
-// 2. 에뮬레이터 연결 확인
-if (process.env.NODE_ENV === 'development') {
-  try {
-    connectFirestoreEmulator(db, 'localhost', 8080);
-  } catch (error) {
-    console.log('에뮬레이터 이미 연결됨');
-  }
-}
-
-// 3. 인증 상태 확인
-const { currentUser } = useAuth();
-if (!currentUser) {
-  return <Navigate to="/login" />;
-}
-```
-
-## 🛠️ 개발 환경 문제
-
-### Node.js 버전 호환성
-
-**요구사항**: Node.js 18.0.0 이상
-
-```bash
-# 현재 버전 확인
-node --version
-
-# nvm을 사용한 버전 관리
-nvm install 18
-nvm use 18
-
-# 또는 직접 설치
-# https://nodejs.org에서 LTS 버전 다운로드
-```
-
-### ESLint/Prettier 충돌
-
-**증상**: 저장 시 포맷팅이 계속 변경됨
-
-**해결법**:
-```json
-// .vscode/settings.json
-{
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
-}
-```
-
-### 환경 변수 문제
-
-**증상**: 환경 변수가 로드되지 않음
-
-**해결법**:
-```bash
-# 1. .env 파일 위치 확인 (app2/.env)
-# 2. REACT_APP_ 접두어 확인
-# 3. 파일 권한 확인
-
-# .env 파일 예시
-REACT_APP_FIREBASE_API_KEY=your_key_here
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_domain.firebaseapp.com
-# 주의: 따옴표나 공백 없이 작성
-```
-
-## 🔥 Firebase 관련 이슈
-
-### Firestore 권한 오류
-
-**증상**: `permission-denied` 또는 `unauthenticated` 오류
-
-**해결법**:
-```javascript
-// 1. 보안 규칙 확인
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // 인증된 사용자만 접근
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // 개인 데이터만 접근
-    match /applications/{applicationId} {
-      allow read, write: if request.auth != null && 
-        (resource.data.applicantId == request.auth.uid || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'manager']);
-    }
-  }
-}
-```
-
-### 쿼리 성능 문제
-
-**증상**: 느린 쿼리 실행 또는 timeout 오류
-
-**해결법**:
-```typescript
-// ❌ 비효율적인 쿼리
-const getAllWorkLogs = async () => {
-  return getDocs(collection(db, 'workLogs')); // 모든 데이터 로드
-};
-
-// ✅ 최적화된 쿼리
-const getWorkLogsByEvent = async (eventId: string, limit = 100) => {
-  return getDocs(query(
-    collection(db, 'workLogs'),
-    where('eventId', '==', eventId),
-    orderBy('date', 'desc'),
-    limitToLast(limit)
-  ));
-};
-```
-
-### 실시간 구독 메모리 누수
-
-**증상**: 페이지 이동 후에도 구독이 유지되어 메모리 사용량 증가
-
-**해결법**:
-```typescript
-useEffect(() => {
-  const unsubscribe = onSnapshot(
-    collection(db, 'staff'),
-    (snapshot) => {
-      // 데이터 처리
-    }
-  );
-
-  // ✅ 컴포넌트 언마운트 시 구독 해제
-  return unsubscribe;
-}, []);
-```
-
-## ⚡ 성능 최적화 이슈
-
-### 대용량 리스트 렌더링 느림
-
-**해결법**: React Window 가상화 적용
-
-```typescript
-import { FixedSizeList as List } from 'react-window';
-
-const VirtualizedList = ({ items }) => (
-  <List
-    height={600}        // 컨테이너 높이
-    itemCount={items.length}
-    itemSize={80}       // 각 아이템 높이
-    itemData={items}
-  >
-    {({ index, style, data }) => (
-      <div style={style}>
-        <ItemComponent item={data[index]} />
-      </div>
-    )}
-  </List>
-);
-```
-
-### 메인 스레드 블로킹
-
-**해결법**: Web Worker 사용
-
-```typescript
-// payrollWorker.ts
-self.onmessage = function(e) {
-  const { workLogs } = e.data;
-  const result = calculateHeavyPayroll(workLogs);
-  self.postMessage(result);
-};
-
-// 컴포넌트에서 사용
-const worker = new Worker('/payrollWorker.js');
-worker.postMessage({ workLogs });
-worker.onmessage = (e) => {
-  setPayrollData(e.data);
-};
-```
-
-### 불필요한 리렌더링
-
-**해결법**: 메모이제이션 적용
-
-```typescript
-// ✅ useMemo로 계산 결과 캐싱
-const filteredData = useMemo(() => 
-  data.filter(item => item.status === selectedStatus),
-  [data, selectedStatus]
-);
-
-// ✅ useCallback으로 함수 캐싱
-const handleClick = useCallback((id) => {
-  onItemClick(id);
-}, [onItemClick]);
-
-// ✅ React.memo로 컴포넌트 최적화
-const ItemComponent = memo(({ item, onClick }) => (
-  <div onClick={() => onClick(item.id)}>
-    {item.name}
-  </div>
-));
-```
-
-## 🎨 UI/UX 문제
-
-### 모바일 반응형 문제
-
-**해결법**: Tailwind CSS 반응형 클래스 사용
-
-```typescript
-// ✅ 반응형 디자인 적용
-<div className="
-  grid grid-cols-1 gap-4
-  md:grid-cols-2 md:gap-6
-  lg:grid-cols-3 lg:gap-8
-">
-  {items.map(item => (
-    <div key={item.id} className="
-      p-4 border rounded-lg
-      hover:shadow-md transition-shadow
-      focus:ring-2 focus:ring-blue-500
-    ">
-      {item.content}
-    </div>
-  ))}
-</div>
-```
-
-### 접근성 문제
-
-**해결법**: ARIA 속성과 시맨틱 HTML 사용
-
-```typescript
-// ✅ 접근성 개선
-<button
-  aria-label="스태프 편집"
-  aria-describedby="edit-help"
-  className="sr-only focus:not-sr-only"  // 스크린 리더 지원
->
-  편집
-</button>
-
-<div id="edit-help" className="sr-only">
-  선택한 스태프의 정보를 편집합니다
-</div>
-
-// 키보드 네비게이션 지원
-const handleKeyDown = (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    handleClick();
-  }
-};
-```
-
-### 다크 모드 문제
-
-**해결법**: CSS 변수와 Tailwind 다크 모드 사용
-
-```css
-/* globals.css */
-:root {
-  --primary-color: #3b82f6;
-  --background-color: #ffffff;
-}
-
-[data-theme="dark"] {
-  --primary-color: #60a5fa;
-  --background-color: #1f2937;
-}
-```
-
-```typescript
-// 다크 모드 토글
-const toggleTheme = () => {
-  const newTheme = theme === 'light' ? 'dark' : 'light';
-  setTheme(newTheme);
-  document.documentElement.setAttribute('data-theme', newTheme);
-};
-```
-
-## 🚀 배포 관련 문제
-
-### 빌드 실패
-
-**해결법**:
-```bash
-# 1. 의존성 업데이트
-npm update
-
-# 2. TypeScript 에러 수정
-npm run type-check
-
-# 3. ESLint 경고 수정
-npm run lint --fix
-
-# 4. 메모리 부족 시
-export NODE_OPTIONS="--max-old-space-size=8192"
 npm run build
+npm test
 ```
 
-### 환경별 설정 문제
+환경변수 확인:
 
-**해결법**: 환경별 설정 파일 분리
+- `RECAPTCHA_SECRET_KEY`
+- `WEB_API_KEY`
 
-```javascript
-// config/environment.js
-const config = {
-  development: {
-    apiUrl: 'http://localhost:3000',
-    firebaseConfig: {
-      // 개발용 Firebase 설정
-    }
-  },
-  production: {
-    apiUrl: 'https://tholdem-ebc18.web.app',
-    firebaseConfig: {
-      // 프로덕션용 Firebase 설정
-    }
-  }
-};
+또한 `functions/package.json`의 Node 22 기준과 로컬 런타임을 맞춰야 합니다.
 
-export default config[process.env.NODE_ENV] || config.development;
-```
+## 8. 계정 삭제/로그인 알림 동작 이상
 
-### Firebase Hosting 배포 실패
+확인 파일:
 
-**해결법**:
-```bash
-# 1. Firebase CLI 업데이트
-npm install -g firebase-tools@latest
+- `functions/src/account/scheduledDeletion.ts`
+- `functions/src/account/loginNotification.ts`
+- `functions/src/index.ts`
 
-# 2. 로그인 재시도
-firebase logout
-firebase login
+확인 항목:
 
-# 3. 프로젝트 설정 확인
-firebase use --list
-firebase use your-project-id
+- Functions 배포 상태
+- Firestore 문서 생성 여부
+- Cloud Functions 로그 오류
 
-# 4. 배포 실행
-firebase deploy --only hosting
-```
+## 9. Sentry 이벤트가 보이지 않음
 
-## 🆘 긴급 상황 대응
+### 확인 포인트
 
-### 프로덕션 서비스 중단
+- `EXPO_PUBLIC_SENTRY_DSN` 설정 여부
+- `uniqn-mobile/app/_layout.tsx`에서 Sentry 초기화 수행 여부
+- 릴리스 채널 값 확인
 
-**즉시 조치**:
-1. **현상 파악**: 에러 로그 확인 (Firebase Console, Sentry)
-2. **영향 범위 확인**: 어떤 기능이 영향받는지 파악
-3. **임시 조치**: 문제 기능 비활성화 또는 이전 버전으로 롤백
+주의:
 
-```bash
-# 이전 버전으로 롤백
-firebase hosting:releases:list
-firebase hosting:releases:rollback TARGET_NAME --version-id VERSION_ID
-```
+- 내부 서비스 이름은 `crashlyticsService`지만 실제 구현은 Sentry입니다.
 
-### 데이터 손실 위험
+## 10. 권한/역할 계산이 이상함
 
-**즉시 조치**:
-1. **백업 확인**: Firebase Console에서 최근 백업 상태 확인
-2. **쓰기 작업 중단**: 위험한 대량 업데이트 작업 중단
-3. **데이터 내보내기**: 중요 데이터 즉시 내보내기
+확인 파일:
 
-```bash
-# Firestore 데이터 내보내기
-gcloud firestore export gs://your-bucket-name/backup-$(date +%Y%m%d)
-```
+- `uniqn-mobile/src/shared/role/RoleResolver.ts`
+- `uniqn-mobile/src/hooks/useAuth.ts`
+- `uniqn-mobile/src/hooks/useAuthGuard.ts`
 
-### 보안 취약점 발견
+현재 역할 체계:
 
-**즉시 조치**:
-1. **취약점 격리**: 해당 기능 즉시 비활성화
-2. **패치 적용**: 보안 업데이트 즉시 적용
-3. **영향 분석**: 로그 분석으로 악용 여부 확인
+- `admin`
+- `employer`
+- `staff`
 
-```bash
-# 의존성 보안 스캔
-npm audit
-npm audit fix --force
+## 빠른 점검 순서
 
-# Firebase 보안 규칙 업데이트
-firebase deploy --only firestore:rules
-```
-
-## 📞 지원 연락처
-
-### 개발팀 연락처
-- **긴급 상황**: GitHub Issues 생성
-- **일반 문의**: 프로젝트 저장소 Discussions
-- **버그 리포트**: GitHub Issues 템플릿 사용
-
-### 외부 서비스 지원
-- **Firebase**: [Firebase Support](https://firebase.google.com/support)
-- **Sentry**: [Sentry Support](https://sentry.io/support/)
-- **Vercel**: [Vercel Support](https://vercel.com/support)
-
-## 🔗 관련 문서
-
-- **[ARCHITECTURE.md](../reference/ARCHITECTURE.md)**: 시스템 아키텍처 이해
-- **[DEVELOPMENT_GUIDE.md](../core/DEVELOPMENT_GUIDE.md)**: 개발 환경 설정
-- **[DATA_SCHEMA.md](../reference/DATA_SCHEMA.md)**: 데이터 구조 이해
-- **[DEPLOYMENT.md](../guides/DEPLOYMENT.md)**: 배포 환경 설정
-
----
-
-*마지막 업데이트: 2026년 2월 1일 - 레거시 웹앱 트러블슈팅 (모바일앱은 CLAUDE.md 에러 처리 섹션 참조)*
+1. `npm run quality`
+2. env 파일 확인
+3. 권한 가드 확인
+4. Query/Repository 호출 경로 확인
+5. Functions 로그와 Sentry 로그 확인

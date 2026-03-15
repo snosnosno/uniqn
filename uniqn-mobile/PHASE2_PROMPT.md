@@ -1,5 +1,8 @@
 # Phase 2: 인증 + 구인구직 개발 프롬프트
 
+> 참고: 이 문서는 모바일앱 초기 개발 당시의 내부 프롬프트 기록입니다.
+> 현재 구현 기준은 `app/`, `src/`, `functions/`의 실제 코드이며, 아래의 레거시 참조 문구는 역사적 맥락으로만 읽어야 합니다.
+
 ## 컨텍스트
 
 ### Phase 1 완료 상태 (2025-12-17)
@@ -125,8 +128,8 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
   - src/types/auth.ts: LoginCredentials, SignupData
   - src/types/job.ts: JobPosting, Application, ApplicationStatus
 
-참조: app2/src/schemas/, app2/src/types/
-작업: 기존 스키마 복사 후 RN 호환 수정
+참조: 과거 레거시 웹 스키마/타입 설계
+작업: 현재는 `uniqn-mobile/src/schemas`, `uniqn-mobile/src/types`를 우선 기준으로 사용
 ```
 
 ### Step 2: 서비스 레이어
@@ -137,7 +140,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
   - src/services/jobService.ts: getJobPostings, getJobDetail
   - src/services/applicationService.ts: applyJob, getMyApplications
 
-참조: app2/src/services/
+참조: 과거 레거시 서비스 설계
 특이사항:
   - 트랜잭션 필수: 지원 시 applications + jobPostings 동시 업데이트
   - 에러 핸들링: Firebase 에러 → BusinessError 변환
@@ -319,7 +322,7 @@ npm test            # 테스트 통과
 
 ## 주의사항
 
-1. **기존 코드 재사용**: app2/src/에서 복사 후 RN 호환 수정
+1. **기존 코드 재사용**: 현재는 `uniqn-mobile/src/`와 `functions/src/`를 우선 재사용
 2. **TODO [출시 전] 주석**: 누락된 기능은 주석으로 명시
 3. **체크리스트 업데이트**: 각 항목 완료 시 DEVELOPMENT_CHECKLIST.md 체크
 4. **커밋 단위**: 기능 단위로 커밋 (인증, 구인구직, 회원탈퇴 분리)

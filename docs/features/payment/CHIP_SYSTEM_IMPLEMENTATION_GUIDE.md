@@ -2,9 +2,10 @@
 
 **최종 업데이트**: 2026년 2월 1일
 **버전**: v1.0.0 (Heart/Diamond Point System)
-**상태**: 📋 **구현 준비**
+**상태**: 📋 **설계 / 구현 준비**
 
-> ⚠️ **마스터 문서 참조**: 포인트 정의, 가격표, 시각 디자인은 [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md)를 참조하세요.
+> ⚠️ 이 문서는 현재 런타임 구현 완료 상태를 설명하지 않습니다.
+> 포인트 정의, 가격표, 시각 디자인은 [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md)를 참조하세요.
 > 이 문서는 **구현 단계 및 기술 가이드**에 집중합니다.
 
 ---

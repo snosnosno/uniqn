@@ -2,10 +2,12 @@
 
 **최종 업데이트**: 2026년 2월 1일
 **버전**: v1.0.0 (Heart/Diamond Point System)
-**상태**: 📋 **구현 준비**
+**상태**: 📋 **설계 / 구현 준비**
 **프로젝트**: UNIQN 하트/다이아 포인트 시스템
 
-> ⚠️ **관련 문서**:
+> ⚠️ 이 문서는 현재 런타임 구현 문서가 아니라 설계 문서입니다.
+>
+> **관련 문서**:
 > - 📊 **포인트 정의 & 가격표**: [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) (마스터 문서)
 > - 🔧 **구현 가이드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md)
 > - 💰 **수익 분석**: [REVENUE_MODEL_ANALYSIS.md](./REVENUE_MODEL_ANALYSIS.md)

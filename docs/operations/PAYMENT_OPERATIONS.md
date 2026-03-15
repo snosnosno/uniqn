@@ -2,9 +2,12 @@
 
 **최종 업데이트**: 2026년 2월 13일
 **버전**: v2.0.0 (하트/다이아 포인트 시스템)
-**상태**: 🔧 **개발 중**
+**상태**: 📋 **운영 초안 / 미구현**
 **프로젝트**: UNIQN 포인트 시스템
 
+> ⚠️ 현재 저장소의 런타임 코드에는 이 문서가 전제하는 결제/포인트 흐름이 완전히 구현되어 있지 않습니다.
+> 이 문서는 운영 초안입니다.
+>
 > **📋 관련 문서**:
 > - 📊 **포인트 정의 & 가격표 (마스터)**: [MODEL_B_CHIP_SYSTEM_FINAL.md](../features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md)
 > - 🔧 **기술 아키텍처/API**: [PAYMENT_SYSTEM_DEVELOPMENT.md](../features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md)

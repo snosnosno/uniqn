@@ -1,262 +1,54 @@
-# UNIQN 프로젝트 문서
+# 문서 인덱스
 
-UNIQN (구 T-HOLDEM) 프로젝트의 모든 개발 문서 모음입니다.
+현재 문서 기준은 `uniqn-mobile/`과 `functions/`입니다. 레거시 웹앱 문서는 `docs/legacy/` 또는 별도 참고 문서로 취급합니다.
 
-**마지막 업데이트**: 2026년 2월 1일
-**프로젝트 버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
-**총 문서 수**: 42개 (12개 폴더)
+## 핵심 문서
 
----
+- `core/DEVELOPMENT_GUIDE.md`
+- `core/TESTING_GUIDE.md`
+- `reference/ARCHITECTURE.md`
+- `reference/API_REFERENCE.md`
+- `guides/DEPLOYMENT.md`
+- `guides/ROLLBACK_PROCEDURES.md`
+- `operations/MONITORING.md`
+- `operations/TROUBLESHOOTING.md`
+- `user/ONBOARDING.md`
+- `user/USER_MANUAL.md`
+- `user/ADMIN_GUIDE.md`
 
-## 문서 구조
+## 카테고리
 
-```
-docs/
-├── README.md              # 문서 인덱스 (이 파일)
-├── core/                  # 핵심 개발 가이드
-├── features/              # 기능별 가이드
-│   └── payment/           # 💎 하트/다이아 포인트 시스템
-├── guides/                # 운영 가이드
-├── operations/            # 운영 문서
-├── reference/             # 참조 문서
-├── user/                  # 사용자 가이드
-└── legacy/                # 레거시 문서 (참고용)
-```
+### core
 
----
+- 개발, 테스트, 기본 워크플로우
 
-## [core/](core/) - 핵심 개발 가이드
+### features
 
-개발에 필수적인 핵심 가이드 문서
+- 현재 기능 설명 문서
+- 결제/포인트 하위 문서는 구현 완료 문서가 아니라 설계/계획 문서가 섞여 있을 수 있으므로 코드와 함께 검토해야 합니다.
 
-| 문서 | 설명 |
-|------|------|
-| [DEVELOPMENT_GUIDE.md](core/DEVELOPMENT_GUIDE.md) | 개발 가이드라인, 코딩 규칙, 프로젝트 구조 |
-| [TESTING_GUIDE.md](core/TESTING_GUIDE.md) | 테스트 작성 가이드 (모바일앱 14% MVP → 60% 목표) |
+### guides
 
----
+- 배포, 롤백, 성능, 국제화 관련 운영 가이드
 
-## [features/](features/) - 기능별 가이드
+### operations
 
-### 주요 기능
+- 모니터링, 보안, 트러블슈팅, 알림 운영
 
-| 문서 | 설명 |
-|------|------|
-| [FEATURE_FLAG_GUIDE.md](features/FEATURE_FLAG_GUIDE.md) | Feature Flag 시스템 사용법 |
-| [MULTI_TENANT_STATUS.md](features/MULTI_TENANT_STATUS.md) | 멀티테넌트 아키텍처 현황 |
-| [NOTIFICATION_IMPLEMENTATION_STATUS.md](features/NOTIFICATION_IMPLEMENTATION_STATUS.md) | 알림 시스템 구현 상태 |
-| [ACCOUNT_MANAGEMENT_SYSTEM.md](features/ACCOUNT_MANAGEMENT_SYSTEM.md) | 계정 관리 시스템 |
-| [PERMISSION_SYSTEM.md](features/PERMISSION_SYSTEM.md) | 권한 시스템 전체 정리 |
+### reference
 
-### [features/payment/](features/payment/) - 💎 하트/다이아 포인트 시스템
+- 아키텍처, API, 인증, 데이터 스키마, 제품 범위 참고
 
-| 문서 | 설명 |
-|------|------|
-| [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) | 💎 하트/다이아 포인트 시스템 최종 설계 (RevenueCat 기반) |
-| [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) | 포인트 시스템 구현 가이드 |
-| [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) | 수익 모델 분석 |
-| [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) | RevenueCat 결제 시스템 개발 문서 |
+### user
 
----
+- 사용자, 관리자, 온보딩 문서
 
-## [guides/](guides/) - 운영 가이드
+### legacy
 
-배포, 성능, 국제화 등 운영 관련 가이드
+- 더 이상 현재 기본 기준이 아닌 과거 문서
 
-| 문서 | 설명 |
-|------|------|
-| [DEPLOYMENT.md](guides/DEPLOYMENT.md) | 배포 가이드 |
-| [ROLLBACK_PROCEDURES.md](guides/ROLLBACK_PROCEDURES.md) | 배포 롤백 절차 가이드 🆕 |
-| [I18N_GUIDE.md](guides/I18N_GUIDE.md) | 국제화(i18n) 가이드 |
-| [PERFORMANCE.md](guides/PERFORMANCE.md) | 성능 최적화 가이드 |
+## 문서 검토 원칙
 
----
-
-## [operations/](operations/) - 운영 문서
-
-모니터링, 보안, 트러블슈팅 등 운영 관련 문서
-
-| 문서 | 설명 |
-|------|------|
-| [MONITORING.md](operations/MONITORING.md) | 모니터링 가이드 |
-| [NOTIFICATION_OPERATIONS.md](operations/NOTIFICATION_OPERATIONS.md) | 알림 시스템 운영 가이드 🆕 |
-| [SECURITY.md](operations/SECURITY.md) | 보안 가이드 |
-| [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) | 트러블슈팅 가이드 |
-| [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) | 결제 시스템 운영 가이드 |
-
----
-
-## [reference/](reference/) - 참조 문서
-
-아키텍처, API, 데이터 스키마 등 참조 문서
-
-| 문서 | 설명 |
-|------|------|
-| [ARCHITECTURE.md](reference/ARCHITECTURE.md) | 시스템 아키텍처 |
-| [API_REFERENCE.md](reference/API_REFERENCE.md) | API 레퍼런스 |
-| [AUTHENTICATION.md](reference/AUTHENTICATION.md) | 인증 시스템 |
-| [DATA_SCHEMA.md](reference/DATA_SCHEMA.md) | 데이터 스키마 |
-| [BUSINESS_CASE.md](reference/BUSINESS_CASE.md) | 비즈니스 케이스 |
-
----
-
-## [user/](user/) - 사용자 가이드
-
-사용자 및 관리자를 위한 매뉴얼
-
-| 문서 | 설명 |
-|------|------|
-| [ADMIN_GUIDE.md](user/ADMIN_GUIDE.md) | 관리자 가이드 |
-| [ONBOARDING.md](user/ONBOARDING.md) | 온보딩 가이드 |
-| [USER_MANUAL.md](user/USER_MANUAL.md) | 사용자 매뉴얼 |
-
----
-
-## [legacy/](legacy/) - 레거시 문서
-
-이전 버전(app2) 관련 기획/분석/릴리스 문서 (참고용)
-
-| 문서 | 설명 |
-|------|------|
-| [REFACTORING_PLAN.md](legacy/REFACTORING_PLAN.md) | 프로젝트 리팩토링 계획 (6주 로드맵) |
-| [CRITICAL_ANALYSIS_V2.md](legacy/CRITICAL_ANALYSIS_V2.md) | 프로젝트 비판적 분석 보고서 v2.0 |
-| [DEPLOYMENT_CHECKLIST.md](legacy/DEPLOYMENT_CHECKLIST.md) | v0.2.4 기능 배포 체크리스트 |
-| [DEPLOYMENT_SUMMARY_v0.2.4.md](legacy/DEPLOYMENT_SUMMARY_v0.2.4.md) | v0.2.4 배포 요약 |
-| [PRODUCTION_TEST_GUIDE_v0.2.4.md](legacy/PRODUCTION_TEST_GUIDE_v0.2.4.md) | v0.2.4 프로덕션 테스트 가이드 |
-| [MIGRATION_GUIDE.md](legacy/MIGRATION_GUIDE.md) | 마이그레이션 가이드 |
-
----
-
-## 빠른 시작 가이드
-
-### 신규 개발자
-1. [DEVELOPMENT_GUIDE.md](core/DEVELOPMENT_GUIDE.md) - 개발 환경 설정
-2. [ARCHITECTURE.md](reference/ARCHITECTURE.md) - 시스템 구조 이해
-3. [TESTING_GUIDE.md](core/TESTING_GUIDE.md) - 테스트 작성법
-
-### 기능 개발
-1. [FEATURE_FLAG_GUIDE.md](features/FEATURE_FLAG_GUIDE.md) - Feature Flag 사용
-2. [PERMISSION_SYSTEM.md](features/PERMISSION_SYSTEM.md) - 권한 시스템 이해
-3. [DATA_SCHEMA.md](reference/DATA_SCHEMA.md) - 데이터 구조 확인
-
-### 배포 및 운영
-1. [DEPLOYMENT.md](guides/DEPLOYMENT.md) - 배포 절차
-2. [MONITORING.md](operations/MONITORING.md) - 모니터링 설정
-3. [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) - 문제 해결
-
-### 💎 포인트 시스템 개발 (하트/다이아 + RevenueCat)
-1. [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 하트/다이아 시스템 설계
-2. [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) - 구현 가이드
-3. [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 운영 가이드
-
----
-
-## 주요 프로젝트 정보
-
-### 기술 스택
-- **Mobile**: React Native 0.81.5 + Expo SDK 54 (주력 플랫폼)
-- **Frontend**: React 19 + TypeScript 5.9 (Strict Mode)
-- **State**: Zustand 5.0 + TanStack Query 5.90
-- **Styling**: NativeWind 4.2 (Tailwind CSS for RN)
-- **Backend**: Firebase 12.6 (Auth, Firestore, Functions)
-- **결제**: RevenueCat (App Store Connect, Google Play Console)
-- **Testing**: Jest + React Native Testing Library (14% → 60% 목표)
-
-### 프로젝트 상태
-| 기능 | 상태 | 완성도 |
-|------|------|--------|
-| 인증 시스템 | Production | 100% (2FA, 세션 관리) |
-| 알림 시스템 | Production | 100% (5개 Functions 배포) |
-| 멀티테넌트 | Production | 100% (Phase 1-6) |
-| 토너먼트 시스템 | Production | 100% |
-| 국제화(i18n) | Production | 100% (한국어/영어) |
-| 💎 포인트 시스템 | Production | 100% (RevenueCat 연동) |
-
-### 최근 업데이트
-- **v1.0.0** (2026-02-01): 모바일앱 전환 + 💎 하트/다이아 포인트 시스템 (RevenueCat)
-- **v0.2.4** (2025-10-31): 기능 확장 및 안정화
-- **v0.2.3** (2025-10-18): 알림/멀티테넌트/테이블 관리 고도화
-- **v0.2.2** (2025-09-19): 인증 시스템 고도화 완료
-
----
-
-## 주제별 문서 찾기
-
-### 아키텍처 & 설계
-- [ARCHITECTURE.md](reference/ARCHITECTURE.md) - 전체 시스템 아키텍처
-- [DATA_SCHEMA.md](reference/DATA_SCHEMA.md) - Firestore 데이터 스키마
-- [MULTI_TENANT_STATUS.md](features/MULTI_TENANT_STATUS.md) - 멀티테넌트 구조
-- [REFACTORING_PLAN.md](legacy/REFACTORING_PLAN.md) - 리팩토링 계획
-
-### 인증 & 권한
-- [AUTHENTICATION.md](reference/AUTHENTICATION.md) - 인증 시스템
-- [PERMISSION_SYSTEM.md](features/PERMISSION_SYSTEM.md) - 권한 시스템
-- [ACCOUNT_MANAGEMENT_SYSTEM.md](features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리
-
-### 💎 포인트 시스템 (하트/다이아)
-- [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 하트/다이아 포인트 시스템 설계
-- [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) - RevenueCat 연동 개발 문서
-- [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 포인트 시스템 운영 가이드
-- [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) - 수익 분석
-
-### 테스트 & 품질
-- [TESTING_GUIDE.md](core/TESTING_GUIDE.md) - 테스트 작성 가이드
-- [PERFORMANCE.md](guides/PERFORMANCE.md) - 성능 최적화
-- [CRITICAL_ANALYSIS_V2.md](legacy/CRITICAL_ANALYSIS_V2.md) - 품질 분석
-
-### 배포 & 운영
-- [DEPLOYMENT.md](guides/DEPLOYMENT.md) - 배포 절차
-- [MONITORING.md](operations/MONITORING.md) - 모니터링
-- [SECURITY.md](operations/SECURITY.md) - 보안
-- [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) - 문제 해결
-
----
-
-## 문서 작성 규칙
-
-### 파일명 규칙
-- 대문자 사용: `FEATURE_NAME.md`
-- 밑줄 사용: 단어 구분 시 `_` 사용
-- 날짜 포함: 보고서는 `YYYY-MM-DD` 형식
-- 버전 포함: 릴리스 문서는 `_v0.2.4` 형식
-
-### 표준 헤더 형식
-```markdown
-# 문서 제목
-
-**최종 업데이트**: 2026년 3월 8일
-**버전**: v0.2.3 (모바일앱 중심 + RevenueCat 연동)
-**상태**: ✅ **Production Ready** (또는 적절한 상태)
-
----
-
-## 목차
-...
-```
-
-### 상태 이모지 가이드
-- ✅ Production Ready / 완료
-- 🔧 개발 중
-- 📋 계획 수립 / 준비
-- 📁 Archived (역사 기록용)
-- 📊 분석 완료
-
-### Markdown 스타일
-- 제목: `#`, `##`, `###` 계층 구조
-- 코드 블록: 언어 명시 (```typescript, ```bash)
-- 강조: **굵게**, *기울임*
-- 체크박스: `- [ ]` 또는 `- [x]`
-- 테이블: 가독성을 위해 적극 활용
-
----
-
-## 문의 및 기여
-
-- **이슈 등록**: GitHub Issues
-- **문서 개선 제안**: Pull Request
-- **개발 가이드**: [CLAUDE.md](../CLAUDE.md)
-
----
-
-*이 문서는 프로젝트의 모든 개발 문서를 정리한 인덱스입니다.*
-*자세한 내용은 각 문서를 참조하세요.*
+- 현재 구현 여부는 항상 코드로 재확인합니다.
+- 존재하지 않는 스크립트, 라우트, Functions 이름은 문서에 남기지 않습니다.
+- 계획 문서는 계획이라고 명시하고, 구현 문서는 실제 코드 경로를 함께 적습니다.

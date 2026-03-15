@@ -1,31 +1,29 @@
 /**
- * UNIQN Mobile - 공고 카드 컴포넌트
+ * UNIQN Mobile - Employer job posting card
  *
- * @description employer 탭에서 공고 목록에 표시되는 카드
- * @version 1.0.0
+ * @description Employer-side posting card used in the "내 공고" list.
  */
 
-import React, { useMemo, memo } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
+import React, { memo, useMemo } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
-import { UsersIcon, QrCodeIcon } from '@/components/icons';
-import { getRoleDisplayName } from '@/types/unified/role';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
-import { formatSalary } from '@/utils/formatters';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
-import { formatDateShortWithDay } from '@/utils/date';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/date';
+import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
+import { QrCodeIcon, UsersIcon } from '@/components/icons';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { STATUS } from '@/constants';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
+import { getDateString } from '@/types/jobPosting/dateRequirement';
+import { getRoleDisplayName } from '@/types/unified/role';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { getAllowanceItems } from '@/utils/allowanceUtils';
+import {
+  formatDateRangeWithCount,
+  formatDateShortWithDay,
+  groupRequirementsToDateRanges,
+} from '@/utils/date';
+import { formatSalary } from '@/utils/formatters';
 
 export interface JobPostingCardProps {
   posting: JobPosting;
@@ -38,6 +36,7 @@ export interface JobPostingCardProps {
 }
 
 interface RoleData {
+  id?: string;
   role?: string;
   name?: string;
   customRole?: string;
@@ -46,28 +45,17 @@ interface RoleData {
   filled?: number;
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 시작/종료 날짜 사이의 날짜 수를 반환
- */
 function getDayCount(startDate: string, endDate: string): number {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return 1;
   }
 
   const diffTime = end.getTime() - start.getTime();
   return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
-
-// ============================================================================
-// Sub-components
-// ============================================================================
 
 const RoleLine = memo(function RoleLine({
   role,
@@ -90,10 +78,6 @@ const RoleLine = memo(function RoleLine({
   );
 });
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export const JobPostingCard = memo(function JobPostingCard({
   posting,
   onPress,
@@ -112,54 +96,42 @@ export const JobPostingCard = memo(function JobPostingCard({
   const status = statusConfig[posting.status] || statusConfig.active;
   const allowanceItems = getAllowanceItems(posting.allowances, { includeEmoji: true });
 
-  // dateSpecificRequirements를 그룹화된 형태로 변환
   const groupedDateRequirements = useMemo(() => {
-    const reqs = posting.dateSpecificRequirements ?? [];
-    if (reqs.length === 0) return [];
+    const requirements = posting.dateSpecificRequirements ?? [];
 
-    // DateSpecificRequirement 형태로 변환
-    const converted: DateSpecificRequirement[] = reqs.map((req) => ({
-      date: getDateString(req.date),
-      isGrouped: req.isGrouped,
-      timeSlots: (req.timeSlots ?? []).map((ts) => ({
+    if (requirements.length === 0) {
+      return [];
+    }
+
+    const converted: DateSpecificRequirement[] = requirements.map((requirement) => ({
+      date: getDateString(requirement.date),
+      isGrouped: requirement.isGrouped,
+      timeSlots: (requirement.timeSlots ?? []).map((timeSlot) => ({
         startTime:
-          (ts as { startTime?: string; time?: string }).startTime ||
-          (ts as { startTime?: string; time?: string }).time ||
+          (timeSlot as { startTime?: string; time?: string }).startTime ||
+          (timeSlot as { startTime?: string; time?: string }).time ||
           '',
-        isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
-        roles: ts.roles ?? [],
+        isTimeToBeAnnounced:
+          (timeSlot as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
+        roles: timeSlot.roles ?? [],
       })),
     }));
 
-    // 그룹화
-    const groups = groupRequirementsToDateRanges(converted);
-
-    // 각 그룹에 추가 정보 계산
-    return groups.map((group) => {
-      const firstTimeSlot = group.timeSlots[0];
-      const displayTime = firstTimeSlot?.isTimeToBeAnnounced
-        ? '미정'
-        : firstTimeSlot?.startTime || '-';
-
-      return {
-        ...group,
-        displayTime,
-        dayCount: getDayCount(group.startDate, group.endDate),
-      };
-    });
+    return groupRequirementsToDateRanges(converted).map((group) => ({
+      ...group,
+      dayCount: getDayCount(group.startDate, group.endDate),
+    }));
   }, [posting.dateSpecificRequirements]);
 
   return (
     <Card variant="elevated" padding="md" className="mx-4 mb-3">
-      {/* 클릭 가능한 상단 영역 (제목, 위치, 일정, 급여) */}
       <Pressable
         onPress={() => onPress(posting)}
         accessibilityLabel={`${posting.title} 공고 상세보기`}
         accessibilityRole="button"
       >
-        {/* 상단: 공고타입 + 긴급 + 제목 */}
         <View className="mb-2 flex-row items-start justify-between">
-          <View className="flex-1 flex-row items-center flex-wrap">
+          <View className="flex-1 flex-row flex-wrap items-center">
             {posting.postingType && posting.postingType !== 'regular' && (
               <PostingTypeBadge
                 type={posting.postingType as PostingType}
@@ -173,7 +145,7 @@ export const JobPostingCard = memo(function JobPostingCard({
               </Badge>
             )}
             <Text
-              className="text-base font-semibold text-gray-900 dark:text-white flex-1"
+              className="flex-1 text-base font-semibold text-gray-900 dark:text-white"
               numberOfLines={1}
             >
               {posting.title}
@@ -181,17 +153,13 @@ export const JobPostingCard = memo(function JobPostingCard({
           </View>
         </View>
 
-        {/* 장소 */}
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
           📍 {posting.location.name}
         </Text>
 
-        {/* 일정 + 급여/수당 그리드 */}
         <View className="flex-row">
-          {/* 왼쪽: 일정 */}
           <View className="flex-1 pr-3">
             {posting.postingType === 'fixed' ? (
-              // 고정공고: FixedScheduleDisplay 사용
               <FixedScheduleDisplay
                 daysPerWeek={posting.daysPerWeek}
                 startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
@@ -206,55 +174,54 @@ export const JobPostingCard = memo(function JobPostingCard({
 
                 return (
                   <View key={group.id || groupIdx} className="mb-2">
-                    {/* 날짜 범위 */}
                     <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       📅 {dateDisplay}
                     </Text>
 
-                    {/* 시간 + 역할 (첫 번째 timeSlot 기준) */}
-                    <View className="ml-5 mt-1">
-                      {group.timeSlots[0]?.roles.map((role: RoleData, roleIdx: number) => (
-                        <RoleLine
-                          key={roleIdx}
-                          role={role}
-                          showTime={roleIdx === 0}
-                          time={group.displayTime}
-                        />
-                      ))}
-                    </View>
+                    {group.timeSlots.map((slot, slotIdx) => {
+                      const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
+
+                      return (
+                        <View key={slot.id || slotIdx} className="ml-5 mt-1">
+                          {slot.roles.map((role: RoleData, roleIdx: number) => (
+                            <RoleLine
+                              key={role.id || roleIdx}
+                              role={role}
+                              showTime={roleIdx === 0}
+                              time={displayTime}
+                            />
+                          ))}
+                        </View>
+                      );
+                    })}
                   </View>
                 );
               })
             ) : (
-              // 레거시 폴백
               <View className="mb-2">
                 <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   📅 {formatDateShortWithDay(posting.workDate)}
                 </Text>
-                <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
-                  🕐 {posting.timeSlot || '-'}
+                <Text className="ml-5 mt-1 text-sm text-gray-900 dark:text-gray-100">
+                  ⏰ {posting.timeSlot || '-'}
                 </Text>
               </View>
             )}
           </View>
 
-          {/* 오른쪽: 급여 + 수당 */}
-          <View className="flex-1 pl-3 border-l border-gray-100 dark:border-surface-overlay">
-            {/* 급여 - v2.0: roles[].salary 구조 */}
-            {!posting.useSameSalary && posting.roles?.some((r) => r.salary) ? (
-              // 역할별 급여 표시
+          <View className="flex-1 border-l border-gray-100 pl-3 dark:border-surface-overlay">
+            {!posting.useSameSalary && posting.roles?.some((role) => role.salary) ? (
               posting.roles
-                .filter((r) => r.salary)
-                .map((r, idx) => (
+                .filter((role) => role.salary)
+                .map((role, idx) => (
                   <Text key={idx} className="text-sm text-gray-900 dark:text-white">
-                    💰 {getRoleDisplayName(r.role, (r as { customRole?: string }).customRole)}:{' '}
-                    {r.salary?.type === 'other'
+                    💰 {getRoleDisplayName(role.role, role.customRole)}:{' '}
+                    {role.salary?.type === 'other'
                       ? '협의'
-                      : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
+                      : formatSalary(role.salary?.type || 'hourly', role.salary?.amount || 0)}
                   </Text>
                 ))
             ) : (
-              // 단일 급여 표시 (useSameSalary 또는 defaultSalary)
               <Text className="text-sm font-medium text-gray-900 dark:text-white">
                 💰{' '}
                 {formatSalary(
@@ -264,7 +231,6 @@ export const JobPostingCard = memo(function JobPostingCard({
               </Text>
             )}
 
-            {/* 수당 */}
             {allowanceItems.length > 0 && (
               <View className="mt-1">
                 {allowanceItems.map((item, idx) => (
@@ -274,12 +240,20 @@ export const JobPostingCard = memo(function JobPostingCard({
                 ))}
               </View>
             )}
+
+            {posting.taxSettings && posting.taxSettings.type !== 'none' && (
+              <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                💸 세금{' '}
+                {posting.taxSettings.type === 'rate'
+                  ? `${posting.taxSettings.value}%`
+                  : `${posting.taxSettings.value.toLocaleString('ko-KR')}원`}
+              </Text>
+            )}
           </View>
         </View>
       </Pressable>
 
-      {/* 하단: 지원자 수 + QR/상태/액션 버튼 (별도 영역으로 분리) */}
-      <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
+      <View className="mt-2 flex-row items-center justify-between border-t border-gray-100 pt-2 dark:border-surface-overlay">
         <View className="flex-row items-center">
           <UsersIcon size={14} color="#9333EA" />
           <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
@@ -287,9 +261,7 @@ export const JobPostingCard = memo(function JobPostingCard({
           </Text>
         </View>
 
-        {/* QR + 상태 뱃지 + 마감/재오픈 버튼 */}
         <View className="flex-row items-center gap-2">
-          {/* QR 버튼 */}
           <Pressable
             onPress={() => onShowQR(posting)}
             className="p-1.5 active:opacity-70"
@@ -298,6 +270,7 @@ export const JobPostingCard = memo(function JobPostingCard({
           >
             <QrCodeIcon size={18} color="#9333EA" />
           </Pressable>
+
           {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
             <TournamentStatusBadge
               status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
@@ -306,14 +279,16 @@ export const JobPostingCard = memo(function JobPostingCard({
               size="sm"
             />
           )}
+
           <Badge variant={status.variant} size="sm">
             {status.label}
           </Badge>
+
           {posting.status === STATUS.JOB_POSTING.ACTIVE && (
             <Pressable
               onPress={() => onClose(posting.id)}
               disabled={isClosing}
-              className="px-3 py-1.5 bg-gray-100 dark:bg-surface rounded-md active:opacity-70"
+              className="rounded-md bg-gray-100 px-3 py-1.5 active:opacity-70 dark:bg-surface"
               accessibilityLabel={`${posting.title} 공고 마감하기`}
               accessibilityRole="button"
               accessibilityState={{ disabled: isClosing }}
@@ -323,11 +298,12 @@ export const JobPostingCard = memo(function JobPostingCard({
               </Text>
             </Pressable>
           )}
+
           {posting.status === STATUS.JOB_POSTING.CLOSED && (
             <Pressable
               onPress={() => onReopen(posting.id)}
               disabled={isReopening}
-              className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 rounded-md active:opacity-70"
+              className="rounded-md bg-primary-50 px-3 py-1.5 active:opacity-70 dark:bg-primary-900/30"
               accessibilityLabel={`${posting.title} 공고 재오픈하기`}
               accessibilityRole="button"
               accessibilityState={{ disabled: isReopening }}

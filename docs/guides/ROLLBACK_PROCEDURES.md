@@ -1,7 +1,7 @@
 # 배포 롤백 절차 가이드
 
-**최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**최종 업데이트**: 2026년 3월 14일
+**버전**: v1.0.0 (모바일앱 중심)
 **상태**: ✅ **Production Ready**
 
 > ⚠️ **참고**: 모바일앱은 **EAS Build** (Expo Application Services)로 빌드/배포됩니다.
@@ -18,7 +18,7 @@
 
 1. [롤백 결정 기준](#-롤백-결정-기준)
 2. [롤백 유형별 절차](#-롤백-유형별-절차)
-3. [Firebase Hosting 롤백](#-firebase-hosting-롤백)
+3. [웹 배포 롤백](#-웹-배포-롤백-cloudflare-pages)
 4. [Firebase Functions 롤백](#-firebase-functions-롤백)
 5. [Firestore Rules 롤백](#-firestore-rules-롤백)
 6. [데이터베이스 롤백](#-데이터베이스-롤백)
@@ -33,7 +33,7 @@
 
 | 증상 | 심각도 | 조치 |
 |------|--------|------|
-| 앱이 완전히 로드되지 않음 (화이트 스크린) | 🔴 Critical | 즉시 Hosting 롤백 |
+| 웹 포털이 로드되지 않음 (화이트 스크린) | 🔴 Critical | 즉시 웹 배포 롤백 |
 | 로그인 불가능 | 🔴 Critical | 즉시 Functions 롤백 |
 | 결제 오류 발생 | 🔴 Critical | 즉시 Functions 롤백 |
 | Security Rules로 인한 액세스 거부 | 🔴 Critical | 즉시 Rules 롤백 |
@@ -42,7 +42,7 @@
 
 | 증상 | 심각도 | 조치 |
 |------|--------|------|
-| 핵심 기능 작동 안함 (공고 작성, 지원 등) | 🟠 High | Hosting + Functions 롤백 |
+| 웹 포털 핵심 기능 작동 안함 (공고 작성, 지원 등) | 🟠 High | 웹 배포 + Functions 롤백 |
 | 실시간 업데이트 안됨 | 🟠 High | Functions 롤백 검토 |
 | 에러율 10% 초과 | 🟠 High | 원인 파악 후 롤백 |
 
@@ -61,7 +61,7 @@
 ### 롤백 우선순위
 
 ```
-1. Firebase Hosting (프론트엔드)  → 가장 빠름, 사용자 영향 최소화
+1. Cloudflare Pages (웹 프론트엔드) → 가장 빠름, 사용자 영향 최소화
 2. Firebase Functions (백엔드)   → 함수 단위 롤백 가능
 3. Firestore Rules (보안)        → 즉시 적용, 데이터 보호
 4. Firestore Data (데이터)       → 최후의 수단, 복잡함
@@ -69,54 +69,37 @@
 
 ---
 
-## 🌐 Firebase Hosting 롤백
+## 🌐 웹 배포 롤백 (Cloudflare Pages)
 
-### 방법 1: Firebase Console (권장)
+현재 웹은 Firebase Hosting이 아니라 Cloudflare Pages가 기본 배포 경로입니다.
+기존 Firebase Hosting 롤백 절차는 현재 웹 프런트엔드 기준이 아닙니다.
 
-1. [Firebase Console](https://console.firebase.google.com) 접속
-2. **프로젝트 선택** → `tholdem-ebc18`
-3. **Hosting** 메뉴 클릭
-4. **릴리즈 기록** 탭 선택
-5. 롤백할 버전의 **...** 메뉴 클릭
-6. **이 버전으로 롤백** 선택
-7. **롤백** 확인
+### 방법 1: Cloudflare Dashboard
 
-### 방법 2: Firebase CLI
+1. Cloudflare Dashboard 접속
+2. `uniqn-app` Pages 프로젝트 선택
+3. Deployments 탭 이동
+4. 정상 버전 선택
+5. 해당 배포를 Promote 또는 재배포
 
 ```bash
-# 현재 호스팅 채널 목록 확인
-firebase hosting:channel:list
-
-# 릴리즈 기록 확인
-firebase hosting:releases:list --limit 10
-
-# 특정 버전으로 롤백 (version_id는 위 명령어에서 확인)
-firebase hosting:clone tholdem-ebc18:VERSION_ID tholdem-ebc18:live
+# 배포 이력 확인
+wrangler pages deployment list --project-name=uniqn-app
 ```
 
-### 방법 3: Git + 재배포
+### 방법 2: Git + 재배포
 
 ```bash
-# 1. 안정적인 커밋으로 체크아웃
-git checkout v0.2.3  # 또는 특정 커밋 해시
-
-# 2. 재빌드
-cd app2
-npm run build
-
-# 3. 재배포
-cd ..
-firebase deploy --only hosting
+# 안정적인 커밋으로 이동 후
+cd uniqn-mobile
+npm run deploy:cloudflare
 ```
 
 ### 롤백 후 확인
 
 ```bash
-# 배포 상태 확인
-firebase hosting:channel:list
-
-# 브라우저에서 확인
-# https://tholdem-ebc18.web.app 접속
+# 브라우저에서 웹 확인
+# https://uniqn.app 또는 Pages 기본 도메인 확인
 ```
 
 ---
@@ -127,7 +110,7 @@ firebase hosting:channel:list
 
 ```bash
 # 1. 안정적인 커밋으로 체크아웃
-git checkout v0.2.3
+git checkout <stable-tag-or-commit>
 
 # 2. 종속성 설치
 cd functions
@@ -141,17 +124,17 @@ firebase deploy --only functions
 
 ```bash
 # 특정 함수만 재배포
-firebase deploy --only functions:sendWorkAssignmentNotification
+firebase deploy --only functions:FUNCTION_NAME
 
 # 여러 함수 재배포
-firebase deploy --only functions:sendWorkAssignmentNotification,functions:confirmPayment
+firebase deploy --only functions:FUNCTION_A,functions:FUNCTION_B
 ```
 
 ### 방법 3: 함수 비활성화 (긴급)
 
 ```bash
 # 함수 삭제 (트래픽 즉시 차단)
-firebase functions:delete sendWorkAssignmentNotification --force
+firebase functions:delete FUNCTION_NAME --force
 
 # 주의: 삭제 후 재배포 필요
 ```
@@ -204,8 +187,9 @@ service cloud.firestore {
 ### 규칙 테스트
 
 ```bash
-# 규칙 테스트 실행
-firebase emulators:exec --only firestore "npm run test:rules"
+# 이 저장소에는 별도 firestore rules 테스트 스크립트가 없습니다.
+# Firestore Emulator를 띄운 뒤 주요 읽기/쓰기 시나리오를 수동 검증합니다.
+firebase emulators:start --only firestore
 ```
 
 ---
@@ -256,7 +240,7 @@ Firebase Console → Firestore → **백업** → **복원** 선택
 □ 2. 팀원 알림 (Slack/카톡)
 □ 3. 롤백 결정
 □ 4. 롤백 실행 (아래 선택)
-   □ Hosting 롤백
+   □ 웹 배포 롤백
    □ Functions 롤백
    □ Rules 롤백
 □ 5. 롤백 성공 확인
@@ -333,11 +317,11 @@ Firebase Console → Firestore → **백업** → **복원** 선택
 ### 롤백 명령어 요약
 
 ```bash
-# Hosting 롤백
-firebase hosting:clone tholdem-ebc18:VERSION_ID tholdem-ebc18:live
+# 웹 재배포
+cd uniqn-mobile && npm run deploy:cloudflare
 
 # Functions 롤백 (전체)
-git checkout v0.2.3 && cd functions && npm install && firebase deploy --only functions
+git checkout <stable-tag-or-commit> && cd functions && npm install && firebase deploy --only functions
 
 # Functions 롤백 (특정 함수)
 firebase deploy --only functions:FUNCTION_NAME
@@ -349,7 +333,7 @@ git checkout HEAD~1 -- firestore.rules && firebase deploy --only firestore:rules
 ### 주요 링크
 
 - [Firebase Console](https://console.firebase.google.com/project/tholdem-ebc18)
-- [Hosting 릴리즈 기록](https://console.firebase.google.com/project/tholdem-ebc18/hosting/sites)
+- Cloudflare Pages Dashboard (`uniqn-app`)
 - [Functions 대시보드](https://console.firebase.google.com/project/tholdem-ebc18/functions)
 - [Firestore Rules](https://console.firebase.google.com/project/tholdem-ebc18/firestore/rules)
 
@@ -364,4 +348,4 @@ git checkout HEAD~1 -- firestore.rules && firebase deploy --only firestore:rules
 ---
 
 *작성자: Claude (Sonnet 4.5)*
-*최종 검토: 2025년 11월 27일*
+*최종 검토: 2026년 3월 14일*
