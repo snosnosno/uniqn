@@ -19,8 +19,7 @@ import {
 import type { JobPostingCard, PostingType, CardRole, SalaryInfo } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
-import { useBookmarks } from '@/hooks';
+import { useBookmarks } from '@/hooks/useBookmarks';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 
@@ -56,6 +55,22 @@ const formatSalary = (type: string, amount: number): string => {
       return `${formattedAmount}원`;
   }
 };
+
+const getDateGroupKey = (startDate: string, endDate: string, index: number): string =>
+  `${startDate}-${endDate}-${index}`;
+
+const getDateRequirementKey = (date: string, index: number): string => `${date}-${index}`;
+
+const getTimeSlotKey = (parentKey: string, startTime: string | undefined, index: number): string =>
+  `${parentKey}-${startTime || 'tba'}-${index}`;
+
+const getRoleKey = (
+  parentKey: string,
+  role: string | undefined,
+  customRole: string | undefined,
+  count: number,
+  index: number
+): string => `${parentKey}-${role || 'role'}-${customRole || ''}-${count}-${index}`;
 
 // ============================================================================
 // Sub Components
@@ -99,41 +114,54 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
   if (isTournament && dateGroups) {
     return (
       <>
-        {dateGroups.map((group, groupIdx) => (
-          <View key={group.id || groupIdx} className="mb-2">
-            {/* 날짜 범위 표시 */}
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              📅 {formatDateRangeWithCount(group.startDate, group.endDate)}
-            </Text>
+        {dateGroups.map((group, groupIdx) => {
+          const groupKey = getDateGroupKey(group.startDate, group.endDate, groupIdx);
 
-            {/* 시간대별 */}
-            {group.timeSlots.map((slot, slotIdx) => {
-              const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
+          return (
+            <View key={groupKey} className="mb-2">
+              {/* 날짜 범위 표시 */}
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                📅 {formatDateRangeWithCount(group.startDate, group.endDate)}
+              </Text>
 
-              return (
-                <View key={slot.id || slotIdx} className="ml-5 mt-1">
-                  {slot.roles.map((role, roleIdx) => {
-                    // RoleRequirement → CardRole-like 변환
-                    const cardRole: CardRole = {
-                      role: role.role ?? '',
-                      customRole: role.customRole,
-                      count: role.headcount ?? 0,
-                      filled: role.filled ?? 0,
-                    };
-                    return (
-                      <RoleLine
-                        key={role.id || roleIdx}
-                        role={cardRole}
-                        showTime={roleIdx === 0}
-                        time={displayTime}
-                      />
-                    );
-                  })}
-                </View>
-              );
-            })}
-          </View>
-        ))}
+              {/* 시간대별 */}
+              {group.timeSlots.map((slot, slotIdx) => {
+                const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
+
+                return (
+                  <View
+                    key={getTimeSlotKey(groupKey, slot.startTime, slotIdx)}
+                    className="ml-5 mt-1"
+                  >
+                    {slot.roles.map((role, roleIdx) => {
+                      // RoleRequirement → CardRole-like 변환
+                      const cardRole: CardRole = {
+                        role: role.role ?? '',
+                        customRole: role.customRole,
+                        count: role.headcount ?? 0,
+                        filled: role.filled ?? 0,
+                      };
+                      return (
+                        <RoleLine
+                          key={getRoleKey(
+                            getTimeSlotKey(groupKey, slot.startTime, slotIdx),
+                            cardRole.role,
+                            cardRole.customRole,
+                            cardRole.count,
+                            roleIdx
+                          )}
+                          role={cardRole}
+                          showTime={roleIdx === 0}
+                          time={displayTime}
+                        />
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
       </>
     );
   }
@@ -142,7 +170,10 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
   return (
     <>
       {dateRequirements?.map((dateReq, dateIdx) => (
-        <View key={dateIdx} className="mb-2">
+        <View
+          key={getDateRequirementKey(typeof dateReq.date === 'string' ? dateReq.date : '', dateIdx)}
+          className="mb-2"
+        >
           {/* 날짜 */}
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
             📅 {formatDateShortWithDay(typeof dateReq.date === 'string' ? dateReq.date : '')}
@@ -153,9 +184,37 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
             const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
 
             return (
-              <View key={slotIdx} className="ml-5 mt-1">
+              <View
+                key={getTimeSlotKey(
+                  getDateRequirementKey(
+                    typeof dateReq.date === 'string' ? dateReq.date : '',
+                    dateIdx
+                  ),
+                  slot.startTime,
+                  slotIdx
+                )}
+                className="ml-5 mt-1"
+              >
                 {slot.roles.map((role, roleIdx) => (
-                  <RoleLine key={roleIdx} role={role} showTime={roleIdx === 0} time={displayTime} />
+                  <RoleLine
+                    key={getRoleKey(
+                      getTimeSlotKey(
+                        getDateRequirementKey(
+                          typeof dateReq.date === 'string' ? dateReq.date : '',
+                          dateIdx
+                        ),
+                        slot.startTime,
+                        slotIdx
+                      ),
+                      role.role,
+                      role.customRole,
+                      role.count,
+                      roleIdx
+                    )}
+                    role={role}
+                    showTime={roleIdx === 0}
+                    time={displayTime}
+                  />
                 ))}
               </View>
             );
@@ -215,32 +274,15 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     toggleBookmark({
       id: job.id,
       title: job.title,
-      location: job.location,
+      location: job.fullLocation || job.location,
       workDate: job.workDate,
     });
-  }, [job.id, job.title, job.location, job.workDate, toggleBookmark]);
+  }, [job.id, job.title, job.fullLocation, job.location, job.workDate, toggleBookmark]);
 
   // 역할에서 급여 정보 추출 (메모이제이션 적용)
   const rolesWithSalary = useMemo(() => {
-    if (job.useSameSalary) return [];
-
-    const rolesMap = new Map<string, { role: string; customRole?: string; salary: SalaryInfo }>();
-
-    job.dateRequirements?.forEach((dateReq) => {
-      dateReq.timeSlots?.forEach((slot) => {
-        slot.roles?.forEach((r) => {
-          if (r.salary) {
-            const key = r.role === 'other' && r.customRole ? r.customRole : r.role;
-            if (!rolesMap.has(key)) {
-              rolesMap.set(key, { role: r.role, customRole: r.customRole, salary: r.salary });
-            }
-          }
-        });
-      });
-    });
-
-    return Array.from(rolesMap.values());
-  }, [job.useSameSalary, job.dateRequirements]);
+    return job.salaryRows ?? [];
+  }, [job.salaryRows]);
 
   // 표시할 급여 결정
   const displaySalary: SalaryInfo = job.defaultSalary ??
@@ -249,7 +291,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
   // 접근성을 위한 설명 텍스트 생성
   const accessibilityLabel = `${job.title}, ${job.location}, ${formatDateShortWithDay(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
 
-  const allowanceItems = getAllowanceItems(job.allowances, { includeEmoji: true });
+  const allowanceItems = job.allowanceLabels ?? [];
 
   return (
     <Pressable
@@ -359,17 +401,11 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           {/* 급여 */}
           {!job.useSameSalary && rolesWithSalary.length > 0 ? (
             // 역할별 급여 표시 (useSameSalary === false && 역할별 급여 존재)
-            rolesWithSalary.slice(0, 3).map((roleData, idx) => {
-              const roleLabel =
-                roleData.role === 'other' && roleData.customRole
-                  ? roleData.customRole
-                  : getRoleDisplayName(roleData.role);
+            rolesWithSalary.map((roleData, idx) => {
+              const roleLabel = roleData.roleLabel || getRoleDisplayName(roleData.role);
               return (
                 <Text key={idx} className="text-sm text-gray-900 dark:text-white">
-                  💰 {roleLabel}:{' '}
-                  {roleData.salary.type === 'other'
-                    ? '협의'
-                    : formatSalary(roleData.salary.type, roleData.salary.amount)}
+                  💰 {roleLabel}: {roleData.text}
                 </Text>
               );
             })
@@ -395,12 +431,13 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           )}
 
           {/* 세금 */}
-          {job.taxSettings && job.taxSettings.type !== 'none' && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              💸 세금{' '}
-              {job.taxSettings.type === 'rate'
-                ? `${job.taxSettings.value}%`
-                : `${job.taxSettings.value.toLocaleString('ko-KR')}원`}
+          {job.taxLabel && (
+            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">💸 {job.taxLabel}</Text>
+          )}
+
+          {job.salaryOverflowCount > 0 && (
+            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              +{job.salaryOverflowCount}개 역할 급여 더 있음
             </Text>
           )}
         </View>

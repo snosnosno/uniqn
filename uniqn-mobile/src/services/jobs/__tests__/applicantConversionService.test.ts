@@ -96,6 +96,7 @@ const mockApplicationData: Application = {
 
 const mockJobPostingData: JobPosting = {
   id: 'job123',
+  schemaVersion: 3,
   ownerId: 'owner123',
   title: '토너먼트 딜러 모집',
   postingType: 'regular',
@@ -117,6 +118,42 @@ const mockJobPostingData: JobPosting = {
     amount: 15000,
   },
   roles: [{ role: 'dealer', count: 5, filled: 0 }],
+  roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 15000 } }],
+  schedule: {
+    kind: 'dated',
+    primaryDate: '2024-01-15',
+    allDates: ['2024-01-15', '2024-01-16'],
+    requirements: [
+      {
+        date: '2024-01-15',
+        timeSlots: [
+          {
+            startTime: '09:00',
+            roles: [{ role: 'dealer', count: 5, filled: 0 }],
+          },
+        ],
+      },
+      {
+        date: '2024-01-16',
+        timeSlots: [
+          {
+            startTime: '09:00',
+            roles: [{ role: 'dealer', count: 5, filled: 0 }],
+          },
+        ],
+      },
+    ],
+  },
+  compensation: {
+    mode: 'shared',
+    defaultSalary: {
+      type: 'hourly',
+      amount: 15000,
+    },
+  },
+  questions: {
+    items: [],
+  },
   totalPositions: 5,
   filledPositions: 0,
   createdAt: Timestamp.now(),

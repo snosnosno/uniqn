@@ -140,20 +140,17 @@ export async function getList(
       // 기본 필터: status
       .whereEqual(FIELDS.JOB_POSTING.status, filters?.status || STATUS.JOB_POSTING.ACTIVE)
       // 역할 필터 (최대 10개)
-      .whereArrayContainsAny('roles', filters?.roles?.slice(0, 10))
+      .whereArrayContainsAny('roleKeys', filters?.roles?.slice(0, 10))
       // 지역 필터
       .whereIf(!!filters?.district, FIELDS.JOB_POSTING.locationDistrict, '==', filters?.district)
-      // 긴급 공고 필터
-      .whereIf(
-        filters?.isUrgent !== undefined,
-        FIELDS.JOB_POSTING.isUrgent,
-        '==',
-        filters?.isUrgent
-      )
       // 구인자 필터 (내 공고)
       .whereIf(!!filters?.ownerId, FIELDS.JOB_POSTING.ownerId, '==', filters?.ownerId)
       // 날짜 범위 필터
       .whereDateRange(FIELDS.JOB_POSTING.workDate, filters?.dateRange);
+
+    if (filters?.isUrgent === true) {
+      qb.whereEqual(FIELDS.JOB_POSTING.postingType, 'urgent');
+    }
 
     // 공고 타입 필터
     if (filters?.postingType === 'tournament') {

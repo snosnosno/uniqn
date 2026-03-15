@@ -7,7 +7,8 @@
 
 import { useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { getJobPostings, convertToCard } from '@/services';
+import { getJobPostings } from '@/services';
+import { buildPostingFacts, projectPostingCard } from '@/domains/job-posting';
 import { queryKeys, queryCachingOptions } from '@/lib/queryClient';
 import { stableFilters } from '@/utils/queryUtils';
 import { sortJobPostings } from '@/utils/jobPostingSorter';
@@ -59,7 +60,10 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
   // 전체 데이터를 플랫하게 변환 후 정렬
   // @see utils/jobPostingSorter.ts - 최적화된 정렬 로직
   const jobs: JobPostingCard[] = useMemo(() => {
-    const allJobs = query.data?.pages.flatMap((page) => page.items.map(convertToCard)) ?? [];
+    const allJobs =
+      query.data?.pages.flatMap((page) =>
+        page.items.map((posting) => projectPostingCard(buildPostingFacts(posting)))
+      ) ?? [];
 
     return sortJobPostings(allJobs);
   }, [query.data?.pages]);

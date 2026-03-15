@@ -13,16 +13,15 @@ import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
-import { useJobSchedule } from '@/hooks';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   groupRequirementsToDateRanges,
   formatDateRangeWithCount,
   formatDateKoreanWithDay,
 } from '@/utils/date';
-import type { JobPosting, PostingType } from '@/types';
+import type { CardDateRequirement, JobPosting, PostingDetailViewModel, PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
+import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 
@@ -62,6 +61,20 @@ function InfoRow({
   );
 }
 
+const getDateGroupKey = (startDate: string, endDate: string, index: number): string =>
+  `${startDate}-${endDate}-${index}`;
+
+const getTimeSlotKey = (parentKey: string, startTime: string | undefined, index: number): string =>
+  `${parentKey}-${startTime || 'tba'}-${index}`;
+
+const getRoleChipKey = (
+  parentKey: string,
+  role: string | undefined,
+  customRole: string | undefined,
+  headcount: number,
+  index: number
+): string => `${parentKey}-${role || 'role'}-${customRole || ''}-${headcount}-${index}`;
+
 /**
  * 날짜 요구사항 그룹화 표시 컴포넌트 (v4.0)
  * - 대회 공고: 연속 날짜 그룹화
@@ -71,18 +84,41 @@ function DateRequirementsGroupedDisplay({
   dateRequirements,
   postingType,
 }: {
-  dateRequirements: DateSpecificRequirement[];
+  dateRequirements: CardDateRequirement[];
   postingType?: PostingType;
 }) {
   const isTournament = postingType === 'tournament';
+  const normalizedRequirements = useMemo(
+    () =>
+      dateRequirements.map((req) => ({
+        date: req.date,
+        isGrouped: req.isGrouped,
+        timeSlots: req.timeSlots.map((slot) => ({
+          id: slot.id,
+          startTime: slot.startTime,
+          isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+          tentativeDescription: slot.tentativeDescription,
+          roles: slot.roles.map((role) => ({
+            id: role.id,
+            role: role.role,
+            customRole: role.customRole,
+            headcount: role.count,
+            filled: role.filled,
+          })),
+        })),
+      })),
+    [dateRequirements]
+  );
 
   // 대회 공고: 연속 날짜 그룹화
   const dateGroups = useMemo(() => {
     if (isTournament) {
-      return groupRequirementsToDateRanges(dateRequirements);
+      return groupRequirementsToDateRanges(
+        normalizedRequirements as unknown as DateSpecificRequirement[]
+      );
     }
     return null;
-  }, [isTournament, dateRequirements]);
+  }, [isTournament, normalizedRequirements]);
 
   if (isTournament && dateGroups) {
     return (
@@ -93,7 +129,7 @@ function DateRequirementsGroupedDisplay({
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
             {dateGroups.map((group, groupIdx) => (
               <View
-                key={group.id || groupIdx}
+                key={getDateGroupKey(group.startDate, group.endDate, groupIdx)}
                 className="mb-3 p-3 bg-gray-50 dark:bg-surface rounded-lg"
               >
                 {/* 날짜 범위 */}
@@ -108,7 +144,14 @@ function DateRequirementsGroupedDisplay({
                     : slot.startTime || '-';
 
                   return (
-                    <View key={slot.id || slotIdx} className="ml-2 mb-2">
+                    <View
+                      key={getTimeSlotKey(
+                        getDateGroupKey(group.startDate, group.endDate, groupIdx),
+                        slot.startTime,
+                        slotIdx
+                      )}
+                      className="ml-2 mb-2"
+                    >
                       <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                         {displayTime}
                       </Text>
@@ -121,7 +164,17 @@ function DateRequirementsGroupedDisplay({
 
                           return (
                             <View
-                              key={role.id || roleIdx}
+                              key={getRoleChipKey(
+                                getTimeSlotKey(
+                                  getDateGroupKey(group.startDate, group.endDate, groupIdx),
+                                  slot.startTime,
+                                  slotIdx
+                                ),
+                                role.role,
+                                role.customRole,
+                                headcount,
+                                roleIdx
+                              )}
                               className={`mr-2 mb-1 px-2 py-1 rounded-md ${
                                 isFilled
                                   ? 'bg-gray-200 dark:bg-surface'
@@ -159,7 +212,7 @@ function DateRequirementsGroupedDisplay({
         <Text className="text-lg mr-3">📅</Text>
         <View className="flex-1">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
-          {dateRequirements.map((req, idx) => (
+          {normalizedRequirements.map((req, idx) => (
             <DateRequirementDisplay
               key={idx}
               requirement={req}
@@ -178,45 +231,37 @@ function DateRequirementsGroupedDisplay({
 // ============================================================================
 
 export function JobDetail({ job }: JobDetailProps) {
-  // v3.0: 통합 타입 Hook 사용
-  const { isFixed, isDated, fixedSchedule } = useJobSchedule(job);
+  const detail = useMemo(
+    () =>
+      projectPostingSurface(buildPostingFacts(job), {
+        audience: 'public',
+        surface: 'detail',
+      }) as PostingDetailViewModel,
+    [job]
+  );
 
   // 구인자 프로필 (버블 점수 표시용)
   const { userProfile: ownerProfile } = useUserProfile({
-    userId: job.ownerId,
-    enabled: !!job.ownerId,
+    userId: detail.ownerId || '',
+    enabled: !!detail.ownerId,
   });
 
   const handleCall = () => {
-    if (job.contactPhone) {
-      Linking.openURL(`tel:${job.contactPhone}`);
+    if (detail.contactPhone) {
+      Linking.openURL(`tel:${detail.contactPhone}`);
     }
   };
 
-  // 수당 정보 (v2.0)
-  const allowanceItems = useMemo(
-    () => getAllowanceItems(job.allowances, { includeEmoji: true }),
-    [job.allowances]
-  );
-
   // 안전한 값 추출
-  const safeTitle = String(job.title || '제목 없음');
-  const safeTimeSlot = String(job.timeSlot || '미정');
-  const safeContactPhone = String(job.contactPhone || '');
-  const safeDescription = String(job.description || '');
-  const safeWorkDate = formatDateKoreanWithDay(job.workDate) || '날짜 미정';
-
-  // v3.0: isDated로 dateRequirements 유무 확인 (레거시 폴백 포함)
-  const hasDateRequirements = isDated && (job.dateSpecificRequirements?.length ?? 0) > 0;
-
-  // location 안전하게 처리
-  const getLocationValue = (): string => {
-    if (!job.location) return '정보 없음';
-    const locationName = typeof job.location === 'string' ? job.location : job.location?.name || '';
-    const address = job.detailedAddress ? ` ${job.detailedAddress}` : '';
-    const result = `${locationName}${address}`.trim();
-    return result || '정보 없음';
-  };
+  const safeTitle = String(detail.title || '제목 없음');
+  const safeTimeSlot = String(detail.timeSlot || '미정');
+  const safeContactPhone = String(detail.contactPhone || '');
+  const safeDescription = String(detail.description || '');
+  const safeWorkDate = formatDateKoreanWithDay(detail.workDate) || '날짜 미정';
+  const hasDateRequirements = detail.dateRequirements.length > 0;
+  const allowanceItems = detail.allowanceLabels;
+  const locationValue = detail.locationLabel || '정보 없음';
+  const isFixed = job.schedule.kind === 'fixed';
 
   return (
     <View className="bg-white dark:bg-surface-dark">
@@ -225,19 +270,19 @@ export function JobDetail({ job }: JobDetailProps) {
         {/* 뱃지 영역 */}
         <View className="flex-row items-center flex-wrap mb-2">
           {/* 공고 타입 뱃지 (regular 제외) */}
-          {job.postingType && job.postingType !== 'regular' && (
-            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
+          {detail.postingType && detail.postingType !== 'regular' && (
+            <PostingTypeBadge type={detail.postingType as PostingType} size="sm" className="mr-2" />
           )}
-          {job.isUrgent === true && !job.postingType && (
+          {detail.isUrgent && !detail.postingType && (
             <Badge variant="error" size="sm" className="mr-2">
               긴급
             </Badge>
           )}
           <Badge
-            variant={job.status === STATUS.JOB_POSTING.ACTIVE ? 'success' : 'default'}
+            variant={detail.status === STATUS.JOB_POSTING.ACTIVE ? 'success' : 'default'}
             size="sm"
           >
-            {job.status === STATUS.JOB_POSTING.ACTIVE ? '모집중' : '마감'}
+            {detail.status === STATUS.JOB_POSTING.ACTIVE ? '모집중' : '마감'}
           </Badge>
         </View>
 
@@ -246,8 +291,8 @@ export function JobDetail({ job }: JobDetailProps) {
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay
           roles={job.roles}
-          useSameSalary={job.useSameSalary}
-          defaultSalary={job.defaultSalary}
+          useSameSalary={detail.useSameSalary}
+          defaultSalary={detail.defaultSalary}
         />
       </View>
 
@@ -269,25 +314,24 @@ export function JobDetail({ job }: JobDetailProps) {
           근무 정보
         </Text>
 
-        <InfoRow icon="📍" label="근무지" value={getLocationValue()} />
+        <InfoRow icon="📍" label="근무지" value={locationValue} />
 
         {/* 날짜별 요구사항 (v3.0) 또는 고정공고 일정 */}
-        {isFixed && fixedSchedule ? (
-          // 고정공고: FixedScheduleDisplay 사용 (v3.0: fixedSchedule에서 데이터 추출)
+        {isFixed ? (
           <View className="py-3 border-b border-gray-100 dark:border-surface-overlay">
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">📅</Text>
               <View className="flex-1">
                 <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
                 <FixedScheduleDisplay
-                  daysPerWeek={fixedSchedule.daysPerWeek}
-                  startTime={fixedSchedule.startTime ?? undefined}
-                  isStartTimeNegotiable={fixedSchedule.isStartTimeNegotiable}
-                  roles={fixedSchedule.roles.map((r) => ({
-                    role: r.roleId,
-                    name: r.displayName,
-                    count: r.requiredCount,
-                    filled: r.filledCount,
+                  daysPerWeek={detail.daysPerWeek}
+                  startTime={detail.startTime}
+                  isStartTimeNegotiable={detail.isStartTimeNegotiable}
+                  roles={detail.requiredRolesWithCount?.map((r) => ({
+                    role: r.role,
+                    name: r.name,
+                    count: r.count,
+                    filled: r.filled,
                   }))}
                   showRoles={true}
                   showFilledCount={true}
@@ -297,8 +341,8 @@ export function JobDetail({ job }: JobDetailProps) {
           </View>
         ) : hasDateRequirements ? (
           <DateRequirementsGroupedDisplay
-            dateRequirements={job.dateSpecificRequirements!}
-            postingType={job.postingType}
+            dateRequirements={detail.dateRequirements}
+            postingType={detail.postingType}
           />
         ) : (
           <>
@@ -331,16 +375,18 @@ export function JobDetail({ job }: JobDetailProps) {
             </View>
           </View>
         )}
+
+        {detail.taxLabel && <InfoRow icon="💸" label="세금" value={detail.taxLabel} />}
       </View>
 
       {/* 사전질문 미리보기 (v2.0) */}
-      {job.usesPreQuestions && job.preQuestions && job.preQuestions.length > 0 && (
+      {detail.questions.length > 0 && (
         <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-            📝 사전질문 ({job.preQuestions.length}개)
+            📝 사전질문 ({detail.questions.length}개)
           </Text>
           <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
-            {job.preQuestions.slice(0, 3).map((q, idx) => (
+            {detail.questions.slice(0, 3).map((q, idx) => (
               <View key={idx} className="mb-2">
                 <Text className="text-sm text-gray-700 dark:text-gray-300">
                   {idx + 1}. {q.question}
@@ -348,9 +394,9 @@ export function JobDetail({ job }: JobDetailProps) {
                 </Text>
               </View>
             ))}
-            {job.preQuestions.length > 3 && (
+            {detail.questions.length > 3 && (
               <Text className="text-xs text-gray-500 dark:text-gray-400">
-                외 {job.preQuestions.length - 3}개 질문
+                외 {detail.questions.length - 3}개 질문
               </Text>
             )}
           </View>
@@ -358,7 +404,7 @@ export function JobDetail({ job }: JobDetailProps) {
       )}
 
       {/* 구인자 정보 + 버블 점수 */}
-      {(job.ownerName || ownerProfile?.bubbleScore) && (
+      {(detail.ownerName || ownerProfile?.bubbleScore) && (
         <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
           <View className="flex-row items-center">
             <Text className="text-lg mr-3">👤</Text>
@@ -366,7 +412,7 @@ export function JobDetail({ job }: JobDetailProps) {
               <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">구인자</Text>
               <View className="flex-row items-center gap-2">
                 <Text className="text-sm text-gray-900 dark:text-white">
-                  {job.ownerName ?? '구인자'}
+                  {detail.ownerName ?? '구인자'}
                 </Text>
                 {ownerProfile?.bubbleScore && (
                   <BubbleScoreBadge score={ownerProfile.bubbleScore.score} size="sm" />
@@ -378,17 +424,17 @@ export function JobDetail({ job }: JobDetailProps) {
       )}
 
       {/* 통계 */}
-      {(typeof job.viewCount === 'number' || typeof job.applicationCount === 'number') && (
+      {(typeof detail.viewCount === 'number' || typeof detail.applicationCount === 'number') && (
         <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
           <View className="flex-row">
-            {typeof job.viewCount === 'number' && (
+            {typeof detail.viewCount === 'number' && (
               <Text className="text-xs text-gray-400 dark:text-gray-500 mr-4">
-                {`👁 조회 ${job.viewCount}`}
+                {`👁 조회 ${detail.viewCount}`}
               </Text>
             )}
-            {typeof job.applicationCount === 'number' && (
+            {typeof detail.applicationCount === 'number' && (
               <Text className="text-xs text-gray-400 dark:text-gray-500">
-                {`👤 지원 ${job.applicationCount}`}
+                {`👤 지원 ${detail.applicationCount}`}
               </Text>
             )}
           </View>

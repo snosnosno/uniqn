@@ -25,6 +25,10 @@ interface BasicInfoSectionProps {
   isEdit?: boolean;
 }
 
+function getLocationAddressValue(location?: Location | null): string {
+  return location?.address || location?.district || '';
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -36,22 +40,23 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   isEdit = false,
 }: BasicInfoSectionProps) {
   const [locationName, setLocationName] = useState(data.location?.name || '');
-  const [locationAddress, setLocationAddress] = useState(data.location?.address || '');
+  const [locationAddress, setLocationAddress] = useState(getLocationAddressValue(data.location));
 
   // 외부에서 data.location이 변경되면 (템플릿 불러오기 등) 로컬 상태 동기화
   useEffect(() => {
     setLocationName(data.location?.name || '');
-    setLocationAddress(data.location?.address || '');
+    setLocationAddress(getLocationAddressValue(data.location));
   }, [data.location]);
 
   // 장소 정보 업데이트
   const handleUpdateLocation = useCallback(
     (name: string, address: string) => {
       if (name.trim()) {
+        const normalizedAddress = address.trim();
         const location: Location = {
           name: name.trim(),
-          address: address.trim(),
-          district: '',
+          address: normalizedAddress,
+          district: normalizedAddress,
         };
         onUpdate({ location });
       } else {

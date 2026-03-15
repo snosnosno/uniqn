@@ -15,7 +15,8 @@ import { JobList, PostingTypeChips, DateSlider, SearchBar } from '@/components/j
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
-import { searchJobPostings, convertToCard, trackSearch } from '@/services';
+import { searchJobPostings, trackSearch } from '@/services';
+import { buildPostingFacts, projectPostingCard } from '@/domains/job-posting';
 import { queryKeys } from '@/lib/queryClient';
 import type { PostingType, JobPostingFilters } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -102,7 +103,7 @@ export default function JobsScreen() {
     queryKey: queryKeys.jobPostings.search(debouncedSearch),
     queryFn: async () => {
       const results = await searchJobPostings(debouncedSearch, 50);
-      return results.map(convertToCard); // 검색 결과는 relevance 순서 유지 (sortJobPostings 미적용)
+      return results.map((posting) => projectPostingCard(buildPostingFacts(posting))); // 검색 결과는 relevance 순서 유지 (sortJobPostings 미적용)
     },
     enabled: isSearching,
     staleTime: 2 * 60 * 1000, // 2분

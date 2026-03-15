@@ -363,6 +363,20 @@ interface StaffQRCode {
 
 ### 2.3 jobPostings (구인공고)
 
+> 2026-03 implementation note
+>
+> The runtime implementation now uses a canonical read model:
+> `JobPostingDocumentV3 -> JobPostingEntity -> PostingFacts -> surface projector`.
+> Public card/detail and employer card/detail all consume the shared facts layer.
+>
+> Canonical storage sections:
+> `location`, `schedule`, `roleCatalog`, `compensation`, `questions`
+>
+> Query helper fields kept top-level:
+> `status`, `ownerId`, `ownerName`, `postingType`, `workDate`, `workDates`, `roleKeys`,
+> `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`,
+> `applicationCount`
+
 ```typescript
 interface JobPosting {
   // === 기본 정보 ===

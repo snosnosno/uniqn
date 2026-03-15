@@ -10,6 +10,13 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { JobCard } from '../JobCard';
 import type { JobPostingCard } from '@/types';
 
+jest.mock('@/hooks/useBookmarks', () => ({
+  useBookmarks: () => ({
+    isBookmarked: () => false,
+    toggleBookmark: jest.fn(),
+  }),
+}));
+
 // Mock Badge component
 jest.mock('@/components/ui/Badge', () => ({
   Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => {
@@ -35,6 +42,7 @@ describe('JobCard', () => {
     id: 'job-1',
     title: '테스트 공고',
     location: '서울 강남구',
+    fullLocation: '서울 강남구 역삼동 123-45',
     workDate: '2025-01-15',
     timeSlot: '18:00 - 02:00',
     roles: ['dealer', 'manager'],
@@ -56,6 +64,24 @@ describe('JobCard', () => {
       type: 'daily',
       amount: 150000,
     },
+    allowanceLabels: [],
+    salaryRows: [
+      {
+        key: 'dealer-daily-150000',
+        role: 'dealer',
+        roleLabel: '딜러',
+        salary: { type: 'daily', amount: 150000 },
+        text: '일급 150,000원',
+      },
+      {
+        key: 'manager-daily-150000',
+        role: 'manager',
+        roleLabel: '매니저',
+        salary: { type: 'daily', amount: 150000 },
+        text: '일급 150,000원',
+      },
+    ],
+    salaryOverflowCount: 0,
     useSameSalary: true,
     status: 'active',
     isUrgent: false,
@@ -202,6 +228,7 @@ describe('JobCard', () => {
         meal: 10000,
         transportation: 5000,
       },
+      allowanceLabels: ['식비 10,000원', '교통비 5,000원'],
     };
 
     const { getByText } = render(<JobCard job={jobWithAllowances} onPress={mockOnPress} />);
@@ -225,6 +252,7 @@ describe('JobCard role labels', () => {
     id: 'job-1',
     title: '테스트 공고',
     location: '서울',
+    fullLocation: '서울',
     workDate: '2025-01-15',
     timeSlot: '18:00 - 02:00',
     roles: [role],
@@ -240,6 +268,17 @@ describe('JobCard role labels', () => {
       },
     ],
     defaultSalary: { type: 'daily', amount: 150000 },
+    allowanceLabels: [],
+    salaryRows: [
+      {
+        key: `${role}-daily-150000`,
+        role,
+        roleLabel: role,
+        salary: { type: 'daily', amount: 150000 },
+        text: '일급 150,000원',
+      },
+    ],
+    salaryOverflowCount: 0,
     useSameSalary: true,
     status: 'active',
     isUrgent: false,
@@ -288,6 +327,7 @@ describe('JobCard accessibility', () => {
     id: 'job-1',
     title: '테스트 공고',
     location: '서울 강남구',
+    fullLocation: '서울 강남구',
     workDate: '2025-01-15',
     timeSlot: '18:00 - 02:00',
     roles: ['dealer'],
@@ -305,6 +345,17 @@ describe('JobCard accessibility', () => {
       },
     ],
     defaultSalary: { type: 'daily', amount: 150000 },
+    allowanceLabels: [],
+    salaryRows: [
+      {
+        key: 'dealer-daily-150000',
+        role: 'dealer',
+        roleLabel: '딜러',
+        salary: { type: 'daily', amount: 150000 },
+        text: '일급 150,000원',
+      },
+    ],
+    salaryOverflowCount: 0,
     useSameSalary: true,
     status: 'active',
     isUrgent: false,

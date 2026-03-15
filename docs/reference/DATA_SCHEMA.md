@@ -225,6 +225,21 @@ applied → pending → confirmed → completed
 
 ### 4. jobPostings (구인공고)
 
+> 2026-03 V3 canonical schema note
+>
+> Runtime and Firestore writes now use `schemaVersion: 3` documents. Legacy `timeSlot`, `isUrgent`,
+> `usesPreQuestions`, top-level `detailedAddress`, and slot-level salary are no longer canonical
+> storage fields. Read-time compatibility is handled by the repository adapter only.
+>
+> Top-level query helper fields:
+> `schemaVersion`, `status`, `ownerId`, `ownerName`, `postingType`, `workDate`, `workDates`,
+> `roleKeys`, `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`,
+> `applicationCount`
+>
+> Canonical nested sections:
+> `location`, `schedule`, `roleCatalog`, `compensation`, `questions`, `fixedConfig`,
+> `tournamentConfig`, `urgentConfig`
+
 ```typescript
 Collection: "jobPostings"
 Document ID: Auto-generated

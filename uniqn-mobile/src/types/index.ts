@@ -70,6 +70,8 @@ export type {
 
 // 구인공고 타입
 export type {
+  JobPostingDocumentV3,
+  JobPostingEntity,
   JobPostingStatus,
   SalaryType,
   SalaryInfo,
@@ -81,6 +83,17 @@ export type {
   JobPostingFilters,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  PostingLocation,
+  PostingRoleCatalogEntry,
+  PostingSchedule,
+  PostingCompensation,
+  PostingFacts,
+  PostingAudience,
+  PostingSurface,
+  PostingCardViewModel,
+  PostingDetailViewModel,
+  PostingManagementViewModel,
+  PostingRuntimeSnapshot,
   // 카드용 타입 (v2.0)
   CardRole,
   CardTimeSlot,
@@ -88,7 +101,8 @@ export type {
   JobPostingCard,
 } from './jobPosting';
 
-export { toJobPostingCard } from './jobPosting';
+export { JOB_POSTING_SCHEMA_VERSION } from './jobPosting';
+export { toJobPostingCard } from '@/domains/job-posting';
 
 // 날짜별 요구사항 타입 (정식 버전 - 신규 코드에서 사용)
 export type {

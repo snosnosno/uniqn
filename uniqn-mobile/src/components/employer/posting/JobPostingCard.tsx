@@ -13,11 +13,11 @@ import { QrCodeIcon, UsersIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { STATUS } from '@/constants';
+import { toJobPostingCard } from '@/domains/job-posting';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified/role';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
 import {
   formatDateRangeWithCount,
   formatDateShortWithDay,
@@ -57,6 +57,21 @@ function getDayCount(startDate: string, endDate: string): number {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
+function getDateGroupKey(startDate: string, endDate: string, index: number): string {
+  return `${startDate}-${endDate}-${index}`;
+}
+
+function getTimeSlotKey(parentKey: string, startTime: string | undefined, index: number): string {
+  return `${parentKey}-${startTime || 'tba'}-${index}`;
+}
+
+function getRoleKey(parentKey: string, role: RoleData, index: number): string {
+  const roleName = role.role || role.name || 'role';
+  const count = role.headcount || role.count || 0;
+
+  return `${parentKey}-${roleName}-${role.customRole || ''}-${count}-${index}`;
+}
+
 const RoleLine = memo(function RoleLine({
   role,
   showTime,
@@ -87,6 +102,7 @@ export const JobPostingCard = memo(function JobPostingCard({
   isClosing,
   isReopening,
 }: JobPostingCardProps) {
+  const card = useMemo(() => toJobPostingCard(posting), [posting]);
   const statusConfig = {
     active: { label: '모집중', variant: 'success' as const },
     closed: { label: '마감', variant: 'default' as const },
@@ -94,16 +110,16 @@ export const JobPostingCard = memo(function JobPostingCard({
   };
 
   const status = statusConfig[posting.status] || statusConfig.active;
-  const allowanceItems = getAllowanceItems(posting.allowances, { includeEmoji: true });
+  const allowanceItems = card.allowanceLabels ?? [];
 
   const groupedDateRequirements = useMemo(() => {
-    const requirements = posting.dateSpecificRequirements ?? [];
+    const requirements = card.dateRequirements ?? [];
 
     if (requirements.length === 0) {
       return [];
     }
 
-    const converted: DateSpecificRequirement[] = requirements.map((requirement) => ({
+    const converted = requirements.map((requirement) => ({
       date: getDateString(requirement.date),
       isGrouped: requirement.isGrouped,
       timeSlots: (requirement.timeSlots ?? []).map((timeSlot) => ({
@@ -113,15 +129,23 @@ export const JobPostingCard = memo(function JobPostingCard({
           '',
         isTimeToBeAnnounced:
           (timeSlot as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
-        roles: timeSlot.roles ?? [],
+        roles: (timeSlot.roles ?? []).map((role) => ({
+          id: role.id,
+          role: role.role,
+          customRole: role.customRole,
+          headcount: role.count,
+          filled: role.filled,
+        })),
       })),
     }));
 
-    return groupRequirementsToDateRanges(converted).map((group) => ({
-      ...group,
-      dayCount: getDayCount(group.startDate, group.endDate),
-    }));
-  }, [posting.dateSpecificRequirements]);
+    return groupRequirementsToDateRanges(converted as unknown as DateSpecificRequirement[]).map(
+      (group) => ({
+        ...group,
+        dayCount: getDayCount(group.startDate, group.endDate),
+      })
+    );
+  }, [card.dateRequirements]);
 
   return (
     <Card variant="elevated" padding="md" className="mx-4 mb-3">
@@ -139,7 +163,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                 className="mr-2"
               />
             )}
-            {posting.isUrgent && (
+            {card.isUrgent && (
               <Badge variant="error" size="sm" className="mr-2">
                 긴급
               </Badge>
@@ -153,16 +177,14 @@ export const JobPostingCard = memo(function JobPostingCard({
           </View>
         </View>
 
-        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-          📍 {posting.location.name}
-        </Text>
+        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">📍 {card.location}</Text>
 
         <View className="flex-row">
           <View className="flex-1 pr-3">
             {posting.postingType === 'fixed' ? (
               <FixedScheduleDisplay
-                daysPerWeek={posting.daysPerWeek}
-                startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+                daysPerWeek={card.daysPerWeek}
+                startTime={card.startTime || card.timeSlot?.split(/[-~]/)[0]?.trim()}
                 compact={true}
               />
             ) : groupedDateRequirements.length > 0 ? (
@@ -173,7 +195,10 @@ export const JobPostingCard = memo(function JobPostingCard({
                   : formatDateRangeWithCount(group.startDate, group.endDate);
 
                 return (
-                  <View key={group.id || groupIdx} className="mb-2">
+                  <View
+                    key={getDateGroupKey(group.startDate, group.endDate, groupIdx)}
+                    className="mb-2"
+                  >
                     <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       📅 {dateDisplay}
                     </Text>
@@ -182,10 +207,25 @@ export const JobPostingCard = memo(function JobPostingCard({
                       const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
 
                       return (
-                        <View key={slot.id || slotIdx} className="ml-5 mt-1">
+                        <View
+                          key={getTimeSlotKey(
+                            getDateGroupKey(group.startDate, group.endDate, groupIdx),
+                            slot.startTime,
+                            slotIdx
+                          )}
+                          className="ml-5 mt-1"
+                        >
                           {slot.roles.map((role: RoleData, roleIdx: number) => (
                             <RoleLine
-                              key={role.id || roleIdx}
+                              key={getRoleKey(
+                                getTimeSlotKey(
+                                  getDateGroupKey(group.startDate, group.endDate, groupIdx),
+                                  slot.startTime,
+                                  slotIdx
+                                ),
+                                role,
+                                roleIdx
+                              )}
                               role={role}
                               showTime={roleIdx === 0}
                               time={displayTime}
@@ -203,31 +243,27 @@ export const JobPostingCard = memo(function JobPostingCard({
                   📅 {formatDateShortWithDay(posting.workDate)}
                 </Text>
                 <Text className="ml-5 mt-1 text-sm text-gray-900 dark:text-gray-100">
-                  ⏰ {posting.timeSlot || '-'}
+                  ⏰ {card.timeSlot || '-'}
                 </Text>
               </View>
             )}
           </View>
 
           <View className="flex-1 border-l border-gray-100 pl-3 dark:border-surface-overlay">
-            {!posting.useSameSalary && posting.roles?.some((role) => role.salary) ? (
-              posting.roles
-                .filter((role) => role.salary)
-                .map((role, idx) => (
-                  <Text key={idx} className="text-sm text-gray-900 dark:text-white">
-                    💰 {getRoleDisplayName(role.role, role.customRole)}:{' '}
-                    {role.salary?.type === 'other'
-                      ? '협의'
-                      : formatSalary(role.salary?.type || 'hourly', role.salary?.amount || 0)}
-                  </Text>
-                ))
+            {!card.useSameSalary && card.salaryRows.length > 0 ? (
+              card.salaryRows.map((row, idx) => (
+                <Text key={idx} className="text-sm text-gray-900 dark:text-white">
+                  💰 {row.roleLabel}: {row.text}
+                </Text>
+              ))
             ) : (
               <Text className="text-sm font-medium text-gray-900 dark:text-white">
                 💰{' '}
-                {formatSalary(
-                  posting.defaultSalary?.type || posting.roles?.[0]?.salary?.type || 'hourly',
-                  posting.defaultSalary?.amount || posting.roles?.[0]?.salary?.amount || 0
-                )}
+                {card.defaultSalary
+                  ? card.defaultSalary.type === 'other'
+                    ? '협의'
+                    : formatSalary(card.defaultSalary.type, card.defaultSalary.amount)
+                  : card.salaryRows[0]?.text || '-'}
               </Text>
             )}
 
@@ -241,12 +277,15 @@ export const JobPostingCard = memo(function JobPostingCard({
               </View>
             )}
 
-            {posting.taxSettings && posting.taxSettings.type !== 'none' && (
+            {card.taxLabel && (
               <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                💸 세금{' '}
-                {posting.taxSettings.type === 'rate'
-                  ? `${posting.taxSettings.value}%`
-                  : `${posting.taxSettings.value.toLocaleString('ko-KR')}원`}
+                💸 {card.taxLabel}
+              </Text>
+            )}
+
+            {card.salaryOverflowCount > 0 && (
+              <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                +{card.salaryOverflowCount}개 역할 급여 더 있음
               </Text>
             )}
           </View>

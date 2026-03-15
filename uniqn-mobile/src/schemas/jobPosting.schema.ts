@@ -8,9 +8,15 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
-import { timestampSchema } from './common';
+import { optionalTimestampSchema, timestampSchema } from './common';
+import { preQuestionsArraySchema } from './preQuestion.schema';
 import { VALID_STAFF_ROLES } from '@/types/role';
-import type { JobPosting } from '@/types';
+import type { JobPosting, JobPostingDocumentV3 } from '@/types';
+import {
+  deserializeJobPostingDocument,
+  deserializeLegacyJobPostingDocument,
+} from '@/domains/job-posting';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
 
 /**
  * 공고 타입 스키마
@@ -199,65 +205,196 @@ export { applicationMessageSchema } from './application.schema';
 // Firestore 문서 검증 스키마 (런타임 타입 검증)
 // ============================================================================
 
+const taxableItemsSchema = z
+  .object({
+    basePay: z.boolean().optional(),
+    meal: z.boolean().optional(),
+    transportation: z.boolean().optional(),
+    accommodation: z.boolean().optional(),
+    additional: z.boolean().optional(),
+  })
+  .strict();
+
+const taxSettingsSchema = z
+  .object({
+    type: z.enum(['none', 'rate', 'fixed']),
+    value: z.number(),
+    taxableItems: taxableItemsSchema.optional(),
+  })
+  .strict();
+
+const postingLocationSchema = z
+  .object({
+    name: z.string(),
+    district: z.string().optional(),
+    detailedAddress: z.string().optional(),
+  })
+  .strict();
+
+const postingRoleCatalogEntrySchema = z
+  .object({
+    role: roleSchema,
+    customRole: z.string().optional(),
+    salary: salaryInfoSchema.optional(),
+  })
+  .strict();
+
+const postingSlotRoleRequirementSchema = z
+  .object({
+    id: z.string().optional(),
+    role: roleSchema.optional(),
+    customRole: z.string().optional(),
+    count: z.number(),
+    filled: z.number().optional(),
+  })
+  .strict();
+
+const postingTimeSlotSchema = z
+  .object({
+    id: z.string().optional(),
+    startTime: z.string().optional(),
+    isTimeToBeAnnounced: z.boolean().optional(),
+    tentativeDescription: z.string().optional(),
+    roles: z.array(postingSlotRoleRequirementSchema),
+  })
+  .strict();
+
+const postingDateRequirementSchema = z
+  .object({
+    date: z.string(),
+    timeSlots: z.array(postingTimeSlotSchema),
+    isGrouped: z.boolean().optional(),
+  })
+  .strict();
+
+const postingFixedRoleRequirementSchema = z
+  .object({
+    role: roleSchema.optional(),
+    customRole: z.string().optional(),
+    count: z.number(),
+    filled: z.number().optional(),
+  })
+  .strict();
+
+const postingScheduleSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('dated'),
+      primaryDate: z.string(),
+      allDates: z.array(z.string()),
+      requirements: z.array(postingDateRequirementSchema),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('fixed'),
+      daysPerWeek: z.number().optional(),
+      startTime: z.string().optional(),
+      isStartTimeNegotiable: z.boolean().optional(),
+      roleRequirements: z.array(postingFixedRoleRequirementSchema).optional(),
+    })
+    .strict(),
+]);
+
+const postingCompensationSchema = z
+  .object({
+    mode: z.enum(['shared', 'by_role']),
+    defaultSalary: salaryInfoSchema.optional(),
+    allowances: allowancesSchema,
+    taxSettings: taxSettingsSchema.optional(),
+  })
+  .strict();
+
+const postingQuestionsSchema = z
+  .object({
+    items: preQuestionsArraySchema,
+  })
+  .strict();
+
+const fixedConfigSchema = z
+  .object({
+    durationDays: z.literal(7),
+    expiresAt: timestampSchema,
+    createdAt: timestampSchema,
+  })
+  .strict();
+
+const tournamentConfigSchema = z
+  .object({
+    approvalStatus: z.enum(['pending', 'approved', 'rejected']),
+    approvedBy: z.string().optional(),
+    approvedAt: optionalTimestampSchema,
+    rejectedBy: z.string().optional(),
+    rejectedAt: optionalTimestampSchema,
+    rejectionReason: z.string().optional(),
+    resubmittedAt: optionalTimestampSchema,
+    submittedAt: timestampSchema,
+  })
+  .strict();
+
+const urgentConfigSchema = z
+  .object({
+    createdAt: timestampSchema,
+    priority: z.literal('high'),
+  })
+  .strict();
+
 /**
- * JobPosting Firestore 문서 스키마 (런타임 검증)
+ * JobPosting V3 Firestore 문서 스키마.
  *
- * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
- * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
+ * @description 저장 문서는 strict V3 구조만 허용한다.
+ * 레거시(V2 이하) 문서는 parse 단계에서 adapter로만 흡수한다.
  */
 export const jobPostingDocumentSchema = z
   .object({
     id: z.string(),
+    schemaVersion: z.literal(JOB_POSTING_SCHEMA_VERSION),
     title: z.string(),
+    description: z.string().optional(),
     status: z.enum(['active', 'closed', 'cancelled']),
-
-    // 장소 정보
-    location: z.object({
-      name: z.string(),
-      district: z.string().optional(),
-    }),
-    detailedAddress: z.string().optional(),
-    contactPhone: z.string().optional(),
-
-    // 일정 정보 (쿼리용 필수 필드)
-    workDate: z.string(),
-    timeSlot: z.string(),
-
-    // 모집 정보
-    roles: z.array(
-      z.object({
-        role: z.string(),
-        count: z.number(),
-        filled: z.number().optional(),
-        customRole: z.string().optional(),
-        salary: z
-          .object({
-            type: salaryTypeSchema,
-            amount: z.number(),
-          })
-          .optional(),
-      })
-    ),
-    totalPositions: z.number(),
-    filledPositions: z.number(),
-
-    // 소유자 정보
     ownerId: z.string(),
     ownerName: z.string().optional(),
-
-    // 메타데이터
     postingType: postingTypeSchema.optional(),
-    isUrgent: z.boolean().optional(),
+    workDate: z.string(),
+    workDates: z.array(z.string()).optional(),
+    roleKeys: z.array(z.string()).optional(),
+    totalPositions: z.number(),
+    filledPositions: z.number(),
     viewCount: z.number().optional(),
     applicationCount: z.number().optional(),
-
-    // Timestamps (Firebase Timestamp)
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
+    closedAt: optionalTimestampSchema,
+    closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
+    tags: z.array(z.string()).optional(),
+    contactPhone: z.string().optional(),
+    location: postingLocationSchema,
+    schedule: postingScheduleSchema,
+    roleCatalog: z.array(postingRoleCatalogEntrySchema),
+    compensation: postingCompensationSchema,
+    questions: postingQuestionsSchema,
+    fixedConfig: fixedConfigSchema.optional(),
+    tournamentConfig: tournamentConfigSchema.optional(),
+    urgentConfig: urgentConfigSchema.optional(),
   })
-  .passthrough();
+  .strict();
 
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
+
+function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDocumentV3 {
+  return {
+    ...document,
+    closedAt: document.closedAt ?? undefined,
+    tournamentConfig: document.tournamentConfig
+      ? {
+          ...document.tournamentConfig,
+          approvedAt: document.tournamentConfig.approvedAt ?? undefined,
+          rejectedAt: document.tournamentConfig.rejectedAt ?? undefined,
+          resubmittedAt: document.tournamentConfig.resubmittedAt ?? undefined,
+        }
+      : undefined,
+  } as JobPostingDocumentV3;
+}
 
 /**
  * 단일 JobPosting 문서 안전 파싱
@@ -267,14 +404,28 @@ export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
  */
 export function parseJobPostingDocument(data: unknown): JobPosting | null {
   const result = jobPostingDocumentSchema.safeParse(data);
-  if (!result.success) {
-    logger.warn('JobPosting 문서 검증 실패', {
-      errors: result.error.flatten(),
+
+  if (result.success) {
+    return deserializeJobPostingDocument(toJobPostingDocumentV3(result.data));
+  }
+
+  const legacyParsed = deserializeLegacyJobPostingDocument(data);
+  if (legacyParsed) {
+    logger.info('레거시 JobPosting 문서를 adapter로 변환', {
+      jobPostingId:
+        data && typeof data === 'object' && 'id' in data
+          ? String((data as Record<string, unknown>).id ?? '')
+          : undefined,
       component: 'jobPosting.schema',
     });
-    return null;
+    return legacyParsed;
   }
-  return result.data as JobPosting;
+
+  logger.warn('JobPosting 문서 검증 실패', {
+    errors: result.error.flatten(),
+    component: 'jobPosting.schema',
+  });
+  return null;
 }
 
 /**

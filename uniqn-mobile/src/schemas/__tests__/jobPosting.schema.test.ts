@@ -21,6 +21,8 @@ import {
   parseJobPostingDocuments,
   isJobPostingDocument,
 } from '../jobPosting.schema';
+import { serializeJobPostingV3 } from '@/domains/job-posting';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
 
 // ============================================================================
 // Mock Timestamp
@@ -31,6 +33,71 @@ const createMockTimestamp = (seconds = 1700000000, nanoseconds = 0) => ({
   nanoseconds,
   toDate: () => new Date(seconds * 1000),
   toMillis: () => seconds * 1000,
+});
+
+const createValidV3JobPostingDocument = () => ({
+  id: 'job-1',
+  schemaVersion: JOB_POSTING_SCHEMA_VERSION,
+  title: '딜러 모집',
+  description: '테스트 공고',
+  status: 'active' as const,
+  ownerId: 'user-1',
+  ownerName: '홍길동',
+  postingType: 'regular' as const,
+  workDate: '2025-06-15',
+  workDates: ['2025-06-15'],
+  roleKeys: ['dealer'],
+  totalPositions: 2,
+  filledPositions: 0,
+  viewCount: 5,
+  applicationCount: 1,
+  createdAt: createMockTimestamp(),
+  updatedAt: createMockTimestamp(),
+  location: {
+    name: '서울',
+    district: '강남구',
+    detailedAddress: '테헤란로 123',
+  },
+  schedule: {
+    kind: 'dated' as const,
+    primaryDate: '2025-06-15',
+    allDates: ['2025-06-15'],
+    requirements: [
+      {
+        date: '2025-06-15',
+        timeSlots: [
+          {
+            startTime: '09:00',
+            roles: [{ role: 'dealer', count: 2, filled: 0 }],
+          },
+        ],
+      },
+    ],
+  },
+  roleCatalog: [{ role: 'dealer', salary: { type: 'daily' as const, amount: 150000 } }],
+  compensation: {
+    mode: 'shared' as const,
+    defaultSalary: { type: 'daily' as const, amount: 150000 },
+    allowances: { meal: 10000 },
+  },
+  questions: {
+    items: [],
+  },
+});
+
+const createValidLegacyJobPostingDocument = () => ({
+  id: 'legacy-job-1',
+  title: '모집',
+  status: 'active' as const,
+  location: { name: '서울' },
+  workDate: '2025-06-15',
+  timeSlot: '09:00',
+  roles: [{ role: 'dealer', count: 1 }],
+  totalPositions: 1,
+  filledPositions: 0,
+  ownerId: 'user-1',
+  createdAt: createMockTimestamp(),
+  updatedAt: createMockTimestamp(),
 });
 
 // ============================================================================
@@ -527,6 +594,140 @@ describe('applicationMessageSchema', () => {
 // ============================================================================
 
 describe('jobPostingDocumentSchema', () => {
+  const validDoc = createValidV3JobPostingDocument();
+
+  it('should accept valid document', () => {
+    const result = jobPostingDocumentSchema.safeParse(validDoc);
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept with optional fields', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      location: { ...validDoc.location, district: 'Gangnam-gu' },
+      contactPhone: '010-1234-5678',
+      ownerName: 'Owner Name',
+      postingType: 'tournament',
+      viewCount: 50,
+      applicationCount: 10,
+      closedAt: createMockTimestamp(1700000500),
+      closedReason: 'manual',
+      tags: ['featured'],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject unknown fields', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      customField: 'extra',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept roleCatalog entries with salary', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      roleCatalog: [
+        { role: 'dealer', salary: { type: 'daily', amount: 150000 } },
+        { role: 'manager', salary: { type: 'hourly', amount: 20000 } },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject invalid role values in V3 structures', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      roleCatalog: [{ role: 'cashier', salary: { type: 'daily', amount: 150000 } }],
+      schedule: {
+        kind: 'dated' as const,
+        primaryDate: '2025-06-15',
+        allDates: ['2025-06-15'],
+        requirements: [
+          {
+            date: '2025-06-15',
+            timeSlots: [
+              {
+                startTime: '09:00',
+                roles: [{ role: 'cashier', count: 2, filled: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject malformed question payloads', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      questions: {
+        items: [null],
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing id', () => {
+    const { id, ...noId } = validDoc;
+    const result = jobPostingDocumentSchema.safeParse(noId);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing title', () => {
+    const { title, ...noTitle } = validDoc;
+    const result = jobPostingDocumentSchema.safeParse(noTitle);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid status', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      status: 'pending',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing location', () => {
+    const { location, ...noLocation } = validDoc;
+    const result = jobPostingDocumentSchema.safeParse(noLocation);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing workDate', () => {
+    const { workDate, ...noWorkDate } = validDoc;
+    const result = jobPostingDocumentSchema.safeParse(noWorkDate);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing ownerId', () => {
+    const { ownerId, ...noOwner } = validDoc;
+    const result = jobPostingDocumentSchema.safeParse(noOwner);
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid createdAt', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      createdAt: 'not-a-timestamp',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept Date for timestamps', () => {
+    const result = jobPostingDocumentSchema.safeParse({
+      ...validDoc,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+/*
+describe('jobPostingDocumentSchema', () => {
   const validDoc = {
     id: 'job-1',
     title: '딜러 모집',
@@ -636,11 +837,119 @@ describe('jobPostingDocumentSchema', () => {
     expect(result.success).toBe(true);
   });
 });
+*/
 
 // ============================================================================
 // parseJobPostingDocument
 // ============================================================================
 
+describe('parseJobPostingDocument', () => {
+  const validDoc = createValidV3JobPostingDocument();
+
+  it('should return parsed data for valid document', () => {
+    const result = parseJobPostingDocument(validDoc);
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('id', 'job-1');
+  });
+
+  it('should return parsed data for valid legacy document', () => {
+    const result = parseJobPostingDocument(createValidLegacyJobPostingDocument());
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('id', 'legacy-job-1');
+  });
+
+  it('should return parsed data for versioned pre-V3 legacy documents', () => {
+    const result = parseJobPostingDocument({
+      ...createValidLegacyJobPostingDocument(),
+      schemaVersion: 2,
+    });
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('id', 'legacy-job-1');
+  });
+
+  it('should return null for invalid document', () => {
+    const result = parseJobPostingDocument({ bad: 'data' });
+    expect(result).toBeNull();
+  });
+
+  it('should return null for malformed V3 documents instead of falling back to legacy parsing', () => {
+    const result = parseJobPostingDocument({
+      ...validDoc,
+      customField: 'extra',
+    });
+    expect(result).toBeNull();
+  });
+
+  it('should return null for invalid V3 role values', () => {
+    const result = parseJobPostingDocument({
+      ...validDoc,
+      roleCatalog: [{ role: 'cashier', salary: { type: 'daily', amount: 150000 } }],
+    });
+    expect(result).toBeNull();
+  });
+
+  it('should return null for invalid V3 question values', () => {
+    const result = parseJobPostingDocument({
+      ...validDoc,
+      questions: {
+        items: [null],
+      },
+    });
+    expect(result).toBeNull();
+  });
+
+  it('should preserve legacy string locations', () => {
+    const result = parseJobPostingDocument({
+      ...createValidLegacyJobPostingDocument(),
+      location: 'Seoul Gangnam',
+    });
+    expect(result?.location.name).toBe('Seoul Gangnam');
+  });
+
+  it('should return null for null input', () => {
+    const result = parseJobPostingDocument(null);
+    expect(result).toBeNull();
+  });
+
+  it('should parse serializer output when form location includes address-only fields', () => {
+    const serialized = serializeJobPostingV3(
+      {
+        postingType: 'regular',
+        title: '테스트 공고',
+        description: '폼 입력 검증',
+        location: {
+          name: '서울',
+          address: '강남구',
+          coordinates: { latitude: 37.5, longitude: 127.0 },
+        },
+        detailedAddress: '테헤란로 123',
+        contactPhone: '010-1234-5678',
+        workDate: '2025-06-15',
+        roles: [{ role: 'dealer', count: 1, filled: 0 }],
+        useSameSalary: true,
+        defaultSalary: { type: 'daily', amount: 150000 },
+        allowances: {},
+        usesPreQuestions: false,
+        preQuestions: [],
+      },
+      {
+        ownerId: 'user-1',
+        ownerName: 'Owner',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    );
+
+    expect(serialized.location).toEqual({
+      name: '서울',
+      district: '강남구',
+      detailedAddress: '테헤란로 123',
+    });
+    expect(parseJobPostingDocument(serialized)).not.toBeNull();
+  });
+});
+
+/*
 describe('parseJobPostingDocument', () => {
   const validDoc = {
     id: 'job-1',
@@ -673,11 +982,30 @@ describe('parseJobPostingDocument', () => {
     expect(result).toBeNull();
   });
 });
+*/
 
 // ============================================================================
 // parseJobPostingDocuments
 // ============================================================================
 
+describe('parseJobPostingDocuments', () => {
+  const validDoc = createValidV3JobPostingDocument();
+
+  it('should parse valid documents and filter invalid ones', () => {
+    const results = parseJobPostingDocuments([
+      validDoc,
+      { invalid: true },
+      { ...validDoc, id: 'job-2' },
+    ]);
+    expect(results).toHaveLength(2);
+  });
+
+  it('should return empty array for empty input', () => {
+    expect(parseJobPostingDocuments([])).toHaveLength(0);
+  });
+});
+
+/*
 describe('parseJobPostingDocuments', () => {
   const validDoc = {
     id: 'job-1',
@@ -707,11 +1035,33 @@ describe('parseJobPostingDocuments', () => {
     expect(parseJobPostingDocuments([])).toHaveLength(0);
   });
 });
+*/
 
 // ============================================================================
 // isJobPostingDocument
 // ============================================================================
 
+describe('isJobPostingDocument', () => {
+  const validDoc = createValidV3JobPostingDocument();
+
+  it('should return true for valid document', () => {
+    expect(isJobPostingDocument(validDoc)).toBe(true);
+  });
+
+  it('should return false for legacy documents', () => {
+    expect(isJobPostingDocument(createValidLegacyJobPostingDocument())).toBe(false);
+  });
+
+  it('should return false for invalid document', () => {
+    expect(isJobPostingDocument({ random: 'data' })).toBe(false);
+  });
+
+  it('should return false for null', () => {
+    expect(isJobPostingDocument(null)).toBe(false);
+  });
+});
+
+/*
 describe('isJobPostingDocument', () => {
   const validDoc = {
     id: 'job-1',
@@ -740,3 +1090,4 @@ describe('isJobPostingDocument', () => {
     expect(isJobPostingDocument(null)).toBe(false);
   });
 });
+*/

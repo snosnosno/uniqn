@@ -47,7 +47,13 @@ import {
 import { STATUS } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
-import type { PostingType, Allowances, TournamentApprovalStatus } from '@/types';
+import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
+import type {
+  PostingManagementViewModel,
+  PostingType,
+  Allowances,
+  TournamentApprovalStatus,
+} from '@/types';
 
 // ============================================================================
 // Types
@@ -210,6 +216,16 @@ export default function JobPostingDetailScreen() {
     () => getAllowanceItems(posting?.allowances),
     [posting?.allowances]
   );
+  const managementView = useMemo(
+    () =>
+      posting
+        ? (projectPostingSurface(buildPostingFacts(posting), {
+            audience: 'employer',
+            surface: 'manage',
+          }) as PostingManagementViewModel)
+        : null,
+    [posting]
+  );
 
   // 로딩 상태
   if (isLoading) {
@@ -337,7 +353,7 @@ export default function JobPostingDetailScreen() {
                 <View className="flex-row items-center mb-3">
                   <MapPinIcon size={18} color="#9333EA" />
                   <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                    {safeLocationName}
+                    {managementView?.locationLabel || safeLocationName}
                   </Text>
                 </View>
 
@@ -353,9 +369,13 @@ export default function JobPostingDetailScreen() {
                     </View>
                     <View className="ml-6">
                       <FixedScheduleDisplay
-                        daysPerWeek={posting.daysPerWeek}
-                        startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
-                        roles={posting.requiredRolesWithCount?.map((r) => ({
+                        daysPerWeek={managementView?.daysPerWeek ?? posting.daysPerWeek}
+                        startTime={
+                          managementView?.startTime || posting.timeSlot?.split(/[-~]/)[0]?.trim()
+                        }
+                        roles={(
+                          managementView?.requiredRolesWithCount ?? posting.requiredRolesWithCount
+                        )?.map((r) => ({
                           role: r.role,
                           count: r.count,
                         }))}
@@ -399,8 +419,8 @@ export default function JobPostingDetailScreen() {
                   <View className="ml-6">
                     <RoleSalaryDisplay
                       roles={posting.roles}
-                      useSameSalary={posting.useSameSalary}
-                      defaultSalary={posting.defaultSalary}
+                      useSameSalary={managementView?.useSameSalary ?? posting.useSameSalary}
+                      defaultSalary={managementView?.defaultSalary ?? posting.defaultSalary}
                       compact={false}
                     />
                   </View>
@@ -417,8 +437,17 @@ export default function JobPostingDetailScreen() {
                   </View>
                 )}
 
+                {managementView?.taxLabel && (
+                  <View className="flex-row items-center mb-4">
+                    <CurrencyDollarIcon size={18} color="#9333EA" />
+                    <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
+                      {managementView.taxLabel}
+                    </Text>
+                  </View>
+                )}
+
                 {/* 사전질문 설정 (v2.0) */}
-                {preQuestionCount > 0 && (
+                {(managementView?.questions.length ?? preQuestionCount) > 0 && (
                   <View className="flex-row items-center mb-4">
                     <DocumentIcon size={18} color="#9333EA" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">

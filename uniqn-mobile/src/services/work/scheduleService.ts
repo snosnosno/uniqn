@@ -23,7 +23,7 @@ import type {
   WorkLogStatus,
   ApplicationStatus,
 } from '@/types';
-import { toJobPostingCard } from '@/types/jobPosting';
+import { toJobPostingCard } from '@/domains/job-posting';
 import { IdNormalizer } from '@/shared/id';
 import { ScheduleMerger, ScheduleConverter, type JobPostingCardWithMeta } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';

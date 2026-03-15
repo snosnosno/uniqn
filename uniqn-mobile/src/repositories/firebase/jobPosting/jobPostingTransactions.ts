@@ -23,6 +23,7 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
+import { serializeJobPostingV3, toCreateJobPostingInput } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
 import type {
   CreateJobPostingContext,
@@ -99,73 +100,55 @@ export async function createWithTransaction(
 
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const newDocRef = doc(jobsRef);
-    const now = serverTimestamp();
-
-    // startTime은 string이므로 분리 (JobPosting.startTime은 Timestamp)
-    const { startTime: inputStartTime, ...restInput } = input;
-
-    // 서비스 레이어에서 변환된 roles 사용 (roles는 RoleRequirement[] 형태로 전달됨)
-    const totalPositions = restInput.roles.reduce((sum, role) => sum + role.count, 0);
-
-    // dateSpecificRequirements에서 날짜만 추출 (array-contains 쿼리용)
-    const workDates = (restInput.dateSpecificRequirements ?? [])
-      .map((req) => {
-        if (typeof req.date === 'string') return req.date;
-        if (req.date && 'toDate' in req.date) {
-          return (req.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
-        }
-        if (req.date && 'seconds' in req.date) {
-          return (
-            new Date((req.date as { seconds: number }).seconds * 1000)
-              .toISOString()
-              .split('T')[0] ?? ''
-          );
-        }
-        return '';
-      })
-      .filter(Boolean);
-
-    // Note: roles는 서비스 레이어에서 RoleRequirement[] 형태로 변환되어 전달됨
-    const jobPostingData = removeUndefined({
-      ...restInput,
-      roles: restInput.roles as JobPosting['roles'],
-      status: STATUS.JOB_POSTING.ACTIVE,
-      ownerId: context.ownerId,
-      ownerName: context.ownerName,
-      description: restInput.description || '',
-      postingType: restInput.postingType || 'regular',
-      totalPositions,
-      filledPositions: 0,
+    const now = Timestamp.now();
+    const current: Partial<JobPosting> = {
+      id: newDocRef.id,
       viewCount: 0,
       applicationCount: 0,
-      workDate: restInput.workDate || '',
-      timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
-      workDates: workDates.length > 0 ? workDates : undefined,
-      // 대회공고 승인 대기
-      ...(input.postingType === 'tournament' && {
-        tournamentConfig: {
-          approvalStatus: STATUS.TOURNAMENT.PENDING,
-          submittedAt: now as Timestamp,
-        },
-      }),
-      // 고정공고 게시 기간
-      ...(input.postingType === 'fixed' && {
-        fixedConfig: {
-          durationDays: 7 as const,
-          createdAt: Timestamp.now(),
-          expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-        },
-      }),
-      createdAt: now as Timestamp,
-      updatedAt: now as Timestamp,
+      filledPositions: 0,
+      ...(input.postingType === 'tournament'
+        ? {
+            tournamentConfig: {
+              approvalStatus: STATUS.TOURNAMENT.PENDING,
+              submittedAt: now,
+            },
+          }
+        : {}),
+      ...(input.postingType === 'fixed'
+        ? {
+            fixedConfig: {
+              durationDays: 7 as const,
+              createdAt: now,
+              expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+            },
+          }
+        : {}),
+    };
+
+    const serialized = serializeJobPostingV3(input, {
+      ownerId: context.ownerId,
+      ownerName: context.ownerName,
+      status: STATUS.JOB_POSTING.ACTIVE,
+      current,
+      createdAt: now,
+      updatedAt: now,
     });
+    const { id: _id, ...jobPostingData } = removeUndefined(
+      serialized as unknown as Record<string, unknown>
+    );
 
     await setDoc(newDocRef, jobPostingData);
 
-    const jobPosting: JobPosting = {
+    const jobPosting = parseJobPostingDocument({
       id: newDocRef.id,
       ...jobPostingData,
-    };
+    });
+
+    if (!jobPosting) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '생성된 공고 데이터를 확인할 수 없습니다',
+      });
+    }
 
     logger.info('공고 생성 완료', { id: newDocRef.id });
 
@@ -219,34 +202,62 @@ export async function updateWithTransaction(
 
       // 확정된 지원자가 있는 경우 일정/역할 수정 불가
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
+      const hasScheduleMutation =
+        input.workDate !== undefined ||
+        input.timeSlot !== undefined ||
+        input.startTime !== undefined ||
+        input.dateSpecificRequirements !== undefined ||
+        input.daysPerWeek !== undefined ||
+        input.isStartTimeNegotiable !== undefined ||
+        input.roles !== undefined;
+
       if (hasConfirmedApplicants) {
-        if (input.workDate || input.timeSlot || input.roles) {
+        if (hasScheduleMutation) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
           });
         }
       }
 
-      // 총 모집 인원 재계산 (역할이 변경된 경우)
-      let totalPositions = currentData.totalPositions;
-      if (input.roles) {
-        totalPositions = input.roles.reduce((sum, role) => sum + role.count, 0);
+      const baseInput = toCreateJobPostingInput(currentData);
+      const mergedInput: CreateJobPostingInput = {
+        ...baseInput,
+        ...input,
+        location: input.location
+          ? {
+              ...baseInput.location,
+              ...input.location,
+            }
+          : baseInput.location,
+        roles: input.roles ?? baseInput.roles,
+      };
+      const updatedAt = Timestamp.now();
+      const serialized = serializeJobPostingV3(mergedInput, {
+        ownerId: currentData.ownerId,
+        ownerName: currentData.ownerName,
+        status: input.status ?? currentData.status,
+        current: currentData,
+        createdAt: currentData.createdAt,
+        updatedAt,
+      });
+      const { id: _id, ...nextDocument } = removeUndefined(
+        serialized as unknown as Record<string, unknown>
+      );
+
+      transaction.set(jobRef, nextDocument);
+
+      const parsed = parseJobPostingDocument({
+        id: jobPostingId,
+        ...nextDocument,
+      });
+
+      if (!parsed) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '수정된 공고 데이터를 확인할 수 없습니다',
+        });
       }
 
-      // undefined 필드 제거
-      const updateData = removeUndefined({
-        ...input,
-        totalPositions,
-        updatedAt: serverTimestamp(),
-      } as Record<string, unknown>);
-
-      transaction.update(jobRef, updateData);
-
-      return {
-        ...currentData,
-        ...updateData,
-        id: jobPostingId,
-      } as JobPosting;
+      return parsed;
     });
 
     logger.info('공고 수정 완료', { jobPostingId });
@@ -499,12 +510,27 @@ export async function updateSettlementSettings(
         });
       }
 
-      transaction.update(jobRef, {
-        roles: data.roles,
-        allowances: data.allowances,
-        taxSettings: data.taxSettings,
-        updatedAt: serverTimestamp(),
+      const baseInput = toCreateJobPostingInput(currentData);
+      const mergedInput: CreateJobPostingInput = {
+        ...baseInput,
+        roles: data.roles as unknown as CreateJobPostingInput['roles'],
+        allowances: data.allowances as CreateJobPostingInput['allowances'],
+        taxSettings: data.taxSettings as CreateJobPostingInput['taxSettings'],
+      };
+      const updatedAt = Timestamp.now();
+      const serialized = serializeJobPostingV3(mergedInput, {
+        ownerId: currentData.ownerId,
+        ownerName: currentData.ownerName,
+        status: currentData.status,
+        current: currentData,
+        createdAt: currentData.createdAt,
+        updatedAt,
       });
+      const { id: _id, ...nextDocument } = removeUndefined(
+        serialized as unknown as Record<string, unknown>
+      );
+
+      transaction.set(jobRef, nextDocument);
     });
 
     logger.info('정산 설정 저장 완료', { jobPostingId });

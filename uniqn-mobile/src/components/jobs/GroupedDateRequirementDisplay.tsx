@@ -148,6 +148,10 @@ function getDatesBetween(startDate: string, endDate: string): string[] {
   return dates;
 }
 
+function getGroupTimeSlotKey(parentKey: string, slot: TimeSlotCompat, index: number): string {
+  return `${parentKey}-${slot.startTime || slot.time || 'tba'}-${index}`;
+}
+
 const GroupItem = memo(function GroupItem({
   group,
   showFilledCount = false,
@@ -183,7 +187,10 @@ const GroupItem = memo(function GroupItem({
                 .join(', ');
 
               return (
-                <Text key={slot.id || slotIdx} className="text-sm text-gray-600 dark:text-gray-400">
+                <Text
+                  key={getGroupTimeSlotKey(`${group.startDate}-${group.endDate}`, slot, slotIdx)}
+                  className="text-sm text-gray-600 dark:text-gray-400"
+                >
                   {formatTimeSlotLabel(slot)} {rolesDisplay || '-'}
                 </Text>
               );
