@@ -227,19 +227,6 @@ export {
 export { useEventQR, type UseEventQROptions, type UseEventQRReturn } from './useEventQR';
 
 // ============================================================================
-// Feature Flag Hooks
-// ============================================================================
-
-export {
-  useFeatureFlag,
-  useFeatureFlagWithStatus,
-  useFeatureFlags,
-  useAllFeatureFlags,
-  useMaintenanceMode,
-  useWhenEnabled,
-} from './useFeatureFlag';
-
-// ============================================================================
 // Assignment v2.0 Hooks
 // ============================================================================
 

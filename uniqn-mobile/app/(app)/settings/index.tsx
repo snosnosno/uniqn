@@ -18,14 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
-import {
-  BellIcon,
-  BellSlashIcon,
-  LockIcon,
-  ChevronRightIcon,
-  TrashIcon,
-  RefreshIcon,
-} from '@/components/icons';
+import { BellIcon, BellSlashIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -38,7 +31,6 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth } from '@/hooks';
-import { useResetAllTutorials } from '@/hooks/useResetAllTutorials';
 import { updateMarketingConsent } from '@/services/auth';
 import { logger } from '@/utils/logger';
 
@@ -97,9 +89,6 @@ export default function SettingsScreen() {
 
   // 모달 스토어
   const { showConfirm } = useModalStore();
-
-  // 튜토리얼 리셋 (useResetAllTutorials는 MMKV 직접 접근만 하므로 타임아웃 부작용 없음)
-  const resetAllTutorials = useResetAllTutorials();
 
   // 캐시 삭제
   const { clearCache, isClearing, cacheStats } = useClearCache();
@@ -174,12 +163,6 @@ export default function SettingsScreen() {
   const handleBiometricToggle = async (value: boolean) => {
     await setBiometricEnabled(value);
   };
-
-  // 튜토리얼 다시 보기 핸들러
-  const handleResetTutorials = useCallback(() => {
-    resetAllTutorials();
-    addToast({ type: 'success', message: '다음 진입 시 튜토리얼이 다시 표시됩니다.' });
-  }, [resetAllTutorials, addToast]);
 
   // 캐시 삭제 핸들러
   const handleClearCache = () => {
@@ -345,20 +328,6 @@ export default function SettingsScreen() {
             }
           />
         </Card>
-
-        {/* 도움말 */}
-        {isAuthenticated && (
-          <Card className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-              도움말
-            </Text>
-            <SettingItem
-              icon={<RefreshIcon size={22} color="#6B7280" />}
-              label="튜토리얼 다시 보기"
-              onPress={handleResetTutorials}
-            />
-          </Card>
-        )}
 
         {/* 앱 정보 */}
         <Card className="mb-4">

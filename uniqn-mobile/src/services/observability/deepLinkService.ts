@@ -45,7 +45,7 @@ export const WEB_DOMAIN = 'uniqn.app';
 
 /** 딥링크 경로 접두사 */
 const SCHEME_PREFIX = `${APP_SCHEME}://`;
-const WEB_PREFIX = `https://${WEB_DOMAIN}`;
+const WEB_PREFIX = `https://${WEB_DOMAIN}/`;
 
 /** 콜드 스타트 네비게이션 재시도 간격 (ms) */
 const COLD_START_RETRY_INTERVAL_MS = 100;
@@ -126,8 +126,17 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       // v2.0: 개별 알림 상세 화면 없음, 목록으로 이동
       return { name: 'notifications' };
 
+    case 'announcements':
+      // 레거시 시스템 공지 링크는 현재 알림함으로 흡수
+      return { name: 'notifications' };
+
     case 'schedule':
       // v2.0: 날짜별 스케줄 라우트 없음, 탭으로 이동
+      return { name: 'schedule' };
+
+    case 'my-applications':
+    case 'my-settlements':
+      // v2.0: 제거된 마이페이지 하위 라우트는 현재 스케줄 탭으로 흡수
       return { name: 'schedule' };
 
     case 'profile':
@@ -142,6 +151,16 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
 
     case 'notices':
       return { name: 'notices' };
+
+    case 'applications':
+      // v2.0: 지원 상세 화면 없음
+      return { name: 'schedule' };
+
+    case 'reviews':
+      if (segments[1] === 'pending' || !segments[1]) {
+        return { name: 'reviews/pending' };
+      }
+      return { name: 'reviews/detail', params: { workLogId: segments[1] } };
 
     case 'employer':
       if (segments[1] === 'my-postings' || segments[1] === 'postings') {
@@ -220,7 +239,7 @@ async function executeNavigation(
 
   // 1차 시도
   try {
-    router.push(expoPath);
+    await router.push(expoPath);
 
     logger.info(`${context.source} 네비게이션 성공`, {
       route: route.name,
@@ -239,7 +258,7 @@ async function executeNavigation(
   await new Promise((resolve) => setTimeout(resolve, NAVIGATION_RETRY_DELAY_MS));
 
   try {
-    router.push(expoPath);
+    await router.push(expoPath);
 
     logger.info(`${context.source} 네비게이션 재시도 성공`, {
       route: route.name,
@@ -255,7 +274,7 @@ async function executeNavigation(
 
   // 폴백: 알림 목록으로 이동
   try {
-    router.replace(FALLBACK_ROUTE);
+    await router.replace(FALLBACK_ROUTE);
 
     trackEvent('notification_navigation_fallback', {
       original_route: route.name,
@@ -514,14 +533,22 @@ export function waitForNavigationReadyAsync(): Promise<void> {
  * @returns 클린업 함수
  */
 export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () => void {
+  const dispatchDeepLink = (url: string) => {
+    if (onDeepLink) {
+      onDeepLink(url);
+      return;
+    }
+
+    void navigateToDeepLink(url);
+  };
+
   // 앱이 이미 실행 중일 때 딥링크로 열리는 경우
   const subscription = Linking.addEventListener('url', ({ url }) => {
     // 웹에서 루트 URL은 일반 페이지 로드이므로 딥링크로 처리하지 않음
     if (isWebRootUrl(url)) return;
 
     logger.info('딥링크 수신', { url });
-    onDeepLink?.(url);
-    navigateToDeepLink(url);
+    dispatchDeepLink(url);
   });
 
   // 앱이 딥링크로 처음 열리는 경우 (콜드 스타트)
@@ -530,10 +557,9 @@ export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () =>
     if (!url || isWebRootUrl(url)) return;
 
     logger.info('초기 딥링크', { url });
-    onDeepLink?.(url);
     // 콜드 스타트 시 네비게이션 준비까지 대기 후 실행
     waitForNavigationReady(() => {
-      navigateToDeepLink(url);
+      dispatchDeepLink(url);
     });
   });
 

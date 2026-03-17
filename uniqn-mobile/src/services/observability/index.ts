@@ -107,12 +107,3 @@ export {
 
 // Token Refresh Service
 export * from './tokenRefreshService';
-
-// Feature Flag Service
-export {
-  featureFlagService,
-  whenEnabled,
-  selectByFlag,
-  type FeatureFlags,
-  type FeatureFlagKey,
-} from './featureFlagService';

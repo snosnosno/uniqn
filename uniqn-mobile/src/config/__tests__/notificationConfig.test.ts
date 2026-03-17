@@ -129,33 +129,33 @@ describe('notificationConfig', () => {
         const link = generateDeepLink(NotificationType.APPLICATION_CONFIRMED, {
           applicationId: 'app123',
         });
-        expect(link).toBe('/applications/app123');
+        expect(link).toBe('/schedule');
       });
 
       it('should fallback for APPLICATION_CONFIRMED without data', () => {
         const link = generateDeepLink(NotificationType.APPLICATION_CONFIRMED);
-        expect(link).toBe('/my-applications');
+        expect(link).toBe('/schedule');
       });
 
       it('should generate link for CONFIRMATION_CANCELLED', () => {
         const link = generateDeepLink(NotificationType.CONFIRMATION_CANCELLED, {
           applicationId: 'app123',
         });
-        expect(link).toBe('/applications/app123');
+        expect(link).toBe('/schedule');
       });
 
       it('should generate link for APPLICATION_REJECTED', () => {
         const link = generateDeepLink(NotificationType.APPLICATION_REJECTED, {
           applicationId: 'app123',
         });
-        expect(link).toBe('/applications/app123');
+        expect(link).toBe('/schedule');
       });
 
       it('should generate link for CANCELLATION_APPROVED', () => {
         const link = generateDeepLink(NotificationType.CANCELLATION_APPROVED, {
           applicationId: 'app123',
         });
-        expect(link).toBe('/applications/app123');
+        expect(link).toBe('/schedule');
       });
 
       it('should fallback for CANCELLATION_APPROVED without data', () => {
@@ -167,7 +167,7 @@ describe('notificationConfig', () => {
         const link = generateDeepLink(NotificationType.CANCELLATION_REJECTED, {
           applicationId: 'app123',
         });
-        expect(link).toBe('/applications/app123');
+        expect(link).toBe('/schedule');
       });
     });
 
@@ -261,12 +261,12 @@ describe('notificationConfig', () => {
 
       it('should generate static link for JOB_CANCELLED', () => {
         const link = generateDeepLink(NotificationType.JOB_CANCELLED);
-        expect(link).toBe('/my-applications');
+        expect(link).toBe('/schedule');
       });
 
-      it('should generate static link for JOB_CLOSED', () => {
+      it('should fallback to jobs list for JOB_CLOSED without data', () => {
         const link = generateDeepLink(NotificationType.JOB_CLOSED);
-        expect(link).toBe('/my-applications');
+        expect(link).toBe('/jobs');
       });
     });
 
@@ -290,7 +290,7 @@ describe('notificationConfig', () => {
     describe('admin types', () => {
       it('should generate static link for INQUIRY_ANSWERED', () => {
         const link = generateDeepLink(NotificationType.INQUIRY_ANSWERED);
-        expect(link).toBe('/support/inquiries');
+        expect(link).toBe('/support');
       });
 
       it('should generate static link for REPORT_RESOLVED', () => {
@@ -298,9 +298,9 @@ describe('notificationConfig', () => {
         expect(link).toBe('/notifications');
       });
 
-      it('should generate link for NEW_REPORT with applicationId', () => {
+      it('should generate link for NEW_REPORT with reportId', () => {
         const link = generateDeepLink(NotificationType.NEW_REPORT, {
-          applicationId: 'report123',
+          reportId: 'report123',
         });
         expect(link).toBe('/admin/reports/report123');
       });
@@ -310,9 +310,9 @@ describe('notificationConfig', () => {
         expect(link).toBe('/admin/reports');
       });
 
-      it('should generate link for NEW_INQUIRY with applicationId', () => {
+      it('should generate link for NEW_INQUIRY with inquiryId', () => {
         const link = generateDeepLink(NotificationType.NEW_INQUIRY, {
-          applicationId: 'inq123',
+          inquiryId: 'inq123',
         });
         expect(link).toBe('/admin/inquiries/inq123');
       });
@@ -321,7 +321,7 @@ describe('notificationConfig', () => {
         const link = generateDeepLink(NotificationType.TOURNAMENT_APPROVAL_REQUEST, {
           jobPostingId: 'tournament789',
         });
-        expect(link).toBe('/admin/tournaments/tournament789');
+        expect(link).toBe('/admin/tournaments');
       });
 
       it('should fallback for TOURNAMENT_APPROVAL_REQUEST without data', () => {

@@ -21,10 +21,10 @@ import {
 } from '@/components/notifications';
 import {
   useGroupedNotifications,
-  useMarkAsRead,
   useMarkAllAsRead,
   useDeleteNotification,
 } from '@/hooks/useNotifications';
+import { useNotificationNavigation } from '@/hooks/useDeepLink';
 import { useNotificationStore } from '@/stores/notificationStore';
 import type {
   NotificationData,
@@ -57,9 +57,8 @@ export default function NotificationsScreen() {
     },
   });
 
-  // 읽음 처리 훅
-  const { markAsRead, isMarking } = useMarkAsRead();
   const { markAllAsRead } = useMarkAllAsRead();
+  const { handleNotificationPress: navigateNotification } = useNotificationNavigation();
 
   // 삭제 훅
   const { deleteNotification } = useDeleteNotification();
@@ -80,12 +79,9 @@ export default function NotificationsScreen() {
   // 알림 클릭 핸들러
   const handleNotificationPress = useCallback(
     (notification: NotificationData) => {
-      if (!notification.isRead && !isMarking) {
-        markAsRead(notification.id);
-      }
-      // NotificationItem이 딥링크 네비게이션 자동 처리
+      void navigateNotification(notification);
     },
-    [markAsRead, isMarking]
+    [navigateNotification]
   );
 
   // 그룹 클릭 핸들러 (그룹 내 모든 알림 읽음 처리)

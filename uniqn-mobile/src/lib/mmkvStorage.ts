@@ -398,7 +398,6 @@ const MIGRATION_COMPLETED_KEY = '@uniqn:mmkv_migration_completed';
  *
  * 마이그레이션 대상:
  * - @uniqn:update_dismissed_* (업데이트 모달 "나중에" 기록)
- * - uniqn-in-app-messages (인앱 메시지 표시 이력)
  *
  * @returns 마이그레이션 성공 여부
  */
@@ -427,7 +426,6 @@ export async function migrateFromAsyncStorage(): Promise<boolean> {
     // 마이그레이션 대상 키 패턴
     const migrationPatterns = [
       '@uniqn:update_dismissed_', // useVersionCheck
-      'uniqn-in-app-messages', // inAppMessageStore (Zustand persist)
     ];
 
     for (const key of allKeys) {

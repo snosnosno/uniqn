@@ -143,14 +143,6 @@ export {
 export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
 
 // ============================================================================
-// In-App Message Components
-// ============================================================================
-
-export { InAppBanner } from './InAppBanner';
-export { InAppModal } from './InAppModal';
-export { InAppMessageManager } from './InAppMessageManager';
-
-// ============================================================================
 // Filter Components
 // ============================================================================
 

@@ -80,19 +80,3 @@ export {
 // ============================================================================
 
 export { syncMissedNotifications, shouldSync, type SyncResult } from './notificationSyncService';
-
-// ============================================================================
-// In-App Message Service
-// ============================================================================
-
-export {
-  resetSession,
-  canShowMessage,
-  filterAndSortMessages,
-  processMessages,
-  showMessage,
-  dismissCurrentMessage,
-  dismissMessagePermanently,
-  getMessagesByType,
-  clearMessageHistory,
-} from './inAppMessageService';

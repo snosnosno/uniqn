@@ -69,7 +69,7 @@ export interface VersionCheckResult {
 export async function getRemoteVersionConfig(): Promise<RemoteVersionConfig | null> {
   try {
     const db = getFirebaseDb();
-    const platform = Platform.OS === 'ios' ? 'ios' : 'android';
+    const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
     const docRef = doc(db, 'appVersions', platform);
     const docSnap = await getDoc(docRef);
 

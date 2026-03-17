@@ -51,6 +51,8 @@ export interface NotificationLinkData {
   applicationId?: string;
   jobPostingId?: string;
   workLogId?: string;
+  reportId?: string;
+  inquiryId?: string;
   date?: string;
 }
 
@@ -69,16 +71,11 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
       : '/employer/my-postings',
   [NotificationType.APPLICATION_CANCELLED]: (data) =>
     data?.jobPostingId ? `/employer/applicants/${data.jobPostingId}` : '/employer/my-postings',
-  [NotificationType.APPLICATION_CONFIRMED]: (data) =>
-    data?.applicationId ? `/applications/${data.applicationId}` : '/my-applications',
-  [NotificationType.CONFIRMATION_CANCELLED]: (data) =>
-    data?.applicationId ? `/applications/${data.applicationId}` : '/my-applications',
-  [NotificationType.APPLICATION_REJECTED]: (data) =>
-    data?.applicationId ? `/applications/${data.applicationId}` : '/my-applications',
-  [NotificationType.CANCELLATION_APPROVED]: (data) =>
-    data?.applicationId ? `/applications/${data.applicationId}` : '/schedule',
-  [NotificationType.CANCELLATION_REJECTED]: (data) =>
-    data?.applicationId ? `/applications/${data.applicationId}` : '/schedule',
+  [NotificationType.APPLICATION_CONFIRMED]: () => '/schedule',
+  [NotificationType.CONFIRMATION_CANCELLED]: () => '/schedule',
+  [NotificationType.APPLICATION_REJECTED]: () => '/schedule',
+  [NotificationType.CANCELLATION_APPROVED]: () => '/schedule',
+  [NotificationType.CANCELLATION_REJECTED]: () => '/schedule',
 
   // === 출퇴근/스케줄 관련 ===
   [NotificationType.STAFF_CHECKED_IN]: (data) =>
@@ -108,8 +105,9 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
   // === 공고 관련 ===
   [NotificationType.JOB_UPDATED]: (data) =>
     data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
-  [NotificationType.JOB_CANCELLED]: () => '/my-applications',
-  [NotificationType.JOB_CLOSED]: () => '/my-applications',
+  [NotificationType.JOB_CANCELLED]: () => '/schedule',
+  [NotificationType.JOB_CLOSED]: (data) =>
+    data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
 
   // === 시스템 ===
   [NotificationType.ANNOUNCEMENT]: () => '/notifications',
@@ -117,14 +115,13 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
   [NotificationType.APP_UPDATE]: () => '/notifications',
 
   // === 관리자 ===
-  [NotificationType.INQUIRY_ANSWERED]: () => '/support/inquiries',
+  [NotificationType.INQUIRY_ANSWERED]: () => '/support',
   [NotificationType.REPORT_RESOLVED]: () => '/notifications',
   [NotificationType.NEW_REPORT]: (data) =>
-    data?.applicationId ? `/admin/reports/${data.applicationId}` : '/admin/reports',
+    data?.reportId ? `/admin/reports/${data.reportId}` : '/admin/reports',
   [NotificationType.NEW_INQUIRY]: (data) =>
-    data?.applicationId ? `/admin/inquiries/${data.applicationId}` : '/admin/inquiries',
-  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: (data) =>
-    data?.jobPostingId ? `/admin/tournaments/${data.jobPostingId}` : '/admin/tournaments',
+    data?.inquiryId ? `/admin/inquiries/${data.inquiryId}` : '/admin/inquiries',
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: () => '/admin/tournaments',
 
   // === 리뷰/평가 관련 ===
   [NotificationType.REVIEW_REQUEST]: (data) =>

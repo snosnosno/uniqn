@@ -225,7 +225,7 @@ async function sendRejectionNotification(
     '지원 결과 안내',
     `'${jobPosting.title}' 지원이 거절되었습니다.`,
     {
-      link: '/my-applications',
+      link: '/schedule',
       priority: 'normal',
       relatedId: applicationId,
       data: {

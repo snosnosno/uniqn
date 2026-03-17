@@ -21,7 +21,6 @@ import {
   ModalManager,
   ErrorState,
   ScreenErrorBoundary,
-  InAppMessageManager,
   OfflineBanner,
   Loading,
 } from '@/components/ui';
@@ -162,7 +161,6 @@ function MainNavigator() {
         <Stack.Screen name="(employer)" />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <InAppMessageManager />
       <ToastManager />
       <ModalManager />
     </View>

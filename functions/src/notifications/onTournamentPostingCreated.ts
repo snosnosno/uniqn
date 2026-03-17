@@ -105,7 +105,7 @@ export const onTournamentPostingCreated = onDocumentCreated(
         '🏆 대회공고 승인 요청',
         `${employerName}님이 '${jobPosting.title}' 대회공고 승인을 요청했습니다.`,
         {
-          link: `/admin/tournaments/${jobPostingId}`,
+          link: '/admin/tournaments',
           priority: 'high',
           data: {
             jobPostingId,

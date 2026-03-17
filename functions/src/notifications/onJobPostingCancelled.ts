@@ -95,7 +95,7 @@ export const onJobPostingCancelled = onDocumentUpdated(
         '🚫 공고 취소',
         `'${after.title || '공고'}'가 취소되었습니다.`,
         {
-          link: '/my-applications',
+          link: '/schedule',
           priority: 'high',
           data: {
             jobPostingId,

@@ -77,8 +77,6 @@ export const EXPO_ROUTES = {
   adminTournaments: '/(admin)/tournaments',
   adminInquiries: '/(admin)/inquiries',
   adminInquiryDetail: '/(admin)/inquiries/[id]',
-  adminStats: '/(admin)/stats',
-  adminSettings: '/(admin)/settings',
 
   // === 리뷰 (app) - 인증 필요 ===
   reviewDetail: '/(app)/reviews/[workLogId]',
@@ -154,6 +152,4 @@ export const ADMIN_REQUIRED_ROUTES: ExpoRouteName[] = [
   'adminTournaments',
   'adminInquiries',
   'adminInquiryDetail',
-  'adminStats',
-  'adminSettings',
 ];

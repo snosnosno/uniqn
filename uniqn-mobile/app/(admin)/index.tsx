@@ -1,12 +1,7 @@
-/**
- * UNIQN Mobile - Admin Dashboard
- * 관리자 대시보드 메인 페이지
- */
-
+import type { ComponentProps } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -60,7 +55,7 @@ export default function AdminDashboard() {
     },
     {
       title: '신고 관리',
-      description: '신고된 컨텐츠 검토 및 처리',
+      description: '신고된 콘텐츠 검토 및 처리',
       iconName: 'flag-outline',
       iconColor: '#dc2626',
       href: '/(admin)/reports',
@@ -68,35 +63,11 @@ export default function AdminDashboard() {
     },
     {
       title: '문의 관리',
-      description: '고객 문의 확인 및 답변',
+      description: '고객 문의 확인 및 응답',
       iconName: 'chatbubble-ellipses-outline',
       iconColor: '#0891b2',
       href: '/(admin)/inquiries',
       bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
-    },
-    {
-      title: '시스템 설정',
-      description: '앱 설정 및 기능 플래그 관리',
-      iconName: 'settings-outline',
-      iconColor: '#4b5563',
-      href: '/(admin)/settings',
-      bgColor: 'bg-gray-100 dark:bg-surface',
-    },
-    {
-      title: '통계',
-      description: '서비스 이용 현황 및 분석',
-      iconName: 'bar-chart-outline',
-      iconColor: '#16a34a',
-      href: '/(admin)/stats',
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
-    },
-    {
-      title: '보안 로그',
-      description: '로그인 시도 및 보안 이벤트',
-      iconName: 'shield-checkmark-outline',
-      iconColor: '#9333ea',
-      href: '/(admin)/security',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
     {
       title: '공지사항 관리',
@@ -111,15 +82,15 @@ export default function AdminDashboard() {
   return (
     <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <View className="p-4">
-        {/* Header */}
         <View className="mb-6">
           <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
             관리자 대시보드
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400">UNIQN 서비스 관리 및 모니터링</Text>
+          <Text className="text-gray-500 dark:text-gray-400">
+            UNIQN 서비스 운영과 주요 업무를 빠르게 확인합니다.
+          </Text>
         </View>
 
-        {/* Menu Grid */}
         <View className="flex-row flex-wrap gap-3">
           {menuItems.map((item) => (
             <View key={item.title} className="w-[48%]">

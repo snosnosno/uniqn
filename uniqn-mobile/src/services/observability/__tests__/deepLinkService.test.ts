@@ -4,8 +4,6 @@
  * @description deepLinkService.ts의 전체 기능 테스트
  */
 
-import { Platform } from 'react-native';
-import { deepLinkService } from '../deepLinkService';
 import type { NotificationType } from '@/types/notification';
 
 // ============================================================================
@@ -32,7 +30,6 @@ const mockCanOpenURL = jest.fn();
 const mockOpenURL = jest.fn();
 
 jest.mock('react-native', () => ({
-  ...jest.requireActual('react-native'),
   Linking: {
     addEventListener: mockAddEventListener,
     getInitialURL: mockGetInitialURL,
@@ -67,33 +64,37 @@ jest.mock('../analyticsService', () => ({
 }));
 
 // Shared 모듈 모킹
+const getMockExpoPath = (route: { name: string; params?: Record<string, string> }) => {
+  if (route.name === 'home') return '/(app)/(tabs)';
+  if (route.name === 'jobs') return '/(public)/jobs';
+  if (route.name === 'job') return `/(public)/jobs/${route.params?.id}`;
+  if (route.name === 'notifications') return '/(app)/notifications';
+  if (route.name === 'schedule') return '/(app)/(tabs)/schedule';
+  if (route.name === 'profile') return '/(app)/(tabs)/profile';
+  if (route.name === 'settings') return '/(app)/settings';
+  if (route.name === 'support') return '/(app)/support';
+  if (route.name === 'notices') return '/(app)/notices';
+  if (route.name === 'employer/my-postings') return '/(employer)/my-postings';
+  if (route.name === 'employer/posting') return `/(employer)/my-postings/${route.params?.id}`;
+  if (route.name === 'employer/applicants') {
+    return `/(employer)/applicants/${route.params?.jobId}`;
+  }
+  if (route.name === 'employer/settlement') {
+    return `/(employer)/settlement/${route.params?.jobId}`;
+  }
+  if (route.name === 'reviews/detail') return `/(app)/reviews/${route.params?.workLogId}`;
+  if (route.name === 'reviews/pending') return '/(app)/reviews/pending';
+  if (route.name === 'admin/dashboard') return '/(admin)';
+  if (route.name === 'admin/reports') return '/(admin)/reports';
+  if (route.name === 'admin/report') return `/(admin)/reports/${route.params?.id}`;
+  if (route.name === 'admin/inquiries') return '/(admin)/inquiries';
+  if (route.name === 'admin/inquiry') return `/(admin)/inquiries/${route.params?.id}`;
+  if (route.name === 'admin/tournaments') return '/(admin)/tournaments';
+  return '/(app)/(tabs)';
+};
+
 const mockRouteMapper = {
-  toExpoPath: jest.fn((route: { name: string; params?: Record<string, string> }) => {
-    if (route.name === 'home') return '/(app)/(tabs)';
-    if (route.name === 'jobs') return '/(public)/jobs';
-    if (route.name === 'job') return `/(public)/jobs/${route.params?.id}`;
-    if (route.name === 'notifications') return '/(app)/notifications';
-    if (route.name === 'schedule') return '/(app)/(tabs)/schedule';
-    if (route.name === 'profile') return '/(app)/(tabs)/profile';
-    if (route.name === 'settings') return '/(app)/settings';
-    if (route.name === 'support') return '/(app)/support';
-    if (route.name === 'notices') return '/(app)/notices';
-    if (route.name === 'employer/my-postings') return '/(employer)/my-postings';
-    if (route.name === 'employer/posting') return `/(employer)/my-postings/${route.params?.id}`;
-    if (route.name === 'employer/applicants') {
-      return `/(employer)/applicants/${route.params?.jobId}`;
-    }
-    if (route.name === 'employer/settlement') {
-      return `/(employer)/settlement/${route.params?.jobId}`;
-    }
-    if (route.name === 'admin/dashboard') return '/(admin)';
-    if (route.name === 'admin/reports') return '/(admin)/reports';
-    if (route.name === 'admin/report') return `/(admin)/reports/${route.params?.id}`;
-    if (route.name === 'admin/inquiries') return '/(admin)/inquiries';
-    if (route.name === 'admin/inquiry') return `/(admin)/inquiries/${route.params?.id}`;
-    if (route.name === 'admin/tournaments') return '/(admin)/tournaments';
-    return '/(app)/(tabs)';
-  }),
+  toExpoPath: jest.fn(getMockExpoPath),
 };
 
 const mockNotificationRouteMap: Record<
@@ -116,6 +117,9 @@ jest.mock('@/shared/deeplink', () => ({
   NOTIFICATION_ROUTE_MAP: mockNotificationRouteMap,
 }));
 
+const { Platform } = require('react-native');
+const { deepLinkService } = require('../deepLinkService');
+
 // ============================================================================
 // Test Suites
 // ============================================================================
@@ -123,8 +127,15 @@ jest.mock('@/shared/deeplink', () => ({
 describe('deepLinkService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouterPush.mockReset();
+    mockRouterReplace.mockReset();
+    mockRouterCanGoBack.mockReset().mockReturnValue(true);
+    mockAddEventListener.mockReset().mockReturnValue({ remove: jest.fn() });
+    mockGetInitialURL.mockReset().mockResolvedValue(null);
+    mockCanOpenURL.mockReset();
+    mockOpenURL.mockReset();
+    mockRouteMapper.toExpoPath.mockReset().mockImplementation(getMockExpoPath);
     Object.defineProperty(Platform, 'OS', { value: 'ios', writable: true });
-    mockRouterCanGoBack.mockReturnValue(true);
   });
 
   // ==========================================================================
@@ -240,6 +251,30 @@ describe('deepLinkService', () => {
       });
     });
 
+    it('레거시 리뷰 링크를 현재 리뷰 상세 라우트로 파싱해야 함', () => {
+      const result = deepLinkService.parseDeepLink('/reviews/worklog-123');
+
+      expect(result).toEqual({
+        url: '/reviews/worklog-123',
+        path: '/reviews/worklog-123',
+        queryParams: {},
+        route: { name: 'reviews/detail', params: { workLogId: 'worklog-123' } },
+        isValid: true,
+      });
+    });
+
+    it('제거된 마이페이지 링크를 현재 스케줄 라우트로 흡수해야 함', () => {
+      const result = deepLinkService.parseDeepLink('/my-applications');
+
+      expect(result).toEqual({
+        url: '/my-applications',
+        path: '/my-applications',
+        queryParams: {},
+        route: { name: 'schedule' },
+        isValid: true,
+      });
+    });
+
     it('쿼리 파라미터에서 jobId를 추출하여 라우트를 생성해야 함', () => {
       const result = deepLinkService.parseDeepLink('uniqn://unknown?jobId=789');
 
@@ -269,7 +304,6 @@ describe('deepLinkService', () => {
       const result = deepLinkService.parseDeepLink('https://[invalid');
 
       expect(result.isValid).toBe(false);
-      expect(mockLoggerError).toHaveBeenCalled();
     });
   });
 
@@ -432,19 +466,15 @@ describe('deepLinkService', () => {
       );
     });
 
-    it('라우트를 찾을 수 없으면 false를 반환해야 함', async () => {
-      // getRouteFromNotification이 null을 반환하도록 모킹
-      jest.spyOn(deepLinkService, 'getRouteFromNotification').mockReturnValueOnce(null);
+    it('매핑되지 않은 알림 타입도 알림 목록으로 폴백 이동해야 함', async () => {
+      mockRouterPush.mockResolvedValue(undefined);
 
       const result = await deepLinkService.navigateFromNotification(
         'unknown_type' as NotificationType
       );
 
-      expect(result).toBe(false);
-      expect(mockLoggerWarn).toHaveBeenCalledWith(
-        '알림에 대한 라우트를 찾을 수 없음',
-        expect.objectContaining({ type: 'unknown_type' })
-      );
+      expect(result).toBe(true);
+      expect(mockRouterPush).toHaveBeenCalledWith('/(app)/notifications');
     });
   });
 
@@ -613,6 +643,7 @@ describe('deepLinkService', () => {
 
       expect(mockOnDeepLink).toHaveBeenCalledWith('uniqn://jobs/123');
       expect(mockLoggerInfo).toHaveBeenCalledWith('딥링크 수신', { url: 'uniqn://jobs/123' });
+      expect(mockRouterPush).not.toHaveBeenCalled();
     });
 
     it('웹에서 루트 URL은 무시해야 함', () => {
@@ -638,18 +669,20 @@ describe('deepLinkService', () => {
     });
 
     it('초기 딥링크를 처리해야 함 (콜드 스타트)', async () => {
+      jest.useFakeTimers();
       const mockOnDeepLink = jest.fn();
-      mockAddEventListener.mockReturnValue({ remove: jest.fn() });
       mockGetInitialURL.mockResolvedValue('uniqn://notifications');
       mockRouterCanGoBack.mockReturnValue(true);
 
       deepLinkService.setupDeepLinkListener(mockOnDeepLink);
 
-      // getInitialURL이 비동기이므로 대기
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Promise.resolve();
+      jest.advanceTimersByTime(100);
 
       expect(mockOnDeepLink).toHaveBeenCalledWith('uniqn://notifications');
       expect(mockLoggerInfo).toHaveBeenCalledWith('초기 딥링크', { url: 'uniqn://notifications' });
+      expect(mockRouterPush).not.toHaveBeenCalled();
+      jest.useRealTimers();
     });
   });
 

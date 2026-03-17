@@ -50,9 +50,6 @@ import {
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput } from '@/types';
-import { useTutorial } from '@/hooks/useTutorial';
-import { TutorialOverlay } from '@/components/tutorial';
-import { SETTLEMENT_EMPLOYER_TUTORIAL } from '@/constants/tutorials';
 
 // ============================================================================
 // Constants
@@ -212,12 +209,6 @@ export default function StaffSettlementsScreen() {
   const { addToast } = useToastStore();
 
   // 튜토리얼
-  const {
-    needsTutorial,
-    completeTutorial,
-    isLoading: isTutorialLoading,
-    timeoutMs: tutorialTimeoutMs,
-  } = useTutorial('settlement', { pageCount: SETTLEMENT_EMPLOYER_TUTORIAL.pages.length });
 
   // 탭 상태
   const [activeTab, setActiveTab] = useState<TabType>('staff');
@@ -790,15 +781,6 @@ export default function StaffSettlementsScreen() {
       />
 
       {/* 튜토리얼 오버레이 */}
-      {needsTutorial && !isTutorialLoading && (
-        <View className="absolute inset-0 z-10">
-          <TutorialOverlay
-            config={SETTLEMENT_EMPLOYER_TUTORIAL}
-            onComplete={completeTutorial}
-            timeoutMs={tutorialTimeoutMs}
-          />
-        </View>
-      )}
     </SafeAreaView>
   );
 }

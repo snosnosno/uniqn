@@ -450,10 +450,6 @@ export const queryKeys = {
   },
 
   // 인앱 메시지
-  inAppMessages: {
-    all: ['inAppMessages'] as const,
-    active: () => [...queryKeys.inAppMessages.all, 'active'] as const,
-  },
 } as const;
 
 // ============================================================================

@@ -50,10 +50,10 @@ export interface UseTutorialOptions {
  * @param options - 페이지 수, 딜레이 등 선택 옵션
  *
  * @example
- * const { needsTutorial, completeTutorial } = useTutorial('postingGuide', { pageCount: 5 });
+ * const { needsTutorial, completeTutorial } = useTutorial('appIntro', { pageCount: 5 });
  *
  * if (needsTutorial) {
- *   return <TutorialOverlay config={POSTING_GUIDE} onComplete={completeTutorial} />;
+ *   return <TutorialOverlay config={APP_INTRO_STAFF} onComplete={completeTutorial} />;
  * }
  */
 export function useTutorial(type: TutorialType, options?: UseTutorialOptions): UseTutorialReturn {

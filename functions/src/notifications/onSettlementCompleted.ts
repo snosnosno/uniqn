@@ -81,7 +81,7 @@ export const onSettlementCompleted = onDocumentUpdated(
         '💰 정산 완료',
         notificationBody,
         {
-          link: '/my-settlements',
+          link: '/schedule',
           priority: 'high',
           relatedId: workLogId,
           data: {

@@ -21,7 +21,7 @@ export interface IconProps {
 // ============================================================================
 
 /** 튜토리얼 식별자 */
-export type TutorialType = 'appIntro' | 'postingGuide' | 'settlement' | 'qrCheckIn';
+export type TutorialType = 'appIntro' | 'qrCheckIn';
 
 // ============================================================================
 // 튜토리얼 페이지

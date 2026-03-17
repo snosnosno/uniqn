@@ -40,20 +40,24 @@ let _verifyPhoneNumber: typeof import('@react-native-firebase/auth').verifyPhone
 let _unlink: typeof import('@react-native-firebase/auth').unlink | null = null;
 
 if (Platform.OS !== 'web') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require('@react-native-firebase/auth');
-  _getAuth = mod.getAuth;
-  _signInWithEmailAndPassword = mod.signInWithEmailAndPassword;
-  _signInWithPhoneNumber = mod.signInWithPhoneNumber;
-  _linkWithCredential = mod.linkWithCredential;
-  _updateProfile = mod.updateProfile;
-  _deleteUser = mod.deleteUser;
-  _signOut = mod.signOut;
-  _EmailAuthProvider = mod.EmailAuthProvider;
-  _signInWithCredential = mod.signInWithCredential;
-  _OAuthProvider = mod.OAuthProvider;
-  _verifyPhoneNumber = mod.verifyPhoneNumber;
-  _unlink = mod.unlink;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@react-native-firebase/auth');
+    _getAuth = mod.getAuth;
+    _signInWithEmailAndPassword = mod.signInWithEmailAndPassword;
+    _signInWithPhoneNumber = mod.signInWithPhoneNumber;
+    _linkWithCredential = mod.linkWithCredential;
+    _updateProfile = mod.updateProfile;
+    _deleteUser = mod.deleteUser;
+    _signOut = mod.signOut;
+    _EmailAuthProvider = mod.EmailAuthProvider;
+    _signInWithCredential = mod.signInWithCredential;
+    _OAuthProvider = mod.OAuthProvider;
+    _verifyPhoneNumber = mod.verifyPhoneNumber;
+    _unlink = mod.unlink;
+  } catch {
+    // 테스트/Jest 환경에서는 네이티브 모듈이 없을 수 있으므로 null export 유지
+  }
 }
 
 // ============================================================================
@@ -61,7 +65,7 @@ if (Platform.OS !== 'web') {
 // ============================================================================
 
 /** 네이티브 플랫폼 여부 (web이면 false) */
-export const hasNativeAuth = Platform.OS !== 'web';
+export const hasNativeAuth = Platform.OS !== 'web' && _getAuth !== null;
 
 export const getNativeAuth = _getAuth;
 export const nativeSignInWithEmailAndPassword = _signInWithEmailAndPassword;

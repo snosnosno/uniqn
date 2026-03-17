@@ -9,8 +9,6 @@ import type { TutorialType } from '@/types/tutorial';
 // ============================================================================
 
 export { APP_INTRO_STAFF, APP_INTRO_EMPLOYER } from './appIntroTutorial';
-export { POSTING_GUIDE_TUTORIAL } from './postingGuideTutorial';
-export { SETTLEMENT_EMPLOYER_TUTORIAL, SETTLEMENT_STAFF_TUTORIAL } from './settlementTutorial';
 export { QR_CHECKIN_TUTORIAL } from './qrCheckInTutorial';
 
 // ============================================================================
@@ -27,8 +25,6 @@ export const TUTORIAL_STORAGE_PREFIX = 'tutorial';
 /** 튜토리얼 MMKV 키에 사용하는 매핑 (TutorialType → storage key) */
 export const TUTORIAL_KEY_MAP: Readonly<Record<TutorialType, string>> = {
   appIntro: 'app_intro',
-  postingGuide: 'posting_guide',
-  settlement: 'settlement',
   qrCheckIn: 'qr_checkin',
 } as const;
 
@@ -44,7 +40,5 @@ export const TUTORIAL_KEY_MAP: Readonly<Record<TutorialType, string>> = {
  */
 export const TUTORIAL_VERSIONS: Readonly<Record<TutorialType, number>> = {
   appIntro: 1,
-  postingGuide: 1,
-  settlement: 1,
   qrCheckIn: 1,
 } as const;

@@ -11,11 +11,11 @@ import { View, Text, Pressable, useColorScheme } from 'react-native';
 
 // 2. 외부 라이브러리
 import Animated, { FadeInRight, FadeOutLeft, Layout } from 'react-native-reanimated';
-import { router, type Href } from 'expo-router';
 
 // 3. 내부 모듈
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
+import { navigateFromNotification } from '@/services/observability/deepLinkService';
 import { formatRelativeTime } from '@/utils/date';
 import { toDateFromTimestamp } from '@/types/notification';
 import { logger } from '@/utils/logger';
@@ -56,11 +56,14 @@ export const NotificationItem = memo(function NotificationItem({
     if (onPress) {
       onPress(notification);
     } else if (notification.link) {
-      try {
-        router.push(notification.link as Href);
-      } catch (error) {
-        logger.warn('알림 딥링크 이동 실패', { link: notification.link, error: String(error) });
-      }
+      void navigateFromNotification(notification.type, notification.data, notification.link).catch(
+        (error) => {
+          logger.warn('알림 딥링크 이동 실패', {
+            link: notification.link,
+            error: String(error),
+          });
+        }
+      );
     }
   }, [notification, onPress]);
 

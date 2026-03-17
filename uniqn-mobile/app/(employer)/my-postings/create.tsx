@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,9 +20,6 @@ import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
-import { useTutorial } from '@/hooks/useTutorial';
-import { TutorialOverlay } from '@/components/tutorial';
-import { POSTING_GUIDE_TUTORIAL } from '@/constants/tutorials';
 
 // ============================================================================
 // Main Component
@@ -34,12 +31,6 @@ export default function CreateJobPostingScreen() {
   const { addToast } = useToastStore();
 
   // 튜토리얼
-  const {
-    needsTutorial,
-    completeTutorial,
-    isLoading: isTutorialLoading,
-    timeoutMs: tutorialTimeoutMs,
-  } = useTutorial('postingGuide', { pageCount: POSTING_GUIDE_TUTORIAL.pages.length });
 
   // Form State
   const [formData, setFormData] = useState<JobPostingFormData>(INITIAL_JOB_POSTING_FORM_DATA);
@@ -198,15 +189,6 @@ export default function CreateJobPostingScreen() {
       />
 
       {/* 튜토리얼 오버레이 */}
-      {needsTutorial && !isTutorialLoading && (
-        <View className="absolute inset-0 z-10">
-          <TutorialOverlay
-            config={POSTING_GUIDE_TUTORIAL}
-            onComplete={completeTutorial}
-            timeoutMs={tutorialTimeoutMs}
-          />
-        </View>
-      )}
     </SafeAreaView>
   );
 }
