@@ -52,7 +52,19 @@ const ROLE_NAME_TO_CODE: Record<string, string> = {
  * - 일반 역할: 한글명 → 영어 코드 (딜러 → dealer)
  * - 커스텀 역할: 이름 그대로 사용
  */
-function getRoleKeyFromFormRole(role: { name?: string; isCustom?: boolean }): string {
+function getRoleKeyFromFormRole(role: {
+  role?: string;
+  name?: string;
+  isCustom?: boolean;
+  customRole?: string;
+}): string {
+  if (role.role) {
+    if (role.role === 'other') {
+      return role.customRole || role.name || 'other';
+    }
+    return role.role;
+  }
+
   const name = role.name || '';
   // 커스텀 역할이면 이름 그대로 반환
   if (role.isCustom) {
@@ -230,7 +242,9 @@ async function createMultiplePostingsByDate(
     // 해당 날짜에 역할이 매핑되는지 확인
     const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
     const filteredRoles = input.roles.filter((role) => {
-      const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
+      const roleKey = getRoleKeyFromFormRole(
+        role as { role?: string; name?: string; isCustom?: boolean; customRole?: string }
+      );
       return dateRoleKeys.has(roleKey);
     });
 
@@ -268,7 +282,9 @@ async function createMultiplePostingsByDate(
 
       // 해당 날짜에 사용되는 역할만 필터링 (급여 정보 포함)
       const filteredRoles = input.roles.filter((role) => {
-        const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
+        const roleKey = getRoleKeyFromFormRole(
+          role as { role?: string; name?: string; isCustom?: boolean; customRole?: string }
+        );
         return dateRoleKeys.has(roleKey);
       }) as typeof input.roles;
 

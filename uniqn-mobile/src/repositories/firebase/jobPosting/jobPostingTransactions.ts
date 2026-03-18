@@ -244,7 +244,7 @@ export async function updateWithTransaction(
         serialized as unknown as Record<string, unknown>
       );
 
-      transaction.set(jobRef, nextDocument);
+      transaction.update(jobRef, nextDocument);
 
       const parsed = parseJobPostingDocument({
         id: jobPostingId,

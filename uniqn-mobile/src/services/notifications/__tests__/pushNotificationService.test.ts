@@ -8,6 +8,10 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 
+// Import after mocks
+import { pushNotificationService } from '../pushNotificationService';
+import { logger } from '@/utils/logger';
+
 // ============================================================================
 // Mocks - 반드시 import 전에 선언
 // ============================================================================
@@ -71,10 +75,6 @@ jest.mock('../../observability/crashlyticsService', () => ({
     recordError: (...args: unknown[]) => mockRecordError(...args),
   },
 }));
-
-// Import after mocks
-import { pushNotificationService } from '../pushNotificationService';
-import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Test Suites
@@ -151,7 +151,8 @@ describe('pushNotificationService', () => {
       expect(mockRecordError).toHaveBeenCalled();
 
       // 상태 복구
-      mockSetNotificationHandler.mockClear();
+      mockSetNotificationHandler.mockReset();
+      mockSetNotificationHandler.mockImplementation(() => undefined);
     });
 
     it('중복 초기화 시 바로 true를 반환해야 함', async () => {

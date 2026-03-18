@@ -9,6 +9,22 @@
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  getDashboardStats,
+  getUsers,
+  getUserById,
+  updateUserRole,
+  setUserActive,
+  getSystemMetrics,
+  adminService,
+} from '../adminService';
+import { adminRepository } from '@/repositories';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+
 jest.mock('@/repositories', () => ({
   adminRepository: {
     getDashboardCounts: jest.fn(),
@@ -63,21 +79,11 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
   }),
 }));
 
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
+const mockRequireAdminUser = jest.fn();
 
-import {
-  getDashboardStats,
-  getUsers,
-  getUserById,
-  updateUserRole,
-  setUserActive,
-  getSystemMetrics,
-  adminService,
-} from '../adminService';
-import { adminRepository } from '@/repositories';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
+jest.mock('@/services/auth', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+}));
 
 // Get typed mock reference
 const mockRepo = adminRepository as jest.Mocked<typeof adminRepository>;
@@ -119,6 +125,7 @@ function createMockAdminUser(overrides: Record<string, unknown> = {}) {
 describe('AdminService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' });
   });
 
   // ==========================================================================

@@ -541,17 +541,16 @@ export const onUserRoleChange = onDocumentWritten(
 
 // --- Dashboard Functions ---
 
-export const getDashboardStats = onRequest(
-  { region: "asia-northeast3", cors: true },
-  async (_request, response) => {
+export const getDashboardStats = onCall(
+  { region: "asia-northeast3" },
+  async (request) => {
     try {
+      requireAuth(request);
+      requireRole(request, "admin");
+
       const now = new Date();
-      const ongoingEventsQuery = db
-        .collection("events")
-        .where("endDate", ">=", now);
-      const totalStaffQuery = db
-        .collection("users")
-        .where("role", "==", "staff");
+      const ongoingEventsQuery = db.collection("events").where("endDate", ">=", now);
+      const totalStaffQuery = db.collection("users").where("role", "==", "staff");
       const topStaffQuery = db
         .collection("users")
         .where("role", "==", "staff")
@@ -570,16 +569,17 @@ export const getDashboardStats = onRequest(
         ...doc.data(),
       }));
 
-      response.status(200).send({
-        data: {
-          ongoingEventsCount: ongoingEventsSnapshot.size,
-          totalStaffCount: totalStaffSnapshot.size,
-          topRatedStaff,
-        },
-      });
+      return {
+        ongoingEventsCount: ongoingEventsSnapshot.size,
+        totalStaffCount: totalStaffSnapshot.size,
+        topRatedStaff,
+      };
     } catch (error) {
       logger.error("Error getting dashboard stats:", error);
-      response.status(500).send({ data: { error: "Internal Server Error" } });
+      throw handleFunctionError(error, {
+        operation: "getDashboardStats",
+        context: { userId: request.auth?.uid },
+      });
     }
   },
 );

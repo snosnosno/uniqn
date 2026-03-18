@@ -121,7 +121,7 @@
 | `processRegistration` | HTTPS onCall | 관리자 가입 승인/거부 |
 | `createUserAccount` | HTTPS onCall | 관리자 사용자 생성 |
 | `onUserRoleChange` | Firestore | 사용자 role claim 동기화 |
-| `getDashboardStats` | HTTPS onRequest | 대시보드 통계 |
+| `getDashboardStats` | HTTPS onCall | 대시보드 통계 |
 | `updateUser` | HTTPS onCall | 사용자 수정 |
 | `deleteUser` | HTTPS onCall | 사용자 삭제 |
 | `logAction` | HTTPS onCall | 액션 로그 기록 |

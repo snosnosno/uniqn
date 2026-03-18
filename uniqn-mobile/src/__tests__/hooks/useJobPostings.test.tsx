@@ -11,7 +11,7 @@ import React from 'react';
 import type { JobPostingCard } from '@/types';
 
 // ============================================================================
-// Import After Mocks
+// Import Hook After Mocks
 // ============================================================================
 
 import { useJobPostings } from '@/hooks/useJobPostings';
@@ -35,6 +35,31 @@ const mockConvertToCard = jest.fn((posting) => posting as JobPostingCard);
 jest.mock('@/services', () => ({
   getJobPostings: (...args: unknown[]) => mockGetJobPostings(...args),
   convertToCard: (posting: unknown) => mockConvertToCard(posting),
+}));
+
+jest.mock('@/domains/job-posting', () => ({
+  buildPostingFacts: (posting: unknown) => posting,
+  projectPostingCard: (posting: unknown) => posting,
+}));
+
+jest.mock('@/utils/queryUtils', () => ({
+  stableFilters: (filters: unknown) => filters,
+}));
+
+jest.mock('@/lib/queryClient', () => ({
+  queryKeys: {
+    jobPostings: {
+      list: (filters: unknown) => ['jobPostings', 'list', filters],
+      all: ['jobPostings'],
+      detail: (id: string) => ['jobPostings', 'detail', id],
+    },
+  },
+  queryCachingOptions: {
+    jobPostings: {
+      staleTime: 0,
+      gcTime: 0,
+    },
+  },
 }));
 
 // ============================================================================

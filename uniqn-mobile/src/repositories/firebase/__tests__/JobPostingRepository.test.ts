@@ -175,7 +175,7 @@ function createMockDocSnap(id: string, data: Record<string, unknown> | null) {
   };
 }
 
-function createMockQuerySnap(docs: Array<{ id: string; data: Record<string, unknown> }>) {
+function createMockQuerySnap(docs: { id: string; data: Record<string, unknown> }[]) {
   const mockDocs = docs.map((d) => ({
     id: d.id,
     exists: () => true,
@@ -187,6 +187,77 @@ function createMockQuerySnap(docs: Array<{ id: string; data: Record<string, unkn
     empty: mockDocs.length === 0,
     size: mockDocs.length,
     forEach: (cb: (doc: (typeof mockDocs)[0]) => void) => mockDocs.forEach(cb),
+  };
+}
+
+function createValidJobPostingData(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    id: 'job-1',
+    title: '湲곗〈 怨듦퀬',
+    description: '?뚯뒪??怨듦퀬',
+    ownerId: 'employer-1',
+    status: 'active',
+    postingType: 'regular',
+    workDate: '2025-06-15',
+    timeSlot: '09:00',
+    location: {
+      name: '?쒖슱',
+      district: '媛뺣궓援?',
+      detailedAddress: '?뚰뿤?濡?123',
+    },
+    contactPhone: '010-1234-5678',
+    roles: [
+      {
+        role: 'dealer',
+        count: 5,
+        filled: 0,
+      },
+    ],
+    schedule: {
+      kind: 'dated',
+      primaryDate: '2025-06-15',
+      allDates: ['2025-06-15'],
+      requirements: [
+        {
+          date: '2025-06-15',
+          timeSlots: [
+            {
+              startTime: '09:00',
+              roles: [
+                {
+                  role: 'dealer',
+                  count: 5,
+                  filled: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    roleCatalog: [
+      {
+        role: 'dealer',
+        salary: { type: 'daily', amount: 150000 },
+      },
+    ],
+    compensation: {
+      mode: 'shared',
+      defaultSalary: { type: 'daily', amount: 150000 },
+      allowances: { meal: 10000 },
+    },
+    questions: {
+      items: [],
+    },
+    totalPositions: 5,
+    filledPositions: 0,
+    viewCount: 0,
+    applicationCount: 0,
+    createdAt: new Date('2025-06-01T00:00:00.000Z'),
+    updatedAt: new Date('2025-06-01T00:00:00.000Z'),
+    ...overrides,
   };
 }
 
@@ -452,7 +523,6 @@ describe('FirebaseJobPostingRepository', () => {
         ),
         update: jest.fn(),
       };
-
       (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
         return callback(mockTransaction);
       });
@@ -742,6 +812,10 @@ describe('FirebaseJobPostingRepository', () => {
       (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
         return callback(mockTransaction);
       });
+
+      mockTransaction.get.mockResolvedValueOnce(
+        createMockDocSnap('job-1', createValidJobPostingData())
+      );
 
       const result = await repository.updateWithTransaction(
         'job-1',

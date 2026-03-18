@@ -4,12 +4,12 @@
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
+    "serve": "npm run build && npx firebase-tools emulators:start --only functions",
+    "shell": "npm run build && npx firebase-tools functions:shell",
     "start": "npm run shell",
-    "deploy": "npm run build && firebase deploy --only functions",
-    "logs": "firebase functions:log",
-    "test": "npm run build && firebase emulators:exec --only firestore \"mocha --require ts-node/register --timeout 15000 test/**/*.test.ts\""
+    "deploy": "npm run build && npx firebase-tools deploy --only functions",
+    "logs": "npx firebase-tools functions:log",
+    "test": "npm run build && npx firebase-tools emulators:exec --only firestore \"mocha --require ts-node/register --timeout 15000 test/**/*.test.ts\""
   },
   "engines": {
     "node": "22"

@@ -1,18 +1,18 @@
 /**
  * UNIQN Mobile - Announcement Service
  *
- * @description 공지사항 관리 서비스 (Repository 패턴)
+ * @description 공지사항 관리 서비스(Repository 패턴)
  * @version 2.0.0 - Repository 패턴 적용
  *
  * 아키텍처:
- * Service Layer → Repository Layer → Firebase
+ * Service Layer -> Repository Layer -> Firebase
  */
 
 import { logger } from '@/utils/logger';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { announcementRepository } from '@/repositories';
-import { requireCurrentUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth';
 import { createAnnouncementSchema, updateAnnouncementSchema } from '@/schemas/announcement.schema';
 import type { Announcement, CreateAnnouncementInput, UpdateAnnouncementInput } from '@/types';
 import type { UserRole } from '@/types/role';
@@ -31,7 +31,7 @@ const COMPONENT = 'announcementService';
 /**
  * 발행된 공지사항 목록 조회 (사용자용)
  * - 발행 상태(published)만 조회
- * - 대상 역할 필터링
+ * - 대상 역할 필터만 지원
  */
 export async function fetchPublishedAnnouncements(
   userRole: UserRole | null,
@@ -54,6 +54,7 @@ export async function fetchAllAnnouncements(
   options: FetchAnnouncementsOptions = {}
 ): Promise<FetchAnnouncementsResult> {
   try {
+    await requireAdminUser();
     return await announcementRepository.getAll(options);
   } catch (error) {
     throw handleServiceError(error, {
@@ -90,7 +91,7 @@ export async function createAnnouncement(
   authorName: string,
   input: CreateAnnouncementInput
 ): Promise<string> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser(authorId);
   const validationResult = createAnnouncementSchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -99,14 +100,15 @@ export async function createAnnouncement(
       errors: validationResult.error.flatten().fieldErrors,
     });
   }
+
   try {
-    const id = await announcementRepository.create(authorId, authorName, validationResult.data);
+    const id = await announcementRepository.create(admin.uid, authorName, validationResult.data);
 
     logger.info('공지사항 생성 완료', {
       component: COMPONENT,
       announcementId: id,
       title: validationResult.data.title,
-      authorId,
+      authorId: admin.uid,
       adminId: admin.uid,
     });
 
@@ -115,7 +117,7 @@ export async function createAnnouncement(
     throw handleServiceError(error, {
       operation: '공지사항 생성',
       component: COMPONENT,
-      context: { authorId },
+      context: { authorId: admin.uid },
     });
   }
 }
@@ -131,7 +133,7 @@ export async function updateAnnouncement(
   announcementId: string,
   input: UpdateAnnouncementInput
 ): Promise<void> {
-  requireCurrentUser();
+  const admin = await requireAdminUser();
   const validationResult = updateAnnouncementSchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -140,12 +142,14 @@ export async function updateAnnouncement(
       errors: validationResult.error.flatten().fieldErrors,
     });
   }
+
   try {
     await announcementRepository.update(announcementId, validationResult.data);
 
     logger.info('공지사항 수정 완료', {
       component: COMPONENT,
       announcementId,
+      adminId: admin.uid,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -160,7 +164,7 @@ export async function updateAnnouncement(
  * 공지사항 발행 (관리자)
  */
 export async function publishAnnouncement(announcementId: string): Promise<void> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     await announcementRepository.publish(announcementId);
 
@@ -182,7 +186,7 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
  * 공지사항 보관 (관리자)
  */
 export async function archiveAnnouncement(announcementId: string): Promise<void> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     await announcementRepository.archive(announcementId);
 
@@ -204,7 +208,7 @@ export async function archiveAnnouncement(announcementId: string): Promise<void>
  * 공지사항 삭제 (관리자)
  */
 export async function deleteAnnouncement(announcementId: string): Promise<void> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     await announcementRepository.delete(announcementId);
 
@@ -250,6 +254,7 @@ export async function incrementViewCount(announcementId: string): Promise<void> 
  */
 export async function getAnnouncementCountByStatus(): Promise<AnnouncementCountByStatus> {
   try {
+    await requireAdminUser();
     return await announcementRepository.getCountByStatus();
   } catch (error) {
     throw handleServiceError(error, {

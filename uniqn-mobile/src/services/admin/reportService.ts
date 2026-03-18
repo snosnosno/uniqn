@@ -17,7 +17,7 @@ import { reportRepository, userRepository } from '@/repositories';
 import type { ReportFilters, FetchReportsResult } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 import { ValidationError, ERROR_CODES, toError } from '@/errors';
-import { requireCurrentUser } from '@/services/auth';
+import { requireAdminUser, requireCurrentUser } from '@/services/auth';
 import type { Report, CreateReportInput, ReviewReportInput } from '@/types/report';
 
 // ============================================================================
@@ -129,7 +129,7 @@ export async function getReportById(reportId: string): Promise<Report | null> {
  * @description Repository의 트랜잭션으로 상태 검증 + 업데이트 원자적 처리
  */
 export async function reviewReport(input: ReviewReportInput): Promise<void> {
-  const user = requireCurrentUser();
+  const admin = await requireAdminUser();
 
   // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = reviewReportInputSchema.safeParse(input);
@@ -151,7 +151,7 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
   // - 존재 확인
   // - 상태 검증 (pending만 처리 가능)
   // - 업데이트 (원자적)
-  await reportRepository.reviewWithTransaction(validatedInput, user.uid);
+  await reportRepository.reviewWithTransaction(validatedInput, admin.uid);
 }
 
 // ============================================================================
@@ -183,7 +183,7 @@ export async function getReportCountByStaff(staffId: string): Promise<{
  * 필터링 및 페이지네이션 기능을 제공합니다.
  */
 export async function getAllReports(filters: ReportFilters = {}): Promise<FetchReportsResult> {
-  requireCurrentUser();
+  await requireAdminUser();
 
   logger.info('Getting all reports (admin)', { filters });
   return reportRepository.getAll({ filters });

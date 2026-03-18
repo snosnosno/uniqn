@@ -93,7 +93,7 @@ export const initSentry = (): void => {
  * @param fn Cloud Function
  * @returns 래핑된 Function
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 제네릭 함수 래퍼를 위해 any 필요
+ 
 export const wrapFunction = <T extends (...args: unknown[]) => unknown>(fn: T): T => {
   return ((...args: Parameters<T>) => {
     try {

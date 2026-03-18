@@ -1,36 +1,34 @@
-/**
- * @file onJobPostingOGSync.ts
- * @description 공고 변경 시 Cloudflare KV에 OG 메타태그 데이터 동기화
- *
- * 트리거 조건:
- * - jobPostings 컬렉션 문서 생성/수정/삭제 감지 (onWrite)
- *
- * 처리 내용:
- * - 삭제 또는 비활성 → KV 삭제
- * - OG 관련 필드 변경 + active 상태 → KV에 포맷된 OG 데이터 저장
- * - viewCount, applicationCount 등 무관한 변경 → 무시
- */
-
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { logger } from 'firebase-functions';
-import { kvPut, kvDelete } from '../utils/cloudflareKV';
+import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { STATUS } from '../constants/status';
-
-// --- OG 관련 필드 (이 필드만 변경 시 KV 업데이트) ---
+import { kvDelete, kvPut } from '../utils/cloudflareKV';
 
 const OG_RELEVANT_FIELDS = [
-  'title', 'status', 'location', 'workDate', 'timeSlot',
-  'roles', 'defaultSalary', 'postingType', 'dateSpecificRequirements',
-  'fixedConfig', 'tournamentConfig', 'urgentConfig',
+  'title',
+  'status',
+  'location',
+  'workDate',
+  'workDates',
+  'timeSlot',
+  'roles',
+  'defaultSalary',
+  'postingType',
+  'dateSpecificRequirements',
+  'daysPerWeek',
+  'fixedConfig',
+  'tournamentConfig',
+  'urgentConfig',
+  'schedule',
+  'compensation',
+  'roleCatalog',
+  'roleKeys',
 ] as const;
-
-// --- 상수 ---
 
 const SALARY_TYPE_LABELS: Record<string, string> = {
   hourly: '시급',
   daily: '일급',
   monthly: '월급',
-  other: '협의',
+  other: '급여',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -45,47 +43,225 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const WEEKDAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
-
 const WEB_DOMAIN = 'https://uniqn.app';
 const OG_DEFAULT_IMAGE = `${WEB_DOMAIN}/og-default.png`;
 
-// --- 포맷 유틸 ---
+type OGSalary = {
+  type?: string;
+  amount?: number;
+};
+
+type OGRole = {
+  role?: string;
+  customRole?: string;
+  count?: number;
+};
+
+type OGDateRequirement = {
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
+type OGLocation = {
+  name?: string;
+  district?: string;
+  region?: string;
+};
+
+type OGRoleCatalogEntry = {
+  role?: string;
+  customRole?: string;
+  salary?: OGSalary;
+};
+
+type OGScheduleSlotRole = {
+  role?: string;
+  customRole?: string;
+  count?: number;
+  filled?: number;
+};
+
+type OGScheduleTimeSlot = {
+  startTime?: string;
+  isTimeToBeAnnounced?: boolean;
+  tentativeDescription?: string;
+  roles?: OGScheduleSlotRole[];
+};
+
+type OGScheduleRequirement = {
+  date?: string;
+  timeSlots?: OGScheduleTimeSlot[];
+  isGrouped?: boolean;
+};
+
+type OGSchedule = {
+  kind?: 'dated' | 'fixed';
+  primaryDate?: string;
+  allDates?: string[];
+  requirements?: OGScheduleRequirement[];
+  daysPerWeek?: number;
+  startTime?: string;
+  isStartTimeNegotiable?: boolean;
+  roleRequirements?: OGRole[];
+};
+
+type OGCompensation = {
+  defaultSalary?: OGSalary;
+};
+
+type JobPostingOGData = Record<string, unknown> & {
+  title?: string;
+  status?: string;
+  location?: OGLocation | string;
+  workDate?: string;
+  timeSlot?: string;
+  roles?: OGRole[];
+  defaultSalary?: OGSalary;
+  postingType?: string;
+  dateSpecificRequirements?: OGDateRequirement[];
+  schedule?: OGSchedule;
+  compensation?: OGCompensation;
+  roleCatalog?: OGRoleCatalogEntry[];
+  fixedConfig?: {
+    daysPerWeek?: number;
+  };
+  daysPerWeek?: number;
+};
 
 function formatShortDate(dateStr: string): string {
   try {
-    const date = new Date(dateStr + 'T00:00:00+09:00');
+    const date = new Date(`${dateStr}T00:00:00+09:00`);
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const weekday = WEEKDAYS_KO[date.getDay()];
+    const weekday = WEEKDAYS_KO[date.getDay()] ?? '';
     return `${month}/${day}(${weekday})`;
   } catch {
     return dateStr;
   }
 }
 
-function formatOGSalary(salary?: { type: string; amount: number }): string {
-  if (!salary || !salary.amount) return '급여 협의';
-  const typeLabel = SALARY_TYPE_LABELS[salary.type] || salary.type;
+function getRoleLabel(role?: string, customRole?: string): string {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
+
+  return ROLE_LABELS[role ?? 'other'] ?? customRole ?? role ?? '';
+}
+
+function mergeRoles(roles: OGRole[]): OGRole[] {
+  const merged = new Map<string, OGRole>();
+
+  roles.forEach((role) => {
+    const key = `${role.role ?? 'other'}:${role.customRole ?? ''}`;
+    const nextCount = role.count ?? 0;
+    const existing = merged.get(key);
+
+    if (existing) {
+      existing.count = (existing.count ?? 0) + nextCount;
+      return;
+    }
+
+    merged.set(key, {
+      role: role.role,
+      customRole: role.customRole,
+      count: role.count,
+    });
+  });
+
+  return Array.from(merged.values());
+}
+
+function getDefaultSalary(data: JobPostingOGData): OGSalary | undefined {
+  return data.compensation?.defaultSalary ?? data.defaultSalary;
+}
+
+export function formatOGSalary(salary?: OGSalary): string {
+  if (!salary?.amount) return '급여 협의';
+  const salaryType = salary.type ?? 'other';
+  const typeLabel = SALARY_TYPE_LABELS[salaryType] ?? salaryType;
   return `${typeLabel} ${salary.amount.toLocaleString('ko-KR')}원`;
 }
 
-function formatOGSchedule(data: Record<string, any>): string {
-  // v2: dateSpecificRequirements 우선
-  if (data.dateSpecificRequirements?.length > 0) {
-    const first = data.dateSpecificRequirements[0];
-    const dateStr = formatShortDate(first.date);
-    const timeStr = first.startTime && first.endTime
-      ? `${first.startTime}~${first.endTime}`
-      : '';
-
-    if (data.dateSpecificRequirements.length > 1) {
-      const extra = data.dateSpecificRequirements.length - 1;
-      return timeStr ? `${dateStr} ${timeStr} 외 ${extra}일` : `${dateStr} 외 ${extra}일`;
-    }
-    return timeStr ? `${dateStr} ${timeStr}` : dateStr;
+function formatTimeText(options: {
+  startTime?: string;
+  endTime?: string;
+  isTimeToBeAnnounced?: boolean;
+  tentativeDescription?: string;
+}): string {
+  if (options.tentativeDescription) {
+    return options.tentativeDescription;
   }
 
-  // v1 fallback: workDate + timeSlot
+  if (options.isTimeToBeAnnounced) {
+    return '미정';
+  }
+
+  if (options.startTime && options.endTime) {
+    return `${options.startTime}~${options.endTime}`;
+  }
+
+  return options.startTime ?? '';
+}
+
+function formatV3DatedSchedule(schedule?: OGSchedule): string {
+  if (schedule?.kind !== 'dated') {
+    return '';
+  }
+
+  const requirements = schedule.requirements ?? [];
+  if (requirements.length === 0) {
+    return schedule.primaryDate ? formatShortDate(schedule.primaryDate) : '';
+  }
+
+  const firstRequirement = requirements[0];
+  if (!firstRequirement?.date) {
+    return schedule.primaryDate ? formatShortDate(schedule.primaryDate) : '';
+  }
+
+  const firstSlot = firstRequirement.timeSlots?.[0];
+  const dateText = formatShortDate(firstRequirement.date);
+  const timeText = formatTimeText({
+    startTime: firstSlot?.startTime,
+    isTimeToBeAnnounced: firstSlot?.isTimeToBeAnnounced,
+    tentativeDescription: firstSlot?.tentativeDescription,
+  });
+
+  if (requirements.length > 1) {
+    const extraDateCount = requirements.length - 1;
+    return timeText
+      ? `${dateText} ${timeText} 외 ${extraDateCount}일`
+      : `${dateText} 외 ${extraDateCount}일`;
+  }
+
+  return timeText ? `${dateText} ${timeText}` : dateText;
+}
+
+export function formatOGSchedule(data: JobPostingOGData): string {
+  const v3Schedule = formatV3DatedSchedule(data.schedule);
+  if (v3Schedule) {
+    return v3Schedule;
+  }
+
+  const requirements = data.dateSpecificRequirements;
+  if (requirements && requirements.length > 0) {
+    const first = requirements[0];
+    if (!first?.date) return '';
+
+    const dateText = formatShortDate(first.date);
+    const timeText = formatTimeText({
+      startTime: first.startTime,
+      endTime: first.endTime,
+    });
+
+    if (requirements.length > 1) {
+      const extraCount = requirements.length - 1;
+      return timeText ? `${dateText} ${timeText} 외 ${extraCount}일` : `${dateText} 외 ${extraCount}일`;
+    }
+
+    return timeText ? `${dateText} ${timeText}` : dateText;
+  }
+
   if (data.workDate && data.timeSlot) {
     const timeSlot = data.timeSlot.replace(' - ', '~').replace(' ~ ', '~');
     return `${formatShortDate(data.workDate)} ${timeSlot}`;
@@ -98,89 +274,171 @@ function formatOGSchedule(data: Record<string, any>): string {
   return '';
 }
 
-function formatOGRoles(roles?: Array<{ role: string; count: number }>): string {
+function extractRolesFromSchedule(schedule?: OGSchedule): OGRole[] {
+  if (!schedule) {
+    return [];
+  }
+
+  if (schedule.kind === 'fixed') {
+    return mergeRoles(schedule.roleRequirements ?? []);
+  }
+
+  return mergeRoles(
+    (schedule.requirements ?? []).flatMap((requirement) =>
+      (requirement.timeSlots ?? []).flatMap((slot) =>
+        (slot.roles ?? []).map((role) => ({
+          role: role.role,
+          customRole: role.customRole,
+          count: role.count,
+        }))
+      )
+    )
+  );
+}
+
+function extractRoles(data: JobPostingOGData): OGRole[] {
+  const scheduleRoles = extractRolesFromSchedule(data.schedule);
+  if (scheduleRoles.length > 0) {
+    return scheduleRoles;
+  }
+
+  if (data.roles && data.roles.length > 0) {
+    return mergeRoles(data.roles);
+  }
+
+  if (data.roleCatalog && data.roleCatalog.length > 0) {
+    return mergeRoles(
+      data.roleCatalog.map((role) => ({
+        role: role.role,
+        customRole: role.customRole,
+      }))
+    );
+  }
+
+  return [];
+}
+
+export function formatOGRoles(roles?: OGRole[]): string {
   if (!roles?.length) return '';
+
   return roles
-    .map(r => `${ROLE_LABELS[r.role] || r.role} ${r.count}명`)
+    .map((role) => {
+      const label = getRoleLabel(role.role, role.customRole);
+      if (!label) {
+        return '';
+      }
+
+      const count = role.count ?? 0;
+      return count > 0 ? `${label} ${count}명` : label;
+    })
+    .filter(Boolean)
     .join(', ');
 }
 
-// --- OG description 조합 (공고 타입별) ---
+function formatFixedSchedule(data: JobPostingOGData): string {
+  if (data.schedule?.kind === 'fixed') {
+    const parts: string[] = [];
 
-function buildOGDescription(data: Record<string, any>): string {
-  const postingType = data.postingType || 'regular';
+    if (typeof data.schedule.daysPerWeek === 'number') {
+      parts.push(`주 ${data.schedule.daysPerWeek}일`);
+    }
+
+    const timeText = data.schedule.startTime
+      ? data.schedule.startTime
+      : data.schedule.isStartTimeNegotiable
+        ? '시간 협의'
+        : '';
+
+    if (timeText) {
+      parts.push(timeText);
+    }
+
+    return parts.join(' ');
+  }
+
+  const daysPerWeek =
+    typeof data.daysPerWeek === 'number' ? data.daysPerWeek : data.fixedConfig?.daysPerWeek;
+
+  return daysPerWeek ? `주 ${daysPerWeek}일` : '';
+}
+
+export function buildOGDescription(data: JobPostingOGData): string {
+  const postingType = data.postingType ?? 'regular';
   const parts: string[] = [];
 
   if (postingType === 'tournament') {
     parts.push('대회');
   } else {
-    const salary = formatOGSalary(data.defaultSalary);
-    parts.push(salary);
+    parts.push(formatOGSalary(getDefaultSalary(data)));
   }
 
   if (postingType === 'fixed') {
-    // 기간제: 주당 일수 표시
-    const daysPerWeek = data.daysPerWeek || data.fixedConfig?.daysPerWeek;
-    if (daysPerWeek) {
-      parts.push(`주 ${daysPerWeek}일`);
+    const fixedSchedule = formatFixedSchedule(data);
+    if (fixedSchedule) {
+      parts.push(fixedSchedule);
     }
   } else {
-    // 일반/대회/긴급: 날짜+시간
     const schedule = formatOGSchedule(data);
-    if (schedule) parts.push(schedule);
+    if (schedule) {
+      parts.push(schedule);
+    }
   }
 
-  const roles = formatOGRoles(data.roles);
-  if (roles) parts.push(roles);
+  const roles = formatOGRoles(extractRoles(data));
+  if (roles) {
+    parts.push(roles);
+  }
 
   return parts.join(' · ');
 }
 
-// --- OG title ---
+function getLocationName(location?: OGLocation | string): string {
+  if (!location) return '';
+  if (typeof location === 'string') return location;
+  return location.name ?? location.district ?? location.region ?? '';
+}
 
-function buildOGTitle(data: Record<string, any>): string {
-  const locationName = data.location?.name || data.location?.region || '';
-  const title = data.title || '';
+export function buildOGTitle(data: JobPostingOGData): string {
+  const locationName = getLocationName(data.location);
+  const title = data.title ?? '';
 
   if (locationName) {
     return `[${locationName}] ${title}`;
   }
+
   return title || 'UNIQN 공고';
 }
 
-// --- 변경 감지 ---
-
-/**
- * 키 순서에 영향받지 않는 deep comparison (JSON.stringify 순서 문제 방지)
- */
 function stableStringify(value: unknown): string {
   if (value === null || value === undefined) return String(value);
   if (typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  const sorted = Object.keys(value as Record<string, unknown>).sort();
-  return `{${sorted.map(k => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`).join(',')}}`;
+
+  const record = value as Record<string, unknown>;
+  const sortedKeys = Object.keys(record).sort();
+  return `{${sortedKeys
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(',')}}`;
 }
 
-function hasOGRelevantChange(
-  before: Record<string, any>,
-  after: Record<string, any>
+export function hasOGRelevantChange(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>
 ): boolean {
   return OG_RELEVANT_FIELDS.some(
-    field => stableStringify(before[field]) !== stableStringify(after[field])
+    (field) => stableStringify(before[field]) !== stableStringify(after[field])
   );
 }
-
-// --- 메인 트리거 ---
 
 export const onJobPostingOGSync = onDocumentWritten(
   { document: 'jobPostings/{jobId}', region: 'asia-northeast3' },
   async (event) => {
     const jobId = event.params.jobId;
-    const after = event.data?.after?.exists ? event.data.after.data()! : null;
-    const before = event.data?.before?.exists ? event.data.before.data()! : null;
+    const after = event.data?.after?.exists ? (event.data.after.data() as JobPostingOGData) : null;
+    const before = event.data?.before?.exists
+      ? (event.data.before.data() as JobPostingOGData)
+      : null;
 
-    // 조기 반환: 수정인데 OG 관련 필드가 안 바뀐 경우 (가장 빈번한 케이스)
-    // viewCount, applicationCount 등 무관한 업데이트에서 KV 호출 없이 즉시 반환
     if (before && after && !hasOGRelevantChange(before, after)) {
       return;
     }
@@ -188,23 +446,23 @@ export const onJobPostingOGSync = onDocumentWritten(
     try {
       const kvKey = `og:jobs:${jobId}`;
 
-      // 1. 삭제됨
       if (!after) {
-        logger.info('공고 삭제 → KV 삭제', { jobId });
+        logger.info('Deleting OG KV for removed job posting', { jobId });
         await kvDelete(kvKey);
         return;
       }
 
-      // 2. 비활성 상태 → KV 삭제
       if (after.status !== STATUS.JOB_POSTING.ACTIVE) {
         if (before?.status === STATUS.JOB_POSTING.ACTIVE) {
-          logger.info('공고 비활성화 → KV 삭제', { jobId, status: after.status });
+          logger.info('Deleting OG KV for inactive job posting', {
+            jobId,
+            status: after.status,
+          });
           await kvDelete(kvKey);
         }
         return;
       }
 
-      // 3. active 상태 + OG 관련 필드 변경 → KV에 OG 데이터 저장
       const ogData = {
         title: buildOGTitle(after),
         description: buildOGDescription(after),
@@ -212,15 +470,14 @@ export const onJobPostingOGSync = onDocumentWritten(
         image: OG_DEFAULT_IMAGE,
       };
 
-      logger.info('공고 OG 데이터 KV 저장', { jobId, ogData });
+      logger.info('Syncing OG data to Cloudflare KV', { jobId, ogData });
       await kvPut(kvKey, ogData);
-
     } catch (error) {
-      // KV 동기화 실패는 critical하지 않으므로 에러를 던지지 않음
-      logger.error('OG KV 동기화 실패', {
+      logger.error('Failed to sync OG data to Cloudflare KV', {
         jobId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
     }
-  });
+  }
+);

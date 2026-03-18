@@ -1,25 +1,41 @@
-/**
- * UNIQN Mobile - InquiryService Tests
- *
- * @description inquiryService 단위 테스트
- * @version 1.0.0
- */
-
 import {
-  fetchMyInquiries,
-  fetchAllInquiries,
-  getInquiry,
   createInquiry,
+  fetchAllInquiries,
+  fetchMyInquiries,
+  getInquiry,
+  getUnansweredCount,
   respondToInquiry,
   updateInquiryStatus,
-  getUnansweredCount,
 } from '../inquiryService';
 
-// ============================================================================
-// Mocks
-// ============================================================================
+import { ERROR_CODES } from '@/errors';
+import { inquiryRepository } from '@/repositories';
 
-jest.mock('@/lib/firebase');
+jest.mock('@/repositories', () => ({
+  inquiryRepository: {
+    getByUserId: jest.fn(),
+    getAll: jest.fn(),
+    getById: jest.fn(),
+    create: jest.fn(),
+    respond: jest.fn(),
+    updateStatus: jest.fn(),
+    getUnansweredCount: jest.fn(),
+  },
+}));
+
+const mockRequireAdminUser = jest.fn();
+const mockRequireMatchingCurrentUser = jest.fn();
+
+jest.mock('@/services/auth', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+  requireMatchingCurrentUser: (...args: unknown[]) => mockRequireMatchingCurrentUser(...args),
+}));
+
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) =>
+    error instanceof Error ? error : new Error(String(error))
+  ),
+}));
 
 jest.mock('@/utils/logger', () => ({
   logger: {
@@ -30,406 +46,150 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('@/errors', () => ({
-  ...jest.requireActual('@/errors'),
-  isAppError: jest.fn(),
-  normalizeError: jest.fn((err: unknown) => {
-    if (err instanceof Error) return err;
-    return new Error(String(err));
-  }),
-}));
-
-// Mock the firestore QueryBuilder and processPaginatedResults
-jest.mock('@/utils/firestore', () => ({
-  QueryBuilder: jest.fn().mockImplementation(() => ({
-    whereEqual: jest.fn().mockReturnThis(),
-    whereIf: jest.fn().mockReturnThis(),
-    orderByDesc: jest.fn().mockReturnThis(),
-    paginate: jest.fn().mockReturnThis(),
-    build: jest.fn().mockReturnValue({}),
-  })),
-  processPaginatedResults: jest.fn(),
-}));
-
-// ============================================================================
-// Import mocked modules
-// ============================================================================
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const firestoreModule = require('firebase/firestore');
-// Inject getCountFromServer mock into the already-mocked firebase/firestore module
-const mockGetCountFromServerFn = jest.fn();
-firestoreModule.getCountFromServer = mockGetCountFromServerFn;
-
-import { getDocs, getDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { processPaginatedResults } from '@/utils/firestore';
-
-const mockGetDocs = getDocs as jest.MockedFunction<typeof getDocs>;
-const mockGetDoc = getDoc as jest.MockedFunction<typeof getDoc>;
-const mockAddDoc = addDoc as jest.MockedFunction<typeof addDoc>;
-const mockUpdateDoc = updateDoc as jest.MockedFunction<typeof updateDoc>;
-const mockProcessPaginatedResults = processPaginatedResults as jest.MockedFunction<
-  typeof processPaginatedResults
->;
-
-// ============================================================================
-// Tests
-// ============================================================================
+const mockRepo = inquiryRepository as jest.Mocked<typeof inquiryRepository>;
 
 describe('inquiryService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' } as never);
+    mockRequireMatchingCurrentUser.mockReturnValue({ uid: 'user-1' } as never);
   });
 
-  // --------------------------------------------------------------------------
-  // fetchMyInquiries
-  // --------------------------------------------------------------------------
-
-  describe('fetchMyInquiries', () => {
-    it('userId가 있으면 내 문의 목록을 조회해야 한다', async () => {
-      const mockInquiries = [
-        {
-          id: 'inq-1',
-          userId: 'user-1',
-          subject: '문의1',
-          status: 'open',
-        },
-      ];
-
-      mockGetDocs.mockResolvedValue({ docs: [] } as never);
-      mockProcessPaginatedResults.mockReturnValue({
-        items: mockInquiries,
-        lastDoc: null,
-        hasMore: false,
-      } as never);
-
-      const result = await fetchMyInquiries({ userId: 'user-1' });
-
-      expect(result).toEqual({
-        inquiries: mockInquiries,
-        lastDoc: null,
-        hasMore: false,
-      });
-    });
-
-    it('userId가 없으면 ValidationError를 던져야 한다', async () => {
-      await expect(fetchMyInquiries({ userId: undefined })).rejects.toThrow();
-    });
-
-    it('userId가 빈 문자열이면 ValidationError를 던져야 한다', async () => {
-      await expect(fetchMyInquiries({ userId: '' })).rejects.toThrow();
-    });
-
-    it('pageSize를 지정할 수 있어야 한다', async () => {
-      mockGetDocs.mockResolvedValue({ docs: [] } as never);
-      mockProcessPaginatedResults.mockReturnValue({
-        items: [],
-        lastDoc: null,
-        hasMore: false,
-      } as never);
-
-      const result = await fetchMyInquiries({
-        userId: 'user-1',
-        pageSize: 10,
-      });
-
-      expect(result).toEqual({
-        inquiries: [],
-        lastDoc: null,
-        hasMore: false,
-      });
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockGetDocs.mockRejectedValue(new Error('Firestore error'));
-
-      await expect(fetchMyInquiries({ userId: 'user-1' })).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // fetchAllInquiries
-  // --------------------------------------------------------------------------
-
-  describe('fetchAllInquiries', () => {
-    it('전체 문의 목록을 조회해야 한다', async () => {
-      const mockInquiries = [
-        { id: 'inq-1', subject: '문의1', status: 'open' },
-        { id: 'inq-2', subject: '문의2', status: 'closed' },
-      ];
-
-      mockGetDocs.mockResolvedValue({ docs: [] } as never);
-      mockProcessPaginatedResults.mockReturnValue({
-        items: mockInquiries,
-        lastDoc: null,
-        hasMore: false,
-      } as never);
-
-      const result = await fetchAllInquiries({});
-
-      expect(result).toEqual({
-        inquiries: mockInquiries,
-        lastDoc: null,
-        hasMore: false,
-      });
-    });
-
-    it('status 필터를 적용할 수 있어야 한다', async () => {
-      mockGetDocs.mockResolvedValue({ docs: [] } as never);
-      mockProcessPaginatedResults.mockReturnValue({
-        items: [],
-        lastDoc: null,
-        hasMore: false,
-      } as never);
-
-      const result = await fetchAllInquiries({
-        filters: { status: 'open' as never },
-      });
-
-      expect(result).toEqual({
-        inquiries: [],
-        lastDoc: null,
-        hasMore: false,
-      });
-    });
-
-    it('status가 all이면 필터를 적용하지 않아야 한다', async () => {
-      mockGetDocs.mockResolvedValue({ docs: [] } as never);
-      mockProcessPaginatedResults.mockReturnValue({
-        items: [],
-        lastDoc: null,
-        hasMore: false,
-      } as never);
-
-      await fetchAllInquiries({
-        filters: { status: 'all' as never },
-      });
-
-      // Should complete without error
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockGetDocs.mockRejectedValue(new Error('Firestore error'));
-
-      await expect(fetchAllInquiries({})).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // getInquiry
-  // --------------------------------------------------------------------------
-
-  describe('getInquiry', () => {
-    const mockInquiryData = {
-      userId: 'user-1',
-      userEmail: 'test@test.com',
-      userName: '테스트',
-      category: 'general',
-      subject: '문의 제목',
-      message: '문의 내용',
-      status: 'open',
-      attachments: [],
-      response: null,
-      responderId: null,
-      responderName: null,
-      respondedAt: null,
-      createdAt: { _serverTimestamp: true },
-      updatedAt: { _serverTimestamp: true },
+  it('fetches inquiries for the current user', async () => {
+    const result = {
+      inquiries: [{ id: 'inq-1', userId: 'user-1' }],
+      nextCursor: null,
+      hasMore: false,
     };
+    mockRepo.getByUserId.mockResolvedValue(result as never);
 
-    it('문의 상세를 조회해야 한다', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        id: 'inq-1',
-        data: () => mockInquiryData,
-      } as never);
-
-      const result = await getInquiry('inq-1');
-
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe('inq-1');
-      expect(result?.subject).toBe('문의 제목');
-      expect(result?.userId).toBe('user-1');
+    await expect(fetchMyInquiries({ userId: 'user-1', pageSize: 10 })).resolves.toEqual({
+      inquiries: result.inquiries,
+      lastDoc: null,
+      hasMore: false,
     });
-
-    it('존재하지 않는 문의는 null을 반환해야 한다', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => false,
-        id: 'non-existent',
-        data: () => undefined,
-      } as never);
-
-      const result = await getInquiry('non-existent');
-
-      expect(result).toBeNull();
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockGetDoc.mockRejectedValue(new Error('Firestore error'));
-
-      await expect(getInquiry('inq-1')).rejects.toThrow();
+    expect(mockRepo.getByUserId).toHaveBeenCalledWith('user-1', {
+      pageSize: 10,
+      cursor: undefined,
     });
   });
 
-  // --------------------------------------------------------------------------
-  // createInquiry
-  // --------------------------------------------------------------------------
+  it('rejects fetchMyInquiries without a user id', async () => {
+    await expect(fetchMyInquiries({ userId: '' })).rejects.toEqual(
+      expect.objectContaining({ code: ERROR_CODES.VALIDATION_REQUIRED })
+    );
+  });
 
-  describe('createInquiry', () => {
-    const mockInput = {
+  it('fetches all inquiries with filters', async () => {
+    const result = {
+      inquiries: [{ id: 'inq-1', status: 'open' }],
+      nextCursor: 'cursor-1',
+      hasMore: true,
+    };
+    mockRepo.getAll.mockResolvedValue(result as never);
+
+    await expect(fetchAllInquiries({ filters: { status: 'open' as never } })).resolves.toEqual({
+      inquiries: result.inquiries,
+      lastDoc: 'cursor-1',
+      hasMore: true,
+    });
+    expect(mockRepo.getAll).toHaveBeenCalledWith({
+      filters: { status: 'open' },
+      pageSize: undefined,
+      cursor: undefined,
+    });
+  });
+
+  it('rejects admin inquiry fetches for non-admin users', async () => {
+    mockRequireAdminUser.mockRejectedValueOnce(
+      Object.assign(new Error('forbidden'), {
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
+
+    await expect(fetchAllInquiries({ filters: { status: 'open' as never } })).rejects.toEqual(
+      expect.objectContaining({ code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS })
+    );
+    expect(mockRepo.getAll).not.toHaveBeenCalled();
+  });
+
+  it('gets a single inquiry', async () => {
+    const inquiry = { id: 'inq-1', subject: 'Need help' };
+    mockRepo.getById.mockResolvedValue(inquiry as never);
+
+    await expect(getInquiry('inq-1')).resolves.toEqual(inquiry);
+    expect(mockRepo.getById).toHaveBeenCalledWith('inq-1');
+  });
+
+  it('creates an inquiry only for the authenticated user', async () => {
+    mockRepo.create.mockResolvedValue('inq-new' as never);
+    const input = {
       category: 'general' as const,
-      subject: '새 문의',
-      message: '문의 내용입니다',
+      subject: 'Question',
+      message: 'Details here',
       attachments: [],
     };
 
-    it('문의를 생성하고 ID를 반환해야 한다', async () => {
-      mockAddDoc.mockResolvedValue({ id: 'new-inq-id' } as never);
-
-      const result = await createInquiry('user-1', 'test@test.com', '테스트', mockInput as never);
-
-      expect(result).toBe('new-inq-id');
-      expect(mockAddDoc).toHaveBeenCalled();
-    });
-
-    it('첨부파일 없이 문의를 생성할 수 있어야 한다', async () => {
-      mockAddDoc.mockResolvedValue({ id: 'new-inq-id' } as never);
-
-      const inputWithoutAttachments = {
-        category: 'general' as const,
-        subject: '새 문의',
-        message: '문의 내용',
-      };
-
-      const result = await createInquiry(
-        'user-1',
-        'test@test.com',
-        '테스트',
-        inputWithoutAttachments as never
-      );
-
-      expect(result).toBe('new-inq-id');
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockAddDoc.mockRejectedValue(new Error('생성 실패'));
-
-      await expect(
-        createInquiry('user-1', 'test@test.com', '테스트', mockInput as never)
-      ).rejects.toThrow();
-    });
+    await expect(createInquiry('user-1', 'user@test.com', 'User', input)).resolves.toBe('inq-new');
+    expect(mockRepo.create).toHaveBeenCalledWith(
+      { userId: 'user-1', userEmail: 'user@test.com', userName: 'User' },
+      input
+    );
   });
 
-  // --------------------------------------------------------------------------
-  // respondToInquiry
-  // --------------------------------------------------------------------------
-
-  describe('respondToInquiry', () => {
-    const mockInput = {
-      response: '답변 내용입니다',
-      status: 'closed' as const,
+  it('rejects inquiry creation when the user id does not match the session', async () => {
+    const input = {
+      category: 'general' as const,
+      subject: 'Question',
+      message: 'Details here',
+      attachments: [],
     };
 
-    it('문의에 응답해야 한다', async () => {
-      mockUpdateDoc.mockResolvedValue(undefined as never);
-
-      await respondToInquiry('inq-1', 'admin-1', '관리자', mockInput as never);
-
-      expect(mockUpdateDoc).toHaveBeenCalled();
-      const updateCall = mockUpdateDoc.mock.calls[0];
-      expect(updateCall[1]).toMatchObject({
-        response: '답변 내용입니다',
-        responderId: 'admin-1',
-        responderName: '관리자',
+    mockRequireMatchingCurrentUser.mockImplementationOnce(() => {
+      throw Object.assign(new Error('forbidden'), {
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
       });
     });
 
-    it('status를 지정하지 않으면 기본값으로 closed를 사용해야 한다', async () => {
-      mockUpdateDoc.mockResolvedValue(undefined as never);
-
-      const inputWithoutStatus = {
-        response: '답변 내용',
-      };
-
-      await respondToInquiry('inq-1', 'admin-1', '관리자', inputWithoutStatus as never);
-
-      expect(mockUpdateDoc).toHaveBeenCalled();
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockUpdateDoc.mockRejectedValue(new Error('응답 실패'));
-
-      await expect(
-        respondToInquiry('inq-1', 'admin-1', '관리자', mockInput as never)
-      ).rejects.toThrow();
-    });
+    await expect(createInquiry('other-user', 'user@test.com', 'User', input)).rejects.toEqual(
+      expect.objectContaining({ code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS })
+    );
+    expect(mockRepo.create).not.toHaveBeenCalled();
   });
 
-  // --------------------------------------------------------------------------
-  // updateInquiryStatus
-  // --------------------------------------------------------------------------
+  it('responds to an inquiry only for the authenticated responder id', async () => {
+    mockRepo.respond.mockResolvedValue(undefined as never);
+    const input = { response: 'Handled', status: 'closed' as const };
 
-  describe('updateInquiryStatus', () => {
-    it('문의 상태를 변경해야 한다', async () => {
-      mockUpdateDoc.mockResolvedValue(undefined as never);
-
-      await updateInquiryStatus('inq-1', 'closed' as never);
-
-      expect(mockUpdateDoc).toHaveBeenCalled();
-      const updateCall = mockUpdateDoc.mock.calls[0];
-      expect(updateCall[1]).toMatchObject({
-        status: 'closed',
-      });
-    });
-
-    it('in_progress 상태로 변경할 수 있어야 한다', async () => {
-      mockUpdateDoc.mockResolvedValue(undefined as never);
-
-      await updateInquiryStatus('inq-1', 'in_progress' as never);
-
-      expect(mockUpdateDoc).toHaveBeenCalled();
-      const updateCall = mockUpdateDoc.mock.calls[0];
-      expect(updateCall[1]).toMatchObject({
-        status: 'in_progress',
-      });
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockUpdateDoc.mockRejectedValue(new Error('상태 변경 실패'));
-
-      await expect(updateInquiryStatus('inq-1', 'closed' as never)).rejects.toThrow();
-    });
+    await expect(respondToInquiry('inq-1', 'admin-1', 'Admin', input)).resolves.toBeUndefined();
+    expect(mockRepo.respond).toHaveBeenCalledWith('inq-1', 'admin-1', 'Admin', input);
   });
 
-  // --------------------------------------------------------------------------
-  // getUnansweredCount
-  // --------------------------------------------------------------------------
+  it('rejects inquiry responses from non-admin users', async () => {
+    mockRequireAdminUser.mockRejectedValueOnce(
+      Object.assign(new Error('forbidden'), {
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
+    const input = { response: 'Handled', status: 'closed' as const };
 
-  describe('getUnansweredCount', () => {
-    it('미답변 문의 수를 반환해야 한다', async () => {
-      mockGetCountFromServerFn.mockResolvedValue({
-        data: () => ({ count: 5 }),
-      } as never);
+    await expect(respondToInquiry('inq-1', 'admin-1', 'Admin', input)).rejects.toEqual(
+      expect.objectContaining({ code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS })
+    );
+    expect(mockRepo.respond).not.toHaveBeenCalled();
+  });
 
-      const result = await getUnansweredCount();
+  it('updates inquiry status', async () => {
+    mockRepo.updateStatus.mockResolvedValue(undefined as never);
 
-      expect(result).toBe(5);
-    });
+    await expect(updateInquiryStatus('inq-1', 'closed' as never)).resolves.toBeUndefined();
+    expect(mockRepo.updateStatus).toHaveBeenCalledWith('inq-1', 'closed');
+  });
 
-    it('미답변 문의가 없으면 0을 반환해야 한다', async () => {
-      mockGetCountFromServerFn.mockResolvedValue({
-        data: () => ({ count: 0 }),
-      } as never);
+  it('returns unanswered inquiry counts', async () => {
+    mockRepo.getUnansweredCount.mockResolvedValue(5 as never);
 
-      const result = await getUnansweredCount();
-
-      expect(result).toBe(0);
-    });
-
-    it('Firestore 에러 시 에러를 던져야 한다', async () => {
-      mockGetCountFromServerFn.mockRejectedValue(new Error('통계 조회 실패'));
-
-      await expect(getUnansweredCount()).rejects.toThrow();
-    });
+    await expect(getUnansweredCount()).resolves.toBe(5);
+    expect(mockRepo.getUnansweredCount).toHaveBeenCalledTimes(1);
   });
 });

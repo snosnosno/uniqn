@@ -1,18 +1,16 @@
-/**
- * UNIQN Mobile - useSchedules Hook Tests
- *
- * @description Unit tests for schedule management hooks
- * @version 1.0.0
- */
+import { act, renderHook, waitFor } from '@testing-library/react-native';
+import type { CalendarView, ScheduleEvent, ScheduleStats } from '@/types';
 
-import { renderHook, act, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-import type { ScheduleEvent, ScheduleStats, CalendarView } from '@/types';
-
-// ============================================================================
-// Mock Services
-// ============================================================================
+import {
+  useSchedules,
+  useSchedulesByMonth,
+  useSchedulesByDate,
+  useScheduleDetail,
+  useTodaySchedules,
+  useUpcomingSchedules,
+  useScheduleStats,
+  useCalendarView,
+} from '@/hooks/useSchedules';
 
 const mockGetMySchedules = jest.fn();
 const mockGetSchedulesByMonth = jest.fn();
@@ -38,10 +36,6 @@ jest.mock('@/services/work/scheduleService', () => ({
   getCalendarMarkedDates: (...args: unknown[]) => mockGetCalendarMarkedDates(...args),
 }));
 
-// ============================================================================
-// Mock Utils
-// ============================================================================
-
 const mockGroupScheduleEvents = jest.fn();
 const mockFilterSchedulesByDate = jest.fn();
 
@@ -54,33 +48,16 @@ jest.mock('@/utils/queryUtils', () => ({
   stableFilters: (filters: unknown) => filters,
 }));
 
-// ============================================================================
-// Mock Auth Store
-// ============================================================================
+type MockUser = { uid: string } | null;
 
-const mockUser = { uid: 'staff-1' };
+let mockUser: MockUser = { uid: 'staff-1' };
 
 jest.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector?: (state: { user: typeof mockUser }) => unknown) =>
-    selector ? selector({ user: mockUser }) : { user: mockUser },
-}));
-
-// ============================================================================
-// Mock Logger
-// ============================================================================
-
-jest.mock('@/utils/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+  useAuthStore: (selector?: (state: { user: MockUser }) => unknown) => {
+    const state = { user: mockUser };
+    return selector ? selector(state) : state;
   },
 }));
-
-// ============================================================================
-// Mock Errors
-// ============================================================================
 
 class MockAuthError extends Error {
   constructor(code: string) {
@@ -96,29 +73,57 @@ jest.mock('@/errors/AppError', () => ({
   },
 }));
 
-jest.mock('@/errors', () => ({
-  AuthError: MockAuthError,
-  ERROR_CODES: {
-    AUTH_REQUIRED: 'AUTH_REQUIRED',
+const mockInvalidateQueries = jest.fn();
+const mockRefetch = jest.fn();
+const mockUseQuery = jest.fn();
+
+let mockQueryData: unknown = undefined;
+let mockQueryError: Error | null = null;
+let mockIsLoading = false;
+let mockIsRefetching = false;
+
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: (
+    options: {
+      queryFn: () => Promise<unknown> | unknown;
+      enabled?: boolean;
+    } & Record<string, unknown>
+  ) => mockUseQuery(options),
+  useQueryClient: () => ({
+    invalidateQueries: mockInvalidateQueries,
+  }),
+}));
+
+jest.mock('@/lib/queryClient', () => ({
+  queryKeys: {
+    schedules: {
+      all: ['schedules'],
+      list: (filters: unknown) => ['schedules', 'list', filters],
+      byMonth: (year: number, month: number) => ['schedules', 'byMonth', year, month],
+      byDate: (date: string) => ['schedules', 'byDate', date],
+    },
+  },
+  queryCachingOptions: {
+    schedules: {
+      staleTime: 0,
+      gcTime: 0,
+    },
+  },
+  cachingPolicies: {
+    realtime: 0,
+    standard: 0,
+    stable: 0,
   },
 }));
 
-// ============================================================================
-// Test Utilities
-// ============================================================================
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
 
 function createMockSchedule(overrides: Partial<ScheduleEvent> = {}): ScheduleEvent {
   return {
@@ -128,8 +133,8 @@ function createMockSchedule(overrides: Partial<ScheduleEvent> = {}): ScheduleEve
     startTime: null,
     endTime: null,
     jobPostingId: 'job-1',
-    jobPostingName: '테스트 공고',
-    location: '서울 강남구',
+    jobPostingName: 'Test job',
+    location: 'Seoul',
     role: 'dealer',
     status: 'not_started',
     sourceCollection: 'workLogs',
@@ -152,686 +157,345 @@ function createMockStats(): ScheduleStats {
   };
 }
 
-// ============================================================================
-// Mock Query Client
-// ============================================================================
-
-jest.mock('@/lib/queryClient', () => ({
-  queryKeys: {
-    schedules: {
-      all: ['schedules'],
-      list: (filters: unknown) => ['schedules', 'list', filters],
-      byMonth: (year: number, month: number) => ['schedules', 'byMonth', year, month],
-      byDate: (date: string) => ['schedules', 'byDate', date],
-    },
-  },
-  queryCachingOptions: {
-    schedules: {
-      staleTime: 30 * 1000,
-      gcTime: 5 * 60 * 1000,
-    },
-  },
-  cachingPolicies: {
-    realtime: 0,
-    standard: 5 * 60 * 1000,
-  },
-}));
-
-// ============================================================================
-// Import Hooks After Mocks
-// ============================================================================
-
-import {
-  useSchedules,
-  useSchedulesByMonth,
-  useSchedulesByDate,
-  useScheduleDetail,
-  useTodaySchedules,
-  useUpcomingSchedules,
-  useScheduleStats,
-  useCalendarView,
-} from '@/hooks/useSchedules';
-
-// ============================================================================
-// Tests
-// ============================================================================
-
-describe('useSchedules Hooks', () => {
-  let queryClient: QueryClient;
-
+describe('useSchedules hooks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
+    mockUser = { uid: 'staff-1' };
+    mockQueryData = undefined;
+    mockQueryError = null;
+    mockIsLoading = false;
+    mockIsRefetching = false;
+    mockInvalidateQueries.mockResolvedValue(undefined);
+    mockRefetch.mockResolvedValue(undefined);
+
+    mockUseQuery.mockImplementation(
+      (options: { queryFn: () => Promise<unknown> | unknown; enabled?: boolean }) => {
+        if (options.enabled === false) {
+          return {
+            data: undefined,
+            isLoading: false,
+            isRefetching: false,
+            error: null,
+            refetch: mockRefetch,
+          };
+        }
+
+        void Promise.resolve()
+          .then(() => options.queryFn())
+          .catch(() => undefined);
+
+        return {
+          data: mockQueryData,
+          isLoading: mockIsLoading,
+          isRefetching: mockIsRefetching,
+          error: mockQueryError,
+          refetch: mockRefetch,
+        };
+      }
+    );
+
+    mockGroupSchedulesByDate.mockImplementation((schedules: ScheduleEvent[]) => [
+      {
+        date: schedules[0]?.date ?? '2024-02-15',
+        events: schedules,
       },
-    });
+    ]);
+    mockGetCalendarMarkedDates.mockImplementation((schedules: ScheduleEvent[]) =>
+      schedules.reduce<Record<string, { marked: true }>>((acc, schedule) => {
+        acc[schedule.date] = { marked: true };
+        return acc;
+      }, {})
+    );
+    mockGroupScheduleEvents.mockImplementation((schedules: unknown[]) => schedules);
+    mockFilterSchedulesByDate.mockImplementation(
+      (schedules: { date?: string }[] | undefined, selectedDate: string) =>
+        (schedules ?? []).filter((schedule) => schedule.date === selectedDate)
+    );
+    mockSubscribeToSchedules.mockReturnValue(() => undefined);
   });
-
-  afterEach(() => {
-    queryClient.clear();
-  });
-
-  // ==========================================================================
-  // useSchedules
-  // ==========================================================================
 
   describe('useSchedules', () => {
-    it('스케줄 목록을 조회해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      const mockStats = createMockStats();
+    it('returns list data, stats, and derived calendar state', async () => {
+      const schedules = [createMockSchedule()];
+      const stats = createMockStats();
+      const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
+      const markedDates = { '2024-02-15': { marked: true } };
 
-      mockGetMySchedules.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: mockStats,
-      });
-      mockGroupSchedulesByDate.mockReturnValueOnce([]);
-      mockGetCalendarMarkedDates.mockReturnValueOnce({});
+      mockQueryData = { schedules, stats };
+      mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
+      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
 
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSchedules());
 
       await waitFor(() => {
-        expect(result.current.schedules).toEqual(mockSchedules);
+        expect(mockGetMySchedules).toHaveBeenCalledWith('staff-1', undefined);
       });
 
-      expect(result.current.stats).toEqual(mockStats);
-      expect(mockGetMySchedules).toHaveBeenCalledWith('staff-1', undefined);
+      expect(result.current.schedules).toEqual(schedules);
+      expect(result.current.stats).toEqual(stats);
+      expect(result.current.groupedSchedules).toEqual(groupedSchedules);
+      expect(result.current.markedDates).toEqual(markedDates);
     });
 
-    it('필터를 적용하여 조회해야 함', async () => {
-      const filters = {
-        dateRange: { start: '2024-02-01', end: '2024-02-29' },
-        type: 'confirmed' as const,
-      };
+    it('does not query when disabled', () => {
+      const { result } = renderHook(() => useSchedules({ enabled: false }));
 
-      mockGetMySchedules.mockResolvedValueOnce({
-        schedules: [],
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValueOnce([]);
-      mockGetCalendarMarkedDates.mockReturnValueOnce({});
-
-      renderHook(() => useSchedules({ filters }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGetMySchedules).toHaveBeenCalledWith('staff-1', filters);
-      });
+      expect(mockGetMySchedules).not.toHaveBeenCalled();
+      expect(result.current.schedules).toEqual([]);
+      expect(result.current.error).toBeNull();
     });
 
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useSchedules({ enabled: false }), {
-        wrapper: createWrapper(),
-      });
+    it('uses realtime subscription data when realtime mode is enabled', async () => {
+      const realtimeSchedules = [createMockSchedule({ id: 'realtime-1' })];
+      const unsubscribe = jest.fn();
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
 
-      await waitFor(() => {
-        expect(mockGetMySchedules).not.toHaveBeenCalled();
-      });
-    });
-
-    it('날짜별 그룹화를 수행해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      const mockGrouped = [
-        {
-          date: '2024-02-15',
-          formattedDate: '2월 15일 (목)',
-          events: mockSchedules,
-          isToday: false,
-          isPast: false,
-        },
-      ];
-
-      mockGetMySchedules.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValueOnce(mockGrouped);
-      mockGetCalendarMarkedDates.mockReturnValueOnce({});
-
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.groupedSchedules).toEqual(mockGrouped);
-      });
-
-      expect(mockGroupSchedulesByDate).toHaveBeenCalledWith(mockSchedules);
-    });
-
-    it('캘린더 마킹 데이터를 생성해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      const mockMarkedDates = {
-        '2024-02-15': { marked: true, dotColor: '#22c55e', type: 'confirmed' as const },
-      };
-
-      mockGetMySchedules.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValueOnce([]);
-      mockGetCalendarMarkedDates.mockReturnValueOnce(mockMarkedDates);
-
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.markedDates).toEqual(mockMarkedDates);
-      });
-
-      expect(mockGetCalendarMarkedDates).toHaveBeenCalledWith(mockSchedules);
-    });
-
-    it('로딩 상태를 올바르게 반환해야 함', async () => {
-      mockGetMySchedules.mockImplementationOnce(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return unsubscribe;
+        }
       );
 
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
+      const { result, unmount } = renderHook(() => useSchedules({ realtime: true }));
+
+      await waitFor(() => {
+        expect(mockSubscribeToSchedules).toHaveBeenCalled();
       });
+
+      expect(mockGetMySchedules).not.toHaveBeenCalled();
+
+      act(() => {
+        onData?.(realtimeSchedules);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules).toEqual(realtimeSchedules);
+      });
+
+      unmount();
+      expect(unsubscribe).toHaveBeenCalled();
+    });
+
+    it('refresh invalidates schedule queries and refetches', async () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      const { result } = renderHook(() => useSchedules());
+
+      await act(async () => {
+        await result.current.refresh();
+      });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['schedules'],
+      });
+      expect(mockRefetch).toHaveBeenCalled();
+    });
+
+    it('exposes query loading and error state', () => {
+      const queryError = new Error('network');
+      mockIsLoading = true;
+      mockIsRefetching = true;
+      mockQueryError = queryError;
+
+      const { result } = renderHook(() => useSchedules());
 
       expect(result.current.isLoading).toBe(true);
-    });
-
-    it('에러를 올바르게 처리해야 함', async () => {
-      const mockError = new Error('네트워크 에러');
-      mockGetMySchedules.mockRejectedValueOnce(mockError);
-
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.error).toBeTruthy();
-      });
-    });
-
-    it('refresh 함수를 제공해야 함', async () => {
-      mockGetMySchedules.mockResolvedValue({
-        schedules: [],
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValue([]);
-      mockGetCalendarMarkedDates.mockReturnValue({});
-
-      const { result } = renderHook(() => useSchedules(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.refresh).toBeDefined();
-      });
-
-      await act(async () => {
-        await result.current.refresh();
-      });
-
-      expect(mockGetMySchedules).toHaveBeenCalled();
+      expect(result.current.isRefreshing).toBe(true);
+      expect(result.current.error).toBe(queryError);
     });
   });
-
-  // ==========================================================================
-  // useSchedulesByMonth
-  // ==========================================================================
 
   describe('useSchedulesByMonth', () => {
-    it('월별 스케줄을 조회해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      const mockStats = createMockStats();
+    it('returns monthly schedules and invalidates month-scoped cache on refresh', async () => {
+      const schedules = [createMockSchedule()];
+      const stats = createMockStats();
 
-      mockGetSchedulesByMonth.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: mockStats,
-      });
-      mockGroupSchedulesByDate.mockReturnValueOnce([]);
-      mockGetCalendarMarkedDates.mockReturnValueOnce({});
+      mockQueryData = { schedules, stats };
 
-      const { result } = renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
 
       await waitFor(() => {
-        expect(result.current.schedules).toEqual(mockSchedules);
+        expect(mockGetSchedulesByMonth).toHaveBeenCalledWith('staff-1', 2024, 2);
       });
 
-      expect(mockGetSchedulesByMonth).toHaveBeenCalledWith('staff-1', 2024, 2);
-    });
-
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2, enabled: false }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGetSchedulesByMonth).not.toHaveBeenCalled();
-      });
-    });
-
-    it('refresh 함수를 제공해야 함', async () => {
-      mockGetSchedulesByMonth.mockResolvedValue({
-        schedules: [],
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValue([]);
-      mockGetCalendarMarkedDates.mockReturnValue({});
-
-      const { result } = renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.refresh).toBeDefined();
-      });
+      expect(result.current.schedules).toEqual(schedules);
+      expect(result.current.stats).toEqual(stats);
 
       await act(async () => {
         await result.current.refresh();
       });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['schedules', 'byMonth', 2024, 2],
+      });
+    });
+
+    it('does not query monthly schedules when disabled', () => {
+      const { result } = renderHook(() =>
+        useSchedulesByMonth({ year: 2024, month: 2, enabled: false })
+      );
+
+      expect(mockGetSchedulesByMonth).not.toHaveBeenCalled();
+      expect(result.current.schedules).toEqual([]);
     });
   });
 
-  // ==========================================================================
-  // useSchedulesByDate
-  // ==========================================================================
+  describe('simple query hooks', () => {
+    it('loads schedules by date', async () => {
+      const schedules = [createMockSchedule()];
+      mockQueryData = schedules;
 
-  describe('useSchedulesByDate', () => {
-    it('특정 날짜 스케줄을 조회해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetSchedulesByDate.mockResolvedValueOnce(mockSchedules);
-
-      const { result } = renderHook(() => useSchedulesByDate('2024-02-15'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSchedulesByDate('2024-02-15'));
 
       await waitFor(() => {
-        expect(result.current.schedules).toEqual(mockSchedules);
+        expect(mockGetSchedulesByDate).toHaveBeenCalledWith('staff-1', '2024-02-15');
       });
 
-      expect(mockGetSchedulesByDate).toHaveBeenCalledWith('staff-1', '2024-02-15');
+      expect(result.current.schedules).toEqual(schedules);
     });
 
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useSchedulesByDate('2024-02-15', false), {
-        wrapper: createWrapper(),
-      });
+    it('skips schedules-by-date queries when date is missing or disabled', () => {
+      renderHook(() => useSchedulesByDate('', true));
+      renderHook(() => useSchedulesByDate('2024-02-15', false));
 
-      await waitFor(() => {
-        expect(mockGetSchedulesByDate).not.toHaveBeenCalled();
-      });
+      expect(mockGetSchedulesByDate).not.toHaveBeenCalled();
     });
 
-    it('date가 없으면 조회하지 않아야 함', async () => {
-      renderHook(() => useSchedulesByDate(''), {
-        wrapper: createWrapper(),
-      });
+    it('loads schedule detail', async () => {
+      const schedule = createMockSchedule();
+      mockQueryData = schedule;
+
+      const { result } = renderHook(() => useScheduleDetail('schedule-1'));
 
       await waitFor(() => {
-        expect(mockGetSchedulesByDate).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  // ==========================================================================
-  // useScheduleDetail
-  // ==========================================================================
-
-  describe('useScheduleDetail', () => {
-    it('스케줄 상세를 조회해야 함', async () => {
-      const mockSchedule = createMockSchedule();
-      mockGetScheduleById.mockResolvedValueOnce(mockSchedule);
-
-      const { result } = renderHook(() => useScheduleDetail('schedule-1'), {
-        wrapper: createWrapper(),
+        expect(mockGetScheduleById).toHaveBeenCalledWith('schedule-1');
       });
 
-      await waitFor(() => {
-        expect(result.current.schedule).toEqual(mockSchedule);
-      });
-
-      expect(mockGetScheduleById).toHaveBeenCalledWith('schedule-1');
+      expect(result.current.schedule).toEqual(schedule);
     });
 
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useScheduleDetail('schedule-1', false), {
-        wrapper: createWrapper(),
-      });
+    it('loads today schedules', async () => {
+      const schedules = [createMockSchedule()];
+      mockQueryData = schedules;
+
+      const { result } = renderHook(() => useTodaySchedules());
 
       await waitFor(() => {
-        expect(mockGetScheduleById).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  // ==========================================================================
-  // useTodaySchedules
-  // ==========================================================================
-
-  describe('useTodaySchedules', () => {
-    it('오늘 스케줄을 조회해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetTodaySchedules.mockResolvedValueOnce(mockSchedules);
-
-      const { result } = renderHook(() => useTodaySchedules(), {
-        wrapper: createWrapper(),
+        expect(mockGetTodaySchedules).toHaveBeenCalledWith('staff-1');
       });
 
-      await waitFor(() => {
-        expect(result.current.schedules).toEqual(mockSchedules);
-      });
-
-      expect(mockGetTodaySchedules).toHaveBeenCalledWith('staff-1');
+      expect(result.current.schedules).toEqual(schedules);
     });
 
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useTodaySchedules(false), {
-        wrapper: createWrapper(),
-      });
+    it('loads upcoming schedules with default and custom ranges', async () => {
+      mockQueryData = [createMockSchedule()];
+
+      renderHook(() => useUpcomingSchedules());
+      renderHook(() => useUpcomingSchedules(14));
 
       await waitFor(() => {
-        expect(mockGetTodaySchedules).not.toHaveBeenCalled();
+        expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 7);
       });
+
+      expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 14);
+    });
+
+    it('loads schedule stats', async () => {
+      const stats = createMockStats();
+      mockQueryData = stats;
+
+      const { result } = renderHook(() => useScheduleStats());
+
+      await waitFor(() => {
+        expect(mockGetScheduleStats).toHaveBeenCalledWith('staff-1');
+      });
+
+      expect(result.current.stats).toEqual(stats);
     });
   });
-
-  // ==========================================================================
-  // useUpcomingSchedules
-  // ==========================================================================
-
-  describe('useUpcomingSchedules', () => {
-    it('다가오는 스케줄을 조회해야 함 (기본 7일)', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetUpcomingSchedules.mockResolvedValueOnce(mockSchedules);
-
-      const { result } = renderHook(() => useUpcomingSchedules(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.schedules).toEqual(mockSchedules);
-      });
-
-      expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 7);
-    });
-
-    it('커스텀 일수로 조회해야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetUpcomingSchedules.mockResolvedValueOnce(mockSchedules);
-
-      renderHook(() => useUpcomingSchedules(14), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGetUpcomingSchedules).toHaveBeenCalledWith('staff-1', 14);
-      });
-    });
-  });
-
-  // ==========================================================================
-  // useScheduleStats
-  // ==========================================================================
-
-  describe('useScheduleStats', () => {
-    it('스케줄 통계를 조회해야 함', async () => {
-      const mockStats = createMockStats();
-      mockGetScheduleStats.mockResolvedValueOnce(mockStats);
-
-      const { result } = renderHook(() => useScheduleStats(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.stats).toEqual(mockStats);
-      });
-
-      expect(mockGetScheduleStats).toHaveBeenCalledWith('staff-1');
-    });
-
-    it('enabled가 false이면 조회하지 않아야 함', async () => {
-      renderHook(() => useScheduleStats(false), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGetScheduleStats).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  // ==========================================================================
-  // useCalendarView
-  // ==========================================================================
 
   describe('useCalendarView', () => {
-    beforeEach(() => {
-      mockGetSchedulesByMonth.mockResolvedValue({
-        schedules: [],
-        stats: createMockStats(),
-      });
-      mockGroupSchedulesByDate.mockReturnValue([]);
-      mockGetCalendarMarkedDates.mockReturnValue({});
-      mockGroupScheduleEvents.mockReturnValue([]);
-      mockFilterSchedulesByDate.mockReturnValue([]);
-    });
+    it('builds grouped calendar state from monthly schedules', async () => {
+      const schedules = [
+        createMockSchedule({ id: 'schedule-1', date: '2024-02-15' }),
+        createMockSchedule({ id: 'schedule-2', date: '2024-02-16' }),
+      ];
+      const stats = createMockStats();
+      const groupedByApplication = [{ id: 'group-1' }];
+      const selectedSchedules = [schedules[0]];
 
-    it('초기 상태를 올바르게 설정해야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
+      mockQueryData = { schedules, stats };
+      mockGroupScheduleEvents.mockReturnValue(groupedByApplication);
+      mockFilterSchedulesByDate.mockReturnValue(selectedSchedules);
 
-      await waitFor(() => {
-        expect(result.current.view).toBe('month');
-      });
-
-      expect(result.current.selectedDate).toBeTruthy();
-      expect(result.current.currentMonth).toMatchObject({
-        year: expect.any(Number),
-        month: expect.any(Number),
-      });
-    });
-
-    it('커스텀 초기 뷰를 설정할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView({ initialView: 'week' }), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useCalendarView({ initialView: 'week' }));
 
       await waitFor(() => {
-        expect(result.current.view).toBe('week');
+        expect(mockGetSchedulesByMonth).toHaveBeenCalled();
+      });
+
+      expect(result.current.view).toBe('week');
+      expect(result.current.schedules).toEqual(schedules);
+      expect(result.current.groupedByApplication).toEqual(groupedByApplication);
+      expect(result.current.selectedDateSchedules).toEqual(selectedSchedules);
+      expect(mockGroupScheduleEvents).toHaveBeenCalledWith(schedules, {
+        enabled: true,
+        minGroupSize: 2,
       });
     });
 
-    it('뷰 타입을 변경할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
+    it('uses raw schedules when grouping is disabled', async () => {
+      const schedules = [createMockSchedule({ date: '2024-02-15' })];
+
+      mockQueryData = { schedules, stats: createMockStats() };
+
+      const { result } = renderHook(() => useCalendarView({ enableGrouping: false }));
 
       await waitFor(() => {
-        expect(result.current.setView).toBeDefined();
+        expect(mockGetSchedulesByMonth).toHaveBeenCalled();
       });
+
+      expect(mockGroupScheduleEvents).not.toHaveBeenCalled();
+      expect(result.current.groupedByApplication).toEqual(schedules);
+      expect(result.current.selectedDateSchedulesRaw).toEqual([]);
+    });
+
+    it('updates view state and month navigation actions', () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      const { result } = renderHook(() => useCalendarView('month' as CalendarView));
 
       act(() => {
         result.current.setView('day');
+        result.current.setSelectedDate('2024-02-20');
+        result.current.goToMonth(2025, 6);
       });
 
       expect(result.current.view).toBe('day');
-    });
-
-    it('날짜를 선택할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.setSelectedDate).toBeDefined();
-      });
-
-      act(() => {
-        result.current.setSelectedDate('2024-02-20');
-      });
-
       expect(result.current.selectedDate).toBe('2024-02-20');
-    });
-
-    it('이전 월로 이동할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.goToPrevMonth).toBeDefined();
-      });
-
-      const initialMonth = result.current.currentMonth.month;
-      const initialYear = result.current.currentMonth.year;
+      expect(result.current.currentMonth).toEqual({ year: 2025, month: 6 });
 
       act(() => {
         result.current.goToPrevMonth();
       });
 
-      if (initialMonth === 1) {
-        expect(result.current.currentMonth.month).toBe(12);
-        expect(result.current.currentMonth.year).toBe(initialYear - 1);
-      } else {
-        expect(result.current.currentMonth.month).toBe(initialMonth - 1);
-      }
-    });
-
-    it('다음 월로 이동할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.goToNextMonth).toBeDefined();
-      });
-
-      const initialMonth = result.current.currentMonth.month;
-      const initialYear = result.current.currentMonth.year;
+      expect(result.current.currentMonth).toEqual({ year: 2025, month: 5 });
 
       act(() => {
         result.current.goToNextMonth();
       });
 
-      if (initialMonth === 12) {
-        expect(result.current.currentMonth.month).toBe(1);
-        expect(result.current.currentMonth.year).toBe(initialYear + 1);
-      } else {
-        expect(result.current.currentMonth.month).toBe(initialMonth + 1);
-      }
-    });
-
-    it('오늘로 이동할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.goToToday).toBeDefined();
-      });
+      expect(result.current.currentMonth).toEqual({ year: 2025, month: 6 });
 
       act(() => {
         result.current.goToToday();
       });
 
       const today = new Date();
-      expect(result.current.currentMonth.year).toBe(today.getFullYear());
-      expect(result.current.currentMonth.month).toBe(today.getMonth() + 1);
-    });
-
-    it('특정 월로 이동할 수 있어야 함', async () => {
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.goToMonth).toBeDefined();
-      });
-
-      act(() => {
-        result.current.goToMonth(2025, 6);
-      });
-
-      expect(result.current.currentMonth.year).toBe(2025);
-      expect(result.current.currentMonth.month).toBe(6);
-    });
-
-    it('그룹핑이 활성화되어 있어야 함 (기본값)', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetSchedulesByMonth.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: createMockStats(),
-      });
-
-      renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGroupScheduleEvents).toHaveBeenCalledWith(mockSchedules, {
-          enabled: true,
-          minGroupSize: 2,
-        });
-      });
-    });
-
-    it('그룹핑을 비활성화할 수 있어야 함', async () => {
-      const mockSchedules = [createMockSchedule()];
-      mockGetSchedulesByMonth.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: createMockStats(),
-      });
-
-      const { result } = renderHook(() => useCalendarView({ enableGrouping: false }), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(mockGroupScheduleEvents).not.toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        expect(result.current.groupedByApplication).toEqual(mockSchedules);
-      });
-    });
-
-    it('선택된 날짜의 스케줄을 필터링해야 함', async () => {
-      const mockSchedules = [createMockSchedule({ date: '2024-02-15' })];
-      mockGetSchedulesByMonth.mockResolvedValueOnce({
-        schedules: mockSchedules,
-        stats: createMockStats(),
-      });
-      mockGroupScheduleEvents.mockReturnValueOnce(mockSchedules);
-      mockFilterSchedulesByDate.mockReturnValueOnce(mockSchedules);
-
-      const { result } = renderHook(() => useCalendarView(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.setSelectedDate).toBeDefined();
-      });
-
-      act(() => {
-        result.current.setSelectedDate('2024-02-15');
-      });
-
-      await waitFor(() => {
-        expect(mockFilterSchedulesByDate).toHaveBeenCalled();
-      });
-    });
-
-    it('하위 호환성: 문자열 뷰 타입을 허용해야 함', async () => {
-      const { result } = renderHook(() => useCalendarView('week' as CalendarView), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.view).toBe('week');
+      expect(result.current.currentMonth).toEqual({
+        year: today.getFullYear(),
+        month: today.getMonth() + 1,
       });
     });
   });

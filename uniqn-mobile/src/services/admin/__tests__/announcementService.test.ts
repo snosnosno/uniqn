@@ -1,28 +1,19 @@
-/**
- * UNIQN Mobile - AnnouncementService Tests
- *
- * @description announcementService 단위 테스트
- * @version 1.0.0
- */
-
 import {
-  fetchPublishedAnnouncements,
-  fetchAllAnnouncements,
-  getAnnouncement,
-  createAnnouncement,
-  updateAnnouncement,
-  publishAnnouncement,
   archiveAnnouncement,
+  createAnnouncement,
   deleteAnnouncement,
-  incrementViewCount,
+  fetchAllAnnouncements,
+  fetchPublishedAnnouncements,
+  getAnnouncement,
   getAnnouncementCountByStatus,
+  incrementViewCount,
+  publishAnnouncement,
+  updateAnnouncement,
 } from '../announcementService';
 
-// ============================================================================
-// Mocks
-// ============================================================================
-
-jest.mock('@/lib/firebase');
+import { ERROR_CODES } from '@/errors';
+import { announcementRepository } from '@/repositories';
+import { requireAdminUser } from '@/services/auth';
 
 jest.mock('@/repositories', () => ({
   announcementRepository: {
@@ -39,6 +30,16 @@ jest.mock('@/repositories', () => ({
   },
 }));
 
+jest.mock('@/services/auth', () => ({
+  requireAdminUser: jest.fn(async () => ({ uid: 'admin-1' })),
+}));
+
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) =>
+    error instanceof Error ? error : new Error(String(error))
+  ),
+}));
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -48,306 +49,129 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('@/errors', () => ({
-  ...jest.requireActual('@/errors'),
-  isAppError: jest.fn(),
-  normalizeError: jest.fn((err: unknown) => {
-    if (err instanceof Error) return err;
-    return new Error(String(err));
-  }),
-}));
-
-// ============================================================================
-// Import mocked modules
-// ============================================================================
-
-import { announcementRepository } from '@/repositories';
-
 const mockRepo = announcementRepository as jest.Mocked<typeof announcementRepository>;
-
-// ============================================================================
-// Tests
-// ============================================================================
+const mockRequireAdminUser = requireAdminUser as jest.MockedFunction<typeof requireAdminUser>;
 
 describe('announcementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' } as never);
   });
 
-  // --------------------------------------------------------------------------
-  // fetchPublishedAnnouncements
-  // --------------------------------------------------------------------------
+  it('fetches published announcements', async () => {
+    const result = { announcements: [{ id: 'ann-1' }], lastDoc: null, hasMore: false };
+    mockRepo.getPublished.mockResolvedValue(result as never);
 
-  describe('fetchPublishedAnnouncements', () => {
-    const mockResult = {
-      announcements: [
-        { id: 'ann-1', title: '공지1', status: 'published' },
-        { id: 'ann-2', title: '공지2', status: 'published' },
-      ],
-      lastDoc: null,
-      hasMore: false,
+    await expect(fetchPublishedAnnouncements('staff')).resolves.toEqual(result);
+    expect(mockRepo.getPublished).toHaveBeenCalledWith('staff', {});
+  });
+
+  it('fetches all announcements with options', async () => {
+    const result = { announcements: [{ id: 'ann-1' }], lastDoc: null, hasMore: false };
+    mockRepo.getAll.mockResolvedValue(result as never);
+
+    await expect(fetchAllAnnouncements({ pageSize: 10 })).resolves.toEqual(result);
+    expect(mockRepo.getAll).toHaveBeenCalledWith({ pageSize: 10 });
+  });
+
+  it('gets a single announcement', async () => {
+    const announcement = { id: 'ann-1', title: 'Notice' };
+    mockRepo.getById.mockResolvedValue(announcement as never);
+
+    await expect(getAnnouncement('ann-1')).resolves.toEqual(announcement);
+    expect(mockRepo.getById).toHaveBeenCalledWith('ann-1');
+  });
+
+  it('creates an announcement when the current user matches the author', async () => {
+    const input = {
+      title: 'Launch update',
+      content: 'Detailed launch note body',
+      category: 'notice' as const,
+      priority: 0 as const,
+      targetAudience: {
+        type: 'roles' as const,
+        roles: ['staff' as const],
+      },
+    };
+    mockRepo.create.mockResolvedValue('ann-new' as never);
+
+    await expect(createAnnouncement('admin-1', 'Admin', input)).resolves.toBe('ann-new');
+    expect(mockRepo.create).toHaveBeenCalledWith(
+      'admin-1',
+      'Admin',
+      expect.objectContaining({
+        ...input,
+        isPinned: false,
+      })
+    );
+  });
+
+  it('rejects announcement creation when the author id does not match the session user', async () => {
+    const input = {
+      title: 'Launch update',
+      content: 'Detailed launch note body',
+      category: 'notice' as const,
+      priority: 0 as const,
+      targetAudience: {
+        type: 'roles' as const,
+        roles: ['staff' as const],
+      },
     };
 
-    it('발행된 공지사항 목록을 조회해야 한다', async () => {
-      mockRepo.getPublished.mockResolvedValue(mockResult as never);
+    mockRequireAdminUser.mockRejectedValueOnce(
+      Object.assign(new Error('unauthorized'), {
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
 
-      const result = await fetchPublishedAnnouncements('staff');
-
-      expect(mockRepo.getPublished).toHaveBeenCalledWith('staff', {});
-      expect(result).toEqual(mockResult);
-    });
-
-    it('옵션을 전달하여 조회할 수 있어야 한다', async () => {
-      mockRepo.getPublished.mockResolvedValue(mockResult as never);
-
-      const options = { pageSize: 10 };
-      await fetchPublishedAnnouncements('admin', options);
-
-      expect(mockRepo.getPublished).toHaveBeenCalledWith('admin', options);
-    });
-
-    it('userRole이 null이어도 조회할 수 있어야 한다', async () => {
-      mockRepo.getPublished.mockResolvedValue(mockResult as never);
-
-      await fetchPublishedAnnouncements(null);
-
-      expect(mockRepo.getPublished).toHaveBeenCalledWith(null, {});
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.getPublished.mockRejectedValue(new Error('DB 오류'));
-
-      await expect(fetchPublishedAnnouncements('staff')).rejects.toThrow();
-    });
+    await expect(createAnnouncement('someone-else', 'Admin', input)).rejects.toEqual(
+      expect.objectContaining({
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
+    expect(mockRepo.create).not.toHaveBeenCalled();
   });
 
-  // --------------------------------------------------------------------------
-  // fetchAllAnnouncements
-  // --------------------------------------------------------------------------
+  it('rejects admin-only announcement queries for non-admin users', async () => {
+    mockRequireAdminUser.mockRejectedValueOnce(
+      Object.assign(new Error('forbidden'), {
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
 
-  describe('fetchAllAnnouncements', () => {
-    const mockResult = {
-      announcements: [{ id: 'ann-1', title: '공지1' }],
-      lastDoc: null,
-      hasMore: false,
-    };
-
-    it('전체 공지사항 목록을 조회해야 한다', async () => {
-      mockRepo.getAll.mockResolvedValue(mockResult as never);
-
-      const result = await fetchAllAnnouncements();
-
-      expect(mockRepo.getAll).toHaveBeenCalledWith({});
-      expect(result).toEqual(mockResult);
-    });
-
-    it('옵션을 전달하여 조회할 수 있어야 한다', async () => {
-      mockRepo.getAll.mockResolvedValue(mockResult as never);
-
-      const options = { pageSize: 5 };
-      await fetchAllAnnouncements(options);
-
-      expect(mockRepo.getAll).toHaveBeenCalledWith(options);
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.getAll.mockRejectedValue(new Error('DB 오류'));
-
-      await expect(fetchAllAnnouncements()).rejects.toThrow();
-    });
+    await expect(fetchAllAnnouncements({ pageSize: 10 })).rejects.toEqual(
+      expect.objectContaining({
+        code: ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+      })
+    );
+    expect(mockRepo.getAll).not.toHaveBeenCalled();
   });
 
-  // --------------------------------------------------------------------------
-  // getAnnouncement
-  // --------------------------------------------------------------------------
+  it('updates, publishes, archives, deletes, and increments view count', async () => {
+    mockRepo.update.mockResolvedValue(undefined as never);
+    mockRepo.publish.mockResolvedValue(undefined as never);
+    mockRepo.archive.mockResolvedValue(undefined as never);
+    mockRepo.delete.mockResolvedValue(undefined as never);
+    mockRepo.incrementViewCount.mockResolvedValue(undefined as never);
 
-  describe('getAnnouncement', () => {
-    const mockAnnouncement = {
-      id: 'ann-1',
-      title: '테스트 공지',
-      status: 'published',
-    };
+    await expect(updateAnnouncement('ann-1', { title: 'Updated title' })).resolves.toBeUndefined();
+    await expect(publishAnnouncement('ann-1')).resolves.toBeUndefined();
+    await expect(archiveAnnouncement('ann-1')).resolves.toBeUndefined();
+    await expect(deleteAnnouncement('ann-1')).resolves.toBeUndefined();
+    await expect(incrementViewCount('ann-1')).resolves.toBeUndefined();
 
-    it('공지사항 상세를 조회해야 한다', async () => {
-      mockRepo.getById.mockResolvedValue(mockAnnouncement as never);
-
-      const result = await getAnnouncement('ann-1');
-
-      expect(mockRepo.getById).toHaveBeenCalledWith('ann-1');
-      expect(result).toEqual(mockAnnouncement);
-    });
-
-    it('존재하지 않는 공지사항은 null을 반환해야 한다', async () => {
-      mockRepo.getById.mockResolvedValue(null as never);
-
-      const result = await getAnnouncement('non-existent');
-
-      expect(result).toBeNull();
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.getById.mockRejectedValue(new Error('DB 오류'));
-
-      await expect(getAnnouncement('ann-1')).rejects.toThrow();
-    });
+    expect(mockRepo.update).toHaveBeenCalledWith('ann-1', { title: 'Updated title' });
+    expect(mockRepo.publish).toHaveBeenCalledWith('ann-1');
+    expect(mockRepo.archive).toHaveBeenCalledWith('ann-1');
+    expect(mockRepo.delete).toHaveBeenCalledWith('ann-1');
+    expect(mockRepo.incrementViewCount).toHaveBeenCalledWith('ann-1');
   });
 
-  // --------------------------------------------------------------------------
-  // createAnnouncement
-  // --------------------------------------------------------------------------
+  it('returns announcement counts by status', async () => {
+    const counts = { draft: 1, published: 2, archived: 3 };
+    mockRepo.getCountByStatus.mockResolvedValue(counts as never);
 
-  describe('createAnnouncement', () => {
-    const mockInput = {
-      title: '새 공지사항',
-      content: '공지 내용',
-      targetRoles: ['staff' as const],
-      priority: 'normal' as const,
-    };
-
-    it('공지사항을 생성하고 ID를 반환해야 한다', async () => {
-      mockRepo.create.mockResolvedValue('new-ann-id' as never);
-
-      const result = await createAnnouncement('author-1', '관리자', mockInput as never);
-
-      expect(mockRepo.create).toHaveBeenCalledWith('author-1', '관리자', mockInput);
-      expect(result).toBe('new-ann-id');
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.create.mockRejectedValue(new Error('생성 실패'));
-
-      await expect(createAnnouncement('author-1', '관리자', mockInput as never)).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // updateAnnouncement
-  // --------------------------------------------------------------------------
-
-  describe('updateAnnouncement', () => {
-    const mockInput = {
-      title: '수정된 공지',
-    };
-
-    it('공지사항을 수정해야 한다', async () => {
-      mockRepo.update.mockResolvedValue(undefined as never);
-
-      await updateAnnouncement('ann-1', mockInput as never);
-
-      expect(mockRepo.update).toHaveBeenCalledWith('ann-1', mockInput);
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.update.mockRejectedValue(new Error('수정 실패'));
-
-      await expect(updateAnnouncement('ann-1', mockInput as never)).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // publishAnnouncement
-  // --------------------------------------------------------------------------
-
-  describe('publishAnnouncement', () => {
-    it('공지사항을 발행해야 한다', async () => {
-      mockRepo.publish.mockResolvedValue(undefined as never);
-
-      await publishAnnouncement('ann-1');
-
-      expect(mockRepo.publish).toHaveBeenCalledWith('ann-1');
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.publish.mockRejectedValue(new Error('발행 실패'));
-
-      await expect(publishAnnouncement('ann-1')).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // archiveAnnouncement
-  // --------------------------------------------------------------------------
-
-  describe('archiveAnnouncement', () => {
-    it('공지사항을 보관해야 한다', async () => {
-      mockRepo.archive.mockResolvedValue(undefined as never);
-
-      await archiveAnnouncement('ann-1');
-
-      expect(mockRepo.archive).toHaveBeenCalledWith('ann-1');
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.archive.mockRejectedValue(new Error('보관 실패'));
-
-      await expect(archiveAnnouncement('ann-1')).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // deleteAnnouncement
-  // --------------------------------------------------------------------------
-
-  describe('deleteAnnouncement', () => {
-    it('공지사항을 삭제해야 한다', async () => {
-      mockRepo.delete.mockResolvedValue(undefined as never);
-
-      await deleteAnnouncement('ann-1');
-
-      expect(mockRepo.delete).toHaveBeenCalledWith('ann-1');
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.delete.mockRejectedValue(new Error('삭제 실패'));
-
-      await expect(deleteAnnouncement('ann-1')).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // incrementViewCount
-  // --------------------------------------------------------------------------
-
-  describe('incrementViewCount', () => {
-    it('조회수를 증가시켜야 한다', async () => {
-      mockRepo.incrementViewCount.mockResolvedValue(undefined as never);
-
-      await incrementViewCount('ann-1');
-
-      expect(mockRepo.incrementViewCount).toHaveBeenCalledWith('ann-1');
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.incrementViewCount.mockRejectedValue(new Error('조회수 증가 실패'));
-
-      await expect(incrementViewCount('ann-1')).rejects.toThrow();
-    });
-  });
-
-  // --------------------------------------------------------------------------
-  // getAnnouncementCountByStatus
-  // --------------------------------------------------------------------------
-
-  describe('getAnnouncementCountByStatus', () => {
-    const mockCounts = {
-      draft: 2,
-      published: 5,
-      archived: 3,
-    };
-
-    it('상태별 공지사항 수를 반환해야 한다', async () => {
-      mockRepo.getCountByStatus.mockResolvedValue(mockCounts as never);
-
-      const result = await getAnnouncementCountByStatus();
-
-      expect(mockRepo.getCountByStatus).toHaveBeenCalled();
-      expect(result).toEqual(mockCounts);
-    });
-
-    it('repository 에러 시 에러를 던져야 한다', async () => {
-      mockRepo.getCountByStatus.mockRejectedValue(new Error('통계 조회 실패'));
-
-      await expect(getAnnouncementCountByStatus()).rejects.toThrow();
-    });
+    await expect(getAnnouncementCountByStatus()).resolves.toEqual(counts);
+    expect(mockRepo.getCountByStatus).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,18 +1,14 @@
 /**
  * UNIQN Mobile - Inquiry Service
  *
- * @description 문의 관리 서비스 (Repository 패턴)
- * @version 2.0.0 - Repository 패턴 전환
- *
- * 아키텍처:
- * Service Layer → Repository Layer → Firebase
+ * @description 문의 관리 서비스 (Repository pattern)
  */
 
 import { logger } from '@/utils/logger';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { inquiryRepository } from '@/repositories';
-import { requireCurrentUser } from '@/services/auth';
+import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth';
 import { createInquirySchema, respondInquirySchema } from '@/schemas';
 import type {
   Inquiry,
@@ -23,15 +19,7 @@ import type {
 } from '@/types';
 import type { InquiryPaginationCursor } from '@/repositories';
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const COMPONENT = 'inquiryService';
-
-// ============================================================================
-// Types (하위 호환용)
-// ============================================================================
 
 interface FetchInquiriesOptions {
   userId?: string;
@@ -46,13 +34,6 @@ interface FetchInquiriesResult {
   hasMore: boolean;
 }
 
-// ============================================================================
-// Inquiry Fetch Operations
-// ============================================================================
-
-/**
- * 내 문의 목록 조회 (사용자)
- */
 export async function fetchMyInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
@@ -62,11 +43,12 @@ export async function fetchMyInquiries(
     if (!userId) {
       throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
         field: 'userId',
-        userMessage: '사용자 ID가 필요합니다',
+        userMessage: '사용자 ID가 필요합니다.',
       });
     }
 
-    const result = await inquiryRepository.getByUserId(userId, {
+    const currentUser = requireMatchingCurrentUser(userId);
+    const result = await inquiryRepository.getByUserId(currentUser.uid, {
       pageSize,
       cursor,
     });
@@ -85,15 +67,12 @@ export async function fetchMyInquiries(
   }
 }
 
-/**
- * 전체 문의 목록 조회 (관리자)
- */
 export async function fetchAllInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
   try {
+    await requireAdminUser();
     const { filters, pageSize, lastDoc: cursor } = options;
-
     const result = await inquiryRepository.getAll({
       filters,
       pageSize,
@@ -113,9 +92,6 @@ export async function fetchAllInquiries(
   }
 }
 
-/**
- * 문의 상세 조회
- */
 export async function getInquiry(inquiryId: string): Promise<Inquiry | null> {
   try {
     return await inquiryRepository.getById(inquiryId);
@@ -128,20 +104,13 @@ export async function getInquiry(inquiryId: string): Promise<Inquiry | null> {
   }
 }
 
-// ============================================================================
-// Inquiry Create Operations
-// ============================================================================
-
-/**
- * 문의 생성 (사용자)
- */
 export async function createInquiry(
   userId: string,
   userEmail: string,
   userName: string,
   input: CreateInquiryInput
 ): Promise<string> {
-  requireCurrentUser();
+  const currentUser = requireMatchingCurrentUser(userId);
   const validationResult = createInquirySchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -150,9 +119,13 @@ export async function createInquiry(
       errors: validationResult.error.flatten().fieldErrors,
     });
   }
+
   try {
     const validated = validationResult.data;
-    const id = await inquiryRepository.create({ userId, userEmail, userName }, validated);
+    const id = await inquiryRepository.create(
+      { userId: currentUser.uid, userEmail, userName },
+      validated
+    );
 
     logger.info('문의 생성 완료', {
       component: COMPONENT,
@@ -165,25 +138,18 @@ export async function createInquiry(
     throw handleServiceError(error, {
       operation: '문의 생성',
       component: COMPONENT,
-      context: { userId, category: input.category },
+      context: { userId: currentUser.uid, category: input.category },
     });
   }
 }
 
-// ============================================================================
-// Inquiry Update Operations (Admin)
-// ============================================================================
-
-/**
- * 문의 응답 (관리자)
- */
 export async function respondToInquiry(
   inquiryId: string,
   responderId: string,
   responderName: string,
   input: RespondInquiryInput
 ): Promise<void> {
-  requireCurrentUser();
+  const admin = await requireAdminUser(responderId);
   const validationResult = respondInquirySchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -192,29 +158,27 @@ export async function respondToInquiry(
       errors: validationResult.error.flatten().fieldErrors,
     });
   }
+
   try {
-    await inquiryRepository.respond(inquiryId, responderId, responderName, validationResult.data);
+    await inquiryRepository.respond(inquiryId, admin.uid, responderName, validationResult.data);
 
     logger.info('문의 응답 완료', {
       component: COMPONENT,
       inquiryId,
-      responderId,
+      responderId: admin.uid,
       status: input.status,
     });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '문의 응답',
       component: COMPONENT,
-      context: { inquiryId, responderId },
+      context: { inquiryId, responderId: admin.uid },
     });
   }
 }
 
-/**
- * 문의 상태 변경 (관리자)
- */
 export async function updateInquiryStatus(inquiryId: string, status: InquiryStatus): Promise<void> {
-  requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     await inquiryRepository.updateStatus(inquiryId, status);
 
@@ -222,6 +186,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
       component: COMPONENT,
       inquiryId,
       status,
+      adminId: admin.uid,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -232,15 +197,9 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
   }
 }
 
-// ============================================================================
-// Statistics
-// ============================================================================
-
-/**
- * 미답변 문의 수 조회 (관리자)
- */
 export async function getUnansweredCount(): Promise<number> {
   try {
+    await requireAdminUser();
     return await inquiryRepository.getUnansweredCount();
   } catch (error) {
     throw handleServiceError(error, {
@@ -249,10 +208,6 @@ export async function getUnansweredCount(): Promise<number> {
     });
   }
 }
-
-// ============================================================================
-// Export
-// ============================================================================
 
 export const inquiryService = {
   fetchMyInquiries,

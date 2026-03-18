@@ -185,6 +185,25 @@ let notificationResponseSubscription: { remove: () => void } | null = null;
 // Expo Notifications 모듈 (동적 로드)
 let Notifications: typeof import('expo-notifications') | null = null;
 
+async function loadNotificationsModule(): Promise<typeof import('expo-notifications') | null> {
+  if (Notifications) {
+    return Notifications;
+  }
+
+  try {
+    if (process.env.JEST_WORKER_ID) {
+      // Jest on React Native does not support the dynamic import path used by the app runtime.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      Notifications = require('expo-notifications') as typeof import('expo-notifications');
+    } else {
+      Notifications = await import('expo-notifications');
+    }
+    return Notifications;
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // Initialization
 // ============================================================================
@@ -210,10 +229,8 @@ export async function initialize(): Promise<boolean> {
       return true;
     }
 
-    // expo-notifications 동적 로드
-    try {
-      Notifications = await import('expo-notifications');
-    } catch {
+    const notifications = await loadNotificationsModule();
+    if (!notifications) {
       logger.warn('expo-notifications 모듈 로드 실패 - 설치 필요');
       isInitialized = true;
       return true;

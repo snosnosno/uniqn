@@ -9,6 +9,23 @@
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  getConfirmedStaff,
+  getConfirmedStaffByDate,
+  updateStaffRole,
+  updateWorkTime,
+  deleteConfirmedStaff,
+  markAsNoShow,
+  updateStaffStatus,
+  subscribeToConfirmedStaff,
+} from '../confirmedStaffService';
+import { confirmedStaffRepository, userRepository } from '@/repositories';
+import type { WorkLog } from '@/types';
+
 jest.mock('@/repositories', () => ({
   confirmedStaffRepository: {
     getByJobPostingId: jest.fn(),
@@ -56,22 +73,11 @@ jest.mock('@/shared/time', () => ({
   },
 }));
 
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
+const mockRequireCurrentUser = jest.fn();
 
-import {
-  getConfirmedStaff,
-  getConfirmedStaffByDate,
-  updateStaffRole,
-  updateWorkTime,
-  deleteConfirmedStaff,
-  markAsNoShow,
-  updateStaffStatus,
-  subscribeToConfirmedStaff,
-} from '../confirmedStaffService';
-import { confirmedStaffRepository, userRepository } from '@/repositories';
-import type { WorkLog } from '@/types';
+jest.mock('@/services/auth', () => ({
+  requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
+}));
 
 // Get typed mock references
 const mockConfirmedStaffRepo = confirmedStaffRepository as jest.Mocked<
@@ -108,6 +114,7 @@ function createMockWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
 describe('ConfirmedStaffService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequireCurrentUser.mockReturnValue({ uid: 'owner-1' });
     // Default: userRepository returns a user
     mockUserRepo.getById.mockResolvedValue({
       nickname: 'TestNick',
@@ -430,6 +437,7 @@ describe('ConfirmedStaffService', () => {
 
       expect(mockConfirmedStaffRepo.markAsNoShow).toHaveBeenCalledWith({
         workLogId: 'wl-1',
+        ownerId: 'owner-1',
         reason: 'Did not show up',
       });
     });
@@ -441,6 +449,7 @@ describe('ConfirmedStaffService', () => {
 
       expect(mockConfirmedStaffRepo.markAsNoShow).toHaveBeenCalledWith({
         workLogId: 'wl-1',
+        ownerId: 'owner-1',
         reason: undefined,
       });
     });
@@ -461,7 +470,11 @@ describe('ConfirmedStaffService', () => {
 
       await updateStaffStatus('wl-1', 'completed');
 
-      expect(mockConfirmedStaffRepo.updateStatus).toHaveBeenCalledWith('wl-1', 'completed');
+      expect(mockConfirmedStaffRepo.updateStatus).toHaveBeenCalledWith({
+        workLogId: 'wl-1',
+        ownerId: 'owner-1',
+        status: 'completed',
+      });
     });
 
     it('should propagate repository errors', async () => {

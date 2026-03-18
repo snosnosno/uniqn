@@ -12,12 +12,13 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { resetCounters } from '../mocks/factories';
 
+import type { ConfirmedStaff, ConfirmedStaffGroup, ConfirmedStaffStats } from '@/types';
+
 // ============================================================================
-// Import After Mocks
+// Import Hook After Mocks
 // ============================================================================
 
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import type { ConfirmedStaff, ConfirmedStaffGroup, ConfirmedStaffStats } from '@/types';
 
 jest.mock('@/lib/firebase', () => ({
   db: {},
@@ -101,8 +102,6 @@ const mockQueryClient = {
   invalidateQueries: jest.fn(),
 };
 
-const mockMutate = jest.fn();
-const mockMutateAsync = jest.fn();
 const mockRefetch = jest.fn();
 
 let mockIsLoading = false;
@@ -123,6 +122,9 @@ jest.mock('@tanstack/react-query', () => ({
           refetch: mockRefetch,
         };
       }
+
+      void Promise.resolve().then(() => options.queryFn());
+
       return {
         data: mockData,
         isLoading: mockIsLoading,
@@ -138,10 +140,9 @@ jest.mock('@tanstack/react-query', () => ({
       onSuccess?: (data: unknown) => void;
       onError?: (error: Error) => void;
     }) => {
-      mockMutate.mockImplementation((args: unknown) => {
+      const mutate = (args: unknown) => {
         mockIsPending = true;
-        options
-          .mutationFn(args)
+        Promise.resolve(options.mutationFn(args))
           .then((result) => {
             options.onSuccess?.(result);
             mockIsPending = false;
@@ -151,12 +152,12 @@ jest.mock('@tanstack/react-query', () => ({
             options.onError?.(error as Error);
             mockIsPending = false;
           });
-      });
+      };
 
-      mockMutateAsync.mockImplementation(async (args: unknown) => {
+      const mutateAsync = async (args: unknown) => {
         try {
           mockIsPending = true;
-          const result = await options.mutationFn(args);
+          const result = await Promise.resolve(options.mutationFn(args));
           options.onSuccess?.(result);
           mockIsPending = false;
           return result;
@@ -166,11 +167,11 @@ jest.mock('@tanstack/react-query', () => ({
           mockIsPending = false;
           throw error;
         }
-      });
+      };
 
       return {
-        mutate: mockMutate,
-        mutateAsync: mockMutateAsync,
+        mutate,
+        mutateAsync,
         data: mockData,
         isPending: mockIsPending,
         error: mockError,

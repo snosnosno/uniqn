@@ -13,7 +13,7 @@ import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { adminRepository } from '@/repositories';
-import { requireCurrentUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth';
 import type {
   AdminUser,
   AdminUserFilters,
@@ -28,7 +28,7 @@ import type { UserRole } from '@/types/role';
 // ============================================================================
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('대시보드 통계 조회 시작', { adminId: admin.uid });
 
@@ -71,7 +71,7 @@ export async function getUsers(
   page: number = 1,
   pageSize: number = 20
 ): Promise<PaginatedUsers> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('사용자 목록 조회', { adminId: admin.uid, filters, page, pageSize });
 
@@ -92,7 +92,7 @@ export async function getUsers(
 }
 
 export async function getUserById(userId: string): Promise<AdminUser> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('사용자 조회', { adminId: admin.uid, userId });
 
@@ -121,7 +121,7 @@ export async function updateUserRole(
   newRole: UserRole,
   reason?: string
 ): Promise<void> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('사용자 역할 변경', { adminId: admin.uid, userId, newRole, reason });
 
@@ -147,7 +147,7 @@ export async function setUserActive(
   isActive: boolean,
   reason?: string
 ): Promise<void> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('사용자 상태 변경', { adminId: admin.uid, userId, isActive, reason });
 
@@ -168,7 +168,7 @@ export async function setUserActive(
 // ============================================================================
 
 export async function getSystemMetrics(): Promise<SystemMetrics> {
-  const admin = requireCurrentUser();
+  const admin = await requireAdminUser();
   try {
     logger.info('시스템 메트릭스 조회 시작', { adminId: admin.uid });
 

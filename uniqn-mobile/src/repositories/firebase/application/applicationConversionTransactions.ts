@@ -30,11 +30,13 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
-import { COLLECTIONS, FIELDS, STAFF_ROLES, STATUS } from '@/constants';
+import { VALID_STAFF_ROLES } from '@/types/role';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import type { ConversionResult, ConversionOptions } from '../../interfaces';
 
-// 표준 역할 키 목록 (other 제외)
-const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
+// Canonical role keys only. The transaction layer should depend on role ids,
+// not UI-oriented metadata like labels and icons.
+const STANDARD_ROLE_KEYS: string[] = VALID_STAFF_ROLES.filter((role) => role !== 'other');
 
 /**
  * 역할이 표준 역할인지 확인하고, 커스텀 역할이면 { role: 'other', customRole } 반환

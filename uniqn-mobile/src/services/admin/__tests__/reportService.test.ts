@@ -17,6 +17,14 @@ import {
 } from '../reportService';
 
 // ============================================================================
+// Import mocked modules
+// ============================================================================
+
+import { auth } from '@/lib/firebase';
+import { reportRepository, userRepository } from '@/repositories';
+import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
+
+// ============================================================================
 // Mocks
 // ============================================================================
 
@@ -78,13 +86,13 @@ jest.mock('@/errors', () => ({
   }),
 }));
 
-// ============================================================================
-// Import mocked modules
-// ============================================================================
+const mockRequireCurrentUser = jest.fn();
+const mockRequireAdminUser = jest.fn();
 
-import { auth } from '@/lib/firebase';
-import { reportRepository, userRepository } from '@/repositories';
-import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
+jest.mock('@/services/auth', () => ({
+  requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+}));
 
 const mockAuth = auth as jest.Mocked<typeof auth>;
 const mockReportRepo = reportRepository as jest.Mocked<typeof reportRepository>;
@@ -105,6 +113,14 @@ describe('reportService', () => {
     jest.clearAllMocks();
     // Default: user is authenticated
     (mockAuth as unknown as Record<string, unknown>).currentUser = mockCurrentUser;
+    mockRequireCurrentUser.mockImplementation(() => {
+      const user = (mockAuth as unknown as Record<string, unknown>).currentUser;
+      if (!user) {
+        throw new Error('Auth required');
+      }
+      return user;
+    });
+    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' });
   });
 
   // --------------------------------------------------------------------------
@@ -335,11 +351,11 @@ describe('reportService', () => {
 
       await reviewReport(mockInput as never);
 
-      expect(mockReportRepo.reviewWithTransaction).toHaveBeenCalledWith(mockInput, 'user-1');
+      expect(mockReportRepo.reviewWithTransaction).toHaveBeenCalledWith(mockInput, 'admin-1');
     });
 
     it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {
-      (mockAuth as unknown as Record<string, unknown>).currentUser = null;
+      mockRequireAdminUser.mockRejectedValueOnce(new Error('Admin required'));
 
       await expect(reviewReport(mockInput as never)).rejects.toThrow();
     });
@@ -440,7 +456,7 @@ describe('reportService', () => {
     });
 
     it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {
-      (mockAuth as unknown as Record<string, unknown>).currentUser = null;
+      mockRequireAdminUser.mockRejectedValueOnce(new Error('Admin required'));
 
       await expect(getAllReports()).rejects.toThrow();
     });

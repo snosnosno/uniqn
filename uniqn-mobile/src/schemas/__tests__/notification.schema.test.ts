@@ -651,6 +651,7 @@ describe('notificationSettingsDocumentSchema', () => {
       job: { enabled: true, pushEnabled: true },
       system: { enabled: true, pushEnabled: true },
       admin: { enabled: false, pushEnabled: false },
+      review: { enabled: true, pushEnabled: true },
     },
   };
 
@@ -730,6 +731,7 @@ describe('parseNotificationSettingsDocument', () => {
       job: { enabled: true, pushEnabled: true },
       system: { enabled: true, pushEnabled: true },
       admin: { enabled: true, pushEnabled: true },
+      review: { enabled: true, pushEnabled: true },
     },
   };
 

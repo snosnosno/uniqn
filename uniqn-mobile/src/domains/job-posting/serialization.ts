@@ -384,7 +384,7 @@ function toDateSpecificRequirements(posting: JobPosting): DateSpecificRequiremen
 
 export function toCreateJobPostingInput(posting: JobPosting): CreateJobPostingInput {
   const compensation = posting.compensation;
-  const questions = posting.questions.items ?? posting.preQuestions ?? [];
+  const questions = posting.questions?.items ?? posting.preQuestions ?? [];
 
   return {
     postingType: posting.postingType,
@@ -451,7 +451,7 @@ function aggregateRolesFromDatedRequirements(
 }
 
 function buildCompatEntity(document: JobPostingDocumentV3): JobPosting {
-  const questions = document.questions.items ?? [];
+  const questions = document.questions?.items ?? [];
   const useSameSalary = document.compensation.mode === 'shared';
 
   if (document.schedule.kind === 'fixed') {

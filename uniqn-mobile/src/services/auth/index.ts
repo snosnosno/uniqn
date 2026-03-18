@@ -31,6 +31,12 @@ export {
   markOrphanAccount,
 } from './authCoreService';
 
+export {
+  requireMatchingCurrentUser,
+  requireCurrentUserRole,
+  requireAdminUser,
+} from './authorizationService';
+
 // ============================================================================
 // Social Login Service (Apple, Google, 카카오)
 // ============================================================================
