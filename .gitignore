@@ -21,6 +21,8 @@ dist/
 # ========================================
 .cache/
 */.cache/
+.jscpd-active/
+.jscpd-report/
 .eslintcache
 *.tmp
 *.bak
