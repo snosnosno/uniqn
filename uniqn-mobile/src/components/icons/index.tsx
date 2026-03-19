@@ -16,6 +16,7 @@ type BookmarkIconProps = IconProps & {
 };
 
 type IconRenderer = (color: string, strokeWidth: number) => React.ReactNode;
+type SolidIconRenderer = (color: string) => React.ReactNode;
 
 const DEFAULT_SIZE = 24;
 const DEFAULT_COLOR_LIGHT = '#6B7280';
@@ -53,6 +54,23 @@ function createOutlineIcon(render: IconRenderer, viewBox = '0 0 24 24'): IconCom
     return (
       <Svg width={size} height={size} viewBox={viewBox} fill="none" {...rest}>
         {render(resolvedColor, strokeWidth)}
+      </Svg>
+    );
+  };
+}
+
+function createSolidIcon(render: SolidIconRenderer, viewBox = '0 0 24 24'): IconComponent {
+  return function SolidIcon({
+    size = DEFAULT_SIZE,
+    color,
+    strokeWidth: _strokeWidth = 2,
+    ...rest
+  }: IconProps) {
+    const resolvedColor = useDefaultColor(color);
+
+    return (
+      <Svg width={size} height={size} viewBox={viewBox} fill="none" {...rest}>
+        {render(resolvedColor)}
       </Svg>
     );
   };
@@ -319,6 +337,19 @@ export const DocumentIcon = createOutlineIcon((color, strokeWidth) => (
   </>
 ));
 
+export const DocumentTextOutlineIcon = createOutlineIcon((color, strokeWidth) => (
+  <>
+    <Path
+      d="M6.5 3.75h7.25l3.75 3.75V20a1.75 1.75 0 0 1-1.75 1.75h-9.5A1.75 1.75 0 0 1 4.5 20V5.5A1.75 1.75 0 0 1 6.25 3.75Z"
+      {...getStrokeProps(color, strokeWidth)}
+    />
+    <Path d="M13.75 3.75V7.5h3.75" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="8" y1="11" x2="16" y2="11" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="8" y1="14.5" x2="16" y2="14.5" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="8" y1="18" x2="13.5" y2="18" {...getStrokeProps(color, strokeWidth)} />
+  </>
+));
+
 export const ImageIcon = createOutlineIcon((color, strokeWidth) => (
   <>
     <Rect x="4" y="5.5" width="16" height="13" rx="2" {...getStrokeProps(color, strokeWidth)} />
@@ -456,31 +487,52 @@ export const MessageIcon = createOutlineIcon((color, strokeWidth) => (
   />
 ));
 
-export const LoaderIcon = RefreshIcon;
+export const LoaderIcon = ({ size = DEFAULT_SIZE, color, strokeWidth = 2, ...rest }: IconProps) => {
+  const resolvedColor = useDefaultColor(color);
+  const segments = [
+    { x1: 12, y1: 3, x2: 12, y2: 6, opacity: 0.28 },
+    { x1: 16.95, y1: 5.05, x2: 14.83, y2: 7.17, opacity: 0.4 },
+    { x1: 21, y1: 12, x2: 18, y2: 12, opacity: 0.52 },
+    { x1: 16.95, y1: 18.95, x2: 14.83, y2: 16.83, opacity: 0.64 },
+    { x1: 12, y1: 21, x2: 12, y2: 18, opacity: 0.76 },
+    { x1: 7.05, y1: 18.95, x2: 9.17, y2: 16.83, opacity: 0.88 },
+    { x1: 3, y1: 12, x2: 6, y2: 12, opacity: 1 },
+    { x1: 7.05, y1: 5.05, x2: 9.17, y2: 7.17, opacity: 0.16 },
+  ];
 
-export const QrCodeIcon = createOutlineIcon((color, strokeWidth) => (
-  <>
-    <Rect x="4" y="4" width="5" height="5" {...getStrokeProps(color, strokeWidth)} />
-    <Rect x="15" y="4" width="5" height="5" {...getStrokeProps(color, strokeWidth)} />
-    <Rect x="4" y="15" width="5" height="5" {...getStrokeProps(color, strokeWidth)} />
-    <Rect x="11.5" y="11.5" width="2" height="2" fill={color} />
-    <Rect x="15" y="15" width="2" height="2" fill={color} />
-    <Rect x="18" y="15" width="2" height="5" fill={color} />
-    <Rect x="11.5" y="15" width="2" height="5" fill={color} />
-    <Rect x="15" y="18" width="3" height="2" fill={color} />
-  </>
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
+      {segments.map((segment, index) => (
+        <Line
+          key={index}
+          x1={segment.x1}
+          y1={segment.y1}
+          x2={segment.x2}
+          y2={segment.y2}
+          stroke={resolvedColor}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          opacity={segment.opacity}
+        />
+      ))}
+    </Svg>
+  );
+};
+
+export const QrCodeIcon = createSolidIcon((color) => (
+  <Path
+    fill={color}
+    fillRule="evenodd"
+    clipRule="evenodd"
+    d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-4h2v2h-2v-2Zm3 0h2v2h-2v-2Zm-3 3h2v2h-2v-2Zm3 0h5v2h-1v5h-2v-2h-2v-3Zm-3 3h2v2h-2v-2Zm3 3h2v2h-2v-2Z"
+  />
 ));
 
-export const ScanIcon = createOutlineIcon((color, strokeWidth) => (
-  <>
-    <Path d="M7 3H4a1 1 0 0 0-1 1v3" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M17 3h3a1 1 0 0 1 1 1v3" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M3 17v3a1 1 0 0 0 1 1h3" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M21 17v3a1 1 0 0 1-1 1h-3" {...getStrokeProps(color, strokeWidth)} />
-    <Rect x="7" y="7" width="10" height="10" rx="1.5" {...getStrokeProps(color, strokeWidth)} />
-    <Line x1="12" y1="7" x2="12" y2="17" {...getStrokeProps(color, strokeWidth)} />
-    <Line x1="7" y1="12" x2="17" y2="12" {...getStrokeProps(color, strokeWidth)} />
-  </>
+export const ScanIcon = createSolidIcon((color) => (
+  <Path
+    fill={color}
+    d="M5 3h4v2H5v4H3V5a2 2 0 0 1 2-2Zm10 0h4a2 2 0 0 1 2 2v4h-2V5h-4V3ZM3 15h2v4h4v2H5a2 2 0 0 1-2-2v-4Zm16 0h2v4a2 2 0 0 1-2 2h-4v-2h4v-4ZM7 7h4v4H7V7Zm6 0h4v2h-4V7Zm-6 6h2v2H7v-2Zm4-2h2v2h-2v-2Zm4 0h2v6h-2v-6Zm-4 4h2v2h-2v-2Z"
+  />
 ));
 
 export const BellSlashIcon = createOutlineIcon((color, strokeWidth) => (
@@ -525,6 +577,14 @@ export const XCircleIcon = createOutlineIcon((color, strokeWidth) => (
   </>
 ));
 
+export const CloseCircleOutlineIcon = createOutlineIcon((color, strokeWidth) => (
+  <>
+    <Circle cx="12" cy="12" r="9.25" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="9" y1="9" x2="15" y2="15" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="15" y1="9" x2="9" y2="15" {...getStrokeProps(color, strokeWidth)} />
+  </>
+));
+
 export const CalendarDaysIcon = CalendarIcon;
 
 export const BanknotesIcon = createOutlineIcon((color, strokeWidth) => (
@@ -536,12 +596,19 @@ export const BanknotesIcon = createOutlineIcon((color, strokeWidth) => (
   </>
 ));
 
-export const MegaphoneIcon = createOutlineIcon((color, strokeWidth) => (
+export const MegaphoneIcon = createSolidIcon((color) => (
+  <Path
+    fill={color}
+    d="M11.5 4.5v15l-4.75-2.38H3V9.88h3.75L11.5 4.5Zm2 1.4v12.2c.97-.24 1.74-.77 2.3-1.58a5.03 5.03 0 0 0 0-5.64c-.56-.81-1.33-1.34-2.3-1.58ZM8.75 13.25l.95 4.25H7.95l-.85-3.75h1.65Zm9.05-1.25c-.57 0-1.05-.2-1.45-.6-.4-.4-.6-.88-.6-1.45s.2-1.05.6-1.45c.4-.4.88-.6 1.45-.6.58 0 1.07.2 1.46.6.39.4.59.88.59 1.45s-.2 1.05-.59 1.45c-.39.4-.88.6-1.46.6Zm1.4 3.5-2.72-1.36c.15-.29.27-.59.35-.91.08-.31.13-.64.15-.97l2.73 1.37-.51 1.87Zm-2.22-7.74a5.14 5.14 0 0 0-.16-.97c-.08-.31-.2-.61-.35-.9L19.2 4.5l.51 1.87-2.73 1.39Z"
+  />
+));
+
+export const MegaphoneOutlineIcon = createOutlineIcon((color, strokeWidth) => (
   <>
-    <Path d="M4 11v2h3.5L14 17V7L7.5 11H4Z" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M8.5 13 10 18" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M17 9.5a4 4 0 0 1 0 5" {...getStrokeProps(color, strokeWidth)} />
-    <Path d="M18.5 7a7 7 0 0 1 0 10" {...getStrokeProps(color, strokeWidth)} />
+    <Path d="M12.5 5.5v13l-4.5-2.25H4V9.75h4L12.5 5.5Z" {...getStrokeProps(color, strokeWidth)} />
+    <Path d="m8 16.25 1.35 3.25" {...getStrokeProps(color, strokeWidth)} />
+    <Path d="M15.5 9.25a3.25 3.25 0 0 1 0 5.5" {...getStrokeProps(color, strokeWidth)} />
+    <Path d="M18 7a6 6 0 0 1 0 10" {...getStrokeProps(color, strokeWidth)} />
   </>
 ));
 
@@ -702,9 +769,9 @@ export const Squares2X2Icon = createOutlineIcon((color, strokeWidth) => (
 
 export const AddCircleOutlineIcon = createOutlineIcon((color, strokeWidth) => (
   <>
-    <Circle cx="12" cy="12" r="9" {...getStrokeProps(color, strokeWidth)} />
-    <Line x1="12" y1="8" x2="12" y2="16" {...getStrokeProps(color, strokeWidth)} />
-    <Line x1="8" y1="12" x2="16" y2="12" {...getStrokeProps(color, strokeWidth)} />
+    <Circle cx="12" cy="12" r="9.25" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="12" y1="8.25" x2="12" y2="15.75" {...getStrokeProps(color, strokeWidth)} />
+    <Line x1="8.25" y1="12" x2="15.75" y2="12" {...getStrokeProps(color, strokeWidth)} />
   </>
 ));
 
@@ -815,9 +882,6 @@ export const PersonOutlineIcon = UserIcon;
 export const PeopleOutlineIcon = UsersIcon;
 export const EyeOutlineIcon = EyeIcon;
 export const CreateOutlineIcon = EditIcon;
-export const DocumentTextOutlineIcon = DocumentIcon;
 export const CloseCircleIcon = XCircleIcon;
-export const CloseCircleOutlineIcon = XCircleIcon;
 export const TrashOutlineIcon = TrashIcon;
-export const MegaphoneOutlineIcon = MegaphoneIcon;
 export const NotificationsIcon = BellIcon;

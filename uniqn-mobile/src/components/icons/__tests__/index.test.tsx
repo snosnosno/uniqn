@@ -1,6 +1,17 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { HeartFilledIcon, SearchIcon, getDefaultIconColor } from '../index';
+import {
+  CloseCircleOutlineIcon,
+  DocumentTextOutlineIcon,
+  HeartFilledIcon,
+  LoaderIcon,
+  MegaphoneIcon,
+  MegaphoneOutlineIcon,
+  QrCodeIcon,
+  ScanIcon,
+  SearchIcon,
+  getDefaultIconColor,
+} from '../index';
 
 describe('icons', () => {
   it('renders svg icons without crashing', () => {
@@ -8,11 +19,25 @@ describe('icons', () => {
       <>
         <SearchIcon testID="search-icon" />
         <HeartFilledIcon testID="heart-icon" color="#EF4444" />
+        <LoaderIcon testID="loader-icon" />
+        <QrCodeIcon testID="qr-code-icon" />
+        <ScanIcon testID="scan-icon" />
+        <MegaphoneIcon testID="megaphone-icon" />
+        <MegaphoneOutlineIcon testID="megaphone-outline-icon" />
+        <DocumentTextOutlineIcon testID="document-text-outline-icon" />
+        <CloseCircleOutlineIcon testID="close-circle-outline-icon" />
       </>
     );
 
     expect(screen.getByTestId('search-icon')).toBeTruthy();
     expect(screen.getByTestId('heart-icon')).toBeTruthy();
+    expect(screen.getByTestId('loader-icon')).toBeTruthy();
+    expect(screen.getByTestId('qr-code-icon')).toBeTruthy();
+    expect(screen.getByTestId('scan-icon')).toBeTruthy();
+    expect(screen.getByTestId('megaphone-icon')).toBeTruthy();
+    expect(screen.getByTestId('megaphone-outline-icon')).toBeTruthy();
+    expect(screen.getByTestId('document-text-outline-icon')).toBeTruthy();
+    expect(screen.getByTestId('close-circle-outline-icon')).toBeTruthy();
   });
 
   it('resolves default colors by theme', () => {
