@@ -4,6 +4,9 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-build-check/
+dist-e2e/
+dist-e2e-emu/
 web-build/
 
 # Native builds

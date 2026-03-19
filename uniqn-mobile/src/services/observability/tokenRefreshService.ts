@@ -16,6 +16,7 @@ import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 import { getMMKVInstance, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { toError, AuthError, ERROR_CODES } from '@/errors';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -100,6 +101,10 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let netInfoUnsubscribe: (() => void) | null = null;
 let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
 
+function formatTimestampForLog(value: number | null): string | null {
+  return toDate(value)?.toISOString() ?? null;
+}
+
 // ============================================================================
 // Persistence
 // ============================================================================
@@ -134,7 +139,7 @@ function restoreState(): void {
       state.failureCount = parsed.failureCount ?? 0;
       state.nextScheduledAt = parsed.nextScheduledAt ?? null;
       logger.info('토큰 갱신 상태 복원', {
-        lastRefreshAt: state.lastRefreshAt ? new Date(state.lastRefreshAt).toISOString() : null,
+        lastRefreshAt: formatTimestampForLog(state.lastRefreshAt),
         failureCount: state.failureCount,
       });
     }
@@ -215,9 +220,7 @@ async function refreshTokenWithRetry(): Promise<boolean> {
         options.onSuccess?.();
 
         logger.info('토큰 갱신 성공', {
-          nextScheduledAt: state.nextScheduledAt
-            ? new Date(state.nextScheduledAt).toISOString()
-            : null,
+          nextScheduledAt: formatTimestampForLog(state.nextScheduledAt),
         });
 
         return true;
@@ -245,7 +248,7 @@ async function refreshTokenWithRetry(): Promise<boolean> {
 
         logger.info('백오프 후 재시도 예정', {
           backoffMs: backoff,
-          nextRetryAt: new Date(state.nextRetryAt).toISOString(),
+          nextRetryAt: formatTimestampForLog(state.nextRetryAt),
         });
 
         await sleep(backoff);
@@ -309,7 +312,7 @@ function scheduleNextRefresh(): void {
 
   logger.info('다음 토큰 갱신 스케줄', {
     intervalMs: config.baseInterval,
-    nextScheduledAt: new Date(nextTime).toISOString(),
+    nextScheduledAt: formatTimestampForLog(nextTime),
   });
 }
 
@@ -430,7 +433,7 @@ export function start(
     logger.info('토큰 갱신 서비스 시작', {
       userId: startOptions.userId,
       nextRefreshIn: Math.round(remainingTime / 1000 / 60) + '분',
-      nextScheduledAt: new Date(state.nextScheduledAt).toISOString(),
+      nextScheduledAt: formatTimestampForLog(state.nextScheduledAt),
     });
   }
 }

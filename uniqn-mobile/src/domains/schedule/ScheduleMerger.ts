@@ -12,6 +12,7 @@
 
 import type { ScheduleEvent } from '@/types';
 import { STATUS } from '@/constants';
+import { parseDateString } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -77,19 +78,11 @@ export interface MergerScheduleStats {
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 /**
- * 날짜 문자열을 Date 객체로 변환
- * iOS 타임존 이슈 방지를 위해 직접 파싱
- */
-function parseDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-/**
  * 날짜 라벨 생성
  */
 function formatDateLabel(dateStr: string): string {
-  const date = parseDate(dateStr);
+  const date = parseDateString(dateStr);
+  if (!date) return dateStr;
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const dayOfWeek = WEEKDAYS[date.getDay()];
@@ -257,8 +250,12 @@ export class ScheduleMerger {
     const sorted = [...dates].sort();
 
     for (let i = 1; i < sorted.length; i++) {
-      const prev = parseDate(sorted[i - 1]);
-      const curr = parseDate(sorted[i]);
+      const prev = parseDateString(sorted[i - 1]!);
+      const curr = parseDateString(sorted[i]!);
+
+      if (!prev || !curr) {
+        return false;
+      }
 
       const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
 

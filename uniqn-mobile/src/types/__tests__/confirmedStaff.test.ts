@@ -197,6 +197,14 @@ describe('confirmedStaff', () => {
       // Date(2025-03-01) in local timezone - verify it has Korean format pattern
       expect(groups[0]!.formattedDate).toMatch(/\d+월 \d+일 \(.+\)/);
     });
+
+    it('should keep raw date when the input is invalid', () => {
+      const staffList: ConfirmedStaff[] = [createMockConfirmedStaff({ date: 'invalid-date' })];
+
+      const groups = groupStaffByDate(staffList);
+
+      expect(groups[0]!.formattedDate).toBe('invalid-date');
+    });
   });
 
   // ===========================================================================

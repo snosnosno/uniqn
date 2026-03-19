@@ -6,7 +6,8 @@
  */
 
 import { format, addDays } from 'date-fns';
-import { toISODateString } from './core';
+import { TimeNormalizer } from '@/shared/time';
+import { toDate, toISODateString } from './core';
 
 /**
  * 날짜 범위 생성 (YYYY-MM-DD 배열)
@@ -28,8 +29,12 @@ export function getDateRange(start: Date, end: Date): string[] {
  */
 export function generateDateRange(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = toDate(startDate);
+  const end = toDate(endDate);
+
+  if (!start || !end) {
+    return dates;
+  }
 
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
     const isoString = toISODateString(date);
@@ -117,7 +122,20 @@ export function parseTimeSlotToDate(
   const parsed = parseTimeSlot(timeSlot);
   if (!parsed) return { startTime: null, endTime: null };
 
-  const startTime = new Date(`${dateStr}T${parsed.start}:00`);
+  const baseDate = toDate(dateStr);
+  const startTimeOnly = TimeNormalizer.parseTime(parsed.start);
+
+  if (!baseDate || !startTimeOnly) {
+    return { startTime: null, endTime: null };
+  }
+
+  const startTime = new Date(baseDate);
+  startTime.setHours(
+    startTimeOnly.getHours(),
+    startTimeOnly.getMinutes(),
+    startTimeOnly.getSeconds(),
+    0
+  );
 
   // 유효하지 않은 시작 시간 체크
   if (isNaN(startTime.getTime())) return { startTime: null, endTime: null };
@@ -127,7 +145,11 @@ export function parseTimeSlotToDate(
     return { startTime, endTime: null };
   }
 
-  let endTime = new Date(`${dateStr}T${parsed.end}:00`);
+  const endTimeOnly = TimeNormalizer.parseTime(parsed.end);
+  if (!endTimeOnly) return { startTime, endTime: null };
+
+  let endTime = new Date(baseDate);
+  endTime.setHours(endTimeOnly.getHours(), endTimeOnly.getMinutes(), endTimeOnly.getSeconds(), 0);
 
   // 자정을 넘어가는 경우 (예: 18:00-02:00)
   if (endTime < startTime) {

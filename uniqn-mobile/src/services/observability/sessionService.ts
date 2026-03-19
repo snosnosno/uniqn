@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { router } from 'expo-router';
 import { AuthError, ERROR_CODES, toError, isAppError } from '@/errors';
+import { toDateValue } from '@/utils/date';
 
 // userSessionStorage는 향후 세션 관리 확장 시 활용
 void userSessionStorage;
@@ -326,11 +327,11 @@ async function checkAndRefreshToken(): Promise<void> {
   try {
     // 토큰 결과 가져오기
     const tokenResult = await currentUser.getIdTokenResult();
-    const expirationTime = new Date(tokenResult.expirationTime).getTime();
+    const expirationTime = toDateValue(tokenResult.expirationTime);
     const now = Date.now();
 
     // 만료 임박 또는 이미 만료된 경우 갱신
-    if (expirationTime - now < TOKEN_EXPIRY_BUFFER) {
+    if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
       await refreshToken();
     }
   } catch (error) {
@@ -385,11 +386,11 @@ export async function getValidToken(): Promise<string | null> {
   try {
     // 토큰 결과 확인
     const tokenResult = await currentUser.getIdTokenResult();
-    const expirationTime = new Date(tokenResult.expirationTime).getTime();
+    const expirationTime = toDateValue(tokenResult.expirationTime);
     const now = Date.now();
 
     // 만료 임박이면 갱신
-    if (expirationTime - now < TOKEN_EXPIRY_BUFFER) {
+    if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
       return await refreshToken();
     }
 

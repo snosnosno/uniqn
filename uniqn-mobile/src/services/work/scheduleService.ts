@@ -10,7 +10,7 @@ import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
-import { toDateString } from '@/utils/date';
+import { formatDateWithDay, toDateString } from '@/utils/date';
 import { timestampToDate } from '@/utils/firestore';
 import type {
   ScheduleEvent,
@@ -219,16 +219,9 @@ export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[
   // ScheduleGroup 배열로 변환
   const result: ScheduleGroup[] = [];
   groups.forEach((events, date) => {
-    const dateObj = new Date(date);
     const isPast = date < today;
     const isToday = date === today;
-
-    // 날짜 포맷팅
-    const formattedDate = dateObj.toLocaleDateString('ko-KR', {
-      month: 'long',
-      day: 'numeric',
-      weekday: 'short',
-    });
+    const formattedDate = formatDateWithDay(date) || date;
 
     result.push({
       date,

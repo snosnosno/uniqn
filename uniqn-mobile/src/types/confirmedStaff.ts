@@ -9,6 +9,7 @@ import type { Timestamp } from 'firebase/firestore';
 import type { WorkLog, PayrollStatus } from './schedule';
 import type { TimeInput } from '@/shared/time/types';
 import { STATUS } from '@/constants';
+import { formatDateWithDay, getTodayString } from '@/utils/date';
 
 // ============================================================================
 // 확정 스태프 상태
@@ -297,7 +298,7 @@ export function workLogToConfirmedStaff(
  * 스태프를 날짜별로 그룹화
  */
 export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGroup[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
   const groupMap = new Map<string, ConfirmedStaff[]>();
 
   // 날짜별 그룹화
@@ -309,8 +310,7 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
   // 그룹 변환 및 정렬
   const groups: ConfirmedStaffGroup[] = Array.from(groupMap.entries())
     .map(([date, staffInDate]) => {
-      const dateObj = new Date(date);
-      const formattedDate = formatDateKorean(dateObj);
+      const formattedDate = formatDateKorean(date);
 
       return {
         date,
@@ -337,7 +337,10 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
 /**
  * 날짜를 한국어 형식으로 포맷 (예: "1월 15일 (수)")
  */
-function formatDateKorean(date: Date): string {
+function formatDateKorean(date: Date | string): string {
+  if (typeof date === 'string') {
+    return formatDateWithDay(date) || date;
+  }
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const dayNames = ['일', '월', '화', '수', '목', '금', '토'];

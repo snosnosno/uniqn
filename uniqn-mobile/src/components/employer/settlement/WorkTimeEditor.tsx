@@ -100,7 +100,7 @@ export function WorkTimeEditor({
       } else {
         const end = parseTimestamp(checkOutSource);
         // 기준 날짜 (workLog.date)와 비교하여 다음날이면 24+ 형식으로 표시
-        const base = workLog.date ? new Date(workLog.date) : new Date();
+        const base = workLog.date ? parseTimestamp(workLog.date) : new Date();
         setEndTimeStr(formatEndTimeForInput(end, base));
         setIsEndTimeUndefined(false);
       }
@@ -112,7 +112,7 @@ export function WorkTimeEditor({
   // 파싱된 시간
   const baseDate = useMemo(() => {
     if (!workLog?.date) return new Date();
-    return new Date(workLog.date);
+    return parseTimestamp(workLog.date);
   }, [workLog?.date]);
 
   const startTime = useMemo(() => {

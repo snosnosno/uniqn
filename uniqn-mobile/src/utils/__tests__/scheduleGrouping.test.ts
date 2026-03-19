@@ -736,3 +736,17 @@ describe('extractAllDatesForCalendar', () => {
     expect(result[2].status).toBe('not_started');
   });
 });
+
+describe('scheduleGrouping invalid date fallbacks', () => {
+  it('returns false when consecutive-date input includes invalid values', () => {
+    expect(isConsecutiveDates(['2025-01-15', 'invalid-date'])).toBe(false);
+  });
+
+  it('returns the raw value for invalid single-date formatting', () => {
+    expect(formatSingleDate('invalid-date')).toBe('invalid-date');
+  });
+
+  it('returns the raw value for invalid single-date displays', () => {
+    expect(formatDateDisplay(['invalid-date'])).toBe('invalid-date');
+  });
+});

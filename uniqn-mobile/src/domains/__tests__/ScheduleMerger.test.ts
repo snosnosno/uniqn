@@ -365,3 +365,18 @@ describe('ScheduleMerger', () => {
     });
   });
 });
+
+describe('ScheduleMerger invalid date fallbacks', () => {
+  it('keeps the raw label when groupByDate receives an invalid date', () => {
+    const schedules: ScheduleEvent[] = [
+      createMockScheduleEvent({ id: '1', date: 'invalid-date', jobPostingId: 'job1' }),
+    ];
+
+    const result = ScheduleMerger.groupByDate(schedules);
+    expect(result[0].label).toBe('invalid-date');
+  });
+
+  it('returns false when isConsecutiveDates receives an invalid date', () => {
+    expect(ScheduleMerger.isConsecutiveDates(['2025-01-20', 'invalid-date'])).toBe(false);
+  });
+});

@@ -14,6 +14,7 @@ import { fetchNotifications } from './notificationService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import type { NotificationData } from '@/types/notification';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -74,7 +75,19 @@ export async function syncMissedNotifications(
     };
   }
 
-  const syncedSince = new Date(lastFetchedAt);
+  const syncedSince = toDate(lastFetchedAt);
+  if (!syncedSince) {
+    logger.warn('invalid lastFetchedAt - skipped notification sync', {
+      userId,
+      lastFetchedAt,
+    });
+    return {
+      syncedCount: 0,
+      notifications: [],
+      syncedSince: null,
+      success: true,
+    };
+  }
 
   try {
     logger.info('놓친 알림 동기화 시작', {

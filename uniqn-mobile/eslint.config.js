@@ -131,6 +131,9 @@ module.exports = [
     ignores: [
       'node_modules/',
       'dist/',
+      'dist-build-check/',
+      'dist-e2e/',
+      'dist-e2e-emu/',
       'build/',
       '.expo/',
       'android/',

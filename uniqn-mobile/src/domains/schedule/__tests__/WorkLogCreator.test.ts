@@ -91,6 +91,11 @@ describe('WorkLogCreator', () => {
       expect(WorkLogCreator.createTimestampFromDateTime('2026-02-11', '12:60')).toBeNull();
     });
 
+    it('잘못된 날짜 문자열은 null 반환', () => {
+      expect(WorkLogCreator.createTimestampFromDateTime('invalid-date', '09:00')).toBeNull();
+      expect(WorkLogCreator.createTimestampFromDateTime('2026-02-30', '09:00')).toBeNull();
+    });
+
     it('한 자릿수 시간도 지원 (예: "9:00")', () => {
       const result = WorkLogCreator.createTimestampFromDateTime('2026-02-11', '9:00');
       expect(result).not.toBeNull();

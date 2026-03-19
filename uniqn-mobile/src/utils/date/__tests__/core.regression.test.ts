@@ -30,4 +30,10 @@ describe('date/core regression', () => {
     expect(toDateString(value)).toBe('');
     expect(toDateValue(value)).toBeNull();
   });
+
+  it('does not coerce invalid date-only strings', () => {
+    expect(toDate('2025-02-30')).toBeNull();
+    expect(toDateString('2025-02-30')).toBe('');
+    expect(toDateValue('2025-02-30')).toBeNull();
+  });
 });

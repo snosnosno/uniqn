@@ -8,6 +8,7 @@
 import { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
+import { getTodayString, getWeekdayKo } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -45,19 +46,14 @@ function formatDate(dateString: string): string {
  * 요일 반환 (타임존 안전)
  */
 function getDayOfWeek(dateString: string): string {
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
-  const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day); // 로컬 타임존 사용
-  return days[date.getDay()];
+  return getWeekdayKo(dateString);
 }
 
 /**
  * 오늘 날짜인지 확인
  */
 function isDateToday(dateString: string): boolean {
-  const today = new Date();
-  const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  return dateString === todayString;
+  return dateString === getTodayString();
 }
 
 // ============================================================================

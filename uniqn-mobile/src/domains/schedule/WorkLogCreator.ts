@@ -12,6 +12,7 @@
 
 import { Timestamp, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { STATUS } from '@/constants';
+import { parseTimeSlotToDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -163,10 +164,9 @@ export class WorkLogCreator {
     try {
       // HH:mm 형식으로 패딩
       const paddedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      const dateTime = new Date(`${date}T${paddedTime}:00`);
+      const { startTime } = parseTimeSlotToDate(paddedTime, date);
 
-      if (isNaN(dateTime.getTime())) return null;
-      return Timestamp.fromDate(dateTime);
+      return startTime ? Timestamp.fromDate(startTime) : null;
     } catch {
       return null;
     }

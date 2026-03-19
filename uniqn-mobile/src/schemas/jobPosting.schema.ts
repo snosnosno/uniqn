@@ -17,6 +17,7 @@ import {
   deserializeLegacyJobPostingDocument,
 } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
+import { isWithinUrgentDateLimit } from '@/utils/date';
 
 /**
  * 공고 타입 스키마
@@ -160,13 +161,7 @@ export const createJobPostingSchema = basicInfoSchema
     (data) => {
       // 긴급 공고는 7일 이내만 가능
       if (data.postingType === 'urgent' || data.isUrgent) {
-        const targetDate = new Date(data.workDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor(
-          (targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return diffDays >= 0 && diffDays <= 7;
+        return isWithinUrgentDateLimit(data.workDate);
       }
       return true;
     },

@@ -18,6 +18,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument } from '@/schemas';
 import type { PayrollStatus, QRCodeAction } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
+import { TimeNormalizer } from '@/shared/time';
 
 // ============================================================================
 // Write Operations
@@ -126,26 +127,14 @@ export async function updateWorkTimeTransaction(
 
       // workDuration 재계산: checkIn/checkOut이 모두 확정된 경우
       const finalCheckIn =
-        updates.checkInTime ??
-        (workLog.checkInTime instanceof Timestamp
-          ? workLog.checkInTime.toDate()
-          : workLog.checkInTime
-            ? new Date(workLog.checkInTime as string)
-            : null);
+        updates.checkInTime ?? TimeNormalizer.parseTime(workLog.checkInTime ?? null);
       const finalCheckOut =
-        updates.checkOutTime ??
-        (workLog.checkOutTime instanceof Timestamp
-          ? workLog.checkOutTime.toDate()
-          : workLog.checkOutTime
-            ? new Date(workLog.checkOutTime as string)
-            : null);
+        updates.checkOutTime ?? TimeNormalizer.parseTime(workLog.checkOutTime ?? null);
 
       if (finalCheckIn && finalCheckOut) {
-        const inTime =
-          finalCheckIn instanceof Date ? finalCheckIn : new Date(finalCheckIn as string);
-        const outTime =
-          finalCheckOut instanceof Date ? finalCheckOut : new Date(finalCheckOut as string);
-        const durationMinutes = Math.round((outTime.getTime() - inTime.getTime()) / (1000 * 60));
+        const durationMinutes = Math.round(
+          (finalCheckOut.getTime() - finalCheckIn.getTime()) / (1000 * 60)
+        );
         updateData.workDuration = Math.round((durationMinutes / 60) * 100) / 100;
       }
 
@@ -355,14 +344,13 @@ export async function processQRCheckInOutTransaction(
         let workDuration = 0;
         const checkInSource = workLog.checkInTime;
         if (checkInSource) {
-          const startTime =
-            checkInSource instanceof Timestamp
-              ? checkInSource.toDate()
-              : new Date(checkInSource as string);
-          const durationMinutes = Math.round(
-            (checkTime.getTime() - startTime.getTime()) / (1000 * 60)
-          );
-          workDuration = Math.round((durationMinutes / 60) * 100) / 100;
+          const startTime = TimeNormalizer.parseTime(checkInSource);
+          if (startTime) {
+            const durationMinutes = Math.round(
+              (checkTime.getTime() - startTime.getTime()) / (1000 * 60)
+            );
+            workDuration = Math.round((durationMinutes / 60) * 100) / 100;
+          }
         }
 
         transaction.update(workLogRef, {

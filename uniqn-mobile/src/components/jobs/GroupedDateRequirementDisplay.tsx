@@ -7,6 +7,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import {
   formatDateRangeWithCount,
   formatDateShortWithDay,
+  generateDateRange,
   groupRequirementsToDateRanges,
   toDateString,
   type DateInput,
@@ -65,11 +66,6 @@ function getRoleLabel(role?: string, name?: string, customRole?: string): string
   return '-';
 }
 
-function parseDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 function formatSingleDate(dateStr: string): string {
   return formatDateShortWithDay(dateStr) || dateStr || '-';
 }
@@ -108,29 +104,9 @@ function calculateTimeSlotStats(timeSlots: TimeSlotCompat[]): { total: number; f
   return { total, filled };
 }
 
-function formatDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function getDatesBetween(startDate: string, endDate: string): string[] {
-  const dates: string[] = [];
-  const start = parseDate(startDate);
-  const end = parseDate(endDate);
-
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return [startDate];
-  }
-
-  const current = new Date(start);
-  while (current <= end) {
-    dates.push(formatDateString(current));
-    current.setDate(current.getDate() + 1);
-  }
-
-  return dates;
+  const dates = generateDateRange(startDate, endDate);
+  return dates.length > 0 ? dates : [startDate];
 }
 
 function getGroupTimeSlotKey(parentKey: string, slot: TimeSlotCompat, index: number): string {

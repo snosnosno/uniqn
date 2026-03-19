@@ -5,8 +5,8 @@
  * @version 1.0.0
  */
 
-import { isToday, isPast, isFuture, addDays, parseISO } from 'date-fns';
-import { toISODateString } from './core';
+import { isToday, isPast, isFuture, addDays } from 'date-fns';
+import { toDate, toISODateString, type DateInput } from './core';
 
 /**
  * HH:mm 형식 검증
@@ -27,9 +27,7 @@ export function isValidDateFormat(date: string): boolean {
  */
 export function parseDate(dateString: string): Date | null {
   if (!isValidDateFormat(dateString)) return null;
-
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : date;
+  return toDate(dateString);
 }
 
 /**
@@ -76,23 +74,23 @@ export function isDuplicateDate(existingDates: string[], newDate: string): boole
  * 날짜 체크 유틸리티
  */
 export const dateChecks = {
-  isToday: (date: Date | string | null): boolean => {
-    const d = typeof date === 'string' ? parseISO(date) : date;
+  isToday: (date: DateInput): boolean => {
+    const d = toDate(date);
     return d ? isToday(d) : false;
   },
 
-  isPast: (date: Date | string | null): boolean => {
-    const d = typeof date === 'string' ? parseISO(date) : date;
+  isPast: (date: DateInput): boolean => {
+    const d = toDate(date);
     return d ? isPast(d) : false;
   },
 
-  isFuture: (date: Date | string | null): boolean => {
-    const d = typeof date === 'string' ? parseISO(date) : date;
+  isFuture: (date: DateInput): boolean => {
+    const d = toDate(date);
     return d ? isFuture(d) : false;
   },
 
-  isWithinDays: (date: Date | string | null, days: number): boolean => {
-    const d = typeof date === 'string' ? parseISO(date) : date;
+  isWithinDays: (date: DateInput, days: number): boolean => {
+    const d = toDate(date);
     if (!d) return false;
 
     const today = new Date();

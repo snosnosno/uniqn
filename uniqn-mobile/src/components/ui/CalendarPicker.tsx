@@ -24,6 +24,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -71,6 +72,11 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // Utils
 // ============================================================================
 
+function cloneDate(value: Date | null | undefined): Date | null {
+  const parsed = toDate(value);
+  return parsed ? new Date(parsed.getTime()) : null;
+}
+
 function getCalendarDays(
   currentMonth: Date,
   selectedDate: Date | null,
@@ -107,24 +113,28 @@ function getCalendarDays(
     let isDisabled = false;
     if (minimumDate) {
       // minimumDate의 시작 시간으로 비교 (당일은 선택 가능)
-      const minStart = new Date(minimumDate);
-      minStart.setHours(0, 0, 0, 0);
-      const dayStart = new Date(day);
+      const minStart = cloneDate(minimumDate);
+      const dayStart = new Date(day.getTime());
       dayStart.setHours(0, 0, 0, 0);
-      if (isBefore(dayStart, minStart)) {
+      if (minStart) {
+        minStart.setHours(0, 0, 0, 0);
+      }
+      if (minStart && isBefore(dayStart, minStart)) {
         isDisabled = true;
       }
     }
     if (maximumDate) {
-      const maxEnd = new Date(maximumDate);
-      maxEnd.setHours(23, 59, 59, 999);
-      if (isAfter(day, maxEnd)) {
+      const maxEnd = cloneDate(maximumDate);
+      if (maxEnd) {
+        maxEnd.setHours(23, 59, 59, 999);
+      }
+      if (maxEnd && isAfter(day, maxEnd)) {
         isDisabled = true;
       }
     }
 
     days.push({
-      date: new Date(day),
+      date: new Date(day.getTime()),
       isCurrentMonth,
       isToday: dayIsToday,
       isSelected,
@@ -235,7 +245,7 @@ export const CalendarPicker = memo(function CalendarPicker({
   testID,
 }: CalendarPickerProps) {
   // 현재 표시 중인 월 (선택된 날짜 또는 오늘 기준)
-  const [currentMonth, setCurrentMonth] = useState(() => value ?? new Date());
+  const [currentMonth, setCurrentMonth] = useState(() => cloneDate(value) ?? new Date());
 
   // 캘린더 날짜 계산
   const calendarDays = useMemo(

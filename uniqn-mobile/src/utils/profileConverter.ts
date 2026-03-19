@@ -4,16 +4,18 @@
  * @description AuthResult의 profile을 Store용 UserProfile로 변환
  */
 
-import { Timestamp } from '@/lib/firebase';
 import type { UserProfile } from '@/types';
+import { toDate as parseDate, type DateInput } from '@/utils/date/core';
 
 /**
  * Timestamp 또는 Date를 Date로 변환
  */
-function toDate(value: unknown): Date {
-  if (value instanceof Timestamp) return value.toDate();
-  if (value instanceof Date) return value;
-  return new Date();
+function toRequiredDate(value: unknown): Date {
+  return parseDate(value as DateInput) ?? new Date();
+}
+
+function toOptionalDate(value: unknown): Date | undefined {
+  return parseDate(value as DateInput) ?? undefined;
 }
 
 /**
@@ -86,21 +88,23 @@ export function toStoreProfile(profile: {
     note: profile.note,
     profileCompleted: profile.profileCompleted,
     isActive: profile.isActive,
-    createdAt: toDate(profile.createdAt),
-    updatedAt: toDate(profile.updatedAt),
+    createdAt: toRequiredDate(profile.createdAt),
+    updatedAt: toRequiredDate(profile.updatedAt),
     employerAgreements: profile.employerAgreements
       ? {
-          termsAgreedAt: toDate(profile.employerAgreements.termsAgreedAt),
-          liabilityWaiverAgreedAt: toDate(profile.employerAgreements.liabilityWaiverAgreedAt),
+          termsAgreedAt: toRequiredDate(profile.employerAgreements.termsAgreedAt),
+          liabilityWaiverAgreedAt: toRequiredDate(
+            profile.employerAgreements.liabilityWaiverAgreedAt
+          ),
         }
       : undefined,
     employerRegisteredAt: profile.employerRegisteredAt
-      ? toDate(profile.employerRegisteredAt)
+      ? toOptionalDate(profile.employerRegisteredAt)
       : undefined,
     bubbleScore: profile.bubbleScore
       ? {
           ...profile.bubbleScore,
-          lastUpdatedAt: toDate(profile.bubbleScore.lastUpdatedAt),
+          lastUpdatedAt: toRequiredDate(profile.bubbleScore.lastUpdatedAt),
         }
       : undefined,
   };

@@ -20,6 +20,8 @@ export type DateInput =
   | null
   | undefined;
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 function hasToDate(value: unknown): value is TimestampLike {
   return (
     value !== null &&
@@ -42,6 +44,11 @@ function parseStringDate(value: string): Date | null {
   const isoParsed = parseISO(value);
   if (isValid(isoParsed)) {
     return isoParsed;
+  }
+
+  // Prevent invalid YYYY-MM-DD inputs from being coerced by the JS Date parser.
+  if (DATE_ONLY_PATTERN.test(value)) {
+    return null;
   }
 
   const parsed = new Date(value);

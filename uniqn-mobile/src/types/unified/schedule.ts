@@ -7,6 +7,7 @@
 
 import type { TimeSlotInfo } from './timeSlot';
 import type { RoleInfo } from './role';
+import { formatAppliedDate } from '@/utils/date';
 
 // ============================================================================
 // Types - Discriminated Union
@@ -222,12 +223,5 @@ export function formatFixedScheduleDisplay(schedule: FixedScheduleInfo): string 
  * @returns 포맷된 날짜 문자열
  */
 export function formatDateDisplay(dateStr: string): string {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-
-  return `${month}/${day}(${dayOfWeek})`;
+  return formatAppliedDate(dateStr) || dateStr;
 }

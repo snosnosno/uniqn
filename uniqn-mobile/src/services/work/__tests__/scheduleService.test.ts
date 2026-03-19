@@ -7,6 +7,22 @@
 
 import type { ScheduleEvent, WorkLog, Application, ScheduleFilters } from '@/types';
 
+// Import after mocks
+import {
+  getMySchedules,
+  getSchedulesByDate,
+  getSchedulesByMonth,
+  getScheduleById,
+  getTodaySchedules,
+  getUpcomingSchedules,
+  subscribeToSchedules,
+  getScheduleStats,
+  groupSchedulesByDate,
+  getCalendarMarkedDates,
+} from '@/services/work/scheduleService';
+import { STATUS } from '@/constants';
+import { Timestamp } from 'firebase/firestore';
+
 // ============================================================================
 // Mock Setup
 // ============================================================================
@@ -156,6 +172,15 @@ jest.mock('@/utils/date', () => ({
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   },
+  formatDateWithDay: (dateStr: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return '';
+    }
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${month}월 ${day}일 (${weekdays[parsed.getDay()]})`;
+  },
 }));
 
 jest.mock('@/utils/firestore', () => ({
@@ -168,22 +193,6 @@ jest.mock('@/utils/firestore', () => ({
     return null;
   },
 }));
-
-// Import after mocks
-import {
-  getMySchedules,
-  getSchedulesByDate,
-  getSchedulesByMonth,
-  getScheduleById,
-  getTodaySchedules,
-  getUpcomingSchedules,
-  subscribeToSchedules,
-  getScheduleStats,
-  groupSchedulesByDate,
-  getCalendarMarkedDates,
-} from '@/services/work/scheduleService';
-import { STATUS } from '@/constants';
-import { Timestamp } from 'firebase/firestore';
 
 // ============================================================================
 // Test Helpers
@@ -857,5 +866,13 @@ describe('scheduleService - getCalendarMarkedDates', () => {
 
     expect(markedDates['2025-01-15'].marked).toBe(true);
     expect(markedDates['2025-01-16'].marked).toBe(true);
+  });
+});
+
+describe('scheduleService - invalid date fallback', () => {
+  it('keeps the raw date label when grouping invalid dates', () => {
+    const groups = groupSchedulesByDate([createMockScheduleEvent({ date: 'invalid-date' })]);
+
+    expect(groups[0].formattedDate).toBe('invalid-date');
   });
 });

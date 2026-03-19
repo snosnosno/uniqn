@@ -8,6 +8,7 @@
 
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
+import { parseDateString } from '@/utils/date';
 import type {
   ScheduleEvent,
   GroupedScheduleEvent,
@@ -36,10 +37,7 @@ export interface GroupScheduleOptions {
  * 날짜 문자열을 Date 객체로 변환
  * iOS 타임존 이슈 방지를 위해 직접 파싱
  */
-function parseDate(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 /**
  * 날짜 배열이 연속인지 확인
@@ -54,8 +52,12 @@ export function isConsecutiveDates(dates: string[]): boolean {
   const sorted = [...dates].sort();
 
   for (let i = 1; i < sorted.length; i++) {
-    const prev = parseDate(sorted[i - 1]);
-    const curr = parseDate(sorted[i]);
+    const prev = parseDateString(sorted[i - 1]!);
+    const curr = parseDateString(sorted[i]!);
+
+    if (!prev || !curr) {
+      return false;
+    }
 
     // 하루 차이인지 확인
     const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
@@ -75,8 +77,9 @@ export function isConsecutiveDates(dates: string[]): boolean {
  * formatSingleDate('2025-01-15') // "1/15(수)"
  */
 export function formatSingleDate(dateStr: string): string {
-  const date = parseDate(dateStr);
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  const date = parseDateString(dateStr);
+  if (!date) return dateStr || '-';
+  const dayOfWeek = WEEKDAYS[date.getDay()];
   return `${date.getMonth() + 1}/${date.getDate()}(${dayOfWeek})`;
 }
 
@@ -102,11 +105,15 @@ export function formatDateDisplay(dates: string[]): string {
 
   if (isConsecutive) {
     // 연속 날짜: "1월 15일(수) ~ 17일(금) (3일)"
-    const startDate = parseDate(sorted[0]);
-    const endDate = parseDate(sorted[sorted.length - 1]);
+    const startDate = parseDateString(sorted[0]!);
+    const endDate = parseDateString(sorted[sorted.length - 1]!);
 
-    const startDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][startDate.getDay()];
-    const endDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][endDate.getDay()];
+    if (!startDate || !endDate) {
+      return sorted.map((date) => formatSingleDate(date)).join(', ');
+    }
+
+    const startDayOfWeek = WEEKDAYS[startDate.getDay()];
+    const endDayOfWeek = WEEKDAYS[endDate.getDay()];
 
     const startMonth = startDate.getMonth() + 1;
     const startDay = startDate.getDate();
@@ -124,7 +131,10 @@ export function formatDateDisplay(dates: string[]): string {
     // 비연속 날짜: "1/15, 1/17, 1/20 (3일)"
     // 최대 3개까지 표시, 그 이상은 축약
     const formattedDates = sorted.map((d) => {
-      const date = parseDate(d);
+      const date = parseDateString(d);
+      if (!date) {
+        return d;
+      }
       return `${date.getMonth() + 1}/${date.getDate()}`;
     });
 

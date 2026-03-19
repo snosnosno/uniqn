@@ -15,6 +15,7 @@ import type {
 } from './index';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import { STAFF_ROLES } from '@/constants';
+import { isWithinUrgentDateLimit } from '@/utils/date';
 
 // ============================================================================
 // 공고 타입별 설정
@@ -239,13 +240,8 @@ export function validateStep(
 
         // urgent: 7일 이내 검증
         if (data.postingType === 'urgent' && data.workDate) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const workDate = new Date(data.workDate);
-          const diffDays = Math.ceil(
-            (workDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-          );
-          if (diffDays < 0 || diffDays > 7) {
+          const isUrgentDateValid = isWithinUrgentDateLimit(data.workDate);
+          if (!isUrgentDateValid) {
             errors.push('긴급 공고는 오늘부터 7일 이내만 가능합니다');
           }
         }

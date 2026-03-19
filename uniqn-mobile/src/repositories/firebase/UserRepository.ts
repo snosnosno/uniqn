@@ -34,6 +34,8 @@ import { parseUserDocument } from '@/schemas';
 import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { toDate } from '@/utils/date';
+import { TimeNormalizer } from '@/shared/time';
 
 // ============================================================================
 // Repository Implementation
@@ -257,7 +259,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       logger.info('회원탈퇴 요청 저장 완료', {
         userId,
-        scheduledDeletionAt: request.scheduledDeletionAt.toDate().toISOString(),
+        scheduledDeletionAt: toDate(request.scheduledDeletionAt)?.toISOString() ?? null,
       });
     } catch (error) {
       logger.error('회원탈퇴 요청 저장 실패', toError(error), { userId });
@@ -292,7 +294,8 @@ export class FirebaseUserRepository implements IUserRepository {
       }
 
       // 유예 기간 확인
-      if (deletionRequest.scheduledDeletionAt.toDate() < new Date()) {
+      const scheduledDeletionAt = toDate(deletionRequest.scheduledDeletionAt);
+      if (!scheduledDeletionAt || scheduledDeletionAt < new Date()) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '탈퇴 유예 기간이 만료되었습니다',
         });
@@ -447,7 +450,7 @@ export class FirebaseUserRepository implements IUserRepository {
           id: docSnapshot.id,
           jobPostingTitle: data.jobPostingTitle ?? '',
           status: data.status,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() ?? '',
+          createdAt: toDate(data.createdAt)?.toISOString() ?? '',
         };
       });
 
@@ -461,8 +464,8 @@ export class FirebaseUserRepository implements IUserRepository {
         return {
           id: docSnapshot.id,
           date: data.date ?? '',
-          checkInAt: data.checkInTime?.toDate?.()?.toISOString(),
-          checkOutAt: data.checkOutTime?.toDate?.()?.toISOString(),
+          checkInAt: TimeNormalizer.parseTime(data.checkInTime)?.toISOString(),
+          checkOutAt: TimeNormalizer.parseTime(data.checkOutTime)?.toISOString(),
         };
       });
 

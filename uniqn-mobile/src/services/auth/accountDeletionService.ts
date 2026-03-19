@@ -18,6 +18,7 @@ import { userRepository } from '@/repositories';
 import type { DeletionReason, DeletionRequest, UserDataExport } from '@/repositories';
 import type { FirestoreUserProfile } from '@/types';
 import { STATUS } from '@/constants';
+import { toDate } from '@/utils/date';
 
 /** 회원탈퇴 유예 기간 (일) */
 export const DELETION_GRACE_PERIOD_DAYS = 30;
@@ -203,7 +204,7 @@ export async function requestAccountDeletion(
 
     logger.info('회원탈퇴 요청 완료', {
       userId: currentUser.uid,
-      scheduledDeletionAt: scheduledDeletion.toDate().toISOString(),
+      scheduledDeletionAt: toDate(scheduledDeletion)?.toISOString() ?? null,
     });
 
     // 4. 로그아웃은 호출자에서 처리

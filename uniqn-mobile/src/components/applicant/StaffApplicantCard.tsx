@@ -17,6 +17,7 @@ import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
 import type { Application, ApplicationStatus, Assignment } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import { STATUS } from '@/constants';
+import { formatAppliedDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -98,11 +99,7 @@ const getStatusBadgeVariant = (
 };
 
 const formatDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
+  return formatAppliedDate(dateStr) || dateStr || '-';
 };
 
 const getAssignmentsSummary = (assignments: Assignment[]): string => {

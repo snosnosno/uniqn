@@ -15,6 +15,10 @@ jest.mock('@/shared/time', () => ({
     parseTime: jest.fn((value: unknown) => {
       if (value instanceof Date) return value;
       if (value === null || value === undefined) return null;
+      if (typeof value === 'string') {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
       if (typeof value === 'object' && value !== null && 'toDate' in value) {
         return (value as { toDate: () => Date }).toDate();
       }
@@ -42,6 +46,14 @@ describe('timeEditorUtils', () => {
       const date = new Date(2025, 0, 15);
       const ts = { toDate: () => date, seconds: 0, nanoseconds: 0 };
       expect(parseTimestamp(ts as any)).toEqual(date);
+    });
+
+    it('날짜 문자열도 공용 파서로 처리한다', () => {
+      const result = parseTimestamp('2025-01-15');
+      expect(result).toBeInstanceOf(Date);
+      expect(result.getFullYear()).toBe(2025);
+      expect(result.getMonth()).toBe(0);
+      expect(result.getDate()).toBe(15);
     });
   });
 

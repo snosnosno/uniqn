@@ -21,6 +21,7 @@ import {
   type ConfirmedStaffStats,
 } from '@/types';
 import { STATUS } from '@/constants';
+import { getTodayString } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -149,7 +150,7 @@ export function ConfirmedStaffList({
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
     // 기본: 오늘과 미래 날짜 펼침
-    const today = new Date().toISOString().split('T')[0];
+    const today = getTodayString();
     const expanded = new Set<string>();
     grouped.forEach((group) => {
       if (group.date >= today) {

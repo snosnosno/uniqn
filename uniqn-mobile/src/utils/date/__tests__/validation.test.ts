@@ -87,6 +87,10 @@ describe('parseDate', () => {
     expect(parseDate('')).toBeNull();
   });
 
+  it('유효하지 않은 달력 날짜는 null을 반환한다', () => {
+    expect(parseDate('2025-02-30')).toBeNull();
+  });
+
   it('윤년 2월 29일을 올바르게 변환한다', () => {
     const result = parseDate('2024-02-29');
     expect(result).toBeInstanceOf(Date);
@@ -214,6 +218,10 @@ describe('dateChecks', () => {
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       expect(dateChecks.isToday(todayStr)).toBe(true);
+    });
+
+    it('유효하지 않은 날짜 문자열은 false를 반환한다', () => {
+      expect(dateChecks.isToday('2025-02-30')).toBe(false);
     });
   });
 

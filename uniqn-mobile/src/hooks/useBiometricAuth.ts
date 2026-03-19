@@ -29,6 +29,7 @@ import { getUserProfile } from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { toStoreProfile } from '@/utils/profileConverter';
 import { toError, requireAuth } from '@/errors';
 
 // ============================================================================
@@ -318,25 +319,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       const profile = await getUserProfile(currentUser.uid);
       if (profile && profile.uid && profile.role) {
         useAuthStore.getState().setUser(currentUser);
-        useAuthStore.getState().setProfile({
-          ...profile,
-          createdAt: profile.createdAt?.toDate?.() ?? new Date(),
-          updatedAt: profile.updatedAt?.toDate?.() ?? new Date(),
-          employerAgreements: profile.employerAgreements
-            ? {
-                termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                liabilityWaiverAgreedAt:
-                  profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
-              }
-            : undefined,
-          employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
-          bubbleScore: profile.bubbleScore
-            ? {
-                ...profile.bubbleScore,
-                lastUpdatedAt: profile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
-              }
-            : undefined,
-        });
+        useAuthStore.getState().setProfile(toStoreProfile(profile));
       } else if (profile) {
         logger.warn('생체 인증: 불완전한 프로필 구조 감지', {
           uid: currentUser.uid,

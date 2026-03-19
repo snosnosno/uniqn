@@ -239,27 +239,8 @@ export class ScheduleConverter {
       return null;
     }
 
-    // "19:00~22:00" 형식 처리
-    const parts = timeSlot.split('~').map((p) => p.trim());
-    const timeStr = type === 'start' ? parts[0] : parts[1] || parts[0];
-
-    if (!timeStr) return null;
-
-    const timeParts = timeStr.split(':');
-    if (timeParts.length < 2) return null;
-
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1], 10);
-    if (isNaN(hours) || isNaN(minutes)) return null;
-
-    const dateParts = date.split('-');
-    if (dateParts.length !== 3) return null;
-
-    const year = parseInt(dateParts[0], 10);
-    const month = parseInt(dateParts[1], 10);
-    const day = parseInt(dateParts[2], 10);
-
-    const dateObj = new Date(year, month - 1, day, hours, minutes);
-    return Timestamp.fromDate(dateObj);
+    const { startTime, endTime } = parseTimeSlotToDate(timeSlot, date);
+    const parsedTime = type === 'start' ? startTime : (endTime ?? startTime);
+    return parsedTime ? Timestamp.fromDate(parsedTime) : null;
   }
 }

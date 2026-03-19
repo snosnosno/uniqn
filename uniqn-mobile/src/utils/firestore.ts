@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from './logger';
+import { TimeNormalizer } from '@/shared/time';
 import type { TimeInput } from '@/shared/time';
 
 // ============================================================================
@@ -463,14 +464,7 @@ export function normalizeTimestamp(value: TimeInput): Timestamp | null {
  * @returns 변환된 Date 또는 null
  */
 export function timestampToDate(value: TimeInput): Date | null {
-  if (!value) return null;
-  if (value instanceof Timestamp) return value.toDate();
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
-    return isNaN(parsed.getTime()) ? null : parsed;
-  }
-  return null;
+  return TimeNormalizer.parseTime(value);
 }
 
 export default {
