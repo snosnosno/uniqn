@@ -1,14 +1,7 @@
 /**
- * UNIQN Mobile - 통합 알림 핸들러 훅 (합성 래퍼)
+ * UNIQN Mobile - notification handler composition hook
  *
- * @description 3개 분리된 훅을 합성하여 기존 인터페이스 유지
- * @version 3.0.0
- *
- * @changelog
- * - v3.0.0: 단일 모놀리식 훅 → 3개 훅 합성 구조로 리팩토링
- *   - usePushNotificationSetup: 초기화 + 권한 + 포그라운드 핸들러
- *   - useFCMTokenManager: 토큰 라이프사이클 (등록/해제/갱신)
- *   - useNotificationSyncOnForeground: 포그라운드 동기화 + 카운터 구독
+ * Combines setup, token lifecycle, and foreground sync into one interface.
  */
 
 import {
@@ -18,87 +11,45 @@ import {
 import { useFCMTokenManager } from './useFCMTokenManager';
 import { useNotificationSyncOnForeground } from './useNotificationSyncOnForeground';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface UseNotificationHandlerOptions extends UsePushNotificationSetupOptions {
-  /** 로그인 시 토큰 자동 등록 여부 (기본: true) */
+  /** 통합 알림 핸들러 활성화 여부 (기본: true) */
+  enabled?: boolean;
+  /** 로그인 후 토큰 자동 등록 여부 (기본: true) */
   autoRegisterToken?: boolean;
 }
 
 export interface UseNotificationHandlerReturn {
-  // ========== 상태 ==========
-  /** 초기화 완료 여부 */
   isInitialized: boolean;
-  /** 권한 상태 */
   permissionStatus: 'granted' | 'denied' | 'undetermined' | null;
-  /** 권한 요청 중 */
   isRequestingPermission: boolean;
-  /** 토큰 등록 완료 여부 */
   isTokenRegistered: boolean;
-
-  // ========== 액션 ==========
-  /** 권한 요청 */
   requestPermission: () => Promise<boolean>;
-  /** 토큰 등록 */
   registerToken: () => Promise<boolean>;
-  /** 토큰 해제 */
   unregisterToken: () => Promise<boolean>;
-  /** 뱃지 수 설정 */
   setBadge: (count: number) => Promise<void>;
-  /** 뱃지 초기화 */
   clearBadge: () => Promise<void>;
-  /** 설정 앱 열기 (권한 거부 시) */
   openSettings: () => Promise<void>;
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
-
-/**
- * 통합 알림 핸들러 훅 (합성 패턴)
- *
- * @description 3개 서브 훅을 합성하여 기존 인터페이스를 유지합니다.
- *
- * @example
- * function MainNavigator() {
- *   const {
- *     isInitialized,
- *     permissionStatus,
- *     requestPermission,
- *     openSettings,
- *   } = useNotificationHandler({
- *     showForegroundToast: true,
- *     onNotificationReceived: (n) => console.log('알림 수신:', n),
- *   });
- *
- *   if (permissionStatus === 'denied') {
- *     return <PermissionDeniedScreen onOpenSettings={openSettings} />;
- *   }
- *
- *   return <Stack />;
- * }
- */
 export function useNotificationHandler(
   options: UseNotificationHandlerOptions = {}
 ): UseNotificationHandlerReturn {
-  const { autoRegisterToken = true, ...setupOptions } = options;
+  const { enabled = true, autoRegisterToken = true, ...setupOptions } = options;
 
-  // 1. 초기화 + 권한 + 포그라운드 핸들러
-  const setup = usePushNotificationSetup(setupOptions);
+  const setup = usePushNotificationSetup({
+    ...setupOptions,
+    autoInitialize: enabled && (setupOptions.autoInitialize ?? true),
+  });
 
-  // 2. 토큰 라이프사이클
   const token = useFCMTokenManager({
     userId: setup.userId,
     isInitialized: setup.isInitialized,
     permissionStatus: setup.permissionStatus,
-    autoRegisterToken,
+    autoRegisterToken: enabled && autoRegisterToken,
   });
 
-  // 3. 포그라운드 동기화 + 카운터 구독
   useNotificationSyncOnForeground({
+    enabled,
     userId: setup.userId,
     isAuthenticated: setup.isAuthenticated,
     isTokenRegistered: token.isTokenRegistered,
@@ -107,13 +58,10 @@ export function useNotificationHandler(
   });
 
   return {
-    // 상태
     isInitialized: setup.isInitialized,
     permissionStatus: setup.permissionStatus,
     isRequestingPermission: setup.isRequestingPermission,
     isTokenRegistered: token.isTokenRegistered,
-
-    // 액션
     requestPermission: setup.requestPermission,
     registerToken: token.registerToken,
     unregisterToken: token.unregisterToken,

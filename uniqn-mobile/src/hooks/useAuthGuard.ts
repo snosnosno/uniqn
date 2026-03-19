@@ -1,51 +1,38 @@
 /**
  * UNIQN Mobile - useAuthGuard Hook
  *
- * @description 라우트 보호 및 권한 확인
- * @version 1.0.0
+ * Route protection and authenticated entry routing.
  */
 
 import { useEffect, useRef } from 'react';
-import { useRouter, useSegments, usePathname } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
+import { getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
+import { RoleResolver } from '@/shared/role';
 import { useAuthStore, selectIsLoading, selectProfile } from '@/stores/authStore';
 import type { UserRole } from '@/types';
-import { RoleResolver } from '@/shared/role';
 import { logger } from '@/utils/logger';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 type RouteGroup = '(auth)' | '(app)' | '(employer)' | '(admin)' | '(public)';
 
 interface RouteConfig {
   requiredAuth: boolean;
   requiredRole?: UserRole;
-  redirectTo?: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/**
- * 라우트 그룹별 설정
- */
 const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   '(public)': {
     requiredAuth: false,
   },
   '(auth)': {
     requiredAuth: false,
-    redirectTo: '/(app)/(tabs)', // 이미 로그인된 경우 리다이렉트
   },
   '(app)': {
     requiredAuth: true,
-    requiredRole: 'staff', // 최소 staff 권한 필요 (로그인만 되어 있으면 됨)
+    requiredRole: 'staff',
   },
   '(employer)': {
     requiredAuth: true,
-    requiredRole: 'employer', // employer 이상 권한 필요 (구인자)
+    requiredRole: 'employer',
   },
   '(admin)': {
     requiredAuth: true,
@@ -53,13 +40,6 @@ const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   },
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 세그먼트에서 라우트 그룹 추출
- */
 function extractRouteGroup(segments: string[]): RouteGroup | null {
   const firstSegment = segments[0] as RouteGroup | undefined;
 
@@ -70,104 +50,90 @@ function extractRouteGroup(segments: string[]): RouteGroup | null {
   return null;
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
-
 export function useAuthGuard(): void {
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
 
-  // Selector를 사용하여 필요한 상태만 구독 (무한 루프 방지)
   const isLoading = useAuthStore(selectIsLoading);
   const profile = useAuthStore(selectProfile);
   const user = useAuthStore((state) => state.user);
 
-  // ⚠️ 중요: store.isAuthenticated는 MMKV rehydration 후 업데이트가 지연될 수 있으므로
-  // user 존재 여부로 직접 판단
   const isAuthenticated = !!user;
   const userRole = profile?.role ?? null;
-
-  // 무한 루프 방지: profile 객체 대신 필요한 원시값만 추출
   const socialProvider = profile?.socialProvider ?? null;
   const phoneVerified = profile?.phoneVerified ?? null;
   const profileCompleted = profile?.profileCompleted ?? null;
 
-  // router를 ref로 저장하여 의존성 배열에서 제외 (안정적인 참조)
+  const authenticatedEntryRoute = getAuthenticatedEntryRoute({
+    socialProvider,
+    phoneVerified,
+    profileCompleted,
+  });
+
   const routerRef = useRef(router);
   routerRef.current = router;
 
   useEffect(() => {
-    // 로딩 중에는 처리하지 않음
-    if (isLoading) return;
+    if (isLoading || (isAuthenticated && !profile)) return;
 
     const routeGroup = extractRouteGroup(segments);
+    const isOnSignup = segments.includes('signup' as never);
+    const isOnProfileSetup = pathname === '/profile-setup' || pathname === '/(app)/profile-setup';
 
-    // 라우트 그룹이 있으면 해당 그룹의 권한 체크로 넘어감
-    // (pathname이 '/'여도 segments에 라우트 그룹이 있으면 그룹 내 index 페이지)
     if (!routeGroup) {
-      // 라우트 그룹이 없고 루트 경로인 경우에만 리다이렉트
-      if (pathname === '/' || pathname === '/index') {
-        if (isAuthenticated) {
-          logger.debug('인증됨 - 메인으로 이동', {
-            component: 'useAuthGuard',
-            pathname,
-          });
-          routerRef.current.replace('/(app)/(tabs)');
-        }
+      if ((pathname === '/' || pathname === '/index') && isAuthenticated) {
+        logger.debug('Authenticated user entered root route', {
+          component: 'useAuthGuard',
+          pathname,
+          authenticatedEntryRoute,
+        });
+        routerRef.current.replace(authenticatedEntryRoute);
       }
       return;
     }
 
     const config = ROUTE_CONFIGS[routeGroup];
 
-    // (auth) 그룹: 이미 로그인되어 있으면 리다이렉트
     if (routeGroup === '(auth)' && isAuthenticated) {
-      // 소셜 로그인 프로필 미완성 + signup 화면 → 리다이렉트 안 함
-      const isSignupScreen = segments.includes('signup' as never);
-      if (isSignupScreen && socialProvider && !phoneVerified) {
-        return; // 프로필 완성 화면에 머무름
+      if (authenticatedEntryRoute.includes('/signup') && isOnSignup) {
+        return;
       }
 
-      logger.debug('이미 인증됨 - 앱으로 리다이렉트', {
+      logger.debug('Authenticated user entered auth group', {
         component: 'useAuthGuard',
         pathname,
+        authenticatedEntryRoute,
       });
-      routerRef.current.replace(config.redirectTo || '/(app)/(tabs)');
+      routerRef.current.replace(authenticatedEntryRoute);
       return;
     }
 
-    // 인증됨 + 소셜 프로필 미완성 → signup 화면으로 이동
-    if (isAuthenticated && socialProvider && !phoneVerified) {
-      const isOnSignup = segments.includes('signup' as never);
-      if (!isOnSignup) {
-        logger.debug('소셜 프로필 미완성 - signup으로 리다이렉트', {
-          component: 'useAuthGuard',
-          pathname,
-          socialProvider,
-        });
-        routerRef.current.replace('/(auth)/signup?mode=social');
-        return;
-      }
+    if (isAuthenticated && authenticatedEntryRoute.includes('/signup') && !isOnSignup) {
+      logger.debug('Incomplete social signup detected', {
+        component: 'useAuthGuard',
+        pathname,
+        socialProvider,
+      });
+      routerRef.current.replace(authenticatedEntryRoute);
+      return;
     }
 
-    // 인증됨 + 프로필 미완성 → profile-setup 화면으로 이동
-    if (isAuthenticated && profileCompleted === false) {
-      const isOnProfileSetup = pathname === '/(app)/profile-setup';
-      if (!isOnProfileSetup) {
-        logger.debug('프로필 미완성 - profile-setup으로 리다이렉트', {
-          component: 'useAuthGuard',
-          pathname,
-        });
-        routerRef.current.replace('/(app)/profile-setup');
-        return;
-      }
+    if (
+      isAuthenticated &&
+      authenticatedEntryRoute.includes('/profile-setup') &&
+      !isOnProfileSetup
+    ) {
+      logger.debug('Incomplete profile detected', {
+        component: 'useAuthGuard',
+        pathname,
+      });
+      routerRef.current.replace(authenticatedEntryRoute);
+      return;
     }
 
-    // 인증 필요 라우트 체크
     if (config.requiredAuth && !isAuthenticated) {
-      logger.debug('인증 필요 - 로그인으로 리다이렉트', {
+      logger.debug('Unauthenticated access to protected route', {
         component: 'useAuthGuard',
         pathname,
         routeGroup,
@@ -176,48 +142,32 @@ export function useAuthGuard(): void {
       return;
     }
 
-    // 권한 체크 (requiredRole이 없으면 권한 체크 생략)
     const hasRequiredPermission = config.requiredRole
       ? RoleResolver.hasPermission(userRole, config.requiredRole)
       : true;
+
     if (config.requiredRole && !hasRequiredPermission) {
-      logger.warn('권한 부족', {
+      logger.warn('Insufficient role for route', {
         component: 'useAuthGuard',
         pathname,
         userRole,
         requiredRole: config.requiredRole,
       });
 
-      // 권한이 부족하면 가능한 가장 높은 권한의 페이지로 리다이렉트
-      if (isAuthenticated) {
-        routerRef.current.replace('/(app)/(tabs)');
-      } else {
-        routerRef.current.replace('/(auth)/login');
-      }
-      return;
+      routerRef.current.replace(isAuthenticated ? authenticatedEntryRoute : '/(auth)/login');
     }
-    // router를 의존성에서 제외하여 무한 루프 방지
-    // user 변경 시 isAuthenticated도 재계산됨
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    user,
+    authenticatedEntryRoute,
+    isAuthenticated,
     isLoading,
-    userRole,
-    socialProvider,
-    phoneVerified,
-    profileCompleted,
-    segments,
     pathname,
+    profile,
+    segments,
+    socialProvider,
+    userRole,
   ]);
 }
 
-// ============================================================================
-// Utility Hooks
-// ============================================================================
-
-/**
- * 권한 확인 유틸리티 훅
- */
 export function useHasPermission(requiredRole: UserRole): boolean {
   const { profile } = useAuthStore();
   const userRole = profile?.role ?? null;
@@ -225,23 +175,14 @@ export function useHasPermission(requiredRole: UserRole): boolean {
   return RoleResolver.hasPermission(userRole, requiredRole);
 }
 
-/**
- * 관리자 권한 확인
- */
 export function useIsAdmin(): boolean {
   return useHasPermission('admin');
 }
 
-/**
- * 구인자 권한 확인
- */
 export function useIsEmployer(): boolean {
   return useHasPermission('employer');
 }
 
-/**
- * 스태프 이상 권한 확인
- */
 export function useIsStaff(): boolean {
   return useHasPermission('staff');
 }

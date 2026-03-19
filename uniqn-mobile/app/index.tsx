@@ -1,19 +1,22 @@
 /**
  * UNIQN Mobile - Splash Screen
- * 앱 시작 스플래시 화면 (네이티브 스플래시 → 이 화면 → 로그인/메인)
+ * Root entry splash that forwards to the authenticated or public flow.
  */
 
 import { useEffect } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { APP_VERSION } from '@/constants/version';
+import { getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
 import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { APP_VERSION } from '@/constants/version';
 import { logger } from '@/utils/logger';
 
 const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
+const SPLASH_REDIRECT_DELAY_MS = 500;
+const HYDRATION_FALLBACK_DELAY_MS = 5000;
 
 const SPINNER_COLOR = {
   light: '#A855F7',
@@ -23,31 +26,35 @@ const SPINNER_COLOR = {
 export default function SplashScreen() {
   const hasHydrated = useAuthStore(selectHasHydrated);
   const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
+
+  const authenticatedEntryRoute = getAuthenticatedEntryRoute({
+    socialProvider: profile?.socialProvider ?? null,
+    phoneVerified: profile?.phoneVerified ?? null,
+    profileCompleted: profile?.profileCompleted ?? null,
+  });
 
   useEffect(() => {
     if (!hasHydrated) {
-      // Hydration이 5초 안에 완료되지 않으면 로그인 화면으로 폴백
       const fallback = setTimeout(() => {
-        logger.warn('Hydration 타임아웃 - 로그인 화면으로 폴백', { component: 'SplashScreen' });
+        logger.warn('Hydration timed out, falling back to login', {
+          component: 'SplashScreen',
+        });
         router.replace('/(auth)/login');
-      }, 5000);
+      }, HYDRATION_FALLBACK_DELAY_MS);
+
       return () => clearTimeout(fallback);
     }
 
-    // 인증 상태에 따라 라우팅
+    if (user && !profile) return;
+
     const timer = setTimeout(() => {
-      if (user) {
-        // 로그인 상태: 메인 화면으로
-        router.replace('/(app)/(tabs)');
-      } else {
-        // 비로그인 상태: 로그인 화면으로
-        router.replace('/(auth)/login');
-      }
-    }, 500); // 스플래시 최소 표시 시간
+      router.replace(user ? authenticatedEntryRoute : '/(auth)/login');
+    }, SPLASH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [hasHydrated, user]);
+  }, [authenticatedEntryRoute, hasHydrated, profile, user]);
 
   return (
     <View className="flex-1 items-center justify-center bg-surface-dark">
