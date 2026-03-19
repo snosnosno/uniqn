@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Platform } from 'react-native';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import {
   signInWithPhoneNumber as webSignInWithPhoneNumber,
   RecaptchaVerifier,
@@ -50,11 +51,16 @@ interface PhoneAuthSnapshotLike {
   error?: { code?: string; message?: string } | null;
 }
 
+type PhoneAuthListenerLike = FirebaseAuthTypes.PhoneAuthListener & {
+  _removeAllListeners?: () => void;
+  removeAllListeners?: (event: string) => void;
+};
+
 /** PhoneAuthListener 참조 */
 interface VerificationForLinkResult {
   verificationId: string;
   settled: { current: boolean };
-  listener: { removeAllListeners(event: string): void } | null;
+  listener: PhoneAuthListenerLike | null;
   autoCode?: string | null;
 }
 
@@ -77,7 +83,7 @@ export interface UsePhoneSMSReturn {
   /** PhoneAuthListener settled 참조 (link 모드) */
   phoneListenerSettledRef: React.MutableRefObject<{ current: boolean } | null>;
   /** PhoneAuthListener 참조 (link 모드) */
-  phoneListenerRef: React.MutableRefObject<{ removeAllListeners(event: string): void } | null>;
+  phoneListenerRef: React.MutableRefObject<PhoneAuthListenerLike | null>;
   /** OTP 요청 시점의 mode 기록 */
   requestedModeRef: React.MutableRefObject<'signIn' | 'link'>;
   requestSMS: (
@@ -93,6 +99,19 @@ export interface UsePhoneSMSReturn {
 const RESEND_COOLDOWN = 60;
 const AUTO_VERIFY_TIMEOUT_SECONDS = 60;
 
+function cleanupPhoneAuthListener(listener: PhoneAuthListenerLike | null): void {
+  if (!listener) return;
+
+  if (typeof listener._removeAllListeners === 'function') {
+    listener._removeAllListeners();
+    return;
+  }
+
+  if (typeof listener.removeAllListeners === 'function') {
+    listener.removeAllListeners('state_changed');
+  }
+}
+
 // ============================================================================
 // Internal: requestVerificationForLink
 // ============================================================================
@@ -106,7 +125,7 @@ const AUTO_VERIFY_TIMEOUT_SECONDS = 60;
 function requestVerificationForLink(e164: string): Promise<VerificationForLinkResult> {
   const LISTENER_TIMEOUT_MS = (RESEND_COOLDOWN + 5) * 1000;
   const settled = { current: false };
-  let listenerRef: { removeAllListeners(event: string): void } | null = null;
+  let listenerRef: PhoneAuthListenerLike | null = null;
 
   const verificationPromise = new Promise<VerificationForLinkResult>((resolve, reject) => {
     if (!nativeVerifyPhoneNumber || !getNativeAuth) {
@@ -132,7 +151,7 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
 
     try {
       const listener = nativeVerifyPhoneNumber(getNativeAuth(), e164, AUTO_VERIFY_TIMEOUT_SECONDS);
-      listenerRef = listener as unknown as { removeAllListeners(event: string): void };
+      listenerRef = listener as PhoneAuthListenerLike;
       listener.on(
         'state_changed',
         (snapshot: PhoneAuthSnapshotLike) => {
@@ -191,9 +210,7 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
   return Promise.race([verificationPromise, timeoutPromise]).finally(() => {
     clearTimeout(timeoutId);
     settled.current = true;
-    if (listenerRef) {
-      listenerRef.removeAllListeners('state_changed');
-    }
+    cleanupPhoneAuthListener(listenerRef);
   });
 }
 
@@ -215,7 +232,7 @@ export function usePhoneSMS({
   const verificationIdRef = useRef<string | null>(null);
   const lastCheckedPhoneRef = useRef<string | null>(null);
   const phoneListenerSettledRef = useRef<{ current: boolean } | null>(null);
-  const phoneListenerRef = useRef<{ removeAllListeners(event: string): void } | null>(null);
+  const phoneListenerRef = useRef<PhoneAuthListenerLike | null>(null);
   const requestedModeRef = useRef<'signIn' | 'link'>(mode);
 
   /** 전화번호 입력 핸들러 (자동 포맷팅) */
@@ -278,7 +295,7 @@ export function usePhoneSMS({
         phoneListenerSettledRef.current.current = true;
       }
       if (phoneListenerRef.current) {
-        phoneListenerRef.current.removeAllListeners('state_changed');
+        cleanupPhoneAuthListener(phoneListenerRef.current);
         phoneListenerRef.current = null;
       }
       const linkResult = await requestVerificationForLink(e164);
@@ -411,7 +428,7 @@ export function usePhoneSMS({
       phoneListenerSettledRef.current = null;
     }
     if (phoneListenerRef.current) {
-      phoneListenerRef.current.removeAllListeners('state_changed');
+      cleanupPhoneAuthListener(phoneListenerRef.current);
       phoneListenerRef.current = null;
     }
   }, []);
@@ -424,7 +441,7 @@ export function usePhoneSMS({
         phoneListenerSettledRef.current = null;
       }
       if (phoneListenerRef.current) {
-        phoneListenerRef.current.removeAllListeners('state_changed');
+        cleanupPhoneAuthListener(phoneListenerRef.current);
         phoneListenerRef.current = null;
       }
     };
