@@ -65,13 +65,6 @@ export function useRecaptcha(onError?: (msg: string) => void): UseRecaptchaRetur
   const [recaptchaKey, setRecaptchaKey] = useState(0);
   const verifierRef = useRef<RecaptchaVerifier | null>(null);
 
-  // 웹: 마운트 시 Enterprise 설정 사전 로드 (비동기, 비차단)
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      ensureRecaptchaConfig();
-    }
-  }, []);
-
   const resetVerifier = useCallback(() => {
     if (verifierRef.current) {
       try {

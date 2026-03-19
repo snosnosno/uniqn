@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
@@ -41,6 +41,8 @@ interface DeferredInitContext {
   authUser: FirebaseUser;
   profile: NonNullable<Awaited<ReturnType<typeof getUserProfile>>>;
 }
+
+const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 1500 : 5000;
 
 async function waitForAuthUser(timeoutMs = 3000): Promise<FirebaseUser | null> {
   const auth = getFirebaseAuth();
@@ -320,10 +322,12 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
       await migrateFromAsyncStorage();
 
-      const hydrated = await waitForHydration(5000);
+      const hydrated = await waitForHydration(AUTH_STORE_HYDRATION_TIMEOUT_MS);
       if (!hydrated) {
         logger.warn('Auth store hydration timed out, continuing with default state', {
           component: 'useAppInitialize',
+          timeoutMs: AUTH_STORE_HYDRATION_TIMEOUT_MS,
+          platform: Platform.OS,
         });
       }
 

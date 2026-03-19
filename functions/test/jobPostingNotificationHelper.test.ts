@@ -1,10 +1,17 @@
+import * as admin from "firebase-admin";
 import { expect } from "chai";
-import {
+import type { NotificationResult } from "../src/utils/notificationUtils";
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const {
   collectApplicantIds,
   notifyApplicantsForJobPostingChange,
   summarizeNotificationResults,
-} from "../src/notifications/jobPostingNotificationHelper";
-import type { NotificationResult } from "../src/utils/notificationUtils";
+} =
+  require("../src/notifications/jobPostingNotificationHelper") as typeof import("../src/notifications/jobPostingNotificationHelper");
 
 describe("jobPostingNotificationHelper", () => {
   it("deduplicates applicant ids", () => {

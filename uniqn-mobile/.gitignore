@@ -62,6 +62,7 @@ blob-report/
 
 # Reports & Artifacts
 .reports/
+output/
 
 # Sentry
 sentry.properties

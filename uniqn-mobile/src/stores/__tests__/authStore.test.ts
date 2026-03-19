@@ -15,6 +15,8 @@ import {
   selectIsAdmin,
   selectIsEmployer,
   selectIsStaff,
+  selectHasHydrated,
+  waitForHydration,
   type AuthUser,
   type UserProfile,
 } from '../authStore';
@@ -54,7 +56,6 @@ describe('AuthStore', () => {
       };
 
       act(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser(mockFirebaseUser as any);
       });
 
@@ -74,7 +75,6 @@ describe('AuthStore', () => {
     it('should clear user when passed null', () => {
       // First set a user
       act(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',
@@ -232,7 +232,6 @@ describe('AuthStore', () => {
       // Reset and set user first
       act(() => {
         useAuthStore.getState().reset();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',
@@ -248,11 +247,42 @@ describe('AuthStore', () => {
     });
   });
 
+  describe('waitForHydration', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should resolve immediately when hydration is already complete', async () => {
+      act(() => {
+        useAuthStore.setState({ _hasHydrated: true });
+      });
+
+      await expect(waitForHydration(100)).resolves.toBe(true);
+    });
+
+    it('should mark hydration as complete after timing out', async () => {
+      jest.useFakeTimers();
+
+      act(() => {
+        useAuthStore.setState({ _hasHydrated: false });
+      });
+
+      const hydrationPromise = waitForHydration(100);
+
+      await act(async () => {
+        jest.advanceTimersByTime(100);
+        await hydrationPromise;
+      });
+
+      await expect(hydrationPromise).resolves.toBe(false);
+      expect(selectHasHydrated(useAuthStore.getState())).toBe(true);
+    });
+  });
+
   describe('reset', () => {
     it('should reset to initial state', () => {
       // Set some state
       act(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',

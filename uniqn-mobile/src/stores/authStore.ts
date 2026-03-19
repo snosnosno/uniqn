@@ -343,6 +343,12 @@ export async function waitForHydration(timeout = 5000): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     const timeoutId = setTimeout(() => {
       unsubscribe();
+
+      if (!useAuthStore.getState()._hasHydrated) {
+        // Persist 복원이 지연되더라도 기본 인증 상태로 계속 진행한다.
+        useAuthStore.setState({ _hasHydrated: true });
+      }
+
       resolve(false);
     }, timeout);
 
