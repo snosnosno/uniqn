@@ -8,7 +8,12 @@
 import { SettlementCalculator } from '../settlement/SettlementCalculator';
 import { TaxCalculator } from '../settlement/TaxCalculator';
 import { SettlementCache } from '../settlement/SettlementCache';
-import type { SalaryInfo, Allowances, TaxSettings } from '@/utils/settlement';
+import {
+  calculateTaxAmountByItems,
+  type SalaryInfo,
+  type Allowances,
+  type TaxSettings,
+} from '@/utils/settlement';
 
 // ============================================================================
 // Test Helpers
@@ -111,6 +116,67 @@ describe('TaxCalculator', () => {
       );
       // 기본급만 적용: 100000 * 10% = 10000
       expect(result.taxAmount).toBe(10000);
+    });
+
+    it('utils.calculateTaxAmountByItems와 rate 계산 결과가 일치한다', () => {
+      const settings: TaxSettings = {
+        type: 'rate',
+        value: 3.3,
+        taxableItems: {
+          basePay: true,
+          meal: false,
+          transportation: true,
+          accommodation: true,
+          additional: false,
+        },
+      };
+      const amounts = {
+        basePay: 100000,
+        meal: 10000,
+        transportation: 5000,
+        accommodation: -1,
+        additional: 3000,
+      };
+
+      const taxCalculatorResult = TaxCalculator.calculateByItems(108000, amounts, settings);
+      const utilTaxAmount = calculateTaxAmountByItems(settings, amounts);
+
+      expect(taxCalculatorResult.taxableAmount).toBe(105000);
+      expect(taxCalculatorResult.taxAmount).toBe(utilTaxAmount);
+    });
+
+    it('utils.calculateTaxAmountByItems와 fixed 계산 결과가 일치한다', () => {
+      const settings: TaxSettings = {
+        type: 'fixed',
+        value: 3300,
+      };
+      const amounts = {
+        basePay: 100000,
+        meal: 10000,
+      };
+
+      const taxCalculatorResult = TaxCalculator.calculateByItems(110000, amounts, settings);
+      const utilTaxAmount = calculateTaxAmountByItems(settings, amounts);
+
+      expect(taxCalculatorResult.taxAmount).toBe(3300);
+      expect(taxCalculatorResult.taxAmount).toBe(utilTaxAmount);
+    });
+
+    it('utils.calculateTaxAmountByItems와 none 계산 결과가 일치한다', () => {
+      const settings: TaxSettings = {
+        type: 'none',
+        value: 0,
+      };
+      const amounts = {
+        basePay: 100000,
+        meal: 10000,
+      };
+
+      const taxCalculatorResult = TaxCalculator.calculateByItems(110000, amounts, settings);
+      const utilTaxAmount = calculateTaxAmountByItems(settings, amounts);
+
+      expect(taxCalculatorResult.taxAmount).toBe(0);
+      expect(taxCalculatorResult.taxAmount).toBe(utilTaxAmount);
     });
   });
 });

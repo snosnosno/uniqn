@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - JobPosting Repository 쓰기/트랜잭션 연산
  *
- * @description 공고 생성, 수정, 삭제, 마감, 재오픈, 일괄 상태 변경 등 쓰기 연산
+ * @description 공고 생성, 수정, 삭제, 마감, 재오픈, 정산 설정 변경 등의 쓰기 연산
  */
 
 import {
@@ -16,6 +16,7 @@ import {
   serverTimestamp,
   runTransaction,
   Timestamp,
+  type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -37,10 +38,6 @@ import type {
   UpdateJobPostingInput,
 } from '@/types';
 
-// ============================================================================
-// Simple Write Operations
-// ============================================================================
-
 export async function incrementViewCount(jobPostingId: string): Promise<void> {
   try {
     const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
@@ -51,7 +48,6 @@ export async function incrementViewCount(jobPostingId: string): Promise<void> {
 
     logger.debug('조회수 증가', { jobPostingId });
   } catch (error) {
-    // 조회수 증가 실패는 무시 (사용자 경험에 영향 없음)
     logger.warn('조회수 증가 실패', { jobPostingId, error: toError(error) });
   }
 }
@@ -81,13 +77,50 @@ export async function updateStatus(jobPostingId: string, status: JobPostingStatu
   }
 }
 
-// ============================================================================
-// Transaction Operations
-// ============================================================================
+async function loadJobPostingForTransaction(transaction: Transaction, jobPostingId: string) {
+  const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+  const jobDoc = await transaction.get(jobRef);
 
-// Note: 인터페이스 메서드명 "createWithTransaction"이지만 실제로는 setDoc 단독 사용.
-// 여러 곳(IJobPostingRepository, jobManagementService, tests)에서 참조하므로 이름 유지.
-// 향후 공고 생성과 동시에 알림/활동 로그를 원자적으로 생성해야 하면 실제 트랜잭션으로 전환 필요.
+  if (!jobDoc.exists()) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '존재하지 않는 공고입니다.',
+    });
+  }
+
+  const jobPosting = parseJobPostingDocument({
+    id: jobDoc.id,
+    ...jobDoc.data(),
+  });
+
+  if (!jobPosting) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '공고 데이터가 올바르지 않습니다',
+    });
+  }
+
+  return { jobRef, jobPosting };
+}
+
+function assertJobPostingOwner(jobPosting: JobPosting, ownerId: string, userMessage: string) {
+  if (jobPosting.ownerId !== ownerId) {
+    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      userMessage,
+    });
+  }
+}
+
+function assertJobPostingStatus(
+  currentStatus: JobPostingStatus,
+  disallowedStatus: JobPostingStatus,
+  userMessage: string
+) {
+  if (currentStatus === disallowedStatus) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage,
+    });
+  }
+}
+
 export async function createWithTransaction(
   input: CreateJobPostingInput,
   context: CreateJobPostingContext
@@ -174,33 +207,13 @@ export async function updateWithTransaction(
     logger.info('공고 수정 (트랜잭션)', { jobPostingId, ownerId });
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
+        transaction,
+        jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
+      assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
 
-      const currentData = parseJobPostingDocument({
-        id: jobDoc.id,
-        ...jobDoc.data(),
-      });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 수정할 수 있습니다',
-        });
-      }
-
-      // 확정된 지원자가 있는 경우 일정/역할 수정 불가
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       const hasScheduleMutation =
         input.workDate !== undefined ||
@@ -211,12 +224,10 @@ export async function updateWithTransaction(
         input.isStartTimeNegotiable !== undefined ||
         input.roles !== undefined;
 
-      if (hasConfirmedApplicants) {
-        if (hasScheduleMutation) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
-          });
-        }
+      if (hasConfirmedApplicants && hasScheduleMutation) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
+        });
       }
 
       const baseInput = toCreateJobPostingInput(currentData);
@@ -281,41 +292,21 @@ export async function deleteWithTransaction(jobPostingId: string, ownerId: strin
     logger.info('공고 삭제 (트랜잭션)', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
+        transaction,
+        jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
+      assertJobPostingOwner(currentData, ownerId, '본인 공고만 삭제할 수 있습니다');
 
-      const currentData = parseJobPostingDocument({
-        id: jobDoc.id,
-        ...jobDoc.data(),
-      });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 삭제할 수 있습니다',
-        });
-      }
-
-      // 확정된 지원자가 있는 경우 삭제 불가
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       if (hasConfirmedApplicants) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
+          userMessage:
+            '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리 후 다시 시도해주세요',
         });
       }
 
-      // Soft Delete: status를 cancelled로 변경
       transaction.update(jobRef, {
         status: STATUS.JOB_POSTING.CANCELLED,
         updatedAt: serverTimestamp(),
@@ -341,38 +332,17 @@ export async function closeWithTransaction(jobPostingId: string, ownerId: string
     logger.info('공고 마감 (트랜잭션)', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
+        transaction,
+        jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const currentData = parseJobPostingDocument({
-        id: jobDoc.id,
-        ...jobDoc.data(),
-      });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 마감할 수 있습니다',
-        });
-      }
-
-      // 이미 마감된 경우
-      if (currentData.status === STATUS.JOB_POSTING.CLOSED) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 마감된 공고입니다',
-        });
-      }
+      assertJobPostingOwner(currentData, ownerId, '본인 공고만 마감할 수 있습니다');
+      assertJobPostingStatus(
+        currentData.status,
+        STATUS.JOB_POSTING.CLOSED,
+        '이미 마감된 공고입니다.'
+      );
 
       transaction.update(jobRef, {
         status: STATUS.JOB_POSTING.CLOSED,
@@ -401,47 +371,24 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
     logger.info('공고 재오픈 (트랜잭션)', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
+        transaction,
+        jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
+      assertJobPostingOwner(currentData, ownerId, '본인 공고만 재오픈할 수 있습니다');
+      assertJobPostingStatus(
+        currentData.status,
+        STATUS.JOB_POSTING.ACTIVE,
+        '이미 활성 상태인 공고입니다.'
+      );
 
-      const currentData = parseJobPostingDocument({
-        id: jobDoc.id,
-        ...jobDoc.data(),
-      });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 재오픈할 수 있습니다',
-        });
-      }
-
-      // 활성 상태인 경우
-      if (currentData.status === STATUS.JOB_POSTING.ACTIVE) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 활성 상태인 공고입니다',
-        });
-      }
-
-      // 취소된 공고는 재오픈 불가
       if (currentData.status === STATUS.JOB_POSTING.CANCELLED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요',
         });
       }
 
-      // 고정공고인 경우 expiresAt 갱신
       const updateData: Record<string, unknown> = {
         status: STATUS.JOB_POSTING.ACTIVE,
         updatedAt: serverTimestamp(),
@@ -485,30 +432,12 @@ export async function updateSettlementSettings(
     logger.info('정산 설정 저장', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
+        transaction,
+        jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const currentData = parseJobPostingDocument({
-        id: jobDoc.id,
-        ...jobDoc.data(),
-      });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 수정할 수 있습니다',
-        });
-      }
+      assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
 
       const baseInput = toCreateJobPostingInput(currentData);
       const mergedInput: CreateJobPostingInput = {
@@ -616,32 +545,35 @@ export async function bulkUpdateStatus(
 
     let successCount = 0;
 
-    // Firestore 배치 작업 제한
     for (let i = 0; i < jobPostingIds.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
       const batch = jobPostingIds.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS);
 
       const batchCount = await runTransaction(getFirebaseDb(), async (transaction) => {
         let count = 0;
-        for (const jobPostingId of batch) {
-          const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+        for (const targetJobPostingId of batch) {
+          const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, targetJobPostingId);
           const jobDoc = await transaction.get(jobRef);
 
-          if (jobDoc.exists()) {
-            const data = parseJobPostingDocument({
-              id: jobDoc.id,
-              ...jobDoc.data(),
+          if (!jobDoc.exists()) {
+            continue;
+          }
+
+          const data = parseJobPostingDocument({
+            id: jobDoc.id,
+            ...jobDoc.data(),
+          });
+
+          if (data && data.ownerId === ownerId) {
+            transaction.update(jobRef, {
+              status,
+              updatedAt: serverTimestamp(),
             });
-            if (data && data.ownerId === ownerId) {
-              transaction.update(jobRef, {
-                status,
-                updatedAt: serverTimestamp(),
-              });
-              count++;
-            }
+            count++;
           }
         }
         return count;
       });
+
       successCount += batchCount;
     }
 

@@ -1,8 +1,7 @@
 /**
- * UNIQN Mobile - 스태프 프로필 상세보기 모달
+ * UNIQN Mobile - 스태프 프로필 상세 모달
  *
  * @description 확정된 스태프의 상세 프로필 정보를 표시하는 모달
- * @version 1.0.0
  */
 
 import React, { useMemo } from 'react';
@@ -10,18 +9,7 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import { SheetModal } from '../../ui/SheetModal';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
-import {
-  PhoneIcon,
-  MailIcon,
-  CalendarIcon,
-  ClockIcon,
-  BriefcaseIcon,
-  DocumentIcon,
-  UserIcon,
-  MapPinIcon,
-  StarIcon,
-  CheckCircleIcon,
-} from '../../icons';
+import { CalendarIcon, ClockIcon, BriefcaseIcon, CheckCircleIcon } from '../../icons';
 import {
   CONFIRMED_STAFF_STATUS_LABELS,
   type ConfirmedStaff,
@@ -29,24 +17,21 @@ import {
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime } from '@/utils/date';
-import { formatBirthDate } from '@/utils/formatters';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { STATUS } from '@/constants';
-
-// ============================================================================
-// Types
-// ============================================================================
+import {
+  InfoRow,
+  ProfileInfoSection,
+  ContactInfoSection,
+  formatProfileDate,
+} from './ProfileInfoSections';
 
 export interface StaffProfileModalProps {
   visible: boolean;
   onClose: () => void;
   staff: ConfirmedStaff | null;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
 
 const STATUS_BADGE_VARIANT: Record<
   ConfirmedStaffStatus,
@@ -60,78 +45,11 @@ const STATUS_BADGE_VARIANT: Record<
   no_show: 'warning',
 };
 
-const GENDER_LABELS: Record<string, string> = {
-  male: '남성',
-  female: '여성',
-  other: '기타',
-};
-
-const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${year}.${month}.${day}(${dayOfWeek})`;
-};
-
-/**
- * TimeInput을 Date로 변환 (TimeNormalizer 위임)
- */
 const parseTimestamp = (value: TimeInput): Date | null => {
   return TimeNormalizer.parseTime(value);
 };
 
-// ============================================================================
-// Sub-components
-// ============================================================================
-
-interface InfoRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-function InfoRow({ icon, label, value }: InfoRowProps) {
-  return (
-    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
-      <View className="w-6 mt-0.5">{icon}</View>
-      <View className="flex-1 ml-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
-        <Text className="text-sm text-gray-900 dark:text-white">{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-interface GridInfoItemProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
-  return (
-    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-lg">
-      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mr-2">
-        {icon}
-      </View>
-      <View className="flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
-        <Text className="text-sm font-medium text-gray-900 dark:text-white">{value}</Text>
-      </View>
-    </View>
-  );
-}
-
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModalProps) {
-  // 사용자 프로필 조회 (모달이 열려있고 staff가 있을 때만)
   const {
     userProfile,
     isLoading: isProfileLoading,
@@ -143,7 +61,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     fallbackName: staff?.staffName,
   });
 
-  // 출근 시간 계산 (checkInTime이 없으면 "미정", timeSlot 폴백 안 함)
   const startTimeStr = useMemo(() => {
     if (!staff) return '미정';
     if (staff.checkInTime) {
@@ -153,7 +70,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     return '미정';
   }, [staff]);
 
-  // 퇴근 시간 계산
   const endTimeStr = useMemo(() => {
     if (!staff) return '미정';
     if (staff.checkOutTime) {
@@ -163,7 +79,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     return '미정';
   }, [staff]);
 
-  // 출석 체크 여부
   const isCheckedIn =
     staff?.status === STATUS.WORK_LOG.CHECKED_IN ||
     staff?.status === STATUS.WORK_LOG.CHECKED_OUT ||
@@ -174,7 +89,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
   return (
     <SheetModal visible={visible} onClose={onClose} title="스태프 프로필">
       <View>
-        {/* 프로필 헤더 */}
         <View className="items-center py-4 bg-gray-50 dark:bg-surface">
           {isProfileLoading ? (
             <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
@@ -183,7 +97,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           ) : (
             <Avatar source={profilePhotoURL} name={displayName} size="xl" className="mb-2" />
           )}
-          {/* 이름 + 상태 뱃지 (같은 행) */}
           <View className="flex-row items-center gap-2 mb-1">
             <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
             <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm" dot>
@@ -195,22 +108,19 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </Text>
         </View>
 
-        {/* 근무 정보 */}
         <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             근무 정보
           </Text>
 
-          {/* 근무 날짜 */}
           {staff.date && (
             <InfoRow
               icon={<CalendarIcon size={16} color="#6B7280" />}
               label="근무 날짜"
-              value={formatDate(staff.date)}
+              value={formatProfileDate(staff.date)}
             />
           )}
 
-          {/* 근무 시간 */}
           <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
             <View className="w-6 mt-0.5">
               <ClockIcon size={16} color="#6B7280" />
@@ -230,7 +140,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
             </View>
           </View>
 
-          {/* 역할 */}
           <InfoRow
             icon={<BriefcaseIcon size={16} color="#6B7280" />}
             label="역할"
@@ -238,99 +147,10 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           />
         </View>
 
-        {/* 프로필 정보 (사용자가 설정한 정보) */}
-        {userProfile && (
-          <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-              프로필 정보
-            </Text>
+        <ProfileInfoSection userProfile={userProfile} />
 
-            {/* 2x2 그리드 레이아웃 */}
-            <View className="flex-row flex-wrap gap-2 mb-3">
-              {userProfile.gender && (
-                <View className="w-[48%]">
-                  <GridInfoItem
-                    icon={<UserIcon size={16} color="#6B7280" />}
-                    label="성별"
-                    value={GENDER_LABELS[userProfile.gender] || userProfile.gender}
-                  />
-                </View>
-              )}
+        <ContactInfoSection userProfile={userProfile} fallbackPhone={staff.phone} />
 
-              {userProfile.birthDate && (
-                <View className="w-[48%]">
-                  <GridInfoItem
-                    icon={<CalendarIcon size={16} color="#6B7280" />}
-                    label="생년월일"
-                    value={formatBirthDate(userProfile.birthDate)}
-                  />
-                </View>
-              )}
-
-              {userProfile.region && (
-                <View className="w-[48%]">
-                  <GridInfoItem
-                    icon={<MapPinIcon size={16} color="#6B7280" />}
-                    label="활동 지역"
-                    value={userProfile.region}
-                  />
-                </View>
-              )}
-
-              {userProfile.experienceYears !== undefined && userProfile.experienceYears > 0 && (
-                <View className="w-[48%]">
-                  <GridInfoItem
-                    icon={<StarIcon size={16} color="#6B7280" />}
-                    label="경력"
-                    value={`${userProfile.experienceYears}년`}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* 경력 상세 및 자기소개는 전체 너비 */}
-            {userProfile.career && (
-              <InfoRow
-                icon={<BriefcaseIcon size={16} color="#6B7280" />}
-                label="경력 상세"
-                value={userProfile.career}
-              />
-            )}
-
-            {userProfile.note && (
-              <InfoRow
-                icon={<DocumentIcon size={16} color="#6B7280" />}
-                label="자기소개"
-                value={userProfile.note}
-              />
-            )}
-          </View>
-        )}
-
-        {/* 연락처 정보 */}
-        <View className="px-4 py-4">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-            연락처 정보
-          </Text>
-
-          {(userProfile?.phone || staff.phone) && (
-            <InfoRow
-              icon={<PhoneIcon size={16} color="#6B7280" />}
-              label="전화번호"
-              value={userProfile?.phone || staff.phone || ''}
-            />
-          )}
-
-          {userProfile?.email && (
-            <InfoRow
-              icon={<MailIcon size={16} color="#6B7280" />}
-              label="이메일"
-              value={userProfile.email}
-            />
-          )}
-        </View>
-
-        {/* 비고 */}
         {staff.notes && (
           <View className="px-4 pb-4">
             <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">비고</Text>
@@ -340,7 +160,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </View>
         )}
 
-        {/* 상태별 추가 정보 */}
         {staff.status === STATUS.CONFIRMED_STAFF.NO_SHOW && (
           <View className="px-4 pb-4">
             <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 flex-row items-center">

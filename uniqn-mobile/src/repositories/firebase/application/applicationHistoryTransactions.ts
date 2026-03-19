@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - Application Repository History Transactions
  *
- * @description v2.0 confirmationHistory 트랜잭션 (2개 메서드)
+ * @description confirmationHistory 기반 확정/확정 취소 트랜잭션
  */
 
 import {
@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
+  type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -33,12 +34,60 @@ import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } fr
 import { updateDateSpecificRequirementsFilled } from '@/domains/application';
 import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
-import type { Assignment, StaffRole } from '@/types';
+import type { Assignment, StaffRole, JobPosting } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
 
-// ============================================================================
-// v2.0 History Transactions
-// ============================================================================
+async function loadApplicationForTransaction(transaction: Transaction, applicationId: string) {
+  const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
+  const applicationDoc = await transaction.get(applicationRef);
+
+  if (!applicationDoc.exists()) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '지원 내역을 찾을 수 없습니다',
+    });
+  }
+
+  const applicationData = parseApplicationDocument({
+    id: applicationDoc.id,
+    ...applicationDoc.data(),
+  });
+
+  if (!applicationData) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '지원 데이터가 올바르지 않습니다',
+    });
+  }
+
+  return { applicationRef, applicationData };
+}
+
+async function loadJobPostingForTransaction(transaction: Transaction, jobPostingId: string) {
+  const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+  const jobDoc = await transaction.get(jobRef);
+
+  if (!jobDoc.exists()) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '공고를 찾을 수 없습니다',
+    });
+  }
+
+  const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+  if (!jobData) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '공고 데이터가 올바르지 않습니다',
+    });
+  }
+
+  return { jobRef, jobData };
+}
+
+function assertJobPostingOwner(jobData: JobPosting, ownerId: string, userMessage: string) {
+  if (jobData.ownerId !== ownerId) {
+    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      userMessage,
+    });
+  }
+}
 
 export async function confirmWithHistoryTransaction(
   applicationId: string,
@@ -54,28 +103,11 @@ export async function confirmWithHistoryTransaction(
       WorkLogCreator.createTimestampFromDateTime.bind(WorkLogCreator);
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 지원서 읽기
-      const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
+      const { applicationRef, applicationData } = await loadApplicationForTransaction(
+        transaction,
+        applicationId
+      );
 
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '지원 내역을 찾을 수 없습니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({
-        id: applicationDoc.id,
-        ...applicationDoc.data(),
-      });
-
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '지원 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 지원 상태 검증 (applied/pending만 확정 가능)
       const confirmableStatuses: string[] = [
         STATUS.APPLICATION.APPLIED,
         STATUS.APPLICATION.PENDING,
@@ -86,7 +118,6 @@ export async function confirmWithHistoryTransaction(
         });
       }
 
-      // 이미 확정된 경우 (활성 확정 확인)
       if (applicationData.confirmationHistory?.length) {
         const activeConfirmation = findActiveConfirmation(applicationData.confirmationHistory);
         if (activeConfirmation) {
@@ -96,54 +127,34 @@ export async function confirmWithHistoryTransaction(
         }
       }
 
-      // 2. 공고 읽기
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
+        transaction,
+        applicationData.jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
+      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
 
-      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-
-      if (!jobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 공고 소유자 확인
-      if (jobData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 관리할 수 있습니다',
-        });
-      }
-
-      // 3. 확정할 assignments 결정
       const assignmentsToConfirm = selectedAssignments ?? applicationData.assignments ?? [];
-
       if (assignmentsToConfirm.length === 0) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '확정할 일정을 선택해주세요',
         });
       }
 
-      // 4. 정원 확인 (dateSpecificRequirements 기반 계산)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-      const assignmentCount = assignmentsToConfirm.reduce((sum, a) => sum + a.dates.length, 0);
+      const assignmentCount = assignmentsToConfirm.reduce((sum, assignment) => {
+        return sum + assignment.dates.length;
+      }, 0);
 
       if (totalPositions > 0 && currentFilled + assignmentCount > totalPositions) {
         throw new MaxCapacityReachedError({
-          userMessage: '모집 인원이 마감되었습니다',
+          userMessage: '모집 인원이 마감되었습니다.',
           jobPostingId: applicationData.jobPostingId,
           maxCapacity: totalPositions,
           currentCount: currentFilled,
         });
       }
 
-      // 5. originalApplication 보존 (최초 확정 시)
       let originalApplication = applicationData.originalApplication;
       if (!originalApplication && applicationData.assignments) {
         originalApplication = {
@@ -152,11 +163,9 @@ export async function confirmWithHistoryTransaction(
         };
       }
 
-      // 6. confirmationHistory 엔트리 생성
       const historyEntry = createHistoryEntry(assignmentsToConfirm, ownerId);
       const confirmationHistory = [...(applicationData.confirmationHistory ?? []), historyEntry];
 
-      // 7. Assignment별 WorkLog 생성
       const workLogIds: string[] = [];
       const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
       const now = serverTimestamp();
@@ -198,7 +207,6 @@ export async function confirmWithHistoryTransaction(
         }
       }
 
-      // 8. 지원서 업데이트
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.CONFIRMED,
         assignments: assignmentsToConfirm,
@@ -211,23 +219,23 @@ export async function confirmWithHistoryTransaction(
         updatedAt: serverTimestamp(),
       });
 
-      // 9. 공고 filledPositions 업데이트
-      const updatedRoles = jobData.roles.map((r) => {
-        const roleAssignments = assignmentsToConfirm.filter((a) =>
-          a.roleIds.includes(r.role as StaffRole)
+      const updatedRoles = jobData.roles.map((role) => {
+        const roleAssignments = assignmentsToConfirm.filter((assignment) =>
+          assignment.roleIds.includes(role.role as StaffRole)
         );
-        const addedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
-        return { ...r, filled: r.filled + addedCount };
+        const addedCount = roleAssignments.reduce(
+          (sum, assignment) => sum + assignment.dates.length,
+          0
+        );
+        return { ...role, filled: role.filled + addedCount };
       });
 
-      // 10. dateSpecificRequirements filled 업데이트
       const updatedDateReqs = updateDateSpecificRequirementsFilled(
         jobData.dateSpecificRequirements,
         assignmentsToConfirm,
         'increment'
       );
 
-      // 11. 전체 마감 여부 확인 및 상태 변경
       const newFilledPositions = currentFilled + assignmentCount;
       const shouldClose = totalPositions > 0 && newFilledPositions >= totalPositions;
       const newStatus = shouldClose ? STATUS.JOB_POSTING.CLOSED : jobData.status;
@@ -251,7 +259,7 @@ export async function confirmWithHistoryTransaction(
       return {
         applicationId,
         workLogIds,
-        message: `${applicationData.applicantName}님의 지원이 확정되었습니다`,
+        message: `${applicationData.applicantName}님의 지원이 확정되었습니다.`,
         historyEntry,
       };
     });
@@ -282,12 +290,6 @@ export async function cancelConfirmationTransaction(
   try {
     logger.info('확정 취소 트랜잭션 시작', { applicationId, ownerId });
 
-    // 트랜잭션 전에 연관 WorkLog ID 수집 (Firestore 트랜잭션 내 쿼리 불가 제약)
-    // TOCTOU 잔여 위험: 사전 조회~트랜잭션 사이에 새 WorkLog 생성 시 누락 가능.
-    // 현실적으로 "확정 취소 중 동일 지원자의 새 WorkLog 생성"은 극히 드문 경우이며,
-    // 트랜잭션 내 transaction.get()으로 각 WorkLog 상태를 재확인하므로 일관성은 보장됨.
-    // 근본 해결: Cloud Functions에서 트리거 기반 처리 검토.
-    // best-effort: 실패해도 확정 취소 자체는 진행
     let relatedWorkLogIds: string[] = [];
     try {
       const applicationPreCheck = await getDoc(
@@ -303,43 +305,25 @@ export async function cancelConfirmationTransaction(
               where('jobPostingId', '==', preData.jobPostingId)
             )
           );
-          relatedWorkLogIds = workLogsSnapshot.docs.map((d) => d.id);
+          relatedWorkLogIds = workLogsSnapshot.docs.map((docSnapshot) => docSnapshot.id);
         }
       }
     } catch {
-      logger.warn('WorkLog 사전 조회 실패, WorkLog 취소 처리 생략', { applicationId });
+      logger.warn('WorkLog 사전 조회 실패, WorkLog 취소 처리는 생략합니다', { applicationId });
     }
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 지원서 읽기
-      const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
+      const { applicationRef, applicationData } = await loadApplicationForTransaction(
+        transaction,
+        applicationId
+      );
 
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '지원 내역을 찾을 수 없습니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({
-        id: applicationDoc.id,
-        ...applicationDoc.data(),
-      });
-
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '지원 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 확정 상태 확인
       if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '확정된 지원만 취소할 수 있습니다',
         });
       }
 
-      // 활성 확정 찾기
       const confirmationHistory = applicationData.confirmationHistory ?? [];
       const activeConfirmation = findActiveConfirmation(confirmationHistory);
 
@@ -349,61 +333,43 @@ export async function cancelConfirmationTransaction(
         });
       }
 
-      // 2. 공고 읽기
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
+        transaction,
+        applicationData.jobPostingId
+      );
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
+      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
 
-      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-
-      if (!jobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 공고 소유자 확인
-      if (jobData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 관리할 수 있습니다',
-        });
-      }
-
-      // 3. confirmationHistory 업데이트 (취소 정보 추가)
       const activeIndex = confirmationHistory.findIndex((entry) => !entry.cancelledAt);
-      const updatedHistory = confirmationHistory.map((entry, idx) => {
-        if (idx === activeIndex) {
+      const updatedHistory = confirmationHistory.map((entry, index) => {
+        if (index === activeIndex) {
           return addCancellationToEntry(entry, cancelReason, ownerId);
         }
         return entry;
       });
 
-      // 4. 감소할 수량 계산
       const cancelledAssignments = activeConfirmation.assignments;
-      const decrementCount = cancelledAssignments.reduce((sum, a) => sum + a.dates.length, 0);
+      const decrementCount = cancelledAssignments.reduce((sum, assignment) => {
+        return sum + assignment.dates.length;
+      }, 0);
 
-      // 5. 공고 filledPositions 감소
-      const updatedRoles = jobData.roles.map((r) => {
-        const roleAssignments = cancelledAssignments.filter((a) =>
-          a.roleIds.includes(r.role as StaffRole)
+      const updatedRoles = jobData.roles.map((role) => {
+        const roleAssignments = cancelledAssignments.filter((assignment) =>
+          assignment.roleIds.includes(role.role as StaffRole)
         );
-        const removedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
-        return { ...r, filled: Math.max(0, r.filled - removedCount) };
+        const removedCount = roleAssignments.reduce(
+          (sum, assignment) => sum + assignment.dates.length,
+          0
+        );
+        return { ...role, filled: Math.max(0, role.filled - removedCount) };
       });
 
-      // 6. dateSpecificRequirements filled 감소
       const updatedDateReqs = updateDateSpecificRequirementsFilled(
         jobData.dateSpecificRequirements,
         cancelledAssignments,
         'decrement'
       );
 
-      // 7. 마감 해제 여부 확인 (closed → active 복원)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
       const newFilledPositions = Math.max(0, currentFilled - decrementCount);
       const shouldReopen =
@@ -423,12 +389,12 @@ export async function cancelConfirmationTransaction(
         jobUpdateData.status = STATUS.JOB_POSTING.ACTIVE;
       }
 
-      // 8. 연관 WorkLog 읽기 (모든 읽기를 쓰기 전에 수행)
-      const workLogSnapshots: Array<{
+      const workLogSnapshots: {
         ref: ReturnType<typeof doc>;
         data: Record<string, unknown> | undefined;
         exists: boolean;
-      }> = [];
+      }[] = [];
+
       for (const workLogId of relatedWorkLogIds) {
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
         const workLogSnap = await transaction.get(workLogRef);
@@ -439,10 +405,8 @@ export async function cancelConfirmationTransaction(
         });
       }
 
-      // 9. 공고 업데이트
       transaction.update(jobRef, jobUpdateData);
 
-      // 10. 지원서 상태 복원 (originalApplication 기반)
       const restoredAssignments = applicationData.originalApplication?.assignments;
       const restoredStatus = STATUS.APPLICATION.APPLIED;
 
@@ -454,7 +418,6 @@ export async function cancelConfirmationTransaction(
         updatedAt: serverTimestamp(),
       });
 
-      // 11. 연관 WorkLog cancelled 처리 (scheduled만 취소)
       for (const snapshot of workLogSnapshots) {
         if (snapshot.exists && snapshot.data?.status === STATUS.WORK_LOG.SCHEDULED) {
           transaction.update(snapshot.ref, {
