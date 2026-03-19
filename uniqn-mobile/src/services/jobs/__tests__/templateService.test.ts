@@ -9,6 +9,21 @@
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  getTemplates,
+  saveTemplate,
+  loadTemplate,
+  deleteTemplate,
+  updateTemplate,
+} from '../templateService';
+import { templateRepository } from '@/repositories';
+import { isAppError, AppError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+
 jest.mock('@/repositories', () => ({
   templateRepository: {
     getTemplates: jest.fn(),
@@ -43,21 +58,6 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
     return new Error(String(error));
   }),
 }));
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  getTemplates,
-  saveTemplate,
-  loadTemplate,
-  deleteTemplate,
-  updateTemplate,
-} from '../templateService';
-import { templateRepository } from '@/repositories';
-import { isAppError, AppError } from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
 
 // Get typed mock references
 const mockRepo = templateRepository as jest.Mocked<typeof templateRepository>;

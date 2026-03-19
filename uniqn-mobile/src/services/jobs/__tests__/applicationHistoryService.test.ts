@@ -10,6 +10,23 @@
 // ============================================================================
 
 // Firebase Firestore mocks
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  confirmApplicationWithHistory,
+  cancelConfirmation,
+  getOriginalApplicationData,
+  getConfirmedSelections,
+  isV2Application,
+  getApplicationHistorySummary,
+  updateDateSpecificRequirementsFilled,
+} from '../applicationHistoryService';
+import { findActiveConfirmation } from '@/types';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { WorkLogCreator } from '@/domains/schedule';
+
 const mockTransaction = {
   get: jest.fn(),
   set: jest.fn(),
@@ -41,7 +58,7 @@ jest.mock('firebase/firestore', () => ({
   getDocs: (...args: unknown[]) => mockGetDocs(args[0]),
   query: (...args: unknown[]) => mockQuery(...args),
   where: (...args: unknown[]) => mockWhere(...args),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   runTransaction: (...args: unknown[]) => mockRunTransaction(args[0], args[1] as any),
   serverTimestamp: () => mockServerTimestamp(),
   increment: (n: number) => mockIncrement(n),
@@ -217,23 +234,6 @@ jest.mock('@/constants', () => ({
     },
   },
 }));
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  confirmApplicationWithHistory,
-  cancelConfirmation,
-  getOriginalApplicationData,
-  getConfirmedSelections,
-  isV2Application,
-  getApplicationHistorySummary,
-  updateDateSpecificRequirementsFilled,
-} from '../applicationHistoryService';
-import { findActiveConfirmation } from '@/types';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { WorkLogCreator } from '@/domains/schedule';
 
 const mockFindActiveConfirmation = findActiveConfirmation as jest.Mock;
 const mockGetClosingStatus = getClosingStatus as jest.Mock;

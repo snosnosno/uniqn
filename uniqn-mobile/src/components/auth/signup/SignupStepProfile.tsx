@@ -314,7 +314,7 @@ export function SignupStepProfile({
           💼 구인자로 활동하고 싶으신가요?
         </Text>
         <Text className="text-xs text-primary-600 dark:text-primary-400">
-          회원가입 후 '내 공고' 탭에서 구인자로 등록할 수 있습니다.
+          회원가입 후 &apos;내 공고&apos; 탭에서 구인자로 등록할 수 있습니다.
         </Text>
       </View>
 

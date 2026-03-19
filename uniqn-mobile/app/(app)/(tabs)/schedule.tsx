@@ -7,7 +7,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
-import CalendarView from '@/components/schedule/CalendarView';
+import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';

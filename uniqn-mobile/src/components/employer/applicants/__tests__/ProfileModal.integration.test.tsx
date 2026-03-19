@@ -8,8 +8,8 @@ jest.mock('@/hooks/useUserProfile', () => ({
 }));
 
 jest.mock('../../../ui/SheetModal', () => {
-  const React = require('react');
-  const { View, Text } = require('react-native');
+  const React = jest.requireActual('react') as typeof import('react');
+  const { View, Text } = jest.requireActual('react-native') as typeof import('react-native');
 
   return {
     SheetModal: ({ visible, title, children }: any) =>
@@ -23,8 +23,8 @@ jest.mock('../../../ui/SheetModal', () => {
 });
 
 jest.mock('../../../ui/Avatar', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
+  const React = jest.requireActual('react') as typeof import('react');
+  const { Text } = jest.requireActual('react-native') as typeof import('react-native');
 
   return {
     Avatar: ({ name }: any) => <Text>{name}</Text>,
@@ -32,8 +32,8 @@ jest.mock('../../../ui/Avatar', () => {
 });
 
 jest.mock('../../../ui/Badge', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
+  const React = jest.requireActual('react') as typeof import('react');
+  const { Text } = jest.requireActual('react-native') as typeof import('react-native');
 
   return {
     Badge: ({ children }: any) => <Text>{children}</Text>,

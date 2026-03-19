@@ -12,12 +12,11 @@
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
-import { Modal } from '@/components/ui/Modal';
+import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { ko } from 'date-fns/locale';
 import { router } from 'expo-router';
 import { RefreshIcon } from '@/components/icons';
 import { useTournamentApproval } from '@/hooks/useTournamentApproval';
-import { ConfirmModal } from '@/components/ui/Modal';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { TournamentConfig } from '@/types';
 import { STATUS } from '@/constants';

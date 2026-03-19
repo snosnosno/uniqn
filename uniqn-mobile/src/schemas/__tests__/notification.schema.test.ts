@@ -496,13 +496,13 @@ describe('notificationDocumentSchema', () => {
   });
 
   it('should reject missing id', () => {
-    const { id, ...noId } = validDoc;
+    const { id: _id, ...noId } = validDoc;
     const result = notificationDocumentSchema.safeParse(noId);
     expect(result.success).toBe(false);
   });
 
   it('should reject missing recipientId', () => {
-    const { recipientId, ...noRecipient } = validDoc;
+    const { recipientId: _recipientId, ...noRecipient } = validDoc;
     const result = notificationDocumentSchema.safeParse(noRecipient);
     expect(result.success).toBe(false);
   });
@@ -693,13 +693,13 @@ describe('notificationSettingsDocumentSchema', () => {
   });
 
   it('should reject missing enabled', () => {
-    const { enabled, ...noEnabled } = validSettings;
+    const { enabled: _enabled, ...noEnabled } = validSettings;
     const result = notificationSettingsDocumentSchema.safeParse(noEnabled);
     expect(result.success).toBe(false);
   });
 
   it('should reject missing categories', () => {
-    const { categories, ...noCategories } = validSettings;
+    const { categories: _categories, ...noCategories } = validSettings;
     const result = notificationSettingsDocumentSchema.safeParse(noCategories);
     expect(result.success).toBe(false);
   });

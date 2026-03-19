@@ -13,6 +13,9 @@
 import { ApplicationValidator, applicationValidator } from '../ApplicationValidator';
 import type { JobPosting, Assignment, PreQuestionAnswer } from '@/types';
 
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { isValidAssignment, validateRequiredAnswers } from '@/types';
+
 // ============================================================================
 // Mocks
 // ============================================================================
@@ -37,9 +40,6 @@ jest.mock('@/types', () => ({
   isValidAssignment: jest.fn(),
   validateRequiredAnswers: jest.fn(),
 }));
-
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { isValidAssignment, validateRequiredAnswers } from '@/types';
 
 const mockGetClosingStatus = getClosingStatus as jest.MockedFunction<typeof getClosingStatus>;
 const mockIsValidAssignment = isValidAssignment as jest.MockedFunction<typeof isValidAssignment>;

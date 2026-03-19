@@ -53,6 +53,7 @@ export const COLLECTIONS = {
   INQUIRIES: 'inquiries',
   ANNOUNCEMENTS: 'announcements',
   REPORTS: 'reports',
+  REPORT_PENDING_LOCKS: 'reportPendingLocks',
   EVENT_QR_CODES: 'eventQRCodes',
   TEMPLATES: 'mobileJobPostingTemplates',
   REVIEWS: 'reviews',

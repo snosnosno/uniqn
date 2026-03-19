@@ -101,6 +101,14 @@ export const UPDATE_POLICY = {
   },
 } as const;
 
+function isStoreUrlConfigured(url?: string): boolean {
+  if (!url) {
+    return false;
+  }
+
+  return !url.includes('XXXXXXXXXX');
+}
+
 // ============================================================================
 // 버전 비교 유틸리티
 // ============================================================================
@@ -173,12 +181,15 @@ export function checkUpdateRequired(currentVersion: string): UpdateType {
 /**
  * 앱스토어 URL 가져오기
  */
-export function getStoreUrl(): string {
-  return Platform.select({
-    ios: UPDATE_POLICY.STORE_URLS.ios,
-    android: UPDATE_POLICY.STORE_URLS.android,
-    default: UPDATE_POLICY.STORE_URLS.web,
-  });
+export function getStoreUrl(platform: typeof Platform.OS = Platform.OS): string {
+  const selectedUrl =
+    platform === 'ios'
+      ? UPDATE_POLICY.STORE_URLS.ios
+      : platform === 'android'
+        ? UPDATE_POLICY.STORE_URLS.android
+        : UPDATE_POLICY.STORE_URLS.web;
+
+  return isStoreUrlConfigured(selectedUrl) ? selectedUrl : UPDATE_POLICY.STORE_URLS.web;
 }
 
 // ============================================================================

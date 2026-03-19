@@ -210,7 +210,7 @@ function createMockDocSnap(id: string, data: Record<string, unknown> | null) {
   };
 }
 
-function createMockQuerySnap(docs: Array<{ id: string; data: Record<string, unknown> }>) {
+function createMockQuerySnap(docs: { id: string; data: Record<string, unknown> }[]) {
   const mockDocs = docs.map((d) => createMockDocSnap(d.id, d.data));
   return {
     docs: mockDocs,

@@ -30,14 +30,13 @@ import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
-import type { Inquiry, InquiryStatus } from '@/types';
+import type { Inquiry, InquiryStatus, CreateInquiryInput, RespondInquiryInput } from '@/types';
 import type {
   IInquiryRepository,
   FetchInquiriesOptions,
   FetchInquiriesResult,
   CreateInquiryContext,
 } from '../interfaces/IInquiryRepository';
-import type { CreateInquiryInput, RespondInquiryInput } from '@/types';
 
 // ============================================================================
 // Constants

@@ -17,15 +17,7 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import {
-  initializeAuth,
-  getAuth,
-  Auth,
-  browserLocalPersistence,
-  connectAuthEmulator,
-} from 'firebase/auth';
-// @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
-import { getReactNativePersistence } from 'firebase/auth';
+import * as firebaseAuthModule from 'firebase/auth';
 import {
   getFirestore,
   connectFirestoreEmulator,
@@ -61,6 +53,15 @@ import {
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEnv } from './env';
+
+type Auth = import('firebase/auth').Auth;
+type AuthPersistence = typeof firebaseAuthModule.browserLocalPersistence;
+
+const getReactNativePersistence = (
+  firebaseAuthModule as typeof firebaseAuthModule & {
+    getReactNativePersistence: (storage: typeof AsyncStorage) => AuthPersistence;
+  }
+).getReactNativePersistence;
 
 // Re-export Firestore utilities (중앙화된 Firebase 접근)
 export {
@@ -202,16 +203,20 @@ export function getFirebaseAuth(): Auth {
     // initializeAuth는 한 번만 호출 가능, 이미 초기화된 경우 getAuth 사용
     try {
       const persistence =
-        Platform.OS === 'web' ? browserLocalPersistence : getReactNativePersistence(AsyncStorage);
-      firebaseAuth = initializeAuth(app, { persistence });
+        Platform.OS === 'web'
+          ? firebaseAuthModule.browserLocalPersistence
+          : getReactNativePersistence(AsyncStorage);
+      firebaseAuth = firebaseAuthModule.initializeAuth(app, { persistence });
     } catch {
       // 이미 초기화된 경우 기존 인스턴스 반환
-      firebaseAuth = getAuth(app);
+      firebaseAuth = firebaseAuthModule.getAuth(app);
     }
 
     // E2E 테스트용 에뮬레이터 연결
     if (shouldUseEmulator() && !emulatorAuthConnected) {
-      connectAuthEmulator(firebaseAuth, EMULATOR_AUTH_URL, { disableWarnings: true });
+      firebaseAuthModule.connectAuthEmulator(firebaseAuth, EMULATOR_AUTH_URL, {
+        disableWarnings: true,
+      });
       emulatorAuthConnected = true;
     }
   }

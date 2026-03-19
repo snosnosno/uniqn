@@ -149,7 +149,6 @@ export const PasswordStrength = React.memo(function PasswordStrength({
         <View className="h-2 bg-gray-200 dark:bg-surface rounded-full overflow-hidden">
           <View
             className={`h-full rounded-full ${config.barColor}`}
-            // eslint-disable-next-line react-native/no-inline-styles
             style={{ width: `${score}%` }}
           />
         </View>

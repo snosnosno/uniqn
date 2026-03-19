@@ -7,6 +7,16 @@
 import type { WorkLog } from '@/types/schedule';
 import type { GroupedSettlement } from '@/types/settlement';
 
+import {
+  groupSettlementsByStaff,
+  getSettlableWorkLogIds,
+  getSettlableWorkLogs,
+  calculateGroupedSettlementStats,
+  filterGroupedSettlements,
+  formatGroupRolesDisplay,
+} from '../settlementGrouping';
+import type { SettlementGroupingContext } from '../settlementGrouping';
+
 // Mock the settlement utility (resolve 함수만 사용)
 jest.mock('../settlement', () => ({
   getRoleSalaryFromRoles: jest.fn(() => ({ type: 'daily', amount: 150000 })),
@@ -27,16 +37,6 @@ jest.mock('@/domains/settlement', () => ({
     })),
   },
 }));
-
-import {
-  groupSettlementsByStaff,
-  getSettlableWorkLogIds,
-  getSettlableWorkLogs,
-  calculateGroupedSettlementStats,
-  filterGroupedSettlements,
-  formatGroupRolesDisplay,
-} from '../settlementGrouping';
-import type { SettlementGroupingContext } from '../settlementGrouping';
 
 // ============================================================================
 // Test Helpers

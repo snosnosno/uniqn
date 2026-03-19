@@ -453,7 +453,7 @@ describe('createJobPostingSchema', () => {
   });
 
   it('should reject missing salary', () => {
-    const { salary, ...noSalary } = validData;
+    const { salary: _salary, ...noSalary } = validData;
     const result = createJobPostingSchema.safeParse(noSalary);
     expect(result.success).toBe(false);
   });
@@ -671,13 +671,13 @@ describe('jobPostingDocumentSchema', () => {
   });
 
   it('should reject missing id', () => {
-    const { id, ...noId } = validDoc;
+    const { id: _id, ...noId } = validDoc;
     const result = jobPostingDocumentSchema.safeParse(noId);
     expect(result.success).toBe(false);
   });
 
   it('should reject missing title', () => {
-    const { title, ...noTitle } = validDoc;
+    const { title: _title, ...noTitle } = validDoc;
     const result = jobPostingDocumentSchema.safeParse(noTitle);
     expect(result.success).toBe(false);
   });
@@ -691,19 +691,19 @@ describe('jobPostingDocumentSchema', () => {
   });
 
   it('should reject missing location', () => {
-    const { location, ...noLocation } = validDoc;
+    const { location: _location, ...noLocation } = validDoc;
     const result = jobPostingDocumentSchema.safeParse(noLocation);
     expect(result.success).toBe(false);
   });
 
   it('should reject missing workDate', () => {
-    const { workDate, ...noWorkDate } = validDoc;
+    const { workDate: _workDate, ...noWorkDate } = validDoc;
     const result = jobPostingDocumentSchema.safeParse(noWorkDate);
     expect(result.success).toBe(false);
   });
 
   it('should reject missing ownerId', () => {
-    const { ownerId, ...noOwner } = validDoc;
+    const { ownerId: _ownerId, ...noOwner } = validDoc;
     const result = jobPostingDocumentSchema.safeParse(noOwner);
     expect(result.success).toBe(false);
   });

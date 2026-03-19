@@ -12,14 +12,13 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { tournamentApprovalService } from '@/services/admin';
-import type { TournamentApprovalStatus } from '@/types';
+import type { TournamentApprovalStatus, JobPosting } from '@/types';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractErrorMessage } from '@/shared/errors';
 import { STATUS } from '@/constants';
-import type { JobPosting } from '@/types';
 
 // ============================================================================
 // Types

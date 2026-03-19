@@ -12,6 +12,21 @@
 // Firebase Firestore Mocks
 // ============================================================================
 
+import {
+  QueryBuilder,
+  processPaginatedResults,
+  processPaginatedResultsWithFilter,
+  buildQuery,
+} from '../queryBuilder';
+import type { CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import {
+  query as mockQuery,
+  where as mockWhere,
+  orderBy as mockOrderBy,
+  limit as mockLimit,
+  startAfter as mockStartAfter,
+} from 'firebase/firestore';
+
 jest.mock('firebase/firestore', () => {
   const mockQuery = jest.fn((...args: unknown[]) => ({ __type: 'query', args }));
   const mockWhere = jest.fn((...args: unknown[]) => ({ __type: 'where', args }));
@@ -27,21 +42,6 @@ jest.mock('firebase/firestore', () => {
     startAfter: mockStartAfter,
   };
 });
-
-import {
-  QueryBuilder,
-  processPaginatedResults,
-  processPaginatedResultsWithFilter,
-  buildQuery,
-} from '../queryBuilder';
-import type { CollectionReference, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
-import {
-  query as mockQuery,
-  where as mockWhere,
-  orderBy as mockOrderBy,
-  limit as mockLimit,
-  startAfter as mockStartAfter,
-} from 'firebase/firestore';
 
 // ============================================================================
 // Helpers

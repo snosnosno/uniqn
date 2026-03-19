@@ -19,6 +19,20 @@
 // Mocks
 // ============================================================================
 
+import {
+  getTodayDateString,
+  formatDateGroup,
+  formatDateRangeDisplay,
+  isDuplicateRole,
+  clampHeadcount,
+  isValidTimeFormat,
+  isValidDateFormat,
+  calculateTotalFromDateReqs,
+  calculateFilledFromDateReqs,
+  isFullyClosed,
+  getClosingStatus,
+} from '../dateUtils';
+
 jest.mock('@/utils/date/core', () => ({
   toISODateString: jest.fn((date: Date | null) => {
     if (!date) return null;
@@ -82,20 +96,6 @@ jest.mock('@/utils/date/ranges', () => ({
   generateDateRange: jest.fn(),
   sortDates: jest.fn((dates: string[]) => [...dates].sort()),
 }));
-
-import {
-  getTodayDateString,
-  formatDateGroup,
-  formatDateRangeDisplay,
-  isDuplicateRole,
-  clampHeadcount,
-  isValidTimeFormat,
-  isValidDateFormat,
-  calculateTotalFromDateReqs,
-  calculateFilledFromDateReqs,
-  isFullyClosed,
-  getClosingStatus,
-} from '../dateUtils';
 
 // ============================================================================
 // getTodayDateString

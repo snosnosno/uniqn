@@ -4,15 +4,6 @@
  * @description XSS/SQL Injection 탐지, 입력 검증, 비밀번호 강도 등 보안 유틸리티 테스트
  */
 
-jest.mock('@/utils/logger', () => ({
-  logger: {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
-
 import {
   hasXSSPattern,
   hasSQLInjectionPattern,
@@ -29,6 +20,15 @@ import {
   sanitizeLogData,
   normalizeForSecurity,
 } from '../security';
+
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
 
 describe('security', () => {
   // ============================================================================

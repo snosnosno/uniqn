@@ -7,10 +7,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SignupStepProfile } from '@/components/auth/signup/SignupStepProfile';
 import { completeProfile, checkNicknameExists, getUserProfile } from '@/services/auth';

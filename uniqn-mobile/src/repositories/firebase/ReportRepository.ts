@@ -30,14 +30,15 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError, isAppError } from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
+  toError,
+  isAppError,
   DuplicateReportError,
   ReportNotFoundError,
   ReportAlreadyReviewedError,
   CannotReportSelfError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
 import { parseReportDocuments, parseReportDocument } from '@/schemas';
 import { getReportSeverity } from '@/types/report';
@@ -213,17 +214,16 @@ export class FirebaseReportRepository implements IReportRepository {
 
       const db = getFirebaseDb();
       const reportsRef = collection(db, COLLECTIONS.REPORTS);
+      const pendingLockId = buildPendingReportLockId(
+        context.reporterId,
+        input.targetId,
+        input.jobPostingId
+      );
+      const pendingLockRef = doc(db, COLLECTIONS.REPORT_PENDING_LOCKS, pendingLockId);
 
       // 1. 중복 신고 검사 (트랜잭션 외부에서 수행)
-      //
-      // ⚠️ Race Condition 인지:
-      // getDocs는 트랜잭션 내부에서 사용할 수 없어 (Firebase SDK 제약)
-      // 중복 체크와 생성 사이에 이론적 race condition 존재.
-      // 실제 발생 확률은 극히 낮음:
-      //   - 같은 reporter가 같은 target/jobPosting에 동시 신고하는 상황은 비현실적
-      //   - UI에서 중복 클릭 방지 (버튼 disabled) 적용됨
-      // 향후 개선: 복합 키 기반 문서 ID (reporter_target_jobPosting) 사용 시
-      //   트랜잭션 내 get+set으로 원자적 중복 방지 가능
+      // 레거시 pending 신고(락 문서 도입 이전 데이터)까지 잡기 위한 사전 조회.
+      // 실제 원자성은 아래 pending lock 트랜잭션이 보장한다.
       const existingQuery = query(
         reportsRef,
         where(FIELDS.REPORT.reporterId, '==', context.reporterId),
@@ -245,8 +245,18 @@ export class FirebaseReportRepository implements IReportRepository {
       // 2. 새 문서 ID 미리 생성
       const newReportRef = doc(reportsRef);
 
-      // 3. 트랜잭션으로 문서 생성
+      // 3. 트랜잭션으로 lock + 문서 생성
       await runTransaction(db, async (transaction) => {
+        const pendingLockSnap = await transaction.get(pendingLockRef);
+
+        if (pendingLockSnap.exists()) {
+          throw new DuplicateReportError({
+            userMessage: '이미 해당 건에 대해 신고하셨습니다',
+            targetId: input.targetId,
+            jobPostingId: input.jobPostingId,
+          });
+        }
+
         const reportData: Record<string, unknown> = {
           type: input.type,
           reporterType: input.reporterType,
@@ -272,6 +282,14 @@ export class FirebaseReportRepository implements IReportRepository {
           reportData.workDate = input.workDate;
         }
 
+        transaction.set(pendingLockRef, {
+          reportId: newReportRef.id,
+          reporterId: context.reporterId,
+          targetId: input.targetId,
+          jobPostingId: input.jobPostingId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
         transaction.set(newReportRef, reportData);
       });
 
@@ -332,7 +350,18 @@ export class FirebaseReportRepository implements IReportRepository {
           });
         }
 
+        const pendingLockRef = doc(
+          db,
+          COLLECTIONS.REPORT_PENDING_LOCKS,
+          buildPendingReportLockId(
+            existingReport.reporterId as string,
+            existingReport.targetId as string,
+            existingReport.jobPostingId as string
+          )
+        );
+
         // 3. 상태 업데이트
+        transaction.delete(pendingLockRef);
         transaction.update(reportRef, {
           status: input.status,
           reviewerId,
@@ -411,4 +440,12 @@ export class FirebaseReportRepository implements IReportRepository {
 
     return reports as Report[];
   }
+}
+
+function buildPendingReportLockId(
+  reporterId: string,
+  targetId: string,
+  jobPostingId: string
+): string {
+  return [reporterId, targetId, jobPostingId].map((value) => encodeURIComponent(value)).join('__');
 }

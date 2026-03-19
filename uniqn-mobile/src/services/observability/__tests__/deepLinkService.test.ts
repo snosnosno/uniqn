@@ -117,8 +117,10 @@ jest.mock('@/shared/deeplink', () => ({
   NOTIFICATION_ROUTE_MAP: mockNotificationRouteMap,
 }));
 
-const { Platform } = require('react-native');
-const { deepLinkService } = require('../deepLinkService');
+const { Platform } = jest.requireMock('react-native') as typeof import('react-native');
+const { deepLinkService } = jest.requireActual(
+  '../deepLinkService'
+) as typeof import('../deepLinkService');
 
 // ============================================================================
 // Test Suites
@@ -400,11 +402,11 @@ describe('deepLinkService', () => {
     });
 
     it('알림 타입 매핑을 사용해야 함', () => {
-      const testCases: Array<{
+      const testCases: {
         type: NotificationType;
         data?: Record<string, string>;
         expected: { name: string; params?: Record<string, string> };
-      }> = [
+      }[] = [
         {
           type: 'new_application' as NotificationType,
           data: { jobPostingId: '123' },

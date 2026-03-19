@@ -8,6 +8,32 @@
 import { Platform } from 'react-native';
 
 // ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  fetchNotifications,
+  getUnreadCount,
+  getNotification,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  deleteNotifications,
+  cleanupOldNotifications,
+  subscribeToNotifications,
+  subscribeToUnreadCount,
+  getNotificationSettings,
+  saveNotificationSettings,
+  checkNotificationPermission,
+  requestNotificationPermission,
+  registerFCMToken,
+  unregisterFCMToken,
+  unregisterAllFCMTokens,
+} from '../notificationService';
+import { notificationRepository } from '@/repositories';
+import * as pushNotificationService from '@/services/notifications/pushNotificationService';
+
+// ============================================================================
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
@@ -46,32 +72,6 @@ jest.mock('@/services/notifications/pushNotificationService', () => ({
   checkPermission: jest.fn(),
   requestPermission: jest.fn(),
 }));
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  fetchNotifications,
-  getUnreadCount,
-  getNotification,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification,
-  deleteNotifications,
-  cleanupOldNotifications,
-  subscribeToNotifications,
-  subscribeToUnreadCount,
-  getNotificationSettings,
-  saveNotificationSettings,
-  checkNotificationPermission,
-  requestNotificationPermission,
-  registerFCMToken,
-  unregisterFCMToken,
-  unregisterAllFCMTokens,
-} from '../notificationService';
-import { notificationRepository } from '@/repositories';
-import * as pushNotificationService from '@/services/notifications/pushNotificationService';
 
 // Get typed mock references
 const mockRepo = notificationRepository as jest.Mocked<typeof notificationRepository>;

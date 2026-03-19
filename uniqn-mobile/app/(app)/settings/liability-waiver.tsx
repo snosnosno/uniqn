@@ -3,8 +3,6 @@
  * 서약서 (면책 동의) 화면
  */
 
-/* eslint-disable react/no-unescaped-entities */
-
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackHeader } from '@/components/headers';

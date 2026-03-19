@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import storage from '@/lib/mmkvStorage';
+import { getMMKVInstance } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { useUserHash } from '@/hooks/useUserHash';
 
@@ -77,7 +77,7 @@ export function useCompletionFlag(options: UseCompletionFlagOptions): UseComplet
     }
 
     try {
-      const mmkv = storage.getMMKVInstance();
+      const mmkv = getMMKVInstance();
       const isCompleted = mmkv.getString(completedKey) === 'true';
       const savedVersion = parseInt(mmkv.getString(versionKey) ?? '0', 10);
       const needs = !isCompleted || savedVersion < currentVersion;
@@ -122,7 +122,7 @@ export function useCompletionFlag(options: UseCompletionFlagOptions): UseComplet
 
       if (completedKey && versionKey) {
         try {
-          const mmkv = storage.getMMKVInstance();
+          const mmkv = getMMKVInstance();
           mmkv.set(completedKey, 'true');
           mmkv.set(versionKey, String(currentVersion));
         } catch {
@@ -140,7 +140,7 @@ export function useCompletionFlag(options: UseCompletionFlagOptions): UseComplet
     if (!completedKey || !versionKey) return;
 
     try {
-      const mmkv = storage.getMMKVInstance();
+      const mmkv = getMMKVInstance();
       mmkv.set(completedKey, 'true');
       mmkv.set(versionKey, String(currentVersion));
       setNeedsAction(false);
@@ -157,7 +157,7 @@ export function useCompletionFlag(options: UseCompletionFlagOptions): UseComplet
     if (!completedKey || !versionKey) return;
 
     try {
-      const mmkv = storage.getMMKVInstance();
+      const mmkv = getMMKVInstance();
       mmkv.delete(completedKey);
       mmkv.delete(versionKey);
       setNeedsAction(true);

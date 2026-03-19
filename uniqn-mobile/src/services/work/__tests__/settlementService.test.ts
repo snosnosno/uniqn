@@ -11,6 +11,18 @@ import {
   resetCounters,
 } from '../../../__tests__/mocks/factories';
 
+// Import after mocks
+import { Timestamp } from 'firebase/firestore';
+
+import {
+  getWorkLogsByJobPosting,
+  calculateSettlement,
+  settleWorkLog,
+  bulkSettlement,
+  updateSettlementStatus,
+  getJobPostingSettlementSummary,
+} from '@/services/work/settlement';
+
 // ============================================================================
 // Mock Repository
 // ============================================================================
@@ -239,18 +251,6 @@ jest.mock('@/shared/time', () => ({
     parseTime: jest.fn(() => new Date()),
   },
 }));
-
-// Import after mocks
-import { Timestamp } from 'firebase/firestore';
-
-import {
-  getWorkLogsByJobPosting,
-  calculateSettlement,
-  settleWorkLog,
-  bulkSettlement,
-  updateSettlementStatus,
-  getJobPostingSettlementSummary,
-} from '@/services/work/settlement';
 
 // ============================================================================
 // Test Utilities

@@ -11,6 +11,8 @@
  */
 
 // Mock @/config/env before importing logger
+import { logger } from '../logger';
+
 jest.mock('@/config/env', () => ({
   env: {
     isProduction: false,
@@ -38,8 +40,6 @@ jest.mock('@/errors/AppError', () => {
 
   return { isAppError };
 });
-
-import { logger } from '../logger';
 
 // =============================================================================
 // Helpers

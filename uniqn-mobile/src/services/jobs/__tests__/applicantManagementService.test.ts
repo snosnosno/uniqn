@@ -14,6 +14,19 @@ import type {
 } from '@/types';
 import type { ApplicantListWithStats } from '@/repositories/interfaces';
 
+// Import after mocks
+import {
+  getApplicantsByJobPosting,
+  confirmApplication,
+  rejectApplication,
+  bulkConfirmApplications,
+  markApplicationAsRead,
+  getApplicantStatsByRole,
+  verifyJobPostingOwnership,
+  subscribeToApplicants,
+  subscribeToApplicantsAsync,
+} from '@/services/jobs/applicantManagementService';
+
 // ============================================================================
 // Mock Setup (호이스팅을 위해 파일 최상단에 배치)
 // ============================================================================
@@ -108,19 +121,6 @@ jest.mock('@/constants/statusConfig', () => ({
     cancellationPending: 'cancellationPending',
   },
 }));
-
-// Import after mocks
-import {
-  getApplicantsByJobPosting,
-  confirmApplication,
-  rejectApplication,
-  bulkConfirmApplications,
-  markApplicationAsRead,
-  getApplicantStatsByRole,
-  verifyJobPostingOwnership,
-  subscribeToApplicants,
-  subscribeToApplicantsAsync,
-} from '@/services/jobs/applicantManagementService';
 
 // ============================================================================
 // Test Helpers

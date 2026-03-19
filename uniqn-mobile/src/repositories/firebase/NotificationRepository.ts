@@ -76,6 +76,68 @@ function createTokenKey(token: string): string {
   return `tk_${h1.toString(36)}_${h2.toString(36)}`;
 }
 
+type StoredFcmTokenRecord = {
+  registeredAt?: { toMillis?: () => number };
+};
+
+type RegisterFcmTokenMetadata = {
+  type: 'expo' | 'fcm';
+  platform: 'ios' | 'android';
+};
+
+function getLegacyTokenKey(token: string): string {
+  return token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function getOldestStoredTokenKey(
+  currentTokens: Record<string, StoredFcmTokenRecord>
+): string | null {
+  let oldestKey: string | null = null;
+  let oldestTime = Infinity;
+
+  for (const [key, value] of Object.entries(currentTokens)) {
+    const registeredAt = value?.registeredAt?.toMillis?.() ?? 0;
+    if (registeredAt < oldestTime) {
+      oldestTime = registeredAt;
+      oldestKey = key;
+    }
+  }
+
+  return oldestKey;
+}
+
+export function buildRegisterFcmTokenUpdate(
+  currentTokens: Record<string, StoredFcmTokenRecord>,
+  token: string,
+  metadata: RegisterFcmTokenMetadata
+): Record<string, unknown> {
+  const tokenKey = createTokenKey(token);
+  const legacyTokenKey = getLegacyTokenKey(token);
+  const isExisting = tokenKey in currentTokens || legacyTokenKey in currentTokens;
+  const updateData: Record<string, unknown> = {
+    [`fcmTokens.${tokenKey}`]: {
+      token,
+      type: metadata.type,
+      platform: metadata.platform,
+      registeredAt: serverTimestamp(),
+      lastRefreshedAt: serverTimestamp(),
+    },
+  };
+
+  if (tokenKey !== legacyTokenKey) {
+    updateData[`fcmTokens.${legacyTokenKey}`] = deleteField();
+  }
+
+  if (!isExisting && Object.keys(currentTokens).length >= MAX_FCM_TOKENS) {
+    const oldestKey = getOldestStoredTokenKey(currentTokens);
+    if (oldestKey && oldestKey !== tokenKey) {
+      updateData[`fcmTokens.${oldestKey}`] = deleteField();
+    }
+  }
+
+  return updateData;
+}
+
 /**
  * Firestore 문서를 NotificationData로 변환
  */
@@ -424,9 +486,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
   ): Promise<void> {
     const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    const tokenKey = createTokenKey(token);
     // 레거시 키 (substring 방식) — 존재하면 삭제하여 중복 방지
-    const legacyTokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       const userDoc = await transaction.get(userRef);
@@ -437,39 +497,10 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
       const currentTokens = (userDoc.data().fcmTokens ?? {}) as Record<
         string,
-        { registeredAt?: { toMillis?: () => number } }
+        StoredFcmTokenRecord
       >;
-      const isExisting = tokenKey in currentTokens || legacyTokenKey in currentTokens;
 
-      // 새 토큰이고 제한 초과 시 가장 오래된 토큰 제거
-      if (!isExisting && Object.keys(currentTokens).length >= MAX_FCM_TOKENS) {
-        let oldestKey: string | null = null;
-        let oldestTime = Infinity;
-
-        for (const [key, val] of Object.entries(currentTokens)) {
-          const ts = val?.registeredAt?.toMillis?.() ?? 0;
-          if (ts < oldestTime) {
-            oldestTime = ts;
-            oldestKey = key;
-          }
-        }
-
-        if (oldestKey) {
-          transaction.update(userRef, { [`fcmTokens.${oldestKey}`]: deleteField() });
-        }
-      }
-
-      transaction.update(userRef, {
-        [`fcmTokens.${tokenKey}`]: {
-          token,
-          type: metadata.type,
-          platform: metadata.platform,
-          registeredAt: serverTimestamp(),
-          lastRefreshedAt: serverTimestamp(),
-        },
-        // 레거시 키 정리 (이미 없으면 no-op)
-        ...(tokenKey !== legacyTokenKey ? { [`fcmTokens.${legacyTokenKey}`]: deleteField() } : {}),
-      });
+      transaction.update(userRef, buildRegisterFcmTokenUpdate(currentTokens, token, metadata));
     });
 
     logger.info('FCM 토큰 등록', {
@@ -482,7 +513,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   async unregisterFCMToken(userId: string, token: string): Promise<void> {
     const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
     const tokenKey = createTokenKey(token);
-    const legacyTokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+    const legacyTokenKey = getLegacyTokenKey(token);
 
     await updateDoc(userRef, {
       [`fcmTokens.${tokenKey}`]: deleteField(),

@@ -9,6 +9,29 @@
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  getMyWorkLogs,
+  getWorkLogsByDate,
+  getWorkLogById,
+  getTodayCheckedInWorkLog,
+  isCurrentlyWorking,
+  getWorkLogStats,
+  getMonthlyPayroll,
+  updateWorkTime,
+  updatePayrollStatus,
+  subscribeToWorkLog,
+  subscribeToMyWorkLogs,
+  subscribeToTodayWorkStatus,
+} from '../workLogService';
+import { workLogRepository } from '@/repositories';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { trackSettlementComplete } from '../../observability/analyticsService';
+import type { WorkLog } from '@/types';
+
 jest.mock('@/repositories', () => ({
   workLogRepository: {
     getByStaffId: jest.fn(),
@@ -93,29 +116,6 @@ jest.mock('@/shared/realtime', () => ({
 jest.mock('../../observability/analyticsService', () => ({
   trackSettlementComplete: jest.fn(),
 }));
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  getMyWorkLogs,
-  getWorkLogsByDate,
-  getWorkLogById,
-  getTodayCheckedInWorkLog,
-  isCurrentlyWorking,
-  getWorkLogStats,
-  getMonthlyPayroll,
-  updateWorkTime,
-  updatePayrollStatus,
-  subscribeToWorkLog,
-  subscribeToMyWorkLogs,
-  subscribeToTodayWorkStatus,
-} from '../workLogService';
-import { workLogRepository } from '@/repositories';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { trackSettlementComplete } from '../../observability/analyticsService';
-import type { WorkLog } from '@/types';
 
 // Get typed mock references
 const mockRepo = workLogRepository as jest.Mocked<typeof workLogRepository>;

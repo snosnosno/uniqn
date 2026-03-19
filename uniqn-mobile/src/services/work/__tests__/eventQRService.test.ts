@@ -5,7 +5,21 @@
  * @version 2.0.0
  */
 
-import type { EventQRCode, WorkLog } from '@/types';
+import type { EventQRCode, WorkLog, EventQRDisplayData } from '@/types';
+
+// Import after mocks
+import {
+  generateEventQR,
+  validateEventQR,
+  processEventQRCheckIn,
+  getActiveEventQR,
+  deactivateEventQR,
+  cleanupExpiredQRCodes,
+  getQRRemainingSeconds,
+  stringifyQRData,
+  QR_REFRESH_INTERVAL_MS,
+} from '@/services/work/eventQRService';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Mock Setup
@@ -163,21 +177,6 @@ jest.mock('@/errors', () => ({
     }
   },
 }));
-
-// Import after mocks
-import {
-  generateEventQR,
-  validateEventQR,
-  processEventQRCheckIn,
-  getActiveEventQR,
-  deactivateEventQR,
-  cleanupExpiredQRCodes,
-  getQRRemainingSeconds,
-  stringifyQRData,
-  QR_REFRESH_INTERVAL_MS,
-} from '@/services/work/eventQRService';
-import type { EventQRDisplayData } from '@/types';
-import { STATUS } from '@/constants';
 
 // ============================================================================
 // Test Helpers

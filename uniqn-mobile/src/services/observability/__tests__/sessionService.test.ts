@@ -129,7 +129,7 @@ jest.mock('@/errors', () => ({
 // Mock 참조 획득 (require로 hoisting 문제 우회)
 // ============================================================================
 
-const { getFirebaseAuth } = require('@/lib/firebase') as {
+const { getFirebaseAuth } = jest.requireMock('@/lib/firebase') as {
   getFirebaseAuth: jest.Mock;
 };
 const mockAuth = getFirebaseAuth() as {
@@ -146,7 +146,7 @@ const mockGetIdToken = mockCurrentUser.getIdToken;
 const mockGetIdTokenResult = mockCurrentUser.getIdTokenResult;
 const mockOnAuthStateChanged = mockAuth.onAuthStateChanged;
 
-const mockSecureStorage = require('@/lib/secureStorage') as {
+const mockSecureStorage = jest.requireMock('@/lib/secureStorage') as {
   authStorage: { setAuthToken: jest.Mock; deleteAuthToken: jest.Mock };
   getItem: jest.Mock;
   setItem: jest.Mock;
@@ -157,34 +157,37 @@ const mockGetItem = mockSecureStorage.getItem;
 const mockSetItem = mockSecureStorage.setItem;
 const mockDeleteItem = mockSecureStorage.deleteItem;
 
-const { router: mockRouter } = require('expo-router') as {
+const { router: mockRouter } = jest.requireMock('expo-router') as {
   router: { replace: jest.Mock };
 };
 const mockRouterReplace = mockRouter.replace;
 
 // authStore mock은 jest.mock factory 내에서 자체 완결 (외부 참조 불필요)
 
-const { useToastStore: mockToastStore } = require('@/stores/toastStore') as {
+const { useToastStore: mockToastStore } = jest.requireMock('@/stores/toastStore') as {
   useToastStore: { getState: jest.Mock };
 };
 const mockAddToast = (mockToastStore.getState() as { addToast: jest.Mock }).addToast;
 
-const { logger: mockLogger } = require('@/utils/logger') as {
+const { logger: mockLogger } = jest.requireMock('@/utils/logger') as {
   logger: { info: jest.Mock; warn: jest.Mock; error: jest.Mock; debug: jest.Mock };
 };
-const { crashlyticsService: mockCrashlyticsService } = require('../crashlyticsService') as {
+const { crashlyticsService: mockCrashlyticsService } = jest.requireMock(
+  '../crashlyticsService'
+) as {
   crashlyticsService: { recordError: jest.Mock };
 };
-const { syncSignOut: mockSyncSignOut } = require('@/lib/authBridge') as {
+const { syncSignOut: mockSyncSignOut } = jest.requireMock('@/lib/authBridge') as {
   syncSignOut: jest.Mock;
 };
-const { RealtimeManager: mockRealtimeManager } = require('@/shared/realtime') as {
+const { RealtimeManager: mockRealtimeManager } = jest.requireMock('@/shared/realtime') as {
   RealtimeManager: { unsubscribeAll: jest.Mock };
 };
-const { clearCounterSyncCache: mockClearCounterSyncCache } =
-  require('@/shared/cache/counterSyncCache') as {
-    clearCounterSyncCache: jest.Mock;
-  };
+const { clearCounterSyncCache: mockClearCounterSyncCache } = jest.requireMock(
+  '@/shared/cache/counterSyncCache'
+) as {
+  clearCounterSyncCache: jest.Mock;
+};
 
 // ============================================================================
 // Test Helpers

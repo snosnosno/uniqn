@@ -9,6 +9,8 @@
  */
 
 // logger mock
+import { RealtimeManager } from '../RealtimeManager';
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     debug: jest.fn(),
@@ -17,8 +19,6 @@ jest.mock('@/utils/logger', () => ({
     error: jest.fn(),
   },
 }));
-
-import { RealtimeManager } from '../RealtimeManager';
 
 describe('RealtimeManager', () => {
   // 각 테스트 전 모든 구독 해제 및 상태 초기화

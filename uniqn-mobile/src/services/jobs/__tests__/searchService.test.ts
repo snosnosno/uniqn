@@ -9,6 +9,18 @@
 // Mocks
 // ============================================================================
 
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  ClientSideSearchProvider,
+  AlgoliaSearchProvider,
+  createSearchProvider,
+  CURRENT_SEARCH_PROVIDER,
+} from '../searchService';
+import type { JobPosting } from '@/types';
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -36,18 +48,6 @@ jest.mock('@/errors', () => {
     isAppError: jest.fn(() => false),
   };
 });
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  ClientSideSearchProvider,
-  AlgoliaSearchProvider,
-  createSearchProvider,
-  CURRENT_SEARCH_PROVIDER,
-} from '../searchService';
-import type { JobPosting } from '@/types';
 
 // ============================================================================
 // Test Helpers

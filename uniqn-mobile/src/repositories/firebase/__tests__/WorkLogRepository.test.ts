@@ -59,7 +59,6 @@ jest.mock('@/errors', () => ({
 // Mock QueryBuilder
 jest.mock('@/utils/firestore/queryBuilder', () => {
   class MockQueryBuilder {
-    constructor(_ref: unknown) {}
     whereEqual() {
       return this;
     }
@@ -133,7 +132,7 @@ function createMockDocSnap(id: string, data: Record<string, unknown> | null) {
   };
 }
 
-function createMockQuerySnap(docs: Array<{ id: string; data: Record<string, unknown> }>) {
+function createMockQuerySnap(docs: { id: string; data: Record<string, unknown> }[]) {
   const mockDocs = docs.map((d) => ({
     id: d.id,
     exists: () => true,

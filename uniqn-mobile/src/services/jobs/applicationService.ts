@@ -15,8 +15,7 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError, handleErrorWithDefault } from '@/errors/serviceErrorHandler';
 import { applicationRepository, type ApplicationWithJob, type ApplyContext } from '@/repositories';
-import { trackJobApply, trackEvent } from '@/services/observability';
-import { startApiTrace } from '@/services/observability';
+import { trackJobApply, trackEvent, startApiTrace } from '@/services/observability';
 import type {
   Application,
   ApplicationStatus,

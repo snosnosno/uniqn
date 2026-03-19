@@ -74,7 +74,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
 
 export function StaffManagementTab({
   jobPostingId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO: 향후 공고 상세 정보 표시에 사용 예정
+
   jobPosting: _jobPosting,
   onShowEventQR,
   onShowRoleChange,

@@ -8,6 +8,17 @@
 import { createMockJobPosting, resetCounters } from '../../../__tests__/mocks/factories';
 import type { CreateJobPostingInput, StaffRole } from '@/types';
 
+// Import after mocks
+import {
+  createJobPosting,
+  updateJobPosting,
+  deleteJobPosting,
+  closeJobPosting,
+  reopenJobPosting,
+  getMyJobPostingStats,
+  bulkUpdateJobPostingStatus,
+} from '@/services/jobs/jobManagementService';
+
 // ============================================================================
 // Mock Repository
 // ============================================================================
@@ -109,17 +120,6 @@ jest.mock('@/errors', () => {
     PermissionError,
   };
 });
-
-// Import after mocks
-import {
-  createJobPosting,
-  updateJobPosting,
-  deleteJobPosting,
-  closeJobPosting,
-  reopenJobPosting,
-  getMyJobPostingStats,
-  bulkUpdateJobPostingStatus,
-} from '@/services/jobs/jobManagementService';
 
 // ============================================================================
 // Test Utilities

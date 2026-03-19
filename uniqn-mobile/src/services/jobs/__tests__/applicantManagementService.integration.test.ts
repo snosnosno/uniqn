@@ -7,6 +7,16 @@
 
 import { createMockApplication, resetCounters } from '../../../__tests__/mocks/factories';
 
+// Import after mocks
+import {
+  getApplicantsByJobPosting,
+  confirmApplication,
+  rejectApplication,
+  bulkConfirmApplications,
+  markApplicationAsRead,
+  getApplicantStatsByRole,
+} from '@/services/jobs/applicantManagementService';
+
 // ============================================================================
 // Mock Repository
 // ============================================================================
@@ -164,16 +174,6 @@ jest.mock('@/constants/statusConfig', () => ({
     cancellation_pending: 'cancellationPending',
   },
 }));
-
-// Import after mocks
-import {
-  getApplicantsByJobPosting,
-  confirmApplication,
-  rejectApplication,
-  bulkConfirmApplications,
-  markApplicationAsRead,
-  getApplicantStatsByRole,
-} from '@/services/jobs/applicantManagementService';
 
 // ============================================================================
 // Test Utilities

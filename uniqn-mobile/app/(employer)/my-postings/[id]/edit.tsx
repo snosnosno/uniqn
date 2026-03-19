@@ -30,6 +30,10 @@ import {
   validateAllSections,
   getFirstErrorSection,
 } from '@/utils/job-posting/validation';
+import {
+  buildUpdateJobPostingInput,
+  shouldAllowLegacyScheduleFallback,
+} from '@/utils/job-posting/submission';
 import type { UpdateJobPostingInput, JobPostingFormData, FormRoleWithCount } from '@/types';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types';
 
@@ -177,9 +181,10 @@ export default function EditJobPostingScreen() {
     const skipSections: (keyof SectionErrors)[] = hasConfirmedApplicants
       ? ['schedule', 'roles']
       : [];
+    const allowLegacyScheduleFallback = shouldAllowLegacyScheduleFallback(existingJob);
 
     const newErrors = validateAllSections(formData, {
-      allowLegacyFallback: true,
+      allowLegacyFallback: allowLegacyScheduleFallback,
       skipSections,
     });
 
@@ -196,7 +201,7 @@ export default function EditJobPostingScreen() {
     }
 
     return true;
-  }, [formData, hasConfirmedApplicants]);
+  }, [existingJob, formData, hasConfirmedApplicants]);
 
   // 공고 수정 제출
   const handleSubmit = useCallback(async () => {
@@ -211,33 +216,9 @@ export default function EditJobPostingScreen() {
     }
 
     try {
-      const input: UpdateJobPostingInput = {
-        postingType: formData.postingType,
-        title: formData.title,
-        description: formData.description || undefined,
-        location: formData.location,
-        detailedAddress: formData.detailedAddress || undefined,
-        contactPhone: formData.contactPhone || undefined,
-        // 확정된 지원자가 있으면 일정/역할 수정 불가
-        ...(hasConfirmedApplicants
-          ? {}
-          : {
-              workDate: formData.workDate,
-              startTime: formData.startTime,
-              daysPerWeek: formData.daysPerWeek,
-              isStartTimeNegotiable: formData.isStartTimeNegotiable,
-              roles: formData.roles,
-            }),
-        defaultSalary: formData.defaultSalary,
-        useSameSalary: formData.useSameSalary,
-        allowances: formData.allowances,
-        // 세금 설정 (항상 포함하여 기존 값 덮어쓰기 보장)
-        taxSettings:
-          formData.taxSettings?.type !== 'none'
-            ? formData.taxSettings
-            : { type: 'none' as const, value: 0 },
-        tags: formData.tags,
-      };
+      const input: UpdateJobPostingInput = buildUpdateJobPostingInput(formData, {
+        hasConfirmedApplicants,
+      });
 
       await updateJobPosting.mutateAsync({ jobPostingId: id, input });
       setIsDirty(false);

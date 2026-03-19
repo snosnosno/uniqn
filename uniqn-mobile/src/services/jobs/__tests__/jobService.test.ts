@@ -9,6 +9,28 @@
 // Mocks (jest.mock is hoisted, so use inline factory functions)
 // ============================================================================
 
+// Note: searchJobPostings uses dynamic `await import('./searchService')`.
+// Jest node environment does not support --experimental-vm-modules,
+// so dynamic import tests are limited to error propagation scenarios.
+
+// ============================================================================
+// Imports (after mocks)
+// ============================================================================
+
+import {
+  getJobPostings,
+  getJobPostingById,
+  incrementViewCount,
+  searchJobPostings,
+  getUrgentJobPostings,
+  getMyJobPostings,
+  convertToCard,
+} from '../jobService';
+import { jobPostingRepository } from '@/repositories';
+import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
+import { startApiTrace } from '@/services/observability/performanceService';
+import { toJobPostingCard } from '@/types';
+
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     getList: jest.fn(),
@@ -56,28 +78,6 @@ jest.mock('@/types', () => ({
     _isCard: true,
   })),
 }));
-
-// Note: searchJobPostings uses dynamic `await import('./searchService')`.
-// Jest node environment does not support --experimental-vm-modules,
-// so dynamic import tests are limited to error propagation scenarios.
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
-import {
-  getJobPostings,
-  getJobPostingById,
-  incrementViewCount,
-  searchJobPostings,
-  getUrgentJobPostings,
-  getMyJobPostings,
-  convertToCard,
-} from '../jobService';
-import { jobPostingRepository } from '@/repositories';
-import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
-import { startApiTrace } from '@/services/observability/performanceService';
-import { toJobPostingCard } from '@/types';
 
 // Get typed mock references
 const mockRepo = jobPostingRepository as jest.Mocked<typeof jobPostingRepository>;
