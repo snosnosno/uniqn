@@ -56,7 +56,7 @@ export const onJobPostingClosed = onDocumentUpdated(
         jobPostingId,
         {
           type: "job_closed",
-          title: "📢 공고 마감 안내",
+          title: "📋 공고 마감 안내",
           body: `'${after.title || "공고"}'가 마감되었습니다.`,
           options: {
             link: `/jobs/${jobPostingId}`,

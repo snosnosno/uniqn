@@ -259,7 +259,7 @@ export async function confirmWithHistoryTransaction(
       return {
         applicationId,
         workLogIds,
-        message: `${applicationData.applicantName}님의 지원이 확정되었습니다.`,
+        message: `${applicationData.applicantName}님의 지원이 확정되었습니다`,
         historyEntry,
       };
     });

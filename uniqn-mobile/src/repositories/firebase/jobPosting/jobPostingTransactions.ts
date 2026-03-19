@@ -302,8 +302,7 @@ export async function deleteWithTransaction(jobPostingId: string, ownerId: strin
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       if (hasConfirmedApplicants) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage:
-            '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리 후 다시 시도해주세요',
+          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
         });
       }
 
@@ -341,7 +340,7 @@ export async function closeWithTransaction(jobPostingId: string, ownerId: string
       assertJobPostingStatus(
         currentData.status,
         STATUS.JOB_POSTING.CLOSED,
-        '이미 마감된 공고입니다.'
+        '이미 마감된 공고입니다'
       );
 
       transaction.update(jobRef, {
@@ -380,7 +379,7 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
       assertJobPostingStatus(
         currentData.status,
         STATUS.JOB_POSTING.ACTIVE,
-        '이미 활성 상태인 공고입니다.'
+        '이미 활성 상태인 공고입니다'
       );
 
       if (currentData.status === STATUS.JOB_POSTING.CANCELLED) {

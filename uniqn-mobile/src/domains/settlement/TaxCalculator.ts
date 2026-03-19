@@ -18,7 +18,7 @@ export interface TaxBreakdown {
   taxType: 'none' | 'fixed' | 'rate';
 }
 
-export interface TaxableAmounts extends TaxableAmountsInput {}
+export type TaxableAmounts = TaxableAmountsInput;
 
 export class TaxCalculator {
   static calculate(grossPay: number, settings: TaxSettings): TaxBreakdown {
