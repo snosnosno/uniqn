@@ -33,6 +33,7 @@ import { formatPhoneNumber } from '@/utils/phone';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
+import { formatDateKoreanWithDay } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -81,15 +82,7 @@ function getWorkDuration(schedule: ScheduleEvent): string {
 }
 
 function formatFullDate(dateString: string): string {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  });
+  return formatDateKoreanWithDay(dateString) || dateString || '-';
 }
 
 // ============================================================================

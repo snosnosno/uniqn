@@ -17,7 +17,8 @@ import { ko } from 'date-fns/locale';
 import { Card } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
-import { INQUIRY_CATEGORY_LABELS, toDate } from '@/types';
+import { INQUIRY_CATEGORY_LABELS } from '@/types';
+import { toDate } from '@/utils/date';
 import { STATUS } from '@/constants';
 
 // 4. 타입

@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/Badge';
 import { STATUS } from '@/constants';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
+import { formatDateShortWithDay } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -100,14 +101,7 @@ const TournamentCard = memo(function TournamentCard({
   const isResubmitted = !!posting.tournamentConfig?.resubmittedAt;
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return new Intl.DateTimeFormat('ko-KR', {
-      month: 'short',
-      day: 'numeric',
-      weekday: 'short',
-    }).format(date);
+    return formatDateShortWithDay(dateStr) || dateStr || '-';
   };
 
   // 날짜 범위 표시 (메모이제이션)

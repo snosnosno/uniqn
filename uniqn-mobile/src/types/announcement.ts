@@ -8,7 +8,7 @@
 import { Timestamp } from 'firebase/firestore';
 import type { FirebaseDocument } from './common';
 import type { UserRole } from './role';
-import { toDate } from './common';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // 카테고리 및 상태

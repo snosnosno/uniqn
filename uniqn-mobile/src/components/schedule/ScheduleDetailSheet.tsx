@@ -7,9 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Modal } from '@/components/ui';
-import { Button } from '@/components/ui';
-import { Badge } from '@/components/ui';
+import { Modal, Button, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
@@ -27,6 +25,7 @@ import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { STATUS } from '@/constants';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
+import { formatDateKoreanWithDay } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -60,14 +59,7 @@ function formatTime(value: TimeInput): string {
 }
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  };
-  return date.toLocaleDateString('ko-KR', options);
+  return formatDateKoreanWithDay(dateString) || dateString || '-';
 }
 
 // ============================================================================

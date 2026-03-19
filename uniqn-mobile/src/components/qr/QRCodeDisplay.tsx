@@ -14,6 +14,7 @@ import { Modal, Button } from '@/components/ui';
 import { RefreshIcon, ClockIcon, CheckCircleIcon } from '@/components/icons';
 import { stringifyQRData } from '@/services/work/eventQRService';
 import type { QRCodeAction, EventQRDisplayData } from '@/types';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -75,10 +76,10 @@ export function QRCodeDisplay({
     if (!displayData?.expiresAt) return;
 
     const updateTime = () => {
-      const expiresAt = new Date(displayData.expiresAt);
+      const expiresAt = toDate(displayData.expiresAt);
       const now = new Date();
 
-      if (now.getTime() >= expiresAt.getTime()) {
+      if (!expiresAt || now.getTime() >= expiresAt.getTime()) {
         setIsExpired(true);
         setRemainingTime('만료됨');
       } else {

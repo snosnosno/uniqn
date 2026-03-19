@@ -11,6 +11,7 @@ import {
   StarIcon,
 } from '../../icons';
 import type { UserProfile } from '@/services';
+import { toDate } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
 
 const GENDER_LABELS: Record<string, string> = {
@@ -22,8 +23,8 @@ const GENDER_LABELS: Record<string, string> = {
 export function formatProfileDate(dateStr?: string): string {
   if (!dateStr) return '';
 
-  const date = new Date(dateStr);
-  if (Number.isNaN(date.getTime())) {
+  const date = toDate(dateStr);
+  if (!date) {
     return dateStr;
   }
 

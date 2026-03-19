@@ -91,16 +91,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 지원일 계산
   const appliedTimeAgo = useMemo(() => {
-    if (!applicant.createdAt) return '';
-
-    const date =
-      typeof applicant.createdAt === 'string'
-        ? new Date(applicant.createdAt)
-        : applicant.createdAt instanceof Date
-          ? applicant.createdAt
-          : applicant.createdAt.toDate();
-
-    return formatRelativeTime(date);
+    return formatRelativeTime(applicant.createdAt);
   }, [applicant.createdAt]);
 
   // 펼침/접힘 토글

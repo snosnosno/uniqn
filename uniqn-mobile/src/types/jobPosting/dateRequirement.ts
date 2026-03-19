@@ -1,183 +1,89 @@
-/**
- * 날짜별 요구사항 타입 정의 (간소화 버전)
- *
- * @version 2.0.0
- * @description
- * - 종료시간 제거 (시작시간만 사용)
- * - periodType 제거 (단일 날짜만)
- * - 불필요한 메타데이터 제거
- *
- * @see specs/react-native-app/22-migration-mapping.md
- */
-
 import { Timestamp } from 'firebase/firestore';
-import type { StaffRole } from '../role';
-import type { SalaryInfo } from '../jobPosting';
 import { generateId } from '@/utils/generateId';
+import { getTodayString, toDateString, type SerializedTimestamp } from '@/utils/date';
+import type { SalaryInfo } from '../jobPosting';
+import type { StaffRole } from '../role';
 
-/**
- * 역할 요구사항
- *
- * @description 시간대별 필요한 역할과 인원수
- */
 export interface RoleRequirement {
-  /** 고유 ID (React Hook Form useFieldArray용) */
   id?: string;
-
-  /** 역할 (dealer, floorman, supervisor, chip_runner, other) */
   role?: StaffRole | 'other';
-
-  /** 커스텀 역할명 (role이 'other'일 때만 사용) */
   customRole?: string;
-
-  /** 필요 인원 (1-200) */
   headcount?: number;
-
-  /** 역할별 급여 */
   salary?: SalaryInfo;
-
-  /** 충원된 인원 */
   filled?: number;
 }
 
-/**
- * 시간대 정보 (간소화)
- *
- * @description
- * - 시작시간만 입력 (종료시간 제거)
- * - 시간 미정 지원
- * - 역할별 인원 관리
- */
 export interface TimeSlot {
-  /** 고유 ID (React Hook Form useFieldArray용) */
   id?: string;
-
-  /** 시작 시간 (HH:mm 형식) */
   startTime?: string;
-
-  /** 시간 미정 여부 */
   isTimeToBeAnnounced?: boolean;
-
-  /** 미정일 때 설명 (예: "토너먼트 진행 상황에 따라 결정") */
   tentativeDescription?: string;
-
-  /** 역할별 필요 인원 */
   roles: RoleRequirement[];
 }
 
-/**
- * 날짜별 요구사항 (간소화)
- *
- * @description
- * - 각 날짜별 시간대와 역할 관리
- * - 불필요한 메타데이터 제거
- */
 export interface DateSpecificRequirement {
-  /** 날짜 (yyyy-MM-dd 형식 또는 Firebase Timestamp) */
-  date: string | Timestamp | { seconds: number };
-
-  /** 해당 날짜의 시간대별 요구사항 */
+  date: string | Timestamp | SerializedTimestamp;
   timeSlots: TimeSlot[];
-
-  /**
-   * 그룹화 여부
-   * - true: 연속 날짜를 하나의 그룹으로 표시 (시간대 공유)
-   * - false/undefined: 개별 날짜로 표시
-   */
   isGrouped?: boolean;
 }
 
-/**
- * 타입별 날짜 제약사항
- */
 export interface DateConstraint {
-  /** 최대 추가 가능한 날짜 개수 */
   maxDates: number;
-
-  /** 라벨 (UI 표시용) */
   label: string;
 }
 
-/**
- * 날짜별 요구사항에서 날짜 문자열 추출
- */
-export function getDateString(dateInput: string | Timestamp | { seconds: number }): string {
-  if (typeof dateInput === 'string') {
-    return dateInput;
-  }
-
-  // Timestamp 객체
-  if (dateInput instanceof Timestamp) {
-    return dateInput.toDate().toISOString().split('T')[0] ?? '';
-  }
-
-  // Legacy Timestamp 객체
-  if ('seconds' in dateInput) {
-    return new Date(dateInput.seconds * 1000).toISOString().split('T')[0] ?? '';
-  }
-
-  return '';
+export function getDateString(dateInput: string | Timestamp | SerializedTimestamp): string {
+  return toDateString(dateInput);
 }
 
-/**
- * 시간대 정렬 (빠른 시간 순서)
- *
- * @description 시작 시간 기준으로 오름차순 정렬, 시간 미정은 맨 뒤로
- */
+export function getDateFromRequirement(requirement: DateSpecificRequirement): string {
+  return getDateString(requirement.date);
+}
+
 export function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
   return [...timeSlots].sort((a, b) => {
-    // 시간 미정인 경우 맨 뒤로
     if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
     if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
     if (a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return 0;
 
-    // 시작 시간 비교 (HH:mm 형식)
     const timeA = a.startTime ?? '99:99';
     const timeB = b.startTime ?? '99:99';
     return timeA.localeCompare(timeB);
   });
 }
 
-/**
- * 날짜별 요구사항 정렬
- *
- * @description 오늘 기준으로 가까운 미래 날짜 순, 같은 날짜 내에서는 빠른 시간 순
- */
 export function sortDateRequirements(
   requirements: DateSpecificRequirement[]
 ): DateSpecificRequirement[] {
-  const today = new Date().toISOString().split('T')[0] ?? '';
+  const today = getTodayString();
 
   return [...requirements]
-    .map((req) => ({
-      ...req,
-      timeSlots: sortTimeSlots(req.timeSlots),
+    .map((requirement) => ({
+      ...requirement,
+      timeSlots: sortTimeSlots(requirement.timeSlots),
     }))
     .sort((a, b) => {
-      const dateA = getDateString(a.date);
-      const dateB = getDateString(b.date);
+      const dateA = getDateFromRequirement(a);
+      const dateB = getDateFromRequirement(b);
 
-      // 오늘 기준 분류
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
       const aIsFuture = dateA >= today;
       const bIsFuture = dateB >= today;
 
-      // 미래 날짜가 과거 날짜보다 먼저
       if (aIsFuture && !bIsFuture) return -1;
       if (!aIsFuture && bIsFuture) return 1;
 
-      // 둘 다 미래: 가까운 날짜 먼저
       if (aIsFuture && bIsFuture) {
         return dateA.localeCompare(dateB);
       }
 
-      // 둘 다 과거: 최근 날짜 먼저
       return dateB.localeCompare(dateA);
     });
 }
 
-/**
- * 기본 시간대 생성 (초기값)
- */
 export function createDefaultTimeSlot(): TimeSlot {
   return {
     id: generateId(),
@@ -187,9 +93,6 @@ export function createDefaultTimeSlot(): TimeSlot {
   };
 }
 
-/**
- * 기본 역할 생성 (초기값)
- */
 export function createDefaultRole(): RoleRequirement {
   return {
     id: generateId(),

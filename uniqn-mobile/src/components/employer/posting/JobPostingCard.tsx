@@ -22,6 +22,7 @@ import {
   formatDateRangeWithCount,
   formatDateShortWithDay,
   groupRequirementsToDateRanges,
+  toDateValue,
 } from '@/utils/date';
 import { formatSalary } from '@/utils/formatters';
 
@@ -46,14 +47,14 @@ interface RoleData {
 }
 
 function getDayCount(startDate: string, endDate: string): number {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = toDateValue(startDate);
+  const end = toDateValue(endDate);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (start === null || end === null) {
     return 1;
   }
 
-  const diffTime = end.getTime() - start.getTime();
+  const diffTime = end - start;
   return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 

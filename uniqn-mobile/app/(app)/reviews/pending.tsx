@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { usePendingReviews } from '@/hooks/useReviews';
 import type { PendingReviewItem } from '@/hooks/useReviews';
+import { getReviewDaysRemaining } from '@/domains/review/reviewDeadline';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 
 /**
@@ -19,23 +20,7 @@ import { REVIEW_DEADLINE_DAYS } from '@/types/review';
  * ReviewValidator.isExpired와 동일한 기준 사용
  */
 function getDaysRemaining(item: PendingReviewItem): number {
-  let baseTime: number;
-  const cot = item.checkOutTime;
-
-  if (cot) {
-    if (cot instanceof Date) {
-      baseTime = cot.getTime();
-    } else if (typeof cot === 'string') {
-      baseTime = new Date(cot).getTime();
-    } else {
-      baseTime = (cot as { toDate(): Date }).toDate().getTime();
-    }
-  } else {
-    baseTime = new Date(item.workDate).getTime();
-  }
-
-  const diff = REVIEW_DEADLINE_DAYS - (Date.now() - baseTime) / (1000 * 60 * 60 * 24);
-  return Math.max(0, Math.ceil(diff));
+  return getReviewDaysRemaining(item.checkOutTime, item.workDate);
 }
 
 interface PendingReviewCardProps {

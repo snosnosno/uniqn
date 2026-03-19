@@ -288,10 +288,7 @@ export function EventQRModal({
   }, [refresh]);
 
   // 포맷된 날짜
-  const formattedDate = useMemo(() => {
-    const date = new Date(targetDate);
-    return formatDate(date);
-  }, [targetDate]);
+  const formattedDate = useMemo(() => formatDate(targetDate), [targetDate]);
 
   // 모드별 색상
   const modeColor = mode === 'checkIn' ? '#16A34A' : '#9333EA';

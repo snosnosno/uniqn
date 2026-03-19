@@ -497,19 +497,6 @@ export function getAndroidChannelId(type: NotificationType): AndroidChannelId {
  *
  * @note Firestore 웹 SDK에서 Timestamp가 plain object로 올 수 있어 duck typing 사용
  */
-export function toDateFromTimestamp(value: Timestamp | Date | undefined): Date | undefined {
-  if (!value) return undefined;
-  if (value instanceof Date) return value;
-  if (typeof value.toDate === 'function') return value.toDate();
-  // plain object fallback ({seconds, nanoseconds})
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ('seconds' in value && typeof (value as any).seconds === 'number') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new Date((value as any).seconds * 1000);
-  }
-  return undefined;
-}
-
 /**
  * 기본 알림 설정 생성
  */

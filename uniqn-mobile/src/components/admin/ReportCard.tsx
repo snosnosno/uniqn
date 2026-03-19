@@ -10,6 +10,7 @@ import { View, Text, Pressable } from 'react-native';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronRightIcon } from '../icons';
+import { toDate } from '@/utils/date';
 import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
@@ -66,12 +67,8 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
   const severityColor = REPORT_SEVERITY_COLORS[report.severity];
 
   // 생성 시간 포맷
-  const timeAgo = report.createdAt
-    ? formatDistanceToNow(
-        report.createdAt instanceof Date ? report.createdAt : report.createdAt.toDate(),
-        { addSuffix: true, locale: ko }
-      )
-    : '';
+  const createdAt = toDate(report.createdAt);
+  const timeAgo = createdAt ? formatDistanceToNow(createdAt, { addSuffix: true, locale: ko }) : '';
 
   return (
     <Pressable

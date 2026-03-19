@@ -9,6 +9,7 @@ import { View, Text } from 'react-native';
 import { MessageIcon, DocumentIcon, CheckCircleIcon, XCircleIcon } from '../../icons';
 import type { UserProfile, ApplicantWithDetails } from '@/services';
 import { STATUS } from '@/constants';
+import { toDateString } from '@/utils/date';
 import { ProfileInfoSection, ContactInfoSection, formatProfileDate } from './ProfileInfoSections';
 
 export interface ApplicantProfileContentProps {
@@ -102,9 +103,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
           <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
             {applicant.confirmationHistory.map((entry, idx) => {
               const isCancelled = !!entry.cancelledAt;
-              const timestamp = isCancelled
-                ? entry.cancelledAt?.toDate?.()?.toISOString?.()?.split('T')[0]
-                : entry.confirmedAt?.toDate?.()?.toISOString?.()?.split('T')[0];
+              const timestamp = toDateString(isCancelled ? entry.cancelledAt : entry.confirmedAt);
 
               return (
                 <View key={idx} className="flex-row items-center mb-2 last:mb-0">

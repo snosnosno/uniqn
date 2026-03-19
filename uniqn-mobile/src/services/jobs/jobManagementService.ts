@@ -5,8 +5,8 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
+import { toDateString } from '@/utils/date';
 import { BusinessError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
@@ -260,22 +260,7 @@ async function createMultiplePostingsByDate(
 
   try {
     for (const dateReq of dateRequirements) {
-      // 날짜 문자열 추출
-      let dateStr: string;
-      if (typeof dateReq.date === 'string') {
-        dateStr = dateReq.date;
-      } else if (dateReq.date && 'toDate' in dateReq.date) {
-        // Timestamp 타입
-        dateStr = (dateReq.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
-      } else if (dateReq.date && 'seconds' in dateReq.date) {
-        // Firestore 직렬화된 타입
-        dateStr =
-          new Date((dateReq.date as { seconds: number }).seconds * 1000)
-            .toISOString()
-            .split('T')[0] ?? '';
-      } else {
-        dateStr = '';
-      }
+      const dateStr = toDateString(dateReq.date);
 
       // 해당 날짜의 역할 키 추출
       const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);

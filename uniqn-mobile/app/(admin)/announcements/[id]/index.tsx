@@ -32,6 +32,7 @@ import {
   getAnnouncementImages,
 } from '@/types/announcement';
 import { useModal } from '@/stores/modalStore';
+import { toDate, type DateInput } from '@/utils/date';
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
@@ -45,21 +46,19 @@ export default function AnnouncementDetailPage() {
   const { mutate: deleteAnnouncement } = useDeleteAnnouncement();
 
   // Format date
-  const formatDate = (timestamp: unknown): string => {
-    if (!timestamp) return '-';
-    try {
-      const date =
-        timestamp instanceof Date ? timestamp : (timestamp as { toDate: () => Date }).toDate();
-      return date.toLocaleString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
+  const formatDate = (timestamp: DateInput): string => {
+    const date = toDate(timestamp);
+    if (!date) {
       return '-';
     }
+
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   // Handle edit

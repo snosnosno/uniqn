@@ -16,7 +16,7 @@ import { ko } from 'date-fns/locale';
 // 3. 내부 모듈
 import { Card, Badge } from '@/components/ui';
 import { MegaphoneIcon, GiftIcon, WrenchScrewdriverIcon, ArrowPathIcon } from '@/components/icons';
-import { toDate } from '@/types';
+import { toDate } from '@/utils/date';
 
 // 4. 타입
 import type { Announcement, AnnouncementCategory, AnnouncementPriority } from '@/types';

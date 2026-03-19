@@ -44,8 +44,6 @@ export type {
   TimeString,
 } from './common';
 
-export { toDate } from './common';
-
 // 사용자 프로필 타입 (통합)
 export type {
   UserProfile,
@@ -227,7 +225,6 @@ export {
   NotificationType as NotificationTypeConst,
   NOTIFICATION_TYPE_LABELS,
   NOTIFICATION_CATEGORY_LABELS,
-  toDateFromTimestamp,
   createDefaultNotificationSettings,
 } from './notification';
 

@@ -77,7 +77,9 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
     return (
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
-        <Text className="text-xs text-gray-500 dark:text-gray-400">지원 {formattedDate}</Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">
+          {formattedDate ? `지원 ${formattedDate}` : '지원 내역'}
+        </Text>
       </View>
     );
   }
@@ -96,7 +98,9 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
           <Badge variant="primary" size="sm">
             최초 지원
           </Badge>
-          <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formattedDate}</Text>
+          {formattedDate ? (
+            <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formattedDate}</Text>
+          ) : null}
         </View>
         <Text className="text-sm text-gray-600 dark:text-gray-400">{summary}</Text>
       </View>

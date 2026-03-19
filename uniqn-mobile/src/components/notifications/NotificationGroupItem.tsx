@@ -11,12 +11,8 @@ import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { NotificationIcon } from './NotificationIcon';
 import { NotificationItem } from './NotificationItem';
-import {
-  GroupedNotificationData,
-  NotificationData,
-  toDateFromTimestamp,
-} from '@/types/notification';
-import { formatRelativeTime } from '@/utils/date';
+import { formatRelativeTime, toDate } from '@/utils/date';
+import { GroupedNotificationData, NotificationData } from '@/types/notification';
 
 export interface NotificationGroupItemProps {
   /** 그룹 데이터 */
@@ -47,7 +43,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
   const contextLabel = group.context.jobTitle || '';
 
   // 최신 알림 시간
-  const latestTime = toDateFromTimestamp(group.latestCreatedAt);
+  const latestTime = toDate(group.latestCreatedAt);
   const timeAgo = latestTime ? formatRelativeTime(latestTime) : '';
 
   // 읽지 않은 알림 존재 여부

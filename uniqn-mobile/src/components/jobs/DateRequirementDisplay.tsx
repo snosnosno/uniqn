@@ -1,55 +1,37 @@
-/**
- * UNIQN Mobile - 날짜별 요구사항 표시 컴포넌트
- *
- * @description 날짜별 모집 정보를 통일된 형식으로 표시
- * @version 1.0.0
- */
-
 import React, { memo, useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import { toDateString } from '@/utils/date';
+import { formatDateShortWithDay, toDateString, type DateInput } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 
-// 역할 요구사항 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface RoleRequirementCompat {
   id?: string;
-  role?: string; // v2.0 필드
-  name?: string; // 레거시 필드 (역할 이름)
+  role?: string;
+  name?: string;
   customRole?: string;
-  headcount?: number; // v2.0 필드
-  count?: number; // 레거시 필드 (인원)
+  headcount?: number;
+  count?: number;
   filled?: number;
 }
 
-// 시간대 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface TimeSlotCompat {
   id?: string;
   startTime?: string;
-  time?: string; // 레거시 필드
+  time?: string;
   isTimeToBeAnnounced?: boolean;
   tentativeDescription?: string;
   roles: RoleRequirementCompat[];
 }
 
-// DateSpecificRequirement 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface DateSpecificRequirementCompat {
-  date: string | { toDate?: () => Date } | { seconds: number };
+  date: DateInput;
   timeSlots: TimeSlotCompat[];
 }
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface DateRequirementDisplayProps {
-  /** 날짜별 요구사항 (postingConfig 또는 dateRequirement 타입 모두 지원) */
   requirement: DateSpecificRequirementCompat;
-  /** 충원 현황 표시 여부 */
   showFilledCount?: boolean;
-  /** 컴팩트 모드 (한 줄 표시) */
   compact?: boolean;
-  /** 인덱스 (Day N 표시용) */
   index?: number;
 }
 
@@ -64,93 +46,65 @@ interface RoleDisplayProps {
   showFilledCount?: boolean;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 날짜 포맷 (M/D(요일))
- */
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
+function formatRequirementDate(dateStr: string): string {
+  return formatDateShortWithDay(dateStr) || '-';
 }
 
-/**
- * 역할 라벨 가져오기 (레거시 호환: role/name 필드 분기)
- * - v2.0: role 필드 사용 (customRole과 함께)
- * - 레거시: name 필드 사용 (customRole 무시 - name이 이미 표시명)
- */
 function getRoleLabel(role?: string, name?: string, customRole?: string): string {
   if (role) {
     return getRoleDisplayName(role, customRole);
   }
+
   if (name) {
     return getRoleDisplayName(name);
   }
+
   return '-';
 }
 
-// ============================================================================
-// Sub Components
-// ============================================================================
-
-/**
- * 역할 표시 컴포넌트
- */
 const RoleDisplay = memo(function RoleDisplay({ role, showFilledCount }: RoleDisplayProps) {
   const label = getRoleLabel(role.role, role.name, role.customRole);
   const filled = role.filled ?? 0;
   const headcount = role.headcount ?? role.count ?? 0;
+  const text = showFilledCount ? `${label} ${filled}/${headcount}명` : `${label} ${headcount}명`;
 
   return (
-    <View className="flex-row items-center mr-2 mb-1">
+    <View className="mb-1 mr-2">
       <Badge variant="primary" size="sm">
-        {showFilledCount ? `${label} ${filled}/${headcount}명` : `${label} ${headcount}명`}
+        {text}
       </Badge>
     </View>
   );
 });
 
-/**
- * 시간대 표시 컴포넌트
- */
 const TimeSlotDisplay = memo(function TimeSlotDisplay({
   timeSlot,
   showFilledCount,
   compact,
 }: TimeSlotDisplayProps) {
-  // startTime 또는 time 필드 사용 (호환성)
   const timeValue = timeSlot.startTime || timeSlot.time || '-';
-  // 시간 미정인 경우: "미정" + 사유(있으면) 표시
   const timeDisplay = timeSlot.isTimeToBeAnnounced
     ? `미정${timeSlot.tentativeDescription ? ` (${timeSlot.tentativeDescription})` : ''}`
     : timeValue;
 
   if (compact) {
+    const roleLabels = timeSlot.roles
+      .map((role) => getRoleLabel(role.role, role.name, role.customRole))
+      .join(', ');
+
     return (
       <Text className="text-sm text-gray-600 dark:text-gray-400">
-        {timeDisplay} •{' '}
-        {timeSlot.roles.map((r) => getRoleLabel(r.role, r.name, r.customRole)).join(', ')}
+        {timeDisplay} · {roleLabels || '-'}
       </Text>
     );
   }
 
   return (
     <View className="ml-4 mt-1">
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-        🕐 {timeDisplay}
+      <Text className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+        {timeDisplay}
       </Text>
-      <View className="flex-row flex-wrap ml-4">
+      <View className="ml-4 flex-row flex-wrap">
         {timeSlot.roles.map((role, idx) => (
           <RoleDisplay key={role.id || idx} role={role} showFilledCount={showFilledCount} />
         ))}
@@ -159,43 +113,34 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
   );
 });
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-/**
- * 날짜별 요구사항 표시 컴포넌트
- */
 export const DateRequirementDisplay = memo(function DateRequirementDisplay({
   requirement,
   showFilledCount = false,
   compact = false,
-  // index는 더 이상 사용하지 않음 (Day N 표시 제거)
 }: DateRequirementDisplayProps) {
   const dateStr = useMemo(() => toDateString(requirement.date), [requirement.date]);
+  const formattedDate = useMemo(() => formatRequirementDate(dateStr), [dateStr]);
 
-  const formattedDate = useMemo(() => formatDate(dateStr), [dateStr]);
-
-  // 전체 인원 합계 (호환성 처리)
   const totalStats = useMemo(() => {
     let total = 0;
     let filled = 0;
+
     requirement.timeSlots.forEach((slot) => {
       slot.roles.forEach((role) => {
         total += role.headcount ?? role.count ?? 0;
         filled += role.filled ?? 0;
       });
     });
+
     return { total, filled };
   }, [requirement.timeSlots]);
 
   if (compact) {
     return (
       <View className="py-1">
-        {/* 날짜 헤더 */}
-        <View className="flex-row items-center mb-1">
-          <Text className="text-sm font-medium text-gray-900 dark:text-white mr-2">
-            📅 {formattedDate}
+        <View className="mb-1 flex-row items-center">
+          <Text className="mr-2 text-sm font-medium text-gray-900 dark:text-white">
+            {formattedDate}
           </Text>
           {showFilledCount && (
             <Badge
@@ -206,13 +151,12 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
             </Badge>
           )}
         </View>
-        {/* 시간대별 역할 (compact 모드) */}
         {requirement.timeSlots.map((slot, idx) => (
           <TimeSlotDisplay
             key={slot.id || idx}
             timeSlot={slot}
             showFilledCount={showFilledCount}
-            compact={true}
+            compact
           />
         ))}
       </View>
@@ -221,11 +165,8 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
 
   return (
     <View className="mb-3">
-      {/* 날짜 헤더 */}
-      <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
-          📅 {formattedDate}
-        </Text>
+      <View className="mb-1 flex-row items-center justify-between">
+        <Text className="text-sm font-semibold text-gray-900 dark:text-white">{formattedDate}</Text>
         {showFilledCount && (
           <Badge variant={totalStats.filled >= totalStats.total ? 'success' : 'warning'} size="sm">
             {totalStats.filled}/{totalStats.total}명
@@ -233,14 +174,8 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
         )}
       </View>
 
-      {/* 시간대별 역할 */}
       {requirement.timeSlots.map((slot, idx) => (
-        <TimeSlotDisplay
-          key={slot.id || idx}
-          timeSlot={slot}
-          showFilledCount={showFilledCount}
-          compact={false}
-        />
+        <TimeSlotDisplay key={slot.id || idx} timeSlot={slot} showFilledCount={showFilledCount} />
       ))}
     </View>
   );

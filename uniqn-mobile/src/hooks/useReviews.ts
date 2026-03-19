@@ -15,11 +15,12 @@ import { useToastStore } from '@/stores/toastStore';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import * as reviewService from '@/services/reviewService';
 import { getMySchedules } from '@/services/work/scheduleService';
+import { isWithinReviewDeadline } from '@/domains/review/reviewDeadline';
 import { workLogRepository, jobPostingRepository } from '@/repositories';
-import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import type { CreateReviewInput, ReviewerType } from '@/types/review';
 import type { ScheduleEvent, WorkLog } from '@/types';
 import type { CreateReviewContext, ReviewPaginationCursor } from '@/repositories';
+import type { DateInput } from '@/utils/date';
 
 // ============================================================================
 // Query Hooks
@@ -140,23 +141,6 @@ export function useBubbleScore() {
 // Helpers
 // ============================================================================
 
-/** checkOutTime → ms 변환 (Timestamp | Date | string 지원) */
-function toBaseTime(checkOutTime: unknown, fallbackDate: string): number {
-  if (checkOutTime) {
-    if (checkOutTime instanceof Date) return checkOutTime.getTime();
-    if (typeof checkOutTime === 'string') return new Date(checkOutTime).getTime();
-    return (checkOutTime as { toDate(): Date }).toDate().getTime();
-  }
-  return new Date(fallbackDate).getTime();
-}
-
-/** 7일 기한 내인지 확인 */
-function isWithinDeadline(checkOutTime: unknown, date: string): boolean {
-  const baseTime = toBaseTime(checkOutTime, date);
-  const daysDiff = (Date.now() - baseTime) / (1000 * 60 * 60 * 24);
-  return daysDiff >= 0 && daysDiff <= REVIEW_DEADLINE_DAYS;
-}
-
 // ============================================================================
 // Pending Reviews
 // ============================================================================
@@ -173,7 +157,7 @@ export interface PendingReviewItem {
   reviewerType: ReviewerType;
   revieweeId: string;
   revieweeName: string;
-  checkOutTime?: unknown;
+  checkOutTime?: DateInput;
 }
 
 /**
@@ -248,7 +232,7 @@ export function usePendingReviews() {
       if (!s.workLogId || !s.ownerId) continue;
       const isWorkCompleted = s.status === 'checked_out' || s.type === 'completed';
       if (!isWorkCompleted) continue;
-      if (!isWithinDeadline(s.checkOutTime, s.date)) continue;
+      if (!isWithinReviewDeadline(s.checkOutTime, s.date)) continue;
       if (givenSet.has(`${s.workLogId}_staff`)) continue;
       items.push({
         workLogId: s.workLogId,
@@ -267,7 +251,7 @@ export function usePendingReviews() {
     if (isEmployer) {
       for (const wl of employerWorkLogs as WorkLog[]) {
         if (!wl.id || !wl.ownerId) continue;
-        if (!isWithinDeadline(wl.checkOutTime, wl.date)) continue;
+        if (!isWithinReviewDeadline(wl.checkOutTime, wl.date)) continue;
         if (givenSet.has(`${wl.id}_employer`)) continue;
         items.push({
           workLogId: wl.id,

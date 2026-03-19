@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react';
 import type { ApplicantWithDetails } from '@/services';
 import { STATUS } from '@/constants';
+import { toDateValue } from '@/utils/date';
 
 import { useApplicantsByJobPosting, useApplicantStats } from './useApplicantsByJobPosting';
 import { getPrimaryRoleId } from './helpers';
@@ -148,23 +149,18 @@ export function useApplicantManagement(
           let comparison = 0;
           switch (filters.sortBy) {
             case 'appliedAt': {
-              const aTime = a.createdAt
-                ? (typeof a.createdAt === 'string'
-                    ? new Date(a.createdAt)
-                    : a.createdAt instanceof Date
-                      ? a.createdAt
-                      : a.createdAt.toDate()
-                  ).getTime()
-                : 0;
-              const bTime = b.createdAt
-                ? (typeof b.createdAt === 'string'
-                    ? new Date(b.createdAt)
-                    : b.createdAt instanceof Date
-                      ? b.createdAt
-                      : b.createdAt.toDate()
-                  ).getTime()
-                : 0;
-              comparison = aTime - bTime;
+              const aTime = toDateValue(a.createdAt);
+              const bTime = toDateValue(b.createdAt);
+
+              if (aTime === null && bTime === null) {
+                comparison = 0;
+              } else if (aTime === null) {
+                comparison = 1;
+              } else if (bTime === null) {
+                comparison = -1;
+              } else {
+                comparison = aTime - bTime;
+              }
               break;
             }
             case 'name':

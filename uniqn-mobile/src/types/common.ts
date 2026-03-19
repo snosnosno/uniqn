@@ -8,7 +8,7 @@
  * 역할 타입 사용 시 '@/types/role'에서 직접 import할 것.
  */
 
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
 import type { UserRole, StaffRole } from './role';
 
 /**
@@ -106,15 +106,6 @@ export interface Location {
     longitude: number;
   };
 }
-
-/**
- * Timestamp 변환 유틸리티
- */
-export const toDate = (timestamp: Timestamp | Date | undefined): Date | undefined => {
-  if (!timestamp) return undefined;
-  if (timestamp instanceof Date) return timestamp;
-  return timestamp.toDate();
-};
 
 /**
  * 날짜 문자열 타입 (YYYY-MM-DD)

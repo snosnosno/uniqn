@@ -109,11 +109,15 @@ export function ApplicantConfirmModal({
       const roleList = getAssignmentRoles(assignment);
       const roles = roleList.map((r) => getRoleDisplayName(r)).join(', ');
       // dates 배열에서 첫 번째 날짜 사용 (또는 날짜 범위 표시)
+      const firstDate = assignment.dates?.[0];
+      const lastDate = assignment.dates?.[assignment.dates.length - 1];
+      const formattedFirstDate = formatDateShort(firstDate ?? null);
+      const formattedLastDate = formatDateShort(lastDate ?? null);
       const dateStr =
         assignment.dates?.length > 0
           ? assignment.dates.length === 1
-            ? formatDateShort(assignment.dates[0]!)
-            : `${formatDateShort(assignment.dates[0]!)} ~ ${formatDateShort(assignment.dates[assignment.dates.length - 1]!)}`
+            ? formattedFirstDate
+            : `${formattedFirstDate} ~ ${formattedLastDate}`
           : '';
       const timeSlot = assignment.timeSlot || '';
 

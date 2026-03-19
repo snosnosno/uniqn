@@ -5,7 +5,7 @@
  * checkInTime/checkOutTime 시간 필드를 통일된 인터페이스로 정규화
  */
 
-import type { Timestamp } from 'firebase/firestore';
+import type { DateInput } from '@/utils/date/core';
 
 // ============================================================================
 // 기본 타입
@@ -17,7 +17,7 @@ import type { Timestamp } from 'firebase/firestore';
  * @description 다양한 시간 형식을 통합하는 타입
  * SettlementCalculator, TimeNormalizer 등에서 사용
  */
-export type TimeInput = Timestamp | Date | string | null | undefined;
+export type TimeInput = DateInput;
 
 // ============================================================================
 // 정규화된 타입
@@ -49,13 +49,13 @@ export interface NormalizedWorkTime {
  */
 export interface TimeFieldsInput {
   /** 실제 출근 시간 (QR 스캔 또는 관리자 수정) */
-  checkInTime?: Timestamp | Date | string | null;
+  checkInTime?: TimeInput;
   /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
-  checkOutTime?: Timestamp | Date | string | null;
+  checkOutTime?: TimeInput;
 
   // 예정 시간
   /** 예정 출근 시간 */
-  scheduledStartTime?: Timestamp | Date | string | null;
+  scheduledStartTime?: TimeInput;
   /** 예정 퇴근 시간 */
-  scheduledEndTime?: Timestamp | Date | string | null;
+  scheduledEndTime?: TimeInput;
 }

@@ -17,6 +17,7 @@ import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { getMyData, exportMyData, updateUserProfile } from '@/services';
 import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
+import { toDate, type DateInput } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
 
 // ============================================================================
@@ -150,9 +151,9 @@ export default function MyDataScreen() {
   }, [user, addToast]);
 
   // 날짜 포맷
-  const formatDate = (timestamp: { toDate?: () => Date } | undefined): string => {
-    if (!timestamp?.toDate) return '-';
-    const date = timestamp.toDate();
+  const formatDate = (timestamp: DateInput): string => {
+    const date = toDate(timestamp);
+    if (!date) return '-';
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',

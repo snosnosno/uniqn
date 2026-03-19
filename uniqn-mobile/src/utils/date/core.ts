@@ -1,103 +1,107 @@
-/**
- * 날짜 핵심 유틸리티
- *
- * @description 기본 날짜 변환 및 파싱 함수들
- * @version 1.0.0
- */
-
-import { format, parseISO, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 
-/**
- * Date 또는 Timestamp를 Date로 변환
- *
- * Firestore Timestamp, Date, ISO 문자열, { seconds } 덕 타입 모두 지원.
- * 직렬화된 Timestamp 객체({ seconds, nanoseconds })도 안전하게 처리합니다.
- */
-export function toDate(
-  value: Date | Timestamp | string | { seconds: number } | undefined | null
-): Date | null {
-  if (!value) return null;
+export interface TimestampLike {
+  toDate: () => Date;
+}
 
-  if (value instanceof Date) return value;
-  if (value instanceof Timestamp) return value.toDate();
-  if (typeof value === 'string') {
-    const parsed = parseISO(value);
-    return isNaN(parsed.getTime()) ? null : parsed;
+export interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds?: number;
+}
+
+export type DateInput =
+  | Date
+  | Timestamp
+  | TimestampLike
+  | SerializedTimestamp
+  | number
+  | string
+  | null
+  | undefined;
+
+function hasToDate(value: unknown): value is TimestampLike {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof (value as TimestampLike).toDate === 'function'
+  );
+}
+
+function hasSeconds(value: unknown): value is SerializedTimestamp {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'seconds' in value &&
+    typeof (value as SerializedTimestamp).seconds === 'number'
+  );
+}
+
+function parseStringDate(value: string): Date | null {
+  const isoParsed = parseISO(value);
+  if (isValid(isoParsed)) {
+    return isoParsed;
   }
-  if (typeof value === 'object' && 'seconds' in value) {
-    return new Date(value.seconds * 1000);
+
+  const parsed = new Date(value);
+  return isValid(parsed) ? parsed : null;
+}
+
+export function isValidDate(value: unknown): value is Date {
+  return value instanceof Date && isValid(value);
+}
+
+export function toDate(value: DateInput): Date | null {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (value instanceof Date) {
+    return isValidDate(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    return parseStringDate(value);
+  }
+
+  if (typeof value === 'number') {
+    const parsed = new Date(value);
+    return isValidDate(parsed) ? parsed : null;
+  }
+
+  if (hasToDate(value)) {
+    return toDate(value.toDate());
+  }
+
+  if (hasSeconds(value)) {
+    const parsed = new Date(value.seconds * 1000);
+    return isValidDate(parsed) ? parsed : null;
   }
 
   return null;
 }
 
-/**
- * ISO 날짜 문자열 생성 (YYYY-MM-DD)
- */
-export function toISODateString(date: Date | null): string | null {
+export function toISODateString(value: DateInput): string | null {
+  const date = toDate(value);
   if (!date) return null;
   return format(date, 'yyyy-MM-dd');
 }
 
-/**
- * 오늘 날짜 (YYYY-MM-DD)
- */
 export function getTodayString(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
-/**
- * 다양한 날짜 형식을 YYYY-MM-DD 문자열로 변환
- */
-export function toDateString(
-  dateInput:
-    | string
-    | Date
-    | Timestamp
-    | { toDate?: () => Date }
-    | { seconds: number }
-    | null
-    | undefined
-): string {
-  if (!dateInput) return '';
-
-  if (typeof dateInput === 'string') {
-    return dateInput;
-  }
-
-  if (dateInput instanceof Date) {
-    return format(dateInput, 'yyyy-MM-dd');
-  }
-
-  if (dateInput instanceof Timestamp) {
-    return format(dateInput.toDate(), 'yyyy-MM-dd');
-  }
-
-  if ('toDate' in dateInput && typeof dateInput.toDate === 'function') {
-    return format(dateInput.toDate(), 'yyyy-MM-dd');
-  }
-
-  if ('seconds' in dateInput) {
-    return format(new Date(dateInput.seconds * 1000), 'yyyy-MM-dd');
-  }
-
-  return '';
+export function toDateString(value: DateInput): string {
+  return toISODateString(value) ?? '';
 }
 
-/**
- * YYYY-MM-DD 문자열을 Date 객체로 변환
- */
 export function parseDateString(dateStr: string): Date | null {
   if (!dateStr) return null;
-  const parsed = parseISO(dateStr);
-  return isValid(parsed) ? parsed : null;
+  return toDate(dateStr);
 }
 
-/**
- * 고유 ID 생성
- *
- * @description crypto.getRandomValues 기반 안전한 ID 생성
- * @deprecated `@/utils/generateId`에서 직접 import 권장
- */
+export function toDateValue(value: DateInput): number | null {
+  const date = toDate(value);
+  return date ? date.getTime() : null;
+}
+
 export { generateId } from '@/utils/generateId';

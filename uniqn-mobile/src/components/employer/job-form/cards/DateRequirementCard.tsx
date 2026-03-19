@@ -13,7 +13,7 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon, TrashIcon } from '@/components/icons';
-import { formatDateWithDay } from '@/utils/date';
+import { formatDateWithDay, toDateString } from '@/utils/date';
 import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { useToast } from '@/stores/toastStore';
@@ -50,19 +50,7 @@ export function DateRequirementCard({
 }: DateRequirementCardProps) {
   const toast = useToast();
 
-  // 날짜 문자열 추출
-  const getDateString = (dateInput: DateSpecificRequirement['date']): string => {
-    if (typeof dateInput === 'string') return dateInput;
-    if ('toDate' in dateInput && typeof dateInput.toDate === 'function') {
-      return dateInput.toDate().toISOString().split('T')[0] ?? '';
-    }
-    if ('seconds' in dateInput) {
-      return new Date(dateInput.seconds * 1000).toISOString().split('T')[0] ?? '';
-    }
-    return '';
-  };
-
-  const dateString = getDateString(requirement.date);
+  const dateString = toDateString(requirement.date);
 
   // 시간대 추가
   const handleAddTimeSlot = useCallback(() => {

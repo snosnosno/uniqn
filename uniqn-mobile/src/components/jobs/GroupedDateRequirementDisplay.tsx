@@ -1,10 +1,3 @@
-/**
- * UNIQN Mobile - Grouped date requirement display
- *
- * @description Renders grouped date requirements and keeps every time slot visible
- * in the summary so employer views match the public job card/detail views.
- */
-
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { LayoutAnimation, Pressable, Text, View } from 'react-native';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
@@ -13,8 +6,10 @@ import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement
 import { getRoleDisplayName } from '@/types/unified';
 import {
   formatDateRangeWithCount,
+  formatDateShortWithDay,
   groupRequirementsToDateRanges,
   toDateString,
+  type DateInput,
   type DateRangeGroup,
 } from '@/utils/date';
 
@@ -38,7 +33,7 @@ interface TimeSlotCompat {
 }
 
 interface DateSpecificRequirementCompat {
-  date: string | { toDate?: () => Date } | { seconds: number };
+  date: DateInput;
   timeSlots: TimeSlotCompat[];
   isGrouped?: boolean;
 }
@@ -76,17 +71,7 @@ function parseDate(dateStr: string): Date {
 }
 
 function formatSingleDate(dateStr: string): string {
-  if (!dateStr) {
-    return '-';
-  }
-
-  const date = parseDate(dateStr);
-  if (Number.isNaN(date.getTime())) {
-    return dateStr;
-  }
-
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${date.getMonth() + 1}/${date.getDate()}(${dayOfWeek})`;
+  return formatDateShortWithDay(dateStr) || dateStr || '-';
 }
 
 function formatTimeSlotLabel(slot: TimeSlotCompat): string {
@@ -176,7 +161,7 @@ const GroupItem = memo(function GroupItem({
         <View className="flex-1">
           <View className="mb-1 flex-row items-center">
             <Text className="text-sm font-semibold text-gray-900 dark:text-white">
-              {isSingleDay ? `📅 ${formatSingleDate(group.startDate)}` : `📅 ${dateDisplay}`}
+              {isSingleDay ? formatSingleDate(group.startDate) : dateDisplay}
             </Text>
           </View>
 
@@ -214,7 +199,7 @@ const GroupItem = memo(function GroupItem({
             onPress={toggleExpand}
             className="ml-2 rounded-full p-1.5 active:bg-gray-100 dark:active:bg-gray-700"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
+            accessibilityLabel={isExpanded ? '날짜 상세 접기' : '날짜 상세 펼치기'}
           >
             {isExpanded ? (
               <ChevronUpIcon size={16} color="#6B7280" />

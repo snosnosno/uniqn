@@ -17,6 +17,10 @@ describe('formatTime', () => {
     expect(formatTime(null)).toBe('--:--');
   });
 
+  it('should format plain HH:mm strings', () => {
+    expect(formatTime('09:00')).toBe('09:00');
+  });
+
   it('should format timestamp to HH:mm', () => {
     // Create a timestamp for 14:30
     const date = new Date('2024-01-15T14:30:00');
@@ -100,6 +104,10 @@ describe('calculateDuration', () => {
     const start = Timestamp.fromDate(new Date('2024-01-15T22:00:00'));
     const end = Timestamp.fromDate(new Date('2024-01-15T02:00:00')); // Next day but same date object
     expect(calculateDuration(start, end)).toBe('4시간');
+  });
+
+  it('should calculate duration from plain HH:mm strings', () => {
+    expect(calculateDuration('09:00', '18:30')).toBe('9시간 30분');
   });
 });
 

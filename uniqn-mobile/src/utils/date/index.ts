@@ -7,13 +7,16 @@
 
 // Core utilities
 export {
+  isValidDate,
   toDate,
+  toDateValue,
   toISODateString,
   getTodayString,
   toDateString,
   parseDateString,
   generateId,
 } from './core';
+export type { DateInput, SerializedTimestamp, TimestampLike } from './core';
 
 // Formatting utilities
 export {

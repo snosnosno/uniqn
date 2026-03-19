@@ -21,11 +21,11 @@ import type {
   NotificationSettings,
   NotificationFilter,
 } from '@/types/notification';
+import { toDate } from '@/utils/date';
 import {
   NotificationCategory,
   NOTIFICATION_TYPE_TO_CATEGORY,
   createDefaultNotificationSettings,
-  toDateFromTimestamp,
 } from '@/types/notification';
 import { logger } from '@/utils/logger';
 
@@ -253,14 +253,14 @@ function applyFilter(
 
     // 날짜 필터 (MMKV 역직렬화 후 plain object 대응)
     if (filter.startDate) {
-      const createdAt = toDateFromTimestamp(notification.createdAt);
+      const createdAt = toDate(notification.createdAt) ?? undefined;
       if (!createdAt || createdAt < filter.startDate) {
         return false;
       }
     }
 
     if (filter.endDate) {
-      const createdAt = toDateFromTimestamp(notification.createdAt);
+      const createdAt = toDate(notification.createdAt) ?? undefined;
       if (!createdAt || createdAt > filter.endDate) {
         return false;
       }

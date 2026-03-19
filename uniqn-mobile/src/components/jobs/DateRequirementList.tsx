@@ -9,6 +9,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { DateSpecificRequirement, TimeSlot } from '@/types';
+import { formatDateShortWithDay } from '@/utils/date';
 import { getDateFromRequirement, sortDateRequirements } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 
@@ -42,11 +43,8 @@ interface TimeSlotItemProps {
 // ============================================================================
 
 const formatDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
+  const formatted = formatDateShortWithDay(dateStr);
+  return formatted || dateStr;
 };
 
 const formatTimeRange = (slot: TimeSlot): string => {

@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
+import { toDateValue } from '@/utils/date';
 import {
   NotificationData,
   NotificationType,
@@ -38,17 +38,8 @@ const DEFAULT_OPTIONS: Required<NotificationGroupingOptions> = {
  * @note Firestore 웹 SDK에서 Timestamp가 plain object({seconds, nanoseconds})로
  * 역직렬화되는 경우가 있어 duck typing으로 안전하게 처리
  */
-function timestampToMs(ts: Timestamp | Date | undefined): number {
-  if (!ts) return 0;
-  if (ts instanceof Date) return ts.getTime();
-  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
-  // plain object fallback ({seconds, nanoseconds})
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ('seconds' in ts && typeof (ts as any).seconds === 'number') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (ts as any).seconds * 1000;
-  }
-  return 0;
+function timestampToMs(ts: NotificationData['createdAt'] | Date | undefined): number {
+  return toDateValue(ts) ?? 0;
 }
 
 /**

@@ -92,6 +92,18 @@ describe('TimeNormalizer', () => {
       expect(normalized.actualStart).toEqual(new Date(dateString));
     });
 
+    it('HH:mm 문자열 예정 시간을 유지한다', () => {
+      const normalized = TimeNormalizer.normalize({
+        scheduledStartTime: '09:00',
+        scheduledEndTime: '18:30',
+      });
+
+      expect(normalized.scheduledStart?.getHours()).toBe(9);
+      expect(normalized.scheduledStart?.getMinutes()).toBe(0);
+      expect(normalized.scheduledEnd?.getHours()).toBe(18);
+      expect(normalized.scheduledEnd?.getMinutes()).toBe(30);
+    });
+
     it('isEstimate: actual 시간이 없으면 true', () => {
       const workLog = {
         scheduledStartTime: new Date('2025-01-20T09:00:00'),
@@ -368,6 +380,22 @@ describe('TimeNormalizer', () => {
       };
 
       expect(TimeNormalizer.isCheckedOut(normalized)).toBe(false);
+    });
+  });
+
+  describe('parseTime', () => {
+    it('parses HH:mm:ss strings without falling back to invalid dates', () => {
+      const parsed = TimeNormalizer.parseTime('09:15:30');
+
+      expect(parsed).not.toBeNull();
+      expect(parsed?.getHours()).toBe(9);
+      expect(parsed?.getMinutes()).toBe(15);
+      expect(parsed?.getSeconds()).toBe(30);
+    });
+
+    it('returns null for out-of-range time-only strings', () => {
+      expect(TimeNormalizer.parseTime('25:00')).toBeNull();
+      expect(TimeNormalizer.parseTime('09:61')).toBeNull();
     });
   });
 });

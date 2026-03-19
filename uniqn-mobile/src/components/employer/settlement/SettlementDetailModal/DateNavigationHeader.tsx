@@ -69,7 +69,7 @@ export function DateNavigationHeader({
 
       <View className="flex-1 items-center">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {formatDate(parseTimestamp(workLogDate) || new Date(workLogDate))}
+          {formatDate(parseTimestamp(workLogDate) ?? workLogDate)}
         </Text>
         <Text className="text-xs text-gray-500 dark:text-gray-400">
           {currentDateIndex + 1} / {totalDays}

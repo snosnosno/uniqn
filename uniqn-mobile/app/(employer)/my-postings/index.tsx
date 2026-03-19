@@ -20,7 +20,11 @@ import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/date';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+  formatDateShortWithDay,
+} from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
@@ -110,14 +114,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
   const tournamentStatus = posting.tournamentConfig?.approvalStatus;
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return new Intl.DateTimeFormat('ko-KR', {
-      month: 'short',
-      day: 'numeric',
-      weekday: 'short',
-    }).format(date);
+    return formatDateShortWithDay(dateStr) || dateStr || '-';
   };
 
   // 날짜 범위 표시 (대회 공고: 그룹화)

@@ -25,7 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { STATUS } from '@/constants';
+import { STATUS, getIconColor } from '@/constants';
 import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
 import { EmptyState, Loading, Button } from '@/components/ui';
 import {
@@ -37,7 +37,6 @@ import {
   CheckCircleIcon,
 } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
-import { getIconColor } from '@/constants';
 import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
@@ -49,6 +48,7 @@ import {
   type EmployeeReportType,
   type EmployerReportType,
 } from '@/types/report';
+import { toDate } from '@/utils/date';
 
 // ============================================================================
 // Constants
@@ -79,14 +79,14 @@ function getReportTypeLabel(report: Report): string {
 }
 
 function formatTimestamp(timestamp: Date | { toDate: () => Date } | undefined): string {
-  if (!timestamp) return '-';
-  const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+  const date = toDate(timestamp);
+  if (!date) return '-';
   return format(date, 'yyyy년 M월 d일 HH:mm', { locale: ko });
 }
 
 function formatTimeAgo(timestamp: Date | { toDate: () => Date } | undefined): string {
-  if (!timestamp) return '';
-  const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+  const date = toDate(timestamp);
+  if (!date) return '';
   return formatDistanceToNow(date, { addSuffix: true, locale: ko });
 }
 

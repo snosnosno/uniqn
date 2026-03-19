@@ -175,6 +175,24 @@ const assignmentInnerSchema = z
   })
   .passthrough();
 
+const originalApplicationSchema = z
+  .object({
+    assignments: z.array(assignmentInnerSchema),
+    appliedAt: optionalTimestampSchema,
+  })
+  .passthrough();
+
+const confirmationHistoryEntrySchema = z
+  .object({
+    confirmedAt: timestampSchema,
+    cancelledAt: optionalTimestampSchema,
+    cancelReason: z.string().optional(),
+    assignments: z.array(assignmentInnerSchema),
+    confirmedBy: z.string().optional(),
+    cancelledBy: z.string().optional(),
+  })
+  .passthrough();
+
 export const applicationDocumentSchema = z
   .object({
     id: z.string(),
@@ -193,6 +211,8 @@ export const applicationDocumentSchema = z
 
     // Assignment (v3.0 필수)
     assignments: z.array(assignmentInnerSchema),
+    originalApplication: originalApplicationSchema.optional(),
+    confirmationHistory: z.array(confirmationHistoryEntrySchema).optional(),
 
     // 확정 정보
     confirmedAt: optionalTimestampSchema,
@@ -214,6 +234,7 @@ export const applicationDocumentSchema = z
     // Timestamps
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
+    processedAt: optionalTimestampSchema,
   })
   .passthrough();
 

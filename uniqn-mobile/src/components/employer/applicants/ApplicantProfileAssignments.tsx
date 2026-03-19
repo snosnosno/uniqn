@@ -10,6 +10,7 @@ import { View, Text } from 'react-native';
 import { CalendarIcon, ClockIcon, BriefcaseIcon } from '../../icons';
 import { getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
+import { toDate } from '@/utils/date';
 import type { Assignment } from '@/types';
 
 // ============================================================================
@@ -26,8 +27,8 @@ export interface ApplicantProfileAssignmentsProps {
 
 const formatDate = (dateStr?: string): string => {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
+  const date = toDate(dateStr);
+  if (!date) return dateStr;
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();

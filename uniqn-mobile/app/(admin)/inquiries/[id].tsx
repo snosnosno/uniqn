@@ -10,8 +10,9 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Card } from '@/components/ui';
 import { InquiryStatusBadge, InquiryResponseForm } from '@/components/support';
 import { useInquiryDetail, useRespondInquiry } from '@/hooks/useInquiry';
-import { INQUIRY_CATEGORY_LABELS, toDate } from '@/types';
+import { INQUIRY_CATEGORY_LABELS } from '@/types';
 import type { RespondInquiryInput } from '@/types';
+import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 

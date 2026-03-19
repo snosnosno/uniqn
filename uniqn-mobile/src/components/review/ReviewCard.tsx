@@ -7,6 +7,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import type { Review } from '@/types/review';
+import { formatDate, toDate } from '@/utils/date';
 import {
   SENTIMENT_EMOJI,
   SENTIMENT_LABELS,
@@ -28,8 +29,8 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
 
   const formattedDate = useMemo(() => {
     if (!review.createdAt) return '';
-    const date = 'toDate' in review.createdAt ? review.createdAt.toDate() : review.createdAt;
-    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    const date = toDate(review.createdAt);
+    return date ? formatDate(date) : '';
   }, [review.createdAt]);
 
   return (

@@ -22,7 +22,7 @@ export interface OriginalApplication {
   assignments: Assignment[];
 
   /** 최초 지원 시간 */
-  appliedAt: Timestamp;
+  appliedAt?: Timestamp;
 }
 
 /**

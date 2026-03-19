@@ -23,6 +23,7 @@ import type { WorkLog, PayrollStatus } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatCurrency } from '@/utils/settlement';
 import { STATUS } from '@/constants';
+import { formatDateShortWithDay } from '@/utils/date';
 
 // ============================================================================
 // Types
@@ -97,13 +98,7 @@ const PAYROLL_STATUS_CONFIG: Record<
  * 날짜 문자열 포맷
  */
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const options: Intl.DateTimeFormatOptions = {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-  };
-  return date.toLocaleDateString('ko-KR', options);
+  return formatDateShortWithDay(dateString) || dateString || '-';
 }
 
 /**

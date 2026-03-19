@@ -14,8 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
 import { STATUS } from '@/constants';
-import { formatRelativeTime } from '@/utils/date';
-import { formatAppliedDate } from '@/utils/date';
+import { formatAppliedDate, formatRelativeTime } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
 
@@ -74,7 +73,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
   // 요청 시간 계산
   const requestTimeAgo = useMemo(() => {
     if (!cancellationRequest?.requestedAt) return '';
-    return formatRelativeTime(new Date(cancellationRequest.requestedAt));
+    return formatRelativeTime(cancellationRequest.requestedAt);
   }, [cancellationRequest?.requestedAt]);
 
   // 승인 핸들러

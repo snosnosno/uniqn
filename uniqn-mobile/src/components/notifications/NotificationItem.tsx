@@ -16,8 +16,7 @@ import Animated, { FadeInRight, FadeOutLeft, Layout } from 'react-native-reanima
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
 import { navigateFromNotification } from '@/services/observability/deepLinkService';
-import { formatRelativeTime } from '@/utils/date';
-import { toDateFromTimestamp } from '@/types/notification';
+import { formatRelativeTime, toDate } from '@/utils/date';
 import { logger } from '@/utils/logger';
 
 // 4. 타입
@@ -71,7 +70,7 @@ export const NotificationItem = memo(function NotificationItem({
     onDelete?.(notification.id);
   }, [notification.id, onDelete]);
 
-  const createdAt = toDateFromTimestamp(notification.createdAt);
+  const createdAt = toDate(notification.createdAt);
   const timeAgo = createdAt ? formatRelativeTime(createdAt) : '';
 
   // 접근성을 위한 설명 텍스트

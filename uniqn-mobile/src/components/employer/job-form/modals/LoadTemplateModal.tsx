@@ -11,6 +11,7 @@ import { logger } from '@/utils/logger';
 import { FlashList } from '@shopify/flash-list';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TrashIcon } from '@/components/icons';
+import { toDate, type DateInput } from '@/utils/date';
 import type { JobPostingTemplate, JobPostingFormData } from '@/types';
 
 // ============================================================================
@@ -44,9 +45,9 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
   const { name, description, templateData, createdAt, usageCount } = template;
 
   // 날짜 포맷
-  const formatDate = (timestamp: { toDate?: () => Date; seconds?: number }) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate?.() ?? new Date(timestamp.seconds! * 1000);
+  const formatDate = (timestamp: DateInput) => {
+    const date = toDate(timestamp);
+    if (!date) return '';
     return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 

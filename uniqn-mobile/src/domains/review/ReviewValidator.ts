@@ -18,6 +18,7 @@ import {
   REVIEWABLE_STATUSES,
   getAllowedTagKeys,
 } from '@/types/review';
+import { getReviewBaseTime } from './reviewDeadline';
 
 // ============================================================================
 // Types
@@ -141,16 +142,12 @@ export class ReviewValidator {
    * 평가 기한 만료 확인
    */
   isExpired(workLog: WorkLogForReview): boolean {
-    const completedAt = workLog.completedAt;
-    if (!completedAt) {
-      // completedAt 없으면 date 기준
-      return this.isDateExpired(workLog.date);
+    const baseTime = getReviewBaseTime(workLog.completedAt, workLog.date);
+    if (baseTime === null) {
+      return false;
     }
 
-    const completedDate =
-      completedAt instanceof Date ? completedAt : (completedAt as Timestamp).toDate();
-
-    const deadline = new Date(completedDate);
+    const deadline = new Date(baseTime);
     deadline.setDate(deadline.getDate() + REVIEW_DEADLINE_DAYS);
     return new Date() > deadline;
   }
@@ -227,14 +224,4 @@ export class ReviewValidator {
   // ==========================================================================
   // Private Helpers
   // ==========================================================================
-
-  /**
-   * 날짜 문자열 기준 기한 확인
-   */
-  private isDateExpired(dateStr: string): boolean {
-    const workDate = new Date(dateStr);
-    const deadline = new Date(workDate);
-    deadline.setDate(deadline.getDate() + REVIEW_DEADLINE_DAYS);
-    return new Date() > deadline;
-  }
 }
