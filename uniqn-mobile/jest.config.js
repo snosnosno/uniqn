@@ -19,7 +19,6 @@ module.exports = {
   // Module path aliases (matching tsconfig.json)
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@expo/vector-icons$': '<rootDir>/src/__tests__/mocks/expoVectorIcons.js',
   },
 
   // Transform configuration

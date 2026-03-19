@@ -19,7 +19,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { XMarkIcon } from '@/components/icons';
 import { Button } from '@/components/ui';
 
 // ============================================================================
@@ -135,7 +135,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                 accessibilityLabel="닫기"
                 accessibilityRole="button"
               >
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <XMarkIcon size={24} color="#9CA3AF" />
               </Pressable>
             </View>
 

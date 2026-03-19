@@ -5,16 +5,18 @@
  */
 
 import { View, Text, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
-
-type IoniconsName = ComponentProps<typeof Ionicons>['name'];
+import {
+  type IconComponent,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+} from '@/components/icons';
 
 interface StatsSummaryCardProps {
   label: string;
   value: number | undefined;
   isLoading?: boolean;
-  icon?: IoniconsName;
+  icon?: IconComponent;
   iconColor?: string;
   iconBgColor?: string;
   valueColor?: string;
@@ -33,6 +35,8 @@ export function StatsSummaryCard({
   suffix = '',
   description,
 }: StatsSummaryCardProps) {
+  const Icon = icon;
+
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
@@ -54,9 +58,9 @@ export function StatsSummaryCard({
             <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{description}</Text>
           )}
         </View>
-        {icon && (
+        {Icon && (
           <View className={`w-10 h-10 rounded-lg items-center justify-center ${iconBgColor}`}>
-            <Ionicons name={icon} size={20} color={iconColor} />
+            <Icon size={20} color={iconColor} />
           </View>
         )}
       </View>
@@ -95,6 +99,12 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
   };
 
   const config = status ? statusConfig[status] : statusConfig.healthy;
+  const StatusIcon =
+    status === 'healthy'
+      ? CheckCircleIcon
+      : status === 'degraded'
+        ? ExclamationTriangleIcon
+        : XCircleIcon;
 
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
@@ -108,17 +118,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
           )}
         </View>
         <View className={`w-10 h-10 rounded-full items-center justify-center ${config.bgColor}`}>
-          <Ionicons
-            name={
-              status === 'healthy'
-                ? 'checkmark-circle'
-                : status === 'degraded'
-                  ? 'warning'
-                  : 'close-circle'
-            }
-            size={24}
-            color={config.iconColor}
-          />
+          <StatusIcon size={24} color={config.iconColor} />
         </View>
       </View>
     </View>

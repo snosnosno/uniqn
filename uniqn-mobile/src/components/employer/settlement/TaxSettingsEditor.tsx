@@ -7,7 +7,7 @@
 
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { CheckmarkIcon } from '@/components/icons';
 import {
   formatCurrency,
   calculateTaxAmount,
@@ -361,7 +361,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                       }
                     `}
                   >
-                    {isChecked && <Ionicons name="checkmark" size={12} color="white" />}
+                    {isChecked && <CheckmarkIcon size={12} color="white" />}
                   </View>
                   <Text
                     className={`text-sm ${

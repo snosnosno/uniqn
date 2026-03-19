@@ -7,8 +7,8 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
+import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icons';
 import { useAllAnnouncements, useAnnouncementStats } from '@/hooks/useAnnouncement';
 import { AnnouncementCard } from '@/components/admin/announcements';
 import type { AnnouncementStatus, Announcement } from '@/types';
@@ -92,7 +92,7 @@ export default function AdminAnnouncementsPage() {
           headerBackTitle: '뒤로',
           headerRight: () => (
             <Pressable onPress={handleCreate} className="mr-2">
-              <Ionicons name="add-circle-outline" size={24} color="#9333EA" />
+              <AddCircleOutlineIcon size={24} color="#9333EA" />
             </Pressable>
           ),
         }}
@@ -158,7 +158,7 @@ export default function AdminAnnouncementsPage() {
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
-            <Ionicons name="document-text-outline" size={64} color="#9ca3af" />
+            <DocumentTextOutlineIcon size={64} color="#9ca3af" />
             <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
               공지사항이 없습니다
             </Text>

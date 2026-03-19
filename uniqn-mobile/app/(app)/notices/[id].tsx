@@ -18,9 +18,15 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Card, Badge } from '@/components/ui';
-import { MegaphoneIcon, GiftIcon, WrenchScrewdriverIcon, ArrowPathIcon } from '@/components/icons';
+import {
+  AlertCircleOutlineIcon,
+  ArrowPathIcon,
+  GiftIcon,
+  MegaphoneIcon,
+  WrenchScrewdriverIcon,
+  XMarkIcon,
+} from '@/components/icons';
 import { useAnnouncementDetail, useIncrementViewCount } from '@/hooks/useAnnouncement';
 import type { AnnouncementCategory } from '@/types';
 import { toDate, getAnnouncementImages } from '@/types';
@@ -90,7 +96,7 @@ export default function NoticeDetailPage() {
       <>
         <Stack.Screen options={{ title: '공지사항' }} />
         <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+          <AlertCircleOutlineIcon size={64} color="#ef4444" />
           <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
@@ -266,7 +272,7 @@ export default function NoticeDetailPage() {
               {/* 헤더 */}
               <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
                 <Pressable onPress={() => setImageViewerVisible(false)} className="p-2" hitSlop={8}>
-                  <Ionicons name="close" size={28} color="white" />
+                  <XMarkIcon size={28} color="white" />
                 </Pressable>
                 <Text className="text-white text-base font-medium">
                   {selectedImageIndex + 1} / {images.length}

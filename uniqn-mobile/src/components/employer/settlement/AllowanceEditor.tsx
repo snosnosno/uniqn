@@ -7,7 +7,14 @@
 
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  type IconComponent,
+  AddCircleOutlineIcon,
+  BedOutlineIcon,
+  BusOutlineIcon,
+  CheckmarkIcon,
+  RestaurantOutlineIcon,
+} from '@/components/icons';
 import { NumericInput } from '@/components/ui';
 import { type Allowances, PROVIDED_FLAG, formatCurrency } from '@/utils/settlement';
 
@@ -37,7 +44,7 @@ type AllowanceType = 'meal' | 'transportation' | 'accommodation';
 interface AllowanceItemConfig {
   key: AllowanceType;
   label: string;
-  icon: string;
+  icon: IconComponent;
   placeholder: string;
 }
 
@@ -49,19 +56,19 @@ const ALLOWANCE_ITEMS: AllowanceItemConfig[] = [
   {
     key: 'meal',
     label: '식비',
-    icon: 'restaurant-outline',
+    icon: RestaurantOutlineIcon,
     placeholder: '10,000',
   },
   {
     key: 'transportation',
     label: '교통비',
-    icon: 'bus-outline',
+    icon: BusOutlineIcon,
     placeholder: '10,000',
   },
   {
     key: 'accommodation',
     label: '숙박비',
-    icon: 'bed-outline',
+    icon: BedOutlineIcon,
     placeholder: '50,000',
   },
 ];
@@ -129,6 +136,7 @@ const AllowanceItem = memo(function AllowanceItem({
 }: AllowanceItemProps) {
   const status = getAllowanceStatus(value);
   const isEnabled = status !== 'none';
+  const Icon = config.icon;
 
   // 체크박스 토글
   const handleToggle = useCallback(() => {
@@ -187,12 +195,12 @@ const AllowanceItem = memo(function AllowanceItem({
             }
           `}
         >
-          {isEnabled && <Ionicons name="checkmark" size={14} color="white" />}
+          {isEnabled && <CheckmarkIcon size={14} color="white" />}
         </View>
 
         {/* 아이콘 + 라벨 */}
         <View className="flex-row items-center flex-1">
-          <Ionicons name={config.icon} size={18} color={isEnabled ? '#4F46E5' : '#9CA3AF'} />
+          <Icon size={18} color={isEnabled ? '#4F46E5' : '#9CA3AF'} />
           <Text
             className={`ml-2 text-base font-medium ${
               isEnabled ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
@@ -356,8 +364,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
       {/* 추가 수당 입력 */}
       <View className="mb-4">
         <View className="flex-row items-center mb-2">
-          <Ionicons
-            name="add-circle-outline"
+          <AddCircleOutlineIcon
             size={18}
             color={allowances.additional && allowances.additional > 0 ? '#4F46E5' : '#9CA3AF'}
           />

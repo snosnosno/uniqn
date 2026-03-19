@@ -9,7 +9,12 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  AddIcon,
+  CalendarOutlineIcon,
+  LocationOutlineIcon,
+  PeopleOutlineIcon,
+} from '@/components/icons';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
@@ -174,7 +179,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 장소 */}
       <View className="flex-row items-center mb-1">
-        <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+        <LocationOutlineIcon size={14} color="#9CA3AF" />
         <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
           {posting.location?.name || '-'}
         </Text>
@@ -182,13 +187,13 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
-        <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
+        <CalendarOutlineIcon size={14} color="#9CA3AF" />
         <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{getDateRange}</Text>
       </View>
 
       {/* 모집 현황 */}
       <View className="flex-row items-center">
-        <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+        <PeopleOutlineIcon size={14} color="#9CA3AF" />
         <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
           {posting.filledPositions ?? 0}/{posting.totalPositions ?? 0}명 충원
         </Text>
@@ -296,7 +301,7 @@ export default function MyPostingsPage() {
             accessibilityRole="button"
             accessibilityLabel="새 공고 작성"
           >
-            <Ionicons name="add" size={18} color="white" />
+            <AddIcon size={18} color="white" />
             <Text className="text-white font-medium ml-1">새 공고</Text>
           </Pressable>
         </View>

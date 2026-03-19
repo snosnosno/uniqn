@@ -8,7 +8,7 @@
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 
 // 2. 외부 라이브러리
-import { Ionicons } from '@expo/vector-icons';
+import { EyeOutlineIcon, PeopleOutlineIcon, PersonOutlineIcon, PinIcon } from '@/components/icons';
 
 // 3. 내부 모듈
 import { getIconColor } from '@/constants/colors';
@@ -45,7 +45,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 flex-row items-center flex-wrap gap-2">
           {/* Pinned Icon */}
-          {announcement.isPinned && <Ionicons name="pin" size={14} color="#f59e0b" />}
+          {announcement.isPinned && <PinIcon size={14} color="#f59e0b" />}
 
           {/* Priority Badge */}
           {announcement.priority > 0 && (
@@ -86,17 +86,13 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
         <View className="flex-row items-center gap-4">
           {/* Author */}
           <View className="flex-row items-center">
-            <Ionicons
-              name="person-outline"
-              size={12}
-              color={getIconColor(isDarkMode, 'secondary')}
-            />
+            <PersonOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
             <Text className="text-xs text-gray-400 ml-1">{announcement.authorName}</Text>
           </View>
 
           {/* View Count */}
           <View className="flex-row items-center">
-            <Ionicons name="eye-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
+            <EyeOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
             <Text className="text-xs text-gray-400 ml-1">
               {announcement.viewCount.toLocaleString()}
             </Text>
@@ -116,7 +112,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
       {/* Target Audience Indicator */}
       {announcement.targetAudience.type === 'roles' && (
         <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
-          <Ionicons name="people-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
+          <PeopleOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
           <Text className="text-xs text-gray-400 ml-1">
             대상:{' '}
             {announcement.targetAudience.roles

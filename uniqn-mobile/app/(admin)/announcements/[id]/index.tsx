@@ -8,7 +8,16 @@ import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  AlertCircleOutlineIcon,
+  ArchiveOutlineIcon,
+  CreateOutlineIcon,
+  EyeOutlineIcon,
+  PaperPlaneOutlineIcon,
+  PersonOutlineIcon,
+  PinIcon,
+  TrashOutlineIcon,
+} from '@/components/icons';
 import { STATUS } from '@/constants';
 import {
   useAnnouncementDetail,
@@ -111,7 +120,7 @@ export default function AnnouncementDetailPage() {
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
         <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
-          <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+          <AlertCircleOutlineIcon size={64} color="#ef4444" />
           <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
@@ -138,7 +147,7 @@ export default function AnnouncementDetailPage() {
           headerBackTitle: '목록',
           headerRight: () => (
             <Pressable onPress={handleEdit} className="mr-2">
-              <Ionicons name="create-outline" size={24} color="#9333EA" />
+              <CreateOutlineIcon size={24} color="#9333EA" />
             </Pressable>
           ),
         }}
@@ -174,7 +183,7 @@ export default function AnnouncementDetailPage() {
               {/* Pinned */}
               {announcement.isPinned && (
                 <View className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 flex-row items-center">
-                  <Ionicons name="pin" size={12} color="#f59e0b" />
+                  <PinIcon size={12} color="#f59e0b" />
                   <Text className="text-xs font-medium text-amber-700 dark:text-amber-300 ml-1">
                     고정
                   </Text>
@@ -190,13 +199,13 @@ export default function AnnouncementDetailPage() {
             {/* Meta */}
             <View className="flex-row flex-wrap gap-4">
               <View className="flex-row items-center">
-                <Ionicons name="person-outline" size={14} color="#9ca3af" />
+                <PersonOutlineIcon size={14} color="#9ca3af" />
                 <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
                   {announcement.authorName}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <Ionicons name="eye-outline" size={14} color="#9ca3af" />
+                <EyeOutlineIcon size={14} color="#9ca3af" />
                 <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
                   {announcement.viewCount.toLocaleString()}
                 </Text>
@@ -331,7 +340,7 @@ export default function AnnouncementDetailPage() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="paper-plane-outline" size={18} color="#fff" />
+                    <PaperPlaneOutlineIcon size={18} color="#fff" />
                     <Text className="text-white font-medium ml-2">발행하기</Text>
                   </>
                 )}
@@ -349,7 +358,7 @@ export default function AnnouncementDetailPage() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Ionicons name="archive-outline" size={18} color="#fff" />
+                    <ArchiveOutlineIcon size={18} color="#fff" />
                     <Text className="text-white font-medium ml-2">보관하기</Text>
                   </>
                 )}
@@ -362,7 +371,7 @@ export default function AnnouncementDetailPage() {
               disabled={!!actionLoading}
               className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
             >
-              <Ionicons name="create-outline" size={18} color="#fff" />
+              <CreateOutlineIcon size={18} color="#fff" />
               <Text className="text-white font-medium ml-2">수정하기</Text>
             </Pressable>
 
@@ -376,7 +385,7 @@ export default function AnnouncementDetailPage() {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <Ionicons name="trash-outline" size={18} color="#fff" />
+                  <TrashOutlineIcon size={18} color="#fff" />
                   <Text className="text-white font-medium ml-2">삭제하기</Text>
                 </>
               )}

@@ -8,7 +8,13 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Dimensions, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  AddIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ImagesOutlineIcon,
+  XMarkIcon,
+} from '@/components/icons';
 import type { AnnouncementImage } from '@/types';
 import { MAX_ANNOUNCEMENT_IMAGES } from '@/types/announcement';
 
@@ -127,7 +133,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="위로 이동"
                 >
-                  <Ionicons name="chevron-up" size={14} color={isFirst ? '#6b7280' : 'white'} />
+                  <ChevronUpIcon size={14} color={isFirst ? '#6b7280' : 'white'} />
                 </Pressable>
                 <Pressable
                   onPress={() => handleMoveDown(index)}
@@ -138,7 +144,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="아래로 이동"
                 >
-                  <Ionicons name="chevron-down" size={14} color={isLast ? '#6b7280' : 'white'} />
+                  <ChevronDownIcon size={14} color={isLast ? '#6b7280' : 'white'} />
                 </Pressable>
               </View>
             )}
@@ -151,7 +157,7 @@ export function AnnouncementImagePicker({
                 hitSlop={8}
                 accessibilityLabel="이미지 삭제"
               >
-                <Ionicons name="close" size={16} color="white" />
+                <XMarkIcon size={16} color="white" />
               </Pressable>
             )}
 
@@ -188,7 +194,7 @@ export function AnnouncementImagePicker({
           className="rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
           accessibilityLabel="이미지 추가"
         >
-          <Ionicons name="add" size={32} color="#9CA3AF" />
+          <AddIcon size={32} color="#9CA3AF" />
           <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">이미지 추가</Text>
         </Pressable>
       ) : null,
@@ -244,7 +250,7 @@ export function AnnouncementImagePicker({
           ) : (
             <View className="items-center">
               <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
-                <Ionicons name="images-outline" size={28} color="#9CA3AF" />
+                <ImagesOutlineIcon size={28} color="#9CA3AF" />
               </View>
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 이미지를 선택하세요

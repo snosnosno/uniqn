@@ -8,7 +8,13 @@
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  CalendarOutlineIcon,
+  CheckmarkCircleOutlineIcon,
+  CloseCircleOutlineIcon,
+  LocationOutlineIcon,
+  PersonOutlineIcon,
+} from '@/components/icons';
 import { useTournamentApproval, useTournamentsByStatus } from '@/hooks/useTournamentApproval';
 import { ApprovalModal } from '@/components/admin/ApprovalModal';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
@@ -152,19 +158,19 @@ const TournamentCard = memo(function TournamentCard({
         </Text>
 
         <View className="flex-row items-center mb-1">
-          <Ionicons name="location-outline" size={14} color="#9CA3AF" />
+          <LocationOutlineIcon size={14} color="#9CA3AF" />
           <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
             {posting.location.name}
           </Text>
         </View>
 
         <View className="flex-row items-center mb-1">
-          <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
+          <CalendarOutlineIcon size={14} color="#9CA3AF" />
           <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{dateRange}</Text>
         </View>
 
         <View className="flex-row items-center">
-          <Ionicons name="person-outline" size={14} color="#9CA3AF" />
+          <PersonOutlineIcon size={14} color="#9CA3AF" />
           <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
             {posting.ownerName ?? '구인자'}
           </Text>
@@ -185,7 +191,7 @@ const TournamentCard = memo(function TournamentCard({
               <ActivityIndicator size="small" color="#EF4444" />
             ) : (
               <>
-                <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
+                <CloseCircleOutlineIcon size={18} color="#EF4444" />
                 <Text className="text-red-500 font-medium ml-1">거부</Text>
               </>
             )}
@@ -201,7 +207,7 @@ const TournamentCard = memo(function TournamentCard({
               <ActivityIndicator size="small" color="#22C55E" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={18} color="#22C55E" />
+                <CheckmarkCircleOutlineIcon size={18} color="#22C55E" />
                 <Text className="text-green-500 font-medium ml-1">승인</Text>
               </>
             )}

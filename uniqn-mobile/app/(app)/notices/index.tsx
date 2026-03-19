@@ -7,7 +7,7 @@
 import { View, Text, ActivityIndicator, RefreshControl } from 'react-native';
 import { Stack } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
-import { Ionicons } from '@expo/vector-icons';
+import { MegaphoneOutlineIcon } from '@/components/icons';
 import { NoticeCard } from '@/components/notices';
 import { usePublishedAnnouncements } from '@/hooks/useAnnouncement';
 import type { Announcement } from '@/types';
@@ -40,7 +40,7 @@ export default function NoticesPage() {
     if (isLoading) return null;
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Ionicons name="megaphone-outline" size={64} color="#9CA3AF" />
+        <MegaphoneOutlineIcon size={64} color="#9CA3AF" />
         <Text className="mt-4 text-lg font-medium text-gray-600 dark:text-gray-400">
           공지사항이 없습니다
         </Text>

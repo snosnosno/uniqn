@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { Pressable, View, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { CheckmarkIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -121,7 +121,7 @@ export const Checkbox = memo(function Checkbox({
           ${getBoxStyle()}
         `}
       >
-        {checked && <Ionicons name="checkmark" size={config.icon} color="white" />}
+        {checked && <CheckmarkIcon size={config.icon} color="white" />}
       </View>
 
       {/* Label & Description */}

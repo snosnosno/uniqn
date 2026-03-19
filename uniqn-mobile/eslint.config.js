@@ -79,6 +79,23 @@ module.exports = [
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
       'no-debugger': 'warn',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@expo/vector-icons',
+              message: 'Use @/components/icons instead.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@expo/vector-icons/*'],
+              message: 'Use @/components/icons instead.',
+            },
+          ],
+        },
+      ],
       'prefer-const': 'warn',
       'no-var': 'error',
       eqeqeq: ['error', 'always'],
