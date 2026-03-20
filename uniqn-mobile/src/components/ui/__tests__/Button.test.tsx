@@ -183,6 +183,31 @@ describe('Button', () => {
     });
   });
 
+  describe('Custom content', () => {
+    it('should render non-text children without wrapping them in Text', () => {
+      render(
+        <Button>
+          <View testID="custom-content">
+            <Text>Custom Content</Text>
+          </View>
+        </Button>
+      );
+
+      expect(screen.getByTestId('custom-content')).toBeTruthy();
+      expect(screen.getByText('Custom Content')).toBeTruthy();
+    });
+
+    it('should preserve a custom className on the pressable', () => {
+      render(
+        <Button accessibilityLabel="Custom class button" className="mt-4">
+          Custom Class
+        </Button>
+      );
+
+      expect(screen.getByLabelText('Custom class button').props.className).toContain('mt-4');
+    });
+  });
+
   describe('Accessibility', () => {
     it('should pass accessibility props', () => {
       render(

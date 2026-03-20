@@ -31,6 +31,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
   fullWidth?: boolean;
   /** 접근성 라벨 (미지정시 children 문자열 사용) */
   accessibilityLabel?: string;
+  className?: string;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -91,6 +92,7 @@ export const Button = memo(function Button({
   iconPosition = 'left',
   fullWidth = false,
   accessibilityLabel,
+  className,
   ...props
 }: ButtonProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -102,8 +104,14 @@ export const Button = memo(function Button({
     accessibilityLabel ?? (typeof children === 'string' ? children : undefined);
 
   const buttonClass =
-    `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`.trim();
+    `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`.trim();
   const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
+  const content =
+    typeof children === 'string' || typeof children === 'number' ? (
+      <Text className={textClass}>{children}</Text>
+    ) : (
+      children
+    );
 
   return (
     <Pressable
@@ -122,7 +130,7 @@ export const Button = memo(function Button({
       ) : (
         <>
           {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
-          <Text className={textClass}>{children}</Text>
+          {content}
           {icon && iconPosition === 'right' && <View className="ml-2">{icon}</View>}
         </>
       )}

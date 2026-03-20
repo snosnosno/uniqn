@@ -6,7 +6,7 @@
  */
 
 import { format, addDays } from 'date-fns';
-import { TimeNormalizer } from '@/shared/time';
+import { TimeNormalizer } from '@/shared/time/TimeNormalizer';
 import { toDate, toISODateString } from './core';
 
 /**
