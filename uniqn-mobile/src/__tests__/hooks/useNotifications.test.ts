@@ -294,6 +294,7 @@ describe('useNotifications Hooks', () => {
     mockNotificationStoreState.hasMore = false;
     mockNotificationStoreState.lastFetchedAt = null;
     mockShouldSync.mockReturnValue(false);
+    mockSubscribeToNotifications.mockReturnValue(jest.fn());
   });
 
   // ==========================================================================
@@ -387,6 +388,53 @@ describe('useNotifications Hooks', () => {
       const { result } = renderHook(() => useNotificationList());
 
       expect(result.current.isLoading).toBe(true);
+    });
+
+    it('should subscribe to realtime updates for unfiltered notification list', () => {
+      const unsubscribe = jest.fn();
+      mockSubscribeToNotifications.mockReturnValue(unsubscribe);
+
+      const { unmount } = renderHook(() => useNotificationList());
+
+      expect(mockSubscribeToNotifications).toHaveBeenCalledWith(
+        'user-1',
+        expect.any(Function),
+        expect.any(Function)
+      );
+
+      unmount();
+
+      expect(unsubscribe).toHaveBeenCalled();
+    });
+
+    it('should not subscribe to realtime updates when server-side filters are applied', () => {
+      renderHook(() =>
+        useNotificationList({
+          filter: {
+            isRead: false,
+          },
+        })
+      );
+
+      expect(mockSubscribeToNotifications).not.toHaveBeenCalled();
+    });
+
+    it('should invalidate the current list query when realtime updates arrive', async () => {
+      renderHook(() => useNotificationList());
+
+      const onNotifications = mockSubscribeToNotifications.mock.calls[0]?.[1] as
+        | (() => void)
+        | undefined;
+
+      expect(onNotifications).toBeDefined();
+
+      await act(async () => {
+        onNotifications?.();
+      });
+
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['notifications'],
+      });
     });
 
     it('should return error state', () => {

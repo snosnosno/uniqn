@@ -13,6 +13,7 @@ import {
   markAsRead as markAsReadService,
   markAllAsRead as markAllAsReadService,
   deleteNotification as deleteNotificationService,
+  subscribeToNotifications,
   getNotificationSettings,
   saveNotificationSettings,
   checkNotificationPermission,
@@ -79,6 +80,7 @@ export function useNotificationList(
 ): UseNotificationListResult {
   const { filter, enabled = true } = options;
   const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
   const {
     notifications: cachedNotifications,
     setNotifications,
@@ -91,9 +93,17 @@ export function useNotificationList(
   const [lastDoc, setLastDoc] = useState<NotificationPageCursor | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const hasSyncedRef = useRef(false);
+  const queryKey = notificationKeys.list(filter ?? {});
+  const hasServerSideFilters = Boolean(
+    filter?.isRead !== undefined ||
+    (filter?.types && filter.types.length > 0) ||
+    filter?.startDate ||
+    filter?.endDate ||
+    filter?.category
+  );
 
   const query = useQuery({
-    queryKey: notificationKeys.list(filter ?? {}),
+    queryKey,
     queryFn: async () => {
       if (!user?.uid) throw new Error('로그인이 필요합니다.');
 
@@ -110,6 +120,28 @@ export function useNotificationList(
     enabled: enabled && !!user?.uid && isOnline,
     staleTime: cachingPolicies.nearRealtime, // 2분
   });
+
+  useEffect(() => {
+    if (!enabled || !user?.uid || !isOnline || hasServerSideFilters) {
+      return;
+    }
+
+    return subscribeToNotifications(
+      user.uid,
+      () => {
+        queryClient.invalidateQueries({ queryKey: notificationKeys.all }).catch((error) => {
+          logger.warn('실시간 알림 목록 무효화 실패', {
+            error: toError(error).message,
+          });
+        });
+      },
+      (error) => {
+        logger.warn('실시간 알림 목록 구독 실패', {
+          error: error.message,
+        });
+      }
+    );
+  }, [enabled, hasServerSideFilters, isOnline, queryClient, user?.uid]);
 
   // 스토어 동기화 (오프라인 캐시용)
   useEffect(() => {
