@@ -55,7 +55,7 @@ try {
 } catch (e) {
   // Sentry 초기화 실패해도 앱은 정상 실행되어야 함
   if (__DEV__) {
-    console.warn('[Sentry] 초기화 실패:', e);
+    logger.warn('[Sentry] initialization failed', { error: e });
   }
 }
 
@@ -70,12 +70,6 @@ if (__DEV__) {
   LogBox.ignoreLogs(SUPPRESSED_WARNINGS);
 
   // 웹 콘솔에서도 써드파티 경고 억제
-  const originalWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
-    const message = typeof args[0] === 'string' ? args[0] : '';
-    if (SUPPRESSED_WARNINGS.some((w) => message.includes(w))) return;
-    originalWarn(...args);
-  };
 }
 
 /**
@@ -175,7 +169,7 @@ function AppContent() {
   const { isInitialized, isLoading, error, retry } = useAppInitialize();
 
   // 초기화 중 로딩 표시
-  if (isLoading || !isInitialized) {
+  if (isLoading || (!isInitialized && !error)) {
     return <Loading variant="layout" message="앱 로딩 중..." />;
   }
 

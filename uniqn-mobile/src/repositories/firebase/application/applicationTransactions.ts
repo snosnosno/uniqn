@@ -34,7 +34,6 @@ import type { ApplyContext } from '../../interfaces';
 import type {
   Application,
   ApplicationStatus,
-  CancellationRequest,
   CreateApplicationInput,
   RecruitmentType,
   RejectApplicationInput,
@@ -416,8 +415,8 @@ export async function requestCancellationWithTransaction(
         }
       }
 
-      const cancellationRequest: CancellationRequest = {
-        requestedAt: new Date().toISOString(),
+      const cancellationRequest = {
+        requestedAt: serverTimestamp(),
         reason: input.reason.trim(),
         status: STATUS.CANCELLATION_REQUEST.PENDING,
       };
@@ -495,11 +494,11 @@ export async function reviewCancellationWithTransaction(
       const baseFields = {
         requestedAt: applicationData.cancellationRequest.requestedAt,
         reason: applicationData.cancellationRequest.reason,
-        reviewedAt: new Date().toISOString(),
+        reviewedAt: serverTimestamp(),
         reviewedBy: reviewerId,
       };
 
-      const updatedCancellationRequest: CancellationRequest = input.approved
+      const updatedCancellationRequest = input.approved
         ? { ...baseFields, status: STATUS.CANCELLATION_REQUEST.APPROVED }
         : {
             ...baseFields,

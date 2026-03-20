@@ -3,6 +3,7 @@ import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
+import { useAppStartupStore, type StartupPhase } from '@/stores/appStartupStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
@@ -34,12 +35,23 @@ interface AppInitState {
 }
 
 interface UseAppInitializeReturn extends AppInitState {
+  startupPhase: StartupPhase;
   retry: () => Promise<void>;
 }
 
 interface DeferredInitContext {
   authUser: FirebaseUser;
   profile: NonNullable<Awaited<ReturnType<typeof getUserProfile>>>;
+}
+
+interface BootstrapResult {
+  authUser: FirebaseUser | null;
+  autoLoginEnabled: boolean;
+  versionCheckResult: VersionCheckResult;
+}
+
+interface ResolveSessionResult {
+  deferredInitContext: DeferredInitContext | null;
 }
 
 const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 1500 : 5000;
@@ -189,7 +201,247 @@ async function initializeUnreadCount(uid: string): Promise<number> {
   }
 }
 
+async function bootstrapCore(): Promise<BootstrapResult> {
+  const envResult = validateEnv();
+  if (!envResult.success) {
+    throw new Error(envResult.error);
+  }
+
+  await migrateFromAsyncStorage();
+
+  const hydrated = await waitForHydration(AUTH_STORE_HYDRATION_TIMEOUT_MS);
+  if (!hydrated) {
+    logger.warn('Auth store hydration timed out, continuing with diagnostic-only fallback', {
+      component: 'useAppInitialize',
+      timeoutMs: AUTH_STORE_HYDRATION_TIMEOUT_MS,
+      platform: Platform.OS,
+    });
+  }
+
+  const firebaseResult = tryInitializeFirebase();
+  if (!firebaseResult.success) {
+    throw new Error(firebaseResult.error);
+  }
+
+  const versionCheckResult = await checkForceUpdate();
+  if (versionCheckResult.isMaintenanceMode) {
+    throw new MaintenanceError(
+      versionCheckResult.maintenanceMessage ?? '서버 점검 중입니다. 잠시 후 다시 시도해주세요.'
+    );
+  }
+
+  if (versionCheckResult.mustUpdate) {
+    throw new ForceUpdateError(
+      '앱을 최신 버전으로 업데이트해주세요.',
+      versionCheckResult.latestVersion,
+      versionCheckResult.releaseNotes
+    );
+  }
+
+  await ensureDualSdkSync();
+  sessionService.initialize();
+
+  await useAuthStore.getState().initialize();
+  await useAuthStore.getState().checkAuthState();
+
+  const autoLoginEnabled = await checkAutoLoginEnabled();
+  const authUser = await waitForAuthUser();
+
+  return {
+    authUser,
+    autoLoginEnabled,
+    versionCheckResult,
+  };
+}
+
+async function resolveSession({
+  authUser,
+  autoLoginEnabled,
+}: Pick<BootstrapResult, 'authUser' | 'autoLoginEnabled'>): Promise<ResolveSessionResult> {
+  if (authUser && !autoLoginEnabled) {
+    useAuthStore.getState().clearAuthState();
+    return { deferredInitContext: null };
+  }
+
+  if (!authUser) {
+    if (useAuthStore.getState().status === 'authenticated') {
+      useAuthStore.getState().clearAuthState();
+    }
+
+    return { deferredInitContext: null };
+  }
+
+  let shouldLoadProfile = true;
+  let tokenRole: string | null = null;
+
+  try {
+    await authUser.getIdToken(true);
+    const tokenResult = await authUser.getIdTokenResult();
+    tokenRole = getRoleClaim(tokenResult.claims as Record<string, unknown>);
+
+    logger.info('Token refresh completed during app initialization', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+      hasRole: Boolean(tokenRole),
+    });
+  } catch (error) {
+    if (isFatalAuthError(error)) {
+      logger.warn('Fatal auth error during initialization, signing user out', {
+        component: 'useAppInitialize',
+        error: error instanceof Error ? error.message : String(error),
+      });
+      await authSignOut();
+      useAuthStore.getState().reset();
+      shouldLoadProfile = false;
+    } else {
+      logger.warn('Non-fatal token refresh error during initialization', {
+        component: 'useAppInitialize',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  if (!shouldLoadProfile) {
+    return { deferredInitContext: null };
+  }
+
+  const freshProfile = await loadLatestProfile(authUser.uid).catch((error) => {
+    logger.warn('Failed to load latest profile during initialization', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  });
+
+  if (!freshProfile) {
+    logger.warn('Profile document missing during initialization, signing user out', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+    });
+    await authSignOut();
+    useAuthStore.getState().reset();
+    return { deferredInitContext: null };
+  }
+
+  if (shouldSynchronizeClaims(freshProfile.role, tokenRole)) {
+    try {
+      const claimsResult = await refreshRoleClaims(authUser, freshProfile.role);
+      tokenRole = getRoleClaim(claimsResult.data.claims as Record<string, unknown>);
+
+      logger.info('Custom claims synchronized before auth state commit', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+        expectedRole: freshProfile.role,
+        role: tokenRole,
+        attempts: claimsResult.attempts,
+      });
+    } catch (error) {
+      logger.warn('Custom claims synchronization failed during initialization, signing user out', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+        expectedRole: freshProfile.role,
+        initialTokenRole: tokenRole,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      await authSignOut();
+      useAuthStore.getState().reset();
+      return { deferredInitContext: null };
+    }
+  }
+
+  useAuthStore.getState().setProfile(toStoreProfile(freshProfile));
+  useAuthStore.getState().setUser(authUser);
+
+  return {
+    deferredInitContext: {
+      authUser,
+      profile: freshProfile,
+    },
+  };
+}
+
+async function runPostLoginTasks(context: DeferredInitContext): Promise<void> {
+  const auth = getFirebaseAuth();
+  const activeUser = auth.currentUser;
+
+  if (!activeUser || activeUser.uid !== context.authUser.uid) {
+    return;
+  }
+
+  try {
+    try {
+      const claimsResult = await retryWithBackoff(
+        async () => {
+          await activeUser.getIdToken(true);
+          const result = await activeUser.getIdTokenResult();
+          if (!result.claims.role) {
+            throw new Error('Custom claims role is missing');
+          }
+          return result;
+        },
+        {
+          maxRetries: 3,
+          initialDelayMs: 1000,
+          backoffMultiplier: 2,
+          component: 'useAppInitialize',
+          operationName: 'refreshCustomClaims',
+        }
+      );
+
+      logger.info('Deferred custom claims refresh completed', {
+        component: 'useAppInitialize',
+        uid: activeUser.uid,
+        role: claimsResult.data.claims.role,
+        attempts: claimsResult.attempts,
+      });
+    } catch (error) {
+      logger.warn('Deferred custom claims refresh failed', {
+        component: 'useAppInitialize',
+        uid: activeUser.uid,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    const needsReconciliation =
+      (context.profile.nickname ?? null) !== (activeUser.displayName ?? null) ||
+      (context.profile.photoURL ?? null) !== (activeUser.photoURL ?? null);
+
+    if (needsReconciliation) {
+      try {
+        const { updateProfile } = await import('firebase/auth');
+        await updateProfile(activeUser, {
+          displayName: context.profile.nickname || activeUser.displayName,
+          photoURL: context.profile.photoURL ?? undefined,
+        });
+        logger.info('Deferred auth profile reconciliation completed', {
+          component: 'useAppInitialize',
+          uid: activeUser.uid,
+        });
+      } catch (error) {
+        logger.warn('Deferred auth profile reconciliation failed', {
+          component: 'useAppInitialize',
+          uid: activeUser.uid,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    if (context.profile.phoneVerified) {
+      const unreadCount = await initializeUnreadCount(activeUser.uid);
+      useNotificationStore.getState().setUnreadCount(unreadCount);
+    }
+  } catch (error) {
+    logger.warn('Deferred initialization failed', {
+      component: 'useAppInitialize',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 export function useAppInitialize(): UseAppInitializeReturn {
+  const startupPhase = useAppStartupStore((store) => store.startupPhase);
+  const setStartupPhase = useAppStartupStore((store) => store.setStartupPhase);
   const [state, setState] = useState<AppInitState>({
     isInitialized: false,
     isLoading: true,
@@ -203,7 +455,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
   const deferredInitContext = useRef<DeferredInitContext | null>(null);
   const didRunDeferredInit = useRef(false);
 
-  const runDeferredInitialization = useCallback(async () => {
+  const runDeferredPostLoginTasks = useCallback(async () => {
     if (didRunDeferredInit.current) {
       return;
     }
@@ -215,80 +467,8 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
     didRunDeferredInit.current = true;
 
-    const auth = getFirebaseAuth();
-    const activeUser = auth.currentUser;
-    if (!activeUser || activeUser.uid !== context.authUser.uid) {
-      deferredInitContext.current = null;
-      return;
-    }
-
     try {
-      try {
-        const claimsResult = await retryWithBackoff(
-          async () => {
-            await activeUser.getIdToken(true);
-            const result = await activeUser.getIdTokenResult();
-            if (!result.claims.role) {
-              throw new Error('Custom claims role is missing');
-            }
-            return result;
-          },
-          {
-            maxRetries: 3,
-            initialDelayMs: 1000,
-            backoffMultiplier: 2,
-            component: 'useAppInitialize',
-            operationName: 'refreshCustomClaims',
-          }
-        );
-
-        logger.info('Deferred custom claims refresh completed', {
-          component: 'useAppInitialize',
-          uid: activeUser.uid,
-          role: claimsResult.data.claims.role,
-          attempts: claimsResult.attempts,
-        });
-      } catch (error) {
-        logger.warn('Deferred custom claims refresh failed', {
-          component: 'useAppInitialize',
-          uid: activeUser.uid,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-
-      const needsReconciliation =
-        (context.profile.nickname ?? null) !== (activeUser.displayName ?? null) ||
-        (context.profile.photoURL ?? null) !== (activeUser.photoURL ?? null);
-
-      if (needsReconciliation) {
-        try {
-          const { updateProfile } = await import('firebase/auth');
-          await updateProfile(activeUser, {
-            displayName: context.profile.nickname || activeUser.displayName,
-            photoURL: context.profile.photoURL ?? undefined,
-          });
-          logger.info('Deferred auth profile reconciliation completed', {
-            component: 'useAppInitialize',
-            uid: activeUser.uid,
-          });
-        } catch (error) {
-          logger.warn('Deferred auth profile reconciliation failed', {
-            component: 'useAppInitialize',
-            uid: activeUser.uid,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-
-      if (context.profile.phoneVerified) {
-        const unreadCount = await initializeUnreadCount(activeUser.uid);
-        useNotificationStore.getState().setUnreadCount(unreadCount);
-      }
-    } catch (error) {
-      logger.warn('Deferred initialization failed', {
-        component: 'useAppInitialize',
-        error: error instanceof Error ? error.message : String(error),
-      });
+      await runPostLoginTasks(context);
     } finally {
       deferredInitContext.current = null;
     }
@@ -314,160 +494,31 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
     try {
       await SplashScreen.preventAutoHideAsync();
+      setStartupPhase('bootstrapping');
 
-      const envResult = validateEnv();
-      if (!envResult.success) {
-        throw new Error(envResult.error);
-      }
+      const bootstrapResult = await bootstrapCore();
 
-      await migrateFromAsyncStorage();
-
-      const hydrated = await waitForHydration(AUTH_STORE_HYDRATION_TIMEOUT_MS);
-      if (!hydrated) {
-        logger.warn('Auth store hydration timed out, continuing with default state', {
-          component: 'useAppInitialize',
-          timeoutMs: AUTH_STORE_HYDRATION_TIMEOUT_MS,
-          platform: Platform.OS,
-        });
-      }
-
-      const firebaseResult = tryInitializeFirebase();
-      if (!firebaseResult.success) {
-        throw new Error(firebaseResult.error);
-      }
-
-      const versionResult = await checkForceUpdate();
-      if (versionResult.isMaintenanceMode) {
-        throw new MaintenanceError(
-          versionResult.maintenanceMessage ?? '서버 점검 중입니다. 잠시 후 다시 시도해주세요.'
-        );
-      }
-
-      if (versionResult.mustUpdate) {
-        throw new ForceUpdateError(
-          '앱을 최신 버전으로 업데이트해주세요.',
-          versionResult.latestVersion,
-          versionResult.releaseNotes
-        );
-      }
-
-      await ensureDualSdkSync();
-      sessionService.initialize();
-
-      await useAuthStore.getState().initialize();
-      await useAuthStore.getState().checkAuthState();
-
-      const autoLoginEnabled = await checkAutoLoginEnabled();
-      const authUser = await waitForAuthUser();
-
-      if (authUser && !autoLoginEnabled) {
-        useAuthStore.getState().clearAuthState();
-      } else if (authUser) {
-        let shouldLoadProfile = true;
-        let tokenRole: string | null = null;
-
-        try {
-          await authUser.getIdToken(true);
-          const tokenResult = await authUser.getIdTokenResult();
-          tokenRole = getRoleClaim(tokenResult.claims as Record<string, unknown>);
-
-          logger.info('Token refresh completed during app initialization', {
-            component: 'useAppInitialize',
-            uid: authUser.uid,
-            hasRole: Boolean(tokenRole),
-          });
-        } catch (error) {
-          if (isFatalAuthError(error)) {
-            logger.warn('Fatal auth error during initialization, signing user out', {
-              component: 'useAppInitialize',
-              error: error instanceof Error ? error.message : String(error),
-            });
-            await authSignOut();
-            useAuthStore.getState().reset();
-            shouldLoadProfile = false;
-          } else {
-            logger.warn('Non-fatal token refresh error during initialization', {
-              component: 'useAppInitialize',
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
-        }
-
-        if (shouldLoadProfile) {
-          const freshProfile = await loadLatestProfile(authUser.uid).catch((error) => {
-            logger.warn('Failed to load latest profile during initialization', {
-              component: 'useAppInitialize',
-              uid: authUser.uid,
-              error: error instanceof Error ? error.message : String(error),
-            });
-            return null;
-          });
-
-          if (freshProfile) {
-            if (shouldSynchronizeClaims(freshProfile.role, tokenRole)) {
-              try {
-                const claimsResult = await refreshRoleClaims(authUser, freshProfile.role);
-                tokenRole = getRoleClaim(claimsResult.data.claims as Record<string, unknown>);
-
-                logger.info('Custom claims synchronized before auth state commit', {
-                  component: 'useAppInitialize',
-                  uid: authUser.uid,
-                  expectedRole: freshProfile.role,
-                  role: tokenRole,
-                  attempts: claimsResult.attempts,
-                });
-              } catch (error) {
-                logger.warn(
-                  'Custom claims synchronization failed during initialization, signing user out',
-                  {
-                    component: 'useAppInitialize',
-                    uid: authUser.uid,
-                    expectedRole: freshProfile.role,
-                    initialTokenRole: tokenRole,
-                    error: error instanceof Error ? error.message : String(error),
-                  }
-                );
-                await authSignOut();
-                useAuthStore.getState().reset();
-                shouldLoadProfile = false;
-              }
-            }
-
-            if (shouldLoadProfile) {
-              useAuthStore.getState().setProfile(toStoreProfile(freshProfile));
-              useAuthStore.getState().setUser(authUser);
-              deferredInitContext.current = {
-                authUser,
-                profile: freshProfile,
-              };
-            }
-          } else {
-            logger.warn('Profile document missing during initialization, signing user out', {
-              component: 'useAppInitialize',
-              uid: authUser.uid,
-            });
-            await authSignOut();
-            useAuthStore.getState().reset();
-          }
-        }
-      } else if (useAuthStore.getState().status === 'authenticated') {
-        useAuthStore.getState().clearAuthState();
-      }
+      setStartupPhase('resolving_session');
+      const sessionResolution = await resolveSession(bootstrapResult);
+      deferredInitContext.current = sessionResolution.deferredInitContext;
 
       setState({
         isInitialized: true,
         isLoading: false,
         error: null,
-        requiresUpdate: versionResult.shouldUpdate,
+        requiresUpdate: bootstrapResult.versionCheckResult.shouldUpdate,
         isMaintenanceMode: false,
-        versionCheckResult: versionResult,
+        versionCheckResult: bootstrapResult.versionCheckResult,
       });
 
+      setStartupPhase('resolved');
       trace.putAttribute('status', 'success');
       trace.stop();
     } catch (error) {
       const appError = error instanceof Error ? error : new Error(String(error));
       const errorMessage = error instanceof Error ? error.message : String(error);
+
+      setStartupPhase('error');
 
       if (isForceUpdateError(appError)) {
         trace.putAttribute('status', 'force_update');
@@ -515,7 +566,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       await SplashScreen.hideAsync();
       isInitializing.current = false;
     }
-  }, []);
+  }, [setStartupPhase]);
 
   const retry = useCallback(async () => {
     await initialize();
@@ -526,12 +577,12 @@ export function useAppInitialize(): UseAppInitializeReturn {
   }, [initialize]);
 
   useEffect(() => {
-    if (!state.isInitialized) {
+    if (startupPhase !== 'resolved' || !state.isInitialized) {
       return;
     }
 
-    void runDeferredInitialization();
-  }, [runDeferredInitialization, state.isInitialized]);
+    void runDeferredPostLoginTasks();
+  }, [runDeferredPostLoginTasks, startupPhase, state.isInitialized]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
@@ -553,6 +604,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
   return {
     ...state,
+    startupPhase,
     retry,
   };
 }

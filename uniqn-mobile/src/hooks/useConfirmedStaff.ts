@@ -323,7 +323,7 @@ export function useConfirmedStaff(
     (input: Omit<UpdateWorkTimeInput, 'modifiedBy'> & { modifiedBy?: string }) => {
       updateWorkTimeMutation.mutate({
         ...input,
-        modifiedBy: input.modifiedBy ?? user?.uid ?? 'system',
+        modifiedBy: input.modifiedBy ?? user?.uid,
       });
     },
     [updateWorkTimeMutation, user?.uid]

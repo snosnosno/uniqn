@@ -55,7 +55,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEnv } from './env';
 
 type Auth = import('firebase/auth').Auth;
-type AuthPersistence = typeof firebaseAuthModule.browserLocalPersistence;
+type AuthPersistence = typeof firebaseAuthModule.browserSessionPersistence;
 
 const getReactNativePersistence = (
   firebaseAuthModule as typeof firebaseAuthModule & {
@@ -191,7 +191,7 @@ export function getFirebaseApp(): FirebaseApp {
  * Firebase Auth 인스턴스 반환
  *
  * 플랫폼별 persistence:
- * - Web: browserLocalPersistence (IndexedDB/localStorage)
+ * - Web: browserSessionPersistence (browser session scope)
  * - Native: getReactNativePersistence(AsyncStorage)
  *
  * getReactNativePersistence는 React Native 전용이므로
@@ -204,12 +204,18 @@ export function getFirebaseAuth(): Auth {
     try {
       const persistence =
         Platform.OS === 'web'
-          ? firebaseAuthModule.browserLocalPersistence
+          ? firebaseAuthModule.browserSessionPersistence
           : getReactNativePersistence(AsyncStorage);
       firebaseAuth = firebaseAuthModule.initializeAuth(app, { persistence });
     } catch {
       // 이미 초기화된 경우 기존 인스턴스 반환
       firebaseAuth = firebaseAuthModule.getAuth(app);
+      if (Platform.OS === 'web') {
+        void firebaseAuthModule.setPersistence(
+          firebaseAuth,
+          firebaseAuthModule.browserSessionPersistence
+        );
+      }
     }
 
     // E2E 테스트용 에뮬레이터 연결

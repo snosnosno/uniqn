@@ -17,6 +17,10 @@ import type { WorkLogStats, MonthlyPayrollSummary, WorkLogFilterOptions } from '
 import type { WorkLog } from '@/types';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import { DEFAULT_PAGE_SIZE, MAX_STATS_PAGE_SIZE } from './constants';
+import {
+  hydrateWorkLogModificationHistory,
+  hydrateWorkLogsModificationHistory,
+} from './timeModificationLogs';
 
 // ============================================================================
 // Read Operations
@@ -43,7 +47,7 @@ export async function getById(workLogId: string): Promise<WorkLog | null> {
       return null;
     }
 
-    return workLog;
+    return await hydrateWorkLogModificationHistory(workLog, { force: true });
   } catch (error) {
     logger.error('근무 기록 상세 조회 실패', toError(error), { workLogId });
     throw handleServiceError(error, {
@@ -89,7 +93,7 @@ export async function getByStaffId(
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('스태프별 근무 기록 조회 실패', toError(error), { staffId });
     throw handleServiceError(error, {
@@ -148,7 +152,7 @@ export async function getByStaffIdWithFilters(
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('필터를 포함한 스태프별 근무 기록 조회 실패', toError(error), { staffId });
     throw handleServiceError(error, {
@@ -192,7 +196,7 @@ export async function getByDate(staffId: string, date: string): Promise<WorkLog[
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('날짜별 근무 기록 조회 실패', toError(error), {
       staffId,
@@ -239,7 +243,7 @@ export async function getCompletedByOwnerId(ownerId: string): Promise<WorkLog[]>
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('구인자별 완료된 근무 기록 조회 실패', toError(error), { ownerId });
     throw handleServiceError(error, {
@@ -281,7 +285,7 @@ export async function getByJobPostingId(jobPostingId: string): Promise<WorkLog[]
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('공고별 근무 기록 조회 실패', toError(error), {
       jobPostingId,
@@ -321,7 +325,7 @@ export async function getTodayCheckedIn(staffId: string): Promise<WorkLog | null
       ...docSnapshot.data(),
     });
 
-    return workLog;
+    return workLog ? await hydrateWorkLogModificationHistory(workLog, { force: true }) : null;
   } catch (error) {
     logger.error('오늘 출근 기록 조회 실패', toError(error), { staffId });
     throw handleServiceError(error, {
@@ -515,7 +519,7 @@ export async function getByDateRange(
       count: items.length,
     });
 
-    return items;
+    return await hydrateWorkLogsModificationHistory(items);
   } catch (error) {
     logger.error('날짜 범위 근무 기록 조회 실패', toError(error), {
       staffId,
@@ -567,7 +571,7 @@ export async function findByJobPostingStaffDate(
       found: !!workLog,
     });
 
-    return workLog;
+    return workLog ? await hydrateWorkLogModificationHistory(workLog, { force: true }) : null;
   } catch (error) {
     logger.error('공고-스태프-날짜 근무 기록 조회 실패', toError(error), {
       jobPostingId,

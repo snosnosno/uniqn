@@ -45,6 +45,7 @@ type MMKVInstance = {
  * 네이티브에서는 react-native-mmkv 사용
  */
 let mmkvInstance: MMKVInstance | null = null;
+let sessionMMKVInstance: MMKVInstance | null = null;
 
 /** 암호화된 민감 데이터용 MMKV 인스턴스 */
 let secureMMKVInstance: MMKVInstance | null = null;
@@ -55,49 +56,55 @@ const ENCRYPTION_KEY_ID = 'mmkv-encryption-key';
 /**
  * 웹 환경용 localStorage 래퍼 생성
  */
-function createWebStorageWrapper(prefix = ''): MMKVInstance {
+function createWebStorageWrapper(
+  prefix = '',
+  storageScope: 'local' | 'session' = 'local'
+): MMKVInstance {
+  const webStorage = storageScope === 'session' ? sessionStorage : localStorage;
+  const storageLabel = storageScope === 'session' ? 'sessionStorage' : 'localStorage';
+
   return {
     getString: (key: string) => {
       try {
-        return localStorage.getItem(prefix + key) ?? undefined;
+        return webStorage.getItem(prefix + key) ?? undefined;
       } catch {
         return undefined;
       }
     },
     set: (key: string, value: string) => {
       try {
-        localStorage.setItem(prefix + key, value);
+        webStorage.setItem(prefix + key, value);
       } catch (e) {
-        logger.warn('[MMKV] localStorage set 실패', { error: e });
+        logger.warn(`[MMKV] ${storageLabel} set failed`, { error: e });
       }
     },
     delete: (key: string) => {
       try {
-        localStorage.removeItem(prefix + key);
+        webStorage.removeItem(prefix + key);
       } catch (e) {
-        logger.warn('[MMKV] localStorage delete 실패', { error: e });
+        logger.warn(`[MMKV] ${storageLabel} delete failed`, { error: e });
       }
     },
     contains: (key: string) => {
       try {
-        return localStorage.getItem(prefix + key) !== null;
+        return webStorage.getItem(prefix + key) !== null;
       } catch {
         return false;
       }
     },
     getAllKeys: () => {
       try {
-        return Object.keys(localStorage).filter((k) => k.startsWith(prefix));
+        return Object.keys(webStorage).filter((k) => k.startsWith(prefix));
       } catch {
         return [];
       }
     },
     clearAll: () => {
       try {
-        const keys = Object.keys(localStorage).filter((k) => k.startsWith(prefix));
-        keys.forEach((k) => localStorage.removeItem(k));
+        const keys = Object.keys(webStorage).filter((k) => k.startsWith(prefix));
+        keys.forEach((k) => webStorage.removeItem(k));
       } catch (e) {
-        logger.warn('[MMKV] localStorage clear 실패', { error: e });
+        logger.warn(`[MMKV] ${storageLabel} clear failed`, { error: e });
       }
     },
   };
@@ -230,6 +237,15 @@ export function getMMKVInstance(): MMKVInstance {
   return mmkvInstance;
 }
 
+export function getSessionMMKVInstance(): MMKVInstance {
+  if (!sessionMMKVInstance) {
+    sessionMMKVInstance =
+      Platform.OS === 'web' ? createWebStorageWrapper('', 'session') : getMMKVInstance();
+  }
+
+  return sessionMMKVInstance;
+}
+
 /**
  * 암호화된 MMKV 인스턴스 가져오기 (싱글톤, 비동기)
  *
@@ -285,6 +301,29 @@ export const mmkvStorage: StateStorage = {
 
   removeItem: (name: string): void => {
     const storage = getMMKVInstance();
+    storage.delete(name);
+  },
+};
+
+/**
+ * Auth shell persistence is session-scoped on web so browser restarts do not
+ * silently revive stale authenticated state. Native keeps the existing MMKV
+ * behavior because session tokens live outside this adapter.
+ */
+export const authStateStorage: StateStorage = {
+  getItem: (name: string): string | null => {
+    const storage = getSessionMMKVInstance();
+    const value = storage.getString(name);
+    return value ?? null;
+  },
+
+  setItem: (name: string, value: string): void => {
+    const storage = getSessionMMKVInstance();
+    storage.set(name, value);
+  },
+
+  removeItem: (name: string): void => {
+    const storage = getSessionMMKVInstance();
     storage.delete(name);
   },
 };

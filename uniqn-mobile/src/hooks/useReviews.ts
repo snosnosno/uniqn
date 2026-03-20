@@ -15,7 +15,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import * as reviewService from '@/services/reviewService';
 import { getMySchedules } from '@/services/work/scheduleService';
-import { isWithinReviewDeadline } from '@/domains/review/reviewDeadline';
+import { isWithinReviewDeadline, resolveReviewerTypeFromRole } from '@/domains/review';
 import { workLogRepository, jobPostingRepository } from '@/repositories';
 import type { CreateReviewInput, ReviewerType } from '@/types/review';
 import type { ScheduleEvent, WorkLog } from '@/types';
@@ -170,7 +170,8 @@ export interface PendingReviewItem {
 export function usePendingReviews() {
   const profile = useAuthStore((s) => s.profile);
   const userId = profile?.uid;
-  const isEmployer = profile?.role === 'employer' || profile?.role === 'admin';
+  const reviewerType = resolveReviewerTypeFromRole(profile?.role);
+  const isEmployerReviewer = reviewerType === 'employer';
 
   // Staff-side: 내 스케줄 (스태프로 참여한 근무)
   const { data: schedules = [], isLoading: schedulesLoading } = useQuery({
@@ -189,16 +190,16 @@ export function usePendingReviews() {
   const { data: employerWorkLogs = [], isLoading: employerLoading } = useQuery({
     queryKey: [...queryKeys.reviews.pending(), 'employer'],
     queryFn: () => workLogRepository.getCompletedByOwnerId(userId!),
-    enabled: !!userId && isEmployer,
+    enabled: !!userId && isEmployerReviewer,
     staleTime: queryCachingOptions.reviews.staleTime,
     gcTime: queryCachingOptions.reviews.gcTime,
   });
 
   // Employer-side: 공고 정보 배치 조회 (제목/위치 표시용)
   const uniqueJobPostingIds = useMemo(() => {
-    if (!isEmployer || employerWorkLogs.length === 0) return [];
+    if (!isEmployerReviewer || employerWorkLogs.length === 0) return [];
     return [...new Set((employerWorkLogs as WorkLog[]).map((wl) => wl.jobPostingId))];
-  }, [employerWorkLogs, isEmployer]);
+  }, [employerWorkLogs, isEmployerReviewer]);
 
   const { data: jobPostingMap = new Map(), isLoading: jobPostingsLoading } = useQuery({
     queryKey: [...queryKeys.reviews.pending(), 'employer-jobpostings', ...uniqueJobPostingIds],
@@ -248,7 +249,7 @@ export function usePendingReviews() {
     }
 
     // 2) Employer-side pending
-    if (isEmployer) {
+    if (isEmployerReviewer) {
       for (const wl of employerWorkLogs as WorkLog[]) {
         if (!wl.id || !wl.ownerId) continue;
         if (!isWithinReviewDeadline(wl.checkOutTime, wl.date)) continue;
@@ -268,12 +269,14 @@ export function usePendingReviews() {
     }
 
     return items;
-  }, [schedules, employerWorkLogs, givenPage, isEmployer, jobPostingMap]);
+  }, [schedules, employerWorkLogs, givenPage, isEmployerReviewer, jobPostingMap]);
 
   return {
     pendingReviews,
     pendingCount: pendingReviews.length,
     isLoading:
-      schedulesLoading || reviewsLoading || (isEmployer && (employerLoading || jobPostingsLoading)),
+      schedulesLoading ||
+      reviewsLoading ||
+      (isEmployerReviewer && (employerLoading || jobPostingsLoading)),
   };
 }

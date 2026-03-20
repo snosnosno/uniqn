@@ -184,7 +184,7 @@ export interface UpdateWorkTimeInput {
   /** 퇴근 시간 (null이면 미정으로 설정) */
   checkOutTime: TimeInput;
   reason: string;
-  /** 수정자 ID (선택적, 기본값: 'system') */
+  /** 수정자 ID (선택적, 기본값: 현재 로그인 사용자 uid) */
   modifiedBy?: string;
 }
 

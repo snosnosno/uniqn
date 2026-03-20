@@ -193,6 +193,31 @@ const confirmationHistoryEntrySchema = z
   })
   .passthrough();
 
+const cancellationRequestTimestampSchema = timestampSchema.or(z.string());
+
+const cancellationRequestDocumentSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('pending'),
+    requestedAt: cancellationRequestTimestampSchema,
+    reason: z.string(),
+  }),
+  z.object({
+    status: z.literal('approved'),
+    requestedAt: cancellationRequestTimestampSchema,
+    reason: z.string(),
+    reviewedAt: cancellationRequestTimestampSchema,
+    reviewedBy: z.string(),
+  }),
+  z.object({
+    status: z.literal('rejected'),
+    requestedAt: cancellationRequestTimestampSchema,
+    reason: z.string(),
+    reviewedAt: cancellationRequestTimestampSchema,
+    reviewedBy: z.string(),
+    rejectionReason: z.string(),
+  }),
+]);
+
 export const applicationDocumentSchema = z
   .object({
     id: z.string(),
@@ -225,6 +250,7 @@ export const applicationDocumentSchema = z
     // 취소 정보
     cancelledAt: optionalTimestampSchema,
     cancellationReason: z.string().optional(),
+    cancellationRequest: cancellationRequestDocumentSchema.optional(),
 
     // 공고 정보 (비정규화)
     jobPostingTitle: z.string().optional(),

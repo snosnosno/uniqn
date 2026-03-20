@@ -69,6 +69,81 @@ service cloud.firestore {
     function isAdmin() {
       return getUserRole() == 'admin';
     }
+
+    function canReadWorkLog(workLogData) {
+      return isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == workLogData.staffId ||
+        (isPrivileged() && request.auth.uid == workLogData.ownerId) ||
+        (isPrivileged() &&
+         exists(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)).data.ownerId == request.auth.uid)
+      );
+    }
+
+    function canMutateWorkLog(workLogData) {
+      return isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == workLogData.staffId ||
+        (hasValidRole() &&
+         exists(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)).data.ownerId == request.auth.uid)
+      );
+    }
+
+    function canCreateAuthoritativeTimeModificationLog(workLogData) {
+      return isSignedIn() && (
+        isAdmin() ||
+        (isPrivileged() && request.auth.uid == workLogData.ownerId) ||
+        (isPrivileged() &&
+         exists(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)).data.ownerId == request.auth.uid)
+      );
+    }
+
+    function canReadTimeModificationLog(logData) {
+      return logData.workLogId is string &&
+        exists(/databases/$(database)/documents/workLogs/$(logData.workLogId)) &&
+        canReadWorkLog(get(/databases/$(database)/documents/workLogs/$(logData.workLogId)).data);
+    }
+
+    function canCreateTimeModificationLog(workLogId) {
+      return exists(/databases/$(database)/documents/workLogs/$(workLogId)) &&
+        canCreateAuthoritativeTimeModificationLog(
+          get(/databases/$(database)/documents/workLogs/$(workLogId)).data
+        ) &&
+        request.resource.data.workLogId == workLogId &&
+        request.resource.data.keys().hasAll([
+          'workLogId',
+          'modifiedAt',
+          'modifiedBy',
+          'reason',
+          'previousStartTime',
+          'previousEndTime',
+          'newStartTime',
+          'newEndTime'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'workLogId',
+          'modifiedAt',
+          'modifiedBy',
+          'reason',
+          'previousStartTime',
+          'previousEndTime',
+          'newStartTime',
+          'newEndTime'
+        ]) &&
+        request.resource.data.modifiedAt == request.time &&
+        request.resource.data.modifiedBy == request.auth.uid &&
+        request.resource.data.modifiedBy is string &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() > 0 &&
+        request.resource.data.reason.size() <= 200 &&
+        (request.resource.data.previousStartTime == null || request.resource.data.previousStartTime is timestamp) &&
+        (request.resource.data.previousEndTime == null || request.resource.data.previousEndTime is timestamp) &&
+        (request.resource.data.newStartTime == null || request.resource.data.newStartTime is timestamp) &&
+        (request.resource.data.newEndTime == null || request.resource.data.newEndTime is timestamp);
+    }
     
 
     function isOwner(userId) {
@@ -603,6 +678,12 @@ service cloud.firestore {
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
          get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       );
+
+      match /timeModificationLogs/{logId} {
+        allow read: if canReadTimeModificationLog(resource.data);
+        allow create: if canCreateTimeModificationLog(workLogId);
+        allow update, delete: if false;
+      }
     }
 
     // --- Participants Collection ---
@@ -772,6 +853,10 @@ service cloud.firestore {
       // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
       allow read: if isSignedIn();
       // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/participants) 적용
+    }
+
+    match /{path=**}/timeModificationLogs/{logId} {
+      allow read: if canReadTimeModificationLog(resource.data);
     }
     
     // --- Attendance Records Collection (표준 필드명 지원) ---

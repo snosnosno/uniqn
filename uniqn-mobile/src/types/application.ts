@@ -24,6 +24,8 @@ import type { OriginalApplication, ConfirmationHistoryEntry } from './applicatio
 import type { PreQuestionAnswer } from './preQuestion';
 import type { JobPosting } from './jobPosting';
 
+type CancellationRequestTimestamp = string | Timestamp;
+
 /**
  * 지원 상태
  */
@@ -46,7 +48,7 @@ export type CancellationRequestStatus = 'pending' | 'approved' | 'rejected';
  */
 interface CancellationRequestBase {
   /** 요청 시간 */
-  requestedAt: string;
+  requestedAt: CancellationRequestTimestamp;
   /** 취소 사유 (필수) */
   reason: string;
 }
@@ -67,7 +69,7 @@ interface CancellationRequestPending extends CancellationRequestBase {
 interface CancellationRequestApproved extends CancellationRequestBase {
   status: 'approved';
   /** 검토 시간 (필수) */
-  reviewedAt: string;
+  reviewedAt: CancellationRequestTimestamp;
   /** 검토자 ID (필수) */
   reviewedBy: string;
   rejectionReason?: never;
@@ -79,7 +81,7 @@ interface CancellationRequestApproved extends CancellationRequestBase {
 interface CancellationRequestRejected extends CancellationRequestBase {
   status: 'rejected';
   /** 검토 시간 (필수) */
-  reviewedAt: string;
+  reviewedAt: CancellationRequestTimestamp;
   /** 검토자 ID (필수) */
   reviewedBy: string;
   /** 거절 사유 (필수) */

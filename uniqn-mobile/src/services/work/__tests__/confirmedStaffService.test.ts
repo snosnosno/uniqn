@@ -368,7 +368,7 @@ describe('ConfirmedStaffService', () => {
         expect.objectContaining({
           checkInTime: null,
           checkOutTime: null,
-          modifiedBy: 'system',
+          modifiedBy: 'owner-1',
         })
       );
     });

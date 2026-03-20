@@ -6,7 +6,7 @@
  *
  * 플랫폼별 동작:
  * - iOS/Android: expo-secure-store (키체인/키스토어)
- * - Web: localStorage with prefix (보안 제한적)
+ * - Web: sessionStorage for sensitive keys, localStorage for non-sensitive keys
  *
  * 보안 기능:
  * - 자동 만료 (TTL)

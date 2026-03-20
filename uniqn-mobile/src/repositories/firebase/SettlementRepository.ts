@@ -42,6 +42,7 @@ import {
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
+import { writeTimeModificationLog } from './workLog/timeModificationLogs';
 import type {
   ISettlementRepository,
   UpdateWorkTimeContext,
@@ -137,7 +138,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         const prevCheckOut = workLog.checkOutTime ?? null;
 
         const modificationLog = {
-          modifiedAt: new Date().toISOString(),
+          modifiedAt: Timestamp.now(),
           modifiedBy: ownerId,
           reason: context.reason || '시간 수정',
           previousStartTime: prevCheckIn ?? null,
@@ -157,6 +158,25 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         };
 
         updateData.modificationHistory = [...(workLog.modificationHistory || []), modificationLog];
+
+        writeTimeModificationLog(transaction, context.workLogId, {
+          modifiedBy: ownerId,
+          reason: context.reason || '시간 수정',
+          previousStartTime: prevCheckIn ?? null,
+          previousEndTime: prevCheckOut ?? null,
+          newStartTime:
+            context.checkInTime !== undefined
+              ? context.checkInTime
+                ? Timestamp.fromDate(context.checkInTime)
+                : null
+              : undefined,
+          newEndTime:
+            context.checkOutTime !== undefined
+              ? context.checkOutTime
+                ? Timestamp.fromDate(context.checkOutTime)
+                : null
+              : undefined,
+        });
 
         transaction.update(workLogRef, updateData);
       });

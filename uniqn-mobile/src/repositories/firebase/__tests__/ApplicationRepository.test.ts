@@ -556,6 +556,110 @@ describe('FirebaseApplicationRepository', () => {
     });
   });
 
+  describe('cancellation request timestamps', () => {
+    it('should write requestedAt with a server timestamp sentinel', async () => {
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(
+          createMockDocSnap('app-1', {
+            id: 'app-1',
+            applicantId: 'staff-1',
+            jobPostingId: 'job-1',
+            status: 'confirmed',
+          })
+        ),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await repository.requestCancellationWithTransaction(
+        {
+          applicationId: 'app-1',
+          reason: '개인 사정으로 취소 요청합니다.',
+        },
+        'staff-1'
+      );
+
+      expect(mockTransaction.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          status: 'cancellation_pending',
+          updatedAt: { _serverTimestamp: true },
+          cancellationRequest: expect.objectContaining({
+            status: 'pending',
+            reason: '개인 사정으로 취소 요청합니다.',
+            requestedAt: { _serverTimestamp: true },
+          }),
+        })
+      );
+    });
+
+    it('should write reviewedAt with a server timestamp sentinel', async () => {
+      const requestedAt = {
+        seconds: 1735689600,
+        nanoseconds: 0,
+        toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+      };
+
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              jobPostingId: 'job-1',
+              status: 'cancellation_pending',
+              cancellationRequest: {
+                status: 'pending',
+                requestedAt,
+                reason: '개인 사정',
+              },
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              id: 'job-1',
+              ownerId: 'employer-1',
+              applicationCount: 3,
+              filledPositions: 1,
+            })
+          ),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await repository.reviewCancellationWithTransaction(
+        {
+          applicationId: 'app-1',
+          approved: false,
+          rejectionReason: '운영상 취소가 어렵습니다.',
+        },
+        'employer-1'
+      );
+
+      expect(mockTransaction.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          status: 'confirmed',
+          updatedAt: { _serverTimestamp: true },
+          cancellationRequest: expect.objectContaining({
+            status: 'rejected',
+            requestedAt,
+            reviewedAt: { _serverTimestamp: true },
+            reviewedBy: 'employer-1',
+            rejectionReason: '운영상 취소가 어렵습니다.',
+          }),
+        })
+      );
+    });
+  });
+
   // ==========================================================================
   // getCancellationRequests
   // ==========================================================================

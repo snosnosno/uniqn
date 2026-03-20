@@ -1,24 +1,24 @@
 /**
  * UNIQN Mobile - Auth Store
  *
- * @description 인증 상태 관리 (Zustand + MMKV)
+ * @description ?몄쬆 ?곹깭 愿由?(Zustand + MMKV)
  * @version 1.2.0
  *
- * 변경사항:
- * - AsyncStorage → MMKV로 마이그레이션 (30배 빠름)
- * - ✅ 토큰 저장: sessionService + secureStorage (expo-secure-store)
- * - ✅ 토큰 갱신: sessionService.refreshToken()
- * - ✅ 세션 만료: sessionService.expireSession()
+ * 蹂寃쎌궗??
+ * - AsyncStorage ??MMKV濡?留덉씠洹몃젅?댁뀡 (30諛?鍮좊쫫)
+ * - ???좏겙 ??? sessionService + secureStorage (expo-secure-store)
+ * - ???좏겙 媛깆떊: sessionService.refreshToken()
+ * - ???몄뀡 留뚮즺: sessionService.expireSession()
  *
- * 참고:
- * - 이 스토어는 user/profile 정보만 저장 (민감하지 않음)
- * - 인증 토큰은 Firebase Auth가 내부 관리 + sessionService가 SecureStore에 백업
- * - 로그인 시도 횟수 등 보안 데이터는 secureStorage 사용
+ * 李멸퀬:
+ * - ???ㅽ넗?대뒗 user/profile ?뺣낫留????(誘쇨컧?섏? ?딆쓬)
+ * - ?몄쬆 ?좏겙? Firebase Auth媛 ?대? 愿由?+ sessionService媛 SecureStore??諛깆뾽
+ * - 濡쒓렇???쒕룄 ?잛닔 ??蹂댁븞 ?곗씠?곕뒗 secureStorage ?ъ슜
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { mmkvStorage } from '@/lib/mmkvStorage';
+import { authStateStorage } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole, UserProfile } from '@/types';
@@ -28,7 +28,7 @@ import { RealtimeManager } from '@/shared/realtime';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 
 export type { UserRole, UserProfile };
-// AuthUser, AuthStatus의 정본(SSOT)은 types/auth.ts
+// AuthUser, AuthStatus???뺣낯(SSOT)? types/auth.ts
 export type { AuthUser, AuthStatus } from '@/types/auth';
 
 // ============================================================================
@@ -36,22 +36,22 @@ export type { AuthUser, AuthStatus } from '@/types/auth';
 // ============================================================================
 
 interface AuthState {
-  // 상태
+  // ?곹깭
   user: AuthUser | null;
   profile: UserProfile | null;
   status: AuthStatus;
   isInitialized: boolean;
   error: string | null;
-  _hasHydrated: boolean; // AsyncStorage에서 복원 완료 여부
+  _hasHydrated: boolean; // AsyncStorage?먯꽌 蹂듭썝 ?꾨즺 ?щ?
 
-  // 계산된 값 (getter 역할)
+  // 怨꾩궛??媛?(getter ??븷)
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  isEmployer: boolean; // 구인자 이상 권한
+  isEmployer: boolean; // 援ъ씤???댁긽 沅뚰븳
   isStaff: boolean;
 
-  // 액션
+  // ?≪뀡
   setUser: (user: FirebaseUser | null) => void;
   setProfile: (profile: UserProfile | null) => void;
   setStatus: (status: AuthStatus) => void;
@@ -61,7 +61,7 @@ interface AuthState {
   initialize: () => Promise<void>;
   checkAuthState: () => Promise<void>;
   reset: () => void;
-  /** 자동 로그인 비활성화 시 사용 - Firebase 로그아웃 없이 UI 상태만 초기화 */
+  /** ?먮룞 濡쒓렇??鍮꾪솢?깊솕 ???ъ슜 - Firebase 濡쒓렇?꾩썐 ?놁씠 UI ?곹깭留?珥덇린??*/
   clearAuthState: () => void;
 }
 
@@ -92,7 +92,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       ...initialState,
 
-      // Firebase User -> AuthUser 변환 및 저장
+      // Firebase User -> AuthUser 蹂??諛????
       setUser: (firebaseUser: FirebaseUser | null) => {
         if (!firebaseUser) {
           set({
@@ -123,7 +123,7 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      // 사용자 프로필 설정 (Firestore에서 가져온 추가 정보)
+      // ?ъ슜???꾨줈???ㅼ젙 (Firestore?먯꽌 媛?몄삩 異붽? ?뺣낫)
       setProfile: (profile: UserProfile | null) => {
         if (!profile) {
           set({
@@ -135,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        // Phase 8: RoleResolver로 역할 플래그 계산 통합 (이원화 해결)
+        // Phase 8: RoleResolver濡???븷 ?뚮옒洹?怨꾩궛 ?듯빀 (?댁썝???닿껐)
         const roleFlags = RoleResolver.computeRoleFlags(profile.role);
 
         set({
@@ -163,10 +163,10 @@ export const useAuthStore = create<AuthState>()(
         set({ _hasHydrated: hasHydrated });
       },
 
-      // 앱 초기화 시 저장된 인증 상태 복원
+      // ??珥덇린??????λ맂 ?몄쬆 ?곹깭 蹂듭썝
       initialize: async () => {
         const state = get();
-        // persist 미들웨어가 자동으로 복원하므로 여기서는 초기화 완료만 표시
+        // persist 誘몃뱾?⑥뼱媛 ?먮룞?쇰줈 蹂듭썝?섎?濡??ш린?쒕뒗 珥덇린???꾨즺留??쒖떆
         if (state.user) {
           set({
             status: 'authenticated',
@@ -182,27 +182,27 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Firebase Auth 상태 확인 (앱 재개 시)
+      // Firebase Auth ?곹깭 ?뺤씤 (???ш컻 ??
       checkAuthState: async () => {
-        // Firebase Auth 리스너가 처리하므로 여기서는 상태만 확인
-        // 실제 구현은 useAuth 훅이나 AuthService에서 담당
+        // Firebase Auth 由ъ뒪?덇? 泥섎━?섎?濡??ш린?쒕뒗 ?곹깭留??뺤씤
+        // ?ㅼ젣 援ы쁽? useAuth ?낆씠??AuthService?먯꽌 ?대떦
         const state = get();
         if (!state.isInitialized) {
           await get().initialize();
         }
       },
 
-      // 로그아웃 시 상태 초기화
+      // 濡쒓렇?꾩썐 ???곹깭 珥덇린??
       reset: () => {
         set(initialState);
       },
 
-      // 자동 로그인 비활성화 시 사용 - Firebase 로그아웃 없이 UI 상태만 초기화
-      // Firebase Auth 세션은 유지되므로 다음 로그인 시 빠르게 복원 가능
+      // ?먮룞 濡쒓렇??鍮꾪솢?깊솕 ???ъ슜 - Firebase 濡쒓렇?꾩썐 ?놁씠 UI ?곹깭留?珥덇린??
+      // Firebase Auth ?몄뀡? ?좎??섎?濡??ㅼ쓬 濡쒓렇????鍮좊Ⅴ寃?蹂듭썝 媛??
       clearAuthState: () => {
-        // Firestore 실시간 리스너 해제 (데이터 수신 차단)
+        // Firestore ?ㅼ떆媛?由ъ뒪???댁젣 (?곗씠???섏떊 李⑤떒)
         RealtimeManager.unsubscribeAll();
-        // 전역 캐시 정리
+        // ?꾩뿭 罹먯떆 ?뺣━
         clearCounterSyncCache();
 
         set({
@@ -213,48 +213,48 @@ export const useAuthStore = create<AuthState>()(
           isAdmin: false,
           isEmployer: false,
           isStaff: false,
-          isInitialized: true, // 초기화는 완료된 상태
+          isInitialized: true, // 珥덇린?붾뒗 ?꾨즺???곹깭
           error: null,
         });
-        logger.info('자동 로그인 비활성화 - 인증 상태 초기화 (리스너/캐시 정리 완료)', {
+        logger.info('?먮룞 濡쒓렇??鍮꾪솢?깊솕 - ?몄쬆 ?곹깭 珥덇린??(由ъ뒪??罹먯떆 ?뺣━ ?꾨즺)', {
           component: 'authStore',
         });
       },
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => mmkvStorage),
-      // 민감한 정보는 저장하지 않음
+      // Web keeps auth shell state in sessionStorage, while native keeps MMKV-backed persistence.
+      storage: createJSONStorage(() => authStateStorage),
+      // 誘쇨컧???뺣낫????ν븯吏 ?딆쓬
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,
         isInitialized: state.isInitialized,
       }),
-      // MMKV에서 데이터 복원 완료 시 호출
+      // MMKV?먯꽌 ?곗씠??蹂듭썝 ?꾨즺 ???몄텧
       onRehydrateStorage: () => (state) => {
-        // ⚠️ 중요: partialize에서 isAdmin/isEmployer/isStaff는 저장하지 않으므로
-        // 복원된 profile을 기반으로 역할 플래그 재계산 필요
-        // Phase 8: RoleResolver.computeRoleFlags로 통합 (이원화 해결)
+        // ?좑툘 以묒슂: partialize?먯꽌 isAdmin/isEmployer/isStaff????ν븯吏 ?딆쑝誘濡?        // 蹂듭썝??profile??湲곕컲?쇰줈 ??븷 ?뚮옒洹??ш퀎???꾩슂
+        // Phase 8: RoleResolver.computeRoleFlags濡??듯빀 (?댁썝???닿껐)
         //
-        // NOTE: 동기적으로 setState 호출 (queueMicrotask 제거)
-        // - queueMicrotask 사용 시 useAppInitialize의 setProfile()과 레이스 컨디션 발생
-        // - microtask가 setProfile() 이후에 실행되면 최신 roleFlags를 덮어쓰는 버그
-        // - Zustand setState는 React 외부 호출이므로 동기 호출 안전
+        // NOTE: ?숆린?곸쑝濡?setState ?몄텧 (queueMicrotask ?쒓굅)
+        // - queueMicrotask ?ъ슜 ??useAppInitialize??setProfile()怨??덉씠??而⑤뵒??諛쒖깮
+        // - microtask媛 setProfile() ?댄썑???ㅽ뻾?섎㈃ 理쒖떊 roleFlags瑜???뼱?곕뒗 踰꾧렇
+        // - Zustand setState??React ?몃? ?몄텧?대?濡??숆린 ?몄텧 ?덉쟾
         if (state?.profile) {
           const roleFlags = RoleResolver.computeRoleFlags(state.profile.role);
-          // 단일 setState로 원자적 업데이트 (중간 상태 노출 방지)
+          // ?⑥씪 setState濡??먯옄???낅뜲?댄듃 (以묎컙 ?곹깭 ?몄텧 諛⑹?)
           useAuthStore.setState({
             ...roleFlags,
             isAuthenticated: !!state.user,
             _hasHydrated: true,
           });
-          logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
+          logger.debug('AuthStore rehydration role flags recalculated', {
             component: 'AuthStore',
             role: state.profile?.role,
             ...roleFlags,
           });
         } else {
-          // profile이 없어도 hydration 완료 표시
+          // profile???놁뼱??hydration ?꾨즺 ?쒖떆
           useAuthStore.setState({ _hasHydrated: true });
         }
       },
@@ -263,7 +263,7 @@ export const useAuthStore = create<AuthState>()(
 );
 
 // ============================================================================
-// Selectors (성능 최적화를 위한 선택자)
+// Selectors (?깅뒫 理쒖쟻?붾? ?꾪븳 ?좏깮??
 // ============================================================================
 
 export const selectUser = (state: AuthState) => state.user;
@@ -282,24 +282,22 @@ export const selectHasHydrated = (state: AuthState) => state._hasHydrated;
 // ============================================================================
 
 /**
- * 인증 상태만 가져오기 (자주 사용)
+ * ?몄쬆 ?곹깭留?媛?몄삤湲?(?먯＜ ?ъ슜)
  */
 export const useIsAuthenticated = () => useAuthStore(selectIsAuthenticated);
 
 /**
- * 사용자 정보만 가져오기
- */
+ * ?ъ슜???뺣낫留?媛?몄삤湲? */
 export const useUser = () => useAuthStore(selectUser);
 
 /**
- * 프로필 정보만 가져오기
- */
+ * ?꾨줈???뺣낫留?媛?몄삤湲? */
 export const useProfile = () => useAuthStore(selectProfile);
 
 /**
- * 역할 기반 권한 체크
+ * ??븷 湲곕컲 沅뚰븳 泥댄겕
  *
- * Phase 8: RoleResolver.hasPermission 사용 (이원화 해결)
+ * Phase 8: RoleResolver.hasPermission ?ъ슜 (?댁썝???닿껐)
  */
 export const useHasRole = (requiredRole: UserRole) => {
   const profile = useAuthStore(selectProfile);
@@ -313,42 +311,33 @@ export const useHasRole = (requiredRole: UserRole) => {
 // ============================================================================
 
 /**
- * Hydration 완료 상태 훅
- */
+ * Hydration ?꾨즺 ?곹깭 ?? */
 export const useHasHydrated = () => useAuthStore(selectHasHydrated);
 
 /**
- * Hydration 완료 대기 유틸리티
- * AsyncStorage에서 데이터 복원이 완료될 때까지 대기
- *
- * @param timeout - 최대 대기 시간 (ms), 기본값 5000ms
- * @returns Promise<boolean> - 복원 완료 여부
+ * Hydration ?꾨즺 ?湲??좏떥由ы떚
+ * AsyncStorage?먯꽌 ?곗씠??蹂듭썝???꾨즺???뚭퉴吏 ?湲? *
+ * @param timeout - 理쒕? ?湲??쒓컙 (ms), 湲곕낯媛?5000ms
+ * @returns Promise<boolean> - 蹂듭썝 ?꾨즺 ?щ?
  *
  * @example
  * ```ts
- * // 앱 초기화 시
- * const hydrated = await waitForHydration();
+ * // ??珥덇린???? * const hydrated = await waitForHydration();
  * if (hydrated) {
- *   // 복원된 상태로 작업 수행
+ *   // 蹂듭썝???곹깭濡??묒뾽 ?섑뻾
  * }
  * ```
  */
 export async function waitForHydration(timeout = 5000): Promise<boolean> {
-  // 이미 hydrated인 경우 즉시 반환
+  // ?대? hydrated??寃쎌슦 利됱떆 諛섑솚
   if (useAuthStore.getState()._hasHydrated) {
     return true;
   }
 
-  // hydration 완료 대기
+  // hydration ?꾨즺 ?湲?
   return new Promise<boolean>((resolve) => {
     const timeoutId = setTimeout(() => {
       unsubscribe();
-
-      if (!useAuthStore.getState()._hasHydrated) {
-        // Persist 복원이 지연되더라도 기본 인증 상태로 계속 진행한다.
-        useAuthStore.setState({ _hasHydrated: true });
-      }
-
       resolve(false);
     }, timeout);
 

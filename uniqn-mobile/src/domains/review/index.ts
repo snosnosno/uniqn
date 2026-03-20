@@ -6,6 +6,8 @@
  */
 
 export { ReviewValidator } from './ReviewValidator';
+export { isWithinReviewDeadline } from './reviewDeadline';
+export { isReviewerType, resolveReviewerType, resolveReviewerTypeFromRole } from './reviewerType';
 export type {
   WorkLogForReview,
   ReviewEligibilityResult,

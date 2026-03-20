@@ -9,14 +9,13 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { APP_VERSION } from '@/constants/version';
 import { getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
-import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
+import { selectStartupPhase, useAppStartupStore } from '@/stores/appStartupStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { logger } from '@/utils/logger';
 
 const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
 const SPLASH_REDIRECT_DELAY_MS = 500;
-const HYDRATION_FALLBACK_DELAY_MS = 5000;
 
 const SPINNER_COLOR = {
   light: '#A855F7',
@@ -24,7 +23,7 @@ const SPINNER_COLOR = {
 } as const;
 
 export default function SplashScreen() {
-  const hasHydrated = useAuthStore(selectHasHydrated);
+  const startupPhase = useAppStartupStore(selectStartupPhase);
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -36,16 +35,7 @@ export default function SplashScreen() {
   });
 
   useEffect(() => {
-    if (!hasHydrated) {
-      const fallback = setTimeout(() => {
-        logger.warn('Hydration timed out, falling back to login', {
-          component: 'SplashScreen',
-        });
-        router.replace('/(auth)/login');
-      }, HYDRATION_FALLBACK_DELAY_MS);
-
-      return () => clearTimeout(fallback);
-    }
+    if (startupPhase !== 'resolved') return;
 
     if (user && !profile) return;
 
@@ -54,7 +44,7 @@ export default function SplashScreen() {
     }, SPLASH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [authenticatedEntryRoute, hasHydrated, profile, user]);
+  }, [authenticatedEntryRoute, profile, startupPhase, user]);
 
   return (
     <View className="flex-1 items-center justify-center bg-surface-dark">

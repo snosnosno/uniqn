@@ -73,4 +73,32 @@ describe('applicationDocumentSchema', () => {
 
     expect(result).toBeNull();
   });
+
+  it('accepts cancellation request timestamps from both legacy strings and Firestore timestamps', () => {
+    const parsed = applicationDocumentSchema.parse({
+      ...baseDocument,
+      status: 'cancellation_pending',
+      cancellationRequest: {
+        status: 'rejected',
+        requestedAt: '2025-01-02T10:00:00.000Z',
+        reviewedAt: createMockTimestamp(1735862400),
+        reviewedBy: 'owner-1',
+        reason: '일정 변경',
+        rejectionReason: '대체 인력 없음',
+      },
+    });
+
+    expect(parsed.cancellationRequest?.requestedAt).toBe('2025-01-02T10:00:00.000Z');
+
+    if (parsed.cancellationRequest?.status !== 'rejected') {
+      throw new Error('Expected rejected cancellation request');
+    }
+
+    const reviewedAt = parsed.cancellationRequest.reviewedAt;
+    if (typeof reviewedAt === 'string') {
+      throw new Error('Expected reviewedAt to be a Timestamp-like value');
+    }
+
+    expect(reviewedAt.toDate()).toBeInstanceOf(Date);
+  });
 });

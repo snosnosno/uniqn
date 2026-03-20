@@ -30,6 +30,9 @@ export const workLogStatusSchema = z.enum([
 
 export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;
 
+const timeFieldSchema = timestampSchema.or(z.string());
+const optionalTimeFieldSchema = timeFieldSchema.nullable().optional();
+
 // ============================================================================
 // 근무 기록 스키마
 // ============================================================================
@@ -38,14 +41,16 @@ export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;
  * 근무 시간 수정 이력 스키마
  */
 export const workTimeModificationSchema = z.object({
-  modifiedAt: z.string(),
+  modifiedAt: timeFieldSchema,
   modifiedBy: z.string().min(1, { message: '수정자 ID는 필수입니다' }),
   reason: z
     .string()
     .min(1, { message: '수정 사유는 필수입니다' })
     .max(200, { message: '사유는 200자를 초과할 수 없습니다' }),
-  previousStartTime: z.string().optional(),
-  previousEndTime: z.string().optional(),
+  previousStartTime: optionalTimeFieldSchema,
+  previousEndTime: optionalTimeFieldSchema,
+  newStartTime: optionalTimeFieldSchema,
+  newEndTime: optionalTimeFieldSchema,
 });
 
 export type WorkTimeModificationData = z.infer<typeof workTimeModificationSchema>;

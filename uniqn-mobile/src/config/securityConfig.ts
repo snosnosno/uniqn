@@ -53,6 +53,17 @@ export const KNOWN_STORAGE_KEYS = [
   'autoLoginEnabled',
 ] as const;
 
+/**
+ * Web storage policy documentation:
+ * - auth shell / tokens: session scoped
+ * - theme and non-sensitive preferences: local persistence
+ */
+export const WEB_STORAGE_POLICY = {
+  authStateScope: 'session',
+  sensitiveKeyScope: 'session',
+  preferenceScope: 'local',
+} as const;
+
 // ============================================================================
 // Token Configuration
 // ============================================================================

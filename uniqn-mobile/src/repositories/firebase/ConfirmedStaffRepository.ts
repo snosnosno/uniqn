@@ -1,18 +1,16 @@
 /**
  * UNIQN Mobile - Firebase Confirmed Staff Repository
  *
- * @description Firebase Firestore 기반 Confirmed Staff Repository 구현
+ * @description Firebase Firestore 湲곕컲 Confirmed Staff Repository 援ы쁽
  * @version 1.0.0
  *
- * 책임:
- * 1. Firebase 쿼리/트랜잭션 실행
- * 2. 멀티 컬렉션 트랜잭션 (WorkLog + Application + JobPosting)
- * 3. 실시간 구독 관리
- *
- * 개선사항:
- * - 중복 쿼리 패턴 통합
- * - 트랜잭션 로직 캡슐화
- */
+ * 梨낆엫:
+ * 1. Firebase 荑쇰━/?몃옖??뀡 ?ㅽ뻾
+ * 2. 硫??而щ젆???몃옖??뀡 (WorkLog + Application + JobPosting)
+ * 3. ?ㅼ떆媛?援щ룆 愿由? *
+ * 媛쒖꽑?ы빆:
+ * - 以묐났 荑쇰━ ?⑦꽩 ?듯빀
+ * - ?몃옖??뀡 濡쒖쭅 罹≪뒓?? */
 
 import {
   collection,
@@ -34,7 +32,11 @@ import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
-import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
+import type { WorkLog, RoleChangeHistory } from '@/types';
+import {
+  buildLegacyTimeModification,
+  writeTimeModificationLog,
+} from './workLog/timeModificationLogs';
 import type {
   IConfirmedStaffRepository,
   UpdateRoleContext,
@@ -60,7 +62,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async getByJobPostingId(jobPostingId: string): Promise<WorkLog[]> {
     try {
-      logger.info('공고별 확정 스태프 WorkLog 조회', { jobPostingId });
+      logger.info('怨듦퀬蹂??뺤젙 ?ㅽ깭??WorkLog 議고쉶', { jobPostingId });
 
       const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
       const q = query(
@@ -77,7 +79,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         }))
       );
 
-      logger.info('공고별 확정 스태프 조회 완료', {
+      logger.info('怨듦퀬蹂??뺤젙 ?ㅽ깭??議고쉶 ?꾨즺', {
         jobPostingId,
         count: workLogs.length,
       });
@@ -85,7 +87,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
       return workLogs;
     } catch (error) {
       throw handleServiceError(error, {
-        operation: '공고별 확정 스태프 조회',
+        operation: '怨듦퀬蹂??뺤젙 ?ㅽ깭??議고쉶',
         component: 'ConfirmedStaffRepository',
         context: { jobPostingId },
       });
@@ -94,7 +96,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async getByJobPostingAndDate(jobPostingId: string, date: string): Promise<WorkLog[]> {
     try {
-      logger.info('날짜별 확정 스태프 WorkLog 조회', { jobPostingId, date });
+      logger.info('?좎쭨蹂??뺤젙 ?ㅽ깭??WorkLog 議고쉶', { jobPostingId, date });
 
       const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
       const q = query(
@@ -114,7 +116,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
       return workLogs;
     } catch (error) {
       throw handleServiceError(error, {
-        operation: '날짜별 확정 스태프 조회',
+        operation: '?좎쭨蹂??뺤젙 ?ㅽ깭??議고쉶',
         component: 'ConfirmedStaffRepository',
         context: { jobPostingId, date },
       });
@@ -127,7 +129,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async updateRoleWithTransaction(context: UpdateRoleContext): Promise<void> {
     try {
-      logger.info('스태프 역할 변경 트랜잭션 시작', { workLogId: context.workLogId });
+      logger.info('?ㅽ깭????븷 蹂寃??몃옖??뀡 ?쒖옉', { workLogId: context.workLogId });
 
       const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
 
@@ -136,7 +138,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         if (!workLogDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '근무 기록을 찾을 수 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎',
           });
         }
 
@@ -146,13 +148,13 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
         if (!workLog) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '근무 기록 데이터가 올바르지 않습니다',
+            userMessage: '洹쇰Т 湲곕줉 ?곗씠?곌? ?щ컮瑜댁? ?딆뒿?덈떎',
           });
         }
 
         const previousRole = workLog.role;
 
-        // 역할 변경 이력 저장
+        // ??븷 蹂寃??대젰 ???
         const roleChangeHistory: RoleChangeHistory[] = workLog.roleChangeHistory || [];
         roleChangeHistory.push({
           previousRole,
@@ -162,7 +164,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           changedAt: Timestamp.now(),
         });
 
-        // 표준 역할 vs 커스텀 역할 처리
+        // ?쒖? ??븷 vs 而ㅼ뒪? ??븷 泥섎━
         const roleUpdate = context.isStandardRole
           ? { role: context.newRole, customRole: null }
           : { role: 'other', customRole: context.newRole };
@@ -174,13 +176,13 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       });
 
-      logger.info('스태프 역할 변경 완료', { workLogId: context.workLogId });
+      logger.info('?ㅽ깭????븷 蹂寃??꾨즺', { workLogId: context.workLogId });
     } catch (error) {
       if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {
-        operation: '스태프 역할 변경',
+        operation: '?ㅽ깭????븷 蹂寃?',
         component: 'ConfirmedStaffRepository',
         context: { workLogId: context.workLogId },
       });
@@ -189,10 +191,10 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void> {
     try {
-      logger.info('근무 시간 수정 트랜잭션 시작', {
+      logger.info('洹쇰Т ?쒓컙 ?섏젙 ?몃옖??뀡 ?쒖옉', {
         workLogId: context.workLogId,
-        checkInTime: context.checkInTime?.toISOString() ?? '미정',
-        checkOutTime: context.checkOutTime?.toISOString() ?? '미정',
+        checkInTime: context.checkInTime?.toISOString() ?? '誘몄젙',
+        checkOutTime: context.checkOutTime?.toISOString() ?? '誘몄젙',
       });
 
       const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
@@ -202,7 +204,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         if (!workLogDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '근무 기록을 찾을 수 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎',
           });
         }
 
@@ -212,26 +214,27 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
         if (!workLog) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '근무 기록 데이터가 올바르지 않습니다',
+            userMessage: '洹쇰Т 湲곕줉 ?곗씠?곌? ?щ컮瑜댁? ?딆뒿?덈떎',
           });
         }
 
-        // 시간 수정 이력 저장
-        const modificationHistory: WorkTimeModification[] = workLog.modificationHistory || [];
+        // ?쒓컙 ?섏젙 ?대젰 ???
+        const modificationHistory = workLog.modificationHistory || [];
         const prevCheckIn = workLog.checkInTime ?? null;
         const prevCheckOut = workLog.checkOutTime ?? null;
 
-        modificationHistory.push({
-          previousStartTime: prevCheckIn,
-          previousEndTime: prevCheckOut,
-          newStartTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
-          newEndTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
-          reason: context.reason,
-          modifiedBy: context.modifiedBy,
-          modifiedAt: Timestamp.now(),
-        });
+        modificationHistory.push(
+          buildLegacyTimeModification({
+            previousStartTime: prevCheckIn,
+            previousEndTime: prevCheckOut,
+            newStartTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
+            newEndTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
+            reason: context.reason,
+            modifiedBy: context.modifiedBy,
+          })
+        );
 
-        // 업데이트 데이터 구성 (scheduledStartTime/scheduledEndTime은 checkInTime의 중복이므로 제거)
+        // ?낅뜲?댄듃 ?곗씠??援ъ꽦 (scheduledStartTime/scheduledEndTime? checkInTime??以묐났?대?濡??쒓굅)
         const updateData: Record<string, unknown> = {
           checkInTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
           checkOutTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
@@ -239,23 +242,32 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           updatedAt: serverTimestamp(),
         };
 
-        // 시간에 따른 상태 변경
+        // ?쒓컙???곕Ⅸ ?곹깭 蹂寃?
         if (context.checkOutTime) {
           updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
         } else if (!context.checkInTime) {
           updateData.status = STATUS.WORK_LOG.SCHEDULED;
         }
 
+        writeTimeModificationLog(transaction, context.workLogId, {
+          previousStartTime: prevCheckIn,
+          previousEndTime: prevCheckOut,
+          newStartTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
+          newEndTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
+          reason: context.reason,
+          modifiedBy: context.modifiedBy,
+        });
+
         transaction.update(workLogRef, updateData);
       });
 
-      logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });
+      logger.info('洹쇰Т ?쒓컙 ?섏젙 ?꾨즺', { workLogId: context.workLogId });
     } catch (error) {
       if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {
-        operation: '근무 시간 수정',
+        operation: '洹쇰Т ?쒓컙 ?섏젙',
         component: 'ConfirmedStaffRepository',
         context: { workLogId: context.workLogId },
       });
@@ -264,7 +276,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async deleteWithTransaction(context: DeleteConfirmedStaffContext): Promise<void> {
     try {
-      logger.info('확정 스태프 삭제 트랜잭션 시작', {
+      logger.info('?뺤젙 ?ㅽ깭????젣 ?몃옖??뀡 ?쒖옉', {
         workLogId: context.workLogId,
         jobPostingId: context.jobPostingId,
       });
@@ -273,11 +285,11 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
         const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, context.jobPostingId);
 
-        // WorkLog 조회
+        // WorkLog 議고쉶
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '근무 기록을 찾을 수 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎',
           });
         }
 
@@ -287,34 +299,34 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
         if (!workLog) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '근무 기록 데이터가 올바르지 않습니다',
+            userMessage: '洹쇰Т 湲곕줉 ?곗씠?곌? ?щ컮瑜댁? ?딆뒿?덈떎',
           });
         }
 
-        // 이미 출퇴근한 경우 삭제 불가
+        // ?대? 異쒗눜洹쇳븳 寃쎌슦 ??젣 遺덇?
         if (
           workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
           workLog.status === STATUS.WORK_LOG.CHECKED_OUT
         ) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '이미 출퇴근한 스태프는 삭제할 수 없습니다',
+            userMessage: '?대? 異쒗눜洹쇳븳 ?ㅽ깭?꾨뒗 ??젣?????놁뒿?덈떎',
           });
         }
 
-        // JobPosting 조회
+        // JobPosting 議고쉶
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '공고를 찾을 수 없습니다',
+            userMessage: '怨듦퀬瑜?李얠쓣 ???놁뒿?덈떎',
           });
         }
 
-        // Application 조회 (모든 읽기를 쓰기 전에 수행)
+        // Application 議고쉶 (紐⑤뱺 ?쎄린瑜??곌린 ?꾩뿉 ?섑뻾)
         const applicationId = `${context.jobPostingId}_${context.staffId}`;
         const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
-        // 1. WorkLog 상태를 cancelled로 변경
+        // 1. WorkLog ?곹깭瑜?cancelled濡?蹂寃?
         transaction.update(workLogRef, {
           status: STATUS.WORK_LOG.CANCELLED,
           cancelledReason: context.reason,
@@ -322,7 +334,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           updatedAt: serverTimestamp(),
         });
 
-        // 2. Application이 있으면 상태 복원
+        // 2. Application???덉쑝硫??곹깭 蹂듭썝
         if (applicationDoc.exists()) {
           transaction.update(applicationRef, {
             status: STATUS.APPLICATION.APPLIED,
@@ -330,14 +342,14 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           });
         }
 
-        // 3. JobPosting의 filledPositions 감소
+        // 3. JobPosting??filledPositions 媛먯냼
         transaction.update(jobPostingRef, {
           filledPositions: increment(-1),
           updatedAt: serverTimestamp(),
         });
       });
 
-      logger.info('확정 스태프 삭제 완료', {
+      logger.info('?뺤젙 ?ㅽ깭????젣 ?꾨즺', {
         workLogId: context.workLogId,
         jobPostingId: context.jobPostingId,
       });
@@ -346,7 +358,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         throw error;
       }
       throw handleServiceError(error, {
-        operation: '확정 스태프 삭제',
+        operation: '?뺤젙 ?ㅽ깭????젣',
         component: 'ConfirmedStaffRepository',
         context: { workLogId: context.workLogId, jobPostingId: context.jobPostingId },
       });
@@ -355,40 +367,40 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async markAsNoShow(context: MarkNoShowContext): Promise<void> {
     try {
-      logger.info('노쇼 처리', { workLogId: context.workLogId });
+      logger.info('?몄눥 泥섎━', { workLogId: context.workLogId });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        // 1. WorkLog 읽기
+        // 1. WorkLog ?쎄린
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '근무 기록을 찾을 수 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎',
           });
         }
 
-        // 2. JobPosting 읽기 → 소유자 확인
+        // 2. JobPosting ?쎄린 ???뚯쑀???뺤씤
         const workLogData = workLogDoc.data();
         const jobPostingId = workLogData?.jobPostingId;
         if (typeof jobPostingId !== 'string' || !jobPostingId) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '근무 기록에 공고 정보가 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??怨듦퀬 ?뺣낫媛 ?놁뒿?덈떎',
           });
         }
         const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '공고를 찾을 수 없습니다',
+            userMessage: '怨듦퀬瑜?李얠쓣 ???놁뒿?덈떎',
           });
         }
         if (jobPostingDoc.data()?.ownerId !== context.ownerId) {
           throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-            userMessage: '공고 소유자만 노쇼 처리할 수 있습니다',
+            userMessage: '怨듦퀬 ?뚯쑀?먮쭔 ?몄눥 泥섎━?????덉뒿?덈떎',
           });
         }
 
-        // 3. WorkLog 업데이트
+        // 3. WorkLog ?낅뜲?댄듃
         transaction.update(workLogRef, {
           status: STATUS.CONFIRMED_STAFF.NO_SHOW,
           noShowReason: context.reason,
@@ -397,13 +409,13 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
       });
 
-      logger.info('노쇼 처리 완료', { workLogId: context.workLogId });
+      logger.info('?몄눥 泥섎━ ?꾨즺', { workLogId: context.workLogId });
     } catch (error) {
       if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {
-        operation: '노쇼 처리',
+        operation: '?몄눥 泥섎━',
         component: 'ConfirmedStaffRepository',
         context: { workLogId: context.workLogId },
       });
@@ -412,47 +424,47 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
   async updateStatus(context: UpdateStaffStatusContext): Promise<void> {
     try {
-      logger.info('스태프 상태 변경', { workLogId: context.workLogId, status: context.status });
+      logger.info('?ㅽ깭???곹깭 蹂寃?', { workLogId: context.workLogId, status: context.status });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        // 1. WorkLog 읽기
+        // 1. WorkLog ?쎄린
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '근무 기록을 찾을 수 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎',
           });
         }
 
-        // 2. JobPosting 읽기 → 소유자 확인
+        // 2. JobPosting ?쎄린 ???뚯쑀???뺤씤
         const workLogData = workLogDoc.data();
         const jobPostingId = workLogData?.jobPostingId;
         if (typeof jobPostingId !== 'string' || !jobPostingId) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '근무 기록에 공고 정보가 없습니다',
+            userMessage: '洹쇰Т 湲곕줉??怨듦퀬 ?뺣낫媛 ?놁뒿?덈떎',
           });
         }
         const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
           throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-            userMessage: '공고를 찾을 수 없습니다',
+            userMessage: '怨듦퀬瑜?李얠쓣 ???놁뒿?덈떎',
           });
         }
         if (jobPostingDoc.data()?.ownerId !== context.ownerId) {
           throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-            userMessage: '공고 소유자만 상태를 변경할 수 있습니다',
+            userMessage: '怨듦퀬 ?뚯쑀?먮쭔 ?곹깭瑜?蹂寃쏀븷 ???덉뒿?덈떎',
           });
         }
 
-        // 3. WorkLog 업데이트
+        // 3. WorkLog ?낅뜲?댄듃
         transaction.update(workLogRef, {
           status: context.status,
           updatedAt: serverTimestamp(),
         });
       });
 
-      logger.info('스태프 상태 변경 완료', {
+      logger.info('?ㅽ깭???곹깭 蹂寃??꾨즺', {
         workLogId: context.workLogId,
         status: context.status,
       });
@@ -461,7 +473,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         throw error;
       }
       throw handleServiceError(error, {
-        operation: '스태프 상태 변경',
+        operation: '?ㅽ깭???곹깭 蹂寃?',
         component: 'ConfirmedStaffRepository',
         context: { workLogId: context.workLogId, status: context.status },
       });
@@ -476,7 +488,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     jobPostingId: string,
     callbacks: ConfirmedStaffSubscriptionCallbacks
   ): Unsubscribe {
-    logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
+    logger.info('?뺤젙 ?ㅽ깭???ㅼ떆媛?援щ룆 ?쒖옉', { jobPostingId });
 
     const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
     const q = query(
@@ -499,13 +511,13 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
           callbacks.onUpdate(workLogs);
         } catch (error) {
-          logger.error('확정 스태프 구독 처리 에러', toError(error), { jobPostingId });
+          logger.error('?뺤젙 ?ㅽ깭??援щ룆 泥섎━ ?먮윭', toError(error), { jobPostingId });
           callbacks.onError?.(toError(error));
         }
       },
       (error) => {
         const appError = handleServiceError(error, {
-          operation: '확정 스태프 구독',
+          operation: '?뺤젙 ?ㅽ깭??援щ룆',
           component: 'ConfirmedStaffRepository',
           context: { jobPostingId },
         });

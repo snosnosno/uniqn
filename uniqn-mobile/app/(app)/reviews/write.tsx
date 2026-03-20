@@ -9,14 +9,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ErrorState } from '@/components/ui';
 import ReviewForm from '@/components/review/ReviewForm';
+import { isReviewerType } from '@/domains/review';
 import { useCreateReview } from '@/hooks/useReviews';
-import { REVIEWER_TYPES } from '@/types/review';
 import type { ReviewerType } from '@/types/review';
 import type { ReviewFormSchema } from '@/schemas/review.schema';
-
-function isValidReviewerType(value: string | undefined): value is ReviewerType {
-  return !!value && (REVIEWER_TYPES as readonly string[]).includes(value);
-}
 
 export default function ReviewWriteScreen() {
   const params = useLocalSearchParams<{
@@ -30,7 +26,7 @@ export default function ReviewWriteScreen() {
   }>();
 
   const reviewerType = useMemo<ReviewerType | null>(
-    () => (isValidReviewerType(params.reviewerType) ? params.reviewerType : null),
+    () => (isReviewerType(params.reviewerType) ? params.reviewerType : null),
     [params.reviewerType]
   );
 

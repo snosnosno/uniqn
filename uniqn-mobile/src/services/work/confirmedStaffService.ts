@@ -204,6 +204,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
   // TimeInput을 Date로 변환 (비즈니스 로직)
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
   const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
+  const modifiedBy = input.modifiedBy ?? requireCurrentUser().uid;
 
   logger.info('근무 시간 수정', {
     workLogId: input.workLogId,
@@ -216,7 +217,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
     checkInTime: checkInDate,
     checkOutTime: checkOutDate,
     reason: input.reason,
-    modifiedBy: input.modifiedBy ?? 'system',
+    modifiedBy,
   });
 
   logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });

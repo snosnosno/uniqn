@@ -6,6 +6,10 @@
 
 import { getDoc, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { FirebaseWorkLogRepository } from '../workLog';
+import {
+  hydrateWorkLogModificationHistory,
+  hydrateWorkLogsModificationHistory,
+} from '../workLog/timeModificationLogs';
 
 // ============================================================================
 // Mocks
@@ -54,6 +58,11 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
 
 jest.mock('@/errors', () => ({
   toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
+}));
+
+jest.mock('../workLog/timeModificationLogs', () => ({
+  hydrateWorkLogModificationHistory: jest.fn(async (workLog: unknown) => workLog),
+  hydrateWorkLogsModificationHistory: jest.fn(async (workLogs: unknown) => workLogs),
 }));
 
 // Mock QueryBuilder
@@ -179,6 +188,10 @@ describe('FirebaseWorkLogRepository', () => {
       expect(result).not.toBeNull();
       expect(result?.id).toBe('wl-1');
       expect(result?.staffId).toBe('staff-1');
+      expect(hydrateWorkLogModificationHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'wl-1' }),
+        { force: true }
+      );
     });
 
     it('should return null when document does not exist', async () => {
@@ -316,6 +329,9 @@ describe('FirebaseWorkLogRepository', () => {
       const result = await repository.getByJobPostingId('job-1');
 
       expect(result).toHaveLength(2);
+      expect(hydrateWorkLogsModificationHistory).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ id: 'wl-1' })])
+      );
     });
 
     it('should return empty array when no work logs found', async () => {

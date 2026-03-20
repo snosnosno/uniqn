@@ -260,7 +260,7 @@ describe('AuthStore', () => {
       await expect(waitForHydration(100)).resolves.toBe(true);
     });
 
-    it('should mark hydration as complete after timing out', async () => {
+    it('should time out without forcing hydration to complete', async () => {
       jest.useFakeTimers();
 
       act(() => {
@@ -275,7 +275,7 @@ describe('AuthStore', () => {
       });
 
       await expect(hydrationPromise).resolves.toBe(false);
-      expect(selectHasHydrated(useAuthStore.getState())).toBe(true);
+      expect(selectHasHydrated(useAuthStore.getState())).toBe(false);
     });
   });
 

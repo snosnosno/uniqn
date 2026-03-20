@@ -9,9 +9,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Loading, ErrorState } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import ReviewBlindMessage from '@/components/review/ReviewBlindMessage';
+import { resolveReviewerType } from '@/domains/review';
 import { useWorkLogReviews } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
-import { REVIEWER_TYPES } from '@/types/review';
 import type { ReviewerType } from '@/types/review';
 
 export default function ReviewDetailScreen() {
@@ -34,12 +34,7 @@ export default function ReviewDetailScreen() {
   }>();
   const { profile } = useAuth();
 
-  const myReviewerType: ReviewerType =
-    reviewerType && (REVIEWER_TYPES as readonly string[]).includes(reviewerType)
-      ? (reviewerType as ReviewerType)
-      : profile?.role === 'employer'
-        ? 'employer'
-        : 'staff';
+  const myReviewerType: ReviewerType = resolveReviewerType(reviewerType, profile?.role);
 
   const { data, isLoading, error } = useWorkLogReviews(workLogId, myReviewerType);
 
