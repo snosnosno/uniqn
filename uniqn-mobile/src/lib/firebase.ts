@@ -20,6 +20,9 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import * as firebaseAuthModule from 'firebase/auth';
 import {
   getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
   connectFirestoreEmulator,
   Firestore,
   Timestamp,
@@ -235,7 +238,19 @@ export function getFirebaseAuth(): Auth {
 export function getFirebaseDb(): Firestore {
   if (!firebaseDb) {
     const app = initializeFirebaseApp();
-    firebaseDb = getFirestore(app);
+    if (Platform.OS === 'web') {
+      try {
+        firebaseDb = initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentSingleTabManager({}),
+          }),
+        });
+      } catch {
+        firebaseDb = getFirestore(app);
+      }
+    } else {
+      firebaseDb = getFirestore(app);
+    }
 
     // E2E 테스트용 에뮬레이터 연결
     if (shouldUseEmulator() && !emulatorFirestoreConnected) {

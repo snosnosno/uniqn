@@ -124,15 +124,18 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
   maskValue: jest.fn((value: string) => value),
 }));
 
-jest.mock('@/services/observability', () => ({
-  checkLoginAttempts: jest.fn(async () => undefined),
-  incrementLoginAttempts: jest.fn(async () => undefined),
-  resetLoginAttempts: jest.fn(async () => undefined),
+jest.mock('@/services/observability/analyticsService', () => ({
   trackLogin: (...args: unknown[]) => mockTrackLogin(...args),
   trackSignup: (...args: unknown[]) => mockTrackSignup(...args),
   trackLogout: (...args: unknown[]) => mockTrackLogout(...args),
   setUserId: (...args: unknown[]) => mockSetUserId(...args),
   setUserProperties: (...args: unknown[]) => mockSetUserProperties(...args),
+}));
+
+jest.mock('@/services/observability/sessionService', () => ({
+  checkLoginAttempts: jest.fn(async () => undefined),
+  incrementLoginAttempts: jest.fn(async () => undefined),
+  resetLoginAttempts: jest.fn(async () => undefined),
 }));
 
 const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;

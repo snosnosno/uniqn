@@ -1,58 +1,136 @@
-/**
- * UNIQN Mobile - 구인공고 상세 훅
- *
- * @description 단일 공고 상세 정보 조회
- * @version 1.1.0
- *
- * @changelog
- * - 1.1.0: staleTime: 0으로 변경 (지원 직전 최신 데이터 필요)
- *          gcTime은 유지하여 뒤로가기 시 즉시 표시
- */
-
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { ERROR_CODES, isAppError, isPermissionError } from '@/errors/AppError';
+import { cachingPolicies, queryKeys } from '@/lib/queryClient';
+import { useAuthStore } from '@/stores/authStore';
+import {
+  getCriticalOfflineCache,
+  removeCriticalOfflineCache,
+  setCriticalOfflineCache,
+} from '@/services/offline/criticalOfflineCache';
 import { getJobPostingById } from '@/services';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
-
-// ============================================================================
-// Types
-// ============================================================================
+import type { JobPosting } from '@/types';
 
 interface UseJobDetailOptions {
   enabled?: boolean;
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
+const JOB_DETAIL_CACHE_SCHEMA_VERSION = 2;
+
+function buildJobDetailCacheKey(jobId: string, userId?: string) {
+  return ['jobPostings', 'detail', userId ?? 'public', jobId].join(':');
+}
+
+export function getJobDetailQueryKey(jobId: string, userId?: string) {
+  return [...queryKeys.jobPostings.detail(jobId), userId ?? 'public'] as const;
+}
+
+export function getJobDetailQueryOptions(jobId: string, userId?: string) {
+  return {
+    queryKey: getJobDetailQueryKey(jobId, userId),
+    queryFn: () => getJobPostingById(jobId),
+    staleTime: 0,
+    gcTime: cachingPolicies.standard,
+  };
+}
+
+function shouldDiscardCachedJobDetail(error: unknown): boolean {
+  if (isPermissionError(error)) {
+    return true;
+  }
+
+  if (isAppError(error)) {
+    const discardableErrorCodes: string[] = [
+      ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+      ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+      ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
+    ];
+
+    return discardableErrorCodes.includes(error.code);
+  }
+
+  const errorCode =
+    error !== null && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code)
+      : '';
+
+  return (
+    errorCode === 'permission-denied' ||
+    errorCode === 'firestore/permission-denied' ||
+    errorCode === 'not-found' ||
+    errorCode === 'firestore/not-found'
+  );
+}
 
 export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
   const { enabled = true } = options;
   const queryClient = useQueryClient();
+  const userId = useAuthStore((state) => state.user?.uid);
+  const { isOnline } = useNetworkStatus();
+  const cacheKey = useMemo(() => buildJobDetailCacheKey(jobId, userId), [jobId, userId]);
+  const detailQueryOptions = useMemo(
+    () => getJobDetailQueryOptions(jobId, userId),
+    [jobId, userId]
+  );
+  const detailQueryKey = detailQueryOptions.queryKey;
 
   const query = useQuery({
-    queryKey: queryKeys.jobPostings.detail(jobId),
-    queryFn: () => getJobPostingById(jobId),
-    enabled: enabled && !!jobId,
-    // 공고 상세는 지원 직전 확인이므로 항상 fresh fetch
-    staleTime: 0,
-    // 뒤로가기 시 즉시 표시를 위해 메모리 유지
-    gcTime: cachingPolicies.standard,
+    ...detailQueryOptions,
+    enabled: enabled && !!jobId && isOnline,
   });
 
-  // 리프레시 함수 (useCallback으로 안정화)
+  useEffect(() => {
+    if (!jobId || !query.isFetched) {
+      return;
+    }
+
+    if (query.data) {
+      setCriticalOfflineCache<JobPosting>(cacheKey, query.data, {
+        schemaVersion: JOB_DETAIL_CACHE_SCHEMA_VERSION,
+        userId,
+      });
+      return;
+    }
+
+    if (query.data === null || shouldDiscardCachedJobDetail(query.error)) {
+      removeCriticalOfflineCache(cacheKey);
+    }
+  }, [cacheKey, jobId, query.data, query.error, query.isFetched, userId]);
+
+  const cachedJob = useMemo(() => {
+    if (!enabled || !jobId) {
+      return null;
+    }
+
+    return (
+      getCriticalOfflineCache<JobPosting>(cacheKey, {
+        ttlMs: cachingPolicies.standard,
+        schemaVersion: JOB_DETAIL_CACHE_SCHEMA_VERSION,
+        userId,
+      })?.data ?? null
+    );
+  }, [cacheKey, enabled, jobId, userId]);
+
+  const shouldUseCachedJob = enabled && !!jobId && !isOnline && query.data === undefined;
+  const job = query.data !== undefined ? query.data : shouldUseCachedJob ? cachedJob : null;
+
   const refresh = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
     await queryClient.invalidateQueries({
-      queryKey: queryKeys.jobPostings.detail(jobId),
+      queryKey: detailQueryKey,
     });
     await query.refetch();
-  }, [queryClient, jobId, query]);
+  }, [detailQueryKey, isOnline, query, queryClient]);
 
   return {
-    job: query.data ?? null,
-    isLoading: query.isLoading,
-    isRefreshing: query.isRefetching,
-    error: query.error,
+    job,
+    isLoading: !job ? query.isLoading : false,
+    isRefreshing: isOnline ? query.isRefetching : false,
+    error: isOnline ? query.error : null,
     refresh,
   };
 }

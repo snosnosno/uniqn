@@ -136,7 +136,12 @@ export { useBookmarks, type BookmarkJobParams, type UseBookmarksReturn } from '.
 // Auto Login Hooks
 // ============================================================================
 
-export { useAutoLogin, checkAutoLoginEnabled, type UseAutoLoginReturn } from './useAutoLogin';
+export {
+  useAutoLogin,
+  checkAutoLoginEnabled,
+  AUTO_LOGIN_HELPER_TEXT,
+  type UseAutoLoginReturn,
+} from './useAutoLogin';
 
 // ============================================================================
 // Biometric Auth Hooks

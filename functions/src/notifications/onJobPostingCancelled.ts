@@ -15,10 +15,11 @@ import { logger } from "firebase-functions";
 import { STATUS } from "../constants/status";
 import { handleTriggerError } from "../errors";
 import { notifyApplicantsForJobPostingChange } from "./jobPostingNotificationHelper";
+import { type JobPostingLocationInput } from "../utils/jobPosting";
 
 interface JobPostingData {
   title?: string;
-  location?: string;
+  location?: JobPostingLocationInput;
   status?: string;
   createdBy?: string;
 }

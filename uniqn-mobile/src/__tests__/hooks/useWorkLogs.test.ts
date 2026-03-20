@@ -163,6 +163,24 @@ jest.mock('@/errors/AppError', () => ({
   },
 }));
 
+jest.mock('@/hooks/useNetworkStatus', () => ({
+  useNetworkStatus: () => ({
+    isOnline: true,
+    isOffline: false,
+    isChecking: false,
+    connectionType: 'wifi',
+    isInternetReachable: true,
+    lastChecked: null,
+    details: null,
+    checkConnection: jest.fn(),
+  }),
+}));
+
+jest.mock('@/services/offline/criticalOfflineCache', () => ({
+  getCriticalOfflineCache: jest.fn(() => null),
+  setCriticalOfflineCache: jest.fn(),
+}));
+
 // ============================================================================
 // Tests
 // ============================================================================

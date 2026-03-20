@@ -9,6 +9,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
+import { Checkbox } from '@/components/ui';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { loginSchema, type LoginFormData } from '@/schemas';
@@ -19,14 +20,27 @@ import { loginSchema, type LoginFormData } from '@/schemas';
 
 interface LoginFormProps {
   onSubmit: (data: LoginFormData) => Promise<void>;
+  autoLoginEnabled: boolean;
+  onAutoLoginChange: (enabled: boolean) => void;
+  autoLoginDisabled?: boolean;
+  autoLoginHelperText?: string;
   isLoading?: boolean;
+  disabled?: boolean;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
+export function LoginForm({
+  onSubmit,
+  autoLoginEnabled,
+  onAutoLoginChange,
+  autoLoginDisabled = false,
+  autoLoginHelperText,
+  isLoading = false,
+  disabled = false,
+}: LoginFormProps) {
   const {
     control,
     handleSubmit,
@@ -41,6 +55,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
   });
 
   const loading = isLoading || isSubmitting;
+  const isDisabled = loading || disabled;
 
   return (
     <View className="w-full flex-col gap-4">
@@ -60,7 +75,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
               autoCapitalize="none"
               autoComplete="email"
               error={errors.email?.message}
-              editable={!loading}
+              editable={!isDisabled}
             />
           )}
         />
@@ -81,14 +96,26 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
               type="password"
               autoComplete="password"
               error={errors.password?.message}
-              editable={!loading}
+              editable={!isDisabled}
             />
           )}
         />
       </View>
 
+      <View className="mt-2">
+        <Checkbox
+          checked={autoLoginEnabled}
+          onChange={onAutoLoginChange}
+          label="자동 로그인"
+          description={autoLoginHelperText}
+          disabled={isDisabled || autoLoginDisabled}
+          size="sm"
+          testID="auto-login-checkbox"
+        />
+      </View>
+
       {/* 비밀번호 찾기 링크 */}
-      <View className="mt-2 items-end">
+      <View className="items-end">
         <Link href="/forgot-password" asChild>
           <Pressable>
             <Text className="text-sm text-primary-600 dark:text-primary-400">
@@ -100,7 +127,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
 
       {/* 로그인 버튼 */}
       <View className="mt-6">
-        <Button onPress={handleSubmit(onSubmit)} disabled={loading} className="w-full">
+        <Button onPress={handleSubmit(onSubmit)} disabled={isDisabled} className="w-full">
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />

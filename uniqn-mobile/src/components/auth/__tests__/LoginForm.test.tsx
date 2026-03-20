@@ -56,6 +56,15 @@ jest.mock('@/schemas', () => ({
   loginSchema: {},
 }));
 
+const mockOnAutoLoginChange = jest.fn();
+
+const createDefaultProps = (onSubmit: jest.Mock) => ({
+  onSubmit,
+  autoLoginEnabled: true,
+  onAutoLoginChange: mockOnAutoLoginChange,
+  autoLoginHelperText: '끄면 다음 실행부터 다시 로그인해야 합니다.',
+});
+
 describe('LoginForm', () => {
   const mockOnSubmit = jest.fn();
 
@@ -64,30 +73,34 @@ describe('LoginForm', () => {
   });
 
   it('should render correctly', () => {
-    const { getByText, getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText, getByPlaceholderText } = render(
+      <LoginForm {...createDefaultProps(mockOnSubmit)} />
+    );
 
     expect(getByText('이메일')).toBeTruthy();
     expect(getByText('비밀번호')).toBeTruthy();
     expect(getByPlaceholderText('이메일을 입력하세요')).toBeTruthy();
     expect(getByPlaceholderText('비밀번호를 입력하세요')).toBeTruthy();
+    expect(getByText('자동 로그인')).toBeTruthy();
+    expect(getByText('끄면 다음 실행부터 다시 로그인해야 합니다.')).toBeTruthy();
     expect(getByText('로그인')).toBeTruthy();
   });
 
   it('should show login button', () => {
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     const loginButton = getByText('로그인');
     expect(loginButton).toBeTruthy();
   });
 
   it('should show forgot password link', () => {
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     expect(getByText('비밀번호를 잊으셨나요?')).toBeTruthy();
   });
 
   it('should show signup link', () => {
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     expect(getByText('계정이 없으신가요?')).toBeTruthy();
     expect(getByText('회원가입')).toBeTruthy();
@@ -96,7 +109,7 @@ describe('LoginForm', () => {
   it('should call onSubmit when login button is pressed', async () => {
     mockOnSubmit.mockResolvedValue(undefined);
 
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     const loginButton = getByText('로그인');
     fireEvent.press(loginButton);
@@ -110,16 +123,30 @@ describe('LoginForm', () => {
   });
 
   it('should show loading state when isLoading is true', () => {
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} isLoading={true} />);
+    const { getByText } = render(
+      <LoginForm {...createDefaultProps(mockOnSubmit)} isLoading={true} />
+    );
 
     expect(getByText('로그인 중...')).toBeTruthy();
   });
 
   it('should disable button when loading', () => {
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} isLoading={true} />);
+    const { getByText } = render(
+      <LoginForm {...createDefaultProps(mockOnSubmit)} isLoading={true} />
+    );
 
     // Button should show loading text
     expect(getByText('로그인 중...')).toBeTruthy();
+  });
+
+  it('should call onAutoLoginChange when checkbox is pressed', () => {
+    const { getByTestId } = render(
+      <LoginForm {...createDefaultProps(mockOnSubmit)} autoLoginEnabled={false} />
+    );
+
+    fireEvent.press(getByTestId('auto-login-checkbox'));
+
+    expect(mockOnAutoLoginChange).toHaveBeenCalledWith(true);
   });
 });
 
@@ -131,14 +158,14 @@ describe('LoginForm validation', () => {
   });
 
   it('should render email input with correct props', () => {
-    const { getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByPlaceholderText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     const emailInput = getByPlaceholderText('이메일을 입력하세요');
     expect(emailInput).toBeTruthy();
   });
 
   it('should render password input with correct props', () => {
-    const { getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByPlaceholderText } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
 
     const passwordInput = getByPlaceholderText('비밀번호를 입력하세요');
     expect(passwordInput).toBeTruthy();
@@ -149,7 +176,9 @@ describe('LoginForm error handling', () => {
   it('should handle submit error gracefully', async () => {
     const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
 
-    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} />);
+    const { getByText } = render(
+      <LoginForm onSubmit={mockOnSubmit} autoLoginEnabled={true} onAutoLoginChange={jest.fn()} />
+    );
 
     const loginButton = getByText('로그인');
     fireEvent.press(loginButton);

@@ -21,10 +21,75 @@ import {
   type UserProfile,
 } from '../authStore';
 
+const mockFirebaseAuth = {
+  currentUser: null as any,
+};
+const mockGetUserProfile = jest.fn();
+const mockToStoreProfile = jest.fn((profile) => profile);
+const mockUnsubscribeAll = jest.fn();
+const mockClearCounterSyncCache = jest.fn();
+const mockClearCriticalOfflineCacheForUser = jest.fn();
+const mockIsAutoLoginEnabled = jest.fn();
+const mockSyncSignOut = jest.fn();
+const mockTrackLogout = jest.fn();
+const mockSetUserId = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('@/lib/firebase', () => ({
+  getFirebaseAuth: jest.fn(() => mockFirebaseAuth),
+}));
+
+jest.mock('@/lib/authBridge', () => ({
+  syncSignOut: () => mockSyncSignOut(),
+}));
+
+jest.mock('@/lib/secureStorage', () => ({
+  settingsStorage: {
+    isAutoLoginEnabled: () => mockIsAutoLoginEnabled(),
+  },
+}));
+
+jest.mock('@/services/observability/analyticsService', () => ({
+  trackLogout: () => mockTrackLogout(),
+  setUserId: (...args: unknown[]) => mockSetUserId(...args),
+}));
+
+jest.mock('@/services/auth/userProfileService', () => ({
+  getUserProfile: (uid: string) => mockGetUserProfile(uid),
+}));
+
+jest.mock('@/utils/profileConverter', () => ({
+  toStoreProfile: (profile: unknown) => mockToStoreProfile(profile),
+}));
+
+jest.mock('@/shared/realtime', () => ({
+  RealtimeManager: {
+    unsubscribeAll: () => mockUnsubscribeAll(),
+  },
+}));
+
+jest.mock('@/shared/cache/counterSyncCache', () => ({
+  clearCounterSyncCache: () => mockClearCounterSyncCache(),
+}));
+
+jest.mock('@/services/offline/criticalOfflineCache', () => ({
+  clearCriticalOfflineCacheForUser: (userId?: string | null) =>
+    mockClearCriticalOfflineCacheForUser(userId),
+}));
+
 describe('AuthStore', () => {
   beforeEach(() => {
     // Reset store to initial state before each test
     useAuthStore.getState().reset();
+    mockFirebaseAuth.currentUser = null;
+    mockGetUserProfile.mockReset();
+    mockToStoreProfile.mockClear();
+    mockUnsubscribeAll.mockClear();
+    mockClearCounterSyncCache.mockClear();
+    mockClearCriticalOfflineCacheForUser.mockClear();
+    mockIsAutoLoginEnabled.mockResolvedValue(true);
+    mockSyncSignOut.mockResolvedValue(undefined);
+    mockTrackLogout.mockClear();
+    mockSetUserId.mockClear();
   });
 
   describe('Initial State', () => {
@@ -244,6 +309,270 @@ describe('AuthStore', () => {
 
       expect(useAuthStore.getState().isInitialized).toBe(true);
       expect(useAuthStore.getState().status).toBe('authenticated');
+    });
+  });
+
+  describe('checkAuthState', () => {
+    it('should preserve cached auth state when Firebase auth has not settled yet', async () => {
+      act(() => {
+        useAuthStore.getState().setUser({
+          uid: 'stale-user',
+          email: 'stale@example.com',
+        } as any);
+        useAuthStore.getState().setProfile({
+          uid: 'stale-user',
+          email: 'stale@example.com',
+          name: 'Stale User',
+          role: 'staff',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        useAuthStore.getState().setInitialized(true);
+      });
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState();
+      });
+
+      expect(useAuthStore.getState().user?.uid).toBe('stale-user');
+      expect(useAuthStore.getState().profile?.uid).toBe('stale-user');
+      expect(useAuthStore.getState().status).toBe('authenticated');
+      expect(mockUnsubscribeAll).not.toHaveBeenCalled();
+      expect(mockClearCounterSyncCache).not.toHaveBeenCalled();
+      expect(mockClearCriticalOfflineCacheForUser).not.toHaveBeenCalled();
+    });
+
+    it('should clear stale authenticated state when auth listener explicitly reports sign-out', async () => {
+      act(() => {
+        useAuthStore.getState().setUser({
+          uid: 'stale-user',
+          email: 'stale@example.com',
+        } as any);
+        useAuthStore.getState().setProfile({
+          uid: 'stale-user',
+          email: 'stale@example.com',
+          name: 'Stale User',
+          role: 'staff',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        useAuthStore.getState().setInitialized(true);
+      });
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState(null);
+      });
+
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(mockUnsubscribeAll).toHaveBeenCalled();
+      expect(mockClearCounterSyncCache).toHaveBeenCalled();
+      expect(mockClearCriticalOfflineCacheForUser).toHaveBeenCalledWith('stale-user');
+    });
+
+    it('should ignore stale explicit auth restore when live Firebase session is already cleared', async () => {
+      const firebaseUser = {
+        uid: 'stale-user',
+        email: 'stale@example.com',
+        displayName: 'Stale User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+
+      mockFirebaseAuth.currentUser = null;
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState(firebaseUser as any);
+      });
+
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(mockGetUserProfile).not.toHaveBeenCalled();
+    });
+
+    it('should sign out explicit auth restore when auto login is disabled', async () => {
+      const firebaseUser = {
+        uid: 'suppressed-user',
+        email: 'suppressed@example.com',
+        displayName: 'Suppressed User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+
+      mockIsAutoLoginEnabled.mockResolvedValue(false);
+      mockFirebaseAuth.currentUser = firebaseUser;
+
+      act(() => {
+        useAuthStore.setState({
+          status: 'unauthenticated',
+          isInitialized: true,
+          user: null,
+          profile: null,
+          bootstrapSource: 'none',
+        });
+      });
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState(firebaseUser as any);
+      });
+
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('unauthenticated');
+      expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+      expect(mockTrackLogout).toHaveBeenCalledTimes(1);
+      expect(mockSetUserId).toHaveBeenCalledWith(null);
+      expect(mockGetUserProfile).not.toHaveBeenCalled();
+      expect(mockClearCriticalOfflineCacheForUser).not.toHaveBeenCalled();
+    });
+
+    it('should hydrate user and profile from Firebase session', async () => {
+      const firebaseUser = {
+        uid: 'firebase-user',
+        email: 'firebase@example.com',
+        displayName: 'Firebase User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+      const profile = {
+        uid: 'firebase-user',
+        email: 'firebase@example.com',
+        name: 'Firebase User',
+        role: 'staff',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUserProfile.mockResolvedValue(profile as never);
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState();
+      });
+
+      expect(useAuthStore.getState().user?.uid).toBe('firebase-user');
+      expect(useAuthStore.getState().profile).toEqual(profile);
+      expect(useAuthStore.getState().status).toBe('authenticated');
+      expect(mockGetUserProfile).toHaveBeenCalledWith('firebase-user');
+      expect(mockToStoreProfile).toHaveBeenCalledWith(profile);
+    });
+
+    it('should clear session when authenticated user has no profile document', async () => {
+      const firebaseUser = {
+        uid: 'firebase-user',
+        email: 'firebase@example.com',
+        displayName: 'Firebase User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+
+      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUserProfile.mockResolvedValue(null);
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState();
+      });
+
+      expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('unauthenticated');
+    });
+
+    it('should request server reconcile when profile refresh fails', async () => {
+      const firebaseUser = {
+        uid: 'firebase-user',
+        email: 'firebase@example.com',
+        displayName: 'Firebase User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+
+      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUserProfile.mockRejectedValue(new Error('network failure'));
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState();
+      });
+
+      expect(useAuthStore.getState().user?.uid).toBe('firebase-user');
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('authenticated');
+      expect(useAuthStore.getState().needsServerReconcile).toBe(true);
+      expect(useAuthStore.getState().bootstrapSource).toBe('none');
+    });
+  });
+
+  describe('clearAuthUiState', () => {
+    it('should preserve user-scoped offline cache while clearing local auth UI state', () => {
+      act(() => {
+        useAuthStore.getState().setUser({
+          uid: 'cached-user',
+          email: 'cached@example.com',
+        } as any);
+        useAuthStore.getState().setProfile({
+          uid: 'cached-user',
+          email: 'cached@example.com',
+          name: 'Cached User',
+          role: 'staff',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      });
+
+      act(() => {
+        useAuthStore.getState().clearAuthUiState();
+      });
+
+      const state = useAuthStore.getState();
+      expect(state.user).toBeNull();
+      expect(state.profile).toBeNull();
+      expect(state.status).toBe('unauthenticated');
+      expect(state.lastScopedUserId).toBe('cached-user');
+      expect(state.suppressedSessionUserId).toBe('cached-user');
+      expect(mockUnsubscribeAll).toHaveBeenCalled();
+      expect(mockClearCounterSyncCache).toHaveBeenCalled();
+      expect(mockClearCriticalOfflineCacheForUser).not.toHaveBeenCalled();
+    });
+
+    it('should clear preserved offline cache when a different user logs in later', () => {
+      act(() => {
+        useAuthStore.getState().setUser({
+          uid: 'cached-user',
+          email: 'cached@example.com',
+        } as any);
+        useAuthStore.getState().setProfile({
+          uid: 'cached-user',
+          email: 'cached@example.com',
+          name: 'Cached User',
+          role: 'staff',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        useAuthStore.getState().clearAuthUiState();
+      });
+
+      mockUnsubscribeAll.mockClear();
+      mockClearCounterSyncCache.mockClear();
+      mockClearCriticalOfflineCacheForUser.mockClear();
+
+      act(() => {
+        useAuthStore.getState().setUser({
+          uid: 'other-user',
+          email: 'other@example.com',
+        } as any);
+      });
+
+      expect(mockClearCriticalOfflineCacheForUser).toHaveBeenCalledWith('cached-user');
+      expect(useAuthStore.getState().suppressedSessionUserId).toBeNull();
+      expect(useAuthStore.getState().lastScopedUserId).toBe('other-user');
     });
   });
 

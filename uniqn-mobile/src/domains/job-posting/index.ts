@@ -1,7 +1,6 @@
 export {
   serializeJobPostingV3,
   deserializeJobPostingDocument,
-  deserializeLegacyJobPostingDocument,
   toCreateJobPostingInput,
 } from './serialization';
 export {

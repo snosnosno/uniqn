@@ -5,7 +5,7 @@
  * @version 2.1.0
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,12 +14,13 @@ import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';
 import {
   login,
+  signOut,
   signInWithApple,
   signInWithGoogle,
   signInWithKakao,
   type AuthResult,
 } from '@/services';
-import { useBiometricAuth } from '@/hooks';
+import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
@@ -53,8 +54,14 @@ const SOCIAL_CONFIG: Record<
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
+  const [loginAutoLoginEnabled, setLoginAutoLoginEnabled] = useState(true);
   const { addToast } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
+  const {
+    autoLoginEnabled: storedAutoLoginEnabled,
+    setAutoLoginEnabled,
+    isLoading: isAutoLoginLoading,
+  } = useAutoLogin();
 
   // 생체 인증
   const {
@@ -65,6 +72,14 @@ export default function LoginScreen() {
     loginWithBiometric,
     updateCredentials: updateBiometricCredentials,
   } = useBiometricAuth();
+
+  useEffect(() => {
+    setLoginAutoLoginEnabled(storedAutoLoginEnabled);
+  }, [storedAutoLoginEnabled]);
+
+  const persistAutoLoginPreference = useCallback(async () => {
+    await setAutoLoginEnabled(loginAutoLoginEnabled);
+  }, [loginAutoLoginEnabled, setAutoLoginEnabled]);
 
   /**
    * 로그인 성공 후 공통 처리: Store 업데이트 → 생체인증 갱신 → 네비게이션
@@ -103,6 +118,13 @@ export default function LoginScreen() {
       try {
         const result = await login(data);
         if (result.user) {
+          try {
+            await persistAutoLoginPreference();
+          } catch (preferenceError) {
+            await signOut();
+            throw preferenceError;
+          }
+
           await handleLoginSuccess(result, '이메일');
         }
       } catch (error) {
@@ -115,7 +137,7 @@ export default function LoginScreen() {
         setIsLoading(false);
       }
     },
-    [addToast, handleLoginSuccess]
+    [addToast, handleLoginSuccess, persistAutoLoginPreference]
   );
 
   // 소셜 로그인 (Apple / Google / Kakao 통합)
@@ -126,6 +148,13 @@ export default function LoginScreen() {
       try {
         const result = await config.loginFn();
         if (result.user) {
+          try {
+            await persistAutoLoginPreference();
+          } catch (preferenceError) {
+            await signOut();
+            throw preferenceError;
+          }
+
           // 신규 소셜 사용자 (프로필 미완성) → 회원가입 플로우로 리다이렉트
           if (result.profile.socialProvider && !result.profile.phoneVerified) {
             setUser(result.user);
@@ -150,7 +179,7 @@ export default function LoginScreen() {
         setLoadingProvider(null);
       }
     },
-    [addToast, handleLoginSuccess, setUser, setProfile]
+    [addToast, handleLoginSuccess, persistAutoLoginPreference, setUser, setProfile]
   );
 
   const handleAppleLogin = useCallback(() => handleSocialLogin('apple'), [handleSocialLogin]);
@@ -158,6 +187,8 @@ export default function LoginScreen() {
   const handleKakaoLogin = useCallback(() => handleSocialLogin('kakao'), [handleSocialLogin]);
 
   const isSocialLoading = loadingProvider !== null;
+  const authActionDisabled = isAutoLoginLoading;
+  const shouldShowBiometric = loginAutoLoginEnabled && isBiometricEnabled && isBiometricAvailable;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
@@ -178,12 +209,12 @@ export default function LoginScreen() {
           </View>
 
           {/* 생체 인증 버튼 */}
-          {isBiometricEnabled && isBiometricAvailable && (
+          {shouldShowBiometric && (
             <View className="mb-6">
               <BiometricButton
                 onPress={handleBiometricLogin}
                 isLoading={isBiometricAuthenticating}
-                disabled={isLoading || isSocialLoading}
+                disabled={isLoading || isSocialLoading || authActionDisabled}
                 variant="default"
                 size="lg"
                 className="w-full"
@@ -198,7 +229,12 @@ export default function LoginScreen() {
           {/* 로그인 폼 */}
           <LoginForm
             onSubmit={handleLogin}
+            autoLoginEnabled={loginAutoLoginEnabled}
+            onAutoLoginChange={setLoginAutoLoginEnabled}
+            autoLoginDisabled={authActionDisabled}
+            autoLoginHelperText={AUTO_LOGIN_HELPER_TEXT}
             isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
+            disabled={authActionDisabled}
           />
 
           {/* 소셜 로그인 (Apple은 iOS에서 항상 표시) */}
@@ -211,7 +247,9 @@ export default function LoginScreen() {
                 onKakaoLogin={handleKakaoLogin}
                 isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
                 loadingProvider={loadingProvider}
-                disabled={isLoading || isSocialLoading || isBiometricAuthenticating}
+                disabled={
+                  isLoading || isSocialLoading || isBiometricAuthenticating || authActionDisabled
+                }
               />
             </>
           )}

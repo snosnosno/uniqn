@@ -17,9 +17,6 @@ export {
   toggleExclusiveByDate,
   toggleGroup,
   getGroupSelectionState,
-  // Backward compatibility
-  createAssignmentKey,
-  getDateFromKeyLegacy,
   // Constants
   DEFAULT_SEPARATOR,
   APPLICANT_SEPARATOR,

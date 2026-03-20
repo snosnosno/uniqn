@@ -35,15 +35,17 @@ import { AuthError, ERROR_CODES, isRetryableError } from '@/errors';
 import { createClientRateLimiter } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
-  checkLoginAttempts,
-  incrementLoginAttempts,
-  resetLoginAttempts,
   trackLogin,
   trackSignup,
   trackLogout,
   setUserId,
   setUserProperties,
-} from '@/services/observability';
+} from '@/services/observability/analyticsService';
+import {
+  checkLoginAttempts,
+  incrementLoginAttempts,
+  resetLoginAttempts,
+} from '@/services/observability/sessionService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 import {
   type UserProfile,
@@ -51,6 +53,7 @@ import {
   type VerifyAndSavePayload,
   callVerifyAndSaveProfile,
 } from './authTypes';
+import { getUserProfile as fetchUserProfile } from './userProfileService';
 
 // ============================================================================
 // Internal Helpers
@@ -763,15 +766,7 @@ export async function resetPassword(email: string): Promise<void> {
  * 사용자 프로필 가져오기
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  try {
-    return await userRepository.getById(uid);
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '프로필 조회',
-      component: 'authService',
-      context: { uid },
-    });
-  }
+  return fetchUserProfile(uid);
 }
 
 /**

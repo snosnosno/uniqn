@@ -15,18 +15,7 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
 import { notifyApplicantsForJobPostingChange } from "./jobPostingNotificationHelper";
-
-const NOTIFY_FIELDS = [
-  "title",
-  "location",
-  "district",
-  "workDate",
-  "startDate",
-  "endDate",
-  "timeSlots",
-  "hourlyRate",
-  "salary",
-];
+import { getChangedJobPostingNotificationFields } from "../utils/jobPosting";
 
 /**
  * 공고 수정 알림 트리거
@@ -43,9 +32,7 @@ export const onJobPostingUpdated = onDocumentUpdated(
     const after = event.data?.after.data();
     if (!before || !after) return;
 
-    const changedFields = NOTIFY_FIELDS.filter(
-      (field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]),
-    );
+    const changedFields = getChangedJobPostingNotificationFields(before, after);
 
     if (changedFields.length === 0) {
       return;

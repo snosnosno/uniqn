@@ -469,13 +469,11 @@ export function getStatusVariant<T extends string>(
  * JobCard 호환용 applicationStatusConfig
  * @deprecated APPLICATION_STATUS 사용 권장
  */
-export const applicationStatusConfig = SCHEDULE_STATUS;
 
 /**
  * ScheduleCard 호환용 statusConfig
  * @deprecated SCHEDULE_STATUS 사용 권장
  */
-export const statusConfig = SCHEDULE_STATUS;
 
 /**
  * ScheduleCard 호환용 attendanceConfig

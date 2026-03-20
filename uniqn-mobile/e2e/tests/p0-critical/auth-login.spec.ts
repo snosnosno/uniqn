@@ -4,6 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/auth/login.page';
+import { SettingsPage } from '../../pages/app/settings/settings.page';
 import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 import { createInvalidLoginData } from '../../factories';
 
@@ -95,5 +96,24 @@ test.describe('로그인', () => {
 
     // URL이 변하지 않아야 함 (로그인 페이지 유지)
     expect(loginPage.getCurrentPath()).toMatch(/login|auth/);
+  });
+
+  test('자동 로그인 체크박스와 안내 문구가 표시된다', async () => {
+    await expect(loginPage.autoLoginCheckbox).toBeVisible();
+    await expect(loginPage.autoLoginHelperText).toBeVisible();
+    await expect(loginPage.autoLoginCheckbox).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('로그인 화면의 자동 로그인 선택이 설정 화면과 동기화된다', async ({ page }) => {
+    const settingsPage = new SettingsPage(page);
+    const { email, password } = TEST_ACCOUNTS.staff;
+
+    await loginPage.login(email, password, false);
+    await loginPage.waitForLoginSuccess();
+
+    await settingsPage.goto();
+
+    await expect(settingsPage.autoLoginLabel).toBeVisible({ timeout: 10_000 });
+    expect(await settingsPage.isSwitchChecked('자동 로그인')).toBe(false);
   });
 });

@@ -56,18 +56,6 @@ export type {
 } from './auth.schema';
 
 // Backward compatibility (deprecated)
-export {
-  signUpAccountSchema as signUpStep1Schema,
-  signUpIdentitySchema as signUpStep2Schema,
-  signUpProfileSchema as signUpStep3Schema,
-  signUpTermsSchema as signUpStep4Schema,
-} from './auth.schema';
-export type {
-  SignUpAccountData as SignUpStep1Data,
-  SignUpIdentityData as SignUpStep2Data,
-  SignUpProfileData as SignUpStep3Data,
-  SignUpTermsData as SignUpStep4Data,
-} from './auth.schema';
 
 // 구인공고 스키마
 export {

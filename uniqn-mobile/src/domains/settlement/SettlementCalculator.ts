@@ -8,6 +8,7 @@
 import type { JobPostingCard } from '@/types/jobPosting';
 import type { SalaryInfo, Allowances, TaxSettings } from '@/utils/settlement';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { TaxCalculator } from './TaxCalculator';
 import { SettlementCache, type CachedSettlement } from './SettlementCache';
 
@@ -350,8 +351,8 @@ export class SettlementCalculator {
     workLogData: {
       checkInTime?: TimeInput;
       checkOutTime?: TimeInput;
-      scheduledStartTime?: TimeInput;
-      scheduledEndTime?: TimeInput;
+      timeSlot?: string;
+      date?: string;
       role?: string;
       customRole?: string;
       customSalaryInfo?: SalaryInfo;
@@ -361,8 +362,13 @@ export class SettlementCalculator {
     jobPostingCard?: JobPostingCard
   ): SettlementBreakdown | null {
     // 시간 결정 (checkIn/checkOut 우선, 없으면 scheduled)
-    const startTime = workLogData.checkInTime || workLogData.scheduledStartTime;
-    const endTime = workLogData.checkOutTime || workLogData.scheduledEndTime;
+    let startTime = workLogData.checkInTime;
+    let endTime = workLogData.checkOutTime;
+    if ((!startTime || !endTime) && workLogData.timeSlot && workLogData.date) {
+      const parsed = parseTimeSlotToDate(workLogData.timeSlot, workLogData.date);
+      if (!startTime && parsed.startTime) startTime = parsed.startTime;
+      if (!endTime && parsed.endTime) endTime = parsed.endTime;
+    }
     const isEstimate = !workLogData.checkInTime || !workLogData.checkOutTime;
 
     // 시간 정보가 없으면 계산 불가

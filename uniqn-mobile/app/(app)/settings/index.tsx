@@ -30,7 +30,7 @@ import {
 } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
-import { useAutoLogin, useBiometricAuth } from '@/hooks';
+import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { updateMarketingConsent } from '@/services/auth';
 import { logger } from '@/utils/logger';
 
@@ -133,6 +133,7 @@ export default function SettingsScreen() {
     isAuthenticating: isBiometricAuthenticating,
     biometricTypeName,
     setEnabled: setBiometricEnabled,
+    refresh: refreshBiometricState,
   } = useBiometricAuth();
 
   // 푸시 알림 토글
@@ -154,6 +155,7 @@ export default function SettingsScreen() {
   const handleAutoLoginToggle = async (value: boolean) => {
     try {
       await setAutoLoginEnabled(value);
+      await refreshBiometricState();
     } catch {
       // 에러 발생 시 이전 상태 유지 (useAutoLogin에서 로깅됨)
     }
@@ -269,6 +271,9 @@ export default function SettingsScreen() {
                   />
                 }
               />
+              <Text className="ml-[34px] mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {AUTO_LOGIN_HELPER_TEXT}
+              </Text>
               {isBiometricAvailable && (
                 <>
                   <Divider spacing="sm" />
@@ -279,7 +284,9 @@ export default function SettingsScreen() {
                       <Switch
                         value={isBiometricEnabled}
                         onValueChange={handleBiometricToggle}
-                        disabled={isBiometricLoading || isBiometricAuthenticating}
+                        disabled={
+                          isBiometricLoading || isBiometricAuthenticating || !autoLoginEnabled
+                        }
                         trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
                         thumbColor={isBiometricEnabled ? '#A855F7' : '#f4f3f4'}
                       />

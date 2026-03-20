@@ -33,6 +33,7 @@ test.describe('설정 메인', () => {
   test('계정 설정 항목이 표시된다', async () => {
     await expect(settingsPage.changePasswordItem).toBeVisible({ timeout: 10_000 });
     await expect(settingsPage.autoLoginLabel).toBeVisible();
+    await expect(settingsPage.autoLoginHelperText).toBeVisible();
   });
 
   test('앱 설정 항목이 표시된다', async () => {
@@ -141,8 +142,12 @@ test.describe('회원탈퇴', () => {
     await expect(deleteAccountPage.warningTitle).toBeVisible({ timeout: 10_000 });
 
     // 탈퇴 사유 옵션 확인
-    await expect(deleteAccountPage.getReasonOption('더 이상 서비스를 이용하지 않아요')).toBeVisible();
-    await expect(deleteAccountPage.getReasonOption('다른 서비스를 이용하게 되었어요')).toBeVisible();
+    await expect(
+      deleteAccountPage.getReasonOption('더 이상 서비스를 이용하지 않아요')
+    ).toBeVisible();
+    await expect(
+      deleteAccountPage.getReasonOption('다른 서비스를 이용하게 되었어요')
+    ).toBeVisible();
     await expect(deleteAccountPage.getReasonOption('개인정보가 걱정돼요')).toBeVisible();
     await expect(deleteAccountPage.getReasonOption('알림이 너무 많아요')).toBeVisible();
     await expect(deleteAccountPage.getReasonOption('사용하기 어려워요')).toBeVisible();

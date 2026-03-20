@@ -6,7 +6,7 @@
  */
 
 import { format, addDays } from 'date-fns';
-import { TimeNormalizer } from '@/shared/time/TimeNormalizer';
+import { parseTimeValue } from '@/shared/time/parseTimeValue';
 import { toDate, toISODateString } from './core';
 
 /**
@@ -123,7 +123,7 @@ export function parseTimeSlotToDate(
   if (!parsed) return { startTime: null, endTime: null };
 
   const baseDate = toDate(dateStr);
-  const startTimeOnly = TimeNormalizer.parseTime(parsed.start);
+  const startTimeOnly = parseTimeValue(parsed.start);
 
   if (!baseDate || !startTimeOnly) {
     return { startTime: null, endTime: null };
@@ -145,7 +145,7 @@ export function parseTimeSlotToDate(
     return { startTime, endTime: null };
   }
 
-  const endTimeOnly = TimeNormalizer.parseTime(parsed.end);
+  const endTimeOnly = parseTimeValue(parsed.end);
   if (!endTimeOnly) return { startTime, endTime: null };
 
   let endTime = new Date(baseDate);

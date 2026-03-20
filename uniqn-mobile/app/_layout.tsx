@@ -34,6 +34,8 @@ import { getLayoutColor } from '@/constants/colors';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
 import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { recordActivity } from '@/services/observability';
+import { initializeNetworkState } from '@/services/offline/networkState';
+import { refreshQueriesAfterReconnect } from '@/services/offline/reconnectSyncService';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -128,6 +130,7 @@ function MainNavigator() {
       logger.info('네트워크 복귀 - 전역 재연결 처리');
       RealtimeManager.onNetworkReconnect();
       tokenRefreshService.onNetworkReconnect();
+      void refreshQueriesAfterReconnect(queryClient);
     } else if (wasOnline && !isOnline) {
       // 온라인 → 오프라인: 연결 끊김 처리
       logger.info('네트워크 끊김 - 전역 연결 해제 처리');
@@ -201,6 +204,13 @@ function WebSheetProvider({ children }: { children: ReactNode }) {
 const SheetProvider = isWeb ? WebSheetProvider : BottomSheetModalProvider;
 
 export default function RootLayout() {
+  useEffect(() => {
+    const unsubscribe = initializeNetworkState();
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

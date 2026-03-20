@@ -107,19 +107,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     return WorkTimeDisplay.getDisplayInfo({
       checkInTime: staff.checkInTime,
       checkOutTime: staff.checkOutTime,
-      scheduledStartTime: staff.scheduledStartTime,
-      scheduledEndTime: staff.scheduledEndTime,
       timeSlot: staff.timeSlot,
       date: staff.date,
     });
-  }, [
-    staff.checkInTime,
-    staff.checkOutTime,
-    staff.scheduledStartTime,
-    staff.scheduledEndTime,
-    staff.timeSlot,
-    staff.date,
-  ]);
+  }, [staff.checkInTime, staff.checkOutTime, staff.timeSlot, staff.date]);
 
   // 통합 시간: 실제 > timeSlot 파싱 > '미정'
   const startTimeStr = timeInfo.effectiveStart;

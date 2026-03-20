@@ -31,6 +31,10 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import {
+  requireOnlineForMutation,
+  shouldApplyOptimisticUpdate,
+} from '@/services/offline/remoteMutationGuard';
+import {
   groupNotificationsWithCategoryFilter,
   countUnreadInGroupedList,
 } from '@/utils/notificationGrouping';
@@ -252,6 +256,7 @@ export function useMarkAsRead() {
 
   const mutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      requireOnlineForMutation('useNotifications.markAsRead');
       await markAsReadService(notificationId);
       return notificationId;
     },
@@ -291,6 +296,7 @@ export function useMarkAllAsRead() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!user?.uid) throw new Error('로그인이 필요합니다.');
+      requireOnlineForMutation('useNotifications.markAllAsRead');
       await markAllAsReadService(user.uid);
     },
     onSuccess: () => {
@@ -331,11 +337,15 @@ export function useDeleteNotification() {
 
   const mutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      requireOnlineForMutation('useNotifications.deleteNotification');
       await deleteNotificationService(notificationId);
       return notificationId;
     },
     // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
     onMutate: async (notificationId: string) => {
+      if (!shouldApplyOptimisticUpdate()) {
+        return { previousNotifications: undefined };
+      }
       // 이전 상태 스냅샷 저장 (롤백용)
       const previousNotifications = [...notifications];
 
@@ -382,7 +392,8 @@ export function useDeleteNotification() {
  */
 export function useNotificationSettingsQuery() {
   const user = useAuthStore((state) => state.user);
-  const { setSettings } = useNotificationStore();
+  const { setSettings, settings } = useNotificationStore();
+  const { isOnline } = useNetworkStatus();
 
   const query = useQuery({
     queryKey: notificationKeys.settings(),
@@ -390,7 +401,7 @@ export function useNotificationSettingsQuery() {
       if (!user?.uid) throw new Error('로그인이 필요합니다.');
       return getNotificationSettings(user.uid);
     },
-    enabled: !!user?.uid,
+    enabled: !!user?.uid && isOnline,
     staleTime: cachingPolicies.stable, // 60분
   });
 
@@ -401,7 +412,11 @@ export function useNotificationSettingsQuery() {
     }
   }, [query.data, setSettings]);
 
-  return query;
+  return {
+    ...query,
+    data: query.data ?? settings,
+    error: isOnline ? query.error : null,
+  };
 }
 
 /**
@@ -416,6 +431,7 @@ export function useSaveNotificationSettings() {
   const mutation = useMutation({
     mutationFn: async (settings: NotificationSettings) => {
       if (!user?.uid) throw new Error('로그인이 필요합니다.');
+      requireOnlineForMutation('useNotifications.saveSettings');
       await saveNotificationSettings(user.uid, settings);
       return settings;
     },

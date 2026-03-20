@@ -12,6 +12,8 @@ export class LoginPage extends BasePage {
   readonly signupLink: Locator;
   readonly forgotPasswordLink: Locator;
   readonly passwordToggle: Locator;
+  readonly autoLoginCheckbox: Locator;
+  readonly autoLoginHelperText: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -22,7 +24,12 @@ export class LoginPage extends BasePage {
     this.forgotPasswordLink = page.getByText('비밀번호를 잊으셨나요?');
     // Password toggle button has no accessibilityLabel in Input.tsx
     // Locate by finding the button near password input
-    this.passwordToggle = page.getByPlaceholder('비밀번호를 입력하세요').locator('..').locator('[role="button"]');
+    this.passwordToggle = page
+      .getByPlaceholder('비밀번호를 입력하세요')
+      .locator('..')
+      .locator('[role="button"]');
+    this.autoLoginCheckbox = page.getByTestId('auto-login-checkbox');
+    this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.');
   }
 
   async goto(): Promise<void> {
@@ -30,9 +37,12 @@ export class LoginPage extends BasePage {
     await this.waitForReady();
   }
 
-  async login(email: string, password: string): Promise<void> {
+  async login(email: string, password: string, autoLoginEnabled?: boolean): Promise<void> {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
+    if (typeof autoLoginEnabled === 'boolean') {
+      await this.setAutoLogin(autoLoginEnabled);
+    }
     await this.loginButton.click();
   }
 
@@ -40,7 +50,7 @@ export class LoginPage extends BasePage {
     // Expo Router route groups는 URL에서 투명 — /(app)/(tabs) → /
     await this.page.waitForURL(
       (url) => !url.pathname.includes('/login') && !url.pathname.includes('/signup'),
-      { timeout: 15_000 },
+      { timeout: 15_000 }
     );
   }
 
@@ -74,6 +84,18 @@ export class LoginPage extends BasePage {
 
   async togglePasswordVisibility(): Promise<void> {
     await this.passwordToggle.click();
+  }
+
+  async isAutoLoginChecked(): Promise<boolean> {
+    const ariaChecked = await this.autoLoginCheckbox.getAttribute('aria-checked');
+    return ariaChecked === 'true';
+  }
+
+  async setAutoLogin(enabled: boolean): Promise<void> {
+    const checked = await this.isAutoLoginChecked();
+    if (checked !== enabled) {
+      await this.autoLoginCheckbox.click();
+    }
   }
 
   async isLoginButtonDisabled(): Promise<boolean> {

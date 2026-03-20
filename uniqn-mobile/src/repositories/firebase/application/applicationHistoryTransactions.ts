@@ -32,7 +32,6 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
 import { updateDateSpecificRequirementsFilled } from '@/domains/application';
-import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
 import type { Assignment, StaffRole, JobPosting } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
@@ -97,10 +96,6 @@ export async function confirmWithHistoryTransaction(
 ): Promise<ConfirmWithHistoryResult> {
   try {
     logger.info('지원 확정 (v2.0) 트랜잭션 시작', { applicationId, ownerId });
-
-    const extractStartTime = WorkLogCreator.extractStartTime.bind(WorkLogCreator);
-    const createTimestampFromDateTime =
-      WorkLogCreator.createTimestampFromDateTime.bind(WorkLogCreator);
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       const { applicationRef, applicationData } = await loadApplicationForTransaction(
@@ -172,11 +167,8 @@ export async function confirmWithHistoryTransaction(
 
       for (const assignment of assignmentsToConfirm) {
         const role = assignment.roleIds[0] || 'other';
-        const startTime = extractStartTime(assignment.timeSlot);
 
         for (const date of assignment.dates) {
-          const checkInTime = createTimestampFromDateTime(date, startTime);
-
           const workLogRef = doc(workLogsRef);
           const workLogData = {
             staffId: applicationData.applicantId,
@@ -190,8 +182,7 @@ export async function confirmWithHistoryTransaction(
             isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
             tentativeDescription: assignment.tentativeDescription ?? null,
             status: STATUS.WORK_LOG.SCHEDULED,
-            attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
-            checkInTime,
+            checkInTime: null,
             checkOutTime: null,
             workDuration: null,
             payrollAmount: null,

@@ -115,8 +115,7 @@
 
 | 함수명 | 타입 | 설명 |
 |---|---|---|
-| `validateJobPostingData` | Firestore | 공고 데이터 자동 보정 |
-| `migrateJobPostings` | HTTPS onCall | 공고 데이터 마이그레이션 |
+| `validateJobPostingData` | Firestore | V3 `searchIndex` 자동 동기화 |
 | `requestRegistration` | HTTPS onCall | 회원가입 요청 처리 |
 | `processRegistration` | HTTPS onCall | 관리자 가입 승인/거부 |
 | `createUserAccount` | HTTPS onCall | 관리자 사용자 생성 |

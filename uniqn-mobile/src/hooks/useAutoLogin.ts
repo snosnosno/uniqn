@@ -6,11 +6,12 @@
  *
  * 동작 방식:
  * - 자동 로그인 ON (기본): 앱 시작 시 Firebase Auth 복원 후 자동 로그인
- * - 자동 로그인 OFF: 앱 시작 시 로그인 화면으로 이동 (Firebase Auth 상태는 유지)
+ * - 자동 로그인 OFF: 다음 앱 시작 시 저장된 세션을 정리하고 로그인 화면에서 시작
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { settingsStorage } from '@/lib/secureStorage';
+import { setBiometricEnabled } from '@/services/auth';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 
@@ -27,6 +28,40 @@ export interface UseAutoLoginReturn {
   setAutoLoginEnabled: (enabled: boolean) => Promise<void>;
   /** 설정 새로고침 */
   refresh: () => Promise<void>;
+}
+
+export const AUTO_LOGIN_HELPER_TEXT = '끄면 다음 실행부터 다시 로그인해야 합니다.';
+
+async function applyAutoLoginPreference(enabled: boolean): Promise<void> {
+  const previousEnabled = await checkAutoLoginEnabled();
+  let settingPersisted = false;
+
+  try {
+    await settingsStorage.setAutoLoginEnabled(enabled);
+    settingPersisted = true;
+
+    if (!enabled) {
+      await setBiometricEnabled(false);
+      logger.info('자동 로그인 해제로 생체 인증을 함께 비활성화했습니다');
+    }
+
+    logger.info('자동 로그인 설정 변경 완료', { enabled });
+  } catch (error) {
+    logger.error('자동 로그인 설정 변경 실패', toError(error));
+
+    if (settingPersisted && previousEnabled !== enabled) {
+      try {
+        await settingsStorage.setAutoLoginEnabled(previousEnabled);
+        logger.warn('자동 로그인 설정 변경을 이전 값으로 되돌렸습니다', {
+          previousEnabled,
+        });
+      } catch (rollbackError) {
+        logger.error('자동 로그인 설정 롤백 실패', toError(rollbackError));
+      }
+    }
+
+    throw error;
+  }
 }
 
 // ============================================================================
@@ -76,11 +111,9 @@ export function useAutoLogin(): UseAutoLoginReturn {
   const setAutoLoginEnabled = useCallback(async (enabled: boolean) => {
     try {
       setIsLoading(true);
-      await settingsStorage.setAutoLoginEnabled(enabled);
+      await applyAutoLoginPreference(enabled);
       setAutoLoginEnabledState(enabled);
-      logger.info('자동 로그인 설정 변경 완료', { enabled });
     } catch (error) {
-      logger.error('자동 로그인 설정 변경 실패', toError(error));
       throw error;
     } finally {
       setIsLoading(false);

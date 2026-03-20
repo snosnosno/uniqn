@@ -24,6 +24,9 @@ import {
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
 import { retryWithBackoff } from '@/utils/retry';
+import { isNetworkError, toError } from '@/errors';
+import { useNetworkStatus } from './useNetworkStatus';
+import { setUserId, trackLogout } from '@/services/observability/analyticsService';
 
 interface AppInitState {
   isInitialized: boolean;
@@ -41,42 +44,143 @@ interface UseAppInitializeReturn extends AppInitState {
 
 interface DeferredInitContext {
   authUser: FirebaseUser;
-  profile: NonNullable<Awaited<ReturnType<typeof getUserProfile>>>;
+  profile:
+    | NonNullable<Awaited<ReturnType<typeof getUserProfile>>>
+    | ReturnType<typeof toStoreProfile>;
 }
 
 interface BootstrapResult {
   authUser: FirebaseUser | null;
+  authResolutionSource: InitialAuthResolution['source'];
   autoLoginEnabled: boolean;
   versionCheckResult: VersionCheckResult;
 }
 
+export interface OfflineBootstrapState {
+  source: 'none' | 'cache' | 'server';
+  needsServerReconcile: boolean;
+}
+
 interface ResolveSessionResult {
   deferredInitContext: DeferredInitContext | null;
+  offlineBootstrap: OfflineBootstrapState;
 }
 
 const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 1500 : 5000;
+const INITIAL_AUTH_READY_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 10000;
+const FOREGROUND_AUTH_SETTLE_TIMEOUT_MS = 2000;
 
-async function waitForAuthUser(timeoutMs = 3000): Promise<FirebaseUser | null> {
+type AuthUserResolution =
+  | { user: FirebaseUser; source: 'current' | 'event' }
+  | { user: null; source: 'event' | 'timeout' };
+
+type InitialAuthResolution =
+  | { user: FirebaseUser; source: 'current' | 'ready' }
+  | { user: null; source: 'ready' | 'timeout' };
+
+async function waitForAuthUser(timeoutMs = 3000): Promise<AuthUserResolution> {
   const auth = getFirebaseAuth();
 
   if (auth.currentUser) {
-    return auth.currentUser;
+    return { user: auth.currentUser, source: 'current' };
   }
 
-  return new Promise<FirebaseUser | null>((resolve) => {
+  return new Promise<AuthUserResolution>((resolve) => {
     let unsubscribe: (() => void) | null = null;
 
     const timeoutId = setTimeout(() => {
       unsubscribe?.();
-      resolve(null);
+      resolve({ user: null, source: 'timeout' });
     }, timeoutMs);
 
     unsubscribe = auth.onAuthStateChanged((user) => {
       clearTimeout(timeoutId);
       unsubscribe?.();
-      resolve(user);
+      resolve({
+        user,
+        source: 'event',
+      });
     });
   });
+}
+
+export async function waitForInitialAuthUser(
+  timeoutMs = INITIAL_AUTH_READY_TIMEOUT_MS
+): Promise<InitialAuthResolution> {
+  const auth = getFirebaseAuth();
+
+  if (auth.currentUser) {
+    return { user: auth.currentUser, source: 'current' };
+  }
+
+  if (typeof auth.authStateReady !== 'function') {
+    const fallbackResolution = await waitForAuthUser(timeoutMs);
+
+    if (fallbackResolution.user) {
+      return {
+        user: fallbackResolution.user,
+        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
+      };
+    }
+
+    return {
+      user: null,
+      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
+    };
+  }
+
+  let timedOut = false;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    await Promise.race([
+      auth.authStateReady(),
+      new Promise<void>((resolve) => {
+        timeoutId = setTimeout(() => {
+          timedOut = true;
+          resolve();
+        }, timeoutMs);
+      }),
+    ]);
+  } catch (error) {
+    logger.warn('authStateReady failed during initialization, falling back to auth observer', {
+      component: 'useAppInitialize',
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    const fallbackResolution = await waitForAuthUser(timeoutMs);
+
+    if (fallbackResolution.user) {
+      return {
+        user: fallbackResolution.user,
+        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
+      };
+    }
+
+    return {
+      user: null,
+      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
+    };
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  if (auth.currentUser) {
+    return { user: auth.currentUser, source: 'ready' };
+  }
+
+  if (timedOut) {
+    logger.warn('Timed out waiting for initial auth state', {
+      component: 'useAppInitialize',
+      timeoutMs,
+      platform: Platform.OS,
+    });
+    return { user: null, source: 'timeout' };
+  }
+
+  return { user: null, source: 'ready' };
 }
 
 function isFatalAuthError(error: unknown): boolean {
@@ -226,53 +330,146 @@ async function bootstrapCore(): Promise<BootstrapResult> {
   const versionCheckResult = await checkForceUpdate();
   if (versionCheckResult.isMaintenanceMode) {
     throw new MaintenanceError(
-      versionCheckResult.maintenanceMessage ?? '서버 점검 중입니다. 잠시 후 다시 시도해주세요.'
+      versionCheckResult.maintenanceMessage ?? '서버 점검 중입니다. 잠시 후 다시 시도해 주세요.'
     );
   }
 
   if (versionCheckResult.mustUpdate) {
     throw new ForceUpdateError(
-      '앱을 최신 버전으로 업데이트해주세요.',
+      '앱을 최신 버전으로 업데이트해 주세요.',
       versionCheckResult.latestVersion,
       versionCheckResult.releaseNotes
     );
   }
 
   await ensureDualSdkSync();
-  sessionService.initialize();
-
   await useAuthStore.getState().initialize();
-  await useAuthStore.getState().checkAuthState();
 
   const autoLoginEnabled = await checkAutoLoginEnabled();
-  const authUser = await waitForAuthUser();
+  const authResolution = await waitForInitialAuthUser();
+  const authUser = authResolution.user;
 
   return {
     authUser,
+    authResolutionSource: authResolution.source,
     autoLoginEnabled,
     versionCheckResult,
   };
 }
 
-async function resolveSession({
+async function applyLogoutObservabilityFallback() {
+  trackLogout();
+  await setUserId(null);
+}
+
+async function signOutAndResetSession(options?: {
+  preserveOnFailure?: boolean;
+  preservedUserId?: string | null;
+}) {
+  const authStore = useAuthStore.getState();
+
+  try {
+    await authSignOut();
+    authStore.clearAuthState();
+  } catch (error) {
+    logger.warn(
+      'Failed to sign out during app initialization, falling back to local auth cleanup',
+      {
+        component: 'useAppInitialize',
+        preservedUserId: options?.preservedUserId ?? null,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
+
+    await applyLogoutObservabilityFallback();
+
+    if (options?.preserveOnFailure) {
+      authStore.clearAuthUiState(options.preservedUserId ?? null);
+      return;
+    }
+
+    authStore.clearAuthState();
+  }
+}
+
+function commitBootstrapSource(
+  source: OfflineBootstrapState['source'],
+  needsServerReconcile: boolean
+) {
+  useAuthStore.getState().setBootstrapSource(source);
+  useAuthStore.getState().setNeedsServerReconcile(needsServerReconcile);
+
+  logger.info('bootstrap_source', {
+    component: 'useAppInitialize',
+    source,
+    needsServerReconcile,
+  });
+}
+
+export async function resolveSession({
   authUser,
+  authResolutionSource,
   autoLoginEnabled,
-}: Pick<BootstrapResult, 'authUser' | 'autoLoginEnabled'>): Promise<ResolveSessionResult> {
-  if (authUser && !autoLoginEnabled) {
-    useAuthStore.getState().clearAuthState();
-    return { deferredInitContext: null };
+}: Pick<
+  BootstrapResult,
+  'authUser' | 'authResolutionSource' | 'autoLoginEnabled'
+>): Promise<ResolveSessionResult> {
+  const authStore = useAuthStore.getState();
+  const persistedUser = authStore.user;
+  const persistedProfile = authStore.profile;
+  const preservedUserId = authUser?.uid ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
+
+  if (!autoLoginEnabled) {
+    if (
+      authUser ||
+      authResolutionSource === 'timeout' ||
+      authStore.status === 'authenticated' ||
+      persistedUser ||
+      persistedProfile
+    ) {
+      await signOutAndResetSession({
+        preserveOnFailure: true,
+        preservedUserId,
+      });
+    }
+
+    commitBootstrapSource('none', false);
+    return {
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    };
   }
 
   if (!authUser) {
-    if (useAuthStore.getState().status === 'authenticated') {
-      useAuthStore.getState().clearAuthState();
+    if (
+      authResolutionSource === 'timeout' &&
+      persistedUser?.uid &&
+      persistedProfile?.uid === persistedUser.uid
+    ) {
+      logger.info('Preserved cached session while waiting for Firebase auth restoration', {
+        component: 'useAppInitialize',
+        uid: persistedUser.uid,
+      });
+      commitBootstrapSource('cache', true);
+      return {
+        deferredInitContext: null,
+        offlineBootstrap: { source: 'cache', needsServerReconcile: true },
+      };
     }
 
-    return { deferredInitContext: null };
+    if (authStore.status === 'authenticated' || persistedUser || persistedProfile) {
+      authStore.clearAuthState();
+    }
+
+    commitBootstrapSource('none', false);
+    return {
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    };
   }
 
-  let shouldLoadProfile = true;
   let tokenRole: string | null = null;
+  let tokenNeedsReconcile = false;
 
   try {
     await authUser.getIdToken(true);
@@ -290,135 +487,152 @@ async function resolveSession({
         component: 'useAppInitialize',
         error: error instanceof Error ? error.message : String(error),
       });
-      await authSignOut();
-      useAuthStore.getState().reset();
-      shouldLoadProfile = false;
-    } else {
-      logger.warn('Non-fatal token refresh error during initialization', {
-        component: 'useAppInitialize',
-        error: error instanceof Error ? error.message : String(error),
-      });
+      await signOutAndResetSession();
+      commitBootstrapSource('none', false);
+      return {
+        deferredInitContext: null,
+        offlineBootstrap: { source: 'none', needsServerReconcile: false },
+      };
     }
-  }
 
-  if (!shouldLoadProfile) {
-    return { deferredInitContext: null };
-  }
-
-  const freshProfile = await loadLatestProfile(authUser.uid).catch((error) => {
-    logger.warn('Failed to load latest profile during initialization', {
+    tokenNeedsReconcile = true;
+    logger.warn('Token refresh will be retried after initialization', {
       component: 'useAppInitialize',
       uid: authUser.uid,
       error: error instanceof Error ? error.message : String(error),
     });
-    return null;
-  });
+  }
 
-  if (!freshProfile) {
-    logger.warn('Profile document missing during initialization, signing user out', {
+  try {
+    const freshProfile = await loadLatestProfile(authUser.uid);
+    const storeProfile = toStoreProfile(freshProfile);
+
+    authStore.setUser(authUser);
+    authStore.setProfile(storeProfile);
+
+    const needsServerReconcile =
+      tokenNeedsReconcile || shouldSynchronizeClaims(freshProfile.role, tokenRole);
+
+    commitBootstrapSource('server', needsServerReconcile);
+
+    if (shouldSynchronizeClaims(freshProfile.role, tokenRole)) {
+      logger.info('Deferred claims reconciliation scheduled', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+        expectedRole: freshProfile.role,
+        tokenRole,
+      });
+    }
+
+    return {
+      deferredInitContext: {
+        authUser,
+        profile: freshProfile,
+      },
+      offlineBootstrap: {
+        source: 'server',
+        needsServerReconcile,
+      },
+    };
+  } catch (error) {
+    const resolvedError = toError(error);
+
+    logger.warn('Failed to load latest profile during initialization', {
       component: 'useAppInitialize',
       uid: authUser.uid,
+      error: resolvedError.message,
     });
-    await authSignOut();
-    useAuthStore.getState().reset();
-    return { deferredInitContext: null };
-  }
 
-  if (shouldSynchronizeClaims(freshProfile.role, tokenRole)) {
-    try {
-      const claimsResult = await refreshRoleClaims(authUser, freshProfile.role);
-      tokenRole = getRoleClaim(claimsResult.data.claims as Record<string, unknown>);
+    if (isNetworkError(resolvedError) && persistedProfile?.uid === authUser.uid) {
+      authStore.setUser(authUser);
+      authStore.setProfile(persistedProfile);
+      commitBootstrapSource('cache', true);
 
-      logger.info('Custom claims synchronized before auth state commit', {
-        component: 'useAppInitialize',
-        uid: authUser.uid,
-        expectedRole: freshProfile.role,
-        role: tokenRole,
-        attempts: claimsResult.attempts,
-      });
-    } catch (error) {
-      logger.warn('Custom claims synchronization failed during initialization, signing user out', {
-        component: 'useAppInitialize',
-        uid: authUser.uid,
-        expectedRole: freshProfile.role,
-        initialTokenRole: tokenRole,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      await authSignOut();
-      useAuthStore.getState().reset();
-      return { deferredInitContext: null };
+      return {
+        deferredInitContext: null,
+        offlineBootstrap: {
+          source: 'cache',
+          needsServerReconcile: true,
+        },
+      };
     }
+
+    if (isNetworkError(resolvedError)) {
+      throw resolvedError;
+    }
+
+    logger.warn('Profile document missing or invalid during initialization, signing user out', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+      error: resolvedError.message,
+    });
+    await signOutAndResetSession();
+    commitBootstrapSource('none', false);
+
+    return {
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    };
   }
-
-  useAuthStore.getState().setProfile(toStoreProfile(freshProfile));
-  useAuthStore.getState().setUser(authUser);
-
-  return {
-    deferredInitContext: {
-      authUser,
-      profile: freshProfile,
-    },
-  };
 }
 
-async function runPostLoginTasks(context: DeferredInitContext): Promise<void> {
+async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsRetry: boolean }> {
   const auth = getFirebaseAuth();
   const activeUser = auth.currentUser;
 
   if (!activeUser || activeUser.uid !== context.authUser.uid) {
-    return;
+    return { needsRetry: false };
   }
 
-  try {
-    try {
-      const claimsResult = await retryWithBackoff(
-        async () => {
-          await activeUser.getIdToken(true);
-          const result = await activeUser.getIdTokenResult();
-          if (!result.claims.role) {
-            throw new Error('Custom claims role is missing');
-          }
-          return result;
-        },
-        {
-          maxRetries: 3,
-          initialDelayMs: 1000,
-          backoffMultiplier: 2,
-          component: 'useAppInitialize',
-          operationName: 'refreshCustomClaims',
-        }
-      );
+  let needsRetry = false;
 
-      logger.info('Deferred custom claims refresh completed', {
-        component: 'useAppInitialize',
-        uid: activeUser.uid,
-        role: claimsResult.data.claims.role,
-        attempts: claimsResult.attempts,
-      });
-    } catch (error) {
-      logger.warn('Deferred custom claims refresh failed', {
-        component: 'useAppInitialize',
-        uid: activeUser.uid,
-        error: error instanceof Error ? error.message : String(error),
-      });
+  try {
+    if (
+      typeof (context.profile as { role?: string | null }).role === 'string' &&
+      (context.profile as { role?: string }).role
+    ) {
+      try {
+        const claimsResult = await refreshRoleClaims(
+          activeUser,
+          (context.profile as { role: string }).role
+        );
+
+        logger.info('Deferred custom claims refresh completed', {
+          component: 'useAppInitialize',
+          uid: activeUser.uid,
+          role: claimsResult.data.claims.role,
+          attempts: claimsResult.attempts,
+        });
+      } catch (error) {
+        needsRetry = true;
+        logger.warn('Deferred custom claims refresh failed', {
+          component: 'useAppInitialize',
+          uid: activeUser.uid,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
-    const needsReconciliation =
-      (context.profile.nickname ?? null) !== (activeUser.displayName ?? null) ||
-      (context.profile.photoURL ?? null) !== (activeUser.photoURL ?? null);
+    const profileNickname =
+      (context.profile as { nickname?: string | null }).nickname ?? activeUser.displayName;
+    const profilePhotoURL = (context.profile as { photoURL?: string | null }).photoURL ?? null;
+    const needsProfileReconciliation =
+      profileNickname !== (activeUser.displayName ?? null) ||
+      profilePhotoURL !== (activeUser.photoURL ?? null);
 
-    if (needsReconciliation) {
+    if (needsProfileReconciliation) {
       try {
         const { updateProfile } = await import('firebase/auth');
         await updateProfile(activeUser, {
-          displayName: context.profile.nickname || activeUser.displayName,
-          photoURL: context.profile.photoURL ?? undefined,
+          displayName: profileNickname || activeUser.displayName,
+          photoURL: profilePhotoURL ?? undefined,
         });
         logger.info('Deferred auth profile reconciliation completed', {
           component: 'useAppInitialize',
           uid: activeUser.uid,
         });
       } catch (error) {
+        needsRetry = true;
         logger.warn('Deferred auth profile reconciliation failed', {
           component: 'useAppInitialize',
           uid: activeUser.uid,
@@ -427,14 +641,61 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<void> {
       }
     }
 
-    if (context.profile.phoneVerified) {
+    if ((context.profile as { phoneVerified?: boolean }).phoneVerified) {
       const unreadCount = await initializeUnreadCount(activeUser.uid);
       useNotificationStore.getState().setUnreadCount(unreadCount);
     }
   } catch (error) {
+    needsRetry = true;
     logger.warn('Deferred initialization failed', {
       component: 'useAppInitialize',
       error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return { needsRetry };
+}
+
+export async function reconcileSessionFromServer(authUser: FirebaseUser): Promise<void> {
+  const authStore = useAuthStore.getState();
+
+  try {
+    const latestProfile = await loadLatestProfile(authUser.uid);
+    const storeProfile = toStoreProfile(latestProfile);
+
+    authStore.setUser(authUser);
+    authStore.setProfile(storeProfile);
+
+    const result = await runPostLoginTasks({
+      authUser,
+      profile: latestProfile,
+    });
+
+    authStore.setNeedsServerReconcile(result.needsRetry);
+    authStore.setBootstrapSource('server');
+
+    logger.info('reconcile_success', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+      needsRetry: result.needsRetry,
+    });
+  } catch (error) {
+    const resolvedError = toError(error);
+
+    if (!isNetworkError(resolvedError)) {
+      logger.warn('Server rejected reconciled session, signing out', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+        error: resolvedError.message,
+      });
+      await signOutAndResetSession();
+      return;
+    }
+
+    logger.warn('reconcile_failure', {
+      component: 'useAppInitialize',
+      uid: authUser.uid,
+      error: resolvedError.message,
     });
   }
 }
@@ -442,6 +703,9 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<void> {
 export function useAppInitialize(): UseAppInitializeReturn {
   const startupPhase = useAppStartupStore((store) => store.startupPhase);
   const setStartupPhase = useAppStartupStore((store) => store.setStartupPhase);
+  const needsServerReconcile = useAuthStore((store) => store.needsServerReconcile);
+  const authUser = useAuthStore((store) => store.user);
+  const { isOnline } = useNetworkStatus();
   const [state, setState] = useState<AppInitState>({
     isInitialized: false,
     isLoading: true,
@@ -452,11 +716,12 @@ export function useAppInitialize(): UseAppInitializeReturn {
   });
 
   const isInitializing = useRef(false);
+  const isReconciling = useRef(false);
   const deferredInitContext = useRef<DeferredInitContext | null>(null);
   const didRunDeferredInit = useRef(false);
 
   const runDeferredPostLoginTasks = useCallback(async () => {
-    if (didRunDeferredInit.current) {
+    if (didRunDeferredInit.current || !isOnline) {
       return;
     }
 
@@ -468,11 +733,53 @@ export function useAppInitialize(): UseAppInitializeReturn {
     didRunDeferredInit.current = true;
 
     try {
-      await runPostLoginTasks(context);
+      const result = await runPostLoginTasks(context);
+      useAuthStore.getState().setNeedsServerReconcile(result.needsRetry);
     } finally {
       deferredInitContext.current = null;
     }
-  }, []);
+  }, [isOnline]);
+
+  const reconcileIfNeeded = useCallback(async () => {
+    if (!isOnline || !needsServerReconcile || !authUser?.uid || isReconciling.current) {
+      return;
+    }
+
+    const firebaseUser = getFirebaseAuth().currentUser;
+    if (!firebaseUser || firebaseUser.uid !== authUser.uid) {
+      return;
+    }
+
+    isReconciling.current = true;
+    try {
+      await reconcileSessionFromServer(firebaseUser);
+    } finally {
+      isReconciling.current = false;
+    }
+  }, [authUser?.uid, isOnline, needsServerReconcile]);
+
+  const syncAuthStateOnForeground = useCallback(async () => {
+    const authResolution = await waitForAuthUser(FOREGROUND_AUTH_SETTLE_TIMEOUT_MS);
+
+    if (authResolution.user) {
+      await useAuthStore.getState().checkAuthState(authResolution.user);
+      await reconcileIfNeeded();
+      return;
+    }
+
+    if (authResolution.source === 'event') {
+      await useAuthStore.getState().checkAuthState(null);
+      return;
+    }
+
+    logger.debug('Skipped destructive auth sync until Firebase auth settles', {
+      component: 'useAppInitialize',
+      timeoutMs: FOREGROUND_AUTH_SETTLE_TIMEOUT_MS,
+    });
+
+    await useAuthStore.getState().checkAuthState();
+    await reconcileIfNeeded();
+  }, [reconcileIfNeeded]);
 
   const initialize = useCallback(async () => {
     if (isInitializing.current) {
@@ -480,6 +787,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
     }
 
     isInitializing.current = true;
+    isReconciling.current = false;
     didRunDeferredInit.current = false;
     deferredInitContext.current = null;
 
@@ -501,6 +809,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       setStartupPhase('resolving_session');
       const sessionResolution = await resolveSession(bootstrapResult);
       deferredInitContext.current = sessionResolution.deferredInitContext;
+      sessionService.initialize();
 
       setState({
         isInitialized: true,
@@ -585,16 +894,20 @@ export function useAppInitialize(): UseAppInitializeReturn {
   }, [runDeferredPostLoginTasks, startupPhase, state.isInitialized]);
 
   useEffect(() => {
+    void reconcileIfNeeded();
+  }, [reconcileIfNeeded]);
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active' && state.isInitialized) {
-        void useAuthStore.getState().checkAuthState();
+        void syncAuthStateOnForeground();
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [state.isInitialized]);
+  }, [state.isInitialized, syncAuthStateOnForeground]);
 
   useEffect(() => {
     return () => {

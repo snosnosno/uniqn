@@ -17,8 +17,21 @@ import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
+import {
+  formatJobPostingLocation,
+  getJobPostingDistrict,
+  type JobPostingLocationInput,
+} from '../utils/jobPosting';
 
 const db = admin.firestore();
+
+interface JobPostingData {
+  title?: string;
+  location?: JobPostingLocationInput;
+  district?: string;
+  ownerId?: string;
+  createdBy?: string;
+}
 
 /**
  * 근무시간 변경 알림 트리거
@@ -70,7 +83,7 @@ export const onWorkTimeChanged = onDocumentUpdated(
         return;
       }
 
-      const jobPosting = jobPostingDoc.data();
+      const jobPosting = jobPostingDoc.data() as JobPostingData | undefined;
       if (!jobPosting) {
         logger.warn('공고 데이터가 없습니다', { workLogId });
         return;
@@ -107,8 +120,8 @@ export const onWorkTimeChanged = onDocumentUpdated(
             jobPostingTitle: jobPosting.title || '',
             scheduledStartTime: formatTime(after.scheduledStartTime),
             scheduledEndTime: formatTime(after.scheduledEndTime),
-            location: jobPosting.location || '',
-            district: jobPosting.district || '',
+            location: formatJobPostingLocation(jobPosting.location),
+            district: getJobPostingDistrict(jobPosting.location),
           },
         }
       );

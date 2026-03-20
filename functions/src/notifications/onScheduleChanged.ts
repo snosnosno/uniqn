@@ -18,6 +18,11 @@ import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
 import { STATUS } from '../constants/status';
+import {
+  formatJobPostingLocation,
+  getJobPostingDistrict,
+  type JobPostingLocationInput,
+} from '../utils/jobPosting';
 
 const db = admin.firestore();
 
@@ -27,8 +32,7 @@ const db = admin.firestore();
 
 interface JobPostingData {
   title?: string;
-  location?: string;
-  district?: string;
+  location?: JobPostingLocationInput;
   detailedAddress?: string;
   ownerId?: string;
   createdBy?: string;
@@ -111,8 +115,8 @@ export const onScheduleCreated = onDocumentCreated(
             role: workLog.role || '',
             scheduledStartTime: formatTime(workLog.scheduledStartTime),
             scheduledEndTime: formatTime(workLog.scheduledEndTime),
-            location: jobPosting?.location || '',
-            district: jobPosting?.district || '',
+            location: formatJobPostingLocation(jobPosting?.location),
+            district: getJobPostingDistrict(jobPosting?.location),
           },
         }
       );

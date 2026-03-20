@@ -25,6 +25,10 @@ import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { handleTriggerError } from '../errors';
+import {
+  formatJobPostingLocation,
+  type JobPostingLocationInput,
+} from '../utils/jobPosting';
 
 const db = admin.firestore();
 
@@ -47,8 +51,7 @@ interface ApplicationData {
 
 interface JobPostingData {
   title?: string;
-  location?: string;
-  district?: string;
+  location?: JobPostingLocationInput;
   detailedAddress?: string;
   ownerId?: string;
   createdBy?: string;
@@ -166,7 +169,7 @@ async function sendConfirmationNotification(
         applicationId,
         jobPostingId: application.jobPostingId,
         jobPostingTitle: jobPosting.title || '',
-        location: jobPosting.location || '',
+        location: formatJobPostingLocation(jobPosting.location),
       },
     }
   );

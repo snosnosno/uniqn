@@ -16,6 +16,7 @@ import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
 import { handleTriggerError } from '../errors';
+import { type JobPostingLocationInput } from '../utils/jobPosting';
 
 const db = admin.firestore();
 
@@ -25,7 +26,7 @@ const db = admin.firestore();
 
 interface JobPostingData {
   title?: string;
-  location?: string;
+  location?: JobPostingLocationInput;
   ownerId?: string;
   createdBy?: string;
 }

@@ -499,9 +499,7 @@ export function calculateSettlementBreakdown(
     checkInTime?: TimeInput;
     checkOutTime?: TimeInput;
     /** @deprecated scheduledStartTime은 checkInTime의 중복. timeSlot 사용 권장 */
-    scheduledStartTime?: TimeInput;
     /** @deprecated scheduledEndTime은 checkOutTime의 중복. timeSlot 사용 권장 */
-    scheduledEndTime?: TimeInput;
     /** timeSlot 문자열 (예: "09:00~18:00") - 예정 시간 폴백용 */
     timeSlot?: string;
     /** 날짜 (YYYY-MM-DD) - timeSlot 파싱에 필요 */
@@ -526,9 +524,6 @@ export function calculateSettlementBreakdown(
   }
 
   // legacy 폴백 (기존 데이터 호환)
-  if (!startTime) startTime = workLogData.scheduledStartTime;
-  if (!endTime) endTime = workLogData.scheduledEndTime;
-
   const isEstimate = !workLogData.checkInTime || !workLogData.checkOutTime;
 
   // 시간 정보가 없으면 계산 불가

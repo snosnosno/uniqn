@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import type { Timestamp } from 'firebase/firestore';
 import type { WorkLog, PayrollStatus } from './schedule';
 import type { TimeInput } from '@/shared/time/types';
 import { STATUS } from '@/constants';
@@ -121,10 +120,8 @@ export interface ConfirmedStaff {
   checkOutTime?: TimeInput;
 
   /** @deprecated checkInTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
-  scheduledStartTime?: Timestamp | string;
 
   /** @deprecated checkOutTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
-  scheduledEndTime?: Timestamp | string;
 
   /** 정산 상태 */
   payrollStatus?: PayrollStatus;
@@ -283,10 +280,8 @@ export function workLogToConfirmedStaff(
     date: workLog.date,
     status: workLog.status as ConfirmedStaffStatus,
     timeSlot: workLog.timeSlot,
-    checkInTime: workLog.checkInTime as Timestamp | string | null | undefined,
-    checkOutTime: workLog.checkOutTime as Timestamp | string | null | undefined,
-    scheduledStartTime: workLog.scheduledStartTime,
-    scheduledEndTime: workLog.scheduledEndTime,
+    checkInTime: workLog.checkInTime,
+    checkOutTime: workLog.checkOutTime,
     payrollStatus: workLog.payrollStatus,
     payrollAmount: workLog.payrollAmount,
     notes: workLog.notes,

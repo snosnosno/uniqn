@@ -22,11 +22,14 @@ import {
   toggleExclusiveByDate,
   toggleGroup,
   getGroupSelectionState,
-  createAssignmentKey,
-  getDateFromKeyLegacy,
   DEFAULT_SEPARATOR,
   APPLICANT_SEPARATOR,
 } from '@/utils/assignment/selectionCore';
+
+const createAssignmentKey = (date: string, timeSlot: string, role: string) =>
+  makeSelectionKey(date, timeSlot, role, { separator: '_' });
+
+const getDateFromKeyLegacy = (key: string) => getDateFromKey(key, { separator: '_' });
 
 // ============================================================================
 // Constants

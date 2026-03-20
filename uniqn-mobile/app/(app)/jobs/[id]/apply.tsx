@@ -18,9 +18,9 @@ import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications } from '@/hooks';
-import { useThemeStore, useToastStore } from '@/stores';
+import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
+import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
-import { queryKeys } from '@/lib/queryClient';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { logger } from '@/utils/logger';
 import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
@@ -84,6 +84,7 @@ function AlreadyAppliedState() {
 
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const userId = useAuthStore((state) => state.user?.uid);
   const { isDarkMode } = useThemeStore();
   const { addToast } = useToastStore();
   const queryClient = useQueryClient();
@@ -119,7 +120,7 @@ export default function ApplyScreen() {
       // 제출 전 최신 공고 상태 확인
       try {
         const latestJob = await queryClient.fetchQuery<JobPosting | null>({
-          queryKey: queryKeys.jobPostings.detail(job.id),
+          ...getJobDetailQueryOptions(job.id, userId),
           staleTime: 0, // 강제 fresh fetch
         });
 
@@ -170,7 +171,7 @@ export default function ApplyScreen() {
         }
       );
     },
-    [job, submitApplication, queryClient, addToast]
+    [job, submitApplication, queryClient, addToast, userId]
   );
 
   // 폼 닫기 핸들러

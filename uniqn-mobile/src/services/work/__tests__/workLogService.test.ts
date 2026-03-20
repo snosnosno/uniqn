@@ -796,7 +796,7 @@ describe('WorkLogService', () => {
       expect(mockRepo.subscribeTodayActive).toHaveBeenCalledWith(
         'staff-1',
         '2025-01-15',
-        ['confirmed', 'checked_in'],
+        ['scheduled', 'checked_in'],
         expect.any(Function),
         expect.any(Function)
       );

@@ -1,16 +1,8 @@
-/**
- * UNIQN Mobile - 근무 기록 목록 컴포넌트
- *
- * @description FlashList 기반 근무 기록 히스토리 목록
- * @version 1.1.0
- */
-
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
-import { TimeNormalizer, type TimeInput } from '@/shared/time';
-import { formatTime } from './helpers/timeHelpers';
+import { WorkTimeDisplay } from '@/shared/time';
 import {
   CalendarIcon,
   ClockIcon,
@@ -25,38 +17,19 @@ import { formatCurrency } from '@/utils/settlement';
 import { STATUS } from '@/constants';
 import { formatDateShortWithDay } from '@/utils/date';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface WorkLogListProps {
-  /** 근무 기록 목록 */
   workLogs: WorkLog[];
-  /** 로딩 상태 */
   isLoading: boolean;
-  /** 새로고침 중 상태 */
   isRefreshing?: boolean;
-  /** 더 불러오는 중 상태 */
   isFetchingMore?: boolean;
-  /** 더 불러올 데이터 있음 */
   hasMore?: boolean;
-  /** 새로고침 핸들러 */
   onRefresh?: () => void;
-  /** 더 불러오기 핸들러 */
   onLoadMore?: () => void;
-  /** 아이템 클릭 핸들러 */
   onItemPress?: (workLog: WorkLog) => void;
-  /** 빈 상태 메시지 */
   emptyMessage?: string;
-  /** 헤더 컴포넌트 */
   ListHeaderComponent?: React.ReactElement;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** 근무 상태 설정 */
 const WORK_STATUS_CONFIG: Record<
   WorkLog['status'],
   { label: string; variant: 'default' | 'success' | 'warning' | 'error' }
@@ -68,7 +41,6 @@ const WORK_STATUS_CONFIG: Record<
   cancelled: { label: '취소', variant: 'error' },
 };
 
-/** 정산 상태 설정 */
 const PAYROLL_STATUS_CONFIG: Record<
   PayrollStatus,
   { label: string; color: string; bgColor: string }
@@ -90,40 +62,10 @@ const PAYROLL_STATUS_CONFIG: Record<
   },
 };
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 날짜 문자열 포맷
- */
 function formatDate(dateString: string): string {
   return formatDateShortWithDay(dateString) || dateString || '-';
 }
 
-/**
- * 근무 시간 계산
- */
-function calculateWorkHours(startTime: TimeInput, endTime: TimeInput): string {
-  const start = TimeNormalizer.parseTime(startTime);
-  const end = TimeNormalizer.parseTime(endTime);
-
-  if (!start || !end) return '-';
-
-  const diffMs = end.getTime() - start.getTime();
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (hours === 0) return `${minutes}분`;
-  if (minutes === 0) return `${hours}시간`;
-  return `${hours}시간 ${minutes}분`;
-}
-
-// ============================================================================
-// Sub Components
-// ============================================================================
-
-/** 스켈레톤 아이템 */
 function WorkLogSkeleton() {
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay">
@@ -144,7 +86,6 @@ function WorkLogSkeleton() {
   );
 }
 
-/** 근무 기록 아이템 */
 interface WorkLogItemProps {
   workLog: WorkLog;
   onPress?: () => void;
@@ -154,11 +95,13 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   const statusConfig = WORK_STATUS_CONFIG[workLog.status];
   const payrollConfig = workLog.payrollStatus ? PAYROLL_STATUS_CONFIG[workLog.payrollStatus] : null;
   const roleLabel = getRoleDisplayName(workLog.role, workLog.customRole);
-
-  // 실제 근무 시간 (있으면 사용, 없으면 예정 시간)
-  const startTime = workLog.checkInTime || workLog.scheduledStartTime;
-  const endTime = workLog.checkOutTime || workLog.scheduledEndTime;
-  const workHours = calculateWorkHours(startTime, endTime);
+  const timeInfo = WorkTimeDisplay.getDisplayInfo({
+    checkInTime: workLog.checkInTime,
+    checkOutTime: workLog.checkOutTime,
+    timeSlot: workLog.timeSlot,
+    date: workLog.date,
+  });
+  const workHours = timeInfo.duration;
 
   const isCompleted =
     workLog.status === STATUS.WORK_LOG.COMPLETED || workLog.status === STATUS.WORK_LOG.CHECKED_OUT;
@@ -170,7 +113,6 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       accessibilityRole="button"
       accessibilityLabel={`${formatDate(workLog.date)} ${roleLabel} 근무 기록`}
     >
-      {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <CalendarIcon size={16} color="#6B7280" />
@@ -181,7 +123,6 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
         <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
       </View>
 
-      {/* 역할 & 시간 */}
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
           <BriefcaseIcon size={14} color="#9CA3AF" />
@@ -190,14 +131,12 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
         <View className="flex-row items-center">
           <ClockIcon size={14} color="#9CA3AF" />
           <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-            {formatTime(startTime)} - {formatTime(endTime)}
+            {timeInfo.effectiveStart} - {timeInfo.effectiveEnd}
           </Text>
         </View>
       </View>
 
-      {/* 근무 시간 & 정산 */}
       <View className="flex-row items-center justify-between">
-        {/* 근무 시간 */}
         <View className="flex-row items-center">
           {isCompleted ? (
             <CheckCircleIcon size={14} color="#22c55e" />
@@ -205,13 +144,16 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
             <PendingIcon size={14} color="#9CA3AF" />
           )}
           <Text
-            className={`ml-1 text-sm ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`ml-1 text-sm ${
+              isCompleted
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}
           >
             {isCompleted ? workHours : '진행 중'}
           </Text>
         </View>
 
-        {/* 정산 정보 */}
         {workLog.payrollAmount && workLog.payrollAmount > 0 && (
           <View className="flex-row items-center">
             {payrollConfig && (
@@ -229,7 +171,6 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
         )}
       </View>
 
-      {/* 메모 (있는 경우) */}
       {workLog.notes && (
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={2}>
@@ -240,10 +181,6 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
     </Pressable>
   );
 });
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
   ({
@@ -258,7 +195,6 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     emptyMessage = '근무 기록이 없습니다',
     ListHeaderComponent,
   }) => {
-    // 아이템 렌더러
     const renderItem = useCallback(
       ({ item }: { item: WorkLog }) => (
         <WorkLogItem workLog={item} onPress={() => onItemPress?.(item)} />
@@ -266,19 +202,19 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
       [onItemPress]
     );
 
-    // 키 추출
     const keyExtractor = useCallback((item: WorkLog) => item.id, []);
 
-    // 더 불러오기 핸들러
     const handleEndReached = useCallback(() => {
       if (!isFetchingMore && hasMore && onLoadMore) {
         onLoadMore();
       }
-    }, [isFetchingMore, hasMore, onLoadMore]);
+    }, [hasMore, isFetchingMore, onLoadMore]);
 
-    // 푸터 렌더러
     const renderFooter = useCallback(() => {
-      if (!isFetchingMore) return null;
+      if (!isFetchingMore) {
+        return null;
+      }
+
       return (
         <View className="py-4 items-center">
           <ActivityIndicator size="small" color="#6366f1" />
@@ -286,29 +222,27 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
       );
     }, [isFetchingMore]);
 
-    // 통계 계산
     const stats = useMemo(() => {
       const completed = workLogs.filter(
         (log) =>
           log.status === STATUS.WORK_LOG.COMPLETED || log.status === STATUS.WORK_LOG.CHECKED_OUT
       ).length;
       const totalEarnings = workLogs.reduce((sum, log) => sum + (log.payrollAmount || 0), 0);
+
       return { completed, totalEarnings };
     }, [workLogs]);
 
-    // 초기 로딩
     if (isLoading && workLogs.length === 0) {
       return (
         <View className="flex-1 px-4 pt-4">
           {ListHeaderComponent}
-          {[1, 2, 3, 4].map((i) => (
-            <WorkLogSkeleton key={i} />
+          {[1, 2, 3, 4].map((item) => (
+            <WorkLogSkeleton key={item} />
           ))}
         </View>
       );
     }
 
-    // 빈 상태
     if (!isLoading && workLogs.length === 0) {
       return (
         <View className="flex-1 px-4 pt-4">
@@ -337,7 +271,6 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
         ListHeaderComponent={
           <>
             {ListHeaderComponent}
-            {/* 요약 통계 */}
             {workLogs.length > 0 && (
               <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-4">
                 <View className="flex-row justify-around">

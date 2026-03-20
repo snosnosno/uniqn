@@ -392,9 +392,6 @@ export {
   getStatusLabel,
   getStatusHexColor,
   getStatusVariant,
-  // Legacy Exports (deprecated)
-  applicationStatusConfig,
-  statusConfig,
 } from './statusConfig';
 
 // ============================================================================

@@ -15,6 +15,7 @@ import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
 import { extractAllFcmTokens, flattenTokens } from "../utils/fcmTokenUtils";
 import { sendMulticast, updateUnreadCounter } from "../utils/notificationUtils";
+import { formatJobPostingLocation } from "../utils/jobPosting";
 import {
   requireAuth,
   requireRole,
@@ -143,7 +144,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
           jobPostingTitle: jobPosting?.title || "공고",
-          location: jobPosting?.location || "",
+          location: formatJobPostingLocation(jobPosting?.location),
         },
       };
 

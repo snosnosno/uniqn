@@ -52,11 +52,11 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   const handleUpdateLocation = useCallback(
     (name: string, address: string) => {
       if (name.trim()) {
-        const normalizedAddress = address.trim();
         const location: Location = {
-          name: name.trim(),
-          address: normalizedAddress,
-          district: normalizedAddress,
+          // Preserve in-progress whitespace while typing. Serialization trims before persistence.
+          name,
+          address,
+          district: address,
         };
         onUpdate({ location });
       } else {

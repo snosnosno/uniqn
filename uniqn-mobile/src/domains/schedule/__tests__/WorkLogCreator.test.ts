@@ -127,7 +127,7 @@ describe('WorkLogCreator', () => {
       expect(workLog.date).toBe('2026-02-15');
       expect(workLog.timeSlot).toBe('09:00~18:00');
       expect(workLog.status).toBe('scheduled');
-      expect(workLog.attendanceStatus).toBe('not_started');
+      expect(workLog.checkInTime).toBeNull();
       expect(workLog.isSettled).toBe(false);
       expect(workLog.checkOutTime).toBeNull();
       expect(workLog.workDuration).toBeNull();
@@ -137,7 +137,7 @@ describe('WorkLogCreator', () => {
     it('checkInTime이 시작 시간 기반으로 생성된다', () => {
       const workLog = WorkLogCreator.create(baseInput);
       // 09:00이 파싱되어 Timestamp으로 설정됨
-      expect(workLog.checkInTime).not.toBeNull();
+      expect(workLog.checkInTime).toBeNull();
     });
 
     it('기본값: isTimeToBeAnnounced=false', () => {

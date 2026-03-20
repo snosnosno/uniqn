@@ -54,7 +54,7 @@ describe("job posting notification entry triggers", () => {
       createUpdatedEvent(
         "job-1",
         { status: STATUS.JOB_POSTING.ACTIVE },
-        { status: STATUS.JOB_POSTING.ACTIVE, title: "봄 공고" },
+        { status: STATUS.JOB_POSTING.ACTIVE, title: "종료 공고" },
       ) as never,
     );
 
@@ -70,7 +70,7 @@ describe("job posting notification entry triggers", () => {
       createUpdatedEvent(
         "job-1",
         { status: STATUS.JOB_POSTING.ACTIVE },
-        { status: STATUS.JOB_POSTING.CLOSED, title: "봄 공고" },
+        { status: STATUS.JOB_POSTING.CLOSED, title: "종료 공고" },
       ) as never,
     );
 
@@ -82,7 +82,7 @@ describe("job posting notification entry triggers", () => {
     expect(spec.title).to.equal("📋 공고 마감 안내");
     expect(spec.options?.link).to.equal("/jobs/job-1");
     expect(spec.options?.data?.jobPostingId).to.equal("job-1");
-    expect(spec.options?.data?.jobPostingTitle).to.equal("봄 공고");
+    expect(spec.options?.data?.jobPostingTitle).to.equal("종료 공고");
     expect(logLabel).to.equal("공고 마감");
   });
 
@@ -127,7 +127,7 @@ describe("job posting notification entry triggers", () => {
     expect(notifyStub.called).to.equal(false);
   });
 
-  it("dispatches updated notifications with changed field metadata", async () => {
+  it("dispatches updated notifications when V3 compensation changes", async () => {
     const notifyStub = sinon
       .stub(notificationHelper, "notifyApplicantsForJobPostingChange")
       .resolves(DEFAULT_DISPATCH_RESULT);
@@ -135,8 +135,22 @@ describe("job posting notification entry triggers", () => {
     await onJobPostingUpdated.run(
       createUpdatedEvent(
         "job-4",
-        { title: "원본 공고", location: "서울" },
-        { title: "수정 공고", location: "서울" },
+        {
+          title: "원본 공고",
+          location: { name: "서울", district: "강남구" },
+          compensation: {
+            mode: "shared",
+            defaultSalary: { type: "daily", amount: 150000 },
+          },
+        },
+        {
+          title: "원본 공고",
+          location: { name: "서울", district: "강남구" },
+          compensation: {
+            mode: "shared",
+            defaultSalary: { type: "daily", amount: 160000 },
+          },
+        },
       ) as never,
     );
 
@@ -148,8 +162,44 @@ describe("job posting notification entry triggers", () => {
     expect(spec.title).to.equal("📝 공고 수정 안내");
     expect(spec.options?.link).to.equal("/jobs/job-4");
     expect(spec.options?.data?.jobPostingId).to.equal("job-4");
-    expect(spec.options?.data?.jobPostingTitle).to.equal("수정 공고");
-    expect(spec.options?.data?.changedFields).to.equal("title");
+    expect(spec.options?.data?.jobPostingTitle).to.equal("원본 공고");
+    expect(spec.options?.data?.changedFields).to.equal("compensation");
     expect(logLabel).to.equal("공고 수정");
+  });
+
+  it("dispatches updated notifications when the V3 schedule changes", async () => {
+    const notifyStub = sinon
+      .stub(notificationHelper, "notifyApplicantsForJobPostingChange")
+      .resolves(DEFAULT_DISPATCH_RESULT);
+
+    await onJobPostingUpdated.run(
+      createUpdatedEvent(
+        "job-5",
+        {
+          title: "V3 공고",
+          location: { name: "서울", district: "강남구" },
+          schedule: {
+            kind: "dated",
+            primaryDate: "2026-03-20",
+            allDates: ["2026-03-20"],
+            requirements: [],
+          },
+        },
+        {
+          title: "V3 공고",
+          location: { name: "서울", district: "강남구" },
+          schedule: {
+            kind: "dated",
+            primaryDate: "2026-03-21",
+            allDates: ["2026-03-21"],
+            requirements: [],
+          },
+        },
+      ) as never,
+    );
+
+    expect(notifyStub.calledOnce).to.equal(true);
+    const [, spec] = notifyStub.firstCall.args;
+    expect(spec.options?.data?.changedFields).to.equal("schedule");
   });
 });

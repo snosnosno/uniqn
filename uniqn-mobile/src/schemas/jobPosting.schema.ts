@@ -12,10 +12,7 @@ import { optionalTimestampSchema, timestampSchema } from './common';
 import { preQuestionsArraySchema } from './preQuestion.schema';
 import { VALID_STAFF_ROLES } from '@/types/role';
 import type { JobPosting, JobPostingDocumentV3 } from '@/types';
-import {
-  deserializeJobPostingDocument,
-  deserializeLegacyJobPostingDocument,
-} from '@/domains/job-posting';
+import { deserializeJobPostingDocument } from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 
@@ -338,7 +335,6 @@ const urgentConfigSchema = z
  * JobPosting V3 Firestore 문서 스키마.
  *
  * @description 저장 문서는 strict V3 구조만 허용한다.
- * 레거시(V2 이하) 문서는 parse 단계에서 adapter로만 흡수한다.
  */
 export const jobPostingDocumentSchema = z
   .object({
@@ -359,6 +355,7 @@ export const jobPostingDocumentSchema = z
     applicationCount: z.number().optional(),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
+    searchIndex: z.array(z.string()).optional(),
     closedAt: optionalTimestampSchema,
     closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
     tags: z.array(z.string()).optional(),
@@ -377,15 +374,17 @@ export const jobPostingDocumentSchema = z
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
 
 function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDocumentV3 {
+  const { searchIndex: _searchIndex, ...rest } = document;
+
   return {
-    ...document,
-    closedAt: document.closedAt ?? undefined,
-    tournamentConfig: document.tournamentConfig
+    ...rest,
+    closedAt: rest.closedAt ?? undefined,
+    tournamentConfig: rest.tournamentConfig
       ? {
-          ...document.tournamentConfig,
-          approvedAt: document.tournamentConfig.approvedAt ?? undefined,
-          rejectedAt: document.tournamentConfig.rejectedAt ?? undefined,
-          resubmittedAt: document.tournamentConfig.resubmittedAt ?? undefined,
+          ...rest.tournamentConfig,
+          approvedAt: rest.tournamentConfig.approvedAt ?? undefined,
+          rejectedAt: rest.tournamentConfig.rejectedAt ?? undefined,
+          resubmittedAt: rest.tournamentConfig.resubmittedAt ?? undefined,
         }
       : undefined,
   } as JobPostingDocumentV3;
@@ -402,18 +401,6 @@ export function parseJobPostingDocument(data: unknown): JobPosting | null {
 
   if (result.success) {
     return deserializeJobPostingDocument(toJobPostingDocumentV3(result.data));
-  }
-
-  const legacyParsed = deserializeLegacyJobPostingDocument(data);
-  if (legacyParsed) {
-    logger.info('레거시 JobPosting 문서를 adapter로 변환', {
-      jobPostingId:
-        data && typeof data === 'object' && 'id' in data
-          ? String((data as Record<string, unknown>).id ?? '')
-          : undefined,
-      component: 'jobPosting.schema',
-    });
-    return legacyParsed;
   }
 
   logger.warn('JobPosting 문서 검증 실패', {

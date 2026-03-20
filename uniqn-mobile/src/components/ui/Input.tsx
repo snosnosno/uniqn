@@ -83,7 +83,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
           {...props}
           accessibilityLabel={props.accessibilityLabel ?? label}
           secureTextEntry={isPassword && !showPassword}
-          keyboardType={getKeyboardType()}
+          keyboardType={props.keyboardType ?? getKeyboardType()}
           onFocus={(e) => {
             setIsFocused(true);
             props.onFocus?.(e);

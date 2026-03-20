@@ -12,6 +12,7 @@ import {
   handleFunctionError,
   handleTriggerError,
 } from "./errors";
+import { buildJobPostingSearchIndex } from "./utils/jobPosting";
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -119,55 +120,25 @@ export const validateJobPostingData = onDocumentWritten(
     let needsUpdate = false;
     const updates: Record<string, unknown> = {};
 
-    // Auto-generate requiredRoles if missing
-    if (!data.requiredRoles && data.timeSlots) {
-      const requiredRoles = Array.from(
-        new Set(
-          data.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) =>
-            ts.roles ? ts.roles.map((r: { name: string }) => r.name) : [],
-          ),
-        ),
-      );
-      updates.requiredRoles = requiredRoles;
-      needsUpdate = true;
-      logger.info(
-        `Auto-generating requiredRoles for post ${postId}:`,
-        requiredRoles,
-      );
-    }
+    const currentSearchIndex = Array.isArray(data.searchIndex)
+      ? data.searchIndex.filter(
+        (value: unknown): value is string => typeof value === "string",
+      )
+      : [];
+    const nextSearchIndex = buildJobPostingSearchIndex({
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      roleCatalog: data.roleCatalog,
+    });
 
-    // Auto-generate searchIndex if missing
-    if (!data.searchIndex) {
-      const searchIndex = [
-        data.title || "",
-        data.location || "",
-        data.description || "",
-        ...(updates.requiredRoles || data.requiredRoles || []),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((word) => word.length > 0);
-      updates.searchIndex = searchIndex;
+    if (JSON.stringify(currentSearchIndex) !== JSON.stringify(nextSearchIndex)) {
+      updates.searchIndex = nextSearchIndex;
       needsUpdate = true;
-      logger.info(`Auto-generating searchIndex for post ${postId}`);
-    }
-
-    // Convert string dates to Timestamp if needed
-    if (data.startDate && typeof data.startDate === "string") {
-      updates.startDate = admin.firestore.Timestamp.fromDate(
-        new Date(data.startDate),
-      );
-      needsUpdate = true;
-      logger.info(`Converting startDate to Timestamp for post ${postId}`);
-    }
-
-    if (data.endDate && typeof data.endDate === "string") {
-      updates.endDate = admin.firestore.Timestamp.fromDate(
-        new Date(data.endDate),
-      );
-      needsUpdate = true;
-      logger.info(`Converting endDate to Timestamp for post ${postId}`);
+      logger.info(`Syncing V3 searchIndex for post ${postId}`, {
+        currentSearchIndex,
+        nextSearchIndex,
+      });
     }
 
     // Apply updates if needed
@@ -182,112 +153,6 @@ export const validateJobPostingData = onDocumentWritten(
           context: { postId },
         });
       }
-    }
-  },
-);
-// --- Data Migration Functions ---
-
-/**
- * Migrates existing job postings to include requiredRoles and proper date formats
- * Only callable by admin users
- */
-export const migrateJobPostings = onCall(
-  { region: "asia-northeast3" },
-  async (request) => {
-    try {
-      // Check admin permissions
-      requireAuth(request);
-      requireRole(request, "admin");
-
-      logger.info("Starting job postings migration...");
-
-      const jobPostingsRef = db.collection("jobPostings");
-      const snapshot = await jobPostingsRef.get();
-
-      let migratedCount = 0;
-      let skippedCount = 0;
-      const batch = db.batch();
-
-      snapshot.docs.forEach((doc) => {
-        const docData = doc.data();
-        let needsUpdate = false;
-        const updates: Record<string, unknown> = {};
-
-        // Check if requiredRoles field is missing
-        if (!docData.requiredRoles && docData.timeSlots) {
-          const requiredRoles = Array.from(
-            new Set(
-              docData.timeSlots.flatMap(
-                (ts: { roles?: Array<{ name: string }> }) =>
-                  ts.roles ? ts.roles.map((r: { name: string }) => r.name) : [],
-              ),
-            ),
-          );
-          updates.requiredRoles = requiredRoles;
-          needsUpdate = true;
-        }
-
-        // Check if searchIndex field is missing
-        if (!docData.searchIndex) {
-          const searchIndex = [
-            docData.title || "",
-            docData.location || "",
-            docData.description || "",
-            ...(updates.requiredRoles || docData.requiredRoles || []),
-          ]
-            .join(" ")
-            .toLowerCase()
-            .split(/\s+/)
-            .filter((word) => word.length > 0);
-          updates.searchIndex = searchIndex;
-          needsUpdate = true;
-        }
-
-        // Check if dates need conversion to Timestamp
-        if (docData.startDate && typeof docData.startDate === "string") {
-          updates.startDate = admin.firestore.Timestamp.fromDate(
-            new Date(docData.startDate),
-          );
-          needsUpdate = true;
-        }
-
-        if (docData.endDate && typeof docData.endDate === "string") {
-          updates.endDate = admin.firestore.Timestamp.fromDate(
-            new Date(docData.endDate),
-          );
-          needsUpdate = true;
-        }
-
-        if (needsUpdate) {
-          batch.update(doc.ref, updates);
-          migratedCount++;
-        } else {
-          skippedCount++;
-        }
-      });
-
-      if (migratedCount > 0) {
-        await batch.commit();
-      }
-
-      logger.info(
-        `Migration completed: ${migratedCount} updated, ${skippedCount} skipped`,
-      );
-
-      return {
-        success: true,
-        message: `Migration completed successfully`,
-        stats: {
-          total: snapshot.docs.length,
-          migrated: migratedCount,
-          skipped: skippedCount,
-        },
-      };
-    } catch (error: unknown) {
-      throw handleFunctionError(error, {
-        operation: "migrateJobPostings",
-        context: { userId: request.auth?.uid },
-      });
     }
   },
 );

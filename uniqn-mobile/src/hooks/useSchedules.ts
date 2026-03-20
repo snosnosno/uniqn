@@ -1,12 +1,13 @@
-/**
- * UNIQN Mobile - 스케줄 훅
- *
- * @description TanStack Query 기반 스케줄 조회 훅
- * @version 1.0.0
- */
-
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useAuthStore } from '@/stores/authStore';
+import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
+import {
+  getCriticalOfflineCache,
+  setCriticalOfflineCache,
+} from '@/services/offline/criticalOfflineCache';
+import { logger } from '@/utils/logger';
 import {
   getMySchedules,
   getSchedulesByMonth,
@@ -19,17 +20,16 @@ import {
   groupSchedulesByDate,
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
-import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
-import { logger } from '@/utils/logger';
 import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
 import { stableFilters } from '@/utils/queryUtils';
 import { AuthError, ERROR_CODES } from '@/errors/AppError';
-import type { ScheduleEvent, ScheduleFilters, CalendarView } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import type {
+  CalendarView,
+  ScheduleEvent,
+  ScheduleFilters,
+  ScheduleStats,
+  CalendarView as CalendarViewType,
+} from '@/types';
 
 interface UseSchedulesOptions {
   filters?: ScheduleFilters;
@@ -43,38 +43,72 @@ interface UseSchedulesByMonthOptions {
   enabled?: boolean;
 }
 
-// ============================================================================
-// Hooks
-// ============================================================================
+interface ScheduleQueryPayload {
+  schedules: ScheduleEvent[];
+  stats?: ScheduleStats;
+}
 
-/**
- * 내 스케줄 목록 조회 훅
- */
+const SCHEDULE_CACHE_SCHEMA_VERSION = 2;
+
+function buildScheduleCacheKey(userId: string | undefined, scope: string, suffix?: string): string {
+  return ['schedules', userId ?? 'anonymous', scope, suffix].filter(Boolean).join(':');
+}
+
+function useCachedSchedulePayload(cacheKey: string, ttlMs: number, userId?: string) {
+  return useMemo(
+    () =>
+      getCriticalOfflineCache<ScheduleQueryPayload>(cacheKey, {
+        ttlMs,
+        userId,
+        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+      })?.data ?? { schedules: [] },
+    [cacheKey, ttlMs, userId]
+  );
+}
+
 export function useSchedules(options: UseSchedulesOptions = {}) {
   const { filters, enabled = true, realtime = false } = options;
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
-
-  // 실시간 구독 상태
+  const { isOnline } = useNetworkStatus();
+  const normalizedFilters = stableFilters(filters ?? {});
+  const cacheKey = buildScheduleCacheKey(staffId, 'list', JSON.stringify(normalizedFilters));
+  const listQueryKey = [
+    ...queryKeys.schedules.list(normalizedFilters),
+    staffId ?? 'anonymous',
+  ] as const;
+  const cachedPayload = useCachedSchedulePayload(
+    cacheKey,
+    queryCachingOptions.schedules.staleTime,
+    staffId
+  );
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
 
   const query = useQuery({
-    queryKey: queryKeys.schedules.list(stableFilters(filters)),
+    queryKey: listQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getMySchedules(staffId, filters);
     },
-    enabled: enabled && !!staffId && !realtime,
+    enabled: enabled && !!staffId && !realtime && isOnline,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
 
-  // 실시간 구독
-  // NOTE: subscribeToSchedules는 filters를 받지 않으므로 의존성에 포함하지 않음.
-  // 필터링이 필요하면 scheduleService에 filters 파라미터를 추가해야 함.
   useEffect(() => {
-    if (!realtime || !staffId) return;
+    if (!staffId || !query.data) {
+      return;
+    }
+
+    setCriticalOfflineCache(cacheKey, query.data, {
+      userId: staffId,
+      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+    });
+  }, [cacheKey, query.data, staffId]);
+
+  useEffect(() => {
+    if (!realtime || !staffId || !isOnline) return;
 
     const unsubscribe = subscribeToSchedules(
       staffId,
@@ -82,260 +116,353 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
         setRealtimeSchedules(schedules);
       },
       (error) => {
-        logger.error('스케줄 실시간 구독 에러', error);
+        logger.error('Schedule realtime subscription failed', error);
       }
     );
 
     return () => unsubscribe();
-  }, [realtime, staffId]);
+  }, [isOnline, realtime, staffId]);
 
-  // 스케줄 데이터 (실시간 또는 쿼리)
+  const shouldUseCachedPayload =
+    enabled && !!staffId && !realtime && !isOnline && query.data === undefined;
+  const queryPayload =
+    query.data !== undefined
+      ? query.data
+      : shouldUseCachedPayload
+        ? cachedPayload
+        : { schedules: [] };
   const schedules = useMemo(
-    () => (realtime ? realtimeSchedules : (query.data?.schedules ?? [])),
-    [realtime, realtimeSchedules, query.data?.schedules]
+    () => (realtime ? realtimeSchedules : (queryPayload.schedules ?? [])),
+    [queryPayload.schedules, realtime, realtimeSchedules]
   );
-  const stats = query.data?.stats;
-
-  // 날짜별 그룹화
+  const stats = realtime ? undefined : queryPayload.stats;
   const groupedSchedules = useMemo(() => groupSchedulesByDate(schedules), [schedules]);
-
-  // 캘린더 마킹 데이터
   const markedDates = useMemo(() => getCalendarMarkedDates(schedules), [schedules]);
 
-  // 리프레시
   const refresh = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
     await queryClient.invalidateQueries({
       queryKey: queryKeys.schedules.all,
     });
     await query.refetch();
-  }, [queryClient, query]);
+  }, [isOnline, query, queryClient]);
 
   return {
     schedules,
     groupedSchedules,
     markedDates,
     stats,
-    isLoading: query.isLoading,
-    isRefreshing: query.isRefetching,
-    error: query.error,
+    isLoading: schedules.length === 0 ? query.isLoading : false,
+    isRefreshing: isOnline ? query.isRefetching : false,
+    error: isOnline ? query.error : null,
     refresh,
   };
 }
 
-/**
- * 월별 스케줄 조회 훅
- */
 export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const { year, month, enabled = true } = options;
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
+  const { isOnline } = useNetworkStatus();
+  const cacheKey = buildScheduleCacheKey(staffId, 'month', `${year}-${month}`);
+  const monthQueryKey = [
+    ...queryKeys.schedules.byMonth(year, month),
+    staffId ?? 'anonymous',
+  ] as const;
+  const cachedPayload = useCachedSchedulePayload(
+    cacheKey,
+    queryCachingOptions.schedules.staleTime,
+    staffId
+  );
 
   const query = useQuery({
-    queryKey: queryKeys.schedules.byMonth(year, month),
+    queryKey: monthQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByMonth(staffId, year, month);
     },
-    enabled: enabled && !!staffId,
+    enabled: enabled && !!staffId && isOnline,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
 
-  const schedules = useMemo(() => query.data?.schedules ?? [], [query.data?.schedules]);
-  const stats = query.data?.stats;
+  useEffect(() => {
+    if (!staffId || !query.data) {
+      return;
+    }
 
-  // 날짜별 그룹화
+    setCriticalOfflineCache(cacheKey, query.data, {
+      userId: staffId,
+      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+    });
+  }, [cacheKey, query.data, staffId]);
+
+  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
+  const queryPayload =
+    query.data !== undefined
+      ? query.data
+      : shouldUseCachedPayload
+        ? cachedPayload
+        : { schedules: [] };
+  const schedules = useMemo(() => queryPayload.schedules ?? [], [queryPayload.schedules]);
+  const stats = queryPayload.stats;
   const groupedSchedules = useMemo(() => groupSchedulesByDate(schedules), [schedules]);
-
-  // 캘린더 마킹 데이터
   const markedDates = useMemo(() => getCalendarMarkedDates(schedules), [schedules]);
 
   const refresh = useCallback(async () => {
+    if (!isOnline) {
+      return;
+    }
+
     await queryClient.invalidateQueries({
       queryKey: queryKeys.schedules.byMonth(year, month),
     });
-  }, [queryClient, year, month]);
+  }, [isOnline, month, queryClient, year]);
 
   return {
     schedules,
     groupedSchedules,
     markedDates,
     stats,
-    isLoading: query.isLoading,
-    isRefreshing: query.isRefetching,
-    error: query.error,
+    isLoading: schedules.length === 0 ? query.isLoading : false,
+    isRefreshing: isOnline ? query.isRefetching : false,
+    error: isOnline ? query.error : null,
     refresh,
   };
 }
 
-/**
- * 특정 날짜 스케줄 조회 훅
- */
 export function useSchedulesByDate(date: string, enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
+  const { isOnline } = useNetworkStatus();
+  const cacheKey = buildScheduleCacheKey(staffId, 'date', date);
+  const dateQueryKey = [...queryKeys.schedules.byDate(date), staffId ?? 'anonymous'] as const;
+  const cachedPayload = useCachedSchedulePayload(
+    cacheKey,
+    queryCachingOptions.schedules.staleTime,
+    staffId
+  );
 
   const query = useQuery({
-    queryKey: queryKeys.schedules.byDate(date),
+    queryKey: dateQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByDate(staffId, date);
     },
-    enabled: enabled && !!staffId && !!date,
+    enabled: enabled && !!staffId && !!date && isOnline,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
 
+  useEffect(() => {
+    if (!staffId || !date || !query.data) {
+      return;
+    }
+
+    setCriticalOfflineCache(
+      cacheKey,
+      { schedules: query.data },
+      {
+        userId: staffId,
+        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+      }
+    );
+  }, [cacheKey, date, query.data, staffId]);
+
+  const shouldUseCachedPayload =
+    enabled && !!staffId && !!date && !isOnline && query.data === undefined;
+  const schedules =
+    query.data !== undefined
+      ? query.data
+      : shouldUseCachedPayload
+        ? (cachedPayload.schedules ?? [])
+        : [];
+
   return {
-    schedules: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    schedules,
+    isLoading: schedules.length > 0 ? false : query.isLoading,
+    error: isOnline ? query.error : null,
+    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
 
-/**
- * 스케줄 상세 조회 훅
- */
 export function useScheduleDetail(scheduleId: string, enabled = true) {
+  const { isOnline } = useNetworkStatus();
   const query = useQuery({
     queryKey: [...queryKeys.schedules.all, 'detail', scheduleId],
     queryFn: () => getScheduleById(scheduleId),
-    enabled: enabled && !!scheduleId,
+    enabled: enabled && !!scheduleId && isOnline,
     staleTime: cachingPolicies.standard,
   });
 
   return {
     schedule: query.data,
     isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    error: isOnline ? query.error : null,
+    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
 
-/**
- * 오늘 스케줄 조회 훅
- */
 export function useTodaySchedules(enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
   const today = new Date().toISOString().split('T')[0];
+  const { isOnline } = useNetworkStatus();
+  const cacheKey = buildScheduleCacheKey(staffId, 'today', today);
+  const todayQueryKey = [...queryKeys.schedules.byDate(today), staffId ?? 'anonymous'] as const;
+  const cachedPayload = useCachedSchedulePayload(cacheKey, cachingPolicies.realtime, staffId);
 
   const query = useQuery({
-    queryKey: queryKeys.schedules.byDate(today),
+    queryKey: todayQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getTodaySchedules(staffId);
     },
-    enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.realtime, // 실시간 데이터
-    refetchInterval: 60 * 1000, // 1분마다 자동 갱신
+    enabled: enabled && !!staffId && isOnline,
+    staleTime: cachingPolicies.realtime,
+    refetchInterval: isOnline ? 60 * 1000 : false,
   });
 
+  useEffect(() => {
+    if (!staffId || !query.data) {
+      return;
+    }
+
+    setCriticalOfflineCache(
+      cacheKey,
+      { schedules: query.data },
+      {
+        userId: staffId,
+        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+      }
+    );
+  }, [cacheKey, query.data, staffId]);
+
+  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
+  const schedules =
+    query.data !== undefined
+      ? query.data
+      : shouldUseCachedPayload
+        ? (cachedPayload.schedules ?? [])
+        : [];
+
   return {
-    schedules: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    schedules,
+    isLoading: schedules.length === 0 ? query.isLoading : false,
+    error: isOnline ? query.error : null,
+    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
 
-/**
- * 다가오는 스케줄 조회 훅
- */
 export function useUpcomingSchedules(days = 7, enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
+  const { isOnline } = useNetworkStatus();
+  const cacheKey = buildScheduleCacheKey(staffId, 'upcoming', String(days));
+  const upcomingQueryKey = [
+    ...queryKeys.schedules.all,
+    'upcoming',
+    days,
+    staffId ?? 'anonymous',
+  ] as const;
+  const cachedPayload = useCachedSchedulePayload(
+    cacheKey,
+    queryCachingOptions.schedules.staleTime,
+    staffId
+  );
 
   const query = useQuery({
-    queryKey: [...queryKeys.schedules.all, 'upcoming', days],
+    queryKey: upcomingQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getUpcomingSchedules(staffId, days);
     },
-    enabled: enabled && !!staffId,
+    enabled: enabled && !!staffId && isOnline,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
 
+  useEffect(() => {
+    if (!staffId || !query.data) {
+      return;
+    }
+
+    setCriticalOfflineCache(
+      cacheKey,
+      { schedules: query.data },
+      {
+        userId: staffId,
+        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+      }
+    );
+  }, [cacheKey, query.data, staffId]);
+
+  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
+  const schedules =
+    query.data !== undefined
+      ? query.data
+      : shouldUseCachedPayload
+        ? (cachedPayload.schedules ?? [])
+        : [];
+
   return {
-    schedules: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    schedules,
+    isLoading: schedules.length === 0 ? query.isLoading : false,
+    error: isOnline ? query.error : null,
+    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
 
-/**
- * 스케줄 통계 조회 훅
- */
 export function useScheduleStats(enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
+  const { isOnline } = useNetworkStatus();
+  const statsQueryKey = [...queryKeys.schedules.all, 'stats', staffId ?? 'anonymous'] as const;
 
   const query = useQuery({
-    queryKey: [...queryKeys.schedules.all, 'stats'],
+    queryKey: statsQueryKey,
     queryFn: async () => {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getScheduleStats(staffId);
     },
-    enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.stable, // 60분
+    enabled: enabled && !!staffId && isOnline,
+    staleTime: cachingPolicies.stable,
   });
 
   return {
     stats: query.data,
     isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    error: isOnline ? query.error : null,
+    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
   };
 }
 
-/**
- * 캘린더 뷰 옵션
- */
 interface UseCalendarViewOptions {
-  /** 초기 뷰 모드 (기본: 'month') */
-  initialView?: CalendarView;
-  /** 스케줄 그룹핑 활성화 (같은 지원의 연속/다중 날짜 통합, 기본: true) */
+  initialView?: CalendarViewType;
   enableGrouping?: boolean;
 }
 
-/**
- * 캘린더 뷰 상태 관리 훅
- *
- * @description
- * - 월별 스케줄 조회 및 캘린더 상태 관리
- * - enableGrouping=true 시 같은 지원의 연속/다중 날짜를 통합 표시
- *
- * @example
- * // 기본 사용 (그룹핑 활성화)
- * const { groupedByApplication, selectedDateSchedules } = useCalendarView();
- *
- * // 그룹핑 비활성화
- * const { schedules } = useCalendarView({ enableGrouping: false });
- */
 export function useCalendarView(options: UseCalendarViewOptions | CalendarView = 'month') {
-  // 옵션 정규화 (하위 호환성: 문자열도 허용)
   const normalizedOptions: UseCalendarViewOptions =
     typeof options === 'string' ? { initialView: options } : options;
 
   const { initialView = 'month', enableGrouping = true } = normalizedOptions;
 
-  const [view, setView] = useState<CalendarView>(initialView);
+  const [view, setView] = useState<CalendarViewType>(initialView);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
   });
 
-  // 월 변경
   const goToMonth = useCallback((year: number, month: number) => {
     setCurrentMonth({ year, month });
   }, []);
 
-  // 이전 월
   const goToPrevMonth = useCallback(() => {
     setCurrentMonth((prev) => {
       if (prev.month === 1) {
@@ -345,7 +472,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     });
   }, []);
 
-  // 다음 월
   const goToNextMonth = useCallback(() => {
     setCurrentMonth((prev) => {
       if (prev.month === 12) {
@@ -355,7 +481,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     });
   }, []);
 
-  // 오늘로 이동
   const goToToday = useCallback(() => {
     const today = new Date();
     setCurrentMonth({
@@ -365,7 +490,6 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     setSelectedDate(today.toISOString().split('T')[0]);
   }, []);
 
-  // 월별 스케줄 데이터
   const {
     schedules,
     groupedSchedules,
@@ -380,49 +504,39 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     month: currentMonth.month,
   });
 
-  // 같은 지원(applicationId)의 연속/다중 날짜를 통합
-  // 결과: (ScheduleEvent | GroupedScheduleEvent)[]
   const groupedByApplication = useMemo(
     () =>
       enableGrouping
         ? groupScheduleEvents(schedules, { enabled: true, minGroupSize: 2 })
         : schedules,
-    [schedules, enableGrouping]
+    [enableGrouping, schedules]
   );
 
-  // 선택된 날짜의 스케줄 (그룹핑된 버전)
-  // GroupedScheduleEvent는 해당 날짜를 포함하면 반환
   const selectedDateSchedules = useMemo(() => {
     if (enableGrouping) {
       return filterSchedulesByDate(groupedByApplication, selectedDate);
     }
-    return schedules.filter((s) => s.date === selectedDate);
-  }, [groupedByApplication, schedules, selectedDate, enableGrouping]);
+    return schedules.filter((schedule) => schedule.date === selectedDate);
+  }, [enableGrouping, groupedByApplication, schedules, selectedDate]);
 
-  // 원본 스케줄에서 선택된 날짜 필터링 (개별 카드용)
   const selectedDateSchedulesRaw = useMemo(() => {
-    return schedules.filter((s) => s.date === selectedDate);
+    return schedules.filter((schedule) => schedule.date === selectedDate);
   }, [schedules, selectedDate]);
 
   return {
-    // 상태
     view,
     selectedDate,
     currentMonth,
-    // 데이터 (원본)
     schedules,
-    groupedSchedules, // 날짜별 그룹화 (기존)
+    groupedSchedules,
     markedDates,
     stats,
-    // 데이터 (통합 표시용)
-    groupedByApplication, // 같은 지원 통합 (신규)
-    selectedDateSchedules, // 선택된 날짜 (그룹핑 적용)
-    selectedDateSchedulesRaw, // 선택된 날짜 (원본)
-    // 상태
+    groupedByApplication,
+    selectedDateSchedules,
+    selectedDateSchedulesRaw,
     isLoading,
     isRefreshing,
     error,
-    // 액션
     setView,
     setSelectedDate,
     goToMonth,

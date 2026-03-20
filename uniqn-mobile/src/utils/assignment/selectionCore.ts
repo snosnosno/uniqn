@@ -287,14 +287,8 @@ export function getGroupSelectionState(
  * @deprecated createAssignmentKey 대신 makeSelectionKey 사용
  * ApplicantCard utils.ts 호환용
  */
-export function createAssignmentKey(date: string, timeSlot: string, role: string): string {
-  return makeSelectionKey(date, timeSlot, role, { separator: '_' });
-}
 
 /**
  * @deprecated getDateFromKey (options 없는 버전) 호환용
  * ApplicantCard utils.ts 호환용
  */
-export function getDateFromKeyLegacy(key: string): string {
-  return key.split('_')[0] ?? '';
-}

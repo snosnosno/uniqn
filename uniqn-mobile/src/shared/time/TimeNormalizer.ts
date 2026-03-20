@@ -1,12 +1,13 @@
-import { toDate } from '@/utils/date/core';
+import { parseTimeSlotToDate } from '@/utils/date/ranges';
+import { parseTimeValue } from './parseTimeValue';
 import type { NormalizedWorkTime, TimeFieldsInput, TimeInput } from './types';
 
 export class TimeNormalizer {
-  private static readonly TIME_ONLY_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
-
   static normalize(input: TimeFieldsInput): NormalizedWorkTime {
-    const scheduledStart = this.parseTime(input.scheduledStartTime);
-    const scheduledEnd = this.parseTime(input.scheduledEndTime);
+    const parsedScheduled =
+      input.timeSlot && input.date ? parseTimeSlotToDate(input.timeSlot, input.date) : null;
+    const scheduledStart = parsedScheduled?.startTime ?? this.parseTime(input.startTime ?? null);
+    const scheduledEnd = parsedScheduled?.endTime ?? this.parseTime(input.endTime ?? null);
     const actualStart = this.parseTime(input.checkInTime);
     const actualEnd = this.parseTime(input.checkOutTime);
     const isEstimate = actualStart === null || actualEnd === null;
@@ -61,45 +62,11 @@ export class TimeNormalizer {
   }
 
   static parseTime(value: TimeInput): Date | null {
-    if (typeof value === 'string') {
-      if (this.TIME_ONLY_PATTERN.test(value)) {
-        return this.parseTimeOnlyString(value);
-      }
-    }
-
-    return toDate(value);
+    return parseTimeValue(value);
   }
 
   static calculateDurationInHours(start: Date, end: Date): number {
     const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
     return totalMinutes / 60;
-  }
-
-  private static parseTimeOnlyString(value: string): Date | null {
-    const match = value.match(this.TIME_ONLY_PATTERN);
-    if (!match) {
-      return null;
-    }
-
-    const [, hourString, minuteString, secondString] = match;
-    const hours = Number(hourString);
-    const minutes = Number(minuteString);
-    const seconds = secondString ? Number(secondString) : 0;
-
-    if (
-      Number.isNaN(hours) ||
-      Number.isNaN(minutes) ||
-      Number.isNaN(seconds) ||
-      hours < 0 ||
-      hours > 23 ||
-      minutes < 0 ||
-      minutes > 59 ||
-      seconds < 0 ||
-      seconds > 59
-    ) {
-      return null;
-    }
-
-    return new Date(1970, 0, 1, hours, minutes, seconds, 0);
   }
 }

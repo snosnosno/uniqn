@@ -34,8 +34,8 @@ import {
   type DeleteConfirmedStaffInput,
   type ConfirmedStaffStatus,
 } from '@/types/confirmedStaff';
-import { STAFF_ROLES, STATUS } from '@/constants';
-import { StatusMapper } from '@/shared/status';
+import { STAFF_ROLES } from '@/constants';
+import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
 
@@ -80,17 +80,9 @@ async function getStaffName(staffId: string): Promise<string> {
  * @description StatusMapper로 위임
  * @note no_show는 WorkLogStatus에 없으므로 별도 처리
  */
-function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
-  // no_show는 WorkLogStatus에 없으므로 직접 처리
-  if (status === STATUS.CONFIRMED_STAFF.NO_SHOW) {
-    return STATUS.CONFIRMED_STAFF.NO_SHOW;
-  }
-  // confirmed는 레거시 상태, scheduled로 정규화
-  if (status === STATUS.APPLICATION.CONFIRMED) {
-    return STATUS.WORK_LOG.SCHEDULED;
-  }
+function mapWorkLogStatus(status: WorkLogStatus): ConfirmedStaffStatus {
   // 나머지는 StatusMapper로 위임
-  return StatusMapper.toConfirmedStaff(status as import('@/shared/status').WorkLogStatus);
+  return StatusMapper.toConfirmedStaff(status);
 }
 
 /**

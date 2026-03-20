@@ -32,14 +32,19 @@ import { logger } from '@/utils/logger';
 import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { sanitizeInput } from '@/utils/security';
-import { trackLogin, trackSignup, setUserId, setUserProperties } from '@/services/observability';
+import {
+  trackLogin,
+  trackSignup,
+  setUserId,
+  setUserProperties,
+} from '@/services/observability/analyticsService';
 import {
   type UserProfile,
   type AuthResult,
   type SocialProfileData,
   callVerifyAndSaveProfile,
 } from './authTypes';
-import { getUserProfile } from './authCoreService';
+import { getUserProfile } from './userProfileService';
 
 // ============================================================================
 // Internal Helpers

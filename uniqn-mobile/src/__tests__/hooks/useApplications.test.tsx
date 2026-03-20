@@ -35,6 +35,24 @@ jest.mock('@/lib/queryClient', () => ({
   cachingPolicies: { frequent: 120000, standard: 300000 },
 }));
 
+jest.mock('@/hooks/useNetworkStatus', () => ({
+  useNetworkStatus: () => ({
+    isOnline: true,
+    isOffline: false,
+    isChecking: false,
+    connectionType: 'wifi',
+    isInternetReachable: true,
+    lastChecked: null,
+    details: null,
+    checkConnection: jest.fn(),
+  }),
+}));
+
+jest.mock('@/services/offline/criticalOfflineCache', () => ({
+  getCriticalOfflineCache: jest.fn(() => null),
+  setCriticalOfflineCache: jest.fn(),
+}));
+
 jest.mock('@/services', () => ({
   getMyApplications: jest.fn().mockResolvedValue([]),
   applyToJobV2: jest.fn().mockResolvedValue({ id: 'test', jobPostingId: 'job-1', assignments: [] }),

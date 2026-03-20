@@ -67,8 +67,7 @@ export interface WorkLogData {
   timeSlot: string;
   isTimeToBeAnnounced: boolean;
   tentativeDescription: string | null;
-  status: 'scheduled' | 'checked_in' | 'completed' | 'cancelled';
-  attendanceStatus: 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+  status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
   checkInTime: Timestamp | null;
   checkOutTime: null;
   workDuration: null;
@@ -183,9 +182,6 @@ export class WorkLogCreator {
    * @returns WorkLog 데이터 (Firestore 저장용)
    */
   static create(input: WorkLogCreateInput): WorkLogData {
-    const startTime = this.extractStartTime(input.timeSlot);
-    const checkInTime = this.createTimestampFromDateTime(input.date, startTime);
-
     return {
       staffId: input.staffId,
       staffName: input.staffName,
@@ -197,8 +193,7 @@ export class WorkLogCreator {
       isTimeToBeAnnounced: input.isTimeToBeAnnounced ?? false,
       tentativeDescription: input.tentativeDescription ?? null,
       status: STATUS.WORK_LOG.SCHEDULED,
-      attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
-      checkInTime,
+      checkInTime: null,
       checkOutTime: null,
       workDuration: null,
       payrollAmount: null,

@@ -64,8 +64,7 @@ export const createWorkLogSchema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
   role: staffRoleSchema,
-  scheduledStartTime: z.string().optional(),
-  scheduledEndTime: z.string().optional(),
+  timeSlot: z.string().optional(),
   notes: z
     .string()
     .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
@@ -140,8 +139,6 @@ export const workLogDocumentSchema = z
     staffPhotoURL: z.string().optional(),
 
     // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
-    scheduledStartTime: optionalTimestampSchema.or(z.string()).optional(),
-    scheduledEndTime: optionalTimestampSchema.or(z.string()).optional(),
     checkInTime: optionalTimestampSchema.or(z.string()).optional(),
     checkOutTime: optionalTimestampSchema.or(z.string()).optional(),
 

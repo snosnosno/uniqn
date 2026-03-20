@@ -1,19 +1,23 @@
-/**
- * UNIQN Mobile - 지원 관리 훅
- *
- * @description 지원서 제출, 조회, 취소 관리
- * @version 2.0.0 - v2.0 Assignment + PreQuestion 지원
- */
-
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import {
+  getCriticalOfflineCache,
+  setCriticalOfflineCache,
+} from '@/services/offline/criticalOfflineCache';
+import {
+  requireOnlineForMutation,
+  shouldApplyOptimisticUpdate,
+} from '@/services/offline/remoteMutationGuard';
 import {
   getMyApplications,
   applyToJobV2,
   cancelApplication as cancelApplicationService,
   requestCancellation as requestCancellationService,
 } from '@/services';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { requireAuth } from '@/errors';
@@ -22,11 +26,6 @@ import { createMutationErrorHandler } from '@/shared/errors';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/** v2.0 지원 파라미터 (Assignment + PreQuestion) */
 interface SubmitApplicationV2Params {
   jobPostingId: string;
   assignments: Assignment[];
@@ -34,38 +33,68 @@ interface SubmitApplicationV2Params {
   message?: string;
 }
 
-/** 취소 요청 파라미터 */
 interface RequestCancellationParams {
   applicationId: string;
   reason: string;
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
+const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
 
 export function useApplications() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user, profile } = useAuthStore();
+  const { isOnline } = useNetworkStatus();
+  const applicationsCacheKey = user?.uid
+    ? `applications:${user.uid}:mine`
+    : 'applications:anonymous:mine';
+  const myApplicationsQueryKey = [
+    ...queryKeys.applications.mine(),
+    user?.uid ?? 'anonymous',
+  ] as const;
 
-  // 내 지원 내역 조회
   const myApplicationsQuery = useQuery({
-    queryKey: queryKeys.applications.mine(),
+    queryKey: myApplicationsQueryKey,
     queryFn: () => getMyApplications(user!.uid),
-    enabled: !!user,
-    staleTime: cachingPolicies.frequent, // 5분
+    enabled: !!user && isOnline,
+    staleTime: cachingPolicies.frequent,
   });
 
-  // 지원 제출 (v2.0: Assignment + PreQuestion)
+  useEffect(() => {
+    if (!user?.uid || !myApplicationsQuery.data) {
+      return;
+    }
+
+    setCriticalOfflineCache(applicationsCacheKey, myApplicationsQuery.data, {
+      userId: user.uid,
+      schemaVersion: APPLICATIONS_CACHE_SCHEMA_VERSION,
+    });
+  }, [applicationsCacheKey, myApplicationsQuery.data, user?.uid]);
+
+  const cachedApplications =
+    (user?.uid
+      ? getCriticalOfflineCache<Application[]>(applicationsCacheKey, {
+          ttlMs: cachingPolicies.standard,
+          userId: user.uid,
+          schemaVersion: APPLICATIONS_CACHE_SCHEMA_VERSION,
+        })?.data
+      : []) ?? [];
+
+  const shouldUseCachedApplications =
+    !!user?.uid && !isOnline && myApplicationsQuery.data === undefined;
+  const effectiveApplications =
+    myApplicationsQuery.data ?? (shouldUseCachedApplications ? cachedApplications : []);
+
   const submitV2Mutation = useMutation({
     mutationFn: (params: SubmitApplicationV2Params) => {
       requireAuth(user?.uid, 'useApplications');
-      // Firestore profile 우선, Auth displayName 폴백
+      requireOnlineForMutation('useApplications.submitApplication');
+
       const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
       const applicantNickname = profile?.nickname || undefined;
       const applicantPhotoURL = profile?.photoURL || user.photoURL || undefined;
+
       return applyToJobV2(
         {
           jobPostingId: params.jobPostingId,
@@ -76,184 +105,169 @@ export function useApplications() {
         user.uid,
         applicantName,
         applicantPhone,
-        undefined, // applicantEmail은 나중에 추가
+        undefined,
         applicantNickname,
         applicantPhotoURL
       );
     },
     onSuccess: (data) => {
-      logger.info('v2.0 지원 완료', {
+      logger.info('Application submission completed', {
         applicationId: data.id,
         assignmentCount: data.assignments?.length ?? 0,
       });
       addToast({ type: 'success', message: '지원이 완료되었습니다.' });
 
-      // 캐시 무효화 (세분화: 전체 무효화 대신 특정 공고만)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applications.mine(),
+      void queryClient.invalidateQueries({
+        queryKey: myApplicationsQueryKey,
       });
-      // 특정 공고 상세만 무효화 (applicationCount 갱신)
-      // 참고: 목록에서는 applicationCount를 표시하지 않으므로 lists() 무효화 불필요
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.detail(data.jobPostingId),
+      void queryClient.invalidateQueries({
+        queryKey: getJobDetailQueryKey(data.jobPostingId, user?.uid),
       });
     },
-    onError: createMutationErrorHandler('v2.0 지원', addToast),
+    onError: createMutationErrorHandler('지원', addToast),
   });
 
-  // 지원 취소 (Optimistic Update 적용)
   const cancelMutation = useMutation({
     mutationFn: (applicationId: string) => {
       requireAuth(user?.uid, 'useApplications');
+      requireOnlineForMutation('useApplications.cancelApplication');
       return cancelApplicationService(applicationId, user.uid);
     },
-    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
     onMutate: async (applicationId: string) => {
-      // 진행 중인 refetch 취소 (낙관적 업데이트와 충돌 방지)
+      if (!shouldApplyOptimisticUpdate()) {
+        return { previousApplications: undefined };
+      }
+
       await queryClient.cancelQueries({
-        queryKey: queryKeys.applications.mine(),
+        queryKey: myApplicationsQueryKey,
       });
 
-      // 이전 데이터 스냅샷 저장 (롤백용)
-      const previousApplications = queryClient.getQueryData<Application[]>(
-        queryKeys.applications.mine()
-      );
+      const previousApplications = queryClient.getQueryData<Application[]>(myApplicationsQueryKey);
 
-      // 낙관적으로 UI 업데이트 (취소된 것처럼 표시)
       if (previousApplications) {
         queryClient.setQueryData<Application[]>(
-          queryKeys.applications.mine(),
-          previousApplications.map((app) =>
-            app.id === applicationId ? { ...app, status: STATUS.APPLICATION.CANCELLED } : app
+          myApplicationsQueryKey,
+          previousApplications.map((application) =>
+            application.id === applicationId
+              ? { ...application, status: STATUS.APPLICATION.CANCELLED }
+              : application
           )
         );
       }
 
-      // 컨텍스트 반환 (롤백에 사용)
       return { previousApplications };
     },
     onSuccess: (_, applicationId) => {
-      logger.info('지원 취소', { applicationId });
+      logger.info('Application cancelled', { applicationId });
       addToast({ type: 'success', message: '지원이 취소되었습니다.' });
     },
     onError: createMutationErrorHandler('지원 취소', addToast, {
       onRollback: (ctx) => {
         const rollbackCtx = ctx as { previousApplications?: Application[] };
         if (rollbackCtx?.previousApplications) {
-          queryClient.setQueryData(queryKeys.applications.mine(), rollbackCtx.previousApplications);
+          queryClient.setQueryData(myApplicationsQueryKey, rollbackCtx.previousApplications);
         }
       },
     }),
-    // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applications.mine(),
+      if (!isOnline) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: myApplicationsQueryKey,
       });
-      // 참고: 목록에서는 applicationCount를 표시하지 않으므로 lists() 무효화 불필요
     },
   });
 
-  // 취소 요청 (확정된 지원에 대해 취소 요청, Optimistic Update 적용)
   const requestCancellationMutation = useMutation({
     mutationFn: (params: RequestCancellationParams) => {
       requireAuth(user?.uid, 'useApplications');
+      requireOnlineForMutation('useApplications.requestCancellation');
       return requestCancellationService(
         { applicationId: params.applicationId, reason: params.reason },
         user.uid
       );
     },
-    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
     onMutate: async ({ applicationId }) => {
-      // 진행 중인 refetch 취소 (낙관적 업데이트와 충돌 방지)
+      if (!shouldApplyOptimisticUpdate()) {
+        return { previousApplications: undefined };
+      }
+
       await queryClient.cancelQueries({
-        queryKey: queryKeys.applications.mine(),
+        queryKey: myApplicationsQueryKey,
       });
 
-      // 이전 데이터 스냅샷 저장 (롤백용)
-      const previousApplications = queryClient.getQueryData<Application[]>(
-        queryKeys.applications.mine()
-      );
+      const previousApplications = queryClient.getQueryData<Application[]>(myApplicationsQueryKey);
 
-      // 낙관적으로 UI 업데이트 (취소 요청 중으로 표시)
       if (previousApplications) {
         queryClient.setQueryData<Application[]>(
-          queryKeys.applications.mine(),
-          previousApplications.map((app) =>
-            app.id === applicationId
-              ? { ...app, status: STATUS.APPLICATION.CANCELLATION_PENDING }
-              : app
+          myApplicationsQueryKey,
+          previousApplications.map((application) =>
+            application.id === applicationId
+              ? { ...application, status: STATUS.APPLICATION.CANCELLATION_PENDING }
+              : application
           )
         );
       }
 
-      // 컨텍스트 반환 (롤백에 사용)
       return { previousApplications };
     },
     onSuccess: (_, { applicationId }) => {
-      logger.info('취소 요청 완료', { applicationId });
+      logger.info('Cancellation request submitted', { applicationId });
       addToast({ type: 'success', message: '취소 요청이 제출되었습니다.' });
     },
     onError: createMutationErrorHandler('취소 요청', addToast, {
       onRollback: (ctx) => {
         const rollbackCtx = ctx as { previousApplications?: Application[] };
         if (rollbackCtx?.previousApplications) {
-          queryClient.setQueryData(queryKeys.applications.mine(), rollbackCtx.previousApplications);
+          queryClient.setQueryData(myApplicationsQueryKey, rollbackCtx.previousApplications);
         }
       },
     }),
-    // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applications.mine(),
+      if (!isOnline) {
+        return;
+      }
+
+      void queryClient.invalidateQueries({
+        queryKey: myApplicationsQueryKey,
       });
     },
   });
 
-  // 특정 공고 지원 여부 확인
   const hasApplied = (jobPostingId: string): boolean => {
-    const applications: Application[] = myApplicationsQuery.data ?? [];
-    return applications.some(
-      (app: Application) =>
-        app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
+    return effectiveApplications.some(
+      (application) =>
+        application.jobPostingId === jobPostingId &&
+        application.status !== STATUS.APPLICATION.CANCELLED
     );
   };
 
-  // 특정 공고 지원 상태 조회
   const getApplicationStatus = (jobPostingId: string): Application | null => {
-    const applications: Application[] = myApplicationsQuery.data ?? [];
     return (
-      applications.find(
-        (app: Application) =>
-          app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
+      effectiveApplications.find(
+        (application) =>
+          application.jobPostingId === jobPostingId &&
+          application.status !== STATUS.APPLICATION.CANCELLED
       ) ?? null
     );
   };
 
   return {
-    // 내 지원 내역
-    myApplications: myApplicationsQuery.data ?? [],
-    isLoading: myApplicationsQuery.isLoading,
-    isRefreshing: myApplicationsQuery.isRefetching,
-    error: myApplicationsQuery.error,
-
-    // 지원 제출 (v2.0: Assignment + PreQuestion) - 1초 throttle
+    myApplications: effectiveApplications,
+    isLoading: effectiveApplications.length === 0 ? myApplicationsQuery.isLoading : false,
+    isRefreshing: isOnline ? myApplicationsQuery.isRefetching : false,
+    error: isOnline ? myApplicationsQuery.error : null,
     submitApplication: useThrottledCallback(submitV2Mutation.mutate, 1000),
     isSubmitting: submitV2Mutation.isPending,
-
-    // 지원 취소
     cancelApplication: cancelMutation.mutate,
     isCancelling: cancelMutation.isPending,
-
-    // 취소 요청 (확정된 지원)
     requestCancellation: requestCancellationMutation.mutate,
     isRequestingCancellation: requestCancellationMutation.isPending,
-
-    // 유틸리티
     hasApplied,
     getApplicationStatus,
-
-    // 리프레시
-    refresh: () => myApplicationsQuery.refetch(),
+    refresh: () => (isOnline ? myApplicationsQuery.refetch() : Promise.resolve()),
   };
 }
 

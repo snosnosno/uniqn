@@ -377,11 +377,10 @@ export function subscribeToTodayWorkStatus(
   return RealtimeManager.subscribe(RealtimeManager.Keys.todayWorkStatus(staffId, today), () => {
     logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
-    // 'confirmed'는 WorkLogStatus 타입에 미정의지만 Firestore에서 실제 사용되는 전이 상태값
     return workLogRepository.subscribeTodayActive(
       staffId,
       today,
-      ['confirmed', STATUS.WORK_LOG.CHECKED_IN],
+      [STATUS.WORK_LOG.SCHEDULED, STATUS.WORK_LOG.CHECKED_IN],
       (workLog) => {
         if (workLog) {
           logger.debug('오늘 근무 상태 업데이트', {

@@ -313,6 +313,7 @@ export async function processQRCheckInOutTransaction(
 
         const updateData: Record<string, unknown> = {
           status: STATUS.WORK_LOG.CHECKED_IN,
+          checkInTime: Timestamp.fromDate(checkTime),
           updatedAt: serverTimestamp(),
         };
 
@@ -320,7 +321,7 @@ export async function processQRCheckInOutTransaction(
         if (!workLog.checkInTime && workLog.timeSlot && date) {
           const { startTime } = parseTimeSlotToDate(workLog.timeSlot, date);
           if (startTime) {
-            updateData.checkInTime = Timestamp.fromDate(startTime);
+            updateData.checkInTime = Timestamp.fromDate(checkTime);
           }
         }
 

@@ -1,22 +1,16 @@
-/**
- * UNIQN Mobile - 구인공고 목록 훅
- *
- * @description TanStack Query 기반 무한스크롤 공고 목록
- * @version 1.3.0 - gcTime 단축 및 useMemo 의존성 최적화 (메모리 누수 방지)
- */
-
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { getJobPostings } from '@/services';
 import { buildPostingFacts, projectPostingCard } from '@/domains/job-posting';
-import { queryKeys, queryCachingOptions } from '@/lib/queryClient';
-import { stableFilters } from '@/utils/queryUtils';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { queryCachingOptions, queryKeys } from '@/lib/queryClient';
+import {
+  getCriticalOfflineCache,
+  setCriticalOfflineCache,
+} from '@/services/offline/criticalOfflineCache';
+import { getJobPostings } from '@/services';
+import type { JobPostingCard, JobPostingFilters } from '@/types';
 import { sortJobPostings } from '@/utils/jobPostingSorter';
-import type { JobPostingFilters, JobPostingCard } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { stableFilters } from '@/utils/queryUtils';
 
 interface UseJobPostingsOptions {
   filters?: JobPostingFilters;
@@ -24,18 +18,19 @@ interface UseJobPostingsOptions {
   enabled?: boolean;
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
+const PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION = 2;
 
 export function useJobPostings(options: UseJobPostingsOptions = {}) {
   const { filters = {}, limit = 20, enabled = true } = options;
   const queryClient = useQueryClient();
+  const { isOnline } = useNetworkStatus();
+  const normalizedFilters = stableFilters(filters);
+  const isDefaultFilter = Object.keys(normalizedFilters).length === 0;
 
   const query = useInfiniteQuery({
-    queryKey: queryKeys.jobPostings.list(stableFilters(filters)),
+    queryKey: queryKeys.jobPostings.list(normalizedFilters),
     queryFn: async ({ pageParam }) => {
-      const result = await getJobPostings(
+      return getJobPostings(
         filters,
         limit,
         pageParam as
@@ -44,7 +39,6 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
             >
           | undefined
       );
-      return result;
     },
     initialPageParam: undefined as
       | import('firebase/firestore').QueryDocumentSnapshot<
@@ -52,14 +46,12 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
         >
       | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
-    enabled,
+    enabled: enabled && isOnline,
     staleTime: queryCachingOptions.jobPostings.staleTime,
     gcTime: queryCachingOptions.jobPostings.gcTime,
   });
 
-  // 전체 데이터를 플랫하게 변환 후 정렬
-  // @see utils/jobPostingSorter.ts - 최적화된 정렬 로직
-  const jobs: JobPostingCard[] = useMemo(() => {
+  const jobs = useMemo<JobPostingCard[]>(() => {
     const allJobs =
       query.data?.pages.flatMap((page) =>
         page.items.map((posting) => projectPostingCard(buildPostingFacts(posting)))
@@ -68,26 +60,54 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
     return sortJobPostings(allJobs);
   }, [query.data?.pages]);
 
-  const hasMore = query.hasNextPage ?? false;
+  const shouldUseCachedJobs = enabled && isDefaultFilter && !isOnline && query.data === undefined;
 
-  // 리프레시 함수
+  const cachedJobs = useMemo(() => {
+    if (!shouldUseCachedJobs) {
+      return [];
+    }
+
+    return (
+      getCriticalOfflineCache<JobPostingCard[]>('public-job-postings:default-list', {
+        ttlMs: queryCachingOptions.jobPostings.staleTime,
+        schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
+      })?.data ?? []
+    );
+  }, [shouldUseCachedJobs]);
+
+  useEffect(() => {
+    if (!isDefaultFilter || query.data === undefined) {
+      return;
+    }
+
+    setCriticalOfflineCache('public-job-postings:default-list', jobs, {
+      schemaVersion: PUBLIC_JOB_POSTINGS_CACHE_SCHEMA_VERSION,
+    });
+  }, [isDefaultFilter, jobs, query.data]);
+
+  const effectiveJobs = query.data !== undefined ? jobs : cachedJobs;
+
   const refresh = async () => {
+    if (!isOnline) {
+      return;
+    }
+
     await queryClient.invalidateQueries({
-      queryKey: queryKeys.jobPostings.list(stableFilters(filters)),
+      queryKey: queryKeys.jobPostings.list(normalizedFilters),
     });
     await query.refetch();
   };
 
   return {
-    jobs,
-    isLoading: query.isLoading,
-    isRefreshing: query.isRefetching && !query.isFetchingNextPage,
-    isFetchingMore: query.isFetchingNextPage,
-    hasMore,
-    error: query.error,
+    jobs: effectiveJobs,
+    isLoading: effectiveJobs.length === 0 ? query.isLoading : false,
+    isRefreshing: isOnline ? query.isRefetching && !query.isFetchingNextPage : false,
+    isFetchingMore: isOnline ? query.isFetchingNextPage : false,
+    hasMore: isOnline ? (query.hasNextPage ?? false) : false,
+    error: isOnline ? query.error : null,
     refresh,
     loadMore: () => {
-      if (query.hasNextPage && !query.isFetchingNextPage) {
+      if (isOnline && query.hasNextPage && !query.isFetchingNextPage) {
         query.fetchNextPage();
       }
     },

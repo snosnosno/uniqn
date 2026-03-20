@@ -426,9 +426,7 @@ export interface WorkLog extends FirebaseDocument {
 
   // 예정 시간
   /** @deprecated checkInTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
-  scheduledStartTime?: string | Timestamp;
   /** @deprecated checkOutTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
-  scheduledEndTime?: string | Timestamp;
 
   // 실제 시간 (QR 스캔 또는 관리자 수정)
   /** 실제 출근 시간 */

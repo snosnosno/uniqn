@@ -16,6 +16,7 @@ export class SettingsPage extends BasePage {
   readonly versionItem: Locator;
   readonly pushNotificationLabel: Locator;
   readonly autoLoginLabel: Locator;
+  readonly autoLoginHelperText: Locator;
   readonly marketingLabel: Locator;
 
   constructor(page: Page) {
@@ -30,6 +31,7 @@ export class SettingsPage extends BasePage {
     this.versionItem = page.getByText('버전');
     this.pushNotificationLabel = page.getByText('푸시 알림');
     this.autoLoginLabel = page.getByText('자동 로그인');
+    this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.');
     this.marketingLabel = page.getByText('마케팅 정보 수신');
   }
 
@@ -75,12 +77,18 @@ export class SettingsPage extends BasePage {
 
   /** Switch 토글 (label 기반) */
   async toggleSwitch(label: string): Promise<void> {
-    const switchElement = this.page
-      .getByText(label)
-      .locator('..')
-      .locator('..')
-      .locator('input[role="switch"], [role="switch"]');
-    await switchElement.click();
+    await this.getSwitch(label).click();
+  }
+
+  async isSwitchChecked(label: string): Promise<boolean> {
+    const switchElement = this.getSwitch(label);
+    const ariaChecked = await switchElement.getAttribute('aria-checked');
+
+    if (ariaChecked !== null) {
+      return ariaChecked === 'true';
+    }
+
+    return switchElement.isChecked();
   }
 
   /** 버전 정보 값 확인 */
@@ -96,5 +104,13 @@ export class SettingsPage extends BasePage {
   /** 알림 권한 미설정 안내 확인 */
   getPermissionUndeterminedAlert(): Locator {
     return this.page.getByText('푸시 알림이 꺼져있습니다');
+  }
+
+  private getSwitch(label: string): Locator {
+    return this.page
+      .getByText(label)
+      .locator('..')
+      .locator('..')
+      .locator('input[role="switch"], [role="switch"]');
   }
 }

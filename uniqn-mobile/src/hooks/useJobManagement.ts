@@ -7,6 +7,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
 import {
   createJobPosting,
   updateJobPosting,
@@ -23,6 +24,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors';
+import {
+  requireOnlineForMutation,
+  shouldApplyOptimisticUpdate,
+} from '@/services/offline/remoteMutationGuard';
 import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
 // ============================================================================
@@ -100,6 +105,7 @@ export function useCreateJobPosting() {
       requireAuth(user?.uid, 'useJobManagement');
       // Firestore profile의 name/nickname 우선 사용, 없으면 Firebase Auth displayName
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
+      requireOnlineForMutation('useJobManagement.createJobPosting');
       return createJobPosting(params.input, user.uid, ownerName);
     },
     onSuccess: (data) => {
@@ -141,6 +147,7 @@ export function useUpdateJobPosting() {
   return useMutation({
     mutationFn: (params: UpdateJobParams) => {
       requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.updateJobPosting');
       return updateJobPosting(params.jobPostingId, params.input, user.uid);
     },
     onSuccess: (_, params) => {
@@ -152,7 +159,7 @@ export function useUpdateJobPosting() {
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.detail(params.jobPostingId),
+        queryKey: getJobDetailQueryKey(params.jobPostingId, user?.uid),
       });
       // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
@@ -174,9 +181,14 @@ export function useDeleteJobPosting() {
   return useMutation({
     mutationFn: (jobPostingId: string) => {
       requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.deleteJobPosting');
       return deleteJobPosting(jobPostingId, user.uid);
     },
     onMutate: async (jobPostingId) => {
+      if (!shouldApplyOptimisticUpdate()) {
+        return { previous: undefined };
+      }
+
       await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
       const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
 
@@ -227,6 +239,7 @@ export function useCloseJobPosting() {
   return useMutation({
     mutationFn: (jobPostingId: string) => {
       requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.closeJobPosting');
       return closeJobPosting(jobPostingId, user.uid);
     },
     onMutate: async (jobPostingId) => {
@@ -253,7 +266,7 @@ export function useCloseJobPosting() {
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.detail(jobPostingId),
+        queryKey: getJobDetailQueryKey(jobPostingId, user?.uid),
       });
       // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
@@ -282,6 +295,7 @@ export function useReopenJobPosting() {
   return useMutation({
     mutationFn: (jobPostingId: string) => {
       requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.reopenJobPosting');
       return reopenJobPosting(jobPostingId, user.uid);
     },
     onMutate: async (jobPostingId) => {
@@ -308,7 +322,7 @@ export function useReopenJobPosting() {
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.detail(jobPostingId),
+        queryKey: getJobDetailQueryKey(jobPostingId, user?.uid),
       });
       // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
@@ -337,6 +351,7 @@ export function useBulkUpdateStatus() {
   return useMutation({
     mutationFn: (params: BulkStatusParams) => {
       requireAuth(user?.uid, 'useJobManagement');
+      requireOnlineForMutation('useJobManagement.bulkUpdateStatus');
       return bulkUpdateJobPostingStatus(params.jobPostingIds, params.status, user.uid);
     },
     onMutate: async (params) => {

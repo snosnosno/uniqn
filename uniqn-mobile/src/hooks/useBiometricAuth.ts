@@ -31,6 +31,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { toStoreProfile } from '@/utils/profileConverter';
 import { toError, requireAuth } from '@/errors';
+import { checkAutoLoginEnabled } from './useAutoLogin';
 
 // ============================================================================
 // Types
@@ -179,6 +180,12 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
   const setEnabled = useCallback(
     async (enabled: boolean) => {
       if (enabled) {
+        const autoLoginEnabled = await checkAutoLoginEnabled();
+        if (!autoLoginEnabled) {
+          useToastStore.getState().error('자동 로그인을 켜야 생체 인증을 사용할 수 있습니다');
+          return;
+        }
+
         // 활성화 시 먼저 생체 인증 수행
         setIsAuthenticating(true);
         try {
@@ -230,6 +237,12 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
   const loginWithBiometric = useCallback(async (): Promise<boolean> => {
     setIsAuthenticating(true);
     try {
+      const autoLoginEnabled = await checkAutoLoginEnabled();
+      if (!autoLoginEnabled) {
+        useToastStore.getState().error('자동 로그인을 켜야 생체 인증을 사용할 수 있습니다');
+        return false;
+      }
+
       // 1. 저장된 자격 증명 확인
       const credentials = await getBiometricCredentials();
       if (!credentials) {

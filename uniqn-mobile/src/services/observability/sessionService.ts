@@ -1,58 +1,30 @@
 /**
  * UNIQN Mobile - Session Management Service
- *
- * @description 세션 관리 및 토큰 로테이션 서비스
- * @version 1.0.0
- *
- * 주요 기능:
- * - 세션 타임아웃 관리 (30분)
- * - 토큰 자동 갱신
- * - 로그인 시도 횟수 추적 및 잠금
- * - 앱 상태 기반 세션 체크
  */
 
 import { AppState, type AppStateStatus } from 'react-native';
-import { getFirebaseAuth } from '@/lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
+import { router } from 'expo-router';
 import { syncSignOut } from '@/lib/authBridge';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { authStorage, userSessionStorage, getItem, setItem, deleteItem } from '@/lib/secureStorage';
-import { logger } from '@/utils/logger';
-import { RealtimeManager } from '@/shared/realtime';
-import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
-import { router } from 'expo-router';
-import { AuthError, ERROR_CODES, toError, isAppError } from '@/errors';
+import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
+import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
+import { RealtimeManager } from '@/shared/realtime';
 import { toDateValue } from '@/utils/date';
+import { logger } from '@/utils/logger';
+import { crashlyticsService } from './crashlyticsService';
 
-// userSessionStorage는 향후 세션 관리 확장 시 활용
 void userSessionStorage;
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** 세션 타임아웃 (30분) */
 const SESSION_TIMEOUT = 30 * 60 * 1000;
-
-/** 세션 만료 경고 버퍼 (5분) */
 const SESSION_WARNING_BUFFER = 5 * 60 * 1000;
-
-/** 토큰 갱신 간격 (50분 - Firebase ID 토큰은 1시간 유효) */
 const TOKEN_REFRESH_INTERVAL = 50 * 60 * 1000;
-
-/** 최대 로그인 시도 횟수 */
 const MAX_LOGIN_ATTEMPTS = 5;
-
-/** 로그인 잠금 시간 (15분) */
 const LOCKOUT_DURATION = 15 * 60 * 1000;
-
-/** 토큰 갱신 최소 남은 시간 (5분 미만이면 갱신) */
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000;
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface SessionState {
   isActive: boolean;
@@ -66,45 +38,70 @@ export interface LoginAttempts {
   lastAttempt: number;
 }
 
-// ============================================================================
-// State
-// ============================================================================
-
 let isInitialized = false;
-let lastActivity: number = Date.now();
+let lastActivity = Date.now();
 let sessionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let sessionWarningTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let tokenRefreshIntervalId: ReturnType<typeof setInterval> | null = null;
 let appStateSubscription: { remove: () => void } | null = null;
 let authUnsubscribe: (() => void) | null = null;
+let authStoreUnsubscribe: (() => void) | null = null;
+let managedSessionUserId: string | null = null;
 
-// ============================================================================
-// Initialization
-// ============================================================================
+function shouldManageSessionForUser(user: FirebaseUser | null): boolean {
+  if (!user) {
+    return false;
+  }
 
-/**
- * 세션 매니저 초기화
- */
-export function initialize(): void {
-  if (isInitialized) return;
-
-  // 앱 상태 변경 리스너
-  appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
-
-  // Firebase Auth 상태 변경 리스너
-  authUnsubscribe = getFirebaseAuth().onAuthStateChanged(handleAuthStateChange);
-
-  isInitialized = true;
-  logger.info('세션 매니저 초기화 완료');
+  const authState = useAuthStore.getState();
+  return authState.status === 'authenticated' && authState.suppressedSessionUserId !== user.uid;
 }
 
-/**
- * 세션 매니저 정리
- */
-export function cleanup(): void {
+function clearSessionRuntime(): void {
   clearSessionTimeout();
   clearSessionWarning();
   clearTokenRefreshInterval();
+  managedSessionUserId = null;
+}
+
+function syncManagedSessionState(): void {
+  const currentUser = getFirebaseAuth().currentUser;
+  const nextManagedUserId =
+    currentUser && shouldManageSessionForUser(currentUser) ? currentUser.uid : null;
+
+  if (!nextManagedUserId) {
+    clearSessionRuntime();
+    return;
+  }
+
+  if (managedSessionUserId === nextManagedUserId) {
+    return;
+  }
+
+  managedSessionUserId = nextManagedUserId;
+  lastActivity = Date.now();
+  resetActivityTimer();
+  startTokenRefreshInterval();
+}
+
+export function initialize(): void {
+  if (isInitialized) {
+    return;
+  }
+
+  appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+  authUnsubscribe = getFirebaseAuth().onAuthStateChanged(handleAuthStateChange);
+  authStoreUnsubscribe = useAuthStore.subscribe(() => {
+    syncManagedSessionState();
+  });
+
+  isInitialized = true;
+  syncManagedSessionState();
+  logger.info('세션 매니저 초기화 완료');
+}
+
+export function cleanup(): void {
+  clearSessionRuntime();
 
   if (appStateSubscription) {
     appStateSubscription.remove();
@@ -116,120 +113,113 @@ export function cleanup(): void {
     authUnsubscribe = null;
   }
 
+  if (authStoreUnsubscribe) {
+    authStoreUnsubscribe();
+    authStoreUnsubscribe = null;
+  }
+
   isInitialized = false;
   logger.info('세션 매니저 정리 완료');
 }
 
-// ============================================================================
-// Session Management
-// ============================================================================
-
-/**
- * 앱 상태 변경 핸들러
- */
 function handleAppStateChange(state: AppStateStatus): void {
   if (state === 'active') {
-    // 포그라운드로 돌아왔을 때 세션 체크
     checkSession();
     logger.debug('앱 포그라운드 복귀 - 세션 체크');
-  } else if (state === 'background') {
-    // 백그라운드로 갈 때 타이머 정지
+    return;
+  }
+
+  if (state === 'background') {
     clearSessionTimeout();
     clearSessionWarning();
     logger.debug('앱 백그라운드 전환 - 세션 타이머 중지');
   }
 }
 
-/**
- * Firebase Auth 상태 변경 핸들러
- */
-async function handleAuthStateChange(user: unknown): Promise<void> {
-  if (user) {
-    // Custom Claims 갱신을 위해 토큰 강제 새로고침
-    // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
-    try {
-      const currentUser = getFirebaseAuth().currentUser;
-      if (currentUser) {
-        await currentUser.getIdToken(true);
-        logger.debug('토큰 강제 갱신 완료 (Custom Claims 로드)');
-      }
-    } catch (error) {
-      logger.warn('토큰 갱신 실패', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
+  try {
+    await useAuthStore.getState().checkAuthState(user);
+  } catch (error) {
+    logger.warn('인증 상태 변경 중 스토어 동기화에 실패했습니다', {
+      component: 'sessionService',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
-    // 로그인됨 - 세션 타이머 시작
+  syncManagedSessionState();
+
+  if (!shouldManageSessionForUser(user)) {
+    logger.info(user ? '인증 상태 변경 - 세션 관리 보류' : '인증 상태 변경 - 세션 종료');
+    return;
+  }
+
+  try {
+    const currentUser = getFirebaseAuth().currentUser;
+    const activeUser = user;
+    if (!activeUser) {
+      return;
+    }
+    if (currentUser && currentUser.uid === activeUser.uid) {
+      await currentUser.getIdToken(true);
+      logger.debug('토큰 강제 갱신 완료 (Custom Claims 로드)');
+    }
+  } catch (error) {
+    logger.warn('토큰 갱신 실패', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  logger.info('인증 상태 변경 - 세션 시작');
+}
+
+export function recordActivity(): void {
+  lastActivity = Date.now();
+
+  if (shouldManageSessionForUser(getFirebaseAuth().currentUser)) {
     resetActivityTimer();
-    startTokenRefreshInterval();
-    logger.info('인증 상태 변경 - 세션 시작');
-  } else {
-    // 로그아웃됨 - 타이머 정지
-    clearSessionTimeout();
-    clearTokenRefreshInterval();
-    logger.info('인증 상태 변경 - 세션 종료');
   }
 }
 
-/**
- * 사용자 활동 기록
- * @description 사용자가 앱과 상호작용할 때마다 호출
- */
-export function recordActivity(): void {
-  lastActivity = Date.now();
-  resetActivityTimer();
-}
-
-/**
- * 세션 체크
- */
 function checkSession(): void {
   const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) return;
+  if (!shouldManageSessionForUser(currentUser)) {
+    return;
+  }
 
   const inactive = Date.now() - lastActivity;
 
   if (inactive > SESSION_TIMEOUT) {
-    // 세션 만료
-    expireSession('세션이 만료되었습니다');
-  } else if (inactive > SESSION_TIMEOUT - SESSION_WARNING_BUFFER) {
-    // 경고 구간 (25~30분): 경고 표시 + 남은 시간만큼 만료 타이머 설정
+    void expireSession('세션이 만료되었습니다.');
+    return;
+  }
+
+  if (inactive > SESSION_TIMEOUT - SESSION_WARNING_BUFFER) {
     showSessionWarning();
     clearSessionTimeout();
     clearSessionWarning();
     sessionTimeoutId = setTimeout(() => {
-      expireSession('비활성으로 인해 세션이 만료되었습니다');
+      void expireSession('비활성 상태로 인해 세션이 만료되었습니다.');
     }, SESSION_TIMEOUT - inactive);
-  } else {
-    // 타이머 재설정
-    resetActivityTimer();
-
-    // 토큰 유효성 체크
-    checkAndRefreshToken();
+    return;
   }
+
+  resetActivityTimer();
+  void checkAndRefreshToken();
 }
 
-/**
- * 세션 타이머 리셋
- */
 function resetActivityTimer(): void {
   clearSessionTimeout();
   clearSessionWarning();
 
-  // 25분 경고 타이머
   sessionWarningTimeoutId = setTimeout(() => {
     showSessionWarning();
   }, SESSION_TIMEOUT - SESSION_WARNING_BUFFER);
 
-  // 30분 만료 타이머
   sessionTimeoutId = setTimeout(() => {
-    expireSession('비활성으로 인해 세션이 만료되었습니다');
+    void expireSession('비활성 상태로 인해 세션이 만료되었습니다.');
   }, SESSION_TIMEOUT);
 }
 
-/**
- * 세션 타이머 클리어
- */
 function clearSessionTimeout(): void {
   if (sessionTimeoutId) {
     clearTimeout(sessionTimeoutId);
@@ -237,9 +227,6 @@ function clearSessionTimeout(): void {
   }
 }
 
-/**
- * 세션 경고 타이머 클리어
- */
 function clearSessionWarning(): void {
   if (sessionWarningTimeoutId) {
     clearTimeout(sessionWarningTimeoutId);
@@ -247,69 +234,53 @@ function clearSessionWarning(): void {
   }
 }
 
-/**
- * 세션 만료 경고 표시
- */
 function showSessionWarning(): void {
   const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) return;
+  if (!shouldManageSessionForUser(currentUser)) {
+    return;
+  }
 
   logger.info('세션 만료 경고', { component: 'sessionService' });
-
   useToastStore.getState().addToast({
     type: 'warning',
-    message: '세션이 5분 후 만료됩니다. 활동을 계속하면 자동 연장됩니다.',
+    message: '세션이 5분 뒤 만료됩니다. 활동을 계속하면 자동 연장됩니다.',
   });
 }
 
-/**
- * 세션 만료 처리
- */
 async function expireSession(message: string): Promise<void> {
   logger.warn('세션 만료', { message });
 
-  // 토스트 알림
   useToastStore.getState().addToast({
     type: 'warning',
-    message: message + ' 다시 로그인해주세요.',
+    message: `${message} 다시 로그인해 주세요.`,
   });
 
-  // Firestore 실시간 구독 해제 및 캐시 정리 후 로그아웃
   try {
     RealtimeManager.unsubscribeAll();
     clearCounterSyncCache();
     await syncSignOut();
     useAuthStore.getState().reset();
   } catch (error) {
-    logger.error('세션 만료 - 로그아웃 실패', toError(error));
+    logger.error('세션 만료 처리 중 로그아웃에 실패했습니다', toError(error));
   }
 
-  // 로그인 페이지로 이동
+  clearSessionRuntime();
   router.replace('/(auth)/login');
 }
 
-// ============================================================================
-// Token Management
-// ============================================================================
-
-/**
- * 토큰 갱신 인터벌 시작
- */
 function startTokenRefreshInterval(): void {
+  if (!shouldManageSessionForUser(getFirebaseAuth().currentUser)) {
+    clearTokenRefreshInterval();
+    return;
+  }
+
   clearTokenRefreshInterval();
-
-  // 초기 토큰 체크
-  checkAndRefreshToken();
-
-  // 주기적 갱신
+  void checkAndRefreshToken();
   tokenRefreshIntervalId = setInterval(() => {
-    checkAndRefreshToken();
+    void checkAndRefreshToken();
   }, TOKEN_REFRESH_INTERVAL);
 }
 
-/**
- * 토큰 갱신 인터벌 정지
- */
 function clearTokenRefreshInterval(): void {
   if (tokenRefreshIntervalId) {
     clearInterval(tokenRefreshIntervalId);
@@ -317,20 +288,21 @@ function clearTokenRefreshInterval(): void {
   }
 }
 
-/**
- * 토큰 체크 및 갱신
- */
 async function checkAndRefreshToken(): Promise<void> {
   const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) return;
+  if (!shouldManageSessionForUser(currentUser)) {
+    return;
+  }
 
   try {
-    // 토큰 결과 가져오기
-    const tokenResult = await currentUser.getIdTokenResult();
+    const activeUser = currentUser;
+    if (!activeUser) {
+      return;
+    }
+    const tokenResult = await activeUser.getIdTokenResult();
     const expirationTime = toDateValue(tokenResult.expirationTime);
     const now = Date.now();
 
-    // 만료 임박 또는 이미 만료된 경우 갱신
     if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
       await refreshToken();
     }
@@ -343,9 +315,6 @@ async function checkAndRefreshToken(): Promise<void> {
   }
 }
 
-/**
- * 토큰 강제 갱신
- */
 export async function refreshToken(): Promise<string | null> {
   const currentUser = getFirebaseAuth().currentUser;
   if (!currentUser) {
@@ -354,90 +323,72 @@ export async function refreshToken(): Promise<string | null> {
   }
 
   try {
-    // 토큰 강제 갱신 (true = force refresh)
     const newToken = await currentUser.getIdToken(true);
-
-    // SecureStore에 저장 (중앙화된 secureStorage 사용)
     await authStorage.setAuthToken(newToken);
-
     logger.info('토큰 갱신 성공');
     return newToken;
   } catch (error) {
     logger.error('토큰 갱신 실패', toError(error));
-
     crashlyticsService.recordError(toError(error), {
       component: 'sessionService',
       action: 'refreshToken',
     });
-
-    // 토큰 갱신 실패 시 세션 만료 처리
-    await expireSession('인증 토큰 갱신에 실패했습니다');
+    await expireSession('인증 토큰 갱신에 실패했습니다.');
     return null;
   }
 }
 
-/**
- * 현재 유효한 토큰 가져오기
- */
 export async function getValidToken(): Promise<string | null> {
   const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return null;
+  }
 
   try {
-    // 토큰 결과 확인
     const tokenResult = await currentUser.getIdTokenResult();
     const expirationTime = toDateValue(tokenResult.expirationTime);
     const now = Date.now();
 
-    // 만료 임박이면 갱신
     if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
       return await refreshToken();
     }
 
     return tokenResult.token;
   } catch (error) {
-    logger.error('토큰 가져오기 실패', toError(error));
+    logger.error('유효 토큰 조회 실패', toError(error));
     return null;
   }
 }
 
-// ============================================================================
-// Login Attempt Management
-// ============================================================================
-
-/**
- * 로그인 시도 횟수 확인
- * @throws AppError 잠금 상태인 경우
- */
 export async function checkLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
     const attempts = await getItem<LoginAttempts>(key);
-    if (!attempts) return;
+    if (!attempts) {
+      return;
+    }
 
-    // 잠금 상태 확인
     if (attempts.lockUntil && Date.now() < attempts.lockUntil) {
       const remainingTime = Math.ceil((attempts.lockUntil - Date.now()) / 60000);
       throw new AuthError(ERROR_CODES.AUTH_RATE_LIMITED, {
-        userMessage: `로그인 시도 횟수를 초과했습니다. ${remainingTime}분 후에 다시 시도해주세요.`,
+        userMessage: `로그인 시도 횟수를 초과했습니다. ${remainingTime}분 후에 다시 시도해 주세요.`,
         metadata: { remainingMinutes: remainingTime },
       });
     }
 
-    // 잠금 해제됨 - 초기화
     if (attempts.lockUntil && Date.now() >= attempts.lockUntil) {
       await deleteItem(key);
     }
   } catch (error) {
-    if (isAppError(error)) throw error;
+    if (isAppError(error)) {
+      throw error;
+    }
+
     logger.error('로그인 시도 횟수 확인 실패', toError(error));
   }
 }
 
-/**
- * 로그인 시도 횟수 증가
- */
 export async function incrementLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
@@ -451,25 +402,24 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
     const newCount = current.count + 1;
     const shouldLock = newCount >= MAX_LOGIN_ATTEMPTS;
 
-    const newAttempts: LoginAttempts = {
+    const nextAttempts: LoginAttempts = {
       count: newCount,
       lockUntil: shouldLock ? Date.now() + LOCKOUT_DURATION : null,
       lastAttempt: Date.now(),
     };
 
-    await setItem(key, newAttempts);
+    await setItem(key, nextAttempts);
 
     if (shouldLock) {
-      logger.warn('로그인 시도 횟수 초과 - 계정 잠금', { email: email.substring(0, 3) + '***' });
+      logger.warn('로그인 시도 횟수 초과 - 계정 잠금', {
+        email: email.substring(0, 3) + '***',
+      });
     }
   } catch (error) {
     logger.error('로그인 시도 횟수 증가 실패', toError(error));
   }
 }
 
-/**
- * 로그인 시도 횟수 초기화 (로그인 성공 시)
- */
 export async function resetLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
@@ -481,15 +431,14 @@ export async function resetLoginAttempts(email: string): Promise<void> {
   }
 }
 
-/**
- * 남은 로그인 시도 횟수 확인
- */
 export async function getRemainingLoginAttempts(email: string): Promise<number> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
     const attempts = await getItem<LoginAttempts>(key);
-    if (!attempts) return MAX_LOGIN_ATTEMPTS;
+    if (!attempts) {
+      return MAX_LOGIN_ATTEMPTS;
+    }
 
     return Math.max(0, MAX_LOGIN_ATTEMPTS - attempts.count);
   } catch {
@@ -497,53 +446,34 @@ export async function getRemainingLoginAttempts(email: string): Promise<number> 
   }
 }
 
-// ============================================================================
-// Session State
-// ============================================================================
-
-/**
- * 현재 세션 상태 가져오기
- */
 export function getSessionState(): SessionState {
   const currentUser = getFirebaseAuth().currentUser;
 
   return {
-    isActive: !!currentUser,
+    isActive: shouldManageSessionForUser(currentUser),
     lastActivity,
-    tokenExpiresAt: null, // async로 가져와야 함
+    tokenExpiresAt: null,
   };
 }
 
-/**
- * 세션이 활성 상태인지 확인
- */
 export function isSessionActive(): boolean {
   const currentUser = getFirebaseAuth().currentUser;
-  if (!currentUser) return false;
+  if (!shouldManageSessionForUser(currentUser)) {
+    return false;
+  }
 
   const inactive = Date.now() - lastActivity;
   return inactive < SESSION_TIMEOUT;
 }
 
-// ============================================================================
-// Export
-// ============================================================================
-
 export const sessionService = {
-  // 초기화
   initialize,
   cleanup,
-
-  // 세션 관리
   recordActivity,
   isSessionActive,
   getSessionState,
-
-  // 토큰 관리
   refreshToken,
   getValidToken,
-
-  // 로그인 시도 관리
   checkLoginAttempts,
   incrementLoginAttempts,
   resetLoginAttempts,

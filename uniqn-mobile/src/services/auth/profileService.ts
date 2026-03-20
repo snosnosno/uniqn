@@ -13,7 +13,7 @@ import { AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/erro
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isSafeUrl } from '@/utils/security';
 import { withAuthFirestoreSync } from '@/utils/authFirestoreSync';
-import { setUserProperties } from '@/services/observability';
+import { setUserProperties } from '@/services/observability/analyticsService';
 import type { EditableProfileFields } from '@/types';
 import type { UserProfile } from './authTypes';
 import { requireCurrentUser } from './authCoreService';
