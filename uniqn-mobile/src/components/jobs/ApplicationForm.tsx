@@ -252,6 +252,7 @@ export function ApplicationForm({
       title="지원하기"
       footer={footerContent}
       isLoading={isSubmitting}
+      fullHeight
     >
       <View className="px-4">
         {/* 공고 정보 */}

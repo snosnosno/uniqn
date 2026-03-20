@@ -45,6 +45,7 @@ export interface SheetModalProps {
   showCloseButton?: boolean;
   /** 로딩 중 닫기 방지 */
   isLoading?: boolean;
+  fullHeight?: boolean;
 }
 
 // ============================================================================
@@ -59,6 +60,7 @@ function WebSheetModal({
   footer,
   showCloseButton = true,
   isLoading = false,
+  fullHeight = false,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -144,7 +146,8 @@ function WebSheetModal({
           <View
             style={[
               {
-                maxHeight: windowHeight * 0.95,
+                maxHeight: fullHeight ? windowHeight : windowHeight * 0.95,
+                height: fullHeight ? windowHeight : undefined,
                 opacity: isAnimating ? 1 : 0,
                 transform: [{ translateY: isAnimating ? 0 : windowHeight }],
                 // @ts-expect-error - 웹 전용 스타일
@@ -152,7 +155,7 @@ function WebSheetModal({
                 pointerEvents: 'auto' as const,
               },
             ]}
-            className="bg-white dark:bg-surface-dark rounded-t-3xl w-full"
+            className={`bg-white dark:bg-surface-dark w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
@@ -172,7 +175,7 @@ function WebSheetModal({
 
             {/* Content */}
             <ScrollView
-              style={{ flex: 1, maxHeight: windowHeight * 0.7 }}
+              style={fullHeight ? { flex: 1 } : { flex: 1, maxHeight: windowHeight * 0.7 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="always"
@@ -205,6 +208,7 @@ function NativeSheetModal({
   footer,
   showCloseButton = true,
   isLoading = false,
+  fullHeight = false,
 }: SheetModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -275,11 +279,16 @@ function NativeSheetModal({
           </Pressable>
 
           {/* Modal Content */}
-          <Animated.View style={[modalAnimatedStyle, { maxHeight: windowHeight * 0.95, flex: 1 }]}>
+          <Animated.View
+            style={[
+              modalAnimatedStyle,
+              fullHeight ? { flex: 1 } : { maxHeight: windowHeight * 0.95, flex: 1 },
+            ]}
+          >
             <SafeAreaView
-              edges={['bottom']}
+              edges={fullHeight ? ['top', 'bottom'] : ['bottom']}
               style={{ flex: 1 }}
-              className="bg-white dark:bg-surface-dark rounded-t-3xl"
+              className={`bg-white dark:bg-surface-dark ${fullHeight ? '' : 'rounded-t-3xl'}`}
             >
               {/* Header */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
