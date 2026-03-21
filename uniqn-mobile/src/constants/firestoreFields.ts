@@ -41,7 +41,6 @@ export const JOB_POSTING_FIELDS = {
   ownerId: 'ownerId',
   postingType: 'postingType',
   locationDistrict: 'location.district',
-  isUrgent: 'isUrgent',
   workDate: 'workDate',
   tournamentApprovalStatus: 'tournamentConfig.approvalStatus',
 } as const;

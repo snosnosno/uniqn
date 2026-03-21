@@ -32,6 +32,10 @@ function normalizeOptionalText(value?: string | null): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+function getFormDetailedAddress(formData: JobPostingFormData): string | undefined {
+  return normalizeOptionalText(formData.location?.detailedAddress ?? formData.detailedAddress);
+}
+
 function toCatalogEntry(role: FormRoleWithCount): PostingRoleCatalogEntry {
   const matchedRole = findRoleOptionByName(role.name);
 
@@ -140,7 +144,7 @@ function buildRoleCatalogFromFormData(formData: JobPostingFormData): PostingRole
       )
     ) ?? [];
 
-  return dedupeRoleCatalog([...roleEntries, ...slotEntries]);
+  return dedupeRoleCatalog([...slotEntries, ...roleEntries]);
 }
 
 function buildCompensation(formData: JobPostingFormData): CreateJobPostingInput['compensation'] {
@@ -208,6 +212,7 @@ function buildFixedDraft(
 
 export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
   const roleCatalog = buildRoleCatalogFromFormData(formData);
+  const detailedAddress = getFormDetailedAddress(formData);
 
   return {
     postingType: formData.postingType,
@@ -225,9 +230,7 @@ export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
 
       return {
         ...baseLocation,
-        ...(normalizeOptionalText(formData.detailedAddress)
-          ? { detailedAddress: normalizeOptionalText(formData.detailedAddress) }
-          : {}),
+        ...(detailedAddress ? { detailedAddress } : {}),
       };
     })(),
     contactPhone: formData.contactPhone,
@@ -276,10 +279,10 @@ function buildDatedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
     return [];
   }
 
-  const sourceSlots =
-    draft.schedule.requirements.length > 0
-      ? draft.schedule.requirements.flatMap((requirement) => requirement.timeSlots)
-      : draft.schedule.templateTimeSlots;
+  const seedRequirement = draft.schedule.requirements.find(
+    (requirement) => requirement.timeSlots.length > 0
+  );
+  const sourceSlots = seedRequirement?.timeSlots ?? draft.schedule.templateTimeSlots;
 
   const totals = new Map<string, { role: PostingRoleCatalogEntry; count: number }>();
 

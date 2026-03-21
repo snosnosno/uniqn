@@ -158,13 +158,20 @@ function getDateRequirements(posting: JobPosting): CardDateRequirement[] {
       startTime: slot.startTime || '',
       isTimeToBeAnnounced: slot.isTimeToBeAnnounced ?? false,
       tentativeDescription: slot.tentativeDescription,
-      roles: slot.roles.map((role) => ({
-        id: role.id,
-        role: role.role ?? 'dealer',
-        customRole: role.customRole,
-        count: role.count,
-        filled: role.filled ?? 0,
-      })),
+      roles: slot.roles.map((role) => {
+        const catalogEntry = posting.roleCatalog.find(
+          (entry) => getRoleKey(entry) === getRoleKey(role)
+        );
+
+        return {
+          id: role.id,
+          role: role.role ?? 'dealer',
+          customRole: role.customRole,
+          count: role.count,
+          filled: role.filled ?? 0,
+          salary: catalogEntry?.salary,
+        };
+      }),
     })),
   }));
 }
@@ -312,6 +319,7 @@ function projectCard(facts: PostingFacts): PostingCardViewModel {
     requiredRolesWithCount: facts.schedule.requiredRolesWithCount,
     tournamentConfig: facts.tournamentConfig,
     salaryRows: salaryRows.slice(0, 3),
+    fullSalaryRows: salaryRows,
     salaryOverflowCount: Math.max(0, salaryRows.length - 3),
   };
 }

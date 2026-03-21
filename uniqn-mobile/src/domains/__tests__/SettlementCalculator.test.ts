@@ -178,6 +178,114 @@ describe('TaxCalculator', () => {
       expect(taxCalculatorResult.taxAmount).toBe(0);
       expect(taxCalculatorResult.taxAmount).toBe(utilTaxAmount);
     });
+    it('salaryRows에 없는 역할은 full dateRequirements fallback으로 조회한다', () => {
+      const mockJobPosting = {
+        useSameSalary: false,
+        defaultSalary: { type: 'hourly' as const, amount: 15000 },
+      };
+      const posting = {
+        ...mockJobPosting,
+        salaryRows: [
+          {
+            role: 'dealer',
+            salary: { type: 'hourly' as const, amount: 20000 },
+          },
+          {
+            role: 'floor',
+            salary: { type: 'hourly' as const, amount: 18000 },
+          },
+          {
+            role: 'other',
+            customRole: 'vip',
+            salary: { type: 'hourly' as const, amount: 30000 },
+          },
+        ],
+        dateRequirements: [
+          {
+            timeSlots: [
+              {
+                roles: [
+                  { role: 'dealer', salary: { type: 'hourly' as const, amount: 20000 } },
+                  { role: 'floor', salary: { type: 'hourly' as const, amount: 18000 } },
+                  {
+                    role: 'other',
+                    customRole: 'vip',
+                    salary: { type: 'hourly' as const, amount: 30000 },
+                  },
+                  {
+                    role: 'other',
+                    customRole: 'photographer',
+                    salary: { type: 'hourly' as const, amount: 25000 },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      const salary = SettlementCalculator.getSalaryForRole(
+        'other',
+        'photographer',
+        posting as never
+      );
+
+      expect(salary.amount).toBe(25000);
+    });
+
+    it('fixed 공고는 fullSalaryRows에서 4번째 이후 역할 급여도 조회한다', () => {
+      const mockJobPosting = {
+        useSameSalary: false,
+        defaultSalary: { type: 'hourly' as const, amount: 15000 },
+      };
+      const posting = {
+        ...mockJobPosting,
+        dateRequirements: [],
+        salaryRows: [
+          {
+            role: 'dealer',
+            salary: { type: 'hourly' as const, amount: 20000 },
+          },
+          {
+            role: 'floor',
+            salary: { type: 'hourly' as const, amount: 18000 },
+          },
+          {
+            role: 'other',
+            customRole: 'vip',
+            salary: { type: 'hourly' as const, amount: 30000 },
+          },
+        ],
+        fullSalaryRows: [
+          {
+            role: 'dealer',
+            salary: { type: 'hourly' as const, amount: 20000 },
+          },
+          {
+            role: 'floor',
+            salary: { type: 'hourly' as const, amount: 18000 },
+          },
+          {
+            role: 'other',
+            customRole: 'vip',
+            salary: { type: 'hourly' as const, amount: 30000 },
+          },
+          {
+            role: 'other',
+            customRole: 'photographer',
+            salary: { type: 'hourly' as const, amount: 25000 },
+          },
+        ],
+      };
+
+      const salary = SettlementCalculator.getSalaryForRole(
+        'other',
+        'photographer',
+        posting as never
+      );
+
+      expect(salary.amount).toBe(25000);
+    });
   });
 });
 

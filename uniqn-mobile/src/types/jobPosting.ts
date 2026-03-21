@@ -310,6 +310,7 @@ export interface PostingCardViewModel {
   requiredRolesWithCount?: RoleWithCount[];
   tournamentConfig?: TournamentConfig;
   salaryRows: PostingSalaryRow[];
+  fullSalaryRows?: PostingSalaryRow[];
   salaryOverflowCount: number;
 }
 
@@ -363,7 +364,6 @@ export interface PostingRuntimeSnapshot {
   useSameSalary?: boolean;
   dateRequirements: CardDateRequirement[];
   questions: PreQuestion[];
-  usesPreQuestions: boolean;
   requiredRolesWithCount?: RoleWithCount[];
   daysPerWeek?: number;
   startTime?: string;

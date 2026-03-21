@@ -6,7 +6,7 @@
  */
 
 import type { JobPostingCard } from '@/types/jobPosting';
-import type { SalaryInfo, Allowances, TaxSettings } from '@/utils/settlement';
+import { type SalaryInfo, type Allowances, type TaxSettings } from '@/utils/settlement';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
 import { TaxCalculator } from './TaxCalculator';
@@ -313,22 +313,40 @@ export class SettlementCalculator {
       return jobPostingCard.defaultSalary;
     }
 
+    const matchesRequestedRole = (candidateRole?: string, candidateCustomRole?: string) => {
+      if (role === 'other') {
+        return customRole
+          ? candidateRole === 'other' && candidateCustomRole === customRole
+          : candidateRole === 'other';
+      }
+
+      return candidateRole === role;
+    };
+
     // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회 (flatMap으로 평탄화)
-    const allRoles = (jobPostingCard.dateRequirements ?? [])
-      .flatMap((dateReq) => dateReq.timeSlots ?? [])
-      .flatMap((timeSlot) => timeSlot.roles ?? []);
+    const matchedSalaryRow = (
+      jobPostingCard.fullSalaryRows ??
+      jobPostingCard.salaryRows ??
+      []
+    ).find((row) => matchesRequestedRole(row.role, row.customRole));
 
-    const matchedRole = allRoles.find((r) => {
-      const isMatch =
-        (role === 'other' && customRole && r.customRole === customRole) || r.role === role;
-      return isMatch && r.salary;
-    });
-
-    if (matchedRole?.salary) {
-      return matchedRole.salary;
+    if (matchedSalaryRow?.salary) {
+      return matchedSalaryRow.salary;
     }
 
     // 역할별 급여 못 찾으면 defaultSalary 폴백
+    const legacyMatchedRole = (jobPostingCard.dateRequirements ?? [])
+      .flatMap((dateReq) => dateReq.timeSlots ?? [])
+      .flatMap((timeSlot) => timeSlot.roles ?? [])
+      .find(
+        (candidate) =>
+          matchesRequestedRole(candidate.role, candidate.customRole) && candidate.salary
+      );
+
+    if (legacyMatchedRole?.salary) {
+      return legacyMatchedRole.salary;
+    }
+
     if (jobPostingCard.defaultSalary) {
       return jobPostingCard.defaultSalary;
     }

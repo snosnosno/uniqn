@@ -182,6 +182,25 @@ describe('job posting submission helpers', () => {
     });
   });
 
+  it('keeps hidden pre-question drafts out of canonical payloads when the toggle is off', () => {
+    const formData = createFormData({
+      usesPreQuestions: false,
+      preQuestions: [
+        {
+          id: 'q1',
+          question: 'Hidden draft question',
+          type: 'text',
+          required: false,
+        },
+      ],
+    });
+
+    const result = buildCreateJobPostingInput(formData);
+
+    expect(result.questions.items).toEqual([]);
+    expect(formData.preQuestions).toHaveLength(1);
+  });
+
   it('builds legacy form state from canonical postings', () => {
     const result = buildJobPostingFormData(createPosting());
 
@@ -200,6 +219,10 @@ describe('job posting submission helpers', () => {
       ...formData,
       description: '',
       detailedAddress: '',
+      location: {
+        ...formData.location!,
+        detailedAddress: '',
+      },
     };
 
     const updateInput = buildUpdateJobPostingInput(clearedFormData);
@@ -226,5 +249,22 @@ describe('job posting submission helpers', () => {
     expect(Object.prototype.hasOwnProperty.call(serialized.location, 'detailedAddress')).toBe(
       false
     );
+  });
+
+  it('prefers canonical nested detailedAddress when facade state is stale', () => {
+    const currentPosting = createPosting();
+    const formData = buildJobPostingFormData(currentPosting);
+    const nextFormData: JobPostingFormData = {
+      ...formData,
+      detailedAddress: 'Suite 101',
+      location: {
+        ...formData.location!,
+        detailedAddress: 'Room 202',
+      },
+    };
+
+    const updateInput = buildUpdateJobPostingInput(nextFormData);
+
+    expect(updateInput.location?.detailedAddress).toBe('Room 202');
   });
 });

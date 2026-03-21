@@ -46,7 +46,8 @@ export function validateBasicInfo(data: JobPostingFormData): Record<string, stri
   if (data.description && !xssValidation(data.description)) {
     errors.description = '위험한 문자열이 포함되어 있습니다';
   }
-  if (data.detailedAddress && !xssValidation(data.detailedAddress)) {
+  const detailedAddress = data.location?.detailedAddress ?? data.detailedAddress;
+  if (detailedAddress && !xssValidation(detailedAddress)) {
     errors.detailedAddress = '위험한 문자열이 포함되어 있습니다';
   }
   if (data.contactPhone && !xssValidation(data.contactPhone)) {

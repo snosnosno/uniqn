@@ -29,6 +29,10 @@ function getLocationAddressValue(location?: Location | null): string {
   return location?.address || location?.district || '';
 }
 
+function getDetailedAddressValue(data: JobPostingFormData): string {
+  return data.location?.detailedAddress ?? data.detailedAddress ?? '';
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -50,20 +54,21 @@ export const BasicInfoSection = memo(function BasicInfoSection({
 
   // 장소 정보 업데이트
   const handleUpdateLocation = useCallback(
-    (name: string, address: string) => {
+    (name: string, address: string, detailedAddress: string = getDetailedAddressValue(data)) => {
       if (name.trim()) {
         const location: Location = {
           // Preserve in-progress whitespace while typing. Serialization trims before persistence.
           name,
           address,
           district: address,
+          ...(detailedAddress ? { detailedAddress } : {}),
         };
-        onUpdate({ location });
+        onUpdate({ location, detailedAddress });
       } else {
-        onUpdate({ location: null });
+        onUpdate({ location: null, detailedAddress });
       }
     },
-    [onUpdate]
+    [data, onUpdate]
   );
 
   // 장소명 변경
@@ -153,8 +158,10 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       <FormField label="상세 주소" error={errors.detailedAddress} className="mt-4">
         <Input
           placeholder="건물명, 층수 등 (선택)"
-          value={data.detailedAddress}
-          onChangeText={(detailedAddress) => onUpdate({ detailedAddress })}
+          value={getDetailedAddressValue(data)}
+          onChangeText={(detailedAddress) =>
+            handleUpdateLocation(locationName, locationAddress, detailedAddress)
+          }
           maxLength={200}
         />
       </FormField>

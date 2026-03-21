@@ -226,10 +226,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
   onUpdate,
   errors = {},
 }: PreQuestionsSectionProps) {
+  const hasPreQuestions = data.usesPreQuestions;
   // 사전질문 사용 토글
   const handleUsesPreQuestionsToggle = useCallback(
     (value: boolean) => {
-      onUpdate({ usesPreQuestions: value });
       if (value && data.preQuestions.length === 0) {
         const newQuestion: PreQuestion = {
           id: generateId('q'),
@@ -237,8 +237,11 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
           required: false,
           type: 'text',
         };
-        onUpdate({ preQuestions: [newQuestion] });
+        onUpdate({ usesPreQuestions: true, preQuestions: [newQuestion] });
+        return;
       }
+
+      onUpdate({ usesPreQuestions: value });
     },
     [data.preQuestions.length, onUpdate]
   );
@@ -254,7 +257,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       required: false,
       type: 'text',
     };
-    onUpdate({ preQuestions: [...data.preQuestions, newQuestion] });
+    onUpdate({
+      usesPreQuestions: true,
+      preQuestions: [...data.preQuestions, newQuestion],
+    });
   }, [data.preQuestions, onUpdate]);
 
   // 질문 업데이트
@@ -262,7 +268,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
     (index: number, question: PreQuestion) => {
       const newQuestions = [...data.preQuestions];
       newQuestions[index] = question;
-      onUpdate({ preQuestions: newQuestions });
+      onUpdate({
+        usesPreQuestions: newQuestions.length > 0,
+        preQuestions: newQuestions,
+      });
     },
     [data.preQuestions, onUpdate]
   );
@@ -271,10 +280,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
   const handleDeleteQuestion = useCallback(
     (index: number) => {
       const newQuestions = data.preQuestions.filter((_, i) => i !== index);
-      onUpdate({ preQuestions: newQuestions });
-      if (newQuestions.length === 0) {
-        onUpdate({ usesPreQuestions: false });
-      }
+      onUpdate({
+        usesPreQuestions: newQuestions.length > 0,
+        preQuestions: newQuestions,
+      });
     },
     [data.preQuestions, onUpdate]
   );
@@ -303,15 +312,15 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
           </Text>
         </View>
         <Switch
-          value={data.usesPreQuestions}
+          value={hasPreQuestions}
           onValueChange={handleUsesPreQuestionsToggle}
           trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
-          thumbColor={data.usesPreQuestions ? '#4F46E5' : '#F3F4F6'}
+          thumbColor={hasPreQuestions ? '#4F46E5' : '#F3F4F6'}
         />
       </View>
 
       {/* 사전질문 목록 */}
-      {data.usesPreQuestions && (
+      {hasPreQuestions && (
         <>
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
