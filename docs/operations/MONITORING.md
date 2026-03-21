@@ -1,6 +1,6 @@
 # UNIQN 모니터링 가이드
 
-**최종 업데이트**: 2026년 3월 14일
+**최종 업데이트**: 2026년 3월 21일
 **상태**: 현재 코드 기준
 
 이 문서는 `uniqn-mobile/`과 `functions/`의 현재 관측성 구현만 정리합니다. 레거시 웹앱 기준 성능 수치나 웹 전용 관리자 모니터링 경로는 현재 기본 운영 기준이 아닙니다.
@@ -9,6 +9,7 @@
 
 - `uniqn-mobile/app/_layout.tsx`
 - `uniqn-mobile/src/services/observability/analyticsService.ts`
+- `uniqn-mobile/src/services/observability/sentryService.ts`
 - `uniqn-mobile/src/services/observability/crashlyticsService.ts`
 - `uniqn-mobile/src/services/observability/performanceService.ts`
 - `uniqn-mobile/src/services/observability/featureFlagService.ts`
@@ -21,8 +22,17 @@
 
 - 실제 SDK: `@sentry/react-native`
 - 초기화 위치: `uniqn-mobile/app/_layout.tsx`
-- 내부 래퍼 이름: `crashlyticsService`
-- 주의: 이름은 Crashlytics지만 현재 구현은 Sentry 기반입니다.
+- canonical 래퍼 이름: `sentryService`
+- 호환 alias: `crashlyticsService`
+- 새 코드는 `sentryService`를 사용하고, 기존 호출부 호환 때문에 `crashlyticsService` alias를 유지합니다.
+
+### 에러 분류 및 전송 정책
+
+- `recoverable-business`: `auth`, `validation`, `permission`, `business`의 `low`/`medium` 에러입니다. `handleServiceError()`로 `AppError` 정규화 후 로깅만 하고 Sentry에는 보내지 않습니다.
+- `infra`: `network`, `firebase`, `security`, `unknown` 카테고리 또는 `severity: high` 에러입니다. Sentry에 non-fatal로 보냅니다.
+- `critical-telemetry`: `severity: critical` 에러입니다. Sentry에 fatal로 보냅니다.
+- `handleSilentError()`는 best-effort 작업 전용입니다. telemetry를 억제한 상태로 로깅만 남깁니다.
+- Error Boundary는 기본/네트워크/데이터 페치 경계에서 위 정책을 따르고, 폼 경계는 사용자 입력 오류를 telemetry로 올리지 않습니다.
 
 ### 앱 이벤트 추적
 

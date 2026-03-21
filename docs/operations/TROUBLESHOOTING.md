@@ -129,7 +129,8 @@ npm test
 
 주의:
 
-- 내부 서비스 이름은 `crashlyticsService`지만 실제 구현은 Sentry입니다.
+- canonical 서비스는 `sentryService`입니다.
+- `crashlyticsService`는 기존 호출부 호환용 alias입니다.
 
 ## 10. 권한/역할 계산이 이상함
 

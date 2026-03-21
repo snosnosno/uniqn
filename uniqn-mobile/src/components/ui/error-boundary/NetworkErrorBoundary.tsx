@@ -12,7 +12,8 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { crashlyticsService } from '@/services/observability';
+import { isAppError } from '@/errors';
+import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 import { isNetworkRelatedError } from './helpers';
@@ -103,15 +104,21 @@ export class NetworkErrorBoundary extends Component<NetworkErrorBoundaryProps, E
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { name = 'Network', onError } = this.props;
+    const logContext = {
+      component: name,
+      boundary: 'NetworkErrorBoundary',
+      errorType: 'network',
+    };
 
     this.setState({ errorInfo });
 
-    logger.error(`NetworkErrorBoundary [${name}] 에러 캐치`, error, {
-      component: name,
-      errorType: 'network',
-    });
+    if (isAppError(error)) {
+      logger.appError(error, logContext);
+    } else {
+      logger.error(`NetworkErrorBoundary [${name}] 에러 캐치`, error, logContext);
+    }
 
-    crashlyticsService.recordError(error, {
+    void sentryService.recordHandledError(error, {
       domain: 'network',
       component: name,
     });

@@ -1,14 +1,14 @@
 /**
  * UNIQN Mobile - 로깅 유틸리티
  *
- * @description 구조화된 로깅 시스템 (AppError 통합 + Crashlytics 연동)
+ * @description 구조화된 로깅 시스템 (AppError 통합 + Sentry 연동)
  * @version 1.2.0
  */
 
-import { isAppError, type AppError } from '@/errors/AppError';
+import { getAppErrorTelemetryPolicy, isAppError, type AppError } from '@/errors/AppError';
 import { env } from '@/config/env';
 
-// Note: crashlyticsService는 동적 import로 순환 의존성 방지
+// Note: sentryService는 동적 import로 순환 의존성 방지
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -118,7 +118,7 @@ const formatLog = (entry: LogEntry): string => {
  *
  * @description 프로덕션 환경에서는 context 내 민감 데이터를 자동 마스킹
  */
-const output = (level: LogLevel, entry: LogEntry, skipCrashlytics = false): void => {
+const output = (level: LogLevel, entry: LogEntry, skipObservability = false): void => {
   if (!shouldLog(level)) return;
 
   // 프로덕션 환경에서 context 마스킹 (민감 데이터 보호)
@@ -147,19 +147,24 @@ const output = (level: LogLevel, entry: LogEntry, skipCrashlytics = false): void
       break;
   }
 
-  // 프로덕션에서 error 레벨은 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
-  // skipCrashlytics: appError()처럼 severity 기반으로 직접 전송을 제어하는 경우 true
-  if (!skipCrashlytics && isProduction && level === 'error' && entry.error) {
-    import('@/services/observability/crashlyticsService')
-      .then(({ crashlyticsService }) => {
-        crashlyticsService
-          .recordError(entry.error!, {
-            logMessage: entry.message,
-            ...entry.context,
-          })
-          .catch(() => {
-            // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
-          });
+  // 프로덕션에서 error 레벨은 observability wrapper로 전송 (동적 import로 순환 의존성 방지)
+  // skipObservability: appError()처럼 정책 기반으로 직접 전송을 제어하는 경우 true
+  if (!skipObservability && isProduction && level === 'error' && entry.error) {
+    import('@/services/observability/sentryService')
+      .then(({ sentryService }) => {
+        const sendPromise = isAppError(entry.error)
+          ? sentryService.recordAppError(entry.error, {
+              logMessage: entry.message,
+              ...(safeEntry.context ? toObservabilityContext(safeEntry.context) : {}),
+            })
+          : sentryService.recordError(entry.error!, {
+              logMessage: entry.message,
+              ...(safeEntry.context ? toObservabilityContext(safeEntry.context) : {}),
+            });
+
+        sendPromise.catch(() => {
+          // Observability 전송 실패 시 무시 (무한 루프 방지)
+        });
       })
       .catch(() => {
         // 동적 import 실패 시 무시
@@ -168,10 +173,10 @@ const output = (level: LogLevel, entry: LogEntry, skipCrashlytics = false): void
 };
 
 /**
- * LogContext를 CrashContext-호환 형식으로 변환
+ * LogContext를 observability context-호환 형식으로 변환
  * unknown 타입을 string | number | boolean | undefined로 필터링
  */
-const toCrashContext = (
+const toObservabilityContext = (
   context: LogContext
 ): Record<string, string | number | boolean | undefined> => {
   const result: Record<string, string | number | boolean | undefined> = {};
@@ -215,9 +220,10 @@ const createEntry = (
     entry.error = contextOrError;
   } else if (contextOrError) {
     entry.context = contextOrError;
-    if (error) {
-      entry.error = error;
-    }
+  }
+
+  if (error) {
+    entry.error = error;
   }
 
   return entry;
@@ -341,20 +347,20 @@ export const logger = {
         error.originalError
       );
 
-      // skipCrashlytics=true: output()의 자동 Sentry 전송을 방지하고,
-      // 아래에서 severity 기반으로 직접 전송을 제어
+      // skipObservability=true: output()의 자동 Sentry 전송을 방지하고,
+      // 아래에서 AppError 정책 기반으로 직접 전송을 제어
       output('error', entry, true);
 
-      // 프로덕션에서는 심각도에 따라 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
-      // low/medium (비밀번호 불일치, 이미 지원함 등) → Sentry 전송 안 함
-      // high/critical (서버 장애, 알 수 없는 에러 등) → Sentry 전송
-      if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
-        // LogContext를 CrashContext-호환 형식으로 변환
-        const crashContext = context ? toCrashContext(context) : undefined;
-        import('@/services/observability/crashlyticsService')
-          .then(({ crashlyticsService }) => {
-            crashlyticsService.recordAppError(error, crashContext).catch(() => {
-              // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+      // 프로덕션에서는 AppError 정책에 따라 Sentry로 전송
+      const telemetryPolicy = getAppErrorTelemetryPolicy(error);
+      if (isProduction && telemetryPolicy.shouldReport) {
+        const safeContext =
+          isProduction && context ? (maskSensitiveContext(context) as LogContext) : context;
+        const observabilityContext = safeContext ? toObservabilityContext(safeContext) : undefined;
+        import('@/services/observability/sentryService')
+          .then(({ sentryService }) => {
+            sentryService.recordAppError(error, observabilityContext).catch(() => {
+              // Observability 전송 실패 시 무시 (무한 루프 방지)
             });
           })
           .catch(() => {

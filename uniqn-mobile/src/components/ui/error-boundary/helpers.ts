@@ -7,7 +7,7 @@
  * AppError 타입 기반 + 레거시 폴백 패턴 매칭
  */
 
-import { isAppError } from '@/errors';
+import { ERROR_CODES, isAppError } from '@/errors';
 
 /**
  * 네트워크 관련 에러인지 확인
@@ -72,7 +72,7 @@ export function isFormRelatedError(error: Error): boolean {
  */
 export function isDataFetchRelatedError(error: Error): boolean {
   if (isAppError(error)) {
-    return error.category === 'firebase' || error.code.includes('DOCUMENT_NOT_FOUND');
+    return error.category === 'firebase' || error.code === ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND;
   }
   const patterns = ['fetch', 'data', 'load', 'not found', '404', '500'];
   const lowerMessage = error.message.toLowerCase();

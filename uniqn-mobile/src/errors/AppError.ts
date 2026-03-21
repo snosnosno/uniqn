@@ -5,7 +5,7 @@
  * @version 1.0.0
  *
  * 현재 상태:
- * - Sentry 연동 완료 (@sentry/react-native, crashlyticsService.ts)
+ * - Sentry 연동 완료 (@sentry/react-native, sentryService.ts)
  * - 에러 자동 보고 활성화됨
  *
  * TODO [P2]: 에러 클래스 단위 테스트 추가 (커버리지 향상)
@@ -32,6 +32,37 @@ export type ErrorCategory =
  * 에러 심각도
  */
 export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+/**
+ * 서비스/관측성 레이어가 따르는 AppError 분류
+ *
+ * recoverable-business:
+ * - 사용자 액션이나 도메인 규칙으로 복구 가능한 에러
+ * - Sentry 전송 대상이 아님
+ *
+ * infra:
+ * - 인프라/네트워크/Firebase/보안/알 수 없는 에러
+ * - 비치명(non-fatal) telemetry 대상
+ *
+ * critical-telemetry:
+ * - 명시적으로 치명적(critical)로 분류된 에러
+ * - fatal telemetry 대상
+ */
+export type AppErrorHandlingKind = 'recoverable-business' | 'infra' | 'critical-telemetry';
+
+/**
+ * 관측성 전송 채널
+ */
+export type AppErrorTelemetryChannel = 'none' | 'error' | 'fatal';
+
+/**
+ * AppError 처리/전송 정책
+ */
+export interface AppErrorTelemetryPolicy {
+  kind: AppErrorHandlingKind;
+  telemetryChannel: AppErrorTelemetryChannel;
+  shouldReport: boolean;
+}
 
 /**
  * 에러 코드 범위
@@ -446,6 +477,68 @@ export const isPermissionError = (error: unknown): error is PermissionError => {
 export const isBusinessError = (error: unknown): error is BusinessError => {
   if (error instanceof BusinessError) return true;
   return isAppError(error) && error.category === 'business';
+};
+
+const RECOVERABLE_BUSINESS_CATEGORIES: readonly ErrorCategory[] = [
+  'auth',
+  'validation',
+  'permission',
+  'business',
+];
+
+const INFRA_CATEGORIES: readonly ErrorCategory[] = ['network', 'firebase', 'security', 'unknown'];
+
+/**
+ * AppError가 복구 가능한 비즈니스/UX 에러인지 판별
+ */
+export const isRecoverableBusinessAppError = (error: AppError): boolean => {
+  return (
+    RECOVERABLE_BUSINESS_CATEGORIES.includes(error.category) &&
+    (error.severity === 'low' || error.severity === 'medium')
+  );
+};
+
+/**
+ * AppError가 인프라/플랫폼 계열 에러인지 판별
+ */
+export const isInfraAppError = (error: AppError): boolean => {
+  if (error.severity === 'critical') {
+    return false;
+  }
+
+  return INFRA_CATEGORIES.includes(error.category) || error.severity === 'high';
+};
+
+/**
+ * AppError 처리/telemetry 정책 계산
+ *
+ * 규칙:
+ * - recoverable-business: auth/validation/permission/business의 low~medium
+ * - infra: network/firebase/security/unknown 또는 severity=high
+ * - critical-telemetry: severity=critical
+ */
+export const getAppErrorTelemetryPolicy = (error: AppError): AppErrorTelemetryPolicy => {
+  if (error.severity === 'critical') {
+    return {
+      kind: 'critical-telemetry',
+      telemetryChannel: 'fatal',
+      shouldReport: true,
+    };
+  }
+
+  if (isInfraAppError(error)) {
+    return {
+      kind: 'infra',
+      telemetryChannel: 'error',
+      shouldReport: true,
+    };
+  }
+
+  return {
+    kind: 'recoverable-business',
+    telemetryChannel: 'none',
+    shouldReport: false,
+  };
 };
 
 export default AppError;
