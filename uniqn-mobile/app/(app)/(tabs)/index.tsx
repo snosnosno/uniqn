@@ -92,7 +92,7 @@ export default function JobsScreen() {
   }, [selectedType, selectedDate]);
 
   // 구인공고 목록 훅 (필터 적용, 타입 선택 전까지 비활성화)
-  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, refresh, loadMore } =
+  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({
       filters,
       enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
@@ -165,6 +165,7 @@ export default function JobsScreen() {
           isRefreshing={searchQuery.isRefetching}
           isFetchingMore={false}
           hasMore={false}
+          error={searchQuery.error as Error | null}
           onRefresh={handleSearchRefresh}
           onLoadMore={noop}
           onJobPress={handleJobPress}
@@ -177,6 +178,7 @@ export default function JobsScreen() {
           isRefreshing={isRefreshing}
           isFetchingMore={isFetchingMore}
           hasMore={hasMore}
+          error={error}
           onRefresh={refresh}
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
