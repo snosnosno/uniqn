@@ -108,7 +108,6 @@ describe('StatusConfig', () => {
   // ==========================================================================
   describe('JOB_POSTING_STATUS', () => {
     it('should have all posting statuses', () => {
-      expect(JOB_POSTING_STATUS.draft).toBeDefined();
       expect(JOB_POSTING_STATUS.active).toBeDefined();
       expect(JOB_POSTING_STATUS.closed).toBeDefined();
       expect(JOB_POSTING_STATUS.cancelled).toBeDefined();

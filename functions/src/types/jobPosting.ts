@@ -10,7 +10,7 @@
 export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date';
 
 /** 공고 상태 */
-export type JobPostingStatus = 'draft' | 'active' | 'closed' | 'cancelled';
+export type JobPostingStatus = 'active' | 'closed' | 'cancelled';
 
 /** 공고 타입 */
 export type PostingType = 'regular' | 'urgent' | 'tournament' | 'fixed';

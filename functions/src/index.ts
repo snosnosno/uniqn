@@ -101,8 +101,8 @@ export { expireByLastWorkDate } from "./scheduled/expireByLastWorkDate";
 export { onWorkDateExpired } from "./triggers/onWorkDateExpired";
 
 /**
- * Firestore trigger that automatically validates and fixes job posting data
- * when a new job posting is created or updated
+ * Firestore trigger that keeps canonical V3 search metadata in sync.
+ * It does not migrate or reshape job posting documents.
  */
 export const validateJobPostingData = onDocumentWritten(
   { document: "jobPostings/{postId}", region: "asia-northeast3" },

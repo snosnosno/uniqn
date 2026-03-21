@@ -474,23 +474,21 @@ export function getRoleSalaryFromJobPostingCard(
     return jobPostingCard.defaultSalary;
   }
 
-  // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회
-  if (jobPostingCard.dateRequirements) {
-    for (const dateReq of jobPostingCard.dateRequirements) {
-      for (const timeSlot of dateReq.timeSlots || []) {
-        for (const r of timeSlot.roles || []) {
-          // 역할 매칭
-          const isMatch =
-            (role === 'other' && customRole && r.customRole === customRole) || r.role === role;
-
-          if (isMatch && r.salary) {
-            return r.salary;
-          }
-        }
+  const matchedSalaryRow = (jobPostingCard.fullSalaryRows ?? jobPostingCard.salaryRows ?? []).find(
+    (row) => {
+      if (role === 'other') {
+        return customRole
+          ? row.role === 'other' && row.customRole === customRole
+          : row.role === 'other';
       }
-    }
-  }
 
+      return row.role === role;
+    }
+  );
+
+  if (matchedSalaryRow?.salary) {
+    return matchedSalaryRow.salary;
+  }
   // 역할별 급여 못 찾으면 defaultSalary 폴백
   if (jobPostingCard.defaultSalary) {
     return jobPostingCard.defaultSalary;

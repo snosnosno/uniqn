@@ -232,6 +232,13 @@ describe('jobPosting schemas', () => {
       expect(parseJobPostingDocument(createValidDocument())?.id).toBe('job-1');
       expect(
         parseJobPostingDocument({
+          ...createValidDocument(),
+          id: 'draft-posting',
+          status: 'draft',
+        })
+      ).toBeNull();
+      expect(
+        parseJobPostingDocument({
           id: 'legacy',
           title: 'Legacy posting',
           status: 'active',

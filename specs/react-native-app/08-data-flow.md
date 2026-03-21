@@ -110,34 +110,82 @@ interface JobPosting {
   };
 
   // 역할 및 급여
-  roles: JobRole[];
-
-  // 추가 정보
-  benefits: string[];
-  requirements: string[];
-  preQuestions: PreQuestion[];
-
-  // 상태
-  status: 'draft' | 'pending_approval' | 'active' | 'closed' | 'cancelled';
-  approvalStatus?: 'pending' | 'approved' | 'rejected';
-  rejectionReason?: string;
-
-  // 통계
-  applicantCount: number;
-  confirmedCount: number;
-
-  // 타임스탬프
+  schemaVersion: 3;
+  status: 'active' | 'closed' | 'cancelled';
+  ownerId: string;
+  ownerName?: string;
+  postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
+  workDate: string;
+  workDates?: string[];
+  roleKeys?: string[];
+  totalPositions: number;
+  filledPositions: number;
+  viewCount?: number;
+  applicationCount?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  publishedAt?: Timestamp;
-}
-
-interface JobRole {
-  id: string;
-  name: string;           // '딜러', '서버', '플로어'
-  count: number;          // 모집 인원
-  salary: number;         // 일당
-  confirmedCount: number; // 확정 인원
+  closedAt?: Timestamp;
+  closedReason?: 'manual' | 'expired' | 'expired_by_work_date';
+  contactPhone?: string;
+  tags?: string[];
+  location: {
+    name: string;
+    district?: string;
+    detailedAddress?: string;
+  };
+  schedule:
+    | {
+        kind: 'dated';
+        primaryDate: string;
+        allDates: string[];
+        requirements: Array<{
+          date: string;
+          isGrouped?: boolean;
+          timeSlots: Array<{
+            id?: string;
+            startTime?: string;
+            isTimeToBeAnnounced?: boolean;
+            tentativeDescription?: string;
+            roles: Array<{
+              id?: string;
+              role?: string;
+              customRole?: string;
+              count: number;
+              filled?: number;
+            }>;
+          }>;
+        }>;
+      }
+    | {
+        kind: 'fixed';
+        daysPerWeek?: number;
+        startTime?: string;
+        isStartTimeNegotiable?: boolean;
+        roleRequirements?: Array<{
+          role?: string;
+          customRole?: string;
+          count: number;
+          filled?: number;
+        }>;
+      };
+  roleCatalog: Array<{
+    role: string;
+    customRole?: string;
+    salary?: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other';
+      amount: number;
+    };
+  }>;
+  compensation: {
+    mode: 'shared' | 'by_role';
+    defaultSalary?: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other';
+      amount: number;
+    };
+  };
+  questions: {
+    items: PreQuestion[];
+  };
 }
 ```
 
@@ -149,42 +197,28 @@ export interface IJobPostingRepository {
   findById(id: string): Promise<JobPosting | null>;
   findActive(filters?: JobFilters): Promise<JobPosting[]>;
   findByEmployer(employerId: string): Promise<JobPosting[]>;
-  create(data: CreateJobPostingDTO): Promise<JobPosting>;
-  update(id: string, data: Partial<JobPosting>): Promise<void>;
+  createWithTransaction(
+    data: CreateJobPostingInput,
+    context: CreateJobPostingContext
+  ): Promise<CreateJobPostingResult>;
+  updateWithTransaction(
+    id: string,
+    data: UpdateJobPostingInput,
+    ownerId: string
+  ): Promise<JobPosting>;
   delete(id: string): Promise<void>;
   updateStatus(id: string, status: JobPostingStatus): Promise<void>;
 }
 
-// src/repositories/firebase/JobPostingRepository.ts
-export class JobPostingRepository implements IJobPostingRepository {
-  async findById(id: string): Promise<JobPosting | null> {
-    const normalizedId = IdNormalizer.normalize(id);
-    const docRef = doc(db, 'jobPostings', normalizedId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) return null;
-
-    return {
-      id: docSnap.id,
-      ...docSnap.data(),
-      createdAt: TimeNormalizer.fromFirestore(docSnap.data().createdAt),
-      updatedAt: TimeNormalizer.fromFirestore(docSnap.data().updatedAt),
-    } as JobPosting;
-  }
-
-  async create(data: CreateJobPostingDTO): Promise<JobPosting> {
-    const docRef = await addDoc(collection(db, 'jobPostings'), {
-      ...data,
-      applicantCount: 0,
-      confirmedCount: 0,
-      status: 'draft',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    return this.findById(docRef.id) as Promise<JobPosting>;
-  }
-}
+// src/repositories/firebase/jobPosting/jobPostingTransactions.ts
+// Firestore stores canonical V3 documents only.
+const serialized = serializeJobPostingV3(input, {
+  ownerId: context.ownerId,
+  ownerName: context.ownerName,
+  status: 'active',
+  createdAt: Timestamp.now(),
+  updatedAt: Timestamp.now(),
+});
 ```
 
 ### 공고 관리 서비스 (실제 구현)
@@ -198,92 +232,18 @@ import { TimeNormalizer } from '@/shared/time';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 
 export const jobManagementService = {
-  /**
-   * 공고 작성 (초안 저장)
-   */
-  async saveDraft(
-    userId: string,
-    data: Partial<JobPosting>
-  ): Promise<string> {
+  async createJobPosting(
+    input: CreateJobPostingInput,
+    ownerId: string,
+    ownerName: string
+  ): Promise<CreateJobPostingResult | CreateJobPostingResult[]> {
     try {
-      const posting = await jobPostingRepository.create({
-        ...data,
-        creatorId: userId,
-        status: 'draft',
+      return jobPostingRepository.createWithTransaction(input, {
+        ownerId,
+        ownerName,
       });
-
-      logger.info('공고 초안 저장', { postingId: posting.id, userId });
-      return posting.id;
     } catch (error) {
-      throw handleServiceError(error, 'jobManagement.saveDraft');
-    }
-  },
-
-  /**
-   * 공고 제출 (승인 요청)
-   */
-  async submitForApproval(postingId: string): Promise<void> {
-    try {
-      const posting = await jobPostingRepository.findById(postingId);
-
-      if (!posting) {
-        throw new DocumentNotFoundError('jobPostings', postingId);
-      }
-
-      // 유효성 검증
-      const validation = jobPostingSchema.safeParse(posting);
-      if (!validation.success) {
-        throw new ValidationError(validation.error);
-      }
-
-      // 상태 업데이트
-      await jobPostingRepository.update(postingId, {
-        status: 'pending_approval',
-        approvalStatus: 'pending',
-      });
-
-      // 관리자에게 알림
-      await notificationService.notifyAdmins({
-        type: 'job_posting_submitted',
-        title: '새 공고 승인 요청',
-        body: `${posting.title} 공고가 승인을 기다리고 있습니다.`,
-        data: { postingId },
-      });
-
-      logger.info('공고 승인 요청', { postingId });
-    } catch (error) {
-      throw handleServiceError(error, 'jobManagement.submitForApproval');
-    }
-  },
-
-  /**
-   * 공고 승인 (관리자)
-   */
-  async approve(postingId: string, adminId: string): Promise<void> {
-    try {
-      const posting = await jobPostingRepository.findById(postingId);
-
-      if (!posting) {
-        throw new DocumentNotFoundError('jobPostings', postingId);
-      }
-
-      await jobPostingRepository.update(postingId, {
-        status: 'active',
-        approvalStatus: 'approved',
-        publishedAt: TimeNormalizer.toFirestore(new Date()),
-      });
-
-      // 작성자에게 알림
-      await notificationService.send(posting.creatorId, {
-        type: 'job_posting_approved',
-        title: '공고 승인 완료',
-        body: `${posting.title} 공고가 승인되어 게시되었습니다.`,
-        data: { postingId },
-      });
-
-      logger.info('공고 승인', { postingId, adminId });
-    } catch (error) {
-      throw handleServiceError(error, 'jobManagement.approve');
+      throw handleServiceError(error, 'jobManagement.createJobPosting');
     }
   },
 };

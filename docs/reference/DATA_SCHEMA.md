@@ -1,4 +1,4 @@
-# 📊 T-HOLDEM 데이터 스키마 가이드
+﻿# 📊 T-HOLDEM 데이터 스키마 가이드
 
 **최종 업데이트**: 2026년 2월 1일
 **버전**: v3.1.0
@@ -245,115 +245,141 @@ Collection: "jobPostings"
 Document ID: Auto-generated
 
 {
-  "id": string,                // 문서 ID
-  "ownerId": string,           // 공고 소유자 ID (employer) ✅
-  "title": string,             // 공고 제목 (required)
-  "description": string,       // 공고 내용
-  "location": string,          // 근무 장소
-
-  // 날짜별 모집 정보 (v2.0 구조)
-  "dateSpecificRequirements"?: DateSpecificRequirement[],
-
-  // 레거시 호환용 (eventDates)
-  "eventDates"?: {             // 이벤트 날짜별 정보
-    "[YYYY-MM-DD]": {
-      "roles": {               // 역할별 모집 정보
-        "dealer": {
-          "count": number,     // 모집 인원
-          "hourlyRate": number, // 시급
-          "workHours": string,  // 근무시간 "HH:mm-HH:mm"
-          "requirements"?: string[] // 요구사항
-        },
-        "server": { /* 동일 구조 */ }
+  "id": string,
+  "schemaVersion": 3,
+  "title": string,
+  "description"?: string,
+  "status": "active" | "closed" | "cancelled",
+  "ownerId": string,
+  "ownerName"?: string,
+  "postingType"?: "regular" | "fixed" | "tournament" | "urgent",
+  "workDate": string,
+  "workDates"?: string[],
+  "roleKeys"?: string[],
+  "totalPositions": number,
+  "filledPositions": number,
+  "viewCount"?: number,
+  "applicationCount"?: number,
+  "createdAt": Timestamp,
+  "updatedAt": Timestamp,
+  "closedAt"?: Timestamp,
+  "closedReason"?: "manual" | "expired" | "expired_by_work_date",
+  "tags"?: string[],
+  "contactPhone"?: string,
+  "searchIndex"?: string[],
+  "location": {
+    "name": string,
+    "district"?: string,
+    "detailedAddress"?: string
+  },
+  "schedule":
+    | {
+        "kind": "dated",
+        "primaryDate": string,
+        "allDates": string[],
+        "requirements": Array<{
+          "date": string,
+          "isGrouped"?: boolean,
+          "timeSlots": Array<{
+            "id"?: string,
+            "startTime"?: string,
+            "isTimeToBeAnnounced"?: boolean,
+            "tentativeDescription"?: string,
+            "roles": Array<{
+              "id"?: string,
+              "role"?: string,
+              "customRole"?: string,
+              "count": number,
+              "filled"?: number
+            }>
+          }>
+        }>
+      }
+    | {
+        "kind": "fixed",
+        "daysPerWeek"?: number,
+        "startTime"?: string,
+        "isStartTimeNegotiable"?: boolean,
+        "roleRequirements"?: Array<{
+          "role"?: string,
+          "customRole"?: string,
+          "count": number,
+          "filled"?: number
+        }>
       },
-      "benefits"?: {           // 복리후생
-        "meal": boolean,       // 식사 제공
-        "transportation": boolean, // 교통비 지원
-        "accommodation": boolean,  // 숙박 제공
-        "other"?: string       // 기타 혜택
-      },
-      "additionalInfo"?: string // 추가 정보
+  "roleCatalog": Array<{
+    "role": string,
+    "customRole"?: string,
+    "salary"?: {
+      "type": "hourly" | "daily" | "monthly" | "other",
+      "amount": number
+    }
+  }>,
+  "compensation": {
+    "mode": "shared" | "by_role",
+    "defaultSalary"?: {
+      "type": "hourly" | "daily" | "monthly" | "other",
+      "amount": number
+    },
+    "allowances"?: {
+      "guaranteedHours"?: number,
+      "meal"?: number,
+      "transportation"?: number,
+      "accommodation"?: number
+    },
+    "taxSettings"?: {
+      "type": "none" | "rate" | "fixed",
+      "value": number,
+      "taxableItems"?: {
+        "basePay"?: boolean,
+        "meal"?: boolean,
+        "transportation"?: boolean,
+        "accommodation"?: boolean,
+        "additional"?: boolean
+      }
     }
   },
-
-  "requirements": {            // 공통 요구사항
-    "minAge"?: number,         // 최소 연령
-    "experience"?: string,     // 경험 요구사항
-    "skills"?: string[],       // 필요 기술
-    "certification"?: string[] // 필요 자격증
+  "questions": {
+    "items": PreQuestion[]
   },
-
-  "applicationDeadline"?: Timestamp, // 지원 마감일
-  "status": "active" | "closed" | "cancelled",  // 공고 상태 ✅
-  "isPublic": boolean,         // 공개 여부
-  "maxApplications"?: number,  // 최대 지원자 수
-  "autoClose"?: boolean,       // 자동 마감 여부
-  "tags"?: string[],           // 태그
-
-  // 공고 타입 (v2.0 확장)
-  "postingType": "regular" | "fixed" | "tournament" | "urgent",  // ✅ urgent 추가
-
-  // 대회 공고 전용 (postingType === 'tournament')
+  "fixedConfig"?: {
+    "durationDays": 7,
+    "expiresAt": Timestamp,
+    "createdAt": Timestamp
+  },
   "tournamentConfig"?: {
-    "approvalStatus": "pending" | "approved" | "rejected",  // 승인 상태
-    "submittedAt"?: Timestamp,   // 제출일시
-    "approvedBy"?: string,       // 승인자 ID
-    "approvedAt"?: Timestamp,    // 승인일시
-    "rejectedBy"?: string,       // 거부자 ID
-    "rejectedAt"?: Timestamp,    // 거부일시
-    "rejectionReason"?: string,  // 거부 사유 (10자 이상)
-    "resubmittedAt"?: Timestamp, // 재제출일시
-    "resubmittedBy"?: string,    // 재제출자 ID
-    "previousRejection"?: {      // 이전 거부 정보 (재제출 시 보존)
-      "reason": string,
-      "rejectedBy": string,
-      "rejectedAt": Timestamp
-    }
+    "approvalStatus": "pending" | "approved" | "rejected",
+    "submittedAt": Timestamp,
+    "approvedBy"?: string,
+    "approvedAt"?: Timestamp,
+    "rejectedBy"?: string,
+    "rejectedAt"?: Timestamp,
+    "rejectionReason"?: string,
+    "resubmittedAt"?: Timestamp
   },
-
-  "createdAt": Timestamp,      // 생성일시
-  "updatedAt": Timestamp,      // 수정일시
-  "createdBy": string,         // 생성자 ID
-  "lastModifiedBy"?: string    // 마지막 수정자 ID
-}
-
-// 날짜별 모집 정보 (v2.0)
-interface DateSpecificRequirement {
-  "date": string,              // "YYYY-MM-DD"
-  "roles": RoleRequirement[],  // 역할별 모집 정보
-  "benefits"?: Benefits,       // 복리후생
-  "additionalInfo"?: string    // 추가 정보
-}
-
-interface RoleRequirement {
-  "roleId": string,            // 역할 ID
-  "count": number,             // 모집 인원
-  "hourlyRate": number,        // 시급
-  "workHours"?: {              // 근무 시간
-    "start": string,           // "HH:mm"
-    "end": string              // "HH:mm"
-  },
-  "requirements"?: string[]    // 역할별 요구사항
+  "urgentConfig"?: {
+    "createdAt": Timestamp,
+    "priority": "high"
+  }
 }
 ```
 
-**상태값 변경 이력**:
-| 레거시 상태 | 현재 상태 | 설명 |
-|------------|----------|------|
-| `draft` | - | 사용 안함 (즉시 게시) |
-| `published` | `active` | 공고 활성 상태 |
-| `closed` | `closed` | 마감됨 |
-| `cancelled` | `cancelled` | 취소됨 |
+**상태값**:
+| 현재 상태 | 설명 |
+|----------|------|
+| `active` | 게시 중 |
+| `closed` | 마감 |
+| `cancelled` | 취소 |
 
-**공고 타입 설명**:
+**공고 타입**:
 | 타입 | 설명 |
 |------|------|
 | `regular` | 일반 공고 |
-| `fixed` | 고정 공고 (정기적) |
-| `tournament` | 대회 공고 (관리자 승인 필요) |
-| `urgent` | 긴급 공고 (상단 노출) ✅ |
+| `fixed` | 고정 공고 |
+| `tournament` | 토너먼트 공고 |
+| `urgent` | 긴급 공고 |
 
-**인덱스**: `status`, `ownerId`, `isPublic`, `postingType`, `createdAt`, `postingType + tournamentConfig.approvalStatus + createdAt`
+**인덱스/조회 helper**: `status`, `ownerId`, `postingType`, `workDate`, `workDates`, `roleKeys`, `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`, `applicationCount`
 
 ### 5. attendanceRecords (출석 기록)
 
@@ -1437,7 +1463,7 @@ const badQuery = async () => {
 **공고 상태**:
 | 레거시 상태 | 현재 상태 | 설명 |
 |-----------|---------|------|
-| `draft` | - | 사용 안함 |
+| `draft` | 저장 불가 | V3 canonical write에서 제거됨 |
 | `published` | `active` | 활성 공고 |
 
 **공고 타입**:
@@ -1447,10 +1473,10 @@ const badQuery = async () => {
 
 ### 하위 호환성 유지 정책
 
-Firestore Rules에서 레거시 필드를 계속 허용하므로:
-- ✅ 기존 데이터 읽기: 문제 없음
-- ✅ 새 데이터 쓰기: 표준 필드명 사용 (`jobPostingId`, `checkInTime` 등)
-- ✅ 점진적 마이그레이션 가능
+런타임 읽기 경로는 일부 레거시 문서 정규화를 유지하지만, Firestore write 계약은 strict V3 canonical입니다.
+- ✅ 기존 데이터 읽기: repository/schema adapter 기준으로 제한적 호환
+- ✅ 새 데이터 쓰기: 표준 필드만 허용 (`schemaVersion: 3`, canonical nested sections)
+- ❌ 레거시 top-level write: `detailedAddress`, `preQuestions`, `usesPreQuestions`, slot-level salary, `draft` status
 
 ```typescript
 // 읽기 시 정규화 (IdNormalizer 패턴)
@@ -1516,3 +1542,4 @@ const isCompatibleVersion = (version: string): boolean => {
 ---
 
 *마지막 업데이트: 2026년 1월 31일 - v3.0 스키마 통합 (Assignment 구조 완성, UserRole/StaffRole 구분, 누락 컬렉션 추가)*
+

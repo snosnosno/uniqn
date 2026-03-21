@@ -1,6 +1,5 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text } from 'react-native';
-import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment } from '@/types';
 import { createSimpleAssignment, FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types';
@@ -96,7 +95,26 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
   const isTournament = jobPosting.postingType === 'tournament';
   const groupedRequirements = useMemo(
-    () => createPostingLegacyDateRequirements(jobPosting),
+    () =>
+      jobPosting.schedule.kind !== 'dated'
+        ? []
+        : jobPosting.schedule.requirements.map((requirement) => ({
+            date: requirement.date,
+            isGrouped: requirement.isGrouped,
+            timeSlots: requirement.timeSlots.map((slot) => ({
+              id: slot.id,
+              startTime: slot.startTime,
+              isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+              tentativeDescription: slot.tentativeDescription,
+              roles: slot.roles.map((role) => ({
+                id: role.id,
+                role: role.role,
+                customRole: role.customRole,
+                headcount: role.count,
+                filled: role.filled ?? 0,
+              })),
+            })),
+          })),
     [jobPosting]
   );
 

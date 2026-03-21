@@ -56,7 +56,6 @@ export const JOB_POSTING_STATUS_VALUES = {
   ACTIVE: 'active',
   CLOSED: 'closed',
   CANCELLED: 'cancelled',
-  DRAFT: 'draft',
 } as const satisfies Record<string, JobPostingStatusType>;
 
 export const INQUIRY_STATUS_VALUES = {

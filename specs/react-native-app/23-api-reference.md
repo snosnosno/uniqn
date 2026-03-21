@@ -1,139 +1,139 @@
-# 23. Firestore 스키마 및 API 참조
+﻿# 23. Firestore ?ㅽ궎留?諛?API 李몄“
 
-## 목차
-1. [개요](#1-개요)
-2. [Firestore 컬렉션 구조](#2-firestore-컬렉션-구조)
-3. [핵심 스키마 정의](#3-핵심-스키마-정의)
-4. [쿼리 패턴](#4-쿼리-패턴)
-5. [인덱스 설정](#5-인덱스-설정)
-6. [보안 규칙](#6-보안-규칙)
-7. [API 엔드포인트](#7-api-엔드포인트)
-8. [에러 코드](#8-에러-코드)
+## 紐⑹감
+1. [媛쒖슂](#1-媛쒖슂)
+2. [Firestore 而щ젆??援ъ“](#2-firestore-而щ젆??援ъ“)
+3. [?듭떖 ?ㅽ궎留??뺤쓽](#3-?듭떖-?ㅽ궎留??뺤쓽)
+4. [荑쇰━ ?⑦꽩](#4-荑쇰━-?⑦꽩)
+5. [?몃뜳???ㅼ젙](#5-?몃뜳???ㅼ젙)
+6. [蹂댁븞 洹쒖튃](#6-蹂댁븞-洹쒖튃)
+7. [API ?붾뱶?ъ씤??(#7-api-?붾뱶?ъ씤??
+8. [?먮윭 肄붾뱶](#8-?먮윭-肄붾뱶)
 
 ---
 
-## 1. 개요
+## 1. 媛쒖슂
 
-### 데이터베이스 구조
+### ?곗씠?곕쿋?댁뒪 援ъ“
 
 ```
 Firebase Project: tholdem-ebc18
-├── Firestore Database
-│   ├── users/              # 사용자 정보
-│   ├── staff/              # 스태프 프로필
-│   ├── jobPostings/        # 구인공고
-│   ├── applications/       # 지원서
-│   ├── workLogs/           # 근무 기록
-│   ├── attendanceRecords/  # 출퇴근 기록
-│   ├── notifications/      # 알림
-│   ├── tournaments/        # 토너먼트 (비활성화)
-│   ├── payments/           # 결제 기록
-│   └── inquiries/          # 문의사항
-│
-├── Authentication
-│   ├── Email/Password
-│   ├── Google OAuth
-│   └── Kakao OAuth
-│
-├── Cloud Functions
-│   ├── 푸시 알림
-│   ├── 결제 웹훅
-│   └── 예약 작업
-│
-└── Cloud Storage
-    ├── profileImages/
-    └── documents/
+?쒋?? Firestore Database
+??  ?쒋?? users/              # ?ъ슜???뺣낫
+??  ?쒋?? staff/              # ?ㅽ깭???꾨줈??
+??  ?쒋?? jobPostings/        # 援ъ씤怨듦퀬
+??  ?쒋?? applications/       # 吏?먯꽌
+??  ?쒋?? workLogs/           # 洹쇰Т 湲곕줉
+??  ?쒋?? attendanceRecords/  # 異쒗눜洹?湲곕줉
+??  ?쒋?? notifications/      # ?뚮┝
+??  ?쒋?? tournaments/        # ?좊꼫癒쇳듃 (鍮꾪솢?깊솕)
+??  ?쒋?? payments/           # 寃곗젣 湲곕줉
+??  ?붴?? inquiries/          # 臾몄쓽?ы빆
+??
+?쒋?? Authentication
+??  ?쒋?? Email/Password
+??  ?쒋?? Google OAuth
+??  ?붴?? Kakao OAuth
+??
+?쒋?? Cloud Functions
+??  ?쒋?? ?몄떆 ?뚮┝
+??  ?쒋?? 寃곗젣 ?뱁썒
+??  ?붴?? ?덉빟 ?묒뾽
+??
+?붴?? Cloud Storage
+    ?쒋?? profileImages/
+    ?붴?? documents/
 ```
 
-### 표준화된 필드 규칙
+### ?쒖??붾맂 ?꾨뱶 洹쒖튃
 
 ```yaml
-ID 필드:
-  - 문서 ID: id (자동 생성 또는 UUID)
-  - 사용자 참조: userId
-  - 스태프 참조: staffId
-  - 공고 참조: eventId 또는 postId
-  - 지원서 참조: applicationId
+ID ?꾨뱶:
+  - 臾몄꽌 ID: id (?먮룞 ?앹꽦 ?먮뒗 UUID)
+  - ?ъ슜??李몄“: userId
+  - ?ㅽ깭??李몄“: staffId
+  - 怨듦퀬 李몄“: eventId ?먮뒗 postId
+  - 吏?먯꽌 李몄“: applicationId
 
-시간 필드:
-  - 생성일: createdAt (Timestamp)
-  - 수정일: updatedAt (Timestamp)
-  - 예정 시간: scheduledStartTime, scheduledEndTime
-  - 실제 시간: actualStartTime, actualEndTime
+?쒓컙 ?꾨뱶:
+  - ?앹꽦?? createdAt (Timestamp)
+  - ?섏젙?? updatedAt (Timestamp)
+  - ?덉젙 ?쒓컙: scheduledStartTime, scheduledEndTime
+  - ?ㅼ젣 ?쒓컙: actualStartTime, actualEndTime
 
-상태 필드:
-  - status: enum 문자열 (예: 'active', 'inactive')
-  - isActive: boolean (간단한 활성화 여부)
+?곹깭 ?꾨뱶:
+  - status: enum 臾몄옄??(?? 'active', 'inactive')
+  - isActive: boolean (媛꾨떒???쒖꽦???щ?)
 
-네이밍:
-  - camelCase 사용
-  - 명확한 의미 전달 (startTime vs time)
+?ㅼ씠諛?
+  - camelCase ?ъ슜
+  - 紐낇솗???섎? ?꾨떖 (startTime vs time)
 ```
 
-### Role 타입 정의 (중요)
+### Role ????뺤쓽 (以묒슂)
 
-시스템에는 두 가지 다른 Role 개념이 존재합니다:
+?쒖뒪?쒖뿉????媛吏 ?ㅻⅨ Role 媛쒕뀗??議댁옱?⑸땲??
 
 ```typescript
 // src/types/roles.ts
 
 /**
- * UserRole: 시스템 내 사용자의 권한 등급
- * - users 컬렉션에서 사용
- * - 앱 접근 권한 및 기능 제어에 사용
+ * UserRole: ?쒖뒪?????ъ슜?먯쓽 沅뚰븳 ?깃툒
+ * - users 而щ젆?섏뿉???ъ슜
+ * - ???묎렐 沅뚰븳 諛?湲곕뒫 ?쒖뼱???ъ슜
  *
- * 권한 체계:
- * - guest (비로그인): role === null → 공고 목록만 조회 가능
- * - staff (기본 가입자): 공고 검색/상세/지원, QR 출퇴근, 내 스케줄
- * - employer (구인자): staff 권한 + 공고 작성/관리, 지원자 확정/거절, 정산
- * - admin (관리자): 모든 권한 + 사용자 관리, 시스템 설정
+ * 沅뚰븳 泥닿퀎:
+ * - guest (鍮꾨줈洹몄씤): role === null ??怨듦퀬 紐⑸줉留?議고쉶 媛??
+ * - staff (湲곕낯 媛?낆옄): 怨듦퀬 寃???곸꽭/吏?? QR 異쒗눜洹? ???ㅼ?以?
+ * - employer (援ъ씤??: staff 沅뚰븳 + 怨듦퀬 ?묒꽦/愿由? 吏?먯옄 ?뺤젙/嫄곗젅, ?뺤궛
+ * - admin (愿由ъ옄): 紐⑤뱺 沅뚰븳 + ?ъ슜??愿由? ?쒖뒪???ㅼ젙
  */
 export type UserRole = 'staff' | 'employer' | 'admin'
 
 export const UserRoleHierarchy = {
-  admin: 100,     // 시스템 관리자 (전체 권한)
-  employer: 50,   // 구인자 (공고 관리 + staff 권한)
-  staff: 10,      // 기본 가입자 (지원, 출퇴근)
-  // guest: 0     // 비로그인 (role === null)
+  admin: 100,     // ?쒖뒪??愿由ъ옄 (?꾩껜 沅뚰븳)
+  employer: 50,   // 援ъ씤??(怨듦퀬 愿由?+ staff 沅뚰븳)
+  staff: 10,      // 湲곕낯 媛?낆옄 (吏?? 異쒗눜洹?
+  // guest: 0     // 鍮꾨줈洹몄씤 (role === null)
 } as const
 
 export const UserRoleDescriptions = {
-  admin: '시스템 관리자 - 모든 권한',
-  employer: '구인자 - 공고 작성 및 지원자 관리',
-  staff: '스태프 - 공고 지원 및 근무',
+  admin: '?쒖뒪??愿由ъ옄 - 紐⑤뱺 沅뚰븳',
+  employer: '援ъ씤??- 怨듦퀬 ?묒꽦 諛?吏?먯옄 愿由?,
+  staff: '?ㅽ깭??- 怨듦퀬 吏??諛?洹쇰Т',
 } as const
 
 /**
- * StaffRole: 근무 시 담당하는 직무/포지션
- * - staff 컬렉션, workLogs, applications에서 사용
- * - 구인공고 모집 역할 및 근무 배정에 사용
+ * StaffRole: 洹쇰Т ???대떦?섎뒗 吏곷Т/?ъ???
+ * - staff 而щ젆?? workLogs, applications?먯꽌 ?ъ슜
+ * - 援ъ씤怨듦퀬 紐⑥쭛 ??븷 諛?洹쇰Т 諛곗젙???ъ슜
  */
 export type StaffRole =
-  | 'dealer'      // 딜러
-  | 'floor'       // 플로어
-  | 'td'          // Tournament Director (토너먼트 디렉터)
-  | 'dc'          // Dealer Coordinator (딜러 코디네이터)
-  | 'chips'       // Chip Master (칩 마스터)
-  | 'register'    // 레지스터 (접수/등록)
-  | 'serving'     // 서빙
-  | 'guard'       // 가드 (경호/보안)
-  | 'manager'     // 매니저
+  | 'dealer'      // ?쒕윭
+  | 'floor'       // ?뚮줈??
+  | 'td'          // Tournament Director (?좊꼫癒쇳듃 ?붾젆??
+  | 'dc'          // Dealer Coordinator (?쒕윭 肄붾뵒?ㅼ씠??
+  | 'chips'       // Chip Master (移?留덉뒪??
+  | 'register'    // ?덉??ㅽ꽣 (?묒닔/?깅줉)
+  | 'serving'     // ?쒕튃
+  | 'guard'       // 媛??(寃쏀샇/蹂댁븞)
+  | 'manager'     // 留ㅻ땲?
 
 export const StaffRoleLabels: Record<StaffRole, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  td: '토너먼트 디렉터',
-  dc: '딜러 코디네이터',
-  chips: '칩 마스터',
-  register: '레지스터',
-  serving: '서빙',
-  guard: '가드',
-  manager: '매니저',
+  dealer: '?쒕윭',
+  floor: '?뚮줈??,
+  td: '?좊꼫癒쇳듃 ?붾젆??,
+  dc: '?쒕윭 肄붾뵒?ㅼ씠??,
+  chips: '移?留덉뒪??,
+  register: '?덉??ㅽ꽣',
+  serving: '?쒕튃',
+  guard: '媛??,
+  manager: '留ㅻ땲?',
 } as const
 
-// 역할별 우선순위 (정산/배치 시 참고)
+// ??븷蹂??곗꽑?쒖쐞 (?뺤궛/諛곗튂 ??李멸퀬)
 export const StaffRolePriority: Record<StaffRole, number> = {
-  td: 9,        // 최고 책임자
+  td: 9,        // 理쒓퀬 梨낆엫??
   manager: 8,
   dc: 7,
   floor: 6,
@@ -144,12 +144,12 @@ export const StaffRolePriority: Record<StaffRole, number> = {
   guard: 1,
 } as const
 
-// 타입 가드
+// ???媛??
 export function isValidUserRole(role: string): role is UserRole {
   return ['admin', 'employer', 'staff'].includes(role)
 }
 
-// Guest 여부 확인 (role이 null이면 guest)
+// Guest ?щ? ?뺤씤 (role??null?대㈃ guest)
 export function isGuest(role: UserRole | null): boolean {
   return role === null
 }
@@ -161,137 +161,137 @@ export function isValidStaffRole(role: string): role is StaffRole {
 }
 ```
 
-### users vs staff 컬렉션 책임 분리
+### users vs staff 而щ젆??梨낆엫 遺꾨━
 
-| 구분 | users 컬렉션 | staff 컬렉션 |
+| 援щ텇 | users 而щ젆??| staff 而щ젆??|
 |------|-------------|--------------|
-| **목적** | 시스템 사용자 계정 | 스태프 프로필/이력 |
-| **1:1 관계** | Firebase Auth UID | userId로 users 참조 |
-| **Role 의미** | 시스템 접근 권한 (UserRole) | 근무 직무 (StaffRole) |
-| **생성 시점** | 회원가입 시 자동 (staff 기본) | 스태프 등록 시 수동 |
-| **필수 여부** | 모든 사용자 | 스태프로 활동하는 사용자만 |
-| **주요 필드** | email, consents | bankName, experience, rating |
+| **紐⑹쟻** | ?쒖뒪???ъ슜??怨꾩젙 | ?ㅽ깭???꾨줈???대젰 |
+| **1:1 愿怨?* | Firebase Auth UID | userId濡?users 李몄“ |
+| **Role ?섎?** | ?쒖뒪???묎렐 沅뚰븳 (UserRole) | 洹쇰Т 吏곷Т (StaffRole) |
+| **?앹꽦 ?쒖젏** | ?뚯썝媛?????먮룞 (staff 湲곕낯) | ?ㅽ깭???깅줉 ???섎룞 |
+| **?꾩닔 ?щ?** | 紐⑤뱺 ?ъ슜??| ?ㅽ깭?꾨줈 ?쒕룞?섎뒗 ?ъ슜?먮쭔 |
+| **二쇱슂 ?꾨뱶** | email, consents | bankName, experience, rating |
 
 ```
-Guest (비로그인)
-└── users/       →  (없음, role === null)
+Guest (鍮꾨줈洹몄씤)
+?붴?? users/       ?? (?놁쓬, role === null)
 
-사용자 A (기본 가입자 - 공고 지원만)
-├── users/userA  →  role: 'staff' (기본값)
-└── staff/staffA →  role: 'dealer' (직무), userId: 'userA'
+?ъ슜??A (湲곕낯 媛?낆옄 - 怨듦퀬 吏?먮쭔)
+?쒋?? users/userA  ?? role: 'staff' (湲곕낯媛?
+?붴?? staff/staffA ?? role: 'dealer' (吏곷Т), userId: 'userA'
 
-사용자 B (구인자 - 공고 작성/관리)
-├── users/userB  →  role: 'employer'
-└── staff/       →  (없음, 직접 근무하지 않음)
+?ъ슜??B (援ъ씤??- 怨듦퀬 ?묒꽦/愿由?
+?쒋?? users/userB  ?? role: 'employer'
+?붴?? staff/       ?? (?놁쓬, 吏곸젒 洹쇰Т?섏? ?딆쓬)
 
-사용자 C (관리자)
-├── users/userC  →  role: 'admin'
-└── staff/staffC →  role: 'td' (직무), userId: 'userC' (선택적)
+?ъ슜??C (愿由ъ옄)
+?쒋?? users/userC  ?? role: 'admin'
+?붴?? staff/staffC ?? role: 'td' (吏곷Т), userId: 'userC' (?좏깮??
 ```
 
-### 역할 업그레이드 플로우
+### ??븷 ?낃렇?덉씠???뚮줈??
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     역할 업그레이드 플로우                    │
-└─────────────────────────────────────────────────────────────┘
+?뚢???????????????????????????????????????????????????????????????
+??                    ??븷 ?낃렇?덉씠???뚮줈??                   ??
+?붴???????????????????????????????????????????????????????????????
 
-Guest (비로그인)
-    │
-    │ 회원가입
-    ▼
-Staff (기본 가입자, role: 'staff')
-    │
-    │ 공고 작성 요청 시 → 사업자 등록 인증
-    ▼
-Employer (구인자, role: 'employer')
-    │
-    │ 관리자 승인
-    ▼
-Admin (관리자, role: 'admin') - 일반적으로 수동 부여
+Guest (鍮꾨줈洹몄씤)
+    ??
+    ???뚯썝媛??
+    ??
+Staff (湲곕낯 媛?낆옄, role: 'staff')
+    ??
+    ??怨듦퀬 ?묒꽦 ?붿껌 ?????ъ뾽???깅줉 ?몄쬆
+    ??
+Employer (援ъ씤?? role: 'employer')
+    ??
+    ??愿由ъ옄 ?뱀씤
+    ??
+Admin (愿由ъ옄, role: 'admin') - ?쇰컲?곸쑝濡??섎룞 遺??
 ```
 
-### Service 네이밍 컨벤션
+### Service ?ㅼ씠諛?而⑤깽??
 
 ```yaml
-Service 파일명 규칙:
-  기본형: "{도메인}Service.ts"
-  예시:
-    - jobPostingService.ts       # 구인공고 CRUD
-    - applicationService.ts      # 지원서 관리
-    - attendanceService.ts       # 출퇴근 관리
-    - paymentService.ts          # 결제 처리
+Service ?뚯씪紐?洹쒖튃:
+  湲곕낯?? "{?꾨찓??Service.ts"
+  ?덉떆:
+    - jobPostingService.ts       # 援ъ씤怨듦퀬 CRUD
+    - applicationService.ts      # 吏?먯꽌 愿由?
+    - attendanceService.ts       # 異쒗눜洹?愿由?
+    - paymentService.ts          # 寃곗젣 泥섎━
 
-금지 패턴:
-  - jobPostingCreateService.ts   # ❌ 동작을 파일명에 포함하지 않음
-  - createJobPosting.ts          # ❌ 동사로 시작하지 않음
-  - JobPostingService.ts         # ❌ PascalCase 사용하지 않음
+湲덉? ?⑦꽩:
+  - jobPostingCreateService.ts   # ???숈옉???뚯씪紐낆뿉 ?ы븿?섏? ?딆쓬
+  - createJobPosting.ts          # ???숈궗濡??쒖옉?섏? ?딆쓬
+  - JobPostingService.ts         # ??PascalCase ?ъ슜?섏? ?딆쓬
 
-메서드 네이밍 규칙:
-  조회: get{Entity}, get{Entity}List, get{Entity}ById
-  생성: create{Entity}
-  수정: update{Entity}
-  삭제: delete{Entity}
-  검색: search{Entity}, filter{Entity}
-  상태변경: confirm{Entity}, cancel{Entity}, close{Entity}
+硫붿꽌???ㅼ씠諛?洹쒖튃:
+  議고쉶: get{Entity}, get{Entity}List, get{Entity}ById
+  ?앹꽦: create{Entity}
+  ?섏젙: update{Entity}
+  ??젣: delete{Entity}
+  寃?? search{Entity}, filter{Entity}
+  ?곹깭蹂寃? confirm{Entity}, cancel{Entity}, close{Entity}
 
-예시 (jobPostingService.ts):
-  - getJobPosting(id)            # 단건 조회
-  - getJobPostings(filters)      # 목록 조회
-  - createJobPosting(data)       # 생성
-  - updateJobPosting(id, data)   # 수정
-  - deleteJobPosting(id)         # 삭제
-  - closeJobPosting(id, reason)  # 상태 변경
+?덉떆 (jobPostingService.ts):
+  - getJobPosting(id)            # ?④굔 議고쉶
+  - getJobPostings(filters)      # 紐⑸줉 議고쉶
+  - createJobPosting(data)       # ?앹꽦
+  - updateJobPosting(id, data)   # ?섏젙
+  - deleteJobPosting(id)         # ??젣
+  - closeJobPosting(id, reason)  # ?곹깭 蹂寃?
 ```
 
 ---
 
-## 2. Firestore 컬렉션 구조
+## 2. Firestore 而щ젆??援ъ“
 
-### 2.1 users (사용자)
+### 2.1 users (?ъ슜??
 
 ```typescript
 interface User {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string                    // Firebase Auth UID
-  email: string                 // 이메일 (고유)
-  name: string                  // 실명
-  nickname?: string             // 닉네임
+  email: string                 // ?대찓??(怨좎쑀)
+  name: string                  // ?ㅻ챸
+  nickname?: string             // ?됰꽕??
 
-  // === 역할 및 권한 ===
-  role: UserRole                // 'staff' | 'employer' | 'admin' (회원가입 시 기본 'staff')
-  isActive: boolean             // 활성 상태
+  // === ??븷 諛?沅뚰븳 ===
+  role: UserRole                // 'staff' | 'employer' | 'admin' (?뚯썝媛????湲곕낯 'staff')
+  isActive: boolean             // ?쒖꽦 ?곹깭
 
-  // === 연락처 ===
-  phone?: string                // 전화번호 (010-0000-0000)
-  phoneVerified?: boolean       // 전화번호 인증 여부
+  // === ?곕씫泥?===
+  phone?: string                // ?꾪솕踰덊샇 (010-0000-0000)
+  phoneVerified?: boolean       // ?꾪솕踰덊샇 ?몄쬆 ?щ?
 
-  // === 프로필 ===
+  // === ?꾨줈??===
   profileImage?: string         // Storage URL
-  bio?: string                  // 자기소개
+  bio?: string                  // ?먭린?뚭컻
 
-  // === 알림 설정 ===
+  // === ?뚮┝ ?ㅼ젙 ===
   notificationSettings: {
-    push: boolean               // 푸시 알림
-    email: boolean              // 이메일 알림
-    sms: boolean                // SMS 알림
+    push: boolean               // ?몄떆 ?뚮┝
+    email: boolean              // ?대찓???뚮┝
+    sms: boolean                // SMS ?뚮┝
   }
 
-  // === FCM 토큰 ===
+  // === FCM ?좏겙 ===
   fcmTokens?: Array<{
     token: string
     platform: 'ios' | 'android' | 'web'
     updatedAt: Timestamp
   }>
 
-  // === 동의 정보 ===
+  // === ?숈쓽 ?뺣낫 ===
   consents: {
     termsOfService: { agreed: boolean; agreedAt: Timestamp }
     privacyPolicy: { agreed: boolean; agreedAt: Timestamp }
     marketing?: { agreed: boolean; agreedAt: Timestamp }
   }
 
-  // === 보안 ===
+  // === 蹂댁븞 ===
   lastLoginAt?: Timestamp
   loginHistory?: Array<{
     timestamp: Timestamp
@@ -299,62 +299,62 @@ interface User {
     ip?: string
   }>
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 ```
 
-### 2.2 staff (스태프 프로필)
+### 2.2 staff (?ㅽ깭???꾨줈??
 
 ```typescript
 interface Staff {
-  // === 기본 정보 ===
-  id: string                    // 스태프 고유 ID
-  userId: string                // Firebase Auth UID 참조
-  name: string                  // 이름
-  phone: string                 // 연락처
+  // === 湲곕낯 ?뺣낫 ===
+  id: string                    // ?ㅽ깭??怨좎쑀 ID
+  userId: string                // Firebase Auth UID 李몄“
+  name: string                  // ?대쫫
+  phone: string                 // ?곕씫泥?
 
-  // === 역할 및 상태 ===
+  // === ??븷 諛??곹깭 ===
   role: StaffRole               // dealer | floor | td | dc | chips | register | serving | guard | manager
   status: 'active' | 'inactive'
 
-  // === 연락처 ===
+  // === ?곕씫泥?===
   email?: string
 
-  // === 계좌 정보 (정산용) ===
-  bankName?: string             // 은행명
-  accountNumber?: string        // 계좌번호
-  accountHolder?: string        // 예금주
+  // === 怨꾩쥖 ?뺣낫 (?뺤궛?? ===
+  bankName?: string             // ??됰챸
+  accountNumber?: string        // 怨꾩쥖踰덊샇
+  accountHolder?: string        // ?덇툑二?
 
-  // === 경력 정보 ===
+  // === 寃쎈젰 ?뺣낫 ===
   experience?: {
-    years: number               // 경력 년수
-    specialties: string[]       // 전문 분야
-    certifications?: string[]   // 자격증
+    years: number               // 寃쎈젰 ?꾩닔
+    specialties: string[]       // ?꾨Ц 遺꾩빞
+    certifications?: string[]   // ?먭꺽利?
   }
 
-  // === 평가 ===
+  // === ?됯? ===
   rating?: {
-    average: number             // 평균 평점 (1-5)
-    count: number               // 평가 수
+    average: number             // ?됯퇏 ?됱젏 (1-5)
+    count: number               // ?됯? ??
   }
 
-  // === 비고 ===
+  // === 鍮꾧퀬 ===
   notes?: string
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 ```
 
-#### staff/{staffId}/qrCodes (서브컬렉션)
+#### staff/{staffId}/qrCodes (?쒕툕而щ젆??
 
 ```typescript
 interface StaffQRCode {
   id: string
-  qrData: string                // QR 코드 데이터 (암호화)
+  qrData: string                // QR 肄붾뱶 ?곗씠??(?뷀샇??
   createdAt: Timestamp
   expiresAt?: Timestamp
   isActive: boolean
@@ -379,134 +379,130 @@ interface StaffQRCode {
 
 ```typescript
 interface JobPosting {
-  // === 기본 정보 ===
   id: string
-  title: string                 // 공고 제목
-  description: string           // 상세 설명
-
-  // === 공고 타입 ===
-  postingType: 'regular' | 'fixed' | 'tournament' | 'urgent'
-
-  // === 위치 정보 ===
-  location: string              // 지역명
-  district?: string             // 시/군/구
-  detailedAddress?: string      // 상세 주소
-
-  // === 연락처 ===
+  schemaVersion: 3
+  title: string
+  description?: string
+  status: 'active' | 'closed' | 'cancelled'
+  ownerId: string
+  ownerName?: string
+  postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent'
+  workDate: string
+  workDates?: string[]
+  roleKeys?: string[]
+  totalPositions: number
+  filledPositions: number
+  viewCount?: number
+  applicationCount?: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  closedAt?: Timestamp
+  closedReason?: 'manual' | 'expired' | 'expired_by_work_date'
+  tags?: string[]
   contactPhone?: string
+  searchIndex?: string[]
 
-  // === 모집 조건 ===
-  dateSpecificRequirements: Array<{
-    date: string                // YYYY-MM-DD
-    timeSlots: Array<{
-      startTime: string         // HH:mm
-      endTime: string           // HH:mm
-      roles: Array<{
-        role: string            // 역할명
-        count: number           // 모집 인원
-      }>
-    }>
+  location: {
+    name: string
+    district?: string
+    detailedAddress?: string
+  }
+
+  schedule:
+    | {
+        kind: 'dated'
+        primaryDate: string
+        allDates: string[]
+        requirements: Array<{
+          date: string
+          isGrouped?: boolean
+          timeSlots: Array<{
+            id?: string
+            startTime?: string
+            isTimeToBeAnnounced?: boolean
+            tentativeDescription?: string
+            roles: Array<{
+              id?: string
+              role?: string
+              customRole?: string
+              count: number
+              filled?: number
+            }>
+          }>
+        }>
+      }
+    | {
+        kind: 'fixed'
+        daysPerWeek?: number
+        startTime?: string
+        isStartTimeNegotiable?: boolean
+        roleRequirements?: Array<{
+          role?: string
+          customRole?: string
+          count: number
+          filled?: number
+        }>
+      }
+
+  roleCatalog: Array<{
+    role: string
+    customRole?: string
+    salary?: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other'
+      amount: number
+    }
   }>
 
-  requiredRoles?: string[]      // 모집 역할 목록
-
-  // === 급여 정보 ===
-  salaryType?: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
-  salaryAmount?: string
-
-  useRoleSalary?: boolean       // 역할별 급여 사용
-  roleSalaries?: {
-    [role: string]: {
-      salaryType: 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
-      salaryAmount: string
+  compensation: {
+    mode: 'shared' | 'by_role'
+    defaultSalary?: {
+      type: 'hourly' | 'daily' | 'monthly' | 'other'
+      amount: number
+    }
+    allowances?: {
+      guaranteedHours?: number
+      meal?: number
+      transportation?: number
+      accommodation?: number
+    }
+    taxSettings?: {
+      type: 'none' | 'rate' | 'fixed'
+      value: number
+      taxableItems?: {
+        basePay?: boolean
+        meal?: boolean
+        transportation?: boolean
+        accommodation?: boolean
+        additional?: boolean
+      }
     }
   }
 
-  // === 복리후생 ===
-  benefits?: {
-    meals: boolean              // 식사 제공
-    parking: boolean            // 주차 지원
-    transportation: boolean     // 교통비 지원
-    accommodation: boolean      // 숙박 지원
-    other?: string              // 기타 복리후생
+  questions: {
+    items: PreQuestion[]
   }
 
-  // === 세금 설정 ===
-  taxSettings?: {
-    enabled: boolean
-    taxRate?: number            // 세율 (%)
-    taxAmount?: number          // 고정 세금
-  }
-
-  // === 사전 질문 ===
-  usesPreQuestions?: boolean
-  preQuestions?: Array<{
-    id: string
-    question: string
-    required: boolean
-    type: 'text' | 'select' | 'multiselect'
-    options?: string[]
-  }>
-
-  // === 상태 관리 ===
-  status: 'open' | 'closed'
-  autoManageStatus?: boolean    // 자동 상태 관리
-
-  statusChangeReason?: string
-  statusChangedAt?: Timestamp
-  statusChangedBy?: string
-
-  // === 지원자 관리 ===
-  applicants?: string[]         // 지원자 ID 목록
-  confirmedStaff?: Array<{
-    staffId: string
-    date: string
-    role: string
-    timeSlot: string
-    confirmedAt: Timestamp
-  }>
-
-  // === 고정 공고 설정 ===
   fixedConfig?: {
-    durationDays: 7 | 30 | 90
+    durationDays: 7
     expiresAt: Timestamp
     createdAt: Timestamp
   }
 
-  fixedData?: {
-    workSchedule: {
-      daysPerWeek: number
-      startTime: string
-      endTime: string
-    }
-    requiredRolesWithCount: Array<{
-      name: string
-      count: number
-    }>
-    viewCount: number
-  }
-
-  // === 대회 공고 설정 ===
   tournamentConfig?: {
     approvalStatus: 'pending' | 'approved' | 'rejected'
+    submittedAt: Timestamp
     approvedBy?: string
     approvedAt?: Timestamp
     rejectedBy?: string
     rejectedAt?: Timestamp
     rejectionReason?: string
-    submittedAt: Timestamp
+    resubmittedAt?: Timestamp
   }
 
-  // === 긴급 공고 설정 ===
   urgentConfig?: {
     createdAt: Timestamp
     priority: 'high'
   }
-
-  // === 작성자 정보 ===
-  createdBy: string             // userId
-  createdAt: Timestamp
-  updatedAt: Timestamp
 }
 ```
 
@@ -514,30 +510,30 @@ interface JobPosting {
 
 ```typescript
 interface Application {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
   applicantId: string           // userId
   applicantName: string
   applicantEmail?: string
   applicantPhone?: string
 
-  // === 공고 정보 ===
-  eventId: string               // jobPostingId (표준 필드)
-  postId: string                // 하위 호환성
+  // === 怨듦퀬 ?뺣낫 ===
+  eventId: string               // jobPostingId (?쒖? ?꾨뱶)
+  postId: string                // ?섏쐞 ?명솚??
   postTitle: string
 
-  // === 상태 ===
+  // === ?곹깭 ===
   status: 'applied' | 'confirmed' | 'cancelled' | 'pending' | 'pending_confirmation'
   recruitmentType?: 'event' | 'fixed'
 
-  // === 배정 정보 (Single Source of Truth) ===
+  // === 諛곗젙 ?뺣낫 (Single Source of Truth) ===
   assignments: Array<{
-    role?: string               // 단일 역할
-    roles?: string[]            // 다중 역할
-    timeSlot: string            // 시간대
-    dates: string[]             // 날짜 배열
-    isGrouped: boolean          // 그룹 여부
-    groupId?: string            // 그룹 ID
+    role?: string               // ?⑥씪 ??븷
+    roles?: string[]            // ?ㅼ쨷 ??븷
+    timeSlot: string            // ?쒓컙?
+    dates: string[]             // ?좎쭨 諛곗뿴
+    isGrouped: boolean          // 洹몃９ ?щ?
+    groupId?: string            // 洹몃９ ID
     checkMethod?: 'group' | 'individual'
     requirementId?: string
     duration?: {
@@ -547,20 +543,20 @@ interface Application {
     }
   }>
 
-  // === 원본 지원 정보 (이력 추적) ===
+  // === ?먮낯 吏???뺣낫 (?대젰 異붿쟻) ===
   originalApplication?: {
     assignments: Assignment[]
     appliedAt: Timestamp
   }
 
-  // === 확정 이력 ===
+  // === ?뺤젙 ?대젰 ===
   confirmationHistory?: Array<{
     confirmedAt: Timestamp
     cancelledAt?: Timestamp
     assignments: Assignment[]
   }>
 
-  // === 사전 질문 답변 ===
+  // === ?ъ쟾 吏덈Ц ?듬? ===
   preQuestionAnswers?: Array<{
     questionId: string
     question: string
@@ -568,10 +564,10 @@ interface Application {
     required: boolean
   }>
 
-  // === 비고 ===
+  // === 鍮꾧퀬 ===
   notes?: string
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   appliedAt: Timestamp
   confirmedAt?: Timestamp
   cancelledAt?: Timestamp
@@ -580,79 +576,79 @@ interface Application {
 }
 ```
 
-### 2.5 workLogs (근무 기록)
+### 2.5 workLogs (洹쇰Т 湲곕줉)
 
 ```typescript
 interface WorkLog {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
-  staffId: string               // staff 문서 ID
-  eventId?: string              // jobPosting ID (선택)
+  staffId: string               // staff 臾몄꽌 ID
+  eventId?: string              // jobPosting ID (?좏깮)
 
-  // === 근무 일시 ===
+  // === 洹쇰Т ?쇱떆 ===
   date: string                  // YYYY-MM-DD
 
-  // === 예정 시간 ===
+  // === ?덉젙 ?쒓컙 ===
   scheduledStartTime?: string   // HH:mm
   scheduledEndTime?: string     // HH:mm
 
-  // === 실제 시간 ===
+  // === ?ㅼ젣 ?쒓컙 ===
   actualStartTime?: string | Timestamp
   actualEndTime?: string | Timestamp
 
-  // === 근무 정보 ===
-  role?: string                 // 역할
-  tableNumber?: number          // 테이블 번호
+  // === 洹쇰Т ?뺣낫 ===
+  role?: string                 // ??븷
+  tableNumber?: number          // ?뚯씠釉?踰덊샇
 
-  // === 상태 ===
+  // === ?곹깭 ===
   status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
 
-  // === 정산 정보 ===
+  // === ?뺤궛 ?뺣낫 ===
   payroll?: {
-    baseSalary: number          // 기본급
-    overtime?: number           // 초과근무
-    deductions?: number         // 공제
-    bonus?: number              // 보너스
-    total: number               // 총액
-    isPaid: boolean             // 지급 여부
+    baseSalary: number          // 湲곕낯湲?
+    overtime?: number           // 珥덇낵洹쇰Т
+    deductions?: number         // 怨듭젣
+    bonus?: number              // 蹂대꼫??
+    total: number               // 珥앹븸
+    isPaid: boolean             // 吏湲??щ?
     paidAt?: Timestamp
   }
 
-  // === 비고 ===
+  // === 鍮꾧퀬 ===
   notes?: string
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 ```
 
-### 2.6 attendanceRecords (출퇴근 기록)
+### 2.6 attendanceRecords (異쒗눜洹?湲곕줉)
 
 ```typescript
 interface AttendanceRecord {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
   staffId: string
   eventId?: string              // jobPosting ID
-  workLogId?: string            // workLog 참조
+  workLogId?: string            // workLog 李몄“
 
-  // === 날짜 ===
+  // === ?좎쭨 ===
   date: string                  // YYYY-MM-DD
 
-  // === 상태 ===
+  // === ?곹깭 ===
   status: 'not_started' | 'checked_in' | 'checked_out'
 
-  // === 출퇴근 시간 ===
+  // === 異쒗눜洹??쒓컙 ===
   checkInTime?: Timestamp
   checkOutTime?: Timestamp
 
-  // === QR 코드 정보 ===
+  // === QR 肄붾뱶 ?뺣낫 ===
   qrCodeId?: string
   checkInMethod?: 'qr' | 'manual' | 'gps'
   checkOutMethod?: 'qr' | 'manual' | 'gps'
 
-  // === 위치 정보 ===
+  // === ?꾩튂 ?뺣낫 ===
   checkInLocation?: {
     latitude: number
     longitude: number
@@ -664,31 +660,31 @@ interface AttendanceRecord {
     accuracy: number
   }
 
-  // === 비고 ===
+  // === 鍮꾧퀬 ===
   notes?: string
-  adminNotes?: string           // 관리자 메모
+  adminNotes?: string           // 愿由ъ옄 硫붾え
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   updatedAt: Timestamp
 }
 ```
 
-### 2.7 notifications (알림)
+### 2.7 notifications (?뚮┝)
 
 ```typescript
 interface Notification {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
-  userId: string                // 수신자
+  userId: string                // ?섏떊??
 
-  // === 알림 내용 ===
+  // === ?뚮┝ ?댁슜 ===
   type: 'application' | 'confirmation' | 'cancellation' |
         'payment' | 'system' | 'reminder' | 'announcement'
   title: string
   body: string
 
-  // === 관련 데이터 ===
+  // === 愿???곗씠??===
   data?: {
     eventId?: string
     applicationId?: string
@@ -696,43 +692,43 @@ interface Notification {
     [key: string]: string | undefined
   }
 
-  // === 상태 ===
+  // === ?곹깭 ===
   isRead: boolean
   readAt?: Timestamp
 
-  // === 딥링크 ===
-  actionUrl?: string            // 앱 내 이동 경로
+  // === ?λ쭅??===
+  actionUrl?: string            // ?????대룞 寃쎈줈
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
 }
 ```
 
-### 2.8 purchases (다이아 충전 기록)
+### 2.8 purchases (?ㅼ씠??異⑹쟾 湲곕줉)
 
 ```typescript
 interface Purchase {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
   userId: string
 
-  // === 패키지 정보 ===
+  // === ?⑦궎吏 ?뺣낫 ===
   packageId: 'starter' | 'basic' | 'popular' | 'premium'
-  diamonds: number              // 기본 다이아 수량
-  bonusDiamonds: number         // 보너스 다이아 수량
-  totalDiamonds: number         // 총 지급 다이아
-  price: number                 // 결제 금액 (원)
+  diamonds: number              // 湲곕낯 ?ㅼ씠???섎웾
+  bonusDiamonds: number         // 蹂대꼫???ㅼ씠???섎웾
+  totalDiamonds: number         // 珥?吏湲??ㅼ씠??
+  price: number                 // 寃곗젣 湲덉븸 (??
 
-  // === RevenueCat 연동 ===
+  // === RevenueCat ?곕룞 ===
   revenueCatTransactionId: string
   store: 'app_store' | 'play_store'
   productId: string             // com.uniqn.diamond.{packageId}
   environment: 'sandbox' | 'production'
 
-  // === 상태 ===
+  // === ?곹깭 ===
   status: 'pending' | 'completed' | 'failed' | 'refunded'
 
-  // === 환불 정보 ===
+  // === ?섎텋 ?뺣낫 ===
   refund?: {
     amount: number
     diamondsDeducted: number
@@ -740,107 +736,107 @@ interface Purchase {
     refundedAt: Timestamp
   }
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   completedAt?: Timestamp
 }
 ```
 
-### 2.9 users/{userId}/heartBatches (하트 배치)
+### 2.9 users/{userId}/heartBatches (?섑듃 諛곗튂)
 
 ```typescript
 interface HeartBatch {
-  // === 기본 정보 ===
-  id: string                    // 자동 생성
+  // === 湲곕낯 ?뺣낫 ===
+  id: string                    // ?먮룞 ?앹꽦
 
-  // === 하트 정보 ===
-  amount: number                // 획득 수량
-  remainingAmount: number       // 남은 수량
-  source: HeartSource           // 획득 경로
+  // === ?섑듃 ?뺣낫 ===
+  amount: number                // ?띾뱷 ?섎웾
+  remainingAmount: number       // ?⑥? ?섎웾
+  source: HeartSource           // ?띾뱷 寃쎈줈
 
-  // === 기간 ===
+  // === 湲곌컙 ===
   acquiredAt: Timestamp
-  expiresAt: Timestamp          // 획득일 + 90일
+  expiresAt: Timestamp          // ?띾뱷??+ 90??
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   metadata?: {
-    referrerId?: string         // 추천인 ID (초대 보상 시)
-    workLogId?: string          // 근무 기록 ID (리뷰 작성 시)
+    referrerId?: string         // 異붿쿇??ID (珥덈? 蹂댁긽 ??
+    workLogId?: string          // 洹쇰Т 湲곕줉 ID (由щ럭 ?묒꽦 ??
     [key: string]: string | undefined
   }
 }
 
 type HeartSource =
-  | 'signup_bonus'      // 가입 보너스 (+10)
-  | 'daily_attendance'  // 일일 출석 (+1)
-  | 'weekly_streak'     // 7일 연속 출석 (+3)
-  | 'review_bonus'      // 리뷰 작성 (+1)
-  | 'referral_bonus'    // 친구 초대 (+5)
-  | 'admin_grant'       // 관리자 지급
+  | 'signup_bonus'      // 媛??蹂대꼫??(+10)
+  | 'daily_attendance'  // ?쇱씪 異쒖꽍 (+1)
+  | 'weekly_streak'     // 7???곗냽 異쒖꽍 (+3)
+  | 'review_bonus'      // 由щ럭 ?묒꽦 (+1)
+  | 'referral_bonus'    // 移쒓뎄 珥덈? (+5)
+  | 'admin_grant'       // 愿由ъ옄 吏湲?
 ```
 
-### 2.10 users/{userId}/pointTransactions (포인트 거래 기록)
+### 2.10 users/{userId}/pointTransactions (?ъ씤??嫄곕옒 湲곕줉)
 
 ```typescript
 interface PointTransaction {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
   userId: string
 
-  // === 거래 정보 ===
+  // === 嫄곕옒 ?뺣낫 ===
   type: 'earn' | 'spend' | 'refund' | 'expire'
   pointType: 'heart' | 'diamond'
-  amount: number                // 양수: 획득, 음수: 차감
+  amount: number                // ?묒닔: ?띾뱷, ?뚯닔: 李④컧
 
-  // === 상세 정보 ===
-  source?: HeartSource          // 하트 획득 시
-  purchaseId?: string           // 다이아 충전 시
-  jobPostingId?: string         // 공고 등록 차감 시
-  postingType?: 'regular' | 'urgent' | 'fixed'  // 공고 타입
+  // === ?곸꽭 ?뺣낫 ===
+  source?: HeartSource          // ?섑듃 ?띾뱷 ??
+  purchaseId?: string           // ?ㅼ씠??異⑹쟾 ??
+  jobPostingId?: string         // 怨듦퀬 ?깅줉 李④컧 ??
+  postingType?: 'regular' | 'urgent' | 'fixed'  // 怨듦퀬 ???
 
-  // === 잔액 스냅샷 ===
+  // === ?붿븸 ?ㅻ깄??===
   balanceAfter: {
     hearts: number
     diamonds: number
   }
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
-  description?: string          // 거래 설명
+  description?: string          // 嫄곕옒 ?ㅻ챸
 }
 ```
 
-### 2.9 inquiries (문의사항)
+### 2.9 inquiries (臾몄쓽?ы빆)
 
 ```typescript
 interface Inquiry {
-  // === 기본 정보 ===
+  // === 湲곕낯 ?뺣낫 ===
   id: string
   userId: string
 
-  // === 문의 내용 ===
+  // === 臾몄쓽 ?댁슜 ===
   category: 'general' | 'payment' | 'technical' | 'report' | 'other'
   subject: string
   content: string
 
-  // === 첨부파일 ===
+  // === 泥⑤??뚯씪 ===
   attachments?: Array<{
     url: string
     filename: string
     size: number
   }>
 
-  // === 상태 ===
+  // === ?곹깭 ===
   status: 'pending' | 'in_progress' | 'resolved' | 'closed'
 
-  // === 답변 ===
+  // === ?듬? ===
   responses?: Array<{
     content: string
     respondedBy: string         // admin userId
     respondedAt: Timestamp
   }>
 
-  // === 메타데이터 ===
+  // === 硫뷀??곗씠??===
   createdAt: Timestamp
   updatedAt: Timestamp
   resolvedAt?: Timestamp
@@ -849,9 +845,9 @@ interface Inquiry {
 
 ---
 
-## 3. 핵심 스키마 정의
+## 3. ?듭떖 ?ㅽ궎留??뺤쓽
 
-### 3.1 Zod 스키마 (검증용)
+### 3.1 Zod ?ㅽ궎留?(寃利앹슜)
 
 ```typescript
 // src/schemas/user.schema.ts
@@ -859,59 +855,104 @@ import { z } from 'zod'
 
 export const userProfileSchema = z.object({
   name: z.string()
-    .min(2, '이름은 2자 이상')
-    .max(50, '이름은 50자 이하'),
+    .min(2, '?대쫫? 2???댁긽')
+    .max(50, '?대쫫? 50???댄븯'),
   nickname: z.string()
-    .min(2, '닉네임은 2자 이상')
-    .max(20, '닉네임은 20자 이하')
+    .min(2, '?됰꽕?꾩? 2???댁긽')
+    .max(20, '?됰꽕?꾩? 20???댄븯')
     .optional(),
   phone: z.string()
-    .regex(/^01[0-9]-\d{3,4}-\d{4}$/, '올바른 전화번호 형식 (010-0000-0000)')
+    .regex(/^01[0-9]-\d{3,4}-\d{4}$/, '?щ컮瑜??꾪솕踰덊샇 ?뺤떇 (010-0000-0000)')
     .optional(),
   bio: z.string()
-    .max(500, '자기소개는 500자 이하')
+    .max(500, '?먭린?뚭컻??500???댄븯')
     .optional(),
 })
 
 // src/schemas/jobPosting.schema.ts
 export const jobPostingSchema = z.object({
-  title: z.string()
-    .min(5, '제목은 5자 이상')
-    .max(100, '제목은 100자 이하'),
-  description: z.string()
-    .min(20, '설명은 20자 이상')
-    .max(2000, '설명은 2000자 이하'),
-  location: z.string()
-    .min(2, '위치를 입력하세요'),
-  postingType: z.enum(['regular', 'fixed', 'tournament', 'urgent']),
-  salaryType: z.enum(['hourly', 'daily', 'monthly', 'negotiable', 'other'])
-    .optional(),
-  salaryAmount: z.string()
-    .regex(/^\d+$/, '숫자만 입력')
-    .optional(),
-  dateSpecificRequirements: z.array(z.object({
-    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    timeSlots: z.array(z.object({
-      startTime: z.string().regex(/^\d{2}:\d{2}$/),
-      endTime: z.string().regex(/^\d{2}:\d{2}$/),
-      roles: z.array(z.object({
-        role: z.string(),
+  schemaVersion: z.literal(3),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  status: z.enum(['active', 'closed', 'cancelled']),
+  ownerId: z.string().min(1),
+  postingType: z.enum(['regular', 'fixed', 'tournament', 'urgent']).optional(),
+  location: z.object({
+    name: z.string().min(1),
+    district: z.string().optional(),
+    detailedAddress: z.string().optional(),
+  }).strict(),
+  schedule: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('dated'),
+      primaryDate: z.string(),
+      allDates: z.array(z.string()),
+      requirements: z.array(z.object({
+        date: z.string(),
+        isGrouped: z.boolean().optional(),
+        timeSlots: z.array(z.object({
+          id: z.string().optional(),
+          startTime: z.string().optional(),
+          isTimeToBeAnnounced: z.boolean().optional(),
+          tentativeDescription: z.string().optional(),
+          roles: z.array(z.object({
+            id: z.string().optional(),
+            role: z.string().optional(),
+            customRole: z.string().optional(),
+            count: z.number().min(1),
+            filled: z.number().optional(),
+          }).strict()),
+        }).strict()),
+      }).strict()).min(1),
+    }).strict(),
+    z.object({
+      kind: z.literal('fixed'),
+      daysPerWeek: z.number().optional(),
+      startTime: z.string().optional(),
+      isStartTimeNegotiable: z.boolean().optional(),
+      roleRequirements: z.array(z.object({
+        role: z.string().optional(),
+        customRole: z.string().optional(),
         count: z.number().min(1),
-      })),
-    })),
-  })).min(1, '최소 1개 날짜 필요'),
+        filled: z.number().optional(),
+      }).strict()).optional(),
+    }).strict(),
+  ]),
+  roleCatalog: z.array(z.object({
+    role: z.string(),
+    customRole: z.string().optional(),
+    salary: z.object({
+      type: z.enum(['hourly', 'daily', 'monthly', 'other']),
+      amount: z.number(),
+    }).optional(),
+  }).strict()).min(1),
+  compensation: z.object({
+    mode: z.enum(['shared', 'by_role']),
+    defaultSalary: z.object({
+      type: z.enum(['hourly', 'daily', 'monthly', 'other']),
+      amount: z.number(),
+    }).optional(),
+  }).strict(),
+  questions: z.object({
+    items: z.array(z.object({
+      id: z.string(),
+      question: z.string(),
+      required: z.boolean(),
+      type: z.enum(['text', 'select', 'multiselect']),
+      options: z.array(z.string()).optional(),
+    }).strict()),
+  }).strict(),
 })
 
 // src/schemas/application.schema.ts
 export const applicationSchema = z.object({
   eventId: z.string().min(1),
   assignments: z.array(z.object({
-    role: z.string().optional(),
-    roles: z.array(z.string()).optional(),
+    roleIds: z.array(z.string()).min(1),
     timeSlot: z.string().min(1),
     dates: z.array(z.string()).min(1),
     isGrouped: z.boolean(),
-  })).min(1, '최소 1개 선택 필요'),
+  })).min(1, '理쒖냼 1媛??좏깮 ?꾩슂'),
   preQuestionAnswers: z.array(z.object({
     questionId: z.string(),
     answer: z.string(),
@@ -919,12 +960,12 @@ export const applicationSchema = z.object({
 })
 ```
 
-### 3.2 타입 가드 함수
+### 3.2 ???媛???⑥닔
 
 ```typescript
 // src/types/guards.ts
 
-// User 역할 검증
+// User ??븷 寃利?
 export function isAdmin(user: User): boolean {
   return user.role === 'admin'
 }
@@ -937,7 +978,7 @@ export function isStaff(user: User): boolean {
   return ['admin', 'manager', 'dealer', 'staff'].includes(user.role)
 }
 
-// JobPosting 타입 검증
+// JobPosting ???寃利?
 export function isFixedPosting(posting: JobPosting): posting is FixedJobPosting {
   return posting.postingType === 'fixed' &&
     posting.fixedConfig !== undefined &&
@@ -953,7 +994,7 @@ export function isUrgentPosting(posting: JobPosting): boolean {
   return posting.postingType === 'urgent'
 }
 
-// Application 상태 검증
+// Application ?곹깭 寃利?
 export function isConfirmedApplication(app: Application): boolean {
   return app.status === 'confirmed'
 }
@@ -965,12 +1006,12 @@ export function isPendingApplication(app: Application): boolean {
 
 ---
 
-## 4. 쿼리 패턴
+## 4. 荑쇰━ ?⑦꽩
 
-### 4.1 구인공고 조회
+### 4.1 援ъ씤怨듦퀬 議고쉶
 
 ```typescript
-// 활성 공고 목록 (페이지네이션)
+// ?쒖꽦 怨듦퀬 紐⑸줉 (?섏씠吏?ㅼ씠??
 const getActiveJobPostings = async (
   lastDoc?: QueryDocumentSnapshot,
   limit: number = 20
@@ -998,7 +1039,7 @@ const getActiveJobPostings = async (
   }
 }
 
-// 지역별 필터링
+// 吏??퀎 ?꾪꽣留?
 const getPostingsByLocation = async (location: string): Promise<JobPosting[]> => {
   const q = query(
     collection(db, 'jobPostings'),
@@ -1014,7 +1055,7 @@ const getPostingsByLocation = async (location: string): Promise<JobPosting[]> =>
   })) as JobPosting[]
 }
 
-// 내 공고 조회
+// ??怨듦퀬 議고쉶
 const getMyPostings = async (userId: string): Promise<JobPosting[]> => {
   const q = query(
     collection(db, 'jobPostings'),
@@ -1030,10 +1071,10 @@ const getMyPostings = async (userId: string): Promise<JobPosting[]> => {
 }
 ```
 
-### 4.2 지원서 조회
+### 4.2 吏?먯꽌 議고쉶
 
 ```typescript
-// 내 지원 목록
+// ??吏??紐⑸줉
 const getMyApplications = async (userId: string): Promise<Application[]> => {
   const q = query(
     collection(db, 'applications'),
@@ -1048,7 +1089,7 @@ const getMyApplications = async (userId: string): Promise<Application[]> => {
   })) as Application[]
 }
 
-// 공고별 지원자 목록
+// 怨듦퀬蹂?吏?먯옄 紐⑸줉
 const getApplicationsByPosting = async (eventId: string): Promise<Application[]> => {
   const q = query(
     collection(db, 'applications'),
@@ -1063,7 +1104,7 @@ const getApplicationsByPosting = async (eventId: string): Promise<Application[]>
   })) as Application[]
 }
 
-// 상태별 지원서 조회
+// ?곹깭蹂?吏?먯꽌 議고쉶
 const getApplicationsByStatus = async (
   eventId: string,
   status: Application['status']
@@ -1083,10 +1124,10 @@ const getApplicationsByStatus = async (
 }
 ```
 
-### 4.3 근무 기록 조회
+### 4.3 洹쇰Т 湲곕줉 議고쉶
 
 ```typescript
-// 스태프별 근무 기록
+// ?ㅽ깭?꾨퀎 洹쇰Т 湲곕줉
 const getWorkLogsByStaff = async (
   staffId: string,
   dateRange?: { start: string, end: string }
@@ -1111,7 +1152,7 @@ const getWorkLogsByStaff = async (
   })) as WorkLog[]
 }
 
-// 날짜별 근무 기록
+// ?좎쭨蹂?洹쇰Т 湲곕줉
 const getWorkLogsByDate = async (date: string): Promise<WorkLog[]> => {
   const q = query(
     collection(db, 'workLogs'),
@@ -1127,10 +1168,10 @@ const getWorkLogsByDate = async (date: string): Promise<WorkLog[]> => {
 }
 ```
 
-### 4.4 실시간 구독
+### 4.4 ?ㅼ떆媛?援щ룆
 
 ```typescript
-// 공고 실시간 구독
+// 怨듦퀬 ?ㅼ떆媛?援щ룆
 const subscribeToJobPosting = (
   postingId: string,
   callback: (posting: JobPosting | null) => void
@@ -1149,7 +1190,7 @@ const subscribeToJobPosting = (
   })
 }
 
-// 알림 실시간 구독
+// ?뚮┝ ?ㅼ떆媛?援щ룆
 const subscribeToNotifications = (
   userId: string,
   callback: (notifications: Notification[]) => void
@@ -1176,9 +1217,9 @@ const subscribeToNotifications = (
 
 ---
 
-## 5. 인덱스 설정
+## 5. ?몃뜳???ㅼ젙
 
-### 5.1 복합 인덱스 (firestore.indexes.json)
+### 5.1 蹂듯빀 ?몃뜳??(firestore.indexes.json)
 
 ```json
 {
@@ -1247,9 +1288,9 @@ const subscribeToNotifications = (
 
 ---
 
-## 6. 보안 규칙
+## 6. 蹂댁븞 洹쒖튃
 
-### 6.1 Firestore 보안 규칙
+### 6.1 Firestore 蹂댁븞 洹쒖튃
 
 ```javascript
 // firestore.rules
@@ -1257,7 +1298,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 헬퍼 함수
+    // ?ы띁 ?⑥닔
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -1276,7 +1317,7 @@ service cloud.firestore {
       return isAuthenticated() && (role == 'admin' || role == 'manager');
     }
 
-    // users 컬렉션
+    // users 而щ젆??
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId);
@@ -1284,19 +1325,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // staff 컬렉션
+    // staff 而щ젆??
     match /staff/{staffId} {
       allow read: if isAuthenticated();
       allow write: if isManagerOrAdmin();
 
-      // QR 코드 서브컬렉션
+      // QR 肄붾뱶 ?쒕툕而щ젆??
       match /qrCodes/{qrId} {
         allow read: if isAuthenticated();
         allow write: if isManagerOrAdmin();
       }
     }
 
-    // jobPostings 컬렉션
+    // jobPostings 而щ젆??
     match /jobPostings/{postingId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() &&
@@ -1306,7 +1347,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // applications 컬렉션
+    // applications 而щ젆??
     match /applications/{applicationId} {
       allow read: if isAuthenticated() &&
         (resource.data.applicantId == request.auth.uid ||
@@ -1319,13 +1360,13 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // workLogs 컬렉션
+    // workLogs 而щ젆??
     match /workLogs/{workLogId} {
       allow read: if isAuthenticated();
       allow write: if isManagerOrAdmin();
     }
 
-    // attendanceRecords 컬렉션
+    // attendanceRecords 而щ젆??
     match /attendanceRecords/{recordId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
@@ -1335,7 +1376,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // notifications 컬렉션
+    // notifications 而щ젆??
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;
@@ -1345,17 +1386,17 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // payments 컬렉션
+    // payments 而щ젆??
     match /payments/{paymentId} {
       allow read: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() &&
         request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin();
-      allow delete: if false; // 결제 기록은 삭제 불가
+      allow delete: if false; // 寃곗젣 湲곕줉? ??젣 遺덇?
     }
 
-    // inquiries 컬렉션
+    // inquiries 而щ젆??
     match /inquiries/{inquiryId} {
       allow read: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid || isAdmin());
@@ -1371,28 +1412,28 @@ service cloud.firestore {
 
 ---
 
-## 7. API 엔드포인트
+## 7. API ?붾뱶?ъ씤??
 
 ### 7.1 Cloud Functions
 
 ```typescript
 // functions/src/index.ts
 
-// === 푸시 알림 ===
+// === ?몄떆 ?뚮┝ ===
 
-// 지원서 확정 알림
+// 吏?먯꽌 ?뺤젙 ?뚮┝
 export const onApplicationConfirmed = functions.firestore
   .document('applications/{applicationId}')
   .onUpdate(async (change, context) => {
     const before = change.before.data()
     const after = change.after.data()
 
-    // 상태가 confirmed로 변경된 경우
+    // ?곹깭媛 confirmed濡?蹂寃쎈맂 寃쎌슦
     if (before.status !== 'confirmed' && after.status === 'confirmed') {
       await sendPushNotification({
         userId: after.applicantId,
-        title: '지원 확정!',
-        body: `${after.postTitle} 공고에 확정되었습니다.`,
+        title: '吏???뺤젙!',
+        body: `${after.postTitle} 怨듦퀬???뺤젙?섏뿀?듬땲??`,
         data: {
           type: 'confirmation',
           applicationId: context.params.applicationId,
@@ -1402,13 +1443,13 @@ export const onApplicationConfirmed = functions.firestore
     }
   })
 
-// 새 지원 알림 (구인자에게)
+// ??吏???뚮┝ (援ъ씤?먯뿉寃?
 export const onNewApplication = functions.firestore
   .document('applications/{applicationId}')
   .onCreate(async (snapshot, context) => {
     const application = snapshot.data()
 
-    // 공고 작성자 조회
+    // 怨듦퀬 ?묒꽦??議고쉶
     const postingDoc = await admin.firestore()
       .collection('jobPostings')
       .doc(application.eventId)
@@ -1418,8 +1459,8 @@ export const onNewApplication = functions.firestore
       const posting = postingDoc.data()
       await sendPushNotification({
         userId: posting.createdBy,
-        title: '새 지원자!',
-        body: `${application.applicantName}님이 지원했습니다.`,
+        title: '??吏?먯옄!',
+        body: `${application.applicantName}?섏씠 吏?먰뻽?듬땲??`,
         data: {
           type: 'application',
           applicationId: context.params.applicationId,
@@ -1429,11 +1470,11 @@ export const onNewApplication = functions.firestore
     }
   })
 
-// === RevenueCat 웹훅 ===
+// === RevenueCat ?뱁썒 ===
 
-// RevenueCat 결제 웹훅 처리
+// RevenueCat 寃곗젣 ?뱁썒 泥섎━
 export const handleRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
-  // 서명 검증
+  // ?쒕챸 寃利?
   const signature = req.headers['x-revenuecat-signature']
   if (!verifyRevenueCatSignature(req.body, signature)) {
     res.status(401).send('Invalid signature')
@@ -1465,13 +1506,13 @@ export const handleRevenueCatWebhook = functions.https.onRequest(async (req, res
   }
 })
 
-// 다이아 충전 처리
+// ?ㅼ씠??異⑹쟾 泥섎━
 async function handleDiamondPurchase(userId: string, event: any) {
   const productId = event.product_id
   const transactionId = event.transaction_id
   const store = event.store as 'app_store' | 'play_store'
 
-  // 패키지별 다이아 수량 매핑
+  // ?⑦궎吏蹂??ㅼ씠???섎웾 留ㅽ븨
   const packages: Record<string, { diamonds: number; bonus: number }> = {
     'com.uniqn.diamond.starter': { diamonds: 3, bonus: 0 },
     'com.uniqn.diamond.basic': { diamonds: 8, bonus: 3 },
@@ -1496,13 +1537,13 @@ async function handleDiamondPurchase(userId: string, event: any) {
 
     const currentDiamonds = userDoc.data()?.points?.diamonds || 0
 
-    // 다이아 지급
+    // ?ㅼ씠??吏湲?
     transaction.update(userRef, {
       'points.diamonds': currentDiamonds + totalDiamonds,
       'points.updatedAt': admin.firestore.FieldValue.serverTimestamp(),
     })
 
-    // 구매 기록 저장
+    // 援щℓ 湲곕줉 ???
     const purchaseRef = admin.firestore().collection('purchases').doc()
     transaction.set(purchaseRef, {
       userId,
@@ -1520,9 +1561,9 @@ async function handleDiamondPurchase(userId: string, event: any) {
   })
 }
 
-// === 스케줄 함수 ===
+// === ?ㅼ?以??⑥닔 ===
 
-// 만료된 고정 공고 자동 종료
+// 留뚮즺??怨좎젙 怨듦퀬 ?먮룞 醫낅즺
 export const expireFixedPostings = functions.pubsub
   .schedule('every 1 hours')
   .onRun(async () => {
@@ -1540,7 +1581,7 @@ export const expireFixedPostings = functions.pubsub
     expiredPostings.docs.forEach(doc => {
       batch.update(doc.ref, {
         status: 'closed',
-        statusChangeReason: '기간 만료',
+        statusChangeReason: '湲곌컙 留뚮즺',
         statusChangedAt: now,
       })
     })
@@ -1552,35 +1593,35 @@ export const expireFixedPostings = functions.pubsub
 
 ---
 
-## 8. 에러 코드
+## 8. ?먮윭 肄붾뱶
 
-### 8.1 에러 코드 정의
+### 8.1 ?먮윭 肄붾뱶 ?뺤쓽
 
 ```typescript
 // src/lib/errors/codes.ts
 
 export const ErrorCodes = {
-  // === 인증 (1xxx) ===
+  // === ?몄쬆 (1xxx) ===
   AUTH_INVALID_CREDENTIALS: 'E1001',
   AUTH_SESSION_EXPIRED: 'E1002',
   AUTH_UNAUTHORIZED: 'E1003',
   AUTH_EMAIL_NOT_VERIFIED: 'E1004',
   AUTH_ACCOUNT_DISABLED: 'E1005',
 
-  // === 검증 (2xxx) ===
+  // === 寃利?(2xxx) ===
   VALIDATION_REQUIRED_FIELD: 'E2001',
   VALIDATION_INVALID_FORMAT: 'E2002',
   VALIDATION_MIN_LENGTH: 'E2003',
   VALIDATION_MAX_LENGTH: 'E2004',
   VALIDATION_XSS_DETECTED: 'E2005',
 
-  // === 비즈니스 로직 (3xxx) ===
+  // === 鍮꾩쫰?덉뒪 濡쒖쭅 (3xxx) ===
   BUSINESS_ALREADY_APPLIED: 'E3002',
   BUSINESS_POSTING_CLOSED: 'E3003',
   BUSINESS_APPLICATION_NOT_FOUND: 'E3004',
   BUSINESS_STAFF_NOT_FOUND: 'E3005',
 
-  // === 결제 (4xxx) ===
+  // === 寃곗젣 (4xxx) ===
   PAYMENT_FAILED: 'E4001',
   PAYMENT_CANCELLED: 'E4002',
   PAYMENT_REFUND_FAILED: 'E4003',
@@ -1592,245 +1633,246 @@ export const ErrorCodes = {
   FIREBASE_QUOTA_EXCEEDED: 'E5003',
   FIREBASE_NETWORK_ERROR: 'E5004',
 
-  // === 보안 (6xxx) ===
+  // === 蹂댁븞 (6xxx) ===
   SECURITY_INTEGRITY_FAILED: 'E6001',
   SECURITY_CERTIFICATE_INVALID: 'E6002',
   SECURITY_RATE_LIMIT: 'E6003',
 
-  // === 네트워크 (7xxx) ===
+  // === ?ㅽ듃?뚰겕 (7xxx) ===
   NETWORK_OFFLINE: 'E7001',
   NETWORK_TIMEOUT: 'E7002',
   NETWORK_SERVER_ERROR: 'E7003',
 
-  // === 알 수 없음 (9xxx) ===
+  // === ?????놁쓬 (9xxx) ===
   UNKNOWN: 'E9999',
 } as const
 
-// 에러 메시지 매핑
+// ?먮윭 硫붿떆吏 留ㅽ븨
 export const ErrorMessages: Record<string, string> = {
-  [ErrorCodes.AUTH_INVALID_CREDENTIALS]: '이메일 또는 비밀번호가 올바르지 않습니다',
-  [ErrorCodes.AUTH_SESSION_EXPIRED]: '세션이 만료되었습니다. 다시 로그인해주세요',
-  [ErrorCodes.AUTH_UNAUTHORIZED]: '접근 권한이 없습니다',
-  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: '본인인증이 필요합니다',  // 휴대폰 본인인증
-  [ErrorCodes.AUTH_ACCOUNT_DISABLED]: '계정이 비활성화되었습니다',
+  [ErrorCodes.AUTH_INVALID_CREDENTIALS]: '?대찓???먮뒗 鍮꾨?踰덊샇媛 ?щ컮瑜댁? ?딆뒿?덈떎',
+  [ErrorCodes.AUTH_SESSION_EXPIRED]: '?몄뀡??留뚮즺?섏뿀?듬땲?? ?ㅼ떆 濡쒓렇?명빐二쇱꽭??,
+  [ErrorCodes.AUTH_UNAUTHORIZED]: '?묎렐 沅뚰븳???놁뒿?덈떎',
+  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: '蹂몄씤?몄쬆???꾩슂?⑸땲??,  // ?대???蹂몄씤?몄쬆
+  [ErrorCodes.AUTH_ACCOUNT_DISABLED]: '怨꾩젙??鍮꾪솢?깊솕?섏뿀?듬땲??,
 
-  [ErrorCodes.VALIDATION_REQUIRED_FIELD]: '필수 항목을 입력해주세요',
-  [ErrorCodes.VALIDATION_INVALID_FORMAT]: '올바른 형식으로 입력해주세요',
-  [ErrorCodes.VALIDATION_XSS_DETECTED]: '허용되지 않는 문자가 포함되어 있습니다',
+  [ErrorCodes.VALIDATION_REQUIRED_FIELD]: '?꾩닔 ??ぉ???낅젰?댁＜?몄슂',
+  [ErrorCodes.VALIDATION_INVALID_FORMAT]: '?щ컮瑜??뺤떇?쇰줈 ?낅젰?댁＜?몄슂',
+  [ErrorCodes.VALIDATION_XSS_DETECTED]: '?덉슜?섏? ?딅뒗 臾몄옄媛 ?ы븿?섏뼱 ?덉뒿?덈떎',
 
-  [ErrorCodes.BUSINESS_ALREADY_APPLIED]: '이미 지원한 공고입니다',
-  [ErrorCodes.BUSINESS_POSTING_CLOSED]: '마감된 공고입니다',
-  [ErrorCodes.BUSINESS_APPLICATION_NOT_FOUND]: '지원서를 찾을 수 없습니다',
+  [ErrorCodes.BUSINESS_ALREADY_APPLIED]: '?대? 吏?먰븳 怨듦퀬?낅땲??,
+  [ErrorCodes.BUSINESS_POSTING_CLOSED]: '留덇컧??怨듦퀬?낅땲??,
+  [ErrorCodes.BUSINESS_APPLICATION_NOT_FOUND]: '吏?먯꽌瑜?李얠쓣 ???놁뒿?덈떎',
 
-  [ErrorCodes.PAYMENT_FAILED]: '결제에 실패했습니다',
-  [ErrorCodes.PAYMENT_CANCELLED]: '결제가 취소되었습니다',
+  [ErrorCodes.PAYMENT_FAILED]: '寃곗젣???ㅽ뙣?덉뒿?덈떎',
+  [ErrorCodes.PAYMENT_CANCELLED]: '寃곗젣媛 痍⑥냼?섏뿀?듬땲??,
 
-  [ErrorCodes.FIREBASE_PERMISSION_DENIED]: '접근 권한이 없습니다',
-  [ErrorCodes.FIREBASE_NOT_FOUND]: '요청한 데이터를 찾을 수 없습니다',
+  [ErrorCodes.FIREBASE_PERMISSION_DENIED]: '?묎렐 沅뚰븳???놁뒿?덈떎',
+  [ErrorCodes.FIREBASE_NOT_FOUND]: '?붿껌???곗씠?곕? 李얠쓣 ???놁뒿?덈떎',
 
-  [ErrorCodes.SECURITY_INTEGRITY_FAILED]: '보안 검증에 실패했습니다',
-  [ErrorCodes.SECURITY_RATE_LIMIT]: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요',
+  [ErrorCodes.SECURITY_INTEGRITY_FAILED]: '蹂댁븞 寃利앹뿉 ?ㅽ뙣?덉뒿?덈떎',
+  [ErrorCodes.SECURITY_RATE_LIMIT]: '?붿껌???덈Т 留롮뒿?덈떎. ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂',
 
-  [ErrorCodes.NETWORK_OFFLINE]: '인터넷 연결을 확인해주세요',
-  [ErrorCodes.NETWORK_TIMEOUT]: '요청 시간이 초과되었습니다',
+  [ErrorCodes.NETWORK_OFFLINE]: '?명꽣???곌껐???뺤씤?댁＜?몄슂',
+  [ErrorCodes.NETWORK_TIMEOUT]: '?붿껌 ?쒓컙??珥덇낵?섏뿀?듬땲??,
 
-  [ErrorCodes.UNKNOWN]: '문제가 발생했습니다. 잠시 후 다시 시도해주세요',
+  [ErrorCodes.UNKNOWN]: '臾몄젣媛 諛쒖깮?덉뒿?덈떎. ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂',
 }
 ```
 
 ---
 
-## 요약
+## ?붿빟
 
-### 핵심 컬렉션 관계도
+### ?듭떖 而щ젆??愿怨꾨룄
 
 ```
 users (1)
-  ├─── applications (N) ──── jobPostings (1)
-  │         │
-  │         └─── confirmationHistory (배열)
-  │         └─── cancellationRequest (객체)
-  │
-  ├─── workLogs (N)
-  │         └─── settlementBreakdown (캐싱)
-  │
-  ├─── notifications (N)
-  │
-  ├─── purchases (N)
-  │
-  ├─── heartBatches (서브컬렉션)
-  │
-  ├─── pointTransactions (서브컬렉션)
-  │
-  ├─── inquiries (N)
-  │
-  └─── reports (N)
+  ?쒋??? applications (N) ???? jobPostings (1)
+  ??        ??
+  ??        ?붴??? confirmationHistory (諛곗뿴)
+  ??        ?붴??? cancellationRequest (媛앹껜)
+  ??
+  ?쒋??? workLogs (N)
+  ??        ?붴??? settlementBreakdown (罹먯떛)
+  ??
+  ?쒋??? notifications (N)
+  ??
+  ?쒋??? purchases (N)
+  ??
+  ?쒋??? heartBatches (?쒕툕而щ젆??
+  ??
+  ?쒋??? pointTransactions (?쒕툕而щ젆??
+  ??
+  ?쒋??? inquiries (N)
+  ??
+  ?붴??? reports (N)
 
-eventQRCodes (N) ──── jobPostings (1)
+eventQRCodes (N) ???? jobPostings (1)
 ```
 
-### 표준 필드 규칙
+### ?쒖? ?꾨뱶 洹쒖튃
 
-| 필드 | 타입 | 설명 |
+| ?꾨뱶 | ???| ?ㅻ챸 |
 |------|------|------|
-| `id` | string | 문서 고유 ID |
-| `userId` | string | 사용자 참조 |
-| `jobPostingId` | string | 공고 참조 (표준) |
-| `applicantId` | string | 지원자 참조 |
-| `createdAt` | Timestamp | 생성 시간 |
-| `updatedAt` | Timestamp | 수정 시간 |
-| `status` | string | 상태 enum |
+| `id` | string | 臾몄꽌 怨좎쑀 ID |
+| `userId` | string | ?ъ슜??李몄“ |
+| `jobPostingId` | string | 怨듦퀬 李몄“ (?쒖?) |
+| `applicantId` | string | 吏?먯옄 李몄“ |
+| `createdAt` | Timestamp | ?앹꽦 ?쒓컙 |
+| `updatedAt` | Timestamp | ?섏젙 ?쒓컙 |
+| `status` | string | ?곹깭 enum |
 
-> **Note**: `eventId`, `postId`, `staffId`는 레거시 필드로, `jobPostingId`, `userId`로 통합 중
-
----
-
-## 9. 서비스 레이어 구조
-
-### 9.1 Core 서비스 (7개)
-
-| 서비스 | 파일 | 주요 기능 |
-|--------|------|----------|
-| **authService** | `authService.ts` | 로그인, 회원가입, 소셜 로그인, 프로필 관리 |
-| **jobService** | `jobService.ts` | 공고 목록, 검색, 필터, 상세 조회 |
-| **applicationService** | `applicationService.ts` | 지원, 취소 요청, 지원 내역 조회 |
-| **workLogService** | `workLogService.ts` | 근무 기록 조회, 실시간 구독 |
-| **scheduleService** | `scheduleService.ts` | 스케줄 조회, 그룹핑, 캘린더 뷰 |
-| **notificationService** | `notificationService.ts` | 알림 조회, 읽음 처리, 실시간 구독 |
-| **reportService** | `reportService.ts` | 양방향 신고 (스태프↔구인자) |
-
-### 9.2 Employer 서비스 (6개)
-
-| 서비스 | 파일 | 주요 기능 |
-|--------|------|----------|
-| **jobManagementService** | `jobManagementService.ts` | 공고 CRUD, 상태 관리 |
-| **applicantManagementService** | `applicantManagementService.ts` | 지원자 확정/거절, 대기자 관리 |
-| **applicationHistoryService** | `applicationHistoryService.ts` | 확정/취소 이력 추적, WorkLog 연동 |
-| **confirmedStaffService** | `confirmedStaffService.ts` | 확정 스태프 관리, 역할 변경 |
-| **settlementService** | `settlement/*.ts` | 정산 계산, 처리 (분할 구조) |
-| **applicantConversionService** | `applicantConversionService.ts` | 지원자→스태프 변환 |
-
-### 9.3 Admin 서비스 (4개)
-
-| 서비스 | 파일 | 주요 기능 |
-|--------|------|----------|
-| **adminService** | `adminService.ts` | 대시보드 통계, 사용자 관리 |
-| **announcementService** | `announcementService.ts` | 공지사항 CRUD, 발행 관리 |
-| **tournamentApprovalService** | `tournamentApprovalService.ts` | 대회공고 승인/거절 |
-| **inquiryService** | `inquiryService.ts` | 문의 관리, FAQ |
-
-### 9.4 Infrastructure 서비스 (17개)
-
-| 서비스 | 파일 | 주요 기능 |
-|--------|------|----------|
-| **pushNotificationService** | `pushNotificationService.ts` | FCM 토큰 관리, 권한 요청 |
-| **eventQRService** | `eventQRService.ts` | QR 생성/검증 (3분 유효) |
-| **deepLinkService** | `deepLinkService.ts` | 딥링크 라우팅 |
-| **analyticsService** | `analyticsService.ts` | 이벤트 추적 |
-| **crashlyticsService** | `crashlyticsService.ts` | 에러 로깅 |
-| **performanceService** | `performanceService.ts` | 성능 모니터링 |
-| **sessionService** | `sessionService.ts` | 세션 관리, 토큰 갱신 |
-| **storageService** | `storageService.ts` | 이미지 업로드 |
-| **biometricService** | `biometricService.ts` | 생체인증 |
-| **featureFlagService** | `featureFlagService.ts` | 기능 플래그 |
-| **inAppMessageService** | `inAppMessageService.ts` | 인앱 메시지 |
-| **cacheService** | `cacheService.ts` | 캐시 관리 |
-| **versionService** | `versionService.ts` | 앱 버전 체크 |
-| **templateService** | `templateService.ts` | 공고 템플릿 |
-| **accountDeletionService** | `accountDeletionService.ts` | 계정 삭제 |
-| **tokenRefreshService** | `tokenRefreshService.ts` | 토큰 자동 갱신 |
-| **searchService** | `searchService.ts` | 클라이언트 사이드 검색 |
+> **Note**: `eventId`, `postId`, `staffId`???덇굅???꾨뱶濡? `jobPostingId`, `userId`濡??듯빀 以?
 
 ---
 
-## 10. 훅 레이어 구조 (46개)
+## 9. ?쒕퉬???덉씠??援ъ“
 
-### 10.1 인증/권한 (6개)
+### 9.1 Core ?쒕퉬??(7媛?
 
-| 훅 | 용도 |
-|----|------|
-| `useAuth` | 인증 상태 통합 래퍼 |
-| `useAuthGuard` | 라우트 권한 보호 |
-| `useAutoLogin` | 자동 로그인 |
-| `useBiometricAuth` | 생체인증 |
-| `useOnboarding` | 온보딩 상태 |
-| `useAppInitialize` | 앱 초기화 |
+| ?쒕퉬??| ?뚯씪 | 二쇱슂 湲곕뒫 |
+|--------|------|----------|
+| **authService** | `authService.ts` | 濡쒓렇?? ?뚯썝媛?? ?뚯뀥 濡쒓렇?? ?꾨줈??愿由?|
+| **jobService** | `jobService.ts` | 怨듦퀬 紐⑸줉, 寃?? ?꾪꽣, ?곸꽭 議고쉶 |
+| **applicationService** | `applicationService.ts` | 吏?? 痍⑥냼 ?붿껌, 吏???댁뿭 議고쉶 |
+| **workLogService** | `workLogService.ts` | 洹쇰Т 湲곕줉 議고쉶, ?ㅼ떆媛?援щ룆 |
+| **scheduleService** | `scheduleService.ts` | ?ㅼ?以?議고쉶, 洹몃９?? 罹섎┛??酉?|
+| **notificationService** | `notificationService.ts` | ?뚮┝ 議고쉶, ?쎌쓬 泥섎━, ?ㅼ떆媛?援щ룆 |
+| **reportService** | `reportService.ts` | ?묐갑???좉퀬 (?ㅽ깭?꾟넄援ъ씤?? |
 
-### 10.2 공고/지원 (9개)
+### 9.2 Employer ?쒕퉬??(6媛?
 
-| 훅 | 용도 |
-|----|------|
-| `useJobPostings` | 무한스크롤 공고 목록 |
-| `useJobDetail` | 공고 상세 |
-| `useJobManagement` | 공고 CRUD (구인자용) |
-| `useJobRoles` | 역할 정보 정규화 |
-| `useJobSchedule` | 일정 정보 정규화 |
-| `useApplications` | 지원 제출/취소 |
-| `useAssignmentSelection` | 배정 선택 관리 |
-| `useBookmarks` | 북마크 관리 |
-| `usePostingTypeCounts` | 타입별 공고 개수 |
+| ?쒕퉬??| ?뚯씪 | 二쇱슂 湲곕뒫 |
+|--------|------|----------|
+| **jobManagementService** | `jobManagementService.ts` | 怨듦퀬 CRUD, ?곹깭 愿由?|
+| **applicantManagementService** | `applicantManagementService.ts` | 吏?먯옄 ?뺤젙/嫄곗젅, ?湲곗옄 愿由?|
+| **applicationHistoryService** | `applicationHistoryService.ts` | ?뺤젙/痍⑥냼 ?대젰 異붿쟻, WorkLog ?곕룞 |
+| **confirmedStaffService** | `confirmedStaffService.ts` | ?뺤젙 ?ㅽ깭??愿由? ??븷 蹂寃?|
+| **settlementService** | `settlement/*.ts` | ?뺤궛 怨꾩궛, 泥섎━ (遺꾪븷 援ъ“) |
+| **applicantConversionService** | `applicantConversionService.ts` | 吏?먯옄?믪뒪?쒗봽 蹂??|
 
-### 10.3 스케줄/근무 (4개)
+### 9.3 Admin ?쒕퉬??(4媛?
 
-| 훅 | 용도 |
-|----|------|
-| `useSchedules` | 스케줄 조회/캘린더 |
-| `useWorkLogs` | 근무 기록 조회 |
-| `useQRCode` | QR 스캔/표시 |
-| `useEventQR` | 현장 QR 관리 (구인자용) |
+| ?쒕퉬??| ?뚯씪 | 二쇱슂 湲곕뒫 |
+|--------|------|----------|
+| **adminService** | `adminService.ts` | ??쒕낫???듦퀎, ?ъ슜??愿由?|
+| **announcementService** | `announcementService.ts` | 怨듭??ы빆 CRUD, 諛쒗뻾 愿由?|
+| **tournamentApprovalService** | `tournamentApprovalService.ts` | ??뚭났怨??뱀씤/嫄곗젅 |
+| **inquiryService** | `inquiryService.ts` | 臾몄쓽 愿由? FAQ |
 
-### 10.4 정산/구인자 (8개)
+### 9.4 Infrastructure ?쒕퉬??(17媛?
 
-| 훅 | 용도 |
-|----|------|
-| `useSettlement` | 정산 조회/처리 |
-| `useSettlementDateNavigation` | 정산 날짜 네비게이션 |
-| `useConfirmedStaff` | 확정 스태프 관리 |
-| `useApplicantsByJobPosting` | 공고별 지원자 조회 |
-| `useApplicantMutations` | 지원자 관리 뮤테이션 |
-| `useCancellationManagement` | 취소 요청 관리 |
-| `useStaffConversion` | 스태프 변환 |
-| `useTemplateManager` | 템플릿 관리 |
-
-### 10.5 알림 (3개)
-
-| 훅 | 용도 |
-|----|------|
-| `useNotifications` | 알림 조회/읽음/삭제 |
-| `useNotificationHandler` | 통합 알림 핸들러 |
-| `useDeepLink` | 딥링크 처리 |
-
-### 10.6 관리자 (4개)
-
-| 훅 | 용도 |
-|----|------|
-| `useAdminDashboard` | 관리자 대시보드 |
-| `useAdminReports` | 신고 관리 |
-| `useAnnouncement` | 공지사항 관리 |
-| `useTournamentApproval` | 대회공고 승인 |
-
-### 10.7 인프라 (8개)
-
-| 훅 | 용도 |
-|----|------|
-| `useNetworkStatus` | 네트워크 상태 감지 |
-| `useNavigationTracking` | Analytics 추적 |
-| `useFeatureFlag` | 기능 플래그 |
-| `useVersionCheck` | 앱 버전 체크 |
-| `useRealtimeQuery` | Firestore 실시간 구독 |
-| `useAllowances` | 수당 관리 |
-| `useInquiry` | 문의 관리 |
-| `useClearCache` | 캐시 삭제 |
+| ?쒕퉬??| ?뚯씪 | 二쇱슂 湲곕뒫 |
+|--------|------|----------|
+| **pushNotificationService** | `pushNotificationService.ts` | FCM ?좏겙 愿由? 沅뚰븳 ?붿껌 |
+| **eventQRService** | `eventQRService.ts` | QR ?앹꽦/寃利?(3遺??좏슚) |
+| **deepLinkService** | `deepLinkService.ts` | ?λ쭅???쇱슦??|
+| **analyticsService** | `analyticsService.ts` | ?대깽??異붿쟻 |
+| **crashlyticsService** | `crashlyticsService.ts` | ?먮윭 濡쒓퉭 |
+| **performanceService** | `performanceService.ts` | ?깅뒫 紐⑤땲?곕쭅 |
+| **sessionService** | `sessionService.ts` | ?몄뀡 愿由? ?좏겙 媛깆떊 |
+| **storageService** | `storageService.ts` | ?대?吏 ?낅줈??|
+| **biometricService** | `biometricService.ts` | ?앹껜?몄쬆 |
+| **featureFlagService** | `featureFlagService.ts` | 湲곕뒫 ?뚮옒洹?|
+| **inAppMessageService** | `inAppMessageService.ts` | ?몄빋 硫붿떆吏 |
+| **cacheService** | `cacheService.ts` | 罹먯떆 愿由?|
+| **versionService** | `versionService.ts` | ??踰꾩쟾 泥댄겕 |
+| **templateService** | `templateService.ts` | 怨듦퀬 ?쒗뵆由?|
+| **accountDeletionService** | `accountDeletionService.ts` | 怨꾩젙 ??젣 |
+| **tokenRefreshService** | `tokenRefreshService.ts` | ?좏겙 ?먮룞 媛깆떊 |
+| **searchService** | `searchService.ts` | ?대씪?댁뼵???ъ씠??寃??|
 
 ---
 
-## 관련 문서
+## 10. ???덉씠??援ъ“ (46媛?
 
-- [00-overview.md](./00-overview.md) - 프로젝트 개요
-- [06-firebase.md](./06-firebase.md) - Firebase 연동 전략
-- [12-security.md](./12-security.md) - 보안 설계
-- [22-migration-mapping.md](./22-migration-mapping.md) - 마이그레이션 매핑
+### 10.1 ?몄쬆/沅뚰븳 (6媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useAuth` | ?몄쬆 ?곹깭 ?듯빀 ?섑띁 |
+| `useAuthGuard` | ?쇱슦??沅뚰븳 蹂댄샇 |
+| `useAutoLogin` | ?먮룞 濡쒓렇??|
+| `useBiometricAuth` | ?앹껜?몄쬆 |
+| `useOnboarding` | ?⑤낫???곹깭 |
+| `useAppInitialize` | ??珥덇린??|
+
+### 10.2 怨듦퀬/吏??(9媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useJobPostings` | 臾댄븳?ㅽ겕濡?怨듦퀬 紐⑸줉 |
+| `useJobDetail` | 怨듦퀬 ?곸꽭 |
+| `useJobManagement` | 怨듦퀬 CRUD (援ъ씤?먯슜) |
+| `useJobRoles` | ??븷 ?뺣낫 ?뺢퇋??|
+| `useJobSchedule` | ?쇱젙 ?뺣낫 ?뺢퇋??|
+| `useApplications` | 吏???쒖텧/痍⑥냼 |
+| `useAssignmentSelection` | 諛곗젙 ?좏깮 愿由?|
+| `useBookmarks` | 遺곷쭏??愿由?|
+| `usePostingTypeCounts` | ??낅퀎 怨듦퀬 媛쒖닔 |
+
+### 10.3 ?ㅼ?以?洹쇰Т (4媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useSchedules` | ?ㅼ?以?議고쉶/罹섎┛??|
+| `useWorkLogs` | 洹쇰Т 湲곕줉 議고쉶 |
+| `useQRCode` | QR ?ㅼ틪/?쒖떆 |
+| `useEventQR` | ?꾩옣 QR 愿由?(援ъ씤?먯슜) |
+
+### 10.4 ?뺤궛/援ъ씤??(8媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useSettlement` | ?뺤궛 議고쉶/泥섎━ |
+| `useSettlementDateNavigation` | ?뺤궛 ?좎쭨 ?ㅻ퉬寃뚯씠??|
+| `useConfirmedStaff` | ?뺤젙 ?ㅽ깭??愿由?|
+| `useApplicantsByJobPosting` | 怨듦퀬蹂?吏?먯옄 議고쉶 |
+| `useApplicantMutations` | 吏?먯옄 愿由?裕ㅽ뀒?댁뀡 |
+| `useCancellationManagement` | 痍⑥냼 ?붿껌 愿由?|
+| `useStaffConversion` | ?ㅽ깭??蹂??|
+| `useTemplateManager` | ?쒗뵆由?愿由?|
+
+### 10.5 ?뚮┝ (3媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useNotifications` | ?뚮┝ 議고쉶/?쎌쓬/??젣 |
+| `useNotificationHandler` | ?듯빀 ?뚮┝ ?몃뱾??|
+| `useDeepLink` | ?λ쭅??泥섎━ |
+
+### 10.6 愿由ъ옄 (4媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useAdminDashboard` | 愿由ъ옄 ??쒕낫??|
+| `useAdminReports` | ?좉퀬 愿由?|
+| `useAnnouncement` | 怨듭??ы빆 愿由?|
+| `useTournamentApproval` | ??뚭났怨??뱀씤 |
+
+### 10.7 ?명봽??(8媛?
+
+| ??| ?⑸룄 |
+|----|------|
+| `useNetworkStatus` | ?ㅽ듃?뚰겕 ?곹깭 媛먯? |
+| `useNavigationTracking` | Analytics 異붿쟻 |
+| `useFeatureFlag` | 湲곕뒫 ?뚮옒洹?|
+| `useVersionCheck` | ??踰꾩쟾 泥댄겕 |
+| `useRealtimeQuery` | Firestore ?ㅼ떆媛?援щ룆 |
+| `useAllowances` | ?섎떦 愿由?|
+| `useInquiry` | 臾몄쓽 愿由?|
+| `useClearCache` | 罹먯떆 ??젣 |
 
 ---
 
-*마지막 업데이트: 2026-02-02*
+## 愿??臾몄꽌
+
+- [00-overview.md](./00-overview.md) - ?꾨줈?앺듃 媛쒖슂
+- [06-firebase.md](./06-firebase.md) - Firebase ?곕룞 ?꾨왂
+- [12-security.md](./12-security.md) - 蹂댁븞 ?ㅺ퀎
+- [22-migration-mapping.md](./22-migration-mapping.md) - 留덉씠洹몃젅?댁뀡 留ㅽ븨
+
+---
+
+*留덉?留??낅뜲?댄듃: 2026-02-02*
+

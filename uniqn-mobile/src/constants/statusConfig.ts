@@ -283,7 +283,7 @@ export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
 /**
  * 공고 상태 타입
  */
-export type JobPostingStatusType = 'active' | 'closed' | 'cancelled' | 'draft';
+export type JobPostingStatusType = 'active' | 'closed' | 'cancelled';
 
 /**
  * 공고 상태 설정
@@ -309,13 +309,6 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     textColor: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     hexColor: '#EF4444',
-  },
-  draft: {
-    label: '임시저장',
-    variant: 'secondary',
-    textColor: 'text-gray-500 dark:text-gray-400',
-    bgColor: 'bg-gray-50 dark:bg-surface',
-    hexColor: '#9CA3AF',
   },
 };
 

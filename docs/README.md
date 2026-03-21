@@ -52,3 +52,6 @@
 - 현재 구현 여부는 항상 코드로 재확인합니다.
 - 존재하지 않는 스크립트, 라우트, Functions 이름은 문서에 남기지 않습니다.
 - 계획 문서는 계획이라고 명시하고, 구현 문서는 실제 코드 경로를 함께 적습니다.
+# Canonical Source Of Truth
+Current runtime and API contracts for job postings live in `uniqn-mobile/` and `functions/`.
+`app2/` is kept only as a legacy reference archive and must not be used as the source of truth for V3 canonical schemas.

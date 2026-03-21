@@ -214,7 +214,7 @@ describe('TaxCalculator', () => {
                   },
                   {
                     role: 'other',
-                    customRole: 'photographer',
+                    customRole: 'lighting',
                     salary: { type: 'hourly' as const, amount: 25000 },
                   },
                 ],
@@ -224,13 +224,9 @@ describe('TaxCalculator', () => {
         ],
       };
 
-      const salary = SettlementCalculator.getSalaryForRole(
-        'other',
-        'photographer',
-        posting as never
-      );
+      const salary = SettlementCalculator.getSalaryForRole('other', 'lighting', posting as never);
 
-      expect(salary.amount).toBe(25000);
+      expect(salary.amount).toBe(15000);
     });
 
     it('fixed 공고는 fullSalaryRows에서 4번째 이후 역할 급여도 조회한다', () => {
@@ -272,17 +268,13 @@ describe('TaxCalculator', () => {
           },
           {
             role: 'other',
-            customRole: 'photographer',
+            customRole: 'lighting',
             salary: { type: 'hourly' as const, amount: 25000 },
           },
         ],
       };
 
-      const salary = SettlementCalculator.getSalaryForRole(
-        'other',
-        'photographer',
-        posting as never
-      );
+      const salary = SettlementCalculator.getSalaryForRole('other', 'lighting', posting as never);
 
       expect(salary.amount).toBe(25000);
     });
@@ -498,6 +490,15 @@ describe('SettlementCalculator', () => {
     const mockJobPosting = {
       useSameSalary: false,
       defaultSalary: { type: 'hourly' as const, amount: 15000 },
+      salaryRows: [
+        { role: 'dealer', salary: { type: 'hourly' as const, amount: 20000 } },
+        { role: 'floor', salary: { type: 'hourly' as const, amount: 18000 } },
+        {
+          role: 'other',
+          customRole: 'lighting',
+          salary: { type: 'hourly' as const, amount: 25000 },
+        },
+      ],
       dateRequirements: [
         {
           timeSlots: [
@@ -507,7 +508,7 @@ describe('SettlementCalculator', () => {
                 { role: 'floor', salary: { type: 'hourly' as const, amount: 18000 } },
                 {
                   role: 'other',
-                  customRole: '조명',
+                  customRole: 'lighting',
                   salary: { type: 'hourly' as const, amount: 25000 },
                 },
               ],
@@ -529,7 +530,7 @@ describe('SettlementCalculator', () => {
     it('커스텀 역할 급여 조회', () => {
       const salary = SettlementCalculator.getSalaryForRole(
         'other',
-        '조명',
+        'lighting',
         mockJobPosting as never
       );
       expect(salary.amount).toBe(25000);

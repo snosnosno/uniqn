@@ -204,6 +204,222 @@ service cloud.firestore {
     }
 
     // Tournament 승인 필드만 변경되었는지 확인 (admin 전용)
+    function hasNoLegacyJobPostingFields(data) {
+      return !('detailedAddress' in data) &&
+             !('preQuestions' in data) &&
+             !('usesPreQuestions' in data) &&
+             !('updatedBy' in data);
+    }
+
+    function hasCanonicalJobPostingKeys(data) {
+      return data.keys().hasAll([
+               'schemaVersion',
+               'title',
+               'status',
+               'ownerId',
+               'location',
+               'workDate',
+               'totalPositions',
+               'filledPositions',
+               'createdAt',
+               'updatedAt',
+               'schedule',
+               'roleCatalog',
+               'compensation',
+               'questions'
+             ]) &&
+             data.keys().hasOnly([
+               'schemaVersion',
+               'title',
+               'description',
+               'status',
+               'ownerId',
+               'ownerName',
+               'postingType',
+               'workDate',
+               'workDates',
+               'roleKeys',
+               'totalPositions',
+               'filledPositions',
+               'viewCount',
+               'applicationCount',
+               'createdAt',
+               'updatedAt',
+               'searchIndex',
+               'closedAt',
+               'closedReason',
+               'tags',
+               'contactPhone',
+               'location',
+               'schedule',
+               'roleCatalog',
+               'compensation',
+               'questions',
+               'fixedConfig',
+               'tournamentConfig',
+               'urgentConfig'
+             ]);
+    }
+
+    function validateCanonicalLocation(location) {
+      return location is map &&
+             location.keys().hasAll(['name']) &&
+             location.keys().hasOnly(['name', 'district', 'detailedAddress']) &&
+             location.name is string &&
+             (!('district' in location) || location.district is string) &&
+             (!('detailedAddress' in location) || location.detailedAddress is string);
+    }
+
+    function validateSalaryInfoMap(salary) {
+      return salary is map &&
+             salary.keys().hasAll(['type', 'amount']) &&
+             salary.keys().hasOnly(['type', 'amount']) &&
+             salary.type in ['hourly', 'daily', 'monthly', 'other'] &&
+             salary.amount is number;
+    }
+
+    function validateAllowancesMap(allowances) {
+      return allowances is map &&
+             allowances.keys().hasOnly([
+               'guaranteedHours',
+               'meal',
+               'transportation',
+               'accommodation'
+             ]) &&
+             (!('guaranteedHours' in allowances) || allowances.guaranteedHours is number) &&
+             (!('meal' in allowances) || allowances.meal is number) &&
+             (!('transportation' in allowances) || allowances.transportation is number) &&
+             (!('accommodation' in allowances) || allowances.accommodation is number);
+    }
+
+    function validateTaxableItemsMap(items) {
+      return items is map &&
+             items.keys().hasOnly([
+               'basePay',
+               'meal',
+               'transportation',
+               'accommodation',
+               'additional'
+             ]) &&
+             (!('basePay' in items) || items.basePay is bool) &&
+             (!('meal' in items) || items.meal is bool) &&
+             (!('transportation' in items) || items.transportation is bool) &&
+             (!('accommodation' in items) || items.accommodation is bool) &&
+             (!('additional' in items) || items.additional is bool);
+    }
+
+    function validateTaxSettingsMap(settings) {
+      return settings is map &&
+             settings.keys().hasAll(['type', 'value']) &&
+             settings.keys().hasOnly(['type', 'value', 'taxableItems']) &&
+             settings.type in ['none', 'rate', 'fixed'] &&
+             settings.value is number &&
+             (!('taxableItems' in settings) || validateTaxableItemsMap(settings.taxableItems));
+    }
+
+    function validateCanonicalCompensation(compensation) {
+      return compensation is map &&
+             compensation.keys().hasAll(['mode']) &&
+             compensation.keys().hasOnly(['mode', 'defaultSalary', 'allowances', 'taxSettings']) &&
+             compensation.mode in ['shared', 'by_role'] &&
+             (!('defaultSalary' in compensation) ||
+               validateSalaryInfoMap(compensation.defaultSalary)) &&
+             (!('allowances' in compensation) ||
+               validateAllowancesMap(compensation.allowances)) &&
+             (!('taxSettings' in compensation) ||
+               validateTaxSettingsMap(compensation.taxSettings));
+    }
+
+    function validateCanonicalQuestions(questions) {
+      return questions is map &&
+             questions.keys().hasAll(['items']) &&
+             questions.keys().hasOnly(['items']) &&
+             questions.items is list;
+    }
+
+    function validateCanonicalSchedule(schedule) {
+      return schedule is map && (
+        (
+          schedule.kind == 'dated' &&
+          schedule.keys().hasAll(['kind', 'primaryDate', 'allDates', 'requirements']) &&
+          schedule.keys().hasOnly(['kind', 'primaryDate', 'allDates', 'requirements']) &&
+          schedule.primaryDate is string &&
+          schedule.allDates is list &&
+          schedule.requirements is list
+        ) ||
+        (
+          schedule.kind == 'fixed' &&
+          schedule.keys().hasAll(['kind']) &&
+          schedule.keys().hasOnly([
+            'kind',
+            'daysPerWeek',
+            'startTime',
+            'isStartTimeNegotiable',
+            'roleRequirements'
+          ]) &&
+          (!('daysPerWeek' in schedule) || schedule.daysPerWeek is number) &&
+          (!('startTime' in schedule) || schedule.startTime is string) &&
+          (!('isStartTimeNegotiable' in schedule) || schedule.isStartTimeNegotiable is bool) &&
+          (!('roleRequirements' in schedule) || schedule.roleRequirements is list)
+        )
+      );
+    }
+
+    function validateCanonicalJobPosting(data) {
+      return hasCanonicalJobPostingKeys(data) &&
+             hasNoLegacyJobPostingFields(data) &&
+             data.schemaVersion == 3 &&
+             isSafeText(data.title, 200) &&
+             (!('description' in data) || data.description is string) &&
+             data.ownerId is string &&
+             (!('ownerName' in data) || data.ownerName is string) &&
+             validateCanonicalLocation(data.location) &&
+             data.workDate is string &&
+             (!('workDates' in data) || data.workDates is list) &&
+             (!('roleKeys' in data) || data.roleKeys is list) &&
+             data.totalPositions is number &&
+             data.filledPositions is number &&
+             (!('viewCount' in data) || data.viewCount is number) &&
+             (!('applicationCount' in data) || data.applicationCount is number) &&
+             (!('searchIndex' in data) || data.searchIndex is list) &&
+             (!('closedReason' in data) || data.closedReason in ['manual', 'expired', 'expired_by_work_date']) &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('contactPhone' in data) || isSafeText(data.contactPhone, 25)) &&
+             validateCanonicalSchedule(data.schedule) &&
+             data.roleCatalog is list &&
+             data.roleCatalog.size() > 0 &&
+             validateCanonicalCompensation(data.compensation) &&
+             validateCanonicalQuestions(data.questions) &&
+             data.status in ['active', 'closed', 'cancelled'] &&
+             (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
+             (!('fixedConfig' in data) || (data.postingType == 'fixed' && validateFixedConfig(data.fixedConfig))) &&
+             (!('tournamentConfig' in data) || (data.postingType == 'tournament' && validateTournamentConfig(data.tournamentConfig))) &&
+             (!('urgentConfig' in data) || (data.postingType == 'urgent' && validateUrgentConfig(data.urgentConfig)));
+    }
+
+    function validateCanonicalJobPostingCreate(data) {
+      return validateCanonicalJobPosting(data) &&
+             data.status == 'active' &&
+             !('searchIndex' in data) &&
+             !('closedAt' in data) &&
+             !('closedReason' in data) &&
+             data.filledPositions == 0 &&
+             (!('viewCount' in data) || data.viewCount == 0) &&
+             (!('applicationCount' in data) || data.applicationCount == 0);
+    }
+
+    function validateCanonicalJobPostingUpdate(nextData, currentData) {
+      return validateCanonicalJobPosting(nextData) &&
+             nextData.schemaVersion == currentData.schemaVersion &&
+             nextData.ownerId == currentData.ownerId &&
+             nextData.createdAt == currentData.createdAt &&
+             (!('searchIndex' in nextData) ||
+               nextData.searchIndex == currentData.searchIndex) &&
+             nextData.filledPositions == currentData.filledPositions &&
+             nextData.applicationCount == currentData.applicationCount &&
+             nextData.viewCount == currentData.viewCount;
+    }
+
     function onlyApprovalFieldsChanged() {
       let allowedFields = ['tournamentConfig'];
       let changedFields = request.resource.data.diff(resource.data).affectedKeys();
@@ -447,52 +663,34 @@ service cloud.firestore {
       // Manager and Staff can create job postings and update their own
       // v2.0: 앱 타입 정의에 맞춘 status 허용 값 + location 객체 지원
       allow create: if hasValidRole() &&
-        request.resource.data.keys().hasAll(['title', 'location', 'status', 'ownerId']) &&
-        request.resource.data.ownerId == request.auth.uid &&
-        isSafeText(request.resource.data.title, 200) &&
-        (!('description' in request.resource.data) || request.resource.data.description is string) &&
-        request.resource.data.location is map &&
-        request.resource.data.location.keys().hasAny(['name', 'region', 'district']) &&
-        request.resource.data.status in ['draft', 'active', 'closed', 'cancelled'] &&
-        (!('postingType' in request.resource.data) || request.resource.data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
-        (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
-        (!('contactPhone' in request.resource.data) || isSafeText(request.resource.data.contactPhone, 25)) &&
-        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
-        (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
-        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
+        validateCanonicalJobPostingCreate(request.resource.data) &&
+        request.resource.data.ownerId == request.auth.uid;
         // 추가 필드 검증
-        (!('applicants' in request.resource.data) || request.resource.data.applicants is list) &&
         // 타입별 config 검증 (timestamp 타입 체크 제거됨)
-        (!('fixedConfig' in request.resource.data) || (request.resource.data.postingType == 'fixed' && validateFixedConfig(request.resource.data.fixedConfig))) &&
-        (!('tournamentConfig' in request.resource.data) || (request.resource.data.postingType == 'tournament' && validateTournamentConfig(request.resource.data.tournamentConfig))) &&
-        (!('urgentConfig' in request.resource.data) || (request.resource.data.postingType == 'urgent' && validateUrgentConfig(request.resource.data.urgentConfig)));
 
       // Admin can update any job posting, Manager/Staff can update their own
       // Tournament 승인은 admin만 가능
       allow update: if (isAdmin() &&
-        (!('postingType' in request.resource.data) || request.resource.data.postingType == resource.data.postingType) &&
-        (!('fixedConfig' in request.resource.data) || validateFixedConfig(request.resource.data.fixedConfig)) &&
-        (!('tournamentConfig' in request.resource.data) || validateTournamentConfig(request.resource.data.tournamentConfig)) &&
-        (!('urgentConfig' in request.resource.data) || validateUrgentConfig(request.resource.data.urgentConfig))) ||
+        validateCanonicalJobPostingUpdate(request.resource.data, resource.data) &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.postingType == resource.data.postingType) ||
         (hasValidRole() && request.auth.uid == resource.data.ownerId &&
-         (!('postingType' in request.resource.data) || request.resource.data.postingType == resource.data.postingType) &&
-         (!('fixedConfig' in request.resource.data) || validateFixedConfig(request.resource.data.fixedConfig)) &&
+         validateCanonicalJobPostingUpdate(request.resource.data, resource.data) &&
+         request.resource.data.ownerId == resource.data.ownerId &&
+         request.resource.data.postingType == resource.data.postingType &&
          // Tournament 승인 필드는 admin만 수정 가능
          (!('tournamentConfig' in request.resource.data) ||
-          (resource.data.postingType == 'tournament' &&
-           request.resource.data.tournamentConfig.approvalStatus == resource.data.tournamentConfig.approvalStatus)) &&
-         (!('urgentConfig' in request.resource.data) || validateUrgentConfig(request.resource.data.urgentConfig))) &&
-        (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
-        (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
-        (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
-        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string);
+           (resource.data.postingType == 'tournament' &&
+            request.resource.data.tournamentConfig.approvalStatus == resource.data.tournamentConfig.approvalStatus)));
         // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - updatedAt 검증 제거
 
       // Phase 4: 조회수 증가 권한 (로그인한 사용자는 누구나 조회수 증가 가능)
       // fixedData.viewCount 필드만 변경되는 경우 허용
       allow update: if isSignedIn() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fixedData']) &&
-        request.resource.data.fixedData.diff(resource.data.fixedData).affectedKeys().hasOnly(['viewCount']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+        request.resource.data.viewCount is number &&
+        resource.data.viewCount is number &&
+        request.resource.data.viewCount == resource.data.viewCount + 1;
 
       // Admin can delete any job posting, Manager/Staff can delete their own
       allow delete: if (isAdmin()) ||

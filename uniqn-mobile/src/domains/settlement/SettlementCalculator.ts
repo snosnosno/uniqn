@@ -335,18 +335,6 @@ export class SettlementCalculator {
     }
 
     // 역할별 급여 못 찾으면 defaultSalary 폴백
-    const legacyMatchedRole = (jobPostingCard.dateRequirements ?? [])
-      .flatMap((dateReq) => dateReq.timeSlots ?? [])
-      .flatMap((timeSlot) => timeSlot.roles ?? [])
-      .find(
-        (candidate) =>
-          matchesRequestedRole(candidate.role, candidate.customRole) && candidate.salary
-      );
-
-    if (legacyMatchedRole?.salary) {
-      return legacyMatchedRole.salary;
-    }
-
     if (jobPostingCard.defaultSalary) {
       return jobPostingCard.defaultSalary;
     }
