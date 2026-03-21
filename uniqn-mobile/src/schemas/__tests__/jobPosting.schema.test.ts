@@ -277,6 +277,17 @@ describe('jobPosting schemas', () => {
       ).toBe(false);
     });
 
+    it('accepts legacy operational fields while keeping canonical parsing stable', () => {
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          applicationCount: undefined,
+          applicantCount: 3,
+          lastUpdated: createMockTimestamp(1700000100),
+        }).success
+      ).toBe(true);
+    });
+
     it('rejects non-canonical tournamentConfig keys added by functions or clients', () => {
       expect(
         jobPostingDocumentSchema.safeParse({
@@ -380,6 +391,18 @@ describe('jobPosting schemas', () => {
       expect(parseJobPostingDocuments([createValidDocument(), { bad: true }])).toHaveLength(1);
       expect(isJobPostingDocument(createValidDocument())).toBe(true);
       expect(isJobPostingDocument({ bad: true })).toBe(false);
+    });
+
+    it('normalizes legacy applicantCount to canonical applicationCount on read', () => {
+      const parsed = parseJobPostingDocument({
+        ...createValidDocument(),
+        applicationCount: undefined,
+        applicantCount: 2,
+        lastUpdated: createMockTimestamp(1700000100),
+      });
+
+      expect(parsed).not.toBeNull();
+      expect(parsed?.applicationCount).toBe(2);
     });
 
     it('parses canonical serializer output', () => {

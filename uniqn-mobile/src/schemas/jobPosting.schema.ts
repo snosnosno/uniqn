@@ -452,8 +452,11 @@ export const jobPostingDocumentSchema = z
     filledPositions: z.number(),
     viewCount: z.number().optional(),
     applicationCount: z.number().optional(),
+    // Legacy derived counters may still exist on persisted documents.
+    applicantCount: z.number().optional(),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
+    lastUpdated: optionalTimestampSchema,
     searchIndex: z.array(z.string()).optional(),
     closedAt: optionalTimestampSchema,
     closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
@@ -476,10 +479,16 @@ export const jobPostingDocumentSchema = z
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
 
 function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDocumentV3 {
-  const { searchIndex: _searchIndex, ...rest } = document;
+  const {
+    searchIndex: _searchIndex,
+    applicantCount: legacyApplicantCount,
+    lastUpdated: _legacyLastUpdated,
+    ...rest
+  } = document;
 
   return {
     ...rest,
+    applicationCount: rest.applicationCount ?? legacyApplicantCount,
     closedAt: rest.closedAt ?? undefined,
     tournamentConfig: rest.tournamentConfig
       ? {
