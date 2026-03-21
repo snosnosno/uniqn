@@ -1,9 +1,3 @@
-/**
- * UNIQN Mobile - JobPosting Repository 쓰기/트랜잭션 연산
- *
- * @description 공고 생성, 수정, 삭제, 마감, 재오픈, 정산 설정 변경 등의 쓰기 연산
- */
-
 import {
   collection,
   doc,
@@ -24,7 +18,11 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
-import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
+import {
+  FIXED_POSTING_DURATION_DAYS,
+  mergeJobPostingInput,
+  serializeJobPostingV3,
+} from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
 import type { StaffRole } from '@/types/role';
 import type {
@@ -48,15 +46,18 @@ export async function incrementViewCount(jobPostingId: string): Promise<void> {
       viewCount: increment(1),
     });
 
-    logger.debug('조회수 증가', { jobPostingId });
+    logger.debug('Job posting view count incremented', { jobPostingId });
   } catch (error) {
-    logger.warn('조회수 증가 실패', { jobPostingId, error: toError(error) });
+    logger.warn('Job posting view count increment failed', {
+      jobPostingId,
+      error: toError(error),
+    });
   }
 }
 
 export async function updateStatus(jobPostingId: string, status: JobPostingStatus): Promise<void> {
   try {
-    logger.info('공고 상태 변경', { jobPostingId, status });
+    logger.info('Job posting status update', { jobPostingId, status });
 
     const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
 
@@ -65,14 +66,14 @@ export async function updateStatus(jobPostingId: string, status: JobPostingStatu
       updatedAt: serverTimestamp(),
     });
 
-    logger.info('공고 상태 변경 완료', { jobPostingId, status });
+    logger.info('Job posting status updated', { jobPostingId, status });
   } catch (error) {
-    logger.error('공고 상태 변경 실패', toError(error), {
+    logger.error('Job posting status update failed', toError(error), {
       jobPostingId,
       status,
     });
     throw handleServiceError(error, {
-      operation: '공고 상태 변경',
+      operation: 'Job posting status update',
       component: 'JobPostingRepository',
       context: { jobPostingId, status },
     });
@@ -85,7 +86,7 @@ async function loadJobPostingForTransaction(transaction: Transaction, jobPosting
 
   if (!jobDoc.exists()) {
     throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-      userMessage: '존재하지 않는 공고입니다.',
+      userMessage: 'Job posting does not exist.',
     });
   }
 
@@ -96,7 +97,7 @@ async function loadJobPostingForTransaction(transaction: Transaction, jobPosting
 
   if (!jobPosting) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '공고 데이터가 올바르지 않습니다',
+      userMessage: 'Job posting data is invalid.',
     });
   }
 
@@ -121,6 +122,23 @@ function assertJobPostingStatus(
       userMessage,
     });
   }
+}
+
+function assertCanonicalSerializedJobPosting(
+  document: JobPosting,
+  userMessage: string,
+  context: Record<string, unknown>
+): JobPosting {
+  const parsed = parseJobPostingDocument(document);
+
+  if (parsed) {
+    return parsed;
+  }
+
+  logger.error('Canonical job posting validation failed before write', context);
+  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+    userMessage,
+  });
 }
 
 type SettlementRolePayload = {
@@ -175,7 +193,7 @@ export async function createWithTransaction(
   context: CreateJobPostingContext
 ): Promise<CreateJobPostingResult> {
   try {
-    logger.info('공고 생성', {
+    logger.info('Job posting create', {
       ownerId: context.ownerId,
       title: input.title,
     });
@@ -199,9 +217,11 @@ export async function createWithTransaction(
       ...(input.postingType === 'fixed'
         ? {
             fixedConfig: {
-              durationDays: 7 as const,
+              durationDays: FIXED_POSTING_DURATION_DAYS,
               createdAt: now,
-              expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+              expiresAt: Timestamp.fromDate(
+                new Date(Date.now() + FIXED_POSTING_DURATION_DAYS * 24 * 60 * 60 * 1000)
+              ),
             },
           }
         : {}),
@@ -215,32 +235,29 @@ export async function createWithTransaction(
       createdAt: now,
       updatedAt: now,
     });
+    const jobPosting = assertCanonicalSerializedJobPosting(
+      serialized,
+      'Created job posting does not satisfy the canonical contract.',
+      {
+        ownerId: context.ownerId,
+        title: input.title,
+      }
+    );
     const { id: _id, ...jobPostingData } = removeUndefined(
       serialized as unknown as Record<string, unknown>
     );
 
     await setDoc(newDocRef, jobPostingData);
 
-    const jobPosting = parseJobPostingDocument({
-      id: newDocRef.id,
-      ...jobPostingData,
-    });
-
-    if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '생성된 공고 데이터를 확인할 수 없습니다',
-      });
-    }
-
-    logger.info('공고 생성 완료', { id: newDocRef.id });
+    logger.info('Job posting created', { id: newDocRef.id });
 
     return { id: newDocRef.id, jobPosting };
   } catch (error) {
-    logger.error('공고 생성 실패', toError(error), {
+    logger.error('Job posting create failed', toError(error), {
       ownerId: context.ownerId,
     });
     throw handleServiceError(error, {
-      operation: '공고 생성',
+      operation: 'Job posting create',
       component: 'JobPostingRepository',
       context: { ownerId: context.ownerId },
     });
@@ -253,7 +270,7 @@ export async function updateWithTransaction(
   ownerId: string
 ): Promise<JobPosting> {
   try {
-    logger.info('공고 수정 (트랜잭션)', { jobPostingId, ownerId });
+    logger.info('Job posting update transaction', { jobPostingId, ownerId });
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -261,14 +278,14 @@ export async function updateWithTransaction(
         jobPostingId
       );
 
-      assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
+      assertJobPostingOwner(currentData, ownerId, 'Only the owner can update this job posting.');
 
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       const hasScheduleMutation = input.schedule !== undefined || input.roleCatalog !== undefined;
 
       if (hasConfirmedApplicants && hasScheduleMutation) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
+          userMessage: 'Cannot change schedule or roles after applicants are confirmed.',
         });
       }
 
@@ -282,36 +299,33 @@ export async function updateWithTransaction(
         createdAt: currentData.createdAt,
         updatedAt,
       });
+      const validatedPosting = assertCanonicalSerializedJobPosting(
+        serialized,
+        'Updated job posting does not satisfy the canonical contract.',
+        {
+          jobPostingId,
+          ownerId,
+        }
+      );
       const { id: _id, ...nextDocument } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
 
       transaction.set(jobRef, nextDocument);
 
-      const parsed = parseJobPostingDocument({
-        id: jobPostingId,
-        ...nextDocument,
-      });
-
-      if (!parsed) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '수정된 공고 데이터를 확인할 수 없습니다',
-        });
-      }
-
-      return parsed;
+      return validatedPosting;
     });
 
-    logger.info('공고 수정 완료', { jobPostingId });
+    logger.info('Job posting updated', { jobPostingId });
 
     return result;
   } catch (error) {
     if (isAppError(error)) {
       throw error;
     }
-    logger.error('공고 수정 실패', toError(error), { jobPostingId });
+    logger.error('Job posting update failed', toError(error), { jobPostingId });
     throw handleServiceError(error, {
-      operation: '공고 수정',
+      operation: 'Job posting update',
       component: 'JobPostingRepository',
       context: { jobPostingId },
     });
@@ -320,7 +334,7 @@ export async function updateWithTransaction(
 
 export async function deleteWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
   try {
-    logger.info('공고 삭제 (트랜잭션)', { jobPostingId, ownerId });
+    logger.info('Job posting delete transaction', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -328,12 +342,12 @@ export async function deleteWithTransaction(jobPostingId: string, ownerId: strin
         jobPostingId
       );
 
-      assertJobPostingOwner(currentData, ownerId, '본인 공고만 삭제할 수 있습니다');
+      assertJobPostingOwner(currentData, ownerId, 'Only the owner can delete this job posting.');
 
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       if (hasConfirmedApplicants) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
+          userMessage: 'Cannot delete a posting with confirmed applicants. Close it instead.',
         });
       }
 
@@ -343,14 +357,14 @@ export async function deleteWithTransaction(jobPostingId: string, ownerId: strin
       });
     });
 
-    logger.info('공고 삭제 완료', { jobPostingId });
+    logger.info('Job posting deleted', { jobPostingId });
   } catch (error) {
     if (isAppError(error)) {
       throw error;
     }
-    logger.error('공고 삭제 실패', toError(error), { jobPostingId });
+    logger.error('Job posting delete failed', toError(error), { jobPostingId });
     throw handleServiceError(error, {
-      operation: '공고 삭제',
+      operation: 'Job posting delete',
       component: 'JobPostingRepository',
       context: { jobPostingId },
     });
@@ -359,7 +373,7 @@ export async function deleteWithTransaction(jobPostingId: string, ownerId: strin
 
 export async function closeWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
   try {
-    logger.info('공고 마감 (트랜잭션)', { jobPostingId, ownerId });
+    logger.info('Job posting close transaction', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -367,11 +381,11 @@ export async function closeWithTransaction(jobPostingId: string, ownerId: string
         jobPostingId
       );
 
-      assertJobPostingOwner(currentData, ownerId, '본인 공고만 마감할 수 있습니다');
+      assertJobPostingOwner(currentData, ownerId, 'Only the owner can close this job posting.');
       assertJobPostingStatus(
         currentData.status,
         STATUS.JOB_POSTING.CLOSED,
-        '이미 마감된 공고입니다'
+        'Job posting is already closed.'
       );
 
       transaction.update(jobRef, {
@@ -382,14 +396,14 @@ export async function closeWithTransaction(jobPostingId: string, ownerId: string
       });
     });
 
-    logger.info('공고 마감 완료', { jobPostingId });
+    logger.info('Job posting closed', { jobPostingId });
   } catch (error) {
     if (isAppError(error)) {
       throw error;
     }
-    logger.error('공고 마감 실패', toError(error), { jobPostingId });
+    logger.error('Job posting close failed', toError(error), { jobPostingId });
     throw handleServiceError(error, {
-      operation: '공고 마감',
+      operation: 'Job posting close',
       component: 'JobPostingRepository',
       context: { jobPostingId },
     });
@@ -398,7 +412,7 @@ export async function closeWithTransaction(jobPostingId: string, ownerId: string
 
 export async function reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
   try {
-    logger.info('공고 재오픈 (트랜잭션)', { jobPostingId, ownerId });
+    logger.info('Job posting reopen transaction', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -406,16 +420,16 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
         jobPostingId
       );
 
-      assertJobPostingOwner(currentData, ownerId, '본인 공고만 재오픈할 수 있습니다');
+      assertJobPostingOwner(currentData, ownerId, 'Only the owner can reopen this job posting.');
       assertJobPostingStatus(
         currentData.status,
         STATUS.JOB_POSTING.ACTIVE,
-        '이미 활성 상태인 공고입니다'
+        'Job posting is already active.'
       );
 
       if (currentData.status === STATUS.JOB_POSTING.CANCELLED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요',
+          userMessage: 'Cancelled postings cannot be reopened. Create a new posting instead.',
         });
       }
 
@@ -427,22 +441,24 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
       if (currentData.postingType === 'fixed') {
         updateData.fixedConfig = {
           ...currentData.fixedConfig,
-          durationDays: 7,
-          expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+          durationDays: FIXED_POSTING_DURATION_DAYS,
+          expiresAt: Timestamp.fromDate(
+            new Date(Date.now() + FIXED_POSTING_DURATION_DAYS * 24 * 60 * 60 * 1000)
+          ),
         };
       }
 
       transaction.update(jobRef, updateData);
     });
 
-    logger.info('공고 재오픈 완료', { jobPostingId });
+    logger.info('Job posting reopened', { jobPostingId });
   } catch (error) {
     if (isAppError(error)) {
       throw error;
     }
-    logger.error('공고 재오픈 실패', toError(error), { jobPostingId });
+    logger.error('Job posting reopen failed', toError(error), { jobPostingId });
     throw handleServiceError(error, {
-      operation: '공고 재오픈',
+      operation: 'Job posting reopen',
       component: 'JobPostingRepository',
       context: { jobPostingId },
     });
@@ -459,7 +475,7 @@ export async function updateSettlementSettings(
   ownerId: string
 ): Promise<void> {
   try {
-    logger.info('정산 설정 저장', { jobPostingId, ownerId });
+    logger.info('Settlement settings update', { jobPostingId, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -467,7 +483,7 @@ export async function updateSettlementSettings(
         jobPostingId
       );
 
-      assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
+      assertJobPostingOwner(currentData, ownerId, 'Only the owner can update this job posting.');
 
       const mergedInput: CreateJobPostingInput = mergeJobPostingInput(currentData, {
         roleCatalog: mergeSettlementRoles(currentData.roleCatalog, data.roles),
@@ -486,6 +502,14 @@ export async function updateSettlementSettings(
         createdAt: currentData.createdAt,
         updatedAt,
       });
+      assertCanonicalSerializedJobPosting(
+        serialized,
+        'Settlement settings update produced a non-canonical job posting.',
+        {
+          jobPostingId,
+          ownerId,
+        }
+      );
       const { id: _id, ...nextDocument } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
@@ -493,14 +517,14 @@ export async function updateSettlementSettings(
       transaction.set(jobRef, nextDocument);
     });
 
-    logger.info('정산 설정 저장 완료', { jobPostingId });
+    logger.info('Settlement settings updated', { jobPostingId });
   } catch (error) {
     if (isAppError(error)) {
       throw error;
     }
-    logger.error('정산 설정 저장 실패', toError(error), { jobPostingId });
+    logger.error('Settlement settings update failed', toError(error), { jobPostingId });
     throw handleServiceError(error, {
-      operation: '정산 설정 저장',
+      operation: 'Settlement settings update',
       component: 'JobPostingRepository',
       context: { jobPostingId, ownerId },
     });
@@ -509,7 +533,7 @@ export async function updateSettlementSettings(
 
 export async function getStatsByOwnerId(ownerId: string): Promise<JobPostingStats> {
   try {
-    logger.info('소유자별 공고 통계 조회', { ownerId });
+    logger.info('Job posting owner stats query', { ownerId });
 
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const q = query(jobsRef, where(FIELDS.JOB_POSTING.ownerId, '==', ownerId));
@@ -549,13 +573,13 @@ export async function getStatsByOwnerId(ownerId: string): Promise<JobPostingStat
       }
     });
 
-    logger.info('소유자별 공고 통계 조회 완료', { ownerId, stats });
+    logger.info('Job posting owner stats queried', { ownerId, stats });
 
     return stats;
   } catch (error) {
-    logger.error('소유자별 공고 통계 조회 실패', toError(error), { ownerId });
+    logger.error('Job posting owner stats query failed', toError(error), { ownerId });
     throw handleServiceError(error, {
-      operation: '소유자별 공고 통계 조회',
+      operation: 'Job posting owner stats query',
       component: 'JobPostingRepository',
       context: { ownerId },
     });
@@ -568,7 +592,7 @@ export async function bulkUpdateStatus(
   ownerId: string
 ): Promise<number> {
   try {
-    logger.info('공고 상태 일괄 변경', {
+    logger.info('Bulk job posting status update', {
       count: jobPostingIds.length,
       status,
       ownerId,
@@ -608,16 +632,16 @@ export async function bulkUpdateStatus(
       successCount += batchCount;
     }
 
-    logger.info('공고 상태 일괄 변경 완료', { successCount });
+    logger.info('Bulk job posting status updated', { successCount });
 
     return successCount;
   } catch (error) {
-    logger.error('공고 상태 일괄 변경 실패', toError(error), {
+    logger.error('Bulk job posting status update failed', toError(error), {
       status,
       ownerId,
     });
     throw handleServiceError(error, {
-      operation: '공고 상태 일괄 변경',
+      operation: 'Bulk job posting status update',
       component: 'JobPostingRepository',
       context: { status, ownerId },
     });

@@ -36,6 +36,76 @@ function getFormDetailedAddress(formData: JobPostingFormData): string | undefine
   return normalizeOptionalText(formData.location?.detailedAddress ?? formData.detailedAddress);
 }
 
+function toCanonicalPostingLocation(
+  location: JobPostingFormData['location'] | JobPostingDraft['location'] | JobPosting['location']
+) {
+  if (!location) {
+    return null;
+  }
+
+  const district = location.district ?? location.address;
+  const detailedAddress = location.detailedAddress;
+
+  return {
+    name: location.name,
+    ...(district !== undefined ? { district } : {}),
+    ...(detailedAddress !== undefined ? { detailedAddress } : {}),
+  };
+}
+
+function toCreateInputLocation(
+  location: JobPostingDraft['location'] | JobPosting['location']
+): CreateJobPostingInput['location'] | null {
+  if (!location) {
+    return null;
+  }
+
+  const district = normalizeOptionalText(location.district ?? location.address);
+  const detailedAddress = normalizeOptionalText(location.detailedAddress);
+
+  return {
+    name: location.name.trim(),
+    ...(district ? { district } : {}),
+    ...(detailedAddress ? { detailedAddress } : {}),
+  };
+}
+
+function toUpdateInputLocation(
+  location: JobPostingDraft['location']
+): UpdateJobPostingInput['location'] {
+  if (!location) {
+    return undefined;
+  }
+
+  const district = normalizeOptionalText(location.district ?? location.address);
+  const detailedAddress = normalizeOptionalText(location.detailedAddress);
+  const hasDistrictField =
+    Object.prototype.hasOwnProperty.call(location, 'district') ||
+    Object.prototype.hasOwnProperty.call(location, 'address');
+  const hasDetailedAddressField = Object.prototype.hasOwnProperty.call(location, 'detailedAddress');
+
+  return {
+    name: location.name.trim(),
+    ...(hasDistrictField ? { district } : {}),
+    ...(hasDetailedAddressField ? { detailedAddress } : {}),
+  };
+}
+
+function toFormLocation(
+  location: JobPostingDraft['location'] | JobPosting['location']
+): JobPostingFormData['location'] {
+  if (!location) {
+    return null;
+  }
+
+  return {
+    ...location,
+    ...((location.address ?? location.district)
+      ? { address: location.address ?? location.district }
+      : {}),
+  };
+}
+
 function toCatalogEntry(role: FormRoleWithCount): PostingRoleCatalogEntry {
   const matchedRole = findRoleOptionByName(role.name);
 
@@ -219,17 +289,14 @@ export function formDataToDraft(formData: JobPostingFormData): JobPostingDraft {
     title: formData.title,
     description: formData.description,
     location: (() => {
-      if (!formData.location) {
+      const canonicalLocation = toCanonicalPostingLocation(formData.location);
+
+      if (!canonicalLocation) {
         return null;
       }
 
-      const { detailedAddress: _ignoredDetailedAddress, ...baseLocation } =
-        formData.location as typeof formData.location & {
-          detailedAddress?: string;
-        };
-
       return {
-        ...baseLocation,
+        ...canonicalLocation,
         ...(detailedAddress ? { detailedAddress } : {}),
       };
     })(),
@@ -319,7 +386,7 @@ export function draftToFormData(draft: JobPostingDraft): JobPostingFormData {
     ...INITIAL_JOB_POSTING_FORM_DATA,
     postingType: draft.postingType,
     title: draft.title,
-    location: draft.location,
+    location: toFormLocation(draft.location),
     detailedAddress: draft.location?.detailedAddress ?? '',
     contactPhone: draft.contactPhone,
     description: draft.description,
@@ -366,15 +433,7 @@ export function applyFormDataPatch(
 }
 
 export function draftToCreateJobPostingInput(draft: JobPostingDraft): CreateJobPostingInput {
-  const location =
-    draft.location === null
-      ? null
-      : {
-          ...draft.location,
-          ...(normalizeOptionalText(draft.location.detailedAddress)
-            ? { detailedAddress: normalizeOptionalText(draft.location.detailedAddress) }
-            : {}),
-        };
+  const location = toCreateInputLocation(draft.location);
 
   return {
     postingType: draft.postingType,
@@ -445,13 +504,7 @@ export function draftToUpdateJobPostingInput(
     postingType: canonicalInput.postingType,
     title: canonicalInput.title,
     description: normalizeOptionalText(draft.description),
-    location:
-      draft.location === null
-        ? undefined
-        : {
-            ...draft.location,
-            detailedAddress: normalizeOptionalText(draft.location.detailedAddress),
-          },
+    location: toUpdateInputLocation(draft.location),
     contactPhone: normalizeOptionalText(draft.contactPhone),
     tags: canonicalInput.tags,
     compensation: canonicalInput.compensation,
@@ -551,7 +604,7 @@ export function jobPostingToDraft(posting: JobPosting): JobPostingDraft {
     postingType: posting.postingType ?? 'regular',
     title: posting.title,
     description: posting.description ?? '',
-    location: posting.location ?? null,
+    location: toCanonicalPostingLocation(posting.location),
     contactPhone: posting.contactPhone ?? '',
     tags: posting.tags ?? [],
     schedule:

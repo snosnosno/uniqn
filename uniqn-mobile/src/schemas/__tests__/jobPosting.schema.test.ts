@@ -142,7 +142,7 @@ describe('jobPosting schemas', () => {
         description: 'Canonical create payload',
         location: {
           name: 'Seoul',
-          address: 'Gangnam-gu',
+          district: 'Gangnam-gu',
           detailedAddress: 'Teheran-ro 123',
         },
         contactPhone: '010-1234-5678',
@@ -173,6 +173,41 @@ describe('jobPosting schemas', () => {
       });
 
       expect(result.success).toBe(true);
+    });
+
+    it('rejects postingType and schedule.kind mismatches', () => {
+      expect(
+        createJobPostingSchema.safeParse({
+          postingType: 'fixed',
+          title: 'Fixed Hiring',
+          location: { name: 'Seoul', district: 'Gangnam-gu' },
+          schedule: {
+            kind: 'dated',
+            primaryDate: '2026-04-01',
+            allDates: ['2026-04-01'],
+            requirements: [],
+          },
+          roleCatalog: [{ role: 'dealer' }],
+          compensation: { mode: 'shared' },
+          questions: { items: [] },
+        }).success
+      ).toBe(false);
+
+      expect(
+        createJobPostingSchema.safeParse({
+          postingType: 'regular',
+          title: 'Regular Hiring',
+          location: { name: 'Seoul', district: 'Gangnam-gu' },
+          schedule: {
+            kind: 'fixed',
+            daysPerWeek: 5,
+            roleRequirements: [{ role: 'dealer', count: 1 }],
+          },
+          roleCatalog: [{ role: 'dealer' }],
+          compensation: { mode: 'shared' },
+          questions: { items: [] },
+        }).success
+      ).toBe(false);
     });
 
     it('rejects urgent postings beyond the 7 day limit', () => {
@@ -209,6 +244,22 @@ describe('jobPosting schemas', () => {
   describe('jobPostingDocumentSchema', () => {
     it('accepts strict V3 job posting documents', () => {
       expect(jobPostingDocumentSchema.safeParse(createValidDocument()).success).toBe(true);
+    });
+
+    it('rejects postingType and schedule.kind mismatches or stale derived date fields', () => {
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          postingType: 'fixed',
+        }).success
+      ).toBe(false);
+
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          workDate: '2026-04-02',
+        }).success
+      ).toBe(false);
     });
 
     it('rejects unknown fields and malformed role values', () => {
@@ -254,11 +305,52 @@ describe('jobPosting schemas', () => {
         }).success
       ).toBe(false);
     });
+
+    it('rejects invalid fixed duration policies and requires type-specific configs', () => {
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          postingType: 'fixed',
+          workDate: '',
+          workDates: undefined,
+          schedule: {
+            kind: 'fixed',
+            daysPerWeek: 5,
+            roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
+          },
+        }).success
+      ).toBe(false);
+
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          postingType: 'fixed',
+          workDate: '',
+          workDates: undefined,
+          schedule: {
+            kind: 'fixed',
+            daysPerWeek: 5,
+            roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
+          },
+          fixedConfig: {
+            durationDays: 30,
+            createdAt: createMockTimestamp(),
+            expiresAt: createMockTimestamp(1700001000),
+          },
+        }).success
+      ).toBe(false);
+    });
   });
 
   describe('parse helpers', () => {
     it('parses valid V3 documents and rejects legacy documents', () => {
       expect(parseJobPostingDocument(createValidDocument())?.id).toBe('job-1');
+      expect(
+        parseJobPostingDocument({
+          ...createValidDocument(),
+          postingType: undefined,
+        })?.postingType
+      ).toBe('regular');
       expect(
         parseJobPostingDocument({
           ...createValidDocument(),
@@ -298,8 +390,7 @@ describe('jobPosting schemas', () => {
           description: 'serializer validation',
           location: {
             name: 'Seoul',
-            address: 'Gangnam-gu',
-            coordinates: { latitude: 37.5, longitude: 127.0 },
+            district: 'Gangnam-gu',
             detailedAddress: 'Teheran-ro 123',
           },
           contactPhone: '010-1234-5678',
@@ -337,10 +428,18 @@ describe('jobPosting schemas', () => {
         }
       );
 
-      expect(parseJobPostingDocument(serialized)).not.toBeNull();
+      const parsed = parseJobPostingDocument(serialized);
+
+      expect(parsed).not.toBeNull();
       expect(serialized.location).toEqual({
         name: 'Seoul',
         district: 'Gangnam-gu',
+        detailedAddress: 'Teheran-ro 123',
+      });
+      expect(parsed?.location).toEqual({
+        name: 'Seoul',
+        district: 'Gangnam-gu',
+        address: 'Gangnam-gu',
         detailedAddress: 'Teheran-ro 123',
       });
     });

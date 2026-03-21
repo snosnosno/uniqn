@@ -4,6 +4,7 @@ import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
 import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
+import { parseJobPostingDocument } from '@/schemas';
 import {
   buildCreateJobPostingInput,
   buildJobPostingFormData,
@@ -72,7 +73,7 @@ function createPosting(): JobPosting {
     updatedAt: new Date(),
     location: {
       name: 'Seoul Gangnam',
-      address: 'Teheran-ro',
+      district: 'Teheran-ro',
       detailedAddress: 'Suite 101',
     },
     schedule: {
@@ -148,6 +149,11 @@ describe('job posting submission helpers', () => {
     expect(result.roleCatalog).toEqual([
       { role: 'dealer', salary: { type: 'hourly', amount: 12000 } },
     ]);
+    expect(result.location).toEqual({
+      name: 'Seoul Gangnam',
+      district: 'Teheran-ro',
+    });
+    expect(Object.prototype.hasOwnProperty.call(result.location, 'address')).toBe(false);
     expect(result.compensation).toEqual({
       mode: 'shared',
       defaultSalary: { type: 'hourly', amount: 12000 },
@@ -205,6 +211,8 @@ describe('job posting submission helpers', () => {
     const result = buildJobPostingFormData(createPosting());
 
     expect(result.workDate).toBe('2026-03-25');
+    expect(result.location?.address).toBe('Teheran-ro');
+    expect(result.location?.district).toBe('Teheran-ro');
     expect(result.detailedAddress).toBe('Suite 101');
     expect(result.dateSpecificRequirements).toHaveLength(2);
     expect(result.roles[0]?.name).toBe('딜러');
@@ -266,5 +274,26 @@ describe('job posting submission helpers', () => {
     const updateInput = buildUpdateJobPostingInput(nextFormData);
 
     expect(updateInput.location?.detailedAddress).toBe('Room 202');
+  });
+
+  it('preserves canonical location data through serialize -> parse -> form round-trip', () => {
+    const createInput = buildCreateJobPostingInput(createFormData());
+    const serialized = serializeJobPostingV3(createInput, {
+      ownerId: 'employer-1',
+      ownerName: 'Owner',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const parsed = parseJobPostingDocument(serialized);
+
+    expect(parsed).not.toBeNull();
+
+    const formData = buildJobPostingFormData(parsed!);
+
+    expect(formData.location).toEqual({
+      name: 'Seoul Gangnam',
+      district: 'Teheran-ro',
+      address: 'Teheran-ro',
+    });
   });
 });
