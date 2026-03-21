@@ -32,7 +32,7 @@ export default function JobListScreen() {
     return result;
   }, [selectedType]);
 
-  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, refresh, loadMore } =
+  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({ filters });
 
   const handleJobPress = useCallback((jobId: string) => {
@@ -66,6 +66,7 @@ export default function JobListScreen() {
           isRefreshing={isRefreshing}
           isFetchingMore={isFetchingMore}
           hasMore={hasMore}
+          error={error}
           onRefresh={refresh}
           onLoadMore={loadMore}
           onJobPress={handleJobPress}
