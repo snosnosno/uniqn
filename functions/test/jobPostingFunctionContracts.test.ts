@@ -227,4 +227,86 @@ describe("job posting function canonical contracts", () => {
     expect(posting.applicationCount).to.equal(1);
     expect(posting.updatedAt).to.exist;
   });
+
+  it("updateJobPostingApplicantCount skips no-op creates when the canonical counter is already current", async () => {
+    const db = admin.firestore();
+    const stableUpdatedAt = admin.firestore.Timestamp.fromDate(
+      new Date("2026-04-01T10:00:00.000Z"),
+    );
+
+    await db
+      .collection("jobPostings")
+      .doc("job-count-stable")
+      .set(createCanonicalTournamentPosting({
+        applicationCount: 1,
+        updatedAt: stableUpdatedAt,
+      }));
+
+    await db.collection("applications").doc("app-stable").set({
+      jobPostingId: "job-count-stable",
+      applicantId: "staff-1",
+      status: "submitted",
+    });
+
+    const afterSnapshot = await db.collection("applications").doc("app-stable").get();
+
+    await updateJobPostingApplicantCount.run({
+      params: { applicationId: "app-stable" },
+      data: {
+        before: { exists: false },
+        after: afterSnapshot,
+      },
+    } as never);
+
+    const postingSnapshot = await db.collection("jobPostings").doc("job-count-stable").get();
+    const posting = postingSnapshot.data() as Record<string, unknown>;
+
+    expect(posting.applicationCount).to.equal(1);
+    expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(true);
+  });
+
+  it("updateJobPostingApplicantCount skips status-only churn when count membership did not change", async () => {
+    const db = admin.firestore();
+    const stableUpdatedAt = admin.firestore.Timestamp.fromDate(
+      new Date("2026-04-01T11:00:00.000Z"),
+    );
+
+    await db
+      .collection("jobPostings")
+      .doc("job-count-status")
+      .set(createCanonicalTournamentPosting({
+        applicationCount: 1,
+        updatedAt: stableUpdatedAt,
+      }));
+
+    await db.collection("applications").doc("app-status").set({
+      jobPostingId: "job-count-status",
+      applicantId: "staff-1",
+      status: "submitted",
+    });
+
+    const beforeSnapshot = await db.collection("applications").doc("app-status").get();
+
+    await db.collection("applications").doc("app-status").set({
+      jobPostingId: "job-count-status",
+      applicantId: "staff-1",
+      status: "confirmed",
+    });
+
+    const afterSnapshot = await db.collection("applications").doc("app-status").get();
+
+    await updateJobPostingApplicantCount.run({
+      params: { applicationId: "app-status" },
+      data: {
+        before: beforeSnapshot,
+        after: afterSnapshot,
+      },
+    } as never);
+
+    const postingSnapshot = await db.collection("jobPostings").doc("job-count-status").get();
+    const posting = postingSnapshot.data() as Record<string, unknown>;
+
+    expect(posting.applicationCount).to.equal(1);
+    expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(true);
+  });
 });

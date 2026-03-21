@@ -1,39 +1,124 @@
-import type { JobPosting, PostingFacts } from '@/types';
+import type {
+  JobPosting,
+  PostingApplicationEligibility,
+  PostingFacts,
+  PostingRoleAvailability,
+  PostingSalaryDisplay,
+  PostingScheduleDisplay,
+} from '@/types';
+import { FIXED_TIME_MARKER } from '@/types/assignment';
+import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import {
   getPostingDefaultSalary,
+  getPostingDateGroups,
+  getPostingDateRequirements,
+  getPostingLegacyTimeSlot,
   getPostingLocationLabels,
   getPostingRequiredRolesWithCount,
+  getPostingRoleKey,
   getPostingRoleStats,
   getPostingSalaryRows,
   getPostingTaxLabel,
 } from './core';
-import {
-  selectPostingApplicationEligibility,
-  selectPostingRoleAvailability,
-  selectPostingSalaryDisplay,
-  selectPostingScheduleDisplay,
-  selectPostingWorkflow,
-} from './selectors';
+import { selectPostingWorkflow } from './selectors';
 
 export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const workflow = selectPostingWorkflow(posting);
   const location = getPostingLocationLabels(posting);
+  const roleStats = getPostingRoleStats(posting);
+  const roleAvailabilityItems = roleStats.map((role) => {
+    const remaining = Math.max(0, role.count - role.filled);
+
+    return {
+      key: role.role === 'other' && role.customRole ? role.customRole : getPostingRoleKey(role),
+      role: role.role,
+      customRole: role.customRole,
+      roleLabel: getRoleDisplayName(role.role, role.customRole),
+      count: role.count,
+      filled: role.filled,
+      remaining,
+      salary: role.salary,
+      isAvailable: remaining > 0,
+    };
+  });
+  const availableRoleItems = roleAvailabilityItems.filter((item) => item.isAvailable);
+  const roleAvailability: PostingRoleAvailability = {
+    items: roleAvailabilityItems,
+    availableItems: availableRoleItems,
+    totalCount: roleAvailabilityItems.reduce((sum, item) => sum + item.count, 0),
+    filledCount: roleAvailabilityItems.reduce((sum, item) => sum + item.filled, 0),
+    remainingCount: roleAvailabilityItems.reduce((sum, item) => sum + item.remaining, 0),
+    hasAvailableRoles: availableRoleItems.length > 0,
+  };
   const salaryRows = getPostingSalaryRows(posting);
   const defaultSalary = getPostingDefaultSalary(posting);
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances, {
     includeEmoji: true,
   });
-  const scheduleDisplay = selectPostingScheduleDisplay(posting);
-  const salaryDisplay = selectPostingSalaryDisplay(posting);
-  const roleAvailability = selectPostingRoleAvailability(posting);
-  const application = selectPostingApplicationEligibility(posting);
+  const dateRequirements = getPostingDateRequirements(posting);
+  const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
+  const scheduleDisplay: PostingScheduleDisplay = {
+    variant: workflow.isFixed
+      ? 'fixed'
+      : workflow.usesGroupedDateRanges
+        ? 'grouped_dates'
+        : dateRequirements.length > 0
+          ? 'dated_requirements'
+          : 'legacy',
+    dateRequirements,
+    dateGroups: workflow.usesGroupedDateRanges ? getPostingDateGroups(posting) : [],
+    workDate: posting.workDate,
+    timeSlot: getPostingLegacyTimeSlot(posting),
+    fixed:
+      posting.schedule.kind === 'fixed'
+        ? {
+            daysPerWeek: posting.schedule.daysPerWeek,
+            startTime: posting.schedule.startTime,
+            isStartTimeNegotiable: posting.schedule.isStartTimeNegotiable,
+            roles: requiredRolesWithCount,
+          }
+        : undefined,
+  };
+  const salaryDisplay: PostingSalaryDisplay = {
+    defaultSalary,
+    rows: salaryRows,
+    previewRows: salaryRows.slice(0, 3),
+    overflowCount: Math.max(0, salaryRows.length - 3),
+    useSameSalary: posting.compensation.mode === 'shared',
+    hasRoleSpecificSalary: posting.compensation.mode === 'by_role' && salaryRows.length > 0,
+  };
+  const postingFull =
+    posting.totalPositions > 0 && posting.filledPositions >= posting.totalPositions;
+  const canApply =
+    posting.status === 'active' && !postingFull && roleAvailability.hasAvailableRoles;
+  let applicationReason: PostingApplicationEligibility['reason'];
+  if (posting.status !== 'active') {
+    applicationReason = 'inactive';
+  } else if (postingFull) {
+    applicationReason = 'posting_full';
+  } else if (!roleAvailability.hasAvailableRoles) {
+    applicationReason = 'role_full';
+  }
+  const application: PostingApplicationEligibility = {
+    canApply,
+    selectionMode: workflow.isFixed ? 'fixed_role' : 'dated_assignment',
+    requiresRoleSelection: workflow.isFixed,
+    requiresAssignmentSelection: !workflow.isFixed,
+    requiresPreQuestions: (posting.questions.items ?? []).length > 0,
+    fixedAssignmentTimeSlot:
+      posting.schedule.kind === 'fixed'
+        ? posting.schedule.startTime || FIXED_TIME_MARKER
+        : FIXED_TIME_MARKER,
+    availableRoleOptions: roleAvailability.availableItems,
+    reason: applicationReason,
+  };
   const questions = posting.questions.items ?? [];
 
   return {
     posting: {
       ...posting,
-      roles: getPostingRoleStats(posting),
+      roles: roleStats,
     },
     title: posting.title,
     description: posting.description,
@@ -51,12 +136,12 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
       kind: posting.schedule.kind,
       workDate: scheduleDisplay.workDate,
       timeSlot: scheduleDisplay.timeSlot,
-      dateRequirements: scheduleDisplay.dateRequirements,
+      dateRequirements,
       daysPerWeek: posting.schedule.kind === 'fixed' ? posting.schedule.daysPerWeek : undefined,
       startTime: posting.schedule.kind === 'fixed' ? posting.schedule.startTime : undefined,
       isStartTimeNegotiable:
         posting.schedule.kind === 'fixed' ? posting.schedule.isStartTimeNegotiable : undefined,
-      requiredRolesWithCount: getPostingRequiredRolesWithCount(posting),
+      requiredRolesWithCount,
       display: scheduleDisplay,
     },
     compensation: {

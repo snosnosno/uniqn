@@ -94,11 +94,13 @@ let mockIsRefetching = false;
 let mockData: unknown = undefined;
 let mockError: Error | null = null;
 let mockEnabled: boolean | undefined;
+let lastQueryFn: (() => Promise<unknown>) | undefined;
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(
     (options: { queryKey: unknown[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
       mockEnabled = options.enabled;
+      lastQueryFn = options.queryFn;
       if (options.enabled === false) {
         return {
           data: undefined,
@@ -194,6 +196,7 @@ describe('useWorkLogs Hooks', () => {
     mockData = undefined;
     mockError = null;
     mockEnabled = undefined;
+    lastQueryFn = undefined;
   });
 
   // ==========================================================================
@@ -343,6 +346,19 @@ describe('useWorkLogs Hooks', () => {
       expect(mockEnabled).toBe(false);
 
       Object.assign(mockAuthState, originalState);
+    });
+
+    it('should derive isWorking from a single today-work-log fetch', async () => {
+      mockGetTodayCheckedInWorkLog.mockResolvedValue(
+        createMockWorkLog({ id: 'wl-current', status: 'checked_in' })
+      );
+
+      renderHook(() => useCurrentWorkStatus());
+
+      await lastQueryFn?.();
+
+      expect(mockGetTodayCheckedInWorkLog).toHaveBeenCalledTimes(1);
+      expect(mockIsCurrentlyWorking).not.toHaveBeenCalled();
     });
   });
 
