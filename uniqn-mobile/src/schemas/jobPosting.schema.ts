@@ -5,37 +5,43 @@ import { optionalTimestampSchema, timestampSchema } from './common';
 import { preQuestionsArraySchema } from './preQuestion.schema';
 import { VALID_STAFF_ROLES } from '@/types/role';
 import type { JobPosting, JobPostingDocumentV3 } from '@/types';
-import { deserializeJobPostingDocument } from '@/domains/job-posting';
+import {
+  FIXED_POSTING_DURATION_DAYS,
+  deriveWorkDateFieldsFromSchedule,
+  deserializeJobPostingDocument,
+  getCanonicalPostingType,
+  isScheduleKindCompatibleWithPostingType,
+} from '@/domains/job-posting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 
 export const postingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urgent'], {
-  error: '올바른 공고 타입을 선택해주세요',
+  error: 'Select a valid posting type',
 });
 
 export type PostingType = z.infer<typeof postingTypeSchema>;
 
 export const salaryTypeSchema = z.enum(['hourly', 'daily', 'monthly', 'other'], {
-  error: '올바른 급여 타입을 선택해주세요',
+  error: 'Select a valid salary type',
 });
 
 export type SalaryTypeSchema = z.infer<typeof salaryTypeSchema>;
 
 export const roleSchema = z.enum(VALID_STAFF_ROLES, {
-  error: '올바른 역할을 선택해주세요',
+  error: 'Select a valid staff role',
 });
 
 export const roleRequirementSchema = z.object({
   role: roleSchema,
   count: z
     .number()
-    .min(1, { message: '최소 1명 이상이어야 합니다' })
-    .max(100, { message: '최대 100명까지 가능합니다' }),
+    .min(1, { message: 'At least one staff member is required' })
+    .max(100, { message: 'At most 100 staff members are allowed' }),
 });
 
 export const salaryInfoSchema = z.object({
   type: salaryTypeSchema,
-  amount: z.number().min(0, { message: '급여는 0 이상이어야 합니다' }),
+  amount: z.number().min(0, { message: 'Salary amount must be non-negative' }),
 });
 
 export const allowancesSchema = z
@@ -50,38 +56,38 @@ export const allowancesSchema = z
 export const basicInfoSchema = z.object({
   title: z
     .string()
-    .min(1, { message: '공고 제목을 입력해주세요' })
-    .max(25, { message: '공고 제목은 25자를 초과할 수 없습니다' })
+    .min(1, { message: 'Enter a title' })
+    .max(25, { message: 'Title must be 25 characters or less' })
     .trim()
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
   location: z
     .string()
-    .min(1, { message: '근무 장소를 선택해주세요' })
+    .min(1, { message: 'Enter a location' })
     .trim()
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
   district: z
     .string()
     .trim()
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' })
     .optional(),
   detailedAddress: z
     .string()
     .trim()
-    .max(200, { message: '상세 주소는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .max(200, { message: 'Detailed address must be 200 characters or less' })
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' })
     .optional(),
   description: z
     .string()
     .trim()
-    .max(500, { message: '공고 설명은 500자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .max(500, { message: 'Description must be 500 characters or less' })
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' })
     .optional(),
   contactPhone: z
     .string()
-    .min(1, { message: '문의 연락처를 입력해주세요' })
-    .max(25, { message: '문의 연락처는 25자를 초과할 수 없습니다' })
+    .min(1, { message: 'Enter a contact phone number' })
+    .max(25, { message: 'Contact phone must be 25 characters or less' })
     .trim()
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+    .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
 });
 
 export type BasicInfoData = z.infer<typeof basicInfoSchema>;
@@ -89,9 +95,9 @@ export type BasicInfoData = z.infer<typeof basicInfoSchema>;
 export const dateTimeSchema = z.object({
   workDate: z
     .string()
-    .min(1, { message: '근무 날짜를 선택해주세요' })
-    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-  timeSlot: z.string().min(1, { message: '근무 시간을 입력해주세요' }),
+    .min(1, { message: 'Select a work date' })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Use YYYY-MM-DD format' }),
+  timeSlot: z.string().min(1, { message: 'Enter a work time' }),
 });
 
 export type DateTimeData = z.infer<typeof dateTimeSchema>;
@@ -144,31 +150,19 @@ const postingLocationInputSchema = z
   .object({
     name: z
       .string()
-      .min(1, { message: '근무 장소를 선택해주세요' })
+      .min(1, { message: 'Enter a location name' })
       .trim()
-      .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
-    address: z
-      .string()
-      .trim()
-      .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-      .optional(),
+      .refine(xssValidation, { message: 'Unsafe text is not allowed' }),
     district: z
       .string()
       .trim()
-      .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+      .refine(xssValidation, { message: 'Unsafe text is not allowed' })
       .optional(),
     detailedAddress: z
       .string()
       .trim()
-      .max(200, { message: '상세 주소는 200자를 초과할 수 없습니다' })
-      .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-      .optional(),
-    coordinates: z
-      .object({
-        latitude: z.number(),
-        longitude: z.number(),
-      })
-      .strict()
+      .max(200, { message: 'Detailed address must be 200 characters or less' })
+      .refine(xssValidation, { message: 'Unsafe text is not allowed' })
       .optional(),
   })
   .strict();
@@ -253,6 +247,40 @@ const postingQuestionsSchema = z
   })
   .strict();
 
+function addContractIssue(ctx: z.RefinementCtx, path: (string | number)[], message: string): void {
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path,
+    message,
+  });
+}
+
+function hasSameStringArray(left?: string[], right?: string[]): boolean {
+  if (!left && !right) {
+    return true;
+  }
+
+  if (!left || !right || left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((value, index) => value === right[index]);
+}
+
+function validatePostingTypeScheduleContract(
+  data: {
+    postingType?: PostingType;
+    schedule: z.infer<typeof postingScheduleSchema>;
+  },
+  ctx: z.RefinementCtx
+): void {
+  const postingType = getCanonicalPostingType(data.postingType);
+
+  if (!isScheduleKindCompatibleWithPostingType(postingType, data.schedule.kind)) {
+    addContractIssue(ctx, ['schedule', 'kind'], 'postingType and schedule.kind must match');
+  }
+}
+
 export const createJobPostingSchema = z
   .object({
     postingType: postingTypeSchema.optional().default('regular'),
@@ -261,16 +289,19 @@ export const createJobPostingSchema = z
     location: postingLocationInputSchema,
     contactPhone: basicInfoSchema.shape.contactPhone.optional(),
     tags: z
-      .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
+      .array(z.string().refine(xssValidation, { message: 'Unsafe text is not allowed' }))
       .optional(),
     schedule: postingScheduleSchema,
     roleCatalog: z.array(postingRoleCatalogEntrySchema).min(1, {
-      message: '최소 1개 역할을 추가해주세요',
+      message: 'Add at least one role',
     }),
     compensation: postingCompensationSchema,
     questions: postingQuestionsSchema,
   })
   .strict()
+  .superRefine((data, ctx) => {
+    validatePostingTypeScheduleContract(data, ctx);
+  })
   .refine(
     (data) => {
       if (data.postingType !== 'urgent' || data.schedule.kind !== 'dated') {
@@ -280,7 +311,7 @@ export const createJobPostingSchema = z
       return isWithinUrgentDateLimit(data.schedule.primaryDate);
     },
     {
-      message: '긴급 공고는 오늘부터 최대 7일 이내의 날짜만 가능합니다',
+      message: 'Urgent postings must be within 7 days',
       path: ['schedule', 'primaryDate'],
     }
   );
@@ -289,7 +320,7 @@ export type CreateJobPostingFormData = z.infer<typeof createJobPostingSchema>;
 
 const fixedConfigSchema = z
   .object({
-    durationDays: z.literal(7),
+    durationDays: z.literal(FIXED_POSTING_DURATION_DAYS),
     expiresAt: timestampSchema,
     createdAt: timestampSchema,
   })
@@ -315,6 +346,95 @@ const urgentConfigSchema = z
   })
   .strict();
 
+function validateDocumentContract(
+  data: {
+    postingType?: PostingType;
+    schedule: z.infer<typeof postingScheduleSchema>;
+    workDate: string;
+    workDates?: string[];
+    fixedConfig?: z.infer<typeof fixedConfigSchema>;
+    tournamentConfig?: z.infer<typeof tournamentConfigSchema>;
+    urgentConfig?: z.infer<typeof urgentConfigSchema>;
+  },
+  ctx: z.RefinementCtx
+): void {
+  const postingType = getCanonicalPostingType(data.postingType);
+  const derivedDates = deriveWorkDateFieldsFromSchedule(data.schedule);
+
+  validatePostingTypeScheduleContract(data, ctx);
+
+  if (data.workDate !== derivedDates.workDate) {
+    addContractIssue(ctx, ['workDate'], 'workDate must match the canonical schedule');
+  }
+
+  if (!hasSameStringArray(data.workDates, derivedDates.workDates)) {
+    addContractIssue(ctx, ['workDates'], 'workDates must match canonical schedule.allDates');
+  }
+
+  const hasFixedConfig = data.fixedConfig !== undefined;
+  const hasTournamentConfig = data.tournamentConfig !== undefined;
+  const hasUrgentConfig = data.urgentConfig !== undefined;
+
+  switch (postingType) {
+    case 'fixed':
+      if (!hasFixedConfig) {
+        addContractIssue(ctx, ['fixedConfig'], 'fixed postings require fixedConfig');
+      }
+      if (hasTournamentConfig) {
+        addContractIssue(
+          ctx,
+          ['tournamentConfig'],
+          'fixed postings cannot include tournamentConfig'
+        );
+      }
+      if (hasUrgentConfig) {
+        addContractIssue(ctx, ['urgentConfig'], 'fixed postings cannot include urgentConfig');
+      }
+      break;
+    case 'tournament':
+      if (hasFixedConfig) {
+        addContractIssue(ctx, ['fixedConfig'], 'tournament postings cannot include fixedConfig');
+      }
+      if (!hasTournamentConfig) {
+        addContractIssue(ctx, ['tournamentConfig'], 'tournament postings require tournamentConfig');
+      }
+      if (hasUrgentConfig) {
+        addContractIssue(ctx, ['urgentConfig'], 'tournament postings cannot include urgentConfig');
+      }
+      break;
+    case 'urgent':
+      if (hasFixedConfig) {
+        addContractIssue(ctx, ['fixedConfig'], 'urgent postings cannot include fixedConfig');
+      }
+      if (hasTournamentConfig) {
+        addContractIssue(
+          ctx,
+          ['tournamentConfig'],
+          'urgent postings cannot include tournamentConfig'
+        );
+      }
+      if (!hasUrgentConfig) {
+        addContractIssue(ctx, ['urgentConfig'], 'urgent postings require urgentConfig');
+      }
+      break;
+    case 'regular':
+      if (hasFixedConfig) {
+        addContractIssue(ctx, ['fixedConfig'], 'regular postings cannot include fixedConfig');
+      }
+      if (hasTournamentConfig) {
+        addContractIssue(
+          ctx,
+          ['tournamentConfig'],
+          'regular postings cannot include tournamentConfig'
+        );
+      }
+      if (hasUrgentConfig) {
+        addContractIssue(ctx, ['urgentConfig'], 'regular postings cannot include urgentConfig');
+      }
+      break;
+  }
+}
+
 export const jobPostingDocumentSchema = z
   .object({
     id: z.string(),
@@ -324,7 +444,7 @@ export const jobPostingDocumentSchema = z
     status: z.enum(['active', 'closed', 'cancelled']),
     ownerId: z.string(),
     ownerName: z.string().optional(),
-    postingType: postingTypeSchema.optional(),
+    postingType: postingTypeSchema.optional().default('regular'),
     workDate: z.string(),
     workDates: z.array(z.string()).optional(),
     roleKeys: z.array(z.string()).optional(),
@@ -332,8 +452,11 @@ export const jobPostingDocumentSchema = z
     filledPositions: z.number(),
     viewCount: z.number().optional(),
     applicationCount: z.number().optional(),
+    // Legacy derived counters may still exist on persisted documents.
+    applicantCount: z.number().optional(),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
+    lastUpdated: optionalTimestampSchema,
     searchIndex: z.array(z.string()).optional(),
     closedAt: optionalTimestampSchema,
     closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
@@ -348,15 +471,24 @@ export const jobPostingDocumentSchema = z
     tournamentConfig: tournamentConfigSchema.optional(),
     urgentConfig: urgentConfigSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    validateDocumentContract(data, ctx);
+  });
 
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
 
 function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDocumentV3 {
-  const { searchIndex: _searchIndex, ...rest } = document;
+  const {
+    searchIndex: _searchIndex,
+    applicantCount: legacyApplicantCount,
+    lastUpdated: _legacyLastUpdated,
+    ...rest
+  } = document;
 
   return {
     ...rest,
+    applicationCount: rest.applicationCount ?? legacyApplicantCount,
     closedAt: rest.closedAt ?? undefined,
     tournamentConfig: rest.tournamentConfig
       ? {

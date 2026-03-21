@@ -31,6 +31,13 @@ export const JOB_POSTING_NOTIFICATION_FIELDS = [
   "status",
 ] as const;
 
+export const JOB_POSTING_SEARCH_INDEX_FIELDS = [
+  "title",
+  "description",
+  "location",
+  "roleCatalog",
+] as const;
+
 function normalizeText(value: string | null | undefined): string {
   return value?.trim() ?? "";
 }
@@ -111,6 +118,15 @@ export function getChangedJobPostingNotificationFields(
   after: Record<string, unknown>,
 ): string[] {
   return JOB_POSTING_NOTIFICATION_FIELDS.filter(
+    (field) => stableStringify(before[field]) !== stableStringify(after[field]),
+  );
+}
+
+export function hasJobPostingSearchIndexSourceChanged(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): boolean {
+  return JOB_POSTING_SEARCH_INDEX_FIELDS.some(
     (field) => stableStringify(before[field]) !== stableStringify(after[field]),
   );
 }

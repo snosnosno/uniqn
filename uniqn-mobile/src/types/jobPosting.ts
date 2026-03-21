@@ -234,6 +234,85 @@ export interface PostingSalaryRow {
   text: string;
 }
 
+export interface PostingWorkflow {
+  scheduleKind: PostingSchedule['kind'];
+  isFixed: boolean;
+  isDated: boolean;
+  isTournament: boolean;
+  isUrgent: boolean;
+  recruitmentType: 'fixed' | 'event';
+  usesGroupedDateRanges: boolean;
+}
+
+export interface PostingRoleAvailabilityItem {
+  key: string;
+  role: StaffRole | 'other';
+  customRole?: string;
+  roleLabel: string;
+  count: number;
+  filled: number;
+  remaining: number;
+  salary?: SalaryInfo;
+  isAvailable: boolean;
+}
+
+export interface PostingRoleAvailability {
+  items: PostingRoleAvailabilityItem[];
+  availableItems: PostingRoleAvailabilityItem[];
+  totalCount: number;
+  filledCount: number;
+  remainingCount: number;
+  hasAvailableRoles: boolean;
+}
+
+export interface PostingDateGroup {
+  id: string;
+  startDate: string;
+  endDate: string;
+  timeSlots: CardTimeSlot[];
+}
+
+export interface PostingScheduleDisplay {
+  variant: 'fixed' | 'grouped_dates' | 'dated_requirements' | 'legacy';
+  dateRequirements: CardDateRequirement[];
+  dateGroups: PostingDateGroup[];
+  workDate: string;
+  timeSlot: string;
+  fixed?: {
+    daysPerWeek?: number;
+    startTime?: string;
+    isStartTimeNegotiable?: boolean;
+    roles?: RoleWithCount[];
+  };
+}
+
+export interface PostingSalaryDisplay {
+  defaultSalary?: SalaryInfo;
+  rows: PostingSalaryRow[];
+  previewRows: PostingSalaryRow[];
+  overflowCount: number;
+  useSameSalary: boolean;
+  hasRoleSpecificSalary: boolean;
+}
+
+export interface PostingApplicationEligibility {
+  canApply: boolean;
+  selectionMode: 'fixed_role' | 'dated_assignment';
+  requiresRoleSelection: boolean;
+  requiresAssignmentSelection: boolean;
+  requiresPreQuestions: boolean;
+  fixedAssignmentTimeSlot: string;
+  availableRoleOptions: PostingRoleAvailabilityItem[];
+  reason?: 'inactive' | 'posting_full' | 'role_full';
+}
+
+export interface PostingSettlementContext {
+  roles: JobRoleStats[];
+  defaultSalary?: SalaryInfo;
+  allowances?: PostingCompensation['allowances'];
+  taxSettings?: PostingCompensation['taxSettings'];
+}
+
 export interface PostingFacts {
   posting: PostingFactsPosting;
   title: string;
@@ -241,6 +320,7 @@ export interface PostingFacts {
   status: JobPostingStatus;
   postingType?: PostingType;
   isUrgent: boolean;
+  workflow: PostingWorkflow;
   location: {
     shortLabel: string;
     fullLabel: string;
@@ -259,6 +339,7 @@ export interface PostingFacts {
     startTime?: string;
     isStartTimeNegotiable?: boolean;
     requiredRolesWithCount?: RoleWithCount[];
+    display: PostingScheduleDisplay;
   };
   compensation: {
     mode: PostingCompensation['mode'];
@@ -266,7 +347,10 @@ export interface PostingFacts {
     salaryRows: PostingSalaryRow[];
     allowanceLabels: string[];
     taxLabel?: string;
+    display: PostingSalaryDisplay;
   };
+  roleAvailability: PostingRoleAvailability;
+  application: PostingApplicationEligibility;
   stats: {
     totalPositions: number;
     filledPositions: number;
@@ -286,6 +370,7 @@ export interface PostingCardViewModel {
   id: string;
   title: string;
   description?: string;
+  workflow: PostingWorkflow;
   location: string;
   fullLocation: string;
   workDate: string;
@@ -312,12 +397,17 @@ export interface PostingCardViewModel {
   salaryRows: PostingSalaryRow[];
   fullSalaryRows?: PostingSalaryRow[];
   salaryOverflowCount: number;
+  scheduleDisplay: PostingScheduleDisplay;
+  salaryDisplay: PostingSalaryDisplay;
+  roleAvailability: PostingRoleAvailability;
+  applicationEligibility: PostingApplicationEligibility;
 }
 
 export interface PostingDetailViewModel {
   id: string;
   title: string;
   description?: string;
+  workflow: PostingWorkflow;
   status: JobPostingStatus;
   postingType?: PostingType;
   isUrgent: boolean;
@@ -345,6 +435,10 @@ export interface PostingDetailViewModel {
   totalPositions: number;
   filledPositions: number;
   tournamentConfig?: TournamentConfig;
+  scheduleDisplay: PostingScheduleDisplay;
+  salaryDisplay: PostingSalaryDisplay;
+  roleAvailability: PostingRoleAvailability;
+  applicationEligibility: PostingApplicationEligibility;
 }
 
 export interface PostingManagementViewModel extends PostingDetailViewModel {

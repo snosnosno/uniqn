@@ -20,9 +20,9 @@ jest.mock('@/config/env', () => ({
   },
 }));
 
-// Mock crashlyticsService (dynamic import used by logger)
-jest.mock('@/services/observability/crashlyticsService', () => ({
-  crashlyticsService: {
+// Mock sentryService (dynamic import used by logger)
+jest.mock('@/services/observability/sentryService', () => ({
+  sentryService: {
     recordError: jest.fn(() => Promise.resolve()),
     recordAppError: jest.fn(() => Promise.resolve()),
   },
@@ -38,7 +38,37 @@ jest.mock('@/errors/AppError', () => {
     );
   };
 
-  return { isAppError };
+  const getAppErrorTelemetryPolicy = (error: {
+    category?: string;
+    severity?: string;
+  }): { kind: string; telemetryChannel: string; shouldReport: boolean } => {
+    if (error.severity === 'critical') {
+      return {
+        kind: 'critical-telemetry',
+        telemetryChannel: 'fatal',
+        shouldReport: true,
+      };
+    }
+
+    if (
+      error.severity === 'high' ||
+      ['network', 'firebase', 'security', 'unknown'].includes(error.category ?? '')
+    ) {
+      return {
+        kind: 'infra',
+        telemetryChannel: 'error',
+        shouldReport: true,
+      };
+    }
+
+    return {
+      kind: 'recoverable-business',
+      telemetryChannel: 'none',
+      shouldReport: false,
+    };
+  };
+
+  return { isAppError, getAppErrorTelemetryPolicy };
 });
 
 // =============================================================================
@@ -121,11 +151,9 @@ describe('logger', () => {
     it('logger.error should accept Error object', () => {
       const err = new Error('테스트 에러');
       logger.error('에러 발생', err);
-      // When Error is passed without context, createEntry receives (level, msg, undefined, err)
-      // Since contextOrError is undefined, entry.error is not set via the else-if branch.
-      // Only the formatted message is logged via console.error.
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('에러 발생'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(err);
     });
 
     it('logger.error should accept context without Error', () => {

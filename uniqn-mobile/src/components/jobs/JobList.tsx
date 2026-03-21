@@ -1,22 +1,10 @@
-/**
- * UNIQN Mobile - 구인공고 목록 컴포넌트
- *
- * @description FlashList 기반 무한스크롤 공고 목록
- * @version 1.1.0
- */
-
 import React, { useCallback } from 'react';
-import { View, RefreshControl, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { JobCard } from './JobCard';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { SkeletonJobCard } from '@/components/ui/Skeleton';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import type { JobPostingCard } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { JobCard } from './JobCard';
+import { PostingSurfaceState } from './shared';
 
 interface JobListProps {
   jobs: JobPostingCard[];
@@ -28,11 +16,8 @@ interface JobListProps {
   onLoadMore: () => void;
   onJobPress: (jobId: string) => void;
   emptyMessage?: string;
+  error?: Error | null;
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export function JobList({
   jobs,
@@ -44,17 +29,20 @@ export function JobList({
   onLoadMore,
   onJobPress,
   emptyMessage = '등록된 공고가 없습니다',
+  error,
 }: JobListProps) {
-  // Hooks must be called before any conditional returns
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => <JobCard job={item} onPress={onJobPress} />,
     [onJobPress]
   );
 
   const renderFooter = useCallback(() => {
-    if (!isFetchingMore) return null;
+    if (!isFetchingMore) {
+      return null;
+    }
+
     return (
-      <View className="py-4 items-center">
+      <View className="items-center py-4">
         <ActivityIndicator size="small" />
       </View>
     );
@@ -64,43 +52,64 @@ export function JobList({
     if (!isFetchingMore && hasMore) {
       onLoadMore();
     }
-  }, [isFetchingMore, hasMore, onLoadMore]);
+  }, [hasMore, isFetchingMore, onLoadMore]);
 
-  const keyExtractor = useCallback((item: JobPostingCard) => item.id, []);
-
-  // 초기 로딩 - 표준화된 SkeletonJobCard 사용
   if (isLoading && jobs.length === 0) {
+    return <PostingSurfaceState mode="loading" scope="list" />;
+  }
+
+  if (error && jobs.length === 0) {
     return (
-      <View className="flex-1 p-4">
-        {[1, 2, 3].map((i) => (
-          <SkeletonJobCard key={i} />
-        ))}
-      </View>
+      <PostingSurfaceState
+        mode="error"
+        scope="list"
+        title="공고 목록을 불러올 수 없습니다"
+        message={error.message}
+        error={error}
+        onRetry={onRefresh}
+      />
     );
   }
 
-  // 빈 상태
   if (!isLoading && jobs.length === 0) {
-    return <EmptyState title="공고 없음" description={emptyMessage} icon="📋" />;
+    return (
+      <PostingSurfaceState
+        mode="empty"
+        scope="list"
+        title="공고 없음"
+        message={emptyMessage}
+        icon="📋"
+      />
+    );
   }
 
   return (
-    <FlashList
-      data={jobs}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
-      estimatedItemSize={160}
-      contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />
-      }
-      onEndReached={handleEndReached}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={renderFooter}
-      ListEmptyComponent={<EmptyState title="공고 없음" description={emptyMessage} icon="📋" />}
-    />
+    <View className="flex-1">
+      {error && jobs.length > 0 ? (
+        <PostingSurfaceState
+          mode="partial"
+          scope="list"
+          title="일부 정보만 표시 중입니다"
+          message="최신 공고 상태를 모두 불러오지 못했습니다. 아래 목록은 계속 확인할 수 있습니다."
+        />
+      ) : null}
+
+      <FlashList
+        data={jobs}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+        estimatedItemSize={160}
+        contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+        }
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+      />
+    </View>
   );
 }
 

@@ -8,7 +8,7 @@ function createDatedDraft(): JobPostingDraft {
     description: '',
     location: {
       name: 'Seoul',
-      address: 'Gangnam-daero',
+      district: 'Gangnam-daero',
     },
     contactPhone: '',
     tags: [],
@@ -84,6 +84,7 @@ describe('draftAdapter dated seed handling', () => {
   it('keeps form roles aligned with the first populated requirement instead of aggregating all dates', () => {
     const formData = draftToFormData(createDatedDraft());
 
+    expect(formData.location?.address).toBe('Gangnam-daero');
     expect(formData.roles).toMatchObject([
       {
         name: '딜러',

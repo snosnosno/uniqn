@@ -183,7 +183,7 @@ service cloud.firestore {
 
     // FixedConfig 검증 함수
     function validateFixedConfig(config) {
-      return config.durationDays in [7, 30, 90] &&
+      return config.durationDays == 7 &&
              'expiresAt' in config &&
              'createdAt' in config;
     }
@@ -365,6 +365,61 @@ service cloud.firestore {
       );
     }
 
+    function getCanonicalPostingType(data) {
+      return ('postingType' in data) ? data.postingType : 'regular';
+    }
+
+    function validateCanonicalPostingTypeSchedule(data) {
+      let postingType = getCanonicalPostingType(data);
+      return (postingType == 'fixed' && data.schedule.kind == 'fixed') ||
+             (postingType != 'fixed' && data.schedule.kind == 'dated');
+    }
+
+    function validateCanonicalDerivedScheduleFields(data) {
+      return (
+        data.schedule.kind == 'fixed' &&
+        data.workDate == '' &&
+        !('workDates' in data)
+      ) || (
+        data.schedule.kind == 'dated' &&
+        data.workDate == data.schedule.primaryDate &&
+        (
+          (data.schedule.allDates.size() == 0 && !('workDates' in data)) ||
+          (data.schedule.allDates.size() > 0 &&
+           'workDates' in data &&
+           data.workDates == data.schedule.allDates)
+        )
+      );
+    }
+
+    function validateCanonicalPostingTypeConfigs(data) {
+      let postingType = getCanonicalPostingType(data);
+      return (
+        postingType == 'fixed' &&
+        'fixedConfig' in data &&
+        validateFixedConfig(data.fixedConfig) &&
+        !('tournamentConfig' in data) &&
+        !('urgentConfig' in data)
+      ) || (
+        postingType == 'tournament' &&
+        !('fixedConfig' in data) &&
+        'tournamentConfig' in data &&
+        validateTournamentConfig(data.tournamentConfig) &&
+        !('urgentConfig' in data)
+      ) || (
+        postingType == 'urgent' &&
+        !('fixedConfig' in data) &&
+        !('tournamentConfig' in data) &&
+        'urgentConfig' in data &&
+        validateUrgentConfig(data.urgentConfig)
+      ) || (
+        postingType == 'regular' &&
+        !('fixedConfig' in data) &&
+        !('tournamentConfig' in data) &&
+        !('urgentConfig' in data)
+      );
+    }
+
     function validateCanonicalJobPosting(data) {
       return hasCanonicalJobPostingKeys(data) &&
              hasNoLegacyJobPostingFields(data) &&
@@ -376,6 +431,8 @@ service cloud.firestore {
              validateCanonicalLocation(data.location) &&
              data.workDate is string &&
              (!('workDates' in data) || data.workDates is list) &&
+             validateCanonicalPostingTypeSchedule(data) &&
+             validateCanonicalDerivedScheduleFields(data) &&
              (!('roleKeys' in data) || data.roleKeys is list) &&
              data.totalPositions is number &&
              data.filledPositions is number &&
@@ -392,9 +449,7 @@ service cloud.firestore {
              validateCanonicalQuestions(data.questions) &&
              data.status in ['active', 'closed', 'cancelled'] &&
              (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
-             (!('fixedConfig' in data) || (data.postingType == 'fixed' && validateFixedConfig(data.fixedConfig))) &&
-             (!('tournamentConfig' in data) || (data.postingType == 'tournament' && validateTournamentConfig(data.tournamentConfig))) &&
-             (!('urgentConfig' in data) || (data.postingType == 'urgent' && validateUrgentConfig(data.urgentConfig)));
+             validateCanonicalPostingTypeConfigs(data);
     }
 
     function validateCanonicalJobPostingCreate(data) {

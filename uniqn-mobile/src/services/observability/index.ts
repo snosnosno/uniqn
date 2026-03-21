@@ -26,29 +26,43 @@ export {
   type UserProperties as AnalyticsUserProperties,
 } from './analyticsService';
 
-// Crashlytics Service
+// Sentry Service (canonical)
 export {
+  sentryService,
+  setEnabled as setSentryEnabled,
   crashlyticsService,
+  recordHandledError,
   setEnabled as setCrashlyticsEnabled,
   recordError,
   recordFatalError,
   recordAppError,
   recordComponentError,
   recordNetworkError,
+  log as sentryLog,
   log as crashlyticsLog,
+  setAttribute as setSentryAttribute,
   setAttribute as setCrashlyticsAttribute,
+  setAttributes as setSentryAttributes,
   setAttributes as setCrashlyticsAttributes,
+  setUserId as setSentryUserId,
   setUserId as setCrashlyticsUserId,
+  setUser as setSentryUser,
   setUser as setCrashlyticsUser,
+  clearUser as clearSentryUser,
   clearUser as clearCrashlyticsUser,
+  setScreen as setSentryScreen,
   setScreen as setCrashlyticsScreen,
   getBreadcrumbs,
   clearBreadcrumbs,
+  type SentrySeverity,
+  type SentryContext,
+  type SentryAttributes,
+  type SentryUser,
   type CrashSeverity,
   type CrashContext,
   type CrashlyticsAttributes,
   type CrashlyticsUser,
-} from './crashlyticsService';
+} from './sentryService';
 
 // Performance Service
 export {

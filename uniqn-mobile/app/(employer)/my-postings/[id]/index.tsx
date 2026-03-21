@@ -1,63 +1,47 @@
-/**
- * UNIQN Mobile - 공고 상세 화면
- * 구인자의 공고 상세 정보 및 관리
- *
- * @description v2.0 - dateSpecificRequirements, roleSalaries 지원
- * @version 2.0.0
- */
-
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
   ActivityIndicator,
   Platform,
+  Pressable,
   RefreshControl,
+  ScrollView,
+  Text,
+  View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useJobDetail } from '@/hooks/useJobDetail';
-import { Card, Badge, Loading, ErrorState, ConfirmModal } from '@/components';
+import { Card, Badge, ConfirmModal } from '@/components';
 import {
-  MapPinIcon,
+  BanknotesIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
   ClockIcon,
   CurrencyDollarIcon,
-  UsersIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  EditIcon,
-  BanknotesIcon,
-  XCircleIcon,
   DocumentIcon,
+  EditIcon,
+  MapPinIcon,
   TrashIcon,
+  UsersIcon,
+  XCircleIcon,
 } from '@/components/icons';
-import { useApplicantManagement } from '@/hooks/applicant';
 import {
+  PostingCompensationContent,
+  PostingScheduleContent,
+  PostingStatusBadge,
+  PostingSurfaceState,
   PostingTypeBadge,
-  GroupedDateRequirementDisplay,
-  FixedScheduleDisplay,
-  RoleSalaryDisplay,
-  TournamentStatusBadge,
   ResubmitButton,
+  TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
-import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
-import type {
-  PostingManagementViewModel,
-  PostingType,
-  Allowances,
-  TournamentApprovalStatus,
-} from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { useApplicantManagement } from '@/hooks/applicant';
+import { useJobDetail } from '@/hooks/useJobDetail';
+import { useDeleteJobPosting } from '@/hooks/useJobManagement';
+import { useThemeStore } from '@/stores/themeStore';
+import type { PostingManagementViewModel, PostingType, TournamentApprovalStatus } from '@/types';
 
 interface ActionCardProps {
   icon: React.ReactNode;
@@ -66,57 +50,6 @@ interface ActionCardProps {
   badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
   onPress: () => void;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 수당 정보 문자열 배열 생성
- */
-const getAllowanceItems = (allowances?: Allowances): string[] => {
-  if (!allowances) return [];
-  const items: string[] = [];
-
-  // 보장시간
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  // 식비
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  // 교통비
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  // 숙박비
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
-};
-
-// ============================================================================
-// Sub-components
-// ============================================================================
 
 function ActionCard({ icon, title, description, badge, onPress }: ActionCardProps) {
   return (
@@ -127,21 +60,21 @@ function ActionCard({ icon, title, description, badge, onPress }: ActionCardProp
       accessibilityLabel={`${title}, ${description}`}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
-        <View className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/30 items-center justify-center mr-4">
+        <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
           {icon}
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mr-2">
+            <Text className="mr-2 text-base font-semibold text-gray-900 dark:text-white">
               {title}
             </Text>
-            {badge && (
+            {badge ? (
               <Badge variant={badge.variant} size="sm">
                 {badge.label}
               </Badge>
-            )}
+            ) : null}
           </View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</Text>
         </View>
         <ChevronRightIcon size={20} color="#9CA3AF" />
       </Card>
@@ -149,69 +82,16 @@ function ActionCard({ icon, title, description, badge, onPress }: ActionCardProp
   );
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
 export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const isDark = useThemeStore((s) => s.isDarkMode);
+  const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
   const { job: posting, isLoading, isRefreshing, error, refresh } = useJobDetail(id || '');
   const { cancellationPendingCount, stats: applicantStats } = useApplicantManagement(id || '');
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
-
-  // 삭제 확인 모달 상태
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-  // 지원자 관리로 이동
-  const handleApplicants = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/applicants`);
-  }, [router, id]);
-
-  // 정산 관리로 이동
-  const handleSettlements = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/settlements`);
-  }, [router, id]);
-
-  // 공고 수정
-  const handleEdit = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/edit`);
-  }, [router, id]);
-
-  // 취소 요청 관리로 이동
-  const handleCancellationRequests = useCallback(() => {
-    router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
-  }, [router, id]);
-
-  // 삭제 확인 모달 열기 (웹: aria-hidden 충돌 방지를 위해 포커스 해제)
-  const handleDeletePress = useCallback(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      (document.activeElement as HTMLElement)?.blur?.();
-    }
-    setShowDeleteModal(true);
-  }, []);
-
-  // 공고 삭제 실행
-  const handleDeleteConfirm = useCallback(() => {
-    if (!id) return;
-    deleteJobPosting(id, {
-      onSuccess: () => {
-        setShowDeleteModal(false);
-        router.back();
-      },
-    });
-  }, [id, deleteJobPosting, router]);
-
-  // 정보 섹션 펼치기/접기 상태 (기본: 접힌 상태)
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
-  // 정보 섹션 토글
-  const handleToggleInfo = useCallback(() => {
-    setIsInfoExpanded((prev) => !prev);
-  }, []);
-
-  // 수당 정보 (v2.0) - hooks는 조건부 반환 전에 호출해야 함
   const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
   const managementView = useMemo(
     () =>
@@ -223,62 +103,80 @@ export default function JobPostingDetailScreen() {
         : null,
     [postingFacts]
   );
-  const allowanceItems = useMemo(
-    () => getAllowanceItems(managementView?.allowances),
-    [managementView?.allowances]
-  );
 
-  // 로딩 상태
+  const handleApplicants = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/applicants`);
+  }, [id, router]);
+
+  const handleSettlements = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/settlements`);
+  }, [id, router]);
+
+  const handleEdit = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/edit`);
+  }, [id, router]);
+
+  const handleCancellationRequests = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
+  }, [id, router]);
+
+  const handleDeletePress = useCallback(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement | null)?.blur?.();
+    }
+
+    setShowDeleteModal(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!id) {
+      return;
+    }
+
+    deleteJobPosting(id, {
+      onSuccess: () => {
+        setShowDeleteModal(false);
+        router.back();
+      },
+    });
+  }, [deleteJobPosting, id, router]);
+
+  const handleToggleInfo = useCallback(() => {
+    setIsInfoExpanded((prev) => !prev);
+  }, []);
+
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-        </View>
+        <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
   }
 
-  // 에러 상태
-  if (error || !posting) {
+  if (error || !posting || !managementView) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-        <ErrorState
+        <PostingSurfaceState
+          mode="error"
+          scope="detail"
           title="공고를 불러올 수 없습니다"
           message={error?.message || '공고 정보를 찾을 수 없습니다.'}
+          error={error}
           onRetry={refresh}
         />
       </SafeAreaView>
     );
   }
 
-  const statusConfig = {
-    active: { label: '모집중', variant: 'success' as const },
-    closed: { label: '마감', variant: 'default' as const },
-    cancelled: { label: '취소됨', variant: 'error' as const },
-  };
-
-  const status = statusConfig[posting.status] || statusConfig.active;
-
-  // 지원자 기준 통계 (사람 수) - applicantStats에서 가져옴
   const totalApplicants = applicantStats?.total || posting.applicationCount || 0;
   const confirmedApplicants = applicantStats?.confirmed || 0;
   const pendingApplicants = (applicantStats?.applied || 0) + (applicantStats?.pending || 0);
-
-  // 배정 기준 통계 (슬롯 수) - posting에서 가져옴
   const filledPositions = posting.filledPositions || 0;
   const totalPositions = posting.totalPositions || 0;
-
-  // 안전한 값 추출
-  const safeTitle = String(posting.title || '제목 없음');
-  const safeLocationName =
-    typeof posting.location === 'string' ? posting.location : posting.location?.name || '장소 미정';
-
-  // dateSpecificRequirements 유무 확인 (v2.0)
-  const hasDateRequirements = (managementView?.dateRequirements.length ?? 0) > 0;
-
-  // 사전질문 개수 (v2.0)
-  const preQuestionCount = managementView?.questions.length ?? 0;
+  const title = posting.title || '제목 없음';
+  const locationLabel = managementView.locationLabel || posting.location?.name || '위치 미정';
+  const allowanceItems = managementView.allowanceLabels ?? [];
+  const questionCount = managementView.questions.length;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -293,47 +191,41 @@ export default function JobPostingDetailScreen() {
           />
         }
       >
-        {/* 공고 정보 카드 */}
         <View className="px-4 pt-3">
           <Card variant="elevated" padding="md">
-            {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
-            {posting.postingType && posting.postingType !== 'regular' && (
-              <View className="flex-row items-center flex-wrap mb-1.5">
+            <View className="mb-1.5 flex-row flex-wrap items-center">
+              {posting.postingType && posting.postingType !== 'regular' ? (
                 <PostingTypeBadge type={posting.postingType as PostingType} size="sm" />
-                {/* 대회공고 승인 상태 뱃지 */}
-                {posting.postingType === 'tournament' &&
-                  posting.tournamentConfig?.approvalStatus && (
-                    <View className="ml-2">
-                      <TournamentStatusBadge
-                        status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
-                        rejectionReason={posting.tournamentConfig.rejectionReason}
-                        size="sm"
-                      />
-                    </View>
-                  )}
-              </View>
-            )}
+              ) : null}
+              {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus ? (
+                <View className="ml-2">
+                  <TournamentStatusBadge
+                    status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
+                    rejectionReason={posting.tournamentConfig.rejectionReason}
+                    size="sm"
+                  />
+                </View>
+              ) : null}
+            </View>
 
-            {/* 헤더: 제목 + 상태뱃지 + 접기버튼 */}
-            <View className="flex-row items-start justify-between mb-2">
-              {/* 제목 */}
+            <View className="mb-2 flex-row items-start justify-between">
               <Text
-                className="flex-1 text-lg font-bold text-gray-900 dark:text-white mr-3"
+                className="mr-3 flex-1 text-lg font-bold text-gray-900 dark:text-white"
                 numberOfLines={2}
               >
-                {safeTitle}
+                {title}
               </Text>
-              {/* 상태뱃지 + 접기/펼치기 버튼 */}
+
               <View className="flex-row items-center">
-                <Badge variant={status.variant} size="sm" className="mr-2">
-                  {status.label}
-                </Badge>
+                <PostingStatusBadge status={posting.status} size="sm" className="mr-2" />
                 <Pressable
                   onPress={handleToggleInfo}
-                  className="flex-row items-center px-2 py-1 rounded-lg active:bg-gray-100 dark:active:bg-gray-700"
+                  className="flex-row items-center rounded-lg px-2 py-1 active:bg-gray-100 dark:active:bg-gray-700"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={isInfoExpanded ? '상세 정보 접기' : '상세 정보 펼치기'}
                 >
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                  <Text className="mr-1 text-xs text-gray-500 dark:text-gray-400">
                     {isInfoExpanded ? '접기' : '상세'}
                   </Text>
                   {isInfoExpanded ? (
@@ -345,170 +237,146 @@ export default function JobPostingDetailScreen() {
               </View>
             </View>
 
-            {/* 정보 섹션 (접기/펼치기 가능) */}
-            {isInfoExpanded && (
+            {isInfoExpanded ? (
               <>
-                {/* 장소 */}
-                <View className="flex-row items-center mb-3">
+                <View className="mb-3 flex-row items-center">
                   <MapPinIcon size={18} color="#9333EA" />
                   <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                    {managementView?.locationLabel || safeLocationName}
+                    {locationLabel}
                   </Text>
                 </View>
 
-                {/* 날짜/시간 (v2.0: 날짜별 요구사항 또는 고정공고 일정) */}
-                {posting.postingType === 'fixed' ? (
-                  // 고정공고: FixedScheduleDisplay 사용
-                  <View className="mb-4">
-                    <View className="flex-row items-center mb-2">
-                      <ClockIcon size={18} color="#9333EA" />
-                      <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
-                        근무 일정
-                      </Text>
-                    </View>
-                    <View className="ml-6">
-                      <FixedScheduleDisplay
-                        daysPerWeek={managementView?.daysPerWeek}
-                        startTime={managementView?.startTime}
-                        roles={managementView?.requiredRolesWithCount?.map((r) => ({
-                          role: r.role,
-                          count: r.count,
-                        }))}
-                        showRoles={true}
-                        showFilledCount={true}
-                      />
-                    </View>
-                  </View>
-                ) : hasDateRequirements ? (
-                  <View className="mb-4">
-                    <View className="flex-row items-center mb-2">
-                      <ClockIcon size={18} color="#9333EA" />
-                      <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
-                        근무 일정
-                      </Text>
-                    </View>
-                    <View className="ml-6">
-                      <GroupedDateRequirementDisplay
-                        requirements={managementView?.dateRequirements ?? []}
-                        showFilledCount={true}
-                      />
-                    </View>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center mb-3">
+                <View className="mb-4">
+                  <View className="mb-2 flex-row items-center">
                     <ClockIcon size={18} color="#9333EA" />
-                    <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                      {`${managementView?.workDate || ''} ${managementView?.timeSlot || ''}`.trim() ||
-                        '일정 미정'}
+                    <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                      근무 일정
                     </Text>
                   </View>
-                )}
+                  <View className="ml-6">
+                    <PostingScheduleContent
+                      display="detail"
+                      workflow={managementView.workflow}
+                      scheduleDisplay={managementView.scheduleDisplay}
+                      workDate={managementView.workDate}
+                      timeSlot={managementView.timeSlot}
+                      daysPerWeek={managementView.daysPerWeek}
+                      startTime={managementView.startTime}
+                      isStartTimeNegotiable={managementView.isStartTimeNegotiable}
+                      requiredRolesWithCount={managementView.requiredRolesWithCount}
+                      showFilledCount={true}
+                    />
+                  </View>
+                </View>
 
-                {/* 급여 (v2.0: 역할별 급여) */}
                 <View className="mb-4">
-                  <View className="flex-row items-center mb-2">
+                  <View className="mb-2 flex-row items-center">
                     <CurrencyDollarIcon size={18} color="#9333EA" />
                     <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                       급여
                     </Text>
                   </View>
                   <View className="ml-6">
-                    <RoleSalaryDisplay
-                      roles={postingFacts?.posting.roles ?? []}
-                      useSameSalary={managementView?.useSameSalary}
-                      defaultSalary={managementView?.defaultSalary}
-                      compact={false}
+                    <PostingCompensationContent
+                      display="detail"
+                      salaryDisplay={managementView.salaryDisplay}
+                      defaultSalary={managementView.defaultSalary}
+                      allowanceLabels={managementView.allowanceLabels}
+                      taxLabel={managementView.taxLabel}
                     />
                   </View>
                 </View>
 
-                {/* 수당 (v2.0) */}
-                {allowanceItems.length > 0 && (
-                  <View className="flex-row flex-wrap mb-4 ml-6">
-                    {allowanceItems.map((item, idx) => (
-                      <Badge key={idx} variant="default" size="sm" className="mr-2 mb-1">
+                {allowanceItems.length > 0 ? (
+                  <View className="mb-4 ml-6 flex-row flex-wrap">
+                    {allowanceItems.map((item, index) => (
+                      <Badge
+                        key={`${item}-${index}`}
+                        variant="default"
+                        size="sm"
+                        className="mb-1 mr-2"
+                      >
                         {item}
                       </Badge>
                     ))}
                   </View>
-                )}
+                ) : null}
 
-                {managementView?.taxLabel && (
-                  <View className="flex-row items-center mb-4">
+                {managementView.taxLabel ? (
+                  <View className="mb-4 flex-row items-center">
                     <CurrencyDollarIcon size={18} color="#9333EA" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                       {managementView.taxLabel}
                     </Text>
                   </View>
-                )}
+                ) : null}
 
-                {/* 사전질문 설정 (v2.0) */}
-                {(managementView?.questions.length ?? preQuestionCount) > 0 && (
-                  <View className="flex-row items-center mb-4">
+                {questionCount > 0 ? (
+                  <View className="mb-4 flex-row items-center">
                     <DocumentIcon size={18} color="#9333EA" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                      사전질문 {preQuestionCount}개 설정됨
+                      사전질문 {questionCount}개 설정됨
                     </Text>
                   </View>
-                )}
+                ) : null}
               </>
-            )}
+            ) : null}
 
-            {/* 모집 현황 - 지원자(사람) + 배정(슬롯) 구분 표시 */}
-            <View className="px-3 pt-3 pb-2 bg-gray-50 dark:bg-surface rounded-lg">
-              {/* 지원자 현황 (사람 수) */}
+            <View className="rounded-lg bg-gray-50 px-3 pb-2 pt-3 dark:bg-surface">
               <View
-                className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-surface-overlay' : ''}`}
+                className={`flex-row justify-around ${
+                  posting.postingType === 'tournament'
+                    ? 'mb-2 border-b border-gray-200 pb-2 dark:border-surface-overlay'
+                    : ''
+                }`}
               >
-                <View className="items-center flex-1">
+                <View className="flex-1 items-center">
                   <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                     {totalApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">지원자</Text>
                 </View>
                 <View className="w-px bg-gray-200 dark:bg-surface" />
-                <View className="items-center flex-1">
+                <View className="flex-1 items-center">
                   <Text className="text-xl font-bold text-success-600 dark:text-success-400">
                     {confirmedApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
                 </View>
                 <View className="w-px bg-gray-200 dark:bg-surface" />
-                <View className="items-center flex-1">
+                <View className="flex-1 items-center">
                   <Text className="text-xl font-bold text-warning-600 dark:text-warning-400">
                     {pendingApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">대기중</Text>
                 </View>
               </View>
-              {/* 배정 현황 (슬롯 수) - 대회공고 타입만 표시 */}
-              {posting.postingType === 'tournament' && (
-                <View className="flex-row justify-center items-center">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-1.5">배정현황</Text>
+
+              {posting.postingType === 'tournament' ? (
+                <View className="flex-row items-center justify-center">
+                  <Text className="mr-1.5 text-xs text-gray-500 dark:text-gray-400">배정 현황</Text>
                   <Text className="text-base font-bold text-gray-900 dark:text-white">
                     {filledPositions}
                   </Text>
-                  <Text className="text-base text-gray-400 dark:text-gray-500 mx-0.5">/</Text>
+                  <Text className="mx-0.5 text-base text-gray-400 dark:text-gray-500">/</Text>
                   <Text className="text-base font-bold text-gray-600 dark:text-gray-400">
                     {totalPositions}
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">건</Text>
+                  <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">명</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </Card>
         </View>
 
-        {/* 관리 메뉴 */}
-        <View className="px-4 pt-3 pb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">관리</Text>
+        <View className="px-4 pb-4 pt-3">
+          <Text className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">관리</Text>
 
           <View className="gap-3">
-            {/* 지원자 관리 */}
             <ActionCard
               icon={<UsersIcon size={24} color="#9333EA" />}
               title="지원자 관리"
-              description={`${pendingApplicants}명의 지원자가 대기중입니다`}
+              description={`${pendingApplicants}명의 지원자가 대기중입니다.`}
               badge={
                 pendingApplicants > 0
                   ? { label: `${pendingApplicants}명`, variant: 'warning' }
@@ -517,11 +385,10 @@ export default function JobPostingDetailScreen() {
               onPress={handleApplicants}
             />
 
-            {/* 취소 요청 관리 */}
             <ActionCard
               icon={<XCircleIcon size={24} color="#EF4444" />}
               title="취소 요청 관리"
-              description="스태프의 취소 요청 검토"
+              description="스태프의 취소 요청을 검토합니다."
               badge={
                 cancellationPendingCount > 0
                   ? { label: `${cancellationPendingCount}건`, variant: 'error' }
@@ -530,102 +397,92 @@ export default function JobPostingDetailScreen() {
               onPress={handleCancellationRequests}
             />
 
-            {/* 스태프/정산 관리 */}
             <ActionCard
               icon={<BanknotesIcon size={24} color="#10B981" />}
-              title="스태프/정산 관리"
-              description="확정 스태프 관리 및 정산"
+              title="스태프 정산 관리"
+              description="확정 스태프 관리와 정산을 진행합니다."
               badge={
                 filledPositions > 0
-                  ? { label: `${filledPositions}건`, variant: 'success' }
+                  ? { label: `${filledPositions}명`, variant: 'success' }
                   : undefined
               }
               onPress={handleSettlements}
             />
 
-            {/* 공고 수정 */}
             <ActionCard
               icon={<EditIcon size={24} color="#6B7280" />}
               title="공고 수정"
-              description="공고 내용 수정 및 상태 변경"
+              description="공고 내용과 상태를 수정합니다."
               onPress={handleEdit}
             />
           </View>
         </View>
 
-        {/* 공고 설명 */}
-        {posting.description && String(posting.description).length > 0 && (
+        {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <Text className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
               공고 내용
             </Text>
             <Card variant="outlined" padding="md">
-              <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
+              <Text className="text-base leading-6 text-gray-700 dark:text-gray-300">
                 {String(posting.description)}
               </Text>
             </Card>
           </View>
-        )}
+        ) : null}
 
-        {/* 대회공고 거부 안내 및 재제출 (거부된 경우에만 표시) */}
         {posting.postingType === 'tournament' &&
-          posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.REJECTED && (
-            <View className="px-4 pb-4">
-              <Card
-                variant="outlined"
-                padding="md"
-                className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
-              >
-                <View className="flex-row items-start mb-3">
-                  <XCircleIcon size={20} color="#EF4444" />
-                  <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
-                    승인이 거부되었습니다
+        posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.REJECTED ? (
+          <View className="px-4 pb-4">
+            <Card
+              variant="outlined"
+              padding="md"
+              className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
+            >
+              <View className="mb-3 flex-row items-start">
+                <XCircleIcon size={20} color="#EF4444" />
+                <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
+                  승인에 반려되었습니다
+                </Text>
+              </View>
+
+              {posting.tournamentConfig.rejectionReason ? (
+                <View className="mb-4 rounded-lg bg-white p-3 dark:bg-surface">
+                  <Text className="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    반려 사유
+                  </Text>
+                  <Text className="text-base text-gray-700 dark:text-gray-300">
+                    {posting.tournamentConfig.rejectionReason}
                   </Text>
                 </View>
+              ) : null}
 
-                {posting.tournamentConfig.rejectionReason && (
-                  <View className="mb-4 p-3 bg-white dark:bg-surface rounded-lg">
-                    <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      거부 사유
-                    </Text>
-                    <Text className="text-base text-gray-700 dark:text-gray-300">
-                      {posting.tournamentConfig.rejectionReason}
-                    </Text>
-                  </View>
-                )}
+              <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                공고 내용을 수정한 뒤 다시 제출하면 재검토가 진행됩니다.
+              </Text>
 
-                <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
-                </Text>
-
-                <View className="flex-row">
-                  <Pressable
-                    onPress={handleEdit}
-                    className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center"
-                  >
-                    <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
-                      수정하기
-                    </Text>
-                  </Pressable>
-                  <View className="flex-1 ml-2">
-                    <ResubmitButton
-                      postingId={posting.id}
-                      size="md"
-                      fullWidth
-                      onSuccess={refresh}
-                    />
-                  </View>
+              <View className="flex-row">
+                <Pressable
+                  onPress={handleEdit}
+                  className="mr-2 flex-1 items-center justify-center rounded-xl border border-primary-600 py-3 dark:border-primary-500"
+                >
+                  <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
+                    수정하기
+                  </Text>
+                </Pressable>
+                <View className="ml-2 flex-1">
+                  <ResubmitButton postingId={posting.id} size="md" fullWidth onSuccess={refresh} />
                 </View>
-              </Card>
-            </View>
-          )}
+              </View>
+            </Card>
+          </View>
+        ) : null}
 
-        {/* 공고 삭제 버튼 */}
-        <View className="px-4 pb-8 pt-4 border-t border-gray-200 dark:border-surface-overlay">
+        <View className="border-t border-gray-200 px-4 pb-8 pt-4 dark:border-surface-overlay">
           <Pressable
             onPress={handleDeletePress}
             disabled={isDeleting}
-            className="flex-row items-center justify-center py-4 rounded-xl bg-red-50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30"
+            className="flex-row items-center justify-center rounded-xl bg-red-50 py-4 active:bg-red-100 dark:bg-red-900/20 dark:active:bg-red-900/30"
             accessibilityRole="button"
             accessibilityLabel="공고 삭제"
             accessibilityState={{ disabled: isDeleting }}
@@ -641,19 +498,18 @@ export default function JobPostingDetailScreen() {
               </>
             )}
           </Pressable>
-          <Text className="text-center text-xs text-gray-400 dark:text-gray-500 mt-2">
+          <Text className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
             확정된 지원자가 있는 공고는 삭제할 수 없습니다
           </Text>
         </View>
       </ScrollView>
 
-      {/* 삭제 확인 모달 */}
       <ConfirmModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
         title="공고 삭제"
-        message="정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다."
+        message="정말 이 공고를 삭제하시겠습니까? 삭제한 공고는 복구할 수 없습니다."
         confirmText="삭제"
         cancelText="취소"
         isDestructive

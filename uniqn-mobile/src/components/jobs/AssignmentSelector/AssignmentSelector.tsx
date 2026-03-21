@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useJobSchedule } from '@/hooks';
+import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import type { Assignment } from '@/types';
 import { createSimpleAssignment, FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
@@ -27,6 +28,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   error,
 }: AssignmentSelectorProps) {
   const { datedSchedules, isFixed, fixedSchedule } = useJobSchedule(jobPosting);
+  const postingFacts = useMemo(() => buildPostingFacts(jobPosting), [jobPosting]);
 
   const selectedKeys = useMemo(() => {
     const keys = new Set<SelectionKey>();
@@ -93,34 +95,15 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       .join(', ');
   }, [selectedAssignments]);
 
-  const isTournament = jobPosting.postingType === 'tournament';
+  const isTournament = postingFacts.workflow.isTournament;
   const groupedRequirements = useMemo(
-    () =>
-      jobPosting.schedule.kind !== 'dated'
-        ? []
-        : jobPosting.schedule.requirements.map((requirement) => ({
-            date: requirement.date,
-            isGrouped: requirement.isGrouped,
-            timeSlots: requirement.timeSlots.map((slot) => ({
-              id: slot.id,
-              startTime: slot.startTime,
-              isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
-              tentativeDescription: slot.tentativeDescription,
-              roles: slot.roles.map((role) => ({
-                id: role.id,
-                role: role.role,
-                customRole: role.customRole,
-                headcount: role.count,
-                filled: role.filled ?? 0,
-              })),
-            })),
-          })),
+    () => createPostingLegacyDateRequirements(jobPosting),
     [jobPosting]
   );
 
   const scheduleGroups = useMemo(() => {
-    return groupDatedSchedules(datedSchedules, groupedRequirements, jobPosting.postingType);
-  }, [datedSchedules, groupedRequirements, jobPosting.postingType]);
+    return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
+  }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
 
   const handleGroupRoleToggle = useCallback(
     (group: ScheduleGroup, slotTime: string, role: string, timeOptions?: TimeOptions) => {

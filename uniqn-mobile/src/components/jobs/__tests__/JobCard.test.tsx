@@ -1,14 +1,11 @@
 /**
  * UNIQN Mobile - JobCard Component Tests
- *
- * @description 구인공고 카드 컴포넌트 테스트
- * @version 2.0.0 - dateRequirements 지원
  */
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
-import { JobCard } from '../JobCard';
+import { fireEvent, render } from '@testing-library/react-native';
 import type { JobPostingCard } from '@/types';
+import { JobCard } from '../JobCard';
 
 jest.mock('@/hooks/useBookmarks', () => ({
   useBookmarks: () => ({
@@ -17,7 +14,6 @@ jest.mock('@/hooks/useBookmarks', () => ({
   }),
 }));
 
-// Mock Badge component
 jest.mock('@/components/ui/Badge', () => ({
   Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -26,173 +22,240 @@ jest.mock('@/components/ui/Badge', () => ({
   },
 }));
 
-// Mock PostingTypeBadge component
 jest.mock('../PostingTypeBadge', () => ({
-  PostingTypeBadge: ({ type }: { type: string; size?: string; className?: string }) => {
+  PostingTypeBadge: ({ type }: { type: string }) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text } = require('react-native');
     return <Text testID={`posting-type-${type}`}>{type}</Text>;
   },
 }));
 
-describe('JobCard', () => {
-  const mockOnPress = jest.fn();
+function createRoleAvailability(roles: string[]): JobPostingCard['roleAvailability'] {
+  const items = roles.map((roleKey) => {
+    const isCustom = roleKey === 'custom';
 
-  const mockJob: JobPostingCard = {
+    return {
+      key: isCustom ? 'other:custom' : roleKey,
+      role: (isCustom
+        ? 'other'
+        : roleKey) as JobPostingCard['roleAvailability']['items'][number]['role'],
+      customRole: isCustom ? 'custom' : undefined,
+      roleLabel: roleKey,
+      count: 1,
+      filled: 0,
+      remaining: 1,
+      isAvailable: true,
+    };
+  });
+
+  return {
+    items,
+    availableItems: items,
+    totalCount: items.length,
+    filledCount: 0,
+    remainingCount: items.length,
+    hasAvailableRoles: items.length > 0,
+  };
+}
+
+function createJobCard(overrides: Partial<JobPostingCard> = {}): JobPostingCard {
+  const roles = overrides.roles ?? ['dealer', 'manager'];
+  const dateRequirements = overrides.dateRequirements ?? [
+    {
+      date: '2025-01-15',
+      timeSlots: [
+        {
+          startTime: '18:00',
+          roles: [
+            { role: 'dealer', count: 3, filled: 1, salary: { type: 'daily', amount: 150000 } },
+            { role: 'manager', count: 2, filled: 0, salary: { type: 'daily', amount: 150000 } },
+          ],
+        },
+      ],
+    },
+  ];
+  const defaultSalary = overrides.defaultSalary ?? { type: 'daily', amount: 150000 };
+  const salaryRows = overrides.salaryRows ?? [
+    {
+      key: 'dealer-daily-150000',
+      role: 'dealer',
+      roleLabel: '딜러',
+      salary: { type: 'daily', amount: 150000 },
+      text: '일급 150,000원',
+    },
+    {
+      key: 'manager-daily-150000',
+      role: 'manager',
+      roleLabel: '매니저',
+      salary: { type: 'daily', amount: 150000 },
+      text: '일급 150,000원',
+    },
+  ];
+  const useSameSalary = overrides.useSameSalary ?? true;
+  const workflow = overrides.workflow ?? {
+    scheduleKind: 'dated',
+    isFixed: false,
+    isDated: true,
+    isTournament: overrides.postingType === 'tournament',
+    isUrgent: overrides.isUrgent ?? false,
+    recruitmentType: 'event',
+    usesGroupedDateRanges: overrides.postingType === 'tournament',
+  };
+  const roleAvailability = overrides.roleAvailability ?? createRoleAvailability(roles);
+  const salaryOverflowCount =
+    overrides.salaryOverflowCount ??
+    Math.max(0, (overrides.fullSalaryRows ?? salaryRows).length - salaryRows.length);
+  const scheduleDisplay = overrides.scheduleDisplay ?? {
+    variant: workflow.isFixed ? 'fixed' : 'dated_requirements',
+    dateRequirements,
+    dateGroups: [],
+    workDate: overrides.workDate ?? '2025-01-15',
+    timeSlot: overrides.timeSlot ?? '18:00 - 02:00',
+    fixed: workflow.isFixed
+      ? {
+          daysPerWeek: overrides.daysPerWeek,
+          startTime: overrides.startTime,
+        }
+      : undefined,
+  };
+  const salaryDisplay = overrides.salaryDisplay ?? {
+    defaultSalary,
+    rows: overrides.fullSalaryRows ?? salaryRows,
+    previewRows: salaryRows,
+    overflowCount: salaryOverflowCount,
+    useSameSalary,
+    hasRoleSpecificSalary: !useSameSalary && (overrides.fullSalaryRows ?? salaryRows).length > 0,
+  };
+  const applicationEligibility = overrides.applicationEligibility ?? {
+    canApply: true,
+    selectionMode: workflow.isFixed ? 'fixed_role' : 'dated_assignment',
+    requiresRoleSelection: workflow.isFixed,
+    requiresAssignmentSelection: !workflow.isFixed,
+    requiresPreQuestions: false,
+    fixedAssignmentTimeSlot: workflow.isFixed
+      ? (overrides.startTime ?? overrides.timeSlot ?? '-')
+      : '-',
+    availableRoleOptions: roleAvailability.availableItems,
+  };
+
+  const baseCard: JobPostingCard = {
     id: 'job-1',
     title: '테스트 공고',
     location: '서울 강남구',
     fullLocation: '서울 강남구 역삼동 123-45',
     workDate: '2025-01-15',
     timeSlot: '18:00 - 02:00',
-    roles: ['dealer', 'manager'],
-    dateRequirements: [
-      {
-        date: '2025-01-15',
-        timeSlots: [
-          {
-            startTime: '18:00',
-            roles: [
-              { role: 'dealer', count: 3, filled: 1, salary: { type: 'daily', amount: 150000 } },
-              { role: 'manager', count: 2, filled: 0, salary: { type: 'daily', amount: 150000 } },
-            ],
-          },
-        ],
-      },
-    ],
-    defaultSalary: {
-      type: 'daily',
-      amount: 150000,
-    },
+    roles,
+    dateRequirements,
+    defaultSalary,
     allowanceLabels: [],
-    salaryRows: [
-      {
-        key: 'dealer-daily-150000',
-        role: 'dealer',
-        roleLabel: '딜러',
-        salary: { type: 'daily', amount: 150000 },
-        text: '일급 150,000원',
-      },
-      {
-        key: 'manager-daily-150000',
-        role: 'manager',
-        roleLabel: '매니저',
-        salary: { type: 'daily', amount: 150000 },
-        text: '일급 150,000원',
-      },
-    ],
-    salaryOverflowCount: 0,
-    useSameSalary: true,
+    salaryRows,
+    salaryOverflowCount,
+    useSameSalary,
     status: 'active',
     isUrgent: false,
     applicationCount: 5,
+    workflow,
+    scheduleDisplay,
+    salaryDisplay,
+    roleAvailability,
+    applicationEligibility,
   };
+
+  return {
+    ...baseCard,
+    ...overrides,
+    roles,
+    dateRequirements,
+    defaultSalary,
+    salaryRows,
+    salaryOverflowCount,
+    useSameSalary,
+    workflow,
+    scheduleDisplay,
+    salaryDisplay,
+    roleAvailability,
+    applicationEligibility,
+  };
+}
+
+describe('JobCard', () => {
+  const mockOnPress = jest.fn();
+  const mockJob = createJobCard();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should render job title', () => {
+  it('renders the title and location', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText('테스트 공고')).toBeTruthy();
-  });
-
-  it('should render location', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
-
     expect(getByText(/서울 강남구/)).toBeTruthy();
   });
 
-  it('should render date from dateRequirements', () => {
+  it('renders date and time from schedule display', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    // Date format: M/D(요일)
-    // 2025-01-15 is Wednesday
     expect(getByText(/1\/15\(수\)/)).toBeTruthy();
-  });
-
-  it('should render start time from dateRequirements', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
-
     expect(getByText(/18:00/)).toBeTruthy();
   });
 
-  it('should render salary correctly for daily type', () => {
+  it('renders salary using the shared salary projection', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText(/일급 150,000원/)).toBeTruthy();
   });
 
-  it('should render salary correctly for hourly type', () => {
-    const hourlyJob: JobPostingCard = {
-      ...mockJob,
-      defaultSalary: {
-        type: 'hourly',
-        amount: 15000,
-      },
-    };
+  it('renders hourly and monthly salary formats', () => {
+    const hourlyJob = createJobCard({
+      defaultSalary: { type: 'hourly', amount: 15000 },
+    });
+    const monthlyJob = createJobCard({
+      defaultSalary: { type: 'monthly', amount: 3000000 },
+    });
 
-    const { getByText } = render(<JobCard job={hourlyJob} onPress={mockOnPress} />);
+    const hourly = render(<JobCard job={hourlyJob} onPress={mockOnPress} />);
+    const monthly = render(<JobCard job={monthlyJob} onPress={mockOnPress} />);
 
-    expect(getByText(/시급 15,000원/)).toBeTruthy();
+    expect(hourly.getByText(/시급 15,000원/)).toBeTruthy();
+    expect(monthly.getByText(/월급 3,000,000원/)).toBeTruthy();
   });
 
-  it('should render salary correctly for monthly type', () => {
-    const monthlyJob: JobPostingCard = {
-      ...mockJob,
-      defaultSalary: {
-        type: 'monthly',
-        amount: 3000000,
-      },
-    };
-
-    const { getByText } = render(<JobCard job={monthlyJob} onPress={mockOnPress} />);
-
-    expect(getByText(/월급 3,000,000원/)).toBeTruthy();
-  });
-
-  it('should render role with count and filled status', () => {
+  it('renders role counts from the schedule projection', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    // 딜러 3명 (1/3), 매니저 2명 (0/2) 형식으로 표시
-    expect(getByText(/딜러/)).toBeTruthy();
-    expect(getByText(/3명/)).toBeTruthy();
-    expect(getByText(/1\/3/)).toBeTruthy();
-    expect(getByText(/매니저/)).toBeTruthy();
-    expect(getByText(/2명/)).toBeTruthy();
-    expect(getByText(/0\/2/)).toBeTruthy();
+    expect(getByText(/딜러 3명 \(1\/3\)/)).toBeTruthy();
+    expect(getByText(/매니저 2명 \(0\/2\)/)).toBeTruthy();
   });
 
-  it('should render urgent badge when isUrgent is true', () => {
-    const urgentJob: JobPostingCard = {
-      ...mockJob,
-      isUrgent: true,
-    };
+  it('renders the urgent badge only when urgent', () => {
+    const urgentJob = createJobCard({ isUrgent: true });
 
-    const { getByText } = render(<JobCard job={urgentJob} onPress={mockOnPress} />);
+    const urgent = render(<JobCard job={urgentJob} onPress={mockOnPress} />);
+    const normal = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    expect(getByText('긴급')).toBeTruthy();
+    expect(urgent.getByText('긴급')).toBeTruthy();
+    expect(normal.queryByText('긴급')).toBeNull();
   });
 
-  it('should not render urgent badge when isUrgent is false', () => {
-    const { queryByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
+  it('renders grouped allowances when provided', () => {
+    const jobWithAllowances = createJobCard({
+      allowances: {
+        meal: 10000,
+        transportation: 5000,
+      },
+      allowanceLabels: ['식비 10,000원', '교통비 5,000원'],
+    });
 
-    expect(queryByText('긴급')).toBeNull();
+    const { getByText } = render(<JobCard job={jobWithAllowances} onPress={mockOnPress} />);
+
+    expect(getByText(/식비 10,000원/)).toBeTruthy();
+    expect(getByText(/교통비 5,000원/)).toBeTruthy();
   });
 
-  it('should call onPress with job id when pressed', () => {
-    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
-
-    const title = getByText('테스트 공고');
-    fireEvent.press(title);
-
-    expect(mockOnPress).toHaveBeenCalledWith('job-1');
-  });
-
-  it('should render multiple dates from dateRequirements', () => {
-    const multiDateJob: JobPostingCard = {
-      ...mockJob,
+  it('supports multi-date dated schedules', () => {
+    const multiDateJob = createJobCard({
       dateRequirements: [
         {
           date: '2025-01-15',
@@ -213,7 +276,7 @@ describe('JobCard', () => {
           ],
         },
       ],
-    };
+    });
 
     const { getByText } = render(<JobCard job={multiDateJob} onPress={mockOnPress} />);
 
@@ -221,115 +284,90 @@ describe('JobCard', () => {
     expect(getByText(/1\/16\(목\)/)).toBeTruthy();
   });
 
-  it('should render allowances when provided', () => {
-    const jobWithAllowances: JobPostingCard = {
-      ...mockJob,
-      allowances: {
-        meal: 10000,
-        transportation: 5000,
-      },
-      allowanceLabels: ['식비 10,000원', '교통비 5,000원'],
-    };
+  it('calls onPress with the job id', () => {
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    const { getByText } = render(<JobCard job={jobWithAllowances} onPress={mockOnPress} />);
+    fireEvent.press(getByText('테스트 공고'));
 
-    expect(getByText(/식비 10,000원/)).toBeTruthy();
-    expect(getByText(/교통비 5,000원/)).toBeTruthy();
-  });
-
-  it('should not render allowances when not provided', () => {
-    const { queryByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
-
-    expect(queryByText(/식비/)).toBeNull();
-    expect(queryByText(/교통비/)).toBeNull();
+    expect(mockOnPress).toHaveBeenCalledWith('job-1');
   });
 });
 
 describe('JobCard role labels', () => {
   const mockOnPress = jest.fn();
 
-  const createJobWithRole = (role: string): JobPostingCard => ({
-    id: 'job-1',
-    title: '테스트 공고',
-    location: '서울',
-    fullLocation: '서울',
-    workDate: '2025-01-15',
-    timeSlot: '18:00 - 02:00',
-    roles: [role],
-    dateRequirements: [
-      {
-        date: '2025-01-15',
-        timeSlots: [
-          {
-            startTime: '18:00',
-            roles: [{ role, count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } }],
-          },
-        ],
-      },
-    ],
-    defaultSalary: { type: 'daily', amount: 150000 },
-    allowanceLabels: [],
-    salaryRows: [
-      {
-        key: `${role}-daily-150000`,
-        role,
-        roleLabel: role,
-        salary: { type: 'daily', amount: 150000 },
-        text: '일급 150,000원',
-      },
-    ],
-    salaryOverflowCount: 0,
-    useSameSalary: true,
-    status: 'active',
-    isUrgent: false,
-  });
+  const createJobWithRole = (role: string): JobPostingCard =>
+    createJobCard({
+      location: '서울',
+      fullLocation: '서울',
+      roles: [role],
+      dateRequirements: [
+        {
+          date: '2025-01-15',
+          timeSlots: [
+            {
+              startTime: '18:00',
+              roles: [{ role, count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } }],
+            },
+          ],
+        },
+      ],
+      salaryRows: [
+        {
+          key: `${role}-daily-150000`,
+          role,
+          roleLabel: role,
+          salary: { type: 'daily', amount: 150000 },
+          text: '일급 150,000원',
+        },
+      ],
+    });
 
-  it('should display "딜러" for dealer role', () => {
+  it('renders dealer as 딜러', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('dealer')} onPress={mockOnPress} />
     );
+
     expect(getByText(/딜러/)).toBeTruthy();
   });
 
-  it('should display "매니저" for manager role', () => {
+  it('renders manager as 매니저', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('manager')} onPress={mockOnPress} />
     );
+
     expect(getByText(/매니저/)).toBeTruthy();
   });
 
-  it('should display "서빙" for serving role', () => {
+  it('renders serving as 서빙', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('serving')} onPress={mockOnPress} />
     );
+
     expect(getByText(/서빙/)).toBeTruthy();
   });
 
-  it('should display "일반" for staff role', () => {
+  it('renders staff as 일반', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('staff')} onPress={mockOnPress} />
     );
+
     expect(getByText(/일반/)).toBeTruthy();
   });
 
-  it('should display role as-is for unknown roles', () => {
+  it('renders custom roles as-is', () => {
     const { getByText } = render(
       <JobCard job={createJobWithRole('custom')} onPress={mockOnPress} />
     );
+
     expect(getByText(/custom/)).toBeTruthy();
   });
 });
 
 describe('JobCard accessibility', () => {
   const mockOnPress = jest.fn();
-
-  const mockJob: JobPostingCard = {
-    id: 'job-1',
-    title: '테스트 공고',
-    location: '서울 강남구',
+  const mockJob = createJobCard({
     fullLocation: '서울 강남구',
-    workDate: '2025-01-15',
-    timeSlot: '18:00 - 02:00',
     roles: ['dealer'],
     dateRequirements: [
       {
@@ -344,8 +382,6 @@ describe('JobCard accessibility', () => {
         ],
       },
     ],
-    defaultSalary: { type: 'daily', amount: 150000 },
-    allowanceLabels: [],
     salaryRows: [
       {
         key: 'dealer-daily-150000',
@@ -355,17 +391,12 @@ describe('JobCard accessibility', () => {
         text: '일급 150,000원',
       },
     ],
-    salaryOverflowCount: 0,
-    useSameSalary: true,
-    status: 'active',
-    isUrgent: false,
-  };
+  });
 
-  it('should be pressable', () => {
+  it('remains pressable', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    const card = getByText('테스트 공고');
-    fireEvent.press(card);
+    fireEvent.press(getByText('테스트 공고'));
 
     expect(mockOnPress).toHaveBeenCalledTimes(1);
   });

@@ -6,7 +6,7 @@ if (!admin.apps.length) {
 }
 
 const { resubmitJobPosting } =
-  require("../src/api/jobPostings/resubmitJobPosting") as typeof import("../src/api/jobPostings/resubmitJobPosting");
+  require("../src/api/jobPostings") as typeof import("../src/api/jobPostings");
 
 describe("resubmitJobPosting canonical contract", () => {
   beforeEach(async () => {
@@ -92,6 +92,11 @@ describe("resubmitJobPosting canonical contract", () => {
     expect(tournamentConfig.approvalStatus).to.equal("pending");
     expect(tournamentConfig.submittedAt).to.deep.equal(submittedAt);
     expect(tournamentConfig.resubmittedAt).to.exist;
+    expect(Object.keys(tournamentConfig).sort()).to.deep.equal([
+      "approvalStatus",
+      "resubmittedAt",
+      "submittedAt",
+    ]);
     expect("rejectedBy" in tournamentConfig).to.equal(false);
     expect("rejectedAt" in tournamentConfig).to.equal(false);
     expect("rejectionReason" in tournamentConfig).to.equal(false);

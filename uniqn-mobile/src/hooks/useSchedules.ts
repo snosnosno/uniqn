@@ -27,7 +27,9 @@ import type {
   CalendarView,
   ScheduleEvent,
   ScheduleFilters,
+  ScheduleGroup,
   ScheduleStats,
+  ScheduleType,
   CalendarView as CalendarViewType,
 } from '@/types';
 
@@ -46,22 +48,49 @@ interface UseSchedulesByMonthOptions {
 interface ScheduleQueryPayload {
   schedules: ScheduleEvent[];
   stats?: ScheduleStats;
+  groupedSchedules?: ScheduleGroup[];
+  markedDates?: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
 }
 
-const SCHEDULE_CACHE_SCHEMA_VERSION = 2;
+interface NormalizedScheduleQueryPayload extends ScheduleQueryPayload {
+  groupedSchedules: ScheduleGroup[];
+  markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
+}
+
+const SCHEDULE_CACHE_SCHEMA_VERSION = 3;
+const EMPTY_SCHEDULE_QUERY_PAYLOAD: NormalizedScheduleQueryPayload = {
+  schedules: [],
+  groupedSchedules: [],
+  markedDates: {},
+};
 
 function buildScheduleCacheKey(userId: string | undefined, scope: string, suffix?: string): string {
   return ['schedules', userId ?? 'anonymous', scope, suffix].filter(Boolean).join(':');
 }
 
+function normalizeScheduleQueryPayload(
+  payload: ScheduleQueryPayload
+): NormalizedScheduleQueryPayload {
+  const schedules = payload.schedules ?? [];
+
+  return {
+    schedules,
+    stats: payload.stats,
+    groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
+    markedDates: payload.markedDates ?? getCalendarMarkedDates(schedules),
+  };
+}
+
 function useCachedSchedulePayload(cacheKey: string, ttlMs: number, userId?: string) {
   return useMemo(
     () =>
-      getCriticalOfflineCache<ScheduleQueryPayload>(cacheKey, {
-        ttlMs,
-        userId,
-        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
-      })?.data ?? { schedules: [] },
+      normalizeScheduleQueryPayload(
+        getCriticalOfflineCache<ScheduleQueryPayload>(cacheKey, {
+          ttlMs,
+          userId,
+          schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+        })?.data ?? EMPTY_SCHEDULE_QUERY_PAYLOAD
+      ),
     [cacheKey, ttlMs, userId]
   );
 }
@@ -95,17 +124,25 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
+  const normalizedQueryPayload = useMemo(
+    () => (query.data ? normalizeScheduleQueryPayload(query.data) : null),
+    [query.data]
+  );
+  const realtimePayload = useMemo(
+    () => normalizeScheduleQueryPayload({ schedules: realtimeSchedules }),
+    [realtimeSchedules]
+  );
 
   useEffect(() => {
-    if (!staffId || !query.data) {
+    if (!staffId || !normalizedQueryPayload) {
       return;
     }
 
-    setCriticalOfflineCache(cacheKey, query.data, {
+    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
       userId: staffId,
       schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
     });
-  }, [cacheKey, query.data, staffId]);
+  }, [cacheKey, normalizedQueryPayload, staffId]);
 
   useEffect(() => {
     if (!realtime || !staffId || !isOnline) return;
@@ -126,18 +163,13 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const shouldUseCachedPayload =
     enabled && !!staffId && !realtime && !isOnline && query.data === undefined;
   const queryPayload =
-    query.data !== undefined
-      ? query.data
-      : shouldUseCachedPayload
-        ? cachedPayload
-        : { schedules: [] };
-  const schedules = useMemo(
-    () => (realtime ? realtimeSchedules : (queryPayload.schedules ?? [])),
-    [queryPayload.schedules, realtime, realtimeSchedules]
-  );
-  const stats = realtime ? undefined : queryPayload.stats;
-  const groupedSchedules = useMemo(() => groupSchedulesByDate(schedules), [schedules]);
-  const markedDates = useMemo(() => getCalendarMarkedDates(schedules), [schedules]);
+    normalizedQueryPayload ??
+    (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
+  const effectivePayload = realtime ? realtimePayload : queryPayload;
+  const schedules = effectivePayload.schedules;
+  const stats = realtime ? undefined : effectivePayload.stats;
+  const groupedSchedules = effectivePayload.groupedSchedules;
+  const markedDates = effectivePayload.markedDates;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -147,8 +179,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     await queryClient.invalidateQueries({
       queryKey: queryKeys.schedules.all,
     });
-    await query.refetch();
-  }, [isOnline, query, queryClient]);
+  }, [isOnline, queryClient]);
 
   return {
     schedules,
@@ -189,29 +220,30 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
+  const normalizedQueryPayload = useMemo(
+    () => (query.data ? normalizeScheduleQueryPayload(query.data) : null),
+    [query.data]
+  );
 
   useEffect(() => {
-    if (!staffId || !query.data) {
+    if (!staffId || !normalizedQueryPayload) {
       return;
     }
 
-    setCriticalOfflineCache(cacheKey, query.data, {
+    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
       userId: staffId,
       schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
     });
-  }, [cacheKey, query.data, staffId]);
+  }, [cacheKey, normalizedQueryPayload, staffId]);
 
   const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
   const queryPayload =
-    query.data !== undefined
-      ? query.data
-      : shouldUseCachedPayload
-        ? cachedPayload
-        : { schedules: [] };
-  const schedules = useMemo(() => queryPayload.schedules ?? [], [queryPayload.schedules]);
+    normalizedQueryPayload ??
+    (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
+  const schedules = queryPayload.schedules;
   const stats = queryPayload.stats;
-  const groupedSchedules = useMemo(() => groupSchedulesByDate(schedules), [schedules]);
-  const markedDates = useMemo(() => getCalendarMarkedDates(schedules), [schedules]);
+  const groupedSchedules = queryPayload.groupedSchedules;
+  const markedDates = queryPayload.markedDates;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -257,30 +289,27 @@ export function useSchedulesByDate(date: string, enabled = true) {
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
+  const normalizedQueryPayload = useMemo(
+    () =>
+      query.data !== undefined ? normalizeScheduleQueryPayload({ schedules: query.data }) : null,
+    [query.data]
+  );
 
   useEffect(() => {
-    if (!staffId || !date || !query.data) {
+    if (!staffId || !date || !normalizedQueryPayload) {
       return;
     }
 
-    setCriticalOfflineCache(
-      cacheKey,
-      { schedules: query.data },
-      {
-        userId: staffId,
-        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
-      }
-    );
-  }, [cacheKey, date, query.data, staffId]);
+    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
+      userId: staffId,
+      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+    });
+  }, [cacheKey, date, normalizedQueryPayload, staffId]);
 
   const shouldUseCachedPayload =
     enabled && !!staffId && !!date && !isOnline && query.data === undefined;
   const schedules =
-    query.data !== undefined
-      ? query.data
-      : shouldUseCachedPayload
-        ? (cachedPayload.schedules ?? [])
-        : [];
+    normalizedQueryPayload?.schedules ?? (shouldUseCachedPayload ? cachedPayload.schedules : []);
 
   return {
     schedules,
@@ -326,29 +355,26 @@ export function useTodaySchedules(enabled = true) {
     staleTime: cachingPolicies.realtime,
     refetchInterval: isOnline ? 60 * 1000 : false,
   });
+  const normalizedQueryPayload = useMemo(
+    () =>
+      query.data !== undefined ? normalizeScheduleQueryPayload({ schedules: query.data }) : null,
+    [query.data]
+  );
 
   useEffect(() => {
-    if (!staffId || !query.data) {
+    if (!staffId || !normalizedQueryPayload) {
       return;
     }
 
-    setCriticalOfflineCache(
-      cacheKey,
-      { schedules: query.data },
-      {
-        userId: staffId,
-        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
-      }
-    );
-  }, [cacheKey, query.data, staffId]);
+    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
+      userId: staffId,
+      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+    });
+  }, [cacheKey, normalizedQueryPayload, staffId]);
 
   const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
   const schedules =
-    query.data !== undefined
-      ? query.data
-      : shouldUseCachedPayload
-        ? (cachedPayload.schedules ?? [])
-        : [];
+    normalizedQueryPayload?.schedules ?? (shouldUseCachedPayload ? cachedPayload.schedules : []);
 
   return {
     schedules,
@@ -385,29 +411,26 @@ export function useUpcomingSchedules(days = 7, enabled = true) {
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
+  const normalizedQueryPayload = useMemo(
+    () =>
+      query.data !== undefined ? normalizeScheduleQueryPayload({ schedules: query.data }) : null,
+    [query.data]
+  );
 
   useEffect(() => {
-    if (!staffId || !query.data) {
+    if (!staffId || !normalizedQueryPayload) {
       return;
     }
 
-    setCriticalOfflineCache(
-      cacheKey,
-      { schedules: query.data },
-      {
-        userId: staffId,
-        schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
-      }
-    );
-  }, [cacheKey, query.data, staffId]);
+    setCriticalOfflineCache(cacheKey, normalizedQueryPayload, {
+      userId: staffId,
+      schemaVersion: SCHEDULE_CACHE_SCHEMA_VERSION,
+    });
+  }, [cacheKey, normalizedQueryPayload, staffId]);
 
   const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
   const schedules =
-    query.data !== undefined
-      ? query.data
-      : shouldUseCachedPayload
-        ? (cachedPayload.schedules ?? [])
-        : [];
+    normalizedQueryPayload?.schedules ?? (shouldUseCachedPayload ? cachedPayload.schedules : []);
 
   return {
     schedules,

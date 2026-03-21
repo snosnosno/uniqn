@@ -2,7 +2,7 @@
  * ErrorBoundary helpers 테스트
  */
 
-import { isAppError } from '@/errors';
+import { ERROR_CODES, isAppError } from '@/errors';
 
 import {
   isNetworkRelatedError,
@@ -13,6 +13,9 @@ import {
 
 jest.mock('@/errors', () => ({
   isAppError: jest.fn(),
+  ERROR_CODES: {
+    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+  },
 }));
 
 const mockIsAppError = isAppError as unknown as jest.Mock;
@@ -153,8 +156,8 @@ describe('ErrorBoundary helpers', () => {
       expect(isDataFetchRelatedError(makeAppError('firebase'))).toBe(true);
     });
 
-    it('AppError code에 DOCUMENT_NOT_FOUND 포함하면 true', () => {
-      const err = makeAppError('business', 'E4002_DOCUMENT_NOT_FOUND');
+    it('AppError code가 FIREBASE_DOCUMENT_NOT_FOUND면 true', () => {
+      const err = makeAppError('business', ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND);
       expect(isDataFetchRelatedError(err)).toBe(true);
     });
 

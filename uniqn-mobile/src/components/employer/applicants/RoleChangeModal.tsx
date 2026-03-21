@@ -138,8 +138,8 @@ export function RoleChangeModal({
     // v2.0: 공고의 역할 배열에서 추출
     if (jobPosting) {
       const postingFacts = buildPostingFacts(jobPosting);
-      if (postingFacts.posting.roles.length > 0) {
-        return postingFacts.posting.roles.map((role) => role.role).filter(Boolean) as string[];
+      if (postingFacts.roleAvailability.items.length > 0) {
+        return postingFacts.roleAvailability.items.map((role) => role.key);
       }
     }
     // 기본 역할
