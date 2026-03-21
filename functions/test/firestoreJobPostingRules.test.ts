@@ -182,6 +182,18 @@ describe("Firestore jobPosting canonical rules", () => {
       }),
     );
 
+    await assertFails(
+      updateDoc(doc(employerDb, "jobPostings", "job-1"), {
+        searchIndex: ["tampered"],
+      }),
+    );
+
+    await assertFails(
+      updateDoc(doc(employerDb, "jobPostings", "job-1"), {
+        applicationCount: 99,
+      }),
+    );
+
     await assertSucceeds(
       updateDoc(doc(staffDb, "jobPostings", "job-1"), {
         viewCount: 1,
