@@ -1,4 +1,8 @@
 export {
+  FIXED_POSTING_DURATION_DAYS,
+  deriveWorkDateFieldsFromSchedule,
+  getCanonicalPostingType,
+  isScheduleKindCompatibleWithPostingType,
   mergeJobPostingInput,
   serializeJobPostingV3,
   deserializeJobPostingDocument,

@@ -1,21 +1,10 @@
-/**
- * UNIQN Mobile - JobPostingRepository 테스트
- *
- * @description Firebase JobPosting Repository 단위 테스트
- */
-
-import { getDoc, getDocs, updateDoc, runTransaction } from 'firebase/firestore';
+import { getDoc, getDocs, setDoc, updateDoc, runTransaction } from 'firebase/firestore';
 import { FirebaseJobPostingRepository } from '../jobPosting';
 
-// firebase/firestore의 전역 mock에 documentId가 누락되어 있으므로 추가
 const firestoreMock = jest.requireMock('firebase/firestore');
 if (!firestoreMock.documentId) {
   firestoreMock.documentId = jest.fn(() => '__documentId__');
 }
-
-// ============================================================================
-// Mocks
-// ============================================================================
 
 jest.mock('@/schemas', () => ({
   parseJobPostingDocument: jest.fn((data: Record<string, unknown>) => {
@@ -23,7 +12,7 @@ jest.mock('@/schemas', () => ({
     return data;
   }),
   parseJobPostingDocuments: jest.fn((docs: Record<string, unknown>[]) =>
-    docs.filter((d) => d && d.id)
+    docs.filter((doc) => doc && doc.id)
   ),
 }));
 
@@ -39,31 +28,35 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/errors/serviceErrorHandler', () => ({
   handleServiceError: jest.fn((error: unknown) => {
     if (error instanceof Error) return error;
-    return new Error('서비스 에러');
+    return new Error('service error');
   }),
 }));
 
 jest.mock('@/errors', () => {
   class AppError extends Error {
     code: string;
+
     constructor(code: string, options?: { userMessage?: string }) {
       super(options?.userMessage || code);
       this.code = code;
       this.name = 'AppError';
     }
   }
+
   class BusinessError extends AppError {
     constructor(code: string, options?: { userMessage?: string }) {
       super(code, options);
       this.name = 'BusinessError';
     }
   }
+
   class PermissionError extends AppError {
     constructor(code: string, options?: { userMessage?: string }) {
       super(code, options);
       this.name = 'PermissionError';
     }
   }
+
   return {
     AppError,
     BusinessError,
@@ -73,12 +66,11 @@ jest.mock('@/errors', () => {
       FIREBASE_PERMISSION_DENIED: 'E4001',
       BUSINESS_INVALID_STATE: 'E6010',
     },
-    toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
-    isAppError: (e: unknown) => e instanceof AppError,
+    toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
+    isAppError: (error: unknown) => error instanceof AppError,
   };
 });
 
-// Mock QueryBuilder to pass through
 jest.mock('@/utils/firestore/queryBuilder', () => {
   class MockQueryBuilder {
     private ref: unknown;
@@ -86,38 +78,48 @@ jest.mock('@/utils/firestore/queryBuilder', () => {
     constructor(ref: unknown) {
       this.ref = ref;
     }
+
     whereEqual() {
       return this;
     }
+
     whereIf() {
       return this;
     }
+
     whereArrayContainsAny() {
       return this;
     }
+
     where() {
       return this;
     }
+
     whereDateRange() {
       return this;
     }
+
     orderBy() {
       return this;
     }
+
     orderByDesc() {
       return this;
     }
+
     limit() {
       return this;
     }
+
     paginate() {
       return this;
     }
+
     build() {
-      // Return something that getDocs can consume
       return { _query: true, ref: this.ref };
     }
   }
+
   return { QueryBuilder: MockQueryBuilder };
 });
 
@@ -162,10 +164,6 @@ jest.mock('@/constants', () => ({
   },
 }));
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
 function createMockDocSnap(id: string, data: Record<string, unknown> | null) {
   return {
     id,
@@ -176,17 +174,18 @@ function createMockDocSnap(id: string, data: Record<string, unknown> | null) {
 }
 
 function createMockQuerySnap(docs: { id: string; data: Record<string, unknown> }[]) {
-  const mockDocs = docs.map((d) => ({
-    id: d.id,
+  const mockDocs = docs.map((doc) => ({
+    id: doc.id,
     exists: () => true,
-    data: () => d.data,
-    ref: { id: d.id, path: `jobPostings/${d.id}` },
+    data: () => doc.data,
+    ref: { id: doc.id, path: `jobPostings/${doc.id}` },
   }));
+
   return {
     docs: mockDocs,
     empty: mockDocs.length === 0,
     size: mockDocs.length,
-    forEach: (cb: (doc: (typeof mockDocs)[0]) => void) => mockDocs.forEach(cb),
+    forEach: (callback: (doc: (typeof mockDocs)[0]) => void) => mockDocs.forEach(callback),
   };
 }
 
@@ -195,26 +194,22 @@ function createValidJobPostingData(
 ): Record<string, unknown> {
   return {
     id: 'job-1',
-    title: '湲곗〈 怨듦퀬',
-    description: '?뚯뒪??怨듦퀬',
+    schemaVersion: 3,
+    title: 'Existing posting',
+    description: 'Saved canonical posting',
     ownerId: 'employer-1',
+    ownerName: 'Owner',
     status: 'active',
     postingType: 'regular',
     workDate: '2025-06-15',
-    timeSlot: '09:00',
+    workDates: ['2025-06-15'],
+    roleKeys: ['dealer'],
     location: {
-      name: '?쒖슱',
-      district: '媛뺣궓援?',
-      detailedAddress: '?뚰뿤?濡?123',
+      name: 'Seoul',
+      district: 'Gangnam-gu',
+      detailedAddress: 'Teheran-ro 123',
     },
     contactPhone: '010-1234-5678',
-    roles: [
-      {
-        role: 'dealer',
-        count: 5,
-        filled: 0,
-      },
-    ],
     schedule: {
       kind: 'dated',
       primaryDate: '2025-06-15',
@@ -261,9 +256,50 @@ function createValidJobPostingData(
   };
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
+function createValidCreateInput(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    postingType: 'regular',
+    title: 'Canonical create',
+    description: 'create payload',
+    location: {
+      name: 'Seoul Gangnam',
+      district: 'Teheran-ro',
+    },
+    contactPhone: '010-1234-5678',
+    schedule: {
+      kind: 'dated',
+      primaryDate: '2025-06-15',
+      allDates: ['2025-06-15'],
+      requirements: [
+        {
+          date: '2025-06-15',
+          timeSlots: [
+            {
+              startTime: '09:00',
+              roles: [
+                {
+                  role: 'dealer',
+                  count: 1,
+                  filled: 0,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    roleCatalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
+    compensation: {
+      mode: 'shared',
+      defaultSalary: { type: 'daily', amount: 150000 },
+      allowances: {},
+    },
+    questions: {
+      items: [],
+    },
+    ...overrides,
+  };
+}
 
 describe('FirebaseJobPostingRepository', () => {
   let repository: FirebaseJobPostingRepository;
@@ -273,14 +309,11 @@ describe('FirebaseJobPostingRepository', () => {
     repository = new FirebaseJobPostingRepository();
   });
 
-  // ==========================================================================
-  // getById
-  // ==========================================================================
   describe('getById', () => {
     it('should return job posting when document exists', async () => {
       const jobData = {
         id: 'job-1',
-        title: '테스트 구인공고',
+        title: 'Test posting',
         status: 'active',
         ownerId: 'employer-1',
       };
@@ -291,7 +324,7 @@ describe('FirebaseJobPostingRepository', () => {
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe('job-1');
-      expect(result?.title).toBe('테스트 구인공고');
+      expect(result?.title).toBe('Test posting');
     });
 
     it('should return null when document does not exist', async () => {
@@ -303,7 +336,6 @@ describe('FirebaseJobPostingRepository', () => {
     });
 
     it('should return null when parsing fails', async () => {
-      // parseJobPostingDocument returns null for invalid data
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { parseJobPostingDocument } = require('@/schemas');
       parseJobPostingDocument.mockReturnValueOnce(null);
@@ -322,9 +354,6 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // getByIdBatch
-  // ==========================================================================
   describe('getByIdBatch', () => {
     it('should return empty array for empty input', async () => {
       const result = await repository.getByIdBatch([]);
@@ -335,8 +364,8 @@ describe('FirebaseJobPostingRepository', () => {
 
     it('should return job postings for given IDs', async () => {
       const querySnap = createMockQuerySnap([
-        { id: 'job-1', data: { id: 'job-1', title: '공고 1', status: 'active' } },
-        { id: 'job-2', data: { id: 'job-2', title: '공고 2', status: 'active' } },
+        { id: 'job-1', data: { id: 'job-1', title: 'Posting 1', status: 'active' } },
+        { id: 'job-2', data: { id: 'job-2', title: 'Posting 2', status: 'active' } },
       ]);
 
       (getDocs as jest.Mock).mockImplementation(() => Promise.resolve(querySnap));
@@ -349,40 +378,35 @@ describe('FirebaseJobPostingRepository', () => {
 
     it('should deduplicate input IDs', async () => {
       const querySnap = createMockQuerySnap([
-        { id: 'job-1', data: { id: 'job-1', title: '공고 1', status: 'active' } },
+        { id: 'job-1', data: { id: 'job-1', title: 'Posting 1', status: 'active' } },
       ]);
 
       (getDocs as jest.Mock).mockImplementation(() => Promise.resolve(querySnap));
 
       await repository.getByIdBatch(['job-1', 'job-1', 'job-1']);
 
-      // getDocs should be called once (one chunk with 1 unique ID)
       expect(getDocs).toHaveBeenCalledTimes(1);
     });
 
     it('should handle partial failures gracefully', async () => {
       (getDocs as jest.Mock).mockRejectedValue(new Error('Partial failure'));
 
-      // Promise.allSettled handles partial failures
       const result = await repository.getByIdBatch(['job-1']);
 
       expect(result).toEqual([]);
     });
   });
 
-  // ==========================================================================
-  // getByOwnerId
-  // ==========================================================================
   describe('getByOwnerId', () => {
     it('should return job postings for the given owner', async () => {
       const querySnap = createMockQuerySnap([
         {
           id: 'job-1',
-          data: { id: 'job-1', title: '공고 1', ownerId: 'employer-1', status: 'active' },
+          data: { id: 'job-1', title: 'Posting 1', ownerId: 'employer-1', status: 'active' },
         },
         {
           id: 'job-2',
-          data: { id: 'job-2', title: '공고 2', ownerId: 'employer-1', status: 'closed' },
+          data: { id: 'job-2', title: 'Posting 2', ownerId: 'employer-1', status: 'closed' },
         },
       ]);
 
@@ -414,9 +438,6 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // getTypeCounts
-  // ==========================================================================
   describe('getTypeCounts', () => {
     it('should return correct type counts', async () => {
       const querySnap = createMockQuerySnap([
@@ -468,9 +489,6 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // incrementViewCount
-  // ==========================================================================
   describe('incrementViewCount', () => {
     it('should call updateDoc with increment', async () => {
       (updateDoc as jest.Mock).mockResolvedValue(undefined);
@@ -483,14 +501,10 @@ describe('FirebaseJobPostingRepository', () => {
     it('should not throw when updateDoc fails', async () => {
       (updateDoc as jest.Mock).mockRejectedValue(new Error('Update failed'));
 
-      // incrementViewCount silently handles errors
       await expect(repository.incrementViewCount('job-1')).resolves.toBeUndefined();
     });
   });
 
-  // ==========================================================================
-  // updateStatus
-  // ==========================================================================
   describe('updateStatus', () => {
     it('should update job posting status', async () => {
       (updateDoc as jest.Mock).mockResolvedValue(undefined);
@@ -507,9 +521,41 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // deleteWithTransaction
-  // ==========================================================================
+  describe('createWithTransaction', () => {
+    it('writes a canonical posting when validation succeeds', async () => {
+      (setDoc as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await repository.createWithTransaction(createValidCreateInput() as never, {
+        ownerId: 'employer-1',
+        ownerName: 'Owner',
+      });
+
+      expect(result).toBeDefined();
+      expect(setDoc).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks Firestore writes when canonical validation fails before create', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { parseJobPostingDocument } = require('@/schemas');
+      parseJobPostingDocument.mockReturnValueOnce(null);
+      (setDoc as jest.Mock).mockResolvedValue(undefined);
+
+      await expect(
+        repository.createWithTransaction(
+          createValidCreateInput({
+            postingType: 'fixed',
+          }) as never,
+          {
+            ownerId: 'employer-1',
+            ownerName: 'Owner',
+          }
+        )
+      ).rejects.toThrow();
+
+      expect(setDoc).not.toHaveBeenCalled();
+    });
+  });
+
   describe('deleteWithTransaction', () => {
     it('should soft-delete job posting (set status to cancelled)', async () => {
       const mockTransaction = {
@@ -523,9 +569,10 @@ describe('FirebaseJobPostingRepository', () => {
         ),
         update: jest.fn(),
       };
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await repository.deleteWithTransaction('job-1', 'employer-1');
 
@@ -537,9 +584,9 @@ describe('FirebaseJobPostingRepository', () => {
         get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', null)),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.deleteWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
@@ -556,9 +603,9 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.deleteWithTransaction('job-1', 'wrong-employer')).rejects.toThrow();
     });
@@ -575,17 +622,14 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.deleteWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
-  // ==========================================================================
-  // closeWithTransaction
-  // ==========================================================================
   describe('closeWithTransaction', () => {
     it('should close an active job posting', async () => {
       const mockTransaction = {
@@ -599,9 +643,9 @@ describe('FirebaseJobPostingRepository', () => {
         update: jest.fn(),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await repository.closeWithTransaction('job-1', 'employer-1');
 
@@ -619,17 +663,14 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.closeWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
-  // ==========================================================================
-  // reopenWithTransaction
-  // ==========================================================================
   describe('reopenWithTransaction', () => {
     it('should reopen a closed job posting', async () => {
       const mockTransaction = {
@@ -644,9 +685,9 @@ describe('FirebaseJobPostingRepository', () => {
         update: jest.fn(),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await repository.reopenWithTransaction('job-1', 'employer-1');
 
@@ -664,9 +705,9 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.reopenWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
@@ -682,17 +723,14 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(repository.reopenWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
-  // ==========================================================================
-  // verifyOwnership
-  // ==========================================================================
   describe('verifyOwnership', () => {
     it('should return true when user is the owner', async () => {
       (getDoc as jest.Mock).mockResolvedValue(
@@ -739,9 +777,6 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // getStatsByOwnerId
-  // ==========================================================================
   describe('getStatsByOwnerId', () => {
     it('should return correct stats for owner', async () => {
       const querySnap = createMockQuerySnap([
@@ -790,16 +825,13 @@ describe('FirebaseJobPostingRepository', () => {
     });
   });
 
-  // ==========================================================================
-  // updateWithTransaction
-  // ==========================================================================
   describe('updateWithTransaction', () => {
     it('should update job posting successfully', async () => {
       const mockTransaction = {
         get: jest.fn().mockResolvedValue(
           createMockDocSnap('job-1', {
             id: 'job-1',
-            title: '기존 공고',
+            title: 'Existing posting',
             ownerId: 'employer-1',
             status: 'active',
             filledPositions: 0,
@@ -810,9 +842,9 @@ describe('FirebaseJobPostingRepository', () => {
         update: jest.fn(),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       mockTransaction.get.mockResolvedValueOnce(
         createMockDocSnap('job-1', createValidJobPostingData())
@@ -820,13 +852,40 @@ describe('FirebaseJobPostingRepository', () => {
 
       const result = await repository.updateWithTransaction(
         'job-1',
-        { title: '수정된 공고' } as Record<string, unknown>,
+        { title: 'Updated posting' } as Record<string, unknown>,
         'employer-1'
       );
 
       expect(result).toBeDefined();
       expect(mockTransaction.set).toHaveBeenCalledTimes(1);
       expect(mockTransaction.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks Firestore writes when canonical validation fails before update', async () => {
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', createValidJobPostingData())),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { parseJobPostingDocument } = require('@/schemas');
+      parseJobPostingDocument.mockImplementationOnce((data: Record<string, unknown>) => data);
+      parseJobPostingDocument.mockReturnValueOnce(null);
+
+      await expect(
+        repository.updateWithTransaction(
+          'job-1',
+          { title: 'Broken canonical update' } as Record<string, unknown>,
+          'employer-1'
+        )
+      ).rejects.toThrow();
+
+      expect(mockTransaction.set).not.toHaveBeenCalled();
     });
 
     it('should replace the document so cleared top-level optional fields are removed', async () => {
@@ -836,9 +895,9 @@ describe('FirebaseJobPostingRepository', () => {
         update: jest.fn(),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await repository.updateWithTransaction(
         'job-1',
@@ -846,8 +905,8 @@ describe('FirebaseJobPostingRepository', () => {
           description: undefined,
           contactPhone: undefined,
           location: {
-            name: '서울',
-            district: '강남구',
+            name: 'Seoul',
+            district: 'Gangnam-gu',
             detailedAddress: undefined,
           },
         } as Record<string, unknown>,
@@ -859,8 +918,8 @@ describe('FirebaseJobPostingRepository', () => {
       expect(Object.prototype.hasOwnProperty.call(nextDocument, 'description')).toBe(false);
       expect(Object.prototype.hasOwnProperty.call(nextDocument, 'contactPhone')).toBe(false);
       expect(nextDocument.location).toMatchObject({
-        name: '서울',
-        district: '강남구',
+        name: 'Seoul',
+        district: 'Gangnam-gu',
       });
       expect(Object.prototype.hasOwnProperty.call(nextDocument.location, 'detailedAddress')).toBe(
         false
@@ -878,14 +937,14 @@ describe('FirebaseJobPostingRepository', () => {
         ),
       };
 
-      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
-        return callback(mockTransaction);
-      });
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
 
       await expect(
         repository.updateWithTransaction(
           'job-1',
-          { title: '수정' } as Record<string, unknown>,
+          { title: 'Updated' } as Record<string, unknown>,
           'wrong-employer'
         )
       ).rejects.toThrow();
