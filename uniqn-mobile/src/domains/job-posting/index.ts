@@ -15,6 +15,11 @@ export {
 } from './display';
 export type { PostingSettlementContext } from './selectors';
 export {
+  selectPostingWorkflow,
+  selectPostingRoleAvailability,
+  selectPostingSalaryDisplay,
+  selectPostingScheduleDisplay,
+  selectPostingApplicationEligibility,
   getPostingRoleStats,
   getPostingDefaultSalary,
   getPostingSettlementContext,

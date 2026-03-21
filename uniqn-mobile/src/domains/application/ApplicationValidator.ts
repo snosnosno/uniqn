@@ -12,6 +12,7 @@
  */
 
 import type { JobPosting, Assignment, PreQuestionAnswer } from '@/types';
+import { selectPostingRoleAvailability } from '@/domains/job-posting';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { STATUS } from '@/constants';
@@ -90,13 +91,38 @@ export class ApplicationValidator {
      * - 표준 역할: r.role === appliedRole
      * - 커스텀 역할: r.role === 'other' && r.customRole === appliedRole
      */
-    const matchesRole = (r: { role?: string; name?: string; customRole?: string }) => {
-      if (r.role === appliedRole || r.name === appliedRole) return true;
-      if (r.role === 'other' && r.customRole === appliedRole) return true;
-      return false;
-    };
+    const roleAvailability = selectPostingRoleAvailability(jobData);
 
-    // dateSpecificRequirements가 있으면 역할별 마감 확인
+    if (roleAvailability.items.length === 0) {
+      return { available: true };
+    }
+
+    const matchedRole = roleAvailability.items.find((role) => {
+      if (role.key === appliedRole) return true;
+      if (role.role === appliedRole) return true;
+      if (role.role === 'other' && role.customRole === appliedRole) return true;
+      return false;
+    });
+
+    if (!matchedRole) {
+      return {
+        available: false,
+        reason: '해당 역할의 모집이 마감되었습니다',
+      };
+    }
+
+    return matchedRole.isAvailable
+      ? {
+          available: true,
+          currentFilled: matchedRole.filled,
+          maxCapacity: matchedRole.count,
+        }
+      : {
+          available: false,
+          reason: '해당 역할의 모집이 마감되었습니다',
+        };
+
+    /*
     if (jobData.schedule.kind === 'dated') {
       if (jobData.schedule.requirements.length === 0) {
         return { available: true };
@@ -147,8 +173,7 @@ export class ApplicationValidator {
       };
     }
 
-    // 역할 정보 없으면 통과 (레거시 호환)
-    return { available: true };
+    */
   }
 
   /**

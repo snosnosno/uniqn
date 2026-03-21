@@ -1,0 +1,301 @@
+import type {
+  CardDateRequirement,
+  CardRole,
+  CardTimeSlot,
+  JobPosting,
+  JobRoleStats,
+  PostingDateGroup,
+  PostingSalaryRow,
+  PostingSettlementContext,
+  RoleRequirement,
+  SalaryInfo,
+} from '@/types';
+import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
+import type { RoleWithCount } from '@/types/postingConfig';
+import { FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
+import { getRoleDisplayName } from '@/types/unified';
+import { groupRequirementsToDateRanges } from '@/utils/date';
+import { formatSalary } from '@/utils/formatters';
+
+export function getPostingRoleKey(role: { role?: string; customRole?: string }): string {
+  if (role.role === 'other' && role.customRole) {
+    return `other:${role.customRole}`;
+  }
+
+  return role.role ?? '';
+}
+
+export function getPostingLocationLabels(posting: JobPosting): {
+  shortLabel: string;
+  fullLabel: string;
+} {
+  const name = posting.location?.name || '';
+  const detailed = posting.location?.detailedAddress || '';
+
+  return {
+    shortLabel: name,
+    fullLabel: `${name}${detailed ? ` ${detailed}` : ''}`.trim(),
+  };
+}
+
+export function getPostingTaxLabel(posting: JobPosting): string | undefined {
+  const taxSettings = posting.compensation.taxSettings;
+
+  if (!taxSettings || taxSettings.type === 'none') {
+    return undefined;
+  }
+
+  return taxSettings.type === 'rate'
+    ? `세금 ${taxSettings.value}%`
+    : `세금 ${taxSettings.value.toLocaleString('ko-KR')}원`;
+}
+
+function toRoleRequirement(role: {
+  role?: string;
+  customRole?: string;
+  count: number;
+  filled?: number;
+}): RoleRequirement {
+  return {
+    role: (role.role ?? 'dealer') as RoleRequirement['role'],
+    customRole: role.customRole,
+    count: role.count,
+    filled: role.filled ?? 0,
+  };
+}
+
+function toCardRole(
+  role: {
+    id?: string;
+    role?: string;
+    customRole?: string;
+    count?: number;
+    headcount?: number;
+    filled?: number;
+  },
+  salary?: SalaryInfo
+): CardRole {
+  return {
+    id: role.id,
+    role: role.role ?? 'dealer',
+    customRole: role.customRole,
+    count: role.count ?? role.headcount ?? 0,
+    filled: role.filled ?? 0,
+    salary,
+  };
+}
+
+function toCardTimeSlot(slot: {
+  id?: string;
+  startTime?: string;
+  isTimeToBeAnnounced?: boolean;
+  tentativeDescription?: string;
+  roles: {
+    id?: string;
+    role?: string;
+    customRole?: string;
+    count?: number;
+    headcount?: number;
+    filled?: number;
+    salary?: SalaryInfo;
+  }[];
+}): CardTimeSlot {
+  return {
+    id: slot.id,
+    startTime: slot.startTime || '',
+    isTimeToBeAnnounced: slot.isTimeToBeAnnounced ?? false,
+    tentativeDescription: slot.tentativeDescription,
+    roles: slot.roles.map((role) => toCardRole(role, role.salary)),
+  };
+}
+
+export function getPostingRoleStats(posting: JobPosting): JobRoleStats[] {
+  if (posting.schedule.kind === 'fixed') {
+    return (posting.schedule.roleRequirements ?? []).map((role) => {
+      const catalogEntry = posting.roleCatalog.find(
+        (entry) => getPostingRoleKey(entry) === getPostingRoleKey(role)
+      );
+
+      return {
+        ...toRoleRequirement(role),
+        salary: catalogEntry?.salary,
+      };
+    });
+  }
+
+  const totals = new Map<string, JobRoleStats>();
+
+  posting.schedule.requirements.forEach((requirement) => {
+    requirement.timeSlots.forEach((slot) => {
+      slot.roles.forEach((role) => {
+        const key = getPostingRoleKey(role);
+        const existing = totals.get(key);
+        const catalogEntry = posting.roleCatalog.find((entry) => getPostingRoleKey(entry) === key);
+
+        if (existing) {
+          existing.count += role.count;
+          existing.filled += role.filled ?? 0;
+          return;
+        }
+
+        totals.set(key, {
+          ...toRoleRequirement(role),
+          salary: catalogEntry?.salary,
+        });
+      });
+    });
+  });
+
+  return Array.from(totals.values());
+}
+
+export function getPostingDefaultSalary(posting: JobPosting): SalaryInfo | undefined {
+  return (
+    posting.compensation.defaultSalary ?? posting.roleCatalog.find((role) => role.salary)?.salary
+  );
+}
+
+export function getPostingSalaryRows(posting: JobPosting): PostingSalaryRow[] {
+  const rows = (posting.roleCatalog ?? [])
+    .filter((role) => role.salary)
+    .map((role) => {
+      const roleKey = role.role === 'other' && role.customRole ? role.customRole : role.role;
+      const roleLabel = getRoleDisplayName(role.role, role.customRole);
+
+      return {
+        key: `${roleKey}-${role.salary?.type}-${role.salary?.amount}`,
+        role: role.role,
+        customRole: role.customRole,
+        roleLabel,
+        salary: role.salary!,
+        text:
+          role.salary?.type === 'other'
+            ? '협의'
+            : formatSalary(role.salary?.type || 'hourly', role.salary?.amount || 0),
+      };
+    });
+
+  const unique = new Map<string, PostingSalaryRow>();
+  rows.forEach((row) => {
+    if (!unique.has(row.key)) {
+      unique.set(row.key, row);
+    }
+  });
+
+  return Array.from(unique.values());
+}
+
+export function getPostingDateRequirements(posting: JobPosting): CardDateRequirement[] {
+  if (posting.schedule.kind !== 'dated') {
+    return [];
+  }
+
+  return posting.schedule.requirements.map((requirement) => ({
+    date: requirement.date,
+    isGrouped: requirement.isGrouped,
+    timeSlots: requirement.timeSlots.map((slot) => ({
+      id: slot.id,
+      startTime: slot.startTime || '',
+      isTimeToBeAnnounced: slot.isTimeToBeAnnounced ?? false,
+      tentativeDescription: slot.tentativeDescription,
+      roles: slot.roles.map((role) => {
+        const catalogEntry = posting.roleCatalog.find(
+          (entry) => getPostingRoleKey(entry) === getPostingRoleKey(role)
+        );
+
+        return toCardRole(role, catalogEntry?.salary);
+      }),
+    })),
+  }));
+}
+
+export function createPostingLegacyDateRequirements(
+  posting: JobPosting
+): DateSpecificRequirement[] {
+  if (posting.schedule.kind !== 'dated') {
+    return [];
+  }
+
+  return posting.schedule.requirements.map((requirement) => ({
+    date: requirement.date,
+    isGrouped: requirement.isGrouped,
+    timeSlots: requirement.timeSlots.map((slot) => ({
+      id: slot.id,
+      startTime: slot.startTime,
+      isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+      tentativeDescription: slot.tentativeDescription,
+      roles: slot.roles.map((role) => ({
+        id: role.id,
+        role: role.role,
+        customRole: role.customRole,
+        headcount: role.count,
+        filled: role.filled ?? 0,
+      })),
+    })),
+  }));
+}
+
+export function getPostingDateGroups(posting: JobPosting): PostingDateGroup[] {
+  return groupRequirementsToDateRanges(createPostingLegacyDateRequirements(posting)).map(
+    (group) => ({
+      id: group.id,
+      startDate: group.startDate,
+      endDate: group.endDate,
+      timeSlots: group.timeSlots.map((slot: TimeSlot) =>
+        toCardTimeSlot({
+          id: slot.id,
+          startTime: slot.startTime,
+          isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+          tentativeDescription: slot.tentativeDescription,
+          roles: slot.roles.map((role) => ({
+            id: role.id,
+            role: role.role,
+            customRole: role.customRole,
+            headcount: role.headcount,
+            filled: role.filled ?? 0,
+            salary: role.salary,
+          })),
+        })
+      ),
+    })
+  );
+}
+
+export function getPostingLegacyTimeSlot(posting: JobPosting): string {
+  if (posting.schedule.kind === 'fixed') {
+    return posting.schedule.startTime ? `${posting.schedule.startTime}~` : FIXED_TIME_MARKER;
+  }
+
+  const firstSlot = posting.schedule.requirements[0]?.timeSlots[0];
+  if (!firstSlot) {
+    return '';
+  }
+
+  if (firstSlot.isTimeToBeAnnounced) {
+    return TBA_TIME_MARKER;
+  }
+
+  return firstSlot.startTime || '';
+}
+
+export function getPostingRequiredRolesWithCount(posting: JobPosting): RoleWithCount[] | undefined {
+  if (posting.schedule.kind !== 'fixed') {
+    return undefined;
+  }
+
+  return posting.schedule.roleRequirements?.map((role) => ({
+    role: role.role ?? 'dealer',
+    name: role.customRole,
+    count: role.count,
+    filled: role.filled ?? 0,
+  }));
+}
+
+export function getPostingSettlementContext(posting: JobPosting): PostingSettlementContext {
+  return {
+    roles: getPostingRoleStats(posting),
+    defaultSalary: getPostingDefaultSalary(posting),
+    allowances: posting.compensation.allowances,
+    taxSettings: posting.compensation.taxSettings,
+  };
+}

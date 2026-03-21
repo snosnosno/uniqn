@@ -1,49 +1,35 @@
 /**
- * UNIQN Mobile - 구인공고 카드 컴포넌트
- *
- * @description 공고 목록에서 사용하는 간략한 정보 카드
- * @version 3.0.0 - 연속 날짜 그룹화 지원
+ * UNIQN Mobile - JobCard
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
-import { Badge } from '@/components/ui/Badge';
-import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
-import { PostingTypeBadge } from './PostingTypeBadge';
-import { FixedScheduleDisplay } from './FixedScheduleDisplay';
-import {
-  groupRequirementsToDateRanges,
-  formatDateRangeWithCount,
-  formatDateShortWithDay,
-} from '@/utils/date';
-import type { JobPostingCard, PostingType, CardRole, SalaryInfo } from '@/types';
-import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
-import { getRoleDisplayName } from '@/types/unified';
-import { useBookmarks } from '@/hooks/useBookmarks';
+import { Platform, Pressable, Text, View } from 'react-native';
+import type { CardRole, JobPostingCard, SalaryInfo } from '@/types';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
+import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
+import { Badge } from '@/components/ui/Badge';
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { getRoleDisplayName } from '@/types/unified';
+import { formatDateRangeWithCount, formatDateShortWithDay } from '@/utils/date';
+import { FixedScheduleDisplay } from './FixedScheduleDisplay';
+import { PostingTypeBadge } from './PostingTypeBadge';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/** 지원 상태 타입 (스케줄 탭에서 사용) */
 export type ApplicationStatusType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
 
 interface JobCardProps {
   job: JobPostingCard;
   onPress: (jobId: string) => void;
-  /** 지원 상태 (스케줄 탭에서만 전달, 구인구직 탭에서는 미사용) */
   applicationStatus?: ApplicationStatusType;
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
 const formatSalary = (type: string, amount: number): string => {
-  if (type === 'other') return '협의';
+  if (type === 'other') {
+    return '협의';
+  }
+
   const formattedAmount = amount.toLocaleString('ko-KR');
+
   switch (type) {
     case 'hourly':
       return `시급 ${formattedAmount}원`;
@@ -72,162 +58,6 @@ const getRoleKey = (
   index: number
 ): string => `${parentKey}-${role || 'role'}-${customRole || ''}-${count}-${index}`;
 
-// ============================================================================
-// Sub Components
-// ============================================================================
-
-/**
- * 날짜 요구사항 표시 컴포넌트 (연속 날짜 그룹화 지원)
- * CardDateRequirement[]와 DateSpecificRequirement[] 모두 지원
- */
-const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
-  dateRequirements,
-  postingType,
-}: {
-  dateRequirements: JobPostingCard['dateRequirements'];
-  postingType?: PostingType;
-}) {
-  // 대회 공고인 경우 연속 날짜 그룹화
-  const isTournament = postingType === 'tournament';
-  const dateGroups = useMemo(() => {
-    if (isTournament && dateRequirements) {
-      // CardDateRequirement를 DateSpecificRequirement로 변환
-      const normalized = dateRequirements.map((req) => ({
-        date: req.date,
-        isGrouped: req.isGrouped,
-        timeSlots: req.timeSlots.map((slot) => ({
-          ...slot,
-          roles: slot.roles.map((r) => ({
-            role: r.role,
-            customRole: r.customRole,
-            headcount: r.count,
-            filled: r.filled,
-          })),
-        })),
-      })) as DateSpecificRequirement[];
-      return groupRequirementsToDateRanges(normalized);
-    }
-    return null;
-  }, [isTournament, dateRequirements]);
-
-  // 대회 공고: 그룹화된 날짜 표시
-  if (isTournament && dateGroups) {
-    return (
-      <>
-        {dateGroups.map((group, groupIdx) => {
-          const groupKey = getDateGroupKey(group.startDate, group.endDate, groupIdx);
-
-          return (
-            <View key={groupKey} className="mb-2">
-              {/* 날짜 범위 표시 */}
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                📅 {formatDateRangeWithCount(group.startDate, group.endDate)}
-              </Text>
-
-              {/* 시간대별 */}
-              {group.timeSlots.map((slot, slotIdx) => {
-                const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
-
-                return (
-                  <View
-                    key={getTimeSlotKey(groupKey, slot.startTime, slotIdx)}
-                    className="ml-5 mt-1"
-                  >
-                    {slot.roles.map((role, roleIdx) => {
-                      // RoleRequirement → CardRole-like 변환
-                      const cardRole: CardRole = {
-                        role: role.role ?? '',
-                        customRole: role.customRole,
-                        count: role.headcount ?? 0,
-                        filled: role.filled ?? 0,
-                      };
-                      return (
-                        <RoleLine
-                          key={getRoleKey(
-                            getTimeSlotKey(groupKey, slot.startTime, slotIdx),
-                            cardRole.role,
-                            cardRole.customRole,
-                            cardRole.count,
-                            roleIdx
-                          )}
-                          role={cardRole}
-                          showTime={roleIdx === 0}
-                          time={displayTime}
-                        />
-                      );
-                    })}
-                  </View>
-                );
-              })}
-            </View>
-          );
-        })}
-      </>
-    );
-  }
-
-  // 일반/긴급 공고: 개별 날짜 표시
-  return (
-    <>
-      {dateRequirements?.map((dateReq, dateIdx) => (
-        <View
-          key={getDateRequirementKey(typeof dateReq.date === 'string' ? dateReq.date : '', dateIdx)}
-          className="mb-2"
-        >
-          {/* 날짜 */}
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            📅 {formatDateShortWithDay(typeof dateReq.date === 'string' ? dateReq.date : '')}
-          </Text>
-
-          {/* 시간대별 */}
-          {dateReq.timeSlots.map((slot, slotIdx) => {
-            const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
-
-            return (
-              <View
-                key={getTimeSlotKey(
-                  getDateRequirementKey(
-                    typeof dateReq.date === 'string' ? dateReq.date : '',
-                    dateIdx
-                  ),
-                  slot.startTime,
-                  slotIdx
-                )}
-                className="ml-5 mt-1"
-              >
-                {slot.roles.map((role, roleIdx) => (
-                  <RoleLine
-                    key={getRoleKey(
-                      getTimeSlotKey(
-                        getDateRequirementKey(
-                          typeof dateReq.date === 'string' ? dateReq.date : '',
-                          dateIdx
-                        ),
-                        slot.startTime,
-                        slotIdx
-                      ),
-                      role.role,
-                      role.customRole,
-                      role.count,
-                      roleIdx
-                    )}
-                    role={role}
-                    showTime={roleIdx === 0}
-                    time={displayTime}
-                  />
-                ))}
-              </View>
-            );
-          })}
-        </View>
-      ))}
-    </>
-  );
-});
-
-/**
- * 역할 라인 컴포넌트
- */
 const RoleLine = memo(function RoleLine({
   role,
   showTime,
@@ -237,7 +67,7 @@ const RoleLine = memo(function RoleLine({
   showTime: boolean;
   time: string;
 }) {
-  const isFilled = role.filled >= role.count && role.count > 0;
+  const isFilled = role.count > 0 && role.filled >= role.count;
 
   return (
     <Text
@@ -253,15 +83,94 @@ const RoleLine = memo(function RoleLine({
   );
 });
 
-// ============================================================================
-// Component
-// ============================================================================
+const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
+  dateRequirements,
+  dateGroups,
+  useGroupedRanges,
+}: {
+  dateRequirements: JobPostingCard['dateRequirements'];
+  dateGroups: JobPostingCard['scheduleDisplay']['dateGroups'];
+  useGroupedRanges: boolean;
+}) {
+  if (useGroupedRanges && dateGroups.length > 0) {
+    return (
+      <>
+        {dateGroups.map((group, groupIdx) => {
+          const groupKey = getDateGroupKey(group.startDate, group.endDate, groupIdx);
 
-/**
- * 구인공고 카드 컴포넌트
- *
- * FlashList 최적화를 위해 React.memo 적용
- */
+          return (
+            <View key={groupKey} className="mb-2">
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                📅 {formatDateRangeWithCount(group.startDate, group.endDate)}
+              </Text>
+
+              {group.timeSlots.map((slot, slotIdx) => {
+                const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
+
+                return (
+                  <View
+                    key={getTimeSlotKey(groupKey, slot.startTime, slotIdx)}
+                    className="ml-5 mt-1"
+                  >
+                    {slot.roles.map((role, roleIdx) => (
+                      <RoleLine
+                        key={getRoleKey(
+                          getTimeSlotKey(groupKey, slot.startTime, slotIdx),
+                          role.role,
+                          role.customRole,
+                          role.count,
+                          roleIdx
+                        )}
+                        role={role}
+                        showTime={roleIdx === 0}
+                        time={displayTime}
+                      />
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {dateRequirements.map((dateRequirement, dateIdx) => (
+        <View key={getDateRequirementKey(dateRequirement.date, dateIdx)} className="mb-2">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            📅 {formatDateShortWithDay(dateRequirement.date)}
+          </Text>
+
+          {dateRequirement.timeSlots.map((slot, slotIdx) => {
+            const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
+            const parentKey = getTimeSlotKey(
+              getDateRequirementKey(dateRequirement.date, dateIdx),
+              slot.startTime,
+              slotIdx
+            );
+
+            return (
+              <View key={parentKey} className="ml-5 mt-1">
+                {slot.roles.map((role, roleIdx) => (
+                  <RoleLine
+                    key={getRoleKey(parentKey, role.role, role.customRole, role.count, roleIdx)}
+                    role={role}
+                    showTime={roleIdx === 0}
+                    time={displayTime}
+                  />
+                ))}
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </>
+  );
+});
+
 export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }: JobCardProps) {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(job.id);
@@ -277,21 +186,14 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       location: job.fullLocation || job.location,
       workDate: job.workDate,
     });
-  }, [job.id, job.title, job.fullLocation, job.location, job.workDate, toggleBookmark]);
+  }, [job.fullLocation, job.id, job.location, job.title, job.workDate, toggleBookmark]);
 
-  // 역할에서 급여 정보 추출 (메모이제이션 적용)
-  const rolesWithSalary = useMemo(() => {
-    return job.salaryRows ?? [];
-  }, [job.salaryRows]);
-
-  // 표시할 급여 결정
+  const rolesWithSalary = useMemo(() => job.salaryRows ?? [], [job.salaryRows]);
   const displaySalary: SalaryInfo = job.defaultSalary ??
     rolesWithSalary[0]?.salary ?? { type: 'hourly', amount: 0 };
-
-  // 접근성을 위한 설명 텍스트 생성
-  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDateShortWithDay(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
-
   const allowanceItems = job.allowanceLabels ?? [];
+
+  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDateShortWithDay(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
 
   return (
     <Pressable
@@ -299,9 +201,8 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
-      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="mb-3 rounded-xl border border-gray-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface"
     >
-      {/* 지원 상태 뱃지 (스케줄 탭에서만 표시) */}
       {applicationStatus && (
         <View className="mb-2">
           <Badge variant={SCHEDULE_STATUS[applicationStatus].variant} dot>
@@ -310,12 +211,10 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         </View>
       )}
 
-      {/* 상단: 공고타입 + 승인상태 + 긴급 + 제목 + 북마크 */}
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 flex-row items-center flex-wrap">
-          {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
+      <View className="mb-2 flex-row items-start justify-between">
+        <View className="flex-1 flex-row flex-wrap items-center">
           {job.postingType && job.postingType !== 'regular' && (
-            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
+            <PostingTypeBadge type={job.postingType} size="sm" className="mr-2" />
           )}
           {job.isUrgent && (
             <Badge variant="error" size="sm" className="mr-2">
@@ -323,18 +222,18 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             </Badge>
           )}
           <Text
-            className="text-base font-semibold text-gray-900 dark:text-white flex-1"
+            className="flex-1 text-base font-semibold text-gray-900 dark:text-white"
             numberOfLines={1}
           >
             {job.title}
           </Text>
         </View>
-        {/* 북마크 버튼 - 웹에서 button 중첩 방지를 위해 View 사용 */}
+
         {Platform.OS === 'web' ? (
           <View
-            // @ts-expect-error - React Native Web supports onClick on View
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
+            // @ts-expect-error React Native Web supports onClick on View
+            onClick={(event: React.MouseEvent) => {
+              event.stopPropagation();
               handleBookmarkPress();
             }}
             className="ml-2 p-1"
@@ -364,53 +263,50 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         )}
       </View>
 
-      {/* 장소 */}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">📍 {job.location}</Text>
+      <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">📍 {job.location}</Text>
 
-      {/* 일정 + 급여/수당 그리드 */}
       <View className="flex-row">
-        {/* 왼쪽: 일정 */}
         <View className="flex-1 pr-3">
-          {job.postingType === 'fixed' ? (
-            // 고정공고: FixedScheduleDisplay 사용
+          {job.workflow.isFixed ? (
             <FixedScheduleDisplay
-              daysPerWeek={job.daysPerWeek}
-              startTime={job.startTime || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+              daysPerWeek={job.scheduleDisplay.fixed?.daysPerWeek ?? job.daysPerWeek}
+              startTime={
+                job.scheduleDisplay.fixed?.startTime ??
+                job.startTime ??
+                job.timeSlot?.split(/[-~]/)[0]?.trim()
+              }
               compact={true}
             />
-          ) : job.dateRequirements && job.dateRequirements.length > 0 ? (
+          ) : job.scheduleDisplay.dateRequirements.length > 0 ? (
             <DateRequirementsDisplay
-              dateRequirements={job.dateRequirements}
-              postingType={job.postingType}
+              dateRequirements={job.scheduleDisplay.dateRequirements}
+              dateGroups={job.scheduleDisplay.dateGroups}
+              useGroupedRanges={job.workflow.usesGroupedDateRanges}
             />
           ) : (
-            // 레거시 폴백
             <View className="mb-2">
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 📅 {formatDateShortWithDay(job.workDate)}
               </Text>
-              <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
-                🕐 {job.timeSlot || '-'}
+              <Text className="ml-5 mt-1 text-sm text-gray-900 dark:text-gray-100">
+                ⏰ {job.timeSlot || '-'}
               </Text>
             </View>
           )}
         </View>
 
-        {/* 오른쪽: 급여 + 수당 */}
-        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-surface-overlay">
-          {/* 급여 */}
-          {!job.useSameSalary && rolesWithSalary.length > 0 ? (
-            // 역할별 급여 표시 (useSameSalary === false && 역할별 급여 존재)
-            rolesWithSalary.map((roleData, idx) => {
+        <View className="flex-1 border-l border-gray-100 pl-3 dark:border-surface-overlay">
+          {!job.salaryDisplay.useSameSalary && rolesWithSalary.length > 0 ? (
+            rolesWithSalary.map((roleData) => {
               const roleLabel = roleData.roleLabel || getRoleDisplayName(roleData.role);
+
               return (
-                <Text key={idx} className="text-sm text-gray-900 dark:text-white">
+                <Text key={roleData.key} className="text-sm text-gray-900 dark:text-white">
                   💰 {roleLabel}: {roleData.text}
                 </Text>
               );
             })
           ) : (
-            // 단일 급여 표시 (useSameSalary === true 또는 역할별 급여 없음)
             <Text className="text-sm font-medium text-gray-900 dark:text-white">
               💰{' '}
               {displaySalary.type === 'other'
@@ -419,34 +315,31 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             </Text>
           )}
 
-          {/* 수당 */}
           {allowanceItems.length > 0 && (
             <View className="mt-1">
               {allowanceItems.map((item, idx) => (
-                <Text key={idx} className="text-sm text-gray-500 dark:text-gray-400">
+                <Text key={`${item}-${idx}`} className="text-sm text-gray-500 dark:text-gray-400">
                   {item}
                 </Text>
               ))}
             </View>
           )}
 
-          {/* 세금 */}
           {job.taxLabel && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">💸 {job.taxLabel}</Text>
+            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">💸 {job.taxLabel}</Text>
           )}
 
-          {job.salaryOverflowCount > 0 && (
+          {job.salaryDisplay.overflowCount > 0 && (
             <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              +{job.salaryOverflowCount}개 역할 급여 더 있음
+              +{job.salaryDisplay.overflowCount}개 역할 급여 더 있음
             </Text>
           )}
         </View>
       </View>
 
-      {/* 하단: 구인자 이름 */}
       {job.ownerName && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">구인자: {job.ownerName}</Text>
+        <View className="mt-2 border-t border-gray-100 pt-2 dark:border-surface-overlay">
+          <Text className="text-xs text-gray-500 dark:text-gray-400">구인처 {job.ownerName}</Text>
         </View>
       )}
     </Pressable>

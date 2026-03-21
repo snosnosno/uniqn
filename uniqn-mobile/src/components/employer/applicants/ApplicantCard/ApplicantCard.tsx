@@ -48,15 +48,17 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   startTime,
 }: ApplicantCardProps) {
   // 고정공고 모드 판단 (props 우선, 없으면 applicant.jobPosting에서 추출)
-  const effectivePostingType = postingType ?? applicant.jobPosting?.postingType;
-  const isFixedMode = effectivePostingType === 'fixed';
   const postingFacts = useMemo(
     () => (applicant.jobPosting ? buildPostingFacts(applicant.jobPosting) : null),
     [applicant.jobPosting]
   );
+  const isFixedMode = postingFacts?.workflow.isFixed ?? postingType === 'fixed';
   // 고정공고용 근무 정보 (props 우선, 없으면 jobPosting에서 추출)
-  const effectiveDaysPerWeek = daysPerWeek ?? postingFacts?.schedule.daysPerWeek;
-  const effectiveStartTime = startTime ?? postingFacts?.schedule.timeSlot?.split(/[-~]/)[0]?.trim();
+  const effectiveDaysPerWeek = daysPerWeek ?? postingFacts?.schedule.display.fixed?.daysPerWeek;
+  const effectiveStartTime =
+    startTime ??
+    postingFacts?.schedule.display.fixed?.startTime ??
+    postingFacts?.schedule.timeSlot?.split(/[-~]/)[0]?.trim();
   // 다크모드 감지 (앱 테마 스토어 사용)
   const { isDarkMode: isDark } = useThemeStore();
 

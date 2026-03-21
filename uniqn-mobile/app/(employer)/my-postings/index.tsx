@@ -9,7 +9,7 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
-import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
+import { createPostingLegacyDateRequirements, selectPostingWorkflow } from '@/domains/job-posting';
 import {
   AddIcon,
   CalendarOutlineIcon,
@@ -110,7 +110,7 @@ const FilterTab = memo(function FilterTab({
 
 const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardProps) {
   const statusConfig = STATUS_CONFIG[posting.status] || STATUS_CONFIG.active;
-  const isTournament = posting.postingType === 'tournament';
+  const isTournament = selectPostingWorkflow(posting).isTournament;
   const tournamentStatus = posting.tournamentConfig?.approvalStatus;
 
   const formatDate = (dateStr: string) => {
@@ -139,7 +139,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
     // 일반/긴급 공고: 단일 날짜 표시
     return formatDate(requirements[0].date as string);
-  }, [posting, posting.workDate, isTournament]);
+  }, [posting, isTournament]);
 
   return (
     <Pressable
@@ -241,7 +241,7 @@ export default function MyPostingsPage() {
           (p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED
         );
       case 'tournament':
-        return postings.filter((p) => p.postingType === 'tournament');
+        return postings.filter((p) => selectPostingWorkflow(p).isTournament);
       default:
         return postings;
     }
@@ -257,7 +257,7 @@ export default function MyPostingsPage() {
       closed: postings.filter(
         (p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED
       ).length,
-      tournament: postings.filter((p) => p.postingType === 'tournament').length,
+      tournament: postings.filter((p) => selectPostingWorkflow(p).isTournament).length,
     };
   }, [postings]);
 

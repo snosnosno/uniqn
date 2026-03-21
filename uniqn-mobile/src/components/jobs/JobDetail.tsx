@@ -259,10 +259,10 @@ export function JobDetail({ job }: JobDetailProps) {
   const safeContactPhone = String(detail.contactPhone || '');
   const safeDescription = String(detail.description || '');
   const safeWorkDate = formatDateKoreanWithDay(detail.workDate) || '날짜 미정';
-  const hasDateRequirements = detail.dateRequirements.length > 0;
+  const hasDateRequirements = detail.scheduleDisplay.dateRequirements.length > 0;
   const allowanceItems = detail.allowanceLabels;
   const locationValue = detail.locationLabel || '정보 없음';
-  const isFixed = job.schedule.kind === 'fixed';
+  const isFixed = detail.workflow.isFixed;
 
   return (
     <View className="bg-white dark:bg-surface-dark">
@@ -292,7 +292,7 @@ export function JobDetail({ job }: JobDetailProps) {
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay
           roles={postingFacts.posting.roles}
-          useSameSalary={detail.useSameSalary}
+          useSameSalary={detail.salaryDisplay.useSameSalary}
           defaultSalary={detail.defaultSalary}
         />
       </View>
@@ -325,10 +325,15 @@ export function JobDetail({ job }: JobDetailProps) {
               <View className="flex-1">
                 <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
                 <FixedScheduleDisplay
-                  daysPerWeek={detail.daysPerWeek}
-                  startTime={detail.startTime}
-                  isStartTimeNegotiable={detail.isStartTimeNegotiable}
-                  roles={detail.requiredRolesWithCount?.map((r) => ({
+                  daysPerWeek={detail.scheduleDisplay.fixed?.daysPerWeek ?? detail.daysPerWeek}
+                  startTime={detail.scheduleDisplay.fixed?.startTime ?? detail.startTime}
+                  isStartTimeNegotiable={
+                    detail.scheduleDisplay.fixed?.isStartTimeNegotiable ??
+                    detail.isStartTimeNegotiable
+                  }
+                  roles={(
+                    detail.scheduleDisplay.fixed?.roles ?? detail.requiredRolesWithCount
+                  )?.map((r) => ({
                     role: r.role,
                     name: r.name,
                     count: r.count,
@@ -342,8 +347,8 @@ export function JobDetail({ job }: JobDetailProps) {
           </View>
         ) : hasDateRequirements ? (
           <DateRequirementsGroupedDisplay
-            dateRequirements={detail.dateRequirements}
-            postingType={detail.postingType}
+            dateRequirements={detail.scheduleDisplay.dateRequirements}
+            postingType={detail.workflow.isTournament ? 'tournament' : detail.postingType}
           />
         ) : (
           <>

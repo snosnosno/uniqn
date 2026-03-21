@@ -15,15 +15,9 @@ import { PostingTypeBadge } from './PostingTypeBadge';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import type { JobPosting, Assignment, PreQuestionAnswer, PostingType } from '@/types';
-import { getPostingDefaultSalary, getPostingRoleStats } from '@/domains/job-posting';
-import {
-  initializePreQuestionAnswers,
-  findUnansweredRequired,
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-} from '@/types';
+import { buildPostingFacts } from '@/domains/job-posting';
+import { initializePreQuestionAnswers, findUnansweredRequired, FIXED_DATE_MARKER } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { getAllowanceItems } from '@/utils/allowanceUtils';
 
 interface ApplicationFormProps {
   job: JobPosting;
@@ -51,13 +45,11 @@ export function ApplicationForm({
   onSubmit,
   onClose,
 }: ApplicationFormProps) {
-  const roleStats = useMemo(() => getPostingRoleStats(job), [job]);
-  const defaultSalary = useMemo(
-    () => getPostingDefaultSalary(job.roleCatalog, job.compensation),
-    [job.roleCatalog, job.compensation]
-  );
-  const questions = useMemo(() => job.questions.items ?? [], [job.questions.items]);
-  const isFixedMode = job.postingType === 'fixed';
+  const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
+  const roleStats = postingFacts.posting.roles;
+  const defaultSalary = postingFacts.compensation.defaultSalary;
+  const questions = postingFacts.questions.items;
+  const isFixedMode = postingFacts.workflow.isFixed;
 
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -70,17 +62,13 @@ export function ApplicationForm({
   const hasPreQuestions = questions.length > 0;
 
   const availableRoles: RoleDisplayItem[] = useMemo(() => {
-    const candidates = isFixedMode
-      ? roleStats
-      : roleStats.filter((role) => (role.filled ?? 0) < role.count);
-
-    return candidates.map((role, idx) => ({
-      key: role.role === 'other' && role.customRole ? role.customRole : role.role || `role-${idx}`,
-      displayName: getRoleDisplayName(role.role || '', role.customRole),
+    return postingFacts.application.availableRoleOptions.map((role, idx) => ({
+      key: role.key || `role-${idx}`,
+      displayName: role.roleLabel || getRoleDisplayName(role.role || '', role.customRole),
       count: role.count,
-      filled: role.filled ?? 0,
+      filled: role.filled,
     }));
-  }, [isFixedMode, roleStats]);
+  }, [postingFacts.application.availableRoleOptions]);
 
   const canSubmit = useMemo(() => {
     if (isSubmitting) return false;
@@ -118,8 +106,7 @@ export function ApplicationForm({
     if (isFixedMode && selectedRole) {
       const fixedAssignment: Assignment = {
         dates: [FIXED_DATE_MARKER],
-        timeSlot:
-          (job.schedule.kind === 'fixed' ? job.schedule.startTime : undefined) || FIXED_TIME_MARKER,
+        timeSlot: postingFacts.application.fixedAssignmentTimeSlot,
         roleIds: [selectedRole],
         isGrouped: false,
       };
@@ -141,9 +128,9 @@ export function ApplicationForm({
     canSubmit,
     hasPreQuestions,
     isFixedMode,
-    job.schedule,
     message,
     onSubmit,
+    postingFacts.application.fixedAssignmentTimeSlot,
     preQuestionAnswers,
     selectedAssignments,
     selectedRole,
@@ -191,14 +178,14 @@ export function ApplicationForm({
           <View className="mb-2">
             <RoleSalaryDisplay
               roles={roleStats}
-              useSameSalary={job.compensation.mode === 'shared'}
+              useSameSalary={postingFacts.compensation.display.useSameSalary}
               defaultSalary={defaultSalary}
               compact={false}
             />
           </View>
 
           {(() => {
-            const allowanceItems = getAllowanceItems(job.compensation.allowances);
+            const allowanceItems = postingFacts.compensation.allowanceLabels;
             if (allowanceItems.length === 0) return null;
             return (
               <View className="mt-1 flex-row flex-wrap">
@@ -215,11 +202,9 @@ export function ApplicationForm({
             <View className="mt-3 border-t border-gray-200 pt-3 dark:border-surface-overlay">
               <Text className="mb-2 text-xs text-gray-500 dark:text-gray-400">근무 조건</Text>
               <FixedScheduleDisplay
-                daysPerWeek={job.schedule.kind === 'fixed' ? job.schedule.daysPerWeek : undefined}
-                startTime={job.schedule.kind === 'fixed' ? job.schedule.startTime : undefined}
-                isStartTimeNegotiable={
-                  job.schedule.kind === 'fixed' ? job.schedule.isStartTimeNegotiable : undefined
-                }
+                daysPerWeek={postingFacts.schedule.display.fixed?.daysPerWeek}
+                startTime={postingFacts.schedule.display.fixed?.startTime}
+                isStartTimeNegotiable={postingFacts.schedule.display.fixed?.isStartTimeNegotiable}
                 compact={true}
               />
             </View>
