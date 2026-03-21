@@ -76,8 +76,8 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('../crashlyticsService', () => ({
-  crashlyticsService: {
+jest.mock('../sentryService', () => ({
+  sentryService: {
     recordError: jest.fn(),
   },
 }));

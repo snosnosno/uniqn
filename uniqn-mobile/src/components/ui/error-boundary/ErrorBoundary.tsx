@@ -10,7 +10,8 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import { crashlyticsService } from '@/services/observability';
+import { isAppError } from '@/errors';
+import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 import type { ErrorBoundaryProps, ErrorBoundaryState } from './types';
@@ -27,7 +28,7 @@ import type { ErrorBoundaryProps, ErrorBoundaryState } from './types';
  * JavaScript 에러를 캐치하고, 앱 크래시를 방지합니다.
  *
  * 에러 발생 시:
- * 1. Crashlytics에 에러 리포트 전송
+ * 1. Sentry에 에러 리포트 전송
  * 2. 로그 기록
  * 3. 대체 UI 표시
  * 4. 복구 옵션 제공
@@ -75,18 +76,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
    */
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { name = 'Unknown', onError } = this.props;
+    const logContext = {
+      component: name,
+      boundary: 'ErrorBoundary',
+      componentStack: errorInfo.componentStack || '',
+    };
 
     // 상태 업데이트
     this.setState({ errorInfo });
 
     // 로깅
-    logger.error(`ErrorBoundary [${name}] 에러 캐치`, error, {
-      component: name,
-      componentStack: errorInfo.componentStack || '',
-    });
+    if (isAppError(error)) {
+      logger.appError(error, logContext);
+    } else {
+      logger.error(`ErrorBoundary [${name}] 에러 캐치`, error, logContext);
+    }
 
-    // Crashlytics에 리포팅
-    crashlyticsService.recordComponentError(error, {
+    // Sentry에 리포팅
+    void sentryService.recordComponentError(error, {
       componentStack: errorInfo.componentStack || undefined,
     });
 

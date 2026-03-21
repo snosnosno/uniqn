@@ -15,7 +15,7 @@ import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RealtimeManager } from '@/shared/realtime';
 import { toDateValue } from '@/utils/date';
 import { logger } from '@/utils/logger';
-import { crashlyticsService } from './crashlyticsService';
+import { sentryService } from './sentryService';
 
 void userSessionStorage;
 
@@ -308,7 +308,7 @@ async function checkAndRefreshToken(): Promise<void> {
     }
   } catch (error) {
     logger.error('토큰 체크 실패', toError(error));
-    crashlyticsService.recordError(toError(error), {
+    void sentryService.recordError(toError(error), {
       component: 'sessionService',
       action: 'checkAndRefreshToken',
     });
@@ -329,7 +329,7 @@ export async function refreshToken(): Promise<string | null> {
     return newToken;
   } catch (error) {
     logger.error('토큰 갱신 실패', toError(error));
-    crashlyticsService.recordError(toError(error), {
+    void sentryService.recordError(toError(error), {
       component: 'sessionService',
       action: 'refreshToken',
     });

@@ -12,6 +12,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { isAppError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { isFormRelatedError } from './helpers';
 import type { FormErrorBoundaryProps, FormErrorFallbackProps, ErrorBoundaryState } from './types';
@@ -104,15 +105,24 @@ export class FormErrorBoundary extends Component<FormErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { name = 'Form', onError } = this.props;
+    const logContext = {
+      component: name,
+      boundary: 'FormErrorBoundary',
+      errorType: 'form',
+    };
 
     this.setState({ errorInfo });
 
-    logger.error(`FormErrorBoundary [${name}] 에러 캐치`, error, {
-      component: name,
-      errorType: 'form',
-    });
+    if (isAppError(error)) {
+      logger.appError(error, logContext);
+    } else {
+      logger.warn(`FormErrorBoundary [${name}] 에러 캐치`, {
+        ...logContext,
+        errorMessage: error.message,
+      });
+    }
 
-    // 폼 에러는 Crashlytics에 보내지 않음 (사용자 입력 오류)
+    // 폼 에러는 observability로 보내지 않음 (사용자 입력/검증 오류)
     if (onError) {
       onError(error, errorInfo);
     }

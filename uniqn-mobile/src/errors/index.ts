@@ -37,6 +37,9 @@ export {
   type ErrorCategory,
   type ErrorSeverity,
   type ErrorCode,
+  type AppErrorHandlingKind,
+  type AppErrorTelemetryChannel,
+  type AppErrorTelemetryPolicy,
   // Constants
   ERROR_CODES,
   ERROR_MESSAGES,
@@ -54,6 +57,9 @@ export {
   isValidationError,
   isPermissionError,
   isBusinessError,
+  isRecoverableBusinessAppError,
+  isInfraAppError,
+  getAppErrorTelemetryPolicy,
 } from './AppError';
 
 // ============================================================================

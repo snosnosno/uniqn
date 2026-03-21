@@ -12,7 +12,8 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { crashlyticsService } from '@/services/observability';
+import { isAppError } from '@/errors';
+import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 import { isAuthRelatedError } from './helpers';
@@ -112,15 +113,21 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { name = 'Auth', onError } = this.props;
+    const logContext = {
+      component: name,
+      boundary: 'AuthErrorBoundary',
+      errorType: 'auth',
+    };
 
     this.setState({ errorInfo });
 
-    logger.error(`AuthErrorBoundary [${name}] 에러 캐치`, error, {
-      component: name,
-      errorType: 'auth',
-    });
+    if (isAppError(error)) {
+      logger.appError(error, logContext);
+    } else {
+      logger.error(`AuthErrorBoundary [${name}] 에러 캐치`, error, logContext);
+    }
 
-    crashlyticsService.recordError(error, {
+    void sentryService.recordHandledError(error, {
       domain: 'auth',
       component: name,
     });

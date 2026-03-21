@@ -28,7 +28,7 @@
  */
 
 import { logger } from '@/utils/logger';
-import { AppError, isAppError } from './AppError';
+import { AppError, getAppErrorTelemetryPolicy, isAppError } from './AppError';
 import { mapFirebaseError, isFirebaseError } from './firebaseErrorMapper';
 import { toError, normalizeError } from './errorUtils';
 
@@ -174,9 +174,12 @@ export function handleServiceError(error: unknown, options: ServiceErrorOptions)
 
   // 2. 이미 AppError인 경우 (BusinessError, PermissionError 등)
   if (isAppError(error)) {
+    const telemetryPolicy = getAppErrorTelemetryPolicy(error);
     logger.appError(error, {
       operation,
       component,
+      handlingKind: telemetryPolicy.kind,
+      telemetryChannel: telemetryPolicy.telemetryChannel,
       ...safeContext,
     });
     return error;
@@ -190,10 +193,14 @@ export function handleServiceError(error: unknown, options: ServiceErrorOptions)
     appError = normalizeError(error);
   }
 
-  // 4. 로깅 (severity 기반 Sentry 전송 - appError()가 high/critical만 전송)
+  const telemetryPolicy = getAppErrorTelemetryPolicy(appError);
+
+  // 4. 로깅 (AppError telemetry 정책 기반 Sentry 전송)
   logger.appError(appError, {
     operation,
     component,
+    handlingKind: telemetryPolicy.kind,
+    telemetryChannel: telemetryPolicy.telemetryChannel,
     ...safeContext,
   });
 
@@ -226,13 +233,17 @@ export function handleSilentError(error: unknown, options: SilentErrorOptions): 
   // 에러 정보 추출
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorCode = isAppError(error) ? error.code : undefined;
+  const telemetryPolicy = isAppError(error) ? getAppErrorTelemetryPolicy(error) : undefined;
 
   const logContext = {
     operation,
     component,
     errorMessage,
     errorCode,
+    handlingKind: telemetryPolicy?.kind,
+    telemetryChannel: telemetryPolicy?.telemetryChannel ?? 'none',
     silent: true,
+    telemetrySuppressed: true,
     ...safeContext,
   };
 

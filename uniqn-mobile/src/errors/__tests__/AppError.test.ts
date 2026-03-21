@@ -17,6 +17,9 @@ import {
   isValidationError,
   isPermissionError,
   isBusinessError,
+  isRecoverableBusinessAppError,
+  isInfraAppError,
+  getAppErrorTelemetryPolicy,
 } from '../AppError';
 
 describe('AppError', () => {
@@ -420,6 +423,64 @@ describe('Type Guards', () => {
     it('다른 AppError 서브클래스에 대해 false를 반환해야 한다', () => {
       const error = new AuthError();
       expect(isBusinessError(error)).toBe(false);
+    });
+  });
+});
+
+describe('AppError telemetry policy', () => {
+  it('business low severity는 recoverable-business로 분류해야 한다', () => {
+    const error = new BusinessError(ERROR_CODES.BUSINESS_ALREADY_APPLIED);
+
+    expect(isRecoverableBusinessAppError(error)).toBe(true);
+    expect(isInfraAppError(error)).toBe(false);
+    expect(getAppErrorTelemetryPolicy(error)).toEqual({
+      kind: 'recoverable-business',
+      telemetryChannel: 'none',
+      shouldReport: false,
+    });
+  });
+
+  it('network medium severity는 infra로 분류해야 한다', () => {
+    const error = new NetworkError();
+
+    expect(isRecoverableBusinessAppError(error)).toBe(false);
+    expect(isInfraAppError(error)).toBe(true);
+    expect(getAppErrorTelemetryPolicy(error)).toEqual({
+      kind: 'infra',
+      telemetryChannel: 'error',
+      shouldReport: true,
+    });
+  });
+
+  it('critical severity는 fatal telemetry로 분류해야 한다', () => {
+    const error = new AppError({
+      code: ERROR_CODES.UNKNOWN,
+      category: 'unknown',
+      severity: 'critical',
+    });
+
+    expect(isRecoverableBusinessAppError(error)).toBe(false);
+    expect(isInfraAppError(error)).toBe(false);
+    expect(getAppErrorTelemetryPolicy(error)).toEqual({
+      kind: 'critical-telemetry',
+      telemetryChannel: 'fatal',
+      shouldReport: true,
+    });
+  });
+
+  it('business high severity는 infra telemetry로 승격해야 한다', () => {
+    const error = new AppError({
+      code: ERROR_CODES.BUSINESS_INVALID_STATE,
+      category: 'business',
+      severity: 'high',
+    });
+
+    expect(isRecoverableBusinessAppError(error)).toBe(false);
+    expect(isInfraAppError(error)).toBe(true);
+    expect(getAppErrorTelemetryPolicy(error)).toEqual({
+      kind: 'infra',
+      telemetryChannel: 'error',
+      shouldReport: true,
     });
   });
 });
