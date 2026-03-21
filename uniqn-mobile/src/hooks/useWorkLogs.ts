@@ -12,7 +12,6 @@ import {
   getWorkLogsByDate,
   getWorkLogById,
   getTodayCheckedInWorkLog,
-  isCurrentlyWorking,
   getWorkLogStats,
   getMonthlyPayroll,
 } from '@/services/work/workLogService';
@@ -181,8 +180,7 @@ export function useCurrentWorkStatus(enabled = true) {
     queryFn: async () => {
       if (!staffId) throw new Error('로그인이 필요합니다.');
       const workLog = await getTodayCheckedInWorkLog(staffId);
-      const working = await isCurrentlyWorking(staffId);
-      return { workLog, isWorking: working };
+      return { workLog, isWorking: workLog !== null };
     },
     enabled: enabled && !!staffId && isOnline,
     staleTime: cachingPolicies.realtime,

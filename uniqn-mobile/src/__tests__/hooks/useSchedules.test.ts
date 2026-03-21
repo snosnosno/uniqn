@@ -66,6 +66,12 @@ jest.mock('@/services/offline/criticalOfflineCache', () => ({
   setCriticalOfflineCache: jest.fn(),
 }));
 
+const { setCriticalOfflineCache: mockSetCriticalOfflineCache } = jest.requireMock(
+  '@/services/offline/criticalOfflineCache'
+) as {
+  setCriticalOfflineCache: jest.Mock;
+};
+
 type MockUser = { uid: string } | null;
 
 let mockUser: MockUser = { uid: 'staff-1' };
@@ -295,7 +301,36 @@ describe('useSchedules hooks', () => {
       expect(unsubscribe).toHaveBeenCalled();
     });
 
-    it('refresh invalidates schedule queries and refetches', async () => {
+    it('writes the canonical schedule cache payload with derived calendar data', async () => {
+      const schedules = [createMockSchedule()];
+      const stats = createMockStats();
+      const groupedSchedules = [{ date: '2024-02-15', events: schedules }];
+      const markedDates = { '2024-02-15': { marked: true } };
+
+      mockQueryData = { schedules, stats };
+      mockGroupSchedulesByDate.mockReturnValue(groupedSchedules);
+      mockGetCalendarMarkedDates.mockReturnValue(markedDates);
+
+      renderHook(() => useSchedules());
+
+      await waitFor(() => {
+        expect(mockSetCriticalOfflineCache).toHaveBeenCalledWith(
+          'schedules:staff-1:list:{}',
+          expect.objectContaining({
+            schedules,
+            stats,
+            groupedSchedules,
+            markedDates,
+          }),
+          expect.objectContaining({
+            userId: 'staff-1',
+            schemaVersion: 3,
+          })
+        );
+      });
+    });
+
+    it('refresh invalidates schedule queries without a duplicate manual refetch', async () => {
       mockQueryData = { schedules: [], stats: createMockStats() };
 
       const { result } = renderHook(() => useSchedules());
@@ -307,7 +342,7 @@ describe('useSchedules hooks', () => {
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
         queryKey: ['schedules'],
       });
-      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockRefetch).not.toHaveBeenCalled();
     });
 
     it('exposes query loading and error state', () => {

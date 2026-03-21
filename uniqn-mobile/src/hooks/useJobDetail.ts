@@ -123,8 +123,7 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     await queryClient.invalidateQueries({
       queryKey: detailQueryKey,
     });
-    await query.refetch();
-  }, [detailQueryKey, isOnline, query, queryClient]);
+  }, [detailQueryKey, isOnline, queryClient]);
 
   return {
     job,

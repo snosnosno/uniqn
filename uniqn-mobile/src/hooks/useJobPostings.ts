@@ -95,7 +95,6 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
     await queryClient.invalidateQueries({
       queryKey: queryKeys.jobPostings.list(normalizedFilters),
     });
-    await query.refetch();
   };
 
   return {
