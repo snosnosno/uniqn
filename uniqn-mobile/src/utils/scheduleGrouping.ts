@@ -46,6 +46,8 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
  * isConsecutiveDates(['2025-01-15', '2025-01-16', '2025-01-17']) // true
  * isConsecutiveDates(['2025-01-15', '2025-01-17']) // false
  */
+const UNDATED_LABEL = '날짜 미정';
+
 export function isConsecutiveDates(dates: string[]): boolean {
   if (dates.length <= 1) return true;
 
@@ -77,6 +79,8 @@ export function isConsecutiveDates(dates: string[]): boolean {
  * formatSingleDate('2025-01-15') // "1/15(수)"
  */
 export function formatSingleDate(dateStr: string): string {
+  if (!dateStr) return UNDATED_LABEL;
+
   const date = parseDateString(dateStr);
   if (!date) return dateStr || '-';
   const dayOfWeek = WEEKDAYS[date.getDay()];
@@ -97,10 +101,34 @@ export function formatSingleDate(dateStr: string): string {
  */
 export function formatDateDisplay(dates: string[]): string {
   if (dates.length === 0) return '';
-  if (dates.length === 1) return formatSingleDate(dates[0]);
+  const datedDates = dates.filter((date) => typeof date === 'string' && date.trim().length > 0);
+  const undatedCount = dates.length - datedDates.length;
 
-  const sorted = [...dates].sort();
-  const totalDays = dates.length;
+  if (datedDates.length === 0) {
+    return undatedCount > 1 ? `${UNDATED_LABEL} (${undatedCount}일)` : UNDATED_LABEL;
+  }
+
+  if (undatedCount > 0) {
+    const formattedDatedDates = datedDates.sort().map((date) => {
+      const parsedDate = parseDateString(date);
+      if (!parsedDate) {
+        return date;
+      }
+      return `${parsedDate.getMonth() + 1}/${parsedDate.getDate()}`;
+    });
+    const displayItems = [...formattedDatedDates, UNDATED_LABEL];
+
+    if (displayItems.length <= 3) {
+      return `${displayItems.join(', ')} (${dates.length}일)`;
+    }
+
+    return `${displayItems[0]}, ${displayItems[1]} ... ${displayItems[displayItems.length - 1]} (${dates.length}일)`;
+  }
+
+  if (datedDates.length === 1) return formatSingleDate(datedDates[0]);
+
+  const sorted = [...datedDates].sort();
+  const totalDays = datedDates.length;
   const isConsecutive = isConsecutiveDates(sorted);
 
   if (isConsecutive) {
@@ -180,7 +208,7 @@ export function formatRolesDisplay(roles: string[], customRoles?: (string | unde
  */
 function createGroupKey(schedule: ScheduleEvent): string | null {
   // applicationId가 없으면 그룹화 불가
-  if (!schedule.applicationId) {
+  if (!schedule.applicationId || !schedule.date) {
     return null;
   }
 
@@ -249,7 +277,7 @@ function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEve
     dateStatuses,
     originalEvents: events,
     applicationId: firstEvent.applicationId,
-    jobPostingCard: firstEvent.jobPostingCard,
+    postingProjection: firstEvent.postingProjection,
     ownerId: firstEvent.ownerId,
     ownerPhone: firstEvent.ownerPhone,
   };
@@ -423,6 +451,9 @@ export function extractAllDatesForCalendar(
     if ('dateRange' in schedule) {
       // GroupedScheduleEvent: 모든 날짜 추출
       for (const dateStatus of schedule.dateStatuses) {
+        if (!dateStatus.date) {
+          continue;
+        }
         result.push({
           date: dateStatus.date,
           type: schedule.type,
@@ -431,6 +462,9 @@ export function extractAllDatesForCalendar(
       }
     } else {
       // ScheduleEvent
+      if (!schedule.date) {
+        continue;
+      }
       result.push({
         date: schedule.date,
         type: schedule.type,

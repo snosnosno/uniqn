@@ -92,6 +92,12 @@
 
 ### `resubmitJobPosting`
 
+Canonical V3 note: resubmit now records `tournamentConfig.resubmittedAt` and clears rejection
+fields. It does not persist `previousRejection` or `resubmittedBy` on the job posting document.
+
+Canonical behavior: the stored document keeps only canonical tournament fields and removes
+rejection metadata instead of archiving it under `previousRejection`.
+
 - Trigger: HTTPS onCall
 - 입력: `postingId: string`
 - 권한: 인증 사용자, 공고 작성자 본인

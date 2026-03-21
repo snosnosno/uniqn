@@ -39,6 +39,10 @@ import { workLogRepository, jobPostingRepository, applicationRepository } from '
 
 const DEFAULT_PAGE_SIZE = 50;
 
+function hasScheduleDate(date: string | undefined): boolean {
+  return typeof date === 'string' && date.trim().length > 0;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -86,20 +90,7 @@ async function fetchJobPostingContextBatch(
     const jobPostings = await jobPostingRepository.getByIdBatch(uniqueIds);
 
     for (const jobPosting of jobPostings) {
-      postingMap.set(jobPosting.id, createSchedulePostingContext(jobPosting)); /*
-      const location =
-        typeof jobPosting.location === 'string'
-          ? jobPosting.location
-          : (jobPosting.location as { name?: string })?.name || '';
-      cardMap.set(jobPosting.id, {
-        card,
-        title: jobPosting.title || '이벤트',
-        location,
-        contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as
-          | string
-          | undefined,
-        ownerId: jobPosting.ownerId,
-      }); */
+      postingMap.set(jobPosting.id, createSchedulePostingContext(jobPosting));
     }
   } catch (error) {
     logger.warn('공고 배치 조회 실패', { error });
@@ -143,6 +134,7 @@ function mergeAndDeduplicateSchedules(
  */
 function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
   const today = toDateString(new Date());
+  const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
 
   let completedSchedules = 0;
   let confirmedSchedules = 0;
@@ -183,11 +175,15 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
     }
 
     // 확정된 스케줄 (미래 날짜, confirmed)
+
+    // 지원 중인 스케줄 (미래 날짜, applied)
+  });
+
+  datedSchedules.forEach((schedule) => {
     if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.CONFIRMED) {
       confirmedSchedules++;
     }
 
-    // 지원 중인 스케줄 (미래 날짜, applied)
     if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.APPLIED) {
       upcomingSchedules++;
     }
@@ -213,6 +209,10 @@ export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[
 
   // 날짜별로 그룹화
   schedules.forEach((schedule) => {
+    if (!hasScheduleDate(schedule.date)) {
+      return;
+    }
+
     const date = schedule.date;
     if (!groups.has(date)) {
       groups.set(date, []);
@@ -386,6 +386,8 @@ export async function getMySchedules(
       filteredSchedules = filteredSchedules.filter((s) => s.type === filters.type);
     }
 
+    const visibleSchedules = filteredSchedules.filter((schedule) => hasScheduleDate(schedule.date));
+
     // ========================================
     // 8. 통계 계산
     // ========================================
@@ -393,14 +395,14 @@ export async function getMySchedules(
 
     const duration = Date.now() - startTime;
     logger.info('스케줄 목록 조회 완료', {
-      count: filteredSchedules.length,
+      count: visibleSchedules.length,
       workLogsCount: workLogSchedules.length,
       applicationsCount: applicationSchedules.length,
       durationMs: duration,
     });
 
     return {
-      schedules: filteredSchedules,
+      schedules: visibleSchedules,
       stats,
       ...(partialFailureWarning && { warning: partialFailureWarning }),
     };
@@ -478,19 +480,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     try {
       const jobPosting = await jobPostingRepository.getById(normalizedJobId);
       if (jobPosting) {
-        postingContext = createSchedulePostingContext(jobPosting); /*
-          typeof jobPosting.location === 'string'
-            ? jobPosting.location
-            : (jobPosting.location as { name?: string })?.name || '';
-        removed = {
-          card: undefined,
-          title: jobPosting.title || '이벤트',
-          location,
-          contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as
-            | string
-            | undefined,
-          ownerId: jobPosting.ownerId,
-        }; */
+        postingContext = createSchedulePostingContext(jobPosting);
       }
     } catch (err) {
       logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });
@@ -581,7 +571,7 @@ export function subscribeToSchedules(
             );
           });
 
-          onUpdate(schedules);
+          onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
         } catch (error) {
           logger.error('스케줄 구독 처리 실패', toError(error));
           onError?.(toError(error));
@@ -622,6 +612,10 @@ export function getCalendarMarkedDates(
   schedules.forEach((schedule) => {
     // 이미 마킹된 날짜가 있으면 우선순위에 따라 결정
     // 우선순위: confirmed > applied > completed > cancelled
+    if (!hasScheduleDate(schedule.date)) {
+      return;
+    }
+
     if (!markedDates[schedule.date]) {
       markedDates[schedule.date] = {
         marked: true,

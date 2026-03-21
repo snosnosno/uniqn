@@ -7,6 +7,6 @@
 
 export { formatTime, formatTimeRange, calculateDuration, formatDate } from './timeHelpers';
 
-export { getRoleSalaryFromCard, formatSalaryDisplay } from './salaryHelpers';
+export { getRoleSalaryFromProjection, formatSalaryDisplay } from './salaryHelpers';
 
 export { statusConfig, attendanceConfig } from './statusConfig';

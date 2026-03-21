@@ -104,6 +104,9 @@ let mockData: unknown = undefined;
 let mockError: Error | null = null;
 
 jest.mock('@tanstack/react-query', () => ({
+  onlineManager: {
+    setOnline: jest.fn(),
+  },
   useQuery: jest.fn(
     (options: { queryKey: string[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
       if (options.enabled === false) {

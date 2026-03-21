@@ -24,6 +24,7 @@ import {
   getMonthlyPayroll,
   getByDateRange,
   findByJobPostingStaffDate,
+  findActiveFixedByJobPostingStaff,
 } from './workLogQueries';
 
 import {
@@ -65,6 +66,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   getMonthlyPayroll = getMonthlyPayroll;
   getByDateRange = getByDateRange;
   findByJobPostingStaffDate = findByJobPostingStaffDate;
+  findActiveFixedByJobPostingStaff = findActiveFixedByJobPostingStaff;
 
   // Realtime
   subscribeByDate = subscribeByDate;

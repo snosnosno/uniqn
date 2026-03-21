@@ -277,6 +277,22 @@ function createMockJobData(overrides: Record<string, unknown> = {}) {
     title: '테스트 공고',
     ownerId: 'owner-1',
     status: 'active',
+    schedule: {
+      kind: 'dated',
+      requirements: ['2025-01-20', '2025-01-21', '2025-01-22'].map((date) => ({
+        date,
+        timeSlots: [
+          {
+            startTime: '18:00',
+            endTime: '02:00',
+            roles: [
+              { role: 'dealer', count: 3, filled: 1 },
+              { role: 'floor', count: 2, filled: 0 },
+            ],
+          },
+        ],
+      })),
+    },
     roles: [
       { role: 'dealer', count: 3, filled: 1 },
       { role: 'floor', count: 2, filled: 0 },

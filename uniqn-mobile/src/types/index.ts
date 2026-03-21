@@ -234,6 +234,7 @@ export type {
   WorkLogStatus,
   ScheduleType,
   PayrollStatus,
+  SchedulePostingProjection,
   ScheduleEvent,
   ScheduleFilters,
   ScheduleStats,

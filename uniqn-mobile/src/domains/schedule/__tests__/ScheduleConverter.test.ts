@@ -1,4 +1,78 @@
-import { ScheduleConverter } from '../ScheduleConverter';
+import { Timestamp } from 'firebase/firestore';
+import { ScheduleConverter, createSchedulePostingContext } from '../ScheduleConverter';
+import type { JobPosting, WorkLog } from '@/types';
+
+function createPosting(): JobPosting {
+  return {
+    id: 'job-1',
+    schemaVersion: 3,
+    title: '포커 이벤트',
+    ownerId: 'owner-1',
+    ownerName: '고용주',
+    workDate: '2025-01-15',
+    workDates: ['2025-01-15'],
+    roleKeys: ['dealer', 'floor'],
+    totalPositions: 2,
+    filledPositions: 0,
+    status: 'active',
+    location: {
+      name: 'Seoul',
+      address: 'Gangnam-daero',
+      detailedAddress: '101',
+    },
+    contactPhone: '01012345678',
+    schedule: {
+      kind: 'dated',
+      primaryDate: '2025-01-15',
+      allDates: ['2025-01-15'],
+      requirements: [
+        {
+          date: '2025-01-15',
+          timeSlots: [
+            {
+              id: 'slot-1',
+              startTime: '09:00',
+              roles: [
+                { id: 'dealer-role', role: 'dealer', count: 1, filled: 0 },
+                { id: 'floor-role', role: 'floor', count: 1, filled: 0 },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    roleCatalog: [
+      { role: 'dealer', salary: { type: 'hourly', amount: 13000 } },
+      { role: 'floor', salary: { type: 'daily', amount: 90000 } },
+    ],
+    compensation: {
+      mode: 'by_role',
+      defaultSalary: { type: 'hourly', amount: 10000 },
+      allowances: { meal: 5000 },
+      taxSettings: { type: 'rate', value: 3.3 },
+    },
+    questions: {
+      items: [],
+    },
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  };
+}
+
+function createWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
+  return {
+    id: 'wl-1',
+    staffId: 'staff-1',
+    jobPostingId: 'job-1',
+    date: '2025-01-15',
+    status: 'scheduled',
+    role: 'floor',
+    timeSlot: '09:00~18:00',
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    ...overrides,
+  };
+}
 
 describe('ScheduleConverter.parseTimeSlotToTimestamp', () => {
   it('parses valid time slots through the shared date utility path', () => {
@@ -22,5 +96,56 @@ describe('ScheduleConverter.parseTimeSlotToTimestamp', () => {
     expect(
       ScheduleConverter.parseTimeSlotToTimestamp('09:00~18:00', '2025-02-30', 'start')
     ).toBeNull();
+  });
+});
+
+describe('ScheduleConverter.workLogToScheduleEvent', () => {
+  it('attaches only the minimal posting projection and keeps canonical settlement data', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(createWorkLog(), postingContext);
+
+    expect(event.postingProjection).toEqual({
+      ownerName: '고용주',
+      description: undefined,
+      settlement: expect.objectContaining({
+        defaultSalary: { type: 'hourly', amount: 10000 },
+        allowances: { meal: 5000 },
+        taxSettings: { type: 'rate', value: 3.3 },
+      }),
+    });
+    expect((event as unknown as Record<string, unknown>).jobPostingCard).toBeUndefined();
+    expect(event.detailedAddress).toBe('101');
+  });
+
+  it('calculates role-specific settlement from canonical role catalog instead of a card view-model', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(
+      createWorkLog({
+        checkInTime: '2025-01-15T09:00:00.000Z',
+        checkOutTime: '2025-01-15T18:00:00.000Z',
+      }),
+      postingContext
+    );
+
+    expect(event.settlementBreakdown?.salaryInfo).toEqual({
+      type: 'daily',
+      amount: 90000,
+    });
+  });
+
+  it('keeps fixed worklog markers out of the UI schedule event while preserving the fixed flag', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(
+      createWorkLog({
+        date: '',
+        timeSlot: undefined,
+        isFixedPosting: true,
+      }),
+      postingContext
+    );
+
+    expect(event.isFixedPosting).toBe(true);
+    expect(event.startTime).toBeNull();
+    expect(event.endTime).toBeNull();
   });
 });

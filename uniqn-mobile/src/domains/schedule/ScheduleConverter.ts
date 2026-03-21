@@ -6,7 +6,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { getPostingSettlementContext, toJobPostingCard } from '@/domains/job-posting';
+import { getPostingSettlementContext } from '@/domains/job-posting';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
 import { StatusMapper } from '@/shared/status';
@@ -15,6 +15,7 @@ import type {
   ApplicationStatus,
   JobPosting,
   ScheduleEvent,
+  SchedulePostingProjection,
   ScheduleType,
   WorkLog,
 } from '@/types';
@@ -29,22 +30,40 @@ import { normalizeTimestamp } from '@/utils/firestore';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
 
 export interface SchedulePostingContext {
-  posting: JobPosting;
   title: string;
   location: string;
+  detailedAddress?: string;
   contactPhone?: string;
   ownerId?: string;
+  ownerName?: string;
+  description?: string;
   settlement: PostingSettlementContext;
 }
 
 export function createSchedulePostingContext(posting: JobPosting): SchedulePostingContext {
   return {
-    posting,
     title: posting.title || '이벤트',
     location: posting.location?.name || '',
+    detailedAddress: posting.location?.detailedAddress,
     contactPhone: posting.contactPhone,
     ownerId: posting.ownerId,
+    ownerName: posting.ownerName,
+    description: posting.description,
     settlement: getPostingSettlementContext(posting),
+  };
+}
+
+function toPostingProjection(
+  postingContext?: SchedulePostingContext
+): SchedulePostingProjection | undefined {
+  if (!postingContext) {
+    return undefined;
+  }
+
+  return {
+    ownerName: postingContext.ownerName,
+    description: postingContext.description,
+    settlement: postingContext.settlement,
   };
 }
 
@@ -69,10 +88,11 @@ export class ScheduleConverter {
       },
       postingContext?.settlement
     );
-    const jobPostingCard = postingContext ? toJobPostingCard(postingContext.posting) : undefined;
+    const postingProjection = toPostingProjection(postingContext);
     const jobPostingId = workLog.jobPostingId || '';
     const jobPostingName = postingContext?.title || '이벤트';
-    const timeSlotParsed = parseTimeSlotToDate(workLog.timeSlot ?? null, workLog.date);
+    const effectiveDate = workLog.date || FIXED_DATE_MARKER;
+    const timeSlotParsed = parseTimeSlotToDate(workLog.timeSlot ?? null, effectiveDate);
     const startTimeFromTimeSlot = timeSlotParsed.startTime
       ? Timestamp.fromDate(timeSlotParsed.startTime)
       : null;
@@ -91,6 +111,7 @@ export class ScheduleConverter {
       jobPostingId,
       jobPostingName,
       location: postingContext?.location || '',
+      detailedAddress: postingContext?.detailedAddress,
       role: workLog.role,
       customRole: workLog.customRole,
       status: attendanceStatus,
@@ -106,8 +127,9 @@ export class ScheduleConverter {
       customSalaryInfo: workLog.customSalaryInfo,
       customAllowances: workLog.customAllowances,
       customTaxSettings: workLog.customTaxSettings,
-      jobPostingCard,
+      postingProjection,
       timeSlot: workLog.timeSlot,
+      isFixedPosting: workLog.isFixedPosting,
       settlementBreakdown: settlementBreakdown || undefined,
       createdAt: workLog.createdAt,
       updatedAt: workLog.updatedAt,
@@ -124,7 +146,7 @@ export class ScheduleConverter {
       return [];
     }
 
-    const jobPostingCard = postingContext ? toJobPostingCard(postingContext.posting) : undefined;
+    const postingProjection = toPostingProjection(postingContext);
 
     return application.assignments.flatMap((assignment, assignmentIdx) =>
       assignment.dates.flatMap((date, dateIdx) => {
@@ -146,6 +168,7 @@ export class ScheduleConverter {
             jobPostingId: application.jobPostingId,
             jobPostingName: postingContext?.title || application.jobPostingTitle || '공고',
             location: postingContext?.location || '',
+            detailedAddress: postingContext?.detailedAddress,
             role: normalizedRole.role,
             customRole: normalizedRole.customRole ?? application.customRole,
             status: STATUS.ATTENDANCE.NOT_STARTED,
@@ -157,7 +180,7 @@ export class ScheduleConverter {
             sourceCollection: 'applications',
             sourceId: application.id,
             applicationId: application.id,
-            jobPostingCard,
+            postingProjection,
             timeSlot: assignment.timeSlot,
             createdAt: application.createdAt,
             updatedAt: application.updatedAt,

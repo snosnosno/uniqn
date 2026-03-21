@@ -1,14 +1,10 @@
 /**
- * UNIQN Mobile - 스케줄 상세 모달 정보 탭
- *
- * @description 공고 정보, 장소, 일정, 역할, 급여 정보 표시
- * @version 1.1.0
+ * UNIQN Mobile - schedule detail info tab
  */
 
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Badge } from '@/components/ui';
-// formatTime, calculateDuration은 WorkTimeDisplay로 대체됨
 import {
   DocumentIcon,
   MapIcon,
@@ -25,6 +21,7 @@ import {
   SALARY_TYPE_LABELS,
   PROVIDED_FLAG,
   DEFAULT_TAX_SETTINGS,
+  getRoleSalaryFromSettlementSource,
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
@@ -35,59 +32,26 @@ import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 import { formatDateKoreanWithDay } from '@/utils/date';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface InfoTabProps {
   schedule: ScheduleEvent;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-// PAYROLL_STATUS: '@/constants/statusConfig'에서 import
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 통합 시간 표시 (WorkTimeDisplay 사용)
- *
- * @description 구인자 화면과 일관성 확보
- * 우선순위: checkInTime > timeSlot 파싱 > '미정'
- */
 function getTimeDisplay(schedule: ScheduleEvent): string {
   const info = WorkTimeDisplay.getDisplayInfo(schedule);
   return `${info.effectiveStart} - ${info.effectiveEnd}`;
 }
 
-/**
- * 실제 시간 표시 (출퇴근 기록이 있는 경우)
- *
- * @returns "HH:mm - HH:mm" 또는 null (기록 없음)
- */
 function getActualTimeDisplay(schedule: ScheduleEvent): string | null {
   return WorkTimeDisplay.getActualTimeRange(schedule);
 }
 
-/**
- * 근무 시간 계산 (WorkTimeDisplay 사용)
- */
 function getWorkDuration(schedule: ScheduleEvent): string {
-  const info = WorkTimeDisplay.getDisplayInfo(schedule);
-  return info.duration;
+  return WorkTimeDisplay.getDisplayInfo(schedule).duration;
 }
 
 function formatFullDate(dateString: string): string {
   return formatDateKoreanWithDay(dateString) || dateString || '-';
 }
-
-// ============================================================================
-// Sub Components
-// ============================================================================
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -98,7 +62,7 @@ interface SectionProps {
 function Section({ icon, title, children }: SectionProps) {
   return (
     <View className="mb-5">
-      <View className="flex-row items-center mb-2">
+      <View className="mb-2 flex-row items-center">
         {icon}
         <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">{title}</Text>
       </View>
@@ -107,85 +71,58 @@ function Section({ icon, title, children }: SectionProps) {
   );
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
-  const ownerName = schedule.jobPostingCard?.ownerName;
+  const ownerName = schedule.postingProjection?.ownerName;
+  const description = schedule.postingProjection?.description;
   const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
 
-  // 급여 정보 (settlementBreakdown > customSalaryInfo > 역할별 급여 > defaultSalary)
   const salaryInfo = useMemo(() => {
-    // 1. settlementBreakdown 우선 (정산 완료 시)
     if (schedule.settlementBreakdown?.salaryInfo) {
       return schedule.settlementBreakdown.salaryInfo;
     }
-    // 2. customSalaryInfo (구인자가 오버라이드한 급여)
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
     }
-    // 3. 역할별 급여 조회: dateRequirements에서 해당 날짜/역할의 급여 찾기
-    const card = schedule.jobPostingCard;
-    if (card?.dateRequirements) {
-      const dateReq = card.dateRequirements.find((dr) => dr.date === schedule.date);
-      if (dateReq) {
-        for (const timeSlot of dateReq.timeSlots || []) {
-          const roleInfo = timeSlot.roles?.find(
-            (r) =>
-              r.role === schedule.role ||
-              (schedule.role === 'other' &&
-                r.role === 'other' &&
-                r.customRole === schedule.customRole)
-          );
-          if (roleInfo?.salary) {
-            return roleInfo.salary;
-          }
-        }
-      }
-    }
-    // 4. 폴백: defaultSalary
-    if (card?.defaultSalary) {
-      return card.defaultSalary;
-    }
-    return null;
+    return getRoleSalaryFromSettlementSource(
+      schedule.postingProjection?.settlement,
+      schedule.role,
+      schedule.customRole
+    );
   }, [
     schedule.settlementBreakdown?.salaryInfo,
     schedule.customSalaryInfo,
-    schedule.jobPostingCard,
-    schedule.date,
+    schedule.postingProjection,
     schedule.role,
     schedule.customRole,
   ]);
 
-  // 수당 정보 (settlementBreakdown > customAllowances > jobPostingCard)
   const allowances: Allowances | undefined = useMemo(() => {
     if (schedule.settlementBreakdown?.allowances) {
       return schedule.settlementBreakdown.allowances;
     }
-    return schedule.customAllowances || schedule.jobPostingCard?.allowances;
+    return schedule.customAllowances || schedule.postingProjection?.settlement.allowances;
   }, [
     schedule.settlementBreakdown?.allowances,
     schedule.customAllowances,
-    schedule.jobPostingCard?.allowances,
+    schedule.postingProjection,
   ]);
 
-  // 세금 설정 (settlementBreakdown > customTaxSettings > jobPostingCard)
   const taxSettings: TaxSettings = useMemo(() => {
     if (schedule.settlementBreakdown?.taxSettings) {
       return schedule.settlementBreakdown.taxSettings;
     }
     return (
-      schedule.customTaxSettings || schedule.jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS
+      schedule.customTaxSettings ||
+      schedule.postingProjection?.settlement.taxSettings ||
+      DEFAULT_TAX_SETTINGS
     );
   }, [
     schedule.settlementBreakdown?.taxSettings,
     schedule.customTaxSettings,
-    schedule.jobPostingCard?.taxSettings,
+    schedule.postingProjection,
   ]);
 
-  // 수당이 있는지 확인 (보장시간 제외)
   const hasAllowances = useMemo(() => {
     if (!allowances) return false;
     return (
@@ -195,21 +132,17 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     );
   }, [allowances]);
 
-  // 세금이 있는지 확인
   const hasTax = taxSettings.type !== 'none';
 
-  // 취소 상태면 별도 UI
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-2 opacity-70">
-        {/* 취소 안내 배너 */}
-        <View className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
-          <Text className="text-sm text-red-600 dark:text-red-400 text-center font-medium">
-            취소된 스케줄입니다
+        <View className="mb-4 rounded-xl bg-red-50 p-4 dark:bg-red-900/20">
+          <Text className="text-center text-sm font-medium text-red-600 dark:text-red-400">
+            취소된 일정입니다
           </Text>
         </View>
 
-        {/* 기본 정보만 표시 */}
         <Section icon={<DocumentIcon size={18} color="#9CA3AF" />} title="공고 정보">
           <Text className="text-base text-gray-500 dark:text-gray-400">
             {schedule.jobPostingName}
@@ -220,7 +153,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <Text className="text-base text-gray-500 dark:text-gray-400">
             {formatFullDate(schedule.date)}
           </Text>
-          <View className="flex-row items-center mt-1">
+          <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color="#9CA3AF" />
             <Text className="ml-1.5 text-sm text-gray-400 dark:text-gray-500">
               {getTimeDisplay(schedule)}
@@ -231,20 +164,15 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     );
   }
 
-  // 공고 설명
-  const description = schedule.jobPostingCard?.description;
-
   return (
     <View className="py-2">
-      {/* 공고 설명 (있으면) */}
       {description && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="공고 설명">
-          <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">{description}</Text>
+          <Text className="text-sm leading-5 text-gray-700 dark:text-gray-300">{description}</Text>
         </Section>
       )}
 
-      {/* 역할 정보 - 같은 행 */}
-      <View className="flex-row items-center mb-4">
+      <View className="mb-4 flex-row items-center">
         <BriefcaseIcon size={18} color="#6B7280" />
         <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">역할 :</Text>
         <Text className="ml-2 text-base font-medium text-gray-900 dark:text-white">
@@ -252,7 +180,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Text>
       </View>
 
-      {/* 장소 - 같은 행 (긴 텍스트는 들여쓰기 줄바꿈) */}
       <View className="mb-4">
         <View className="flex-row items-start">
           <MapIcon size={18} color="#6B7280" />
@@ -262,7 +189,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
               {schedule.location || '-'}
             </Text>
             {schedule.detailedAddress && (
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                 {schedule.detailedAddress}
               </Text>
             )}
@@ -270,19 +197,17 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </View>
       </View>
 
-      {/* 일정 - 상태별 다르게 표시 */}
       <Section icon={<CalendarIcon size={18} color="#6B7280" />} title="일정">
         <Text className="text-base text-gray-900 dark:text-white">
           {formatFullDate(schedule.date)}
         </Text>
 
         {schedule.type === STATUS.SCHEDULE.COMPLETED ? (
-          // 완료 상태: 실제 근무시간만 표시
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
               <View className="flex-row items-center">
                 <ClockIcon size={14} color="#9333EA" />
-                <Text className="ml-1.5 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                <Text className="ml-1.5 text-sm font-medium text-primary-600 dark:text-primary-400">
                   실제: {getActualTimeDisplay(schedule)}
                 </Text>
                 <Text className="ml-2 text-sm text-primary-500 dark:text-primary-500">
@@ -292,8 +217,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
           </View>
         ) : (
-          // 지원중/확정 상태: 예정 시간 (WorkTimeDisplay 사용)
-          <View className="flex-row items-center mt-2">
+          <View className="mt-2 flex-row items-center">
             <ClockIcon size={14} color="#9CA3AF" />
             <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
               {getTimeDisplay(schedule)}
@@ -302,26 +226,24 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         )}
       </Section>
 
-      {/* 구인자 연락처 (구인자 정보 포함) */}
       {(ownerName || schedule.ownerPhone) && (
         <Section icon={<PhoneIcon size={18} color="#6B7280" />} title="구인자 연락처">
-          {/* 구인자 이름 */}
           {ownerName && (
-            <View className="flex-row items-center mb-2">
+            <View className="mb-2 flex-row items-center">
               <UserIcon size={14} color="#9CA3AF" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 구인자: {ownerName}
               </Text>
             </View>
           )}
-          {/* 전화번호 */}
+
           {schedule.ownerPhone && (
             <Pressable
               onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
-              className="flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
+              className="flex-row items-center rounded-lg bg-primary-50 px-3 py-2 active:bg-primary-100 dark:bg-primary-900/20 dark:active:bg-primary-900/30"
             >
-              <Text className="text-base text-primary-600 dark:text-primary-400 font-medium">
-                {formatPhoneNumber(schedule.ownerPhone!)}
+              <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
+                {formatPhoneNumber(schedule.ownerPhone)}
               </Text>
               <View className="ml-auto flex-row items-center">
                 <PhoneIcon size={16} color="#9333EA" />
@@ -334,21 +256,17 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Section>
       )}
 
-      {/* 급여 정보 (모든 상태) */}
       {salaryInfo && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="급여 정보">
-          <View className="p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
-            {/* 급여 타입 + 금액 */}
-            <Text className="text-base text-gray-900 dark:text-white font-medium">
+          <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface/30">
+            <Text className="text-base font-medium text-gray-900 dark:text-white">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
             </Text>
 
-            {/* 수당 정보 (있는 것만 표시, 보장시간 제외) */}
             {hasAllowances && (
-              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-surface-overlay">
-                {/* 식비 */}
+              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-surface-overlay">
                 {allowances?.meal !== undefined && allowances.meal !== 0 && (
-                  <View className="flex-row justify-between items-center py-1">
+                  <View className="flex-row items-center justify-between py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">식비</Text>
                     <Text
                       className={`text-sm font-medium ${
@@ -363,9 +281,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                     </Text>
                   </View>
                 )}
-                {/* 교통비 */}
+
                 {allowances?.transportation !== undefined && allowances.transportation !== 0 && (
-                  <View className="flex-row justify-between items-center py-1">
+                  <View className="flex-row items-center justify-between py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">교통비</Text>
                     <Text
                       className={`text-sm font-medium ${
@@ -380,9 +298,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                     </Text>
                   </View>
                 )}
-                {/* 숙박비 */}
+
                 {allowances?.accommodation !== undefined && allowances.accommodation !== 0 && (
-                  <View className="flex-row justify-between items-center py-1">
+                  <View className="flex-row items-center justify-between py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">숙박비</Text>
                     <Text
                       className={`text-sm font-medium ${
@@ -400,10 +318,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
               </View>
             )}
 
-            {/* 세금 정보 (설정 있으면 표시) */}
             {hasTax && (
-              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-surface-overlay">
-                <View className="flex-row justify-between items-center py-1">
+              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-surface-overlay">
+                <View className="flex-row items-center justify-between py-1">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">세금</Text>
                   <Text className="text-sm font-medium text-red-600 dark:text-red-400">
                     {taxSettings.type === 'rate'
@@ -417,18 +334,17 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Section>
       )}
 
-      {/* 정산 현황 (완료 상태만) */}
       {schedule.type === STATUS.SCHEDULE.COMPLETED && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="정산 현황">
-          <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
+          <View className="flex-row items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-surface/30">
             <View>
               {schedule.settlementBreakdown && (
-                <Text className="text-base text-gray-900 dark:text-white font-medium">
+                <Text className="text-base font-medium text-gray-900 dark:text-white">
                   {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
                 </Text>
               )}
               {schedule.payrollAmount && schedule.payrollAmount > 0 && (
-                <Text className="text-sm text-green-600 dark:text-green-400 mt-0.5">
+                <Text className="mt-0.5 text-sm text-green-600 dark:text-green-400">
                   확정: {formatCurrency(schedule.payrollAmount)}
                 </Text>
               )}
@@ -440,7 +356,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Section>
       )}
 
-      {/* 메모 */}
       {schedule.notes && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="메모">
           <Text className="text-sm text-gray-600 dark:text-gray-400">{schedule.notes}</Text>

@@ -39,6 +39,7 @@ export {
   calculateSettlementWithTax,
   calculateSettlementFromWorkLogWithTax,
   getRoleSalaryFromJobPostingCard,
+  getRoleSalaryFromSettlementSource,
   calculateSettlementBreakdown,
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,

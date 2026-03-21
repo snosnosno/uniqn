@@ -302,6 +302,20 @@ describe('groupSettlementsByStaff', () => {
     expect(result[0].dateStatuses[0].date).toBe('2025-01-15');
     expect(result[0].dateStatuses[1].date).toBe('2025-01-17');
   });
+  it('빈 날짜 workLog는 마지막에 두고 날짜 미정으로 표시한다', () => {
+    const workLogs = [
+      createWorkLog({ id: 'wl-1', date: '' }),
+      createWorkLog({ id: 'wl-2', date: '2025-01-15' }),
+    ];
+
+    const result = groupSettlementsByStaff(workLogs, defaultContext);
+
+    expect(result[0].dateStatuses[0].date).toBe('2025-01-15');
+    expect(result[0].dateStatuses[1].date).toBe('');
+    expect(result[0].dateStatuses[1].formattedDate).toBe('날짜 미정');
+    expect(result[0].dateRange.start).toBe('2025-01-15');
+    expect(result[0].dateRange.end).toBe('2025-01-15');
+  });
 });
 
 // ============================================================================

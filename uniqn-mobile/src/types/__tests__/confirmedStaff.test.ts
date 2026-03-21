@@ -205,6 +205,21 @@ describe('confirmedStaff', () => {
 
       expect(groups[0]!.formattedDate).toBe('invalid-date');
     });
+
+    it('puts undated staff in a trailing placeholder group', () => {
+      const staffList: ConfirmedStaff[] = [
+        createMockConfirmedStaff({ id: 'dated', date: '2025-03-01' }),
+        createMockConfirmedStaff({ id: 'undated', date: '' }),
+      ];
+
+      const groups = groupStaffByDate(staffList);
+
+      expect(groups).toHaveLength(2);
+      expect(groups[0]!.date).toBe('2025-03-01');
+      expect(groups[1]!.date).toBe('');
+      expect(groups[1]!.formattedDate).toBe('날짜 미정');
+      expect(groups[1]!.staff[0]!.id).toBe('undated');
+    });
   });
 
   // ===========================================================================

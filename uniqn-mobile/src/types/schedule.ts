@@ -6,7 +6,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
-import type { JobPostingCard, SalaryType } from './jobPosting';
+import type { JobRoleStats, PostingCompensation, SalaryInfo, SalaryType } from './jobPosting';
 import type { TimeInput } from '@/shared/time/types';
 import { StatusMapper } from '@/shared/status';
 import type { StaffRole } from './role';
@@ -105,6 +105,17 @@ export interface SettlementBreakdown {
   calculatedAt: string;
 }
 
+export interface SchedulePostingProjection {
+  ownerName?: string;
+  description?: string;
+  settlement: {
+    roles: JobRoleStats[];
+    defaultSalary?: SalaryInfo;
+    allowances?: PostingCompensation['allowances'];
+    taxSettings?: PostingCompensation['taxSettings'];
+  };
+}
+
 /**
  * 스케줄 이벤트
  */
@@ -176,10 +187,11 @@ export interface ScheduleEvent extends FirebaseDocument {
   };
 
   // JobCard 렌더링용 데이터 (스케줄 탭에서 사용)
-  jobPostingCard?: JobPostingCard;
+  postingProjection?: SchedulePostingProjection;
 
   /** 시간대 문자열 (예: "18:00~02:00") - 시간 표시 폴백용 */
   timeSlot?: string;
+  isFixedPosting?: boolean;
 }
 
 /**
@@ -320,7 +332,7 @@ export interface GroupedScheduleEvent {
   applicationId?: string;
 
   /** JobPostingCard 정보 (UI 렌더링용) */
-  jobPostingCard?: JobPostingCard;
+  postingProjection?: SchedulePostingProjection;
 
   /** 구인자 ID */
   ownerId?: string;
@@ -415,6 +427,7 @@ export interface WorkLog extends FirebaseDocument {
   /** 공고 ID */
   jobPostingId: string;
   date: string;
+  isFixedPosting?: boolean;
 
   // 스태프 프로필 정보 (비정규화 - 조회 편의)
   /** 스태프 이름 */

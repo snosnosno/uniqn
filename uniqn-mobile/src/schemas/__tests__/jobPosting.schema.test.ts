@@ -225,6 +225,35 @@ describe('jobPosting schemas', () => {
         }).success
       ).toBe(false);
     });
+
+    it('rejects non-canonical tournamentConfig keys added by functions or clients', () => {
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          postingType: 'tournament',
+          tournamentConfig: {
+            approvalStatus: 'pending',
+            submittedAt: createMockTimestamp(),
+            resubmittedAt: createMockTimestamp(1700000100),
+            resubmittedBy: 'employer-1',
+          },
+        }).success
+      ).toBe(false);
+
+      expect(
+        jobPostingDocumentSchema.safeParse({
+          ...createValidDocument(),
+          postingType: 'tournament',
+          tournamentConfig: {
+            approvalStatus: 'pending',
+            submittedAt: createMockTimestamp(),
+            previousRejection: {
+              reason: 'legacy',
+            },
+          },
+        }).success
+      ).toBe(false);
+    });
   });
 
   describe('parse helpers', () => {

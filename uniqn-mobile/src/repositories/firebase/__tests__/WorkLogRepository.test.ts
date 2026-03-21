@@ -447,6 +447,87 @@ describe('FirebaseWorkLogRepository', () => {
     });
   });
 
+  describe('findActiveFixedByJobPostingStaff', () => {
+    it('should return the active fixed work log when one exists', async () => {
+      (getDocs as jest.Mock).mockResolvedValue(
+        createMockQuerySnap([
+          {
+            id: 'wl-cancelled',
+            data: {
+              id: 'wl-cancelled',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              isFixedPosting: true,
+              status: 'cancelled',
+              updatedAt: '2025-01-20T08:00:00.000Z',
+            },
+          },
+          {
+            id: 'wl-scheduled',
+            data: {
+              id: 'wl-scheduled',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              isFixedPosting: true,
+              status: 'scheduled',
+              updatedAt: '2025-01-20T09:00:00.000Z',
+            },
+          },
+          {
+            id: 'wl-checked-in',
+            data: {
+              id: 'wl-checked-in',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              isFixedPosting: true,
+              status: 'checked_in',
+              updatedAt: '2025-01-20T10:00:00.000Z',
+            },
+          },
+        ])
+      );
+
+      const result = await repository.findActiveFixedByJobPostingStaff('job-1', 'staff-1');
+
+      expect(result?.id).toBe('wl-checked-in');
+      expect(hydrateWorkLogModificationHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'wl-checked-in' }),
+        { force: true }
+      );
+    });
+
+    it('should return null when only inactive fixed work logs exist', async () => {
+      (getDocs as jest.Mock).mockResolvedValue(
+        createMockQuerySnap([
+          {
+            id: 'wl-cancelled',
+            data: {
+              id: 'wl-cancelled',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              isFixedPosting: true,
+              status: 'cancelled',
+            },
+          },
+          {
+            id: 'wl-checked-out',
+            data: {
+              id: 'wl-checked-out',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              isFixedPosting: true,
+              status: 'checked_out',
+            },
+          },
+        ])
+      );
+
+      const result = await repository.findActiveFixedByJobPostingStaff('job-1', 'staff-1');
+
+      expect(result).toBeNull();
+    });
+  });
+
   // ==========================================================================
   // getStats
   // ==========================================================================

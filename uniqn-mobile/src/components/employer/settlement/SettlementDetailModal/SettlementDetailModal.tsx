@@ -195,7 +195,7 @@ export function SettlementDetailModal({
                         reviewerType: 'employer',
                         jobPostingId: workLog.jobPostingId,
                         jobPostingTitle: jobPostingTitle ?? '',
-                        workDate: workLog.date,
+                        workDate: workLog.date || '',
                       },
                     });
                   }, 300);

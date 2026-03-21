@@ -148,6 +148,9 @@ function convertToMarkedDates(schedules: ScheduleEvent[], selectedDate: string):
   // 날짜별 스케줄 그룹화
   const schedulesByDate = new Map<string, ScheduleEvent[]>();
   schedules.forEach((schedule) => {
+    if (!schedule.date) {
+      return;
+    }
     const existing = schedulesByDate.get(schedule.date) || [];
     schedulesByDate.set(schedule.date, [...existing, schedule]);
   });

@@ -131,12 +131,12 @@ export const workLogDocumentSchema = z
     id: z.string(),
     staffId: z.string(),
     jobPostingId: z.string(),
-    date: z.string(),
+    date: z.string().nullable(),
 
     // 스태프 정보
     staffName: z.string().optional(),
-    staffNickname: z.string().optional(),
-    staffPhotoURL: z.string().optional(),
+    staffNickname: z.string().nullable().optional(),
+    staffPhotoURL: z.string().nullable().optional(),
 
     // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
     checkInTime: optionalTimestampSchema.or(z.string()).optional(),
@@ -145,7 +145,7 @@ export const workLogDocumentSchema = z
     // 상태
     status: workLogStatusSchema,
     role: staffRoleSchema,
-    customRole: z.string().optional(),
+    customRole: z.string().nullable().optional(),
 
     // 정산 정보
     payrollStatus: payrollStatusSchema.optional(),
@@ -154,8 +154,9 @@ export const workLogDocumentSchema = z
     payrollNotes: z.string().nullable().optional(),
 
     // 메타
-    notes: z.string().optional(),
-    timeSlot: z.string().optional(),
+    notes: z.string().nullable().optional(),
+    timeSlot: z.string().nullable().optional(),
+    isFixedPosting: z.boolean().optional(),
     ownerId: z.string().optional(),
 
     // Timestamps
@@ -181,7 +182,16 @@ export function parseWorkLogDocument(data: unknown): WorkLog | null {
     });
     return null;
   }
-  return result.data as WorkLog;
+
+  return {
+    ...result.data,
+    date: result.data.date ?? '',
+    staffNickname: result.data.staffNickname ?? undefined,
+    staffPhotoURL: result.data.staffPhotoURL ?? undefined,
+    customRole: result.data.customRole ?? undefined,
+    notes: result.data.notes ?? undefined,
+    timeSlot: result.data.timeSlot ?? undefined,
+  } as WorkLog;
 }
 
 /**

@@ -229,7 +229,8 @@ applied → pending → confirmed → completed
 >
 > Runtime and Firestore writes now use `schemaVersion: 3` documents. Legacy `timeSlot`, `isUrgent`,
 > `usesPreQuestions`, top-level `detailedAddress`, and slot-level salary are no longer canonical
-> storage fields. Read-time compatibility is handled by the repository adapter only.
+> storage fields. Job posting runtime reads are now strict V3 parse-based; legacy persisted documents
+> fail parsing and are filtered out of app surfaces.
 >
 > Top-level query helper fields:
 > `schemaVersion`, `status`, `ownerId`, `ownerName`, `postingType`, `workDate`, `workDates`,
@@ -1473,8 +1474,9 @@ const badQuery = async () => {
 
 ### 하위 호환성 유지 정책
 
-런타임 읽기 경로는 일부 레거시 문서 정규화를 유지하지만, Firestore write 계약은 strict V3 canonical입니다.
-- ✅ 기존 데이터 읽기: repository/schema adapter 기준으로 제한적 호환
+job posting 런타임 읽기 경로는 strict V3 parse 기반이며, Firestore write 계약도 strict V3 canonical입니다.
+- ✅ 브리지 계층 유지: canonical 문서 <-> 레거시 form facade/state 변환
+- ❌ 레거시 persisted jobPosting 읽기: strict parser 실패 시 앱 surface에서 제외
 - ✅ 새 데이터 쓰기: 표준 필드만 허용 (`schemaVersion: 3`, canonical nested sections)
 - ❌ 레거시 top-level write: `detailedAddress`, `preQuestions`, `usesPreQuestions`, slot-level salary, `draft` status
 

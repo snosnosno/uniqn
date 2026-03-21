@@ -52,6 +52,45 @@ export interface SettlementGroupingContext {
   taxSettings?: TaxSettings;
 }
 
+function splitDatesByAvailability(dates: string[]): { dated: string[]; undated: string[] } {
+  return {
+    dated: dates.filter((date) => typeof date === 'string' && date.trim().length > 0).sort(),
+    undated: dates.filter((date) => !date || date.trim().length === 0),
+  };
+}
+
+function compareSettlementDates(a: string, b: string): number {
+  const hasDateA = !!a;
+  const hasDateB = !!b;
+
+  if (hasDateA && hasDateB) {
+    return a.localeCompare(b);
+  }
+  if (hasDateA) {
+    return -1;
+  }
+  if (hasDateB) {
+    return 1;
+  }
+  return 0;
+}
+
+function compareSettlementGroupStartDesc(a: GroupedSettlement, b: GroupedSettlement): number {
+  const startA = a.dateRange.start;
+  const startB = b.dateRange.start;
+
+  if (startA && startB) {
+    return startB.localeCompare(startA);
+  }
+  if (startA) {
+    return -1;
+  }
+  if (startB) {
+    return 1;
+  }
+  return 0;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -121,7 +160,9 @@ function createGroupedSettlement(
   const firstWorkLog = workLogs[0];
 
   // 날짜 수집 및 정렬
-  const dates = [...new Set(workLogs.map((wl) => wl.date))].sort();
+  const uniqueDates = [...new Set(workLogs.map((wl) => wl.date))];
+  const { dated: datedDates, undated: undatedDates } = splitDatesByAvailability(uniqueDates);
+  const dates = [...datedDates, ...undatedDates];
 
   // 역할 수집 (Map 기반으로 role-customRole 1:1 매핑 유지)
   const roleMap = new Map<string, string | undefined>();
@@ -136,7 +177,7 @@ function createGroupedSettlement(
   // 날짜별 정산 상태 생성
   const dateStatuses: DateSettlementStatus[] = workLogs
     .map((wl) => createDateSettlementStatus(wl, context))
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareSettlementDates(a.date, b.date));
 
   // 정산 요약 계산
   let totalAmount = 0;
@@ -179,11 +220,11 @@ function createGroupedSettlement(
     jobPostingId: firstWorkLog.jobPostingId,
     staffProfile: extractStaffProfile(firstWorkLog),
     dateRange: {
-      start: dates[0],
-      end: dates[dates.length - 1],
+      start: datedDates[0] ?? '',
+      end: datedDates[datedDates.length - 1] ?? '',
       dates,
       totalDays: dates.length,
-      isConsecutive: isConsecutiveDates(dates),
+      isConsecutive: datedDates.length > 0 ? isConsecutiveDates(datedDates) : false,
     },
     roles,
     customRoles: alignedCustomRoles.some((v) => v !== undefined) ? alignedCustomRoles : undefined,
@@ -273,9 +314,7 @@ export function groupSettlementsByStaff(
   }
 
   // 날짜순 정렬 (최신순)
-  result.sort((a, b) => {
-    return b.dateRange.start.localeCompare(a.dateRange.start);
-  });
+  result.sort(compareSettlementGroupStartDesc);
 
   return result;
 }

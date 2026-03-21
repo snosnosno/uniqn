@@ -289,6 +289,23 @@ export function workLogToConfirmedStaff(
   };
 }
 
+const UNDATED_GROUP_KEY = '__undated__';
+const UNDATED_LABEL = '날짜 미정';
+
+function normalizeGroupDate(date: string): string {
+  return typeof date === 'string' && date.trim().length > 0 ? date : UNDATED_GROUP_KEY;
+}
+
+function denormalizeGroupDate(groupKey: string): string {
+  return groupKey === UNDATED_GROUP_KEY ? '' : groupKey;
+}
+
+function compareGroupDates(a: string, b: string): number {
+  if (a === UNDATED_GROUP_KEY) return 1;
+  if (b === UNDATED_GROUP_KEY) return -1;
+  return a.localeCompare(b);
+}
+
 /**
  * 스태프를 날짜별로 그룹화
  */
@@ -298,13 +315,15 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
 
   // 날짜별 그룹화
   staffList.forEach((staff) => {
-    const existing = groupMap.get(staff.date) || [];
-    groupMap.set(staff.date, [...existing, staff]);
+    const groupKey = normalizeGroupDate(staff.date);
+    const existing = groupMap.get(groupKey) || [];
+    groupMap.set(groupKey, [...existing, staff]);
   });
 
   // 그룹 변환 및 정렬
   const groups: ConfirmedStaffGroup[] = Array.from(groupMap.entries())
-    .map(([date, staffInDate]) => {
+    .map(([groupKey, staffInDate]) => {
+      const date = denormalizeGroupDate(groupKey);
       const formattedDate = formatDateKorean(date);
 
       return {
@@ -324,7 +343,7 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
         },
       };
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareGroupDates(normalizeGroupDate(a.date), normalizeGroupDate(b.date)));
 
   return groups;
 }
@@ -334,6 +353,9 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
  */
 function formatDateKorean(date: Date | string): string {
   if (typeof date === 'string') {
+    if (!date) {
+      return UNDATED_LABEL;
+    }
     return formatDateWithDay(date) || date;
   }
   const month = date.getMonth() + 1;

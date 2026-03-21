@@ -415,6 +415,30 @@ describe('scheduleService - getMySchedules', () => {
     expect(result.schedules).toEqual([]);
     expect(result.stats.totalSchedules).toBe(0);
   });
+  it('빈 날짜 schedule은 목록과 통계에서 제외한다', async () => {
+    const mockSchedules = [
+      createMockScheduleEvent({ id: 'dated', date: '2025-01-15', type: STATUS.SCHEDULE.CONFIRMED }),
+      createMockScheduleEvent({
+        id: 'undated',
+        date: '',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 120000,
+      }),
+    ];
+
+    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
+
+    const result = await getMySchedules('staff-123');
+
+    expect(result.schedules).toHaveLength(1);
+    expect(result.schedules[0]?.id).toBe('dated');
+    expect(result.stats.totalSchedules).toBe(2);
+    expect(result.stats.completedSchedules).toBe(1);
+    expect(result.stats.totalEarnings).toBe(120000);
+  });
 });
 
 describe('scheduleService - getSchedulesByDate', () => {
@@ -688,6 +712,30 @@ describe('scheduleService - subscribeToSchedules', () => {
 
     expect(onError).toHaveBeenCalledTimes(1);
   });
+  it('realtime update에서도 빈 날짜 schedule은 제외한다', async () => {
+    const onUpdate = jest.fn();
+    const mockWorkLogs = [
+      createMockWorkLog({ id: 'dated', date: '2025-01-15' }),
+      createMockWorkLog({ id: 'undated', date: '' }),
+    ];
+
+    mockWorkLogRepositorySubscribeByStaffId.mockImplementation((_staffId, callback) => {
+      callback(mockWorkLogs);
+      return jest.fn();
+    });
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+
+    subscribeToSchedules('staff-123', onUpdate);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onUpdate).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'dated',
+        date: '2025-01-15',
+      }),
+    ]);
+  });
 });
 
 describe('scheduleService - getScheduleStats', () => {
@@ -733,6 +781,29 @@ describe('scheduleService - getScheduleStats', () => {
 
     expect(stats.completedSchedules).toBe(2);
     expect(stats.totalEarnings).toBeGreaterThan(0);
+  });
+
+  it('빈 날짜 completed schedule도 통계에는 포함한다', async () => {
+    const mockSchedules = [
+      createMockScheduleEvent({
+        id: 'undated-completed',
+        date: '',
+        type: STATUS.SCHEDULE.COMPLETED,
+        payrollAmount: 90000,
+      }),
+      createMockScheduleEvent({ id: 'dated-confirmed', type: STATUS.SCHEDULE.CONFIRMED }),
+    ];
+
+    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
+
+    const stats = await getScheduleStats('staff-123');
+
+    expect(stats.totalSchedules).toBe(2);
+    expect(stats.completedSchedules).toBe(1);
+    expect(stats.totalEarnings).toBe(90000);
   });
 });
 
@@ -866,6 +937,15 @@ describe('scheduleService - getCalendarMarkedDates', () => {
 
     expect(markedDates['2025-01-15'].marked).toBe(true);
     expect(markedDates['2025-01-16'].marked).toBe(true);
+  });
+  it('빈 날짜 schedule은 캘린더 마킹에서 제외한다', () => {
+    const markedDates = getCalendarMarkedDates([
+      createMockScheduleEvent({ date: '' }),
+      createMockScheduleEvent({ date: '2025-01-15' }),
+    ]);
+
+    expect(markedDates['']).toBeUndefined();
+    expect(markedDates['2025-01-15']).toBeDefined();
   });
 });
 

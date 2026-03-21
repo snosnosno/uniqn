@@ -750,3 +750,17 @@ describe('scheduleGrouping invalid date fallbacks', () => {
     expect(formatDateDisplay(['invalid-date'])).toBe('invalid-date');
   });
 });
+
+describe('scheduleGrouping undated handling', () => {
+  it('formats empty dates as 날짜 미정', () => {
+    expect(formatSingleDate('')).toBe('날짜 미정');
+  });
+
+  it('formats mixed dated and undated arrays without broken commas', () => {
+    expect(formatDateDisplay(['2025-01-15', ''])).toBe('1/15, 날짜 미정 (2일)');
+  });
+
+  it('formats all-undated arrays as 날짜 미정 with count', () => {
+    expect(formatDateDisplay(['', ''])).toBe('날짜 미정 (2일)');
+  });
+});

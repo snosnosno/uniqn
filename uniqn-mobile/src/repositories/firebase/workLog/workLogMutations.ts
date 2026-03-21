@@ -284,7 +284,7 @@ export async function processQRCheckInOutTransaction(
       }
 
       // 방어적 검증: QR date와 WorkLog date 일치 확인
-      if (workLog.date !== date) {
+      if (!workLog.isFixedPosting && workLog.date !== date) {
         throw new InvalidQRCodeError({
           message: `QR date(${date})와 WorkLog date(${workLog.date}) 불일치`,
           userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',

@@ -9,9 +9,6 @@ export interface WorkTimeSource {
   endTime?: TimeInput;
   timeSlot?: string;
   date?: string;
-  jobPostingCard?: {
-    timeSlot?: string;
-  };
 }
 
 export interface WorkTimeDisplayResult {
@@ -37,7 +34,7 @@ export class WorkTimeDisplay {
     const actualStart = TimeNormalizer.parseTime(source.checkInTime);
     const actualEnd = TimeNormalizer.parseTime(source.checkOutTime);
 
-    const timeSlotStr = source.timeSlot || source.jobPostingCard?.timeSlot;
+    const timeSlotStr = source.timeSlot;
     const parsedScheduled = parseTimeSlotToDate(timeSlotStr ?? null, source.date ?? '');
     const scheduledStart = parsedScheduled.startTime ?? TimeNormalizer.parseTime(source.startTime);
     const scheduledEnd = parsedScheduled.endTime ?? TimeNormalizer.parseTime(source.endTime);

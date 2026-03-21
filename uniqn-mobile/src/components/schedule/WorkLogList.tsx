@@ -63,6 +63,10 @@ const PAYROLL_STATUS_CONFIG: Record<
 };
 
 function formatDate(dateString: string): string {
+  if (!dateString) {
+    return '날짜 미정';
+  }
+
   return formatDateShortWithDay(dateString) || dateString || '-';
 }
 

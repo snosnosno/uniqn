@@ -1,11 +1,5 @@
 /**
- * UNIQN Mobile - ScheduleCard 컴포넌트
- *
- * @description 상태별로 다른 UI를 표시하는 스케줄 카드
- * - applied: 공고 정보 중심 (JobCard 스타일)
- * - confirmed: 역할 + 출퇴근 상태
- * - completed: 역할 + 정산 금액
- * @version 1.1.0 - 헬퍼 분리
+ * UNIQN Mobile - ScheduleCard component
  */
 
 import React, { memo, useMemo } from 'react';
@@ -32,7 +26,8 @@ import {
 import {
   formatTime,
   formatDate,
-  getRoleSalaryFromCard,
+  formatSalaryDisplay,
+  getRoleSalaryFromProjection,
   statusConfig,
   attendanceConfig,
 } from './helpers';
@@ -40,76 +35,47 @@ import { STATUS } from '@/constants';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
+  const ownerName = schedule.postingProjection?.ownerName;
 
-  // 구인자명
-  const ownerName = schedule.jobPostingCard?.ownerName;
+  const projectedSalary = useMemo(
+    () =>
+      getRoleSalaryFromProjection(schedule.postingProjection, schedule.role, schedule.customRole),
+    [schedule.postingProjection, schedule.role, schedule.customRole]
+  );
 
-  // 급여 정보 추출 (역할별 급여 우선, defaultSalary 폴백)
   const salaryDisplay = useMemo(() => {
-    const card = schedule.jobPostingCard;
-    if (!card) return null;
+    const salary =
+      schedule.settlementBreakdown?.salaryInfo || schedule.customSalaryInfo || projectedSalary;
+    return formatSalaryDisplay(salary);
+  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, projectedSalary]);
 
-    // 1. 역할별 급여 조회
-    const roleSalary = getRoleSalaryFromCard(
-      card,
-      schedule.date,
-      schedule.role,
-      schedule.customRole
-    );
-    const salary = roleSalary || card.defaultSalary;
-
-    if (salary) {
-      const { type, amount } = salary;
-      if (type === 'other') return '협의';
-      const typeLabel = type === 'hourly' ? '시급' : type === 'daily' ? '일급' : '월급';
-      return `${typeLabel} ${amount.toLocaleString()}원`;
-    }
-    return null;
-  }, [schedule.jobPostingCard, schedule.date, schedule.role, schedule.customRole]);
-
-  // 완료 상태 금액 계산 (payrollAmount 우선, 없으면 계산)
   const completedAmount = useMemo(() => {
     if (schedule.type !== STATUS.SCHEDULE.COMPLETED) return null;
 
-    // payrollAmount(구인자 확정 금액) 우선
     if (schedule.payrollAmount && schedule.payrollAmount > 0) {
       return schedule.payrollAmount;
     }
 
-    // 없으면 계산 (오버라이드 데이터 우선, 세금 포함)
     if (schedule.checkInTime && schedule.checkOutTime) {
-      // 역할별 급여 조회 (customSalaryInfo > 역할별 급여 > defaultSalary)
-      const roleSalary = getRoleSalaryFromCard(
-        schedule.jobPostingCard,
-        schedule.date,
-        schedule.role,
-        schedule.customRole
-      );
       const salaryInfo: SalaryInfo =
         schedule.customSalaryInfo ||
-        roleSalary ||
-        schedule.jobPostingCard?.defaultSalary ||
+        projectedSalary ||
+        schedule.postingProjection?.settlement.defaultSalary ||
         DEFAULT_SALARY_INFO;
       const allowances: Allowances | undefined =
-        schedule.customAllowances || schedule.jobPostingCard?.allowances;
+        schedule.customAllowances || schedule.postingProjection?.settlement.allowances;
       const taxSettings: TaxSettings =
-        schedule.customTaxSettings || schedule.jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS;
+        schedule.customTaxSettings ||
+        schedule.postingProjection?.settlement.taxSettings ||
+        DEFAULT_TAX_SETTINGS;
 
       const result = calculateSettlementWithTax(
         schedule.checkInTime,
@@ -119,41 +85,34 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         taxSettings
       );
 
-      // 세금 있으면 세후 금액, 없으면 세전 금액
       const amount = taxSettings.type !== 'none' ? result.afterTaxPay : result.totalPay;
       return amount > 0 ? amount : null;
     }
 
     return null;
   }, [
+    projectedSalary,
     schedule.type,
     schedule.payrollAmount,
     schedule.checkInTime,
     schedule.checkOutTime,
-    schedule.date,
-    schedule.role,
-    schedule.customRole,
     schedule.customSalaryInfo,
     schedule.customAllowances,
     schedule.customTaxSettings,
-    schedule.jobPostingCard,
+    schedule.postingProjection,
   ]);
 
-  // 시간 표시 정보 (WorkTimeDisplay 사용 - 구인자 화면과 일관성 확보)
-  const timeDisplayInfo = useMemo(() => {
-    return WorkTimeDisplay.getDisplayInfo(schedule);
-  }, [schedule]);
+  const timeDisplayInfo = useMemo(() => WorkTimeDisplay.getDisplayInfo(schedule), [schedule]);
 
-  // 확정 상태 시간 표시 (실제 > timeSlot 파싱 > '미정')
   const confirmedTimeDisplay = useMemo(() => {
     if (schedule.type !== STATUS.SCHEDULE.CONFIRMED) return null;
     return `${timeDisplayInfo.effectiveStart} - ${timeDisplayInfo.effectiveEnd}`;
   }, [schedule.type, timeDisplayInfo]);
 
   const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
-
-  // 접근성 라벨 생성
-  const accessibilityLabel = `${schedule.jobPostingName}, ${status.label}, ${formatDate(schedule.date)}${schedule.location ? `, ${schedule.location}` : ''}`;
+  const accessibilityLabel = `${schedule.jobPostingName}, ${status.label}, ${formatDate(schedule.date)}${
+    schedule.location ? `, ${schedule.location}` : ''
+  }`;
 
   return (
     <Pressable
@@ -163,17 +122,14 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
       accessibilityLabel={accessibilityLabel}
     >
       <Card className={`mb-3 ${isCancelled ? 'opacity-60' : ''}`}>
-        {/* 상단: 상태 뱃지 + 금액(completed) */}
-        <View className="flex-row items-start justify-between mb-2">
-          <View className="flex-row items-center flex-wrap flex-1">
-            {/* 상태 뱃지 */}
+        <View className="mb-2 flex-row items-start justify-between">
+          <View className="flex-1 flex-row flex-wrap items-center">
             <Badge variant={status.variant} dot>
               {status.label}
             </Badge>
 
-            {/* 확정 상태: 출퇴근 상태 표시 */}
             {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
-              <View className={`ml-2 px-2 py-0.5 rounded-full ${attendance.bgColor}`}>
+              <View className={`ml-2 rounded-full px-2 py-0.5 ${attendance.bgColor}`}>
                 <Text className={`text-xs font-medium ${attendance.textColor}`}>
                   {attendance.label}
                 </Text>
@@ -181,7 +137,6 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             )}
           </View>
 
-          {/* 완료 상태: 정산 금액 우측 상단 */}
           {schedule.type === STATUS.SCHEDULE.COMPLETED && completedAmount && (
             <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(completedAmount)}
@@ -189,9 +144,8 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           )}
         </View>
 
-        {/* 제목 */}
         <Text
-          className={`text-base font-semibold mb-2 ${
+          className={`mb-2 text-base font-semibold ${
             isCancelled
               ? 'text-gray-400 dark:text-gray-500 line-through'
               : 'text-gray-900 dark:text-white'
@@ -201,12 +155,11 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           {schedule.jobPostingName}
         </Text>
 
-        {/* 장소 */}
         {schedule.location && (
-          <View className="flex-row items-center mb-2">
+          <View className="mb-2 flex-row items-center">
             <MapIcon size={14} color="#6B7280" />
             <Text
-              className="ml-1.5 text-sm text-gray-500 dark:text-gray-400 flex-1"
+              className="ml-1.5 flex-1 text-sm text-gray-500 dark:text-gray-400"
               numberOfLines={1}
             >
               {schedule.location}
@@ -214,9 +167,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           </View>
         )}
 
-        {/* 상태별 추가 정보 */}
         {schedule.type === STATUS.SCHEDULE.APPLIED ? (
-          // 지원 중: 일정 + 역할 + 급여 + 구인자
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color="#6B7280" />
@@ -229,24 +180,24 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
                 {formatTime(schedule.startTime)}
               </Text>
             </View>
-            <View className="flex-row items-center flex-wrap mt-2">
-              {/* 역할 */}
-              <View className="flex-row items-center mr-3">
+
+            <View className="mt-2 flex-row flex-wrap items-center">
+              <View className="mr-3 flex-row items-center">
                 <BriefcaseIcon size={14} color="#6B7280" />
                 <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
               </View>
-              {/* 급여 */}
+
               {salaryDisplay && (
-                <View className="flex-row items-center mr-3">
+                <View className="mr-3 flex-row items-center">
                   <BanknotesIcon size={14} color="#6B7280" />
                   <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
                     {salaryDisplay}
                   </Text>
                 </View>
               )}
-              {/* 구인자 */}
+
               {ownerName && (
                 <View className="flex-row items-center">
                   <UserIcon size={14} color="#9CA3AF" />
@@ -256,7 +207,6 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </View>
           </View>
         ) : (
-          // 확정/완료: 일정 + 역할
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color="#6B7280" />
@@ -267,13 +217,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               <ClockIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {schedule.type === STATUS.SCHEDULE.COMPLETED
-                  ? // 완료: 근무시간 표시 (WorkTimeDisplay 사용)
-                    timeDisplayInfo.duration
-                  : // 확정: 예정시간 범위 표시 (WorkTimeDisplay 사용)
-                    confirmedTimeDisplay}
+                  ? timeDisplayInfo.duration
+                  : confirmedTimeDisplay}
               </Text>
             </View>
-            <View className="flex-row items-center mt-2">
+
+            <View className="mt-2 flex-row items-center">
               <BriefcaseIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
@@ -282,11 +231,10 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           </View>
         )}
 
-        {/* 취소됨 안내 */}
         {isCancelled && (
-          <View className="mt-3 py-2 px-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <Text className="text-xs text-red-600 dark:text-red-400 text-center">
-              이 스케줄은 취소되었습니다
+          <View className="mt-3 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
+            <Text className="text-center text-xs text-red-600 dark:text-red-400">
+              이 일정이 취소되었습니다.
             </Text>
           </View>
         )}

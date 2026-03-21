@@ -31,6 +31,7 @@ interface PendingReviewCardProps {
 function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
   const daysRemaining = getDaysRemaining(item);
   const isUrgent = daysRemaining <= 2;
+  const workDateLabel = item.workDate || '날짜 미정';
 
   return (
     <Pressable
@@ -46,7 +47,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {item.workDate}
+              {workDateLabel}
               {item.location ? ` · ${item.location}` : ''}
             </Text>
             {item.reviewerType === 'employer' && (

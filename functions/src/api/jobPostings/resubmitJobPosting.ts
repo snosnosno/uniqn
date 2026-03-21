@@ -72,12 +72,6 @@ export const resubmitJobPosting = onCall(
         transaction.update(postingRef, {
           'tournamentConfig.approvalStatus': 'pending',
           'tournamentConfig.resubmittedAt': now,
-          'tournamentConfig.resubmittedBy': userId,
-          'tournamentConfig.previousRejection': {
-            reason: posting.tournamentConfig.rejectionReason || null,
-            rejectedBy: posting.tournamentConfig.rejectedBy || null,
-            rejectedAt: posting.tournamentConfig.rejectedAt || null
-          },
           'tournamentConfig.rejectionReason': FieldValue.delete(),
           'tournamentConfig.rejectedBy': FieldValue.delete(),
           'tournamentConfig.rejectedAt': FieldValue.delete(),

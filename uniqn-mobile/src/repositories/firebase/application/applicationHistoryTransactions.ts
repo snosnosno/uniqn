@@ -29,7 +29,7 @@ import {
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
-import { normalizeAssignmentRole } from '@/types/assignment';
+import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
 import { updatePostingScheduleFilled } from '@/domains/application';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
@@ -167,6 +167,38 @@ export async function confirmWithHistoryTransaction(
 
       for (const assignment of assignmentsToConfirm) {
         const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
+        const isFixedAssignment =
+          assignment.dates.length === 1 && assignment.dates[0] === FIXED_DATE_MARKER;
+
+        if (isFixedAssignment) {
+          const workLogRef = doc(workLogsRef);
+          const workLogData = {
+            staffId: applicationData.applicantId,
+            staffName: applicationData.applicantName,
+            jobPostingId: applicationData.jobPostingId,
+            jobPostingName: jobData.title,
+            ownerId: jobData.ownerId,
+            role: normalizedRole.role,
+            customRole: normalizedRole.customRole ?? null,
+            date: null,
+            timeSlot: null,
+            isFixedPosting: true,
+            status: STATUS.WORK_LOG.SCHEDULED,
+            checkInTime: null,
+            checkOutTime: null,
+            workDuration: null,
+            payrollAmount: null,
+            isSettled: false,
+            assignmentGroupId: assignment.groupId ?? null,
+            checkMethod: assignment.checkMethod ?? 'individual',
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          transaction.set(workLogRef, workLogData);
+          workLogIds.push(workLogRef.id);
+          continue;
+        }
 
         for (const date of assignment.dates) {
           const workLogRef = doc(workLogsRef);
