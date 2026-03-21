@@ -112,7 +112,7 @@ export const onCheckInOut = onDocumentUpdated(
       }
 
       const staffName = staffDoc.data()?.name || "스태프";
-      const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
+      const employerId = jobPosting?.ownerId;
 
       // 3. 각 체크 타입별 알림 전송 (동시 출퇴근 시 양쪽 모두 처리)
       for (const checkType of checkTypes) {

@@ -22,6 +22,7 @@ import {
   updateSettlementStatus,
   getJobPostingSettlementSummary,
 } from '@/services/work/settlement';
+import type { Allowances, SalaryInfo } from '@/types';
 
 // ============================================================================
 // Mock Repository
@@ -256,7 +257,7 @@ jest.mock('@/shared/time', () => ({
 // Test Utilities
 // ============================================================================
 
-function createMockJobPostingWithSalary(overrides: Record<string, unknown> = {}) {
+function createLegacyMockJobPostingWithSalary(overrides: Record<string, unknown> = {}) {
   const baseJob = createMockJobPosting();
   return {
     id: baseJob.id,
@@ -288,6 +289,64 @@ function createMockJobPostingWithSalary(overrides: Record<string, unknown> = {})
     },
     useSameSalary: true,
     ...overrides,
+  };
+}
+
+function createMockJobPostingWithSalary(overrides: Record<string, unknown> = {}) {
+  const legacyJob = createLegacyMockJobPostingWithSalary(overrides) as Record<string, unknown> & {
+    roles?: {
+      role: string;
+      customRole?: string;
+      count: number;
+      filled?: number;
+      salary?: SalaryInfo;
+    }[];
+    defaultSalary?: SalaryInfo;
+    useSameSalary?: boolean;
+    allowances?: Allowances;
+    taxSettings?: Record<string, unknown>;
+    location?: { name?: string; district?: string };
+  };
+
+  const roles = legacyJob.roles ?? [
+    { role: 'dealer', count: 3, filled: 0, salary: { type: 'hourly', amount: 15000 } },
+    { role: 'manager', count: 1, filled: 0, salary: { type: 'hourly', amount: 15000 } },
+  ];
+
+  return {
+    ...legacyJob,
+    location: {
+      name: legacyJob.location?.name ?? '서울 강남구',
+      district: legacyJob.location?.district ?? '강남구',
+      ...(typeof legacyJob.detailedAddress === 'string'
+        ? { detailedAddress: legacyJob.detailedAddress }
+        : {}),
+    },
+    schedule: {
+      kind: 'fixed' as const,
+      daysPerWeek: 5,
+      startTime: '09:00',
+      roleRequirements: roles.map((role) => ({
+        role: role.role as 'dealer' | 'manager' | 'floor' | 'staff' | 'other',
+        ...(role.customRole ? { customRole: role.customRole } : {}),
+        count: role.count,
+        ...(role.filled !== undefined ? { filled: role.filled } : {}),
+      })),
+    },
+    roleCatalog: roles.map((role) => ({
+      role: role.role as 'dealer' | 'manager' | 'floor' | 'staff' | 'other',
+      ...(role.customRole ? { customRole: role.customRole } : {}),
+      ...(role.salary ? { salary: role.salary } : {}),
+    })),
+    compensation: {
+      mode: legacyJob.useSameSalary === false ? ('by_role' as const) : ('shared' as const),
+      ...(legacyJob.defaultSalary ? { defaultSalary: legacyJob.defaultSalary } : {}),
+      ...(legacyJob.allowances ? { allowances: legacyJob.allowances } : {}),
+      ...(legacyJob.taxSettings ? { taxSettings: legacyJob.taxSettings } : {}),
+    },
+    questions: {
+      items: [],
+    },
   };
 }
 

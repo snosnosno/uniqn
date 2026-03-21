@@ -32,7 +32,7 @@ import type { Timestamp, Unsubscribe } from 'firebase/firestore';
  * 지원서 + 공고 정보 조인 타입
  */
 export interface ApplicationWithJob extends Application {
-  jobPosting?: Partial<JobPosting>;
+  jobPosting?: JobPosting;
 }
 
 /**

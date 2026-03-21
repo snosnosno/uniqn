@@ -19,7 +19,7 @@ import {
 // Helpers
 // ============================================================================
 
-function createMinimalJob(overrides: Partial<JobPosting> = {}): JobPosting {
+function createMinimalJobLegacy(overrides: Partial<JobPosting> = {}): JobPosting {
   return {
     id: 'job-1',
     title: '테스트 공고',
@@ -35,6 +35,111 @@ function createMinimalJob(overrides: Partial<JobPosting> = {}): JobPosting {
     updatedAt: new Date().toISOString(),
     ...overrides,
   } as unknown as JobPosting;
+}
+void createMinimalJobLegacy;
+
+type LegacyDateRequirement = {
+  date: string;
+  timeSlots: {
+    startTime?: string;
+    roles: {
+      role?: string;
+      customRole?: string;
+      headcount?: number;
+      filled?: number;
+    }[];
+  }[];
+};
+
+type LegacyRoleRequirement = {
+  role?: string;
+  customRole?: string;
+  count: number;
+  filled?: number;
+};
+
+type TestJobOverrides = Partial<JobPosting> & {
+  dateSpecificRequirements?: LegacyDateRequirement[];
+  requiredRolesWithCount?: LegacyRoleRequirement[];
+  roles?: LegacyRoleRequirement[];
+  timeSlot?: string;
+};
+
+function createMinimalJob(overrides: TestJobOverrides = {}): JobPosting {
+  const workDate =
+    overrides.workDate ?? overrides.dateSpecificRequirements?.[0]?.date ?? '2025-01-28';
+  const datedRequirements = (overrides.dateSpecificRequirements ?? []).map((requirement) => ({
+    date: requirement.date,
+    timeSlots: requirement.timeSlots.map((slot, slotIndex) => ({
+      id: `slot-${slotIndex}`,
+      startTime: slot.startTime,
+      roles: slot.roles.map((role, roleIndex) => ({
+        id: `role-${roleIndex}`,
+        role: role.role ?? 'dealer',
+        customRole: role.customRole,
+        count: role.headcount ?? 0,
+        filled: role.filled ?? 0,
+      })),
+    })),
+  }));
+
+  const schedule =
+    overrides.postingType === 'fixed'
+      ? {
+          kind: 'fixed' as const,
+          roleRequirements: (overrides.requiredRolesWithCount ?? []).map((role) => ({
+            role: role.role ?? 'dealer',
+            customRole: role.customRole,
+            count: role.count,
+            filled: role.filled ?? 0,
+          })),
+        }
+      : {
+          kind: 'dated' as const,
+          primaryDate: workDate,
+          allDates: datedRequirements.map((requirement) => requirement.date),
+          requirements: datedRequirements,
+        };
+
+  const roleCatalogSource =
+    overrides.requiredRolesWithCount ??
+    overrides.dateSpecificRequirements?.flatMap((requirement) =>
+      requirement.timeSlots.flatMap((slot) =>
+        slot.roles.map((role) => ({
+          role: role.role ?? 'dealer',
+          customRole: role.customRole,
+        }))
+      )
+    ) ??
+    [];
+
+  return {
+    id: 'job-1',
+    schemaVersion: 3,
+    title: 'Test Posting',
+    status: 'active',
+    location: overrides.location ?? { name: 'Gangnam', district: 'Seoul' },
+    workDate,
+    /*
+    title: '?뚯뒪??怨듦퀬',
+    status: 'active',
+    location: overrides.location ?? { name: '媛뺣궓援?, district: '媛뺣궓援? },
+    workDate,
+    */
+    totalPositions: overrides.totalPositions ?? 0,
+    filledPositions: overrides.filledPositions ?? 0,
+    ownerId: overrides.ownerId ?? 'owner-1',
+    createdAt: overrides.createdAt ?? new Date(),
+    updatedAt: overrides.updatedAt ?? new Date(),
+    schedule,
+    roleCatalog: roleCatalogSource.map((role) => ({
+      role: role.role ?? 'dealer',
+      customRole: role.customRole,
+    })),
+    compensation: overrides.compensation ?? { mode: 'shared' },
+    questions: overrides.questions ?? { items: [] },
+    postingType: overrides.postingType,
+  } as JobPosting;
 }
 
 // ============================================================================
@@ -225,6 +330,36 @@ describe('normalizeJobRoles', () => {
     expect(result[0].filledCount).toBe(3); // 1 + 2
   });
 
+  it('customRole이 다르면 other 역할도 별도로 집계한다', () => {
+    const job = createMinimalJob({
+      postingType: 'tournament',
+      dateSpecificRequirements: [
+        {
+          date: '2025-01-28',
+          timeSlots: [
+            {
+              startTime: '19:00',
+              roles: [{ role: 'other', customRole: '조명 담당', headcount: 2, filled: 1 }],
+            },
+          ],
+        },
+        {
+          date: '2025-01-29',
+          timeSlots: [
+            {
+              startTime: '19:00',
+              roles: [{ role: 'other', customRole: '사회자', headcount: 3, filled: 2 }],
+            },
+          ],
+        },
+      ],
+    });
+    const result = normalizeJobRoles(job);
+    expect(result).toHaveLength(2);
+    expect(result.find((role) => role.customName === '조명 담당')?.requiredCount).toBe(2);
+    expect(result.find((role) => role.customName === '사회자')?.requiredCount).toBe(3);
+  });
+
   it('레거시 roles 필드만 있으면 빈 배열을 반환한다 (폴백 제거됨)', () => {
     const job = createMinimalJob({
       roles: [
@@ -318,7 +453,7 @@ describe('getRolesForDateAndTime', () => {
   });
 
   it('roles도 없으면 빈 배열을 반환한다', () => {
-    const job = createMinimalJob({ roles: undefined as unknown as JobPosting['roles'] });
+    const job = createMinimalJob({ roles: undefined });
     const result = getRolesForDateAndTime(job, '2025-01-28', '19:00');
     expect(result).toEqual([]);
   });

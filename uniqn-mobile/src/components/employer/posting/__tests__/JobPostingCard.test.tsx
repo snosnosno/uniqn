@@ -44,29 +44,6 @@ describe('JobPostingCard', () => {
       detailedAddress: '123-45',
     },
     workDate: '2026-03-31',
-    timeSlot: '',
-    dateSpecificRequirements: [
-      {
-        date: '2026-03-31',
-        timeSlots: [
-          {
-            startTime: '09:00',
-            roles: [{ role: 'dealer', headcount: 1, filled: 0 }],
-          },
-          {
-            startTime: '13:00',
-            roles: [
-              { role: 'dealer', headcount: 1, filled: 0 },
-              { role: 'floor', headcount: 1, filled: 0 },
-            ],
-          },
-        ],
-      },
-    ],
-    roles: [
-      { role: 'dealer', count: 2, filled: 0, salary: { type: 'hourly', amount: 20000 } },
-      { role: 'floor', count: 1, filled: 0, salary: { type: 'hourly', amount: 30000 } },
-    ],
     roleCatalog: [
       { role: 'dealer', salary: { type: 'hourly', amount: 20000 } },
       { role: 'floor', salary: { type: 'hourly', amount: 30000 } },
@@ -96,6 +73,7 @@ describe('JobPostingCard', () => {
     },
     compensation: {
       mode: 'by_role',
+      defaultSalary: { type: 'hourly', amount: 20000 },
       taxSettings: {
         type: 'rate',
         value: 3.3,
@@ -109,11 +87,6 @@ describe('JobPostingCard', () => {
     ownerId: 'owner-1',
     ownerName: 'Owner',
     applicationCount: 1,
-    useSameSalary: false,
-    taxSettings: {
-      type: 'rate',
-      value: 3.3,
-    },
     createdAt: { seconds: 0, nanoseconds: 0, toDate: () => new Date('2026-03-01') } as never,
     updatedAt: { seconds: 0, nanoseconds: 0, toDate: () => new Date('2026-03-01') } as never,
   };

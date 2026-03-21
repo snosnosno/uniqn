@@ -17,7 +17,7 @@ import {
 // Helpers
 // ============================================================================
 
-function createMinimalJob(overrides: Partial<JobPosting> = {}): JobPosting {
+function createMinimalJobLegacy(overrides: Partial<JobPosting> = {}): JobPosting {
   return {
     id: 'job-1',
     title: '테스트 공고',
@@ -33,6 +33,144 @@ function createMinimalJob(overrides: Partial<JobPosting> = {}): JobPosting {
     updatedAt: new Date().toISOString(),
     ...overrides,
   } as unknown as JobPosting;
+}
+void createMinimalJobLegacy;
+
+type LegacyDateRequirement = {
+  date: string;
+  timeSlots: {
+    startTime?: string;
+    roles: {
+      role?: string;
+      customRole?: string;
+      headcount?: number;
+      filled?: number;
+    }[];
+  }[];
+};
+
+type LegacyRoleRequirement = {
+  role?: string;
+  customRole?: string;
+  count: number;
+  filled?: number;
+};
+
+type TestJobOverrides = Partial<JobPosting> & {
+  dateSpecificRequirements?: LegacyDateRequirement[];
+  requiredRolesWithCount?: LegacyRoleRequirement[];
+  roles?: LegacyRoleRequirement[];
+  timeSlot?: string;
+  daysPerWeek?: number;
+  isStartTimeNegotiable?: boolean;
+};
+
+function createMinimalJob(overrides: TestJobOverrides = {}): JobPosting {
+  const workDate =
+    overrides.workDate ?? overrides.dateSpecificRequirements?.[0]?.date ?? '2025-01-28';
+  const startTime = overrides.timeSlot?.split(/[-~]/)[0]?.trim();
+
+  const datedRequirements =
+    overrides.dateSpecificRequirements?.map((requirement) => ({
+      date: requirement.date,
+      timeSlots: requirement.timeSlots.map((slot, slotIndex) => ({
+        id: `slot-${slotIndex}`,
+        startTime: slot.startTime,
+        roles: slot.roles.map((role, roleIndex) => ({
+          id: `role-${roleIndex}`,
+          role: role.role ?? 'dealer',
+          customRole: role.customRole,
+          count: role.headcount ?? 0,
+          filled: role.filled ?? 0,
+        })),
+      })),
+    })) ?? [];
+
+  const fallbackRequirement =
+    overrides.roles !== undefined && overrides.roles.length > 0
+      ? [
+          {
+            date: workDate,
+            timeSlots: [
+              {
+                id: 'slot-fallback',
+                startTime,
+                roles: overrides.roles.map((role, roleIndex) => ({
+                  id: `fallback-role-${roleIndex}`,
+                  role: role.role ?? 'dealer',
+                  customRole: role.customRole,
+                  count: role.count,
+                  filled: role.filled ?? 0,
+                })),
+              },
+            ],
+          },
+        ]
+      : [];
+
+  const schedule =
+    overrides.postingType === 'fixed'
+      ? {
+          kind: 'fixed' as const,
+          daysPerWeek: overrides.daysPerWeek,
+          startTime,
+          isStartTimeNegotiable: overrides.isStartTimeNegotiable,
+          roleRequirements: (overrides.requiredRolesWithCount ?? []).map((role) => ({
+            role: role.role ?? 'dealer',
+            customRole: role.customRole,
+            count: role.count,
+            filled: role.filled ?? 0,
+          })),
+        }
+      : {
+          kind: 'dated' as const,
+          primaryDate: workDate,
+          allDates: (datedRequirements.length > 0 ? datedRequirements : fallbackRequirement).map(
+            (requirement) => requirement.date
+          ),
+          requirements: datedRequirements.length > 0 ? datedRequirements : fallbackRequirement,
+        };
+
+  const roleCatalogSource =
+    overrides.requiredRolesWithCount ??
+    overrides.roles ??
+    overrides.dateSpecificRequirements?.flatMap((requirement) =>
+      requirement.timeSlots.flatMap((slot) =>
+        slot.roles.map((role) => ({
+          role: role.role ?? 'dealer',
+          customRole: role.customRole,
+        }))
+      )
+    ) ??
+    [];
+
+  return {
+    id: 'job-1',
+    schemaVersion: 3,
+    title: 'Test Posting',
+    status: 'active',
+    location: overrides.location ?? { name: 'Gangnam', district: 'Seoul' },
+    workDate,
+    /*
+    title: '?뚯뒪??怨듦퀬',
+    status: 'active',
+    location: overrides.location ?? { name: '媛뺣궓援?, district: '媛뺣궓援? },
+    workDate,
+    */
+    totalPositions: overrides.totalPositions ?? 0,
+    filledPositions: overrides.filledPositions ?? 0,
+    ownerId: overrides.ownerId ?? 'owner-1',
+    createdAt: overrides.createdAt ?? new Date(),
+    updatedAt: overrides.updatedAt ?? new Date(),
+    schedule,
+    roleCatalog: roleCatalogSource.map((role) => ({
+      role: role.role ?? 'dealer',
+      customRole: role.customRole,
+    })),
+    compensation: overrides.compensation ?? { mode: 'shared' },
+    questions: overrides.questions ?? { items: [] },
+    postingType: overrides.postingType,
+  } as JobPosting;
 }
 
 // ============================================================================

@@ -10,7 +10,8 @@
  * 3. 향후 백엔드 교체 가능성 확보
  */
 
-import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput } from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 // ============================================================================
 // Interface
@@ -82,7 +83,10 @@ export interface ITemplateRepository {
   updateTemplate(
     templateId: string,
     input: Partial<
-      Pick<CreateTemplateInput, 'name' | 'description'> & { formData?: JobPostingFormData }
+      Pick<CreateTemplateInput, 'name' | 'description'> & {
+        draft?: JobPostingDraft;
+        formData?: CreateTemplateInput['formData'];
+      }
     >,
     userId: string
   ): Promise<void>;

@@ -61,7 +61,7 @@ export interface MockJobPosting {
   startTime: string;
   endTime: string;
   status: 'active' | 'closed' | 'cancelled';
-  applicantCount: number;
+  applicationCount: number;
   maxApplicants: number;
   employerId: string;
   createdAt: string;
@@ -190,7 +190,7 @@ export function createMockJobPosting(overrides: Partial<MockJobPosting> = {}): M
     startTime: '18:00',
     endTime: '02:00',
     status: 'active',
-    applicantCount: 0,
+    applicationCount: 0,
     maxApplicants: 10,
     employerId: 'employer-1',
     createdAt: now,

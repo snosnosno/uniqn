@@ -9,13 +9,7 @@ const OG_RELEVANT_FIELDS = [
   'location',
   'workDate',
   'workDates',
-  'timeSlot',
-  'roles',
-  'defaultSalary',
   'postingType',
-  'dateSpecificRequirements',
-  'daysPerWeek',
-  'fixedConfig',
   'tournamentConfig',
   'urgentConfig',
   'schedule',
@@ -55,12 +49,6 @@ type OGRole = {
   role?: string;
   customRole?: string;
   count?: number;
-};
-
-type OGDateRequirement = {
-  date?: string;
-  startTime?: string;
-  endTime?: string;
 };
 
 type OGLocation = {
@@ -115,18 +103,10 @@ type JobPostingOGData = Record<string, unknown> & {
   status?: string;
   location?: OGLocation | string;
   workDate?: string;
-  timeSlot?: string;
-  roles?: OGRole[];
-  defaultSalary?: OGSalary;
   postingType?: string;
-  dateSpecificRequirements?: OGDateRequirement[];
   schedule?: OGSchedule;
   compensation?: OGCompensation;
   roleCatalog?: OGRoleCatalogEntry[];
-  fixedConfig?: {
-    daysPerWeek?: number;
-  };
-  daysPerWeek?: number;
 };
 
 function formatShortDate(dateStr: string): string {
@@ -173,7 +153,7 @@ function mergeRoles(roles: OGRole[]): OGRole[] {
 }
 
 function getDefaultSalary(data: JobPostingOGData): OGSalary | undefined {
-  return data.compensation?.defaultSalary ?? data.defaultSalary;
+  return data.compensation?.defaultSalary;
 }
 
 export function formatOGSalary(salary?: OGSalary): string {
@@ -243,30 +223,6 @@ export function formatOGSchedule(data: JobPostingOGData): string {
     return v3Schedule;
   }
 
-  const requirements = data.dateSpecificRequirements;
-  if (requirements && requirements.length > 0) {
-    const first = requirements[0];
-    if (!first?.date) return '';
-
-    const dateText = formatShortDate(first.date);
-    const timeText = formatTimeText({
-      startTime: first.startTime,
-      endTime: first.endTime,
-    });
-
-    if (requirements.length > 1) {
-      const extraCount = requirements.length - 1;
-      return timeText ? `${dateText} ${timeText} 외 ${extraCount}일` : `${dateText} 외 ${extraCount}일`;
-    }
-
-    return timeText ? `${dateText} ${timeText}` : dateText;
-  }
-
-  if (data.workDate && data.timeSlot) {
-    const timeSlot = data.timeSlot.replace(' - ', '~').replace(' ~ ', '~');
-    return `${formatShortDate(data.workDate)} ${timeSlot}`;
-  }
-
   if (data.workDate) {
     return formatShortDate(data.workDate);
   }
@@ -300,10 +256,6 @@ function extractRoles(data: JobPostingOGData): OGRole[] {
   const scheduleRoles = extractRolesFromSchedule(data.schedule);
   if (scheduleRoles.length > 0) {
     return scheduleRoles;
-  }
-
-  if (data.roles && data.roles.length > 0) {
-    return mergeRoles(data.roles);
   }
 
   if (data.roleCatalog && data.roleCatalog.length > 0) {
@@ -356,10 +308,7 @@ function formatFixedSchedule(data: JobPostingOGData): string {
     return parts.join(' ');
   }
 
-  const daysPerWeek =
-    typeof data.daysPerWeek === 'number' ? data.daysPerWeek : data.fixedConfig?.daysPerWeek;
-
-  return daysPerWeek ? `주 ${daysPerWeek}일` : '';
+  return '';
 }
 
 export function buildOGDescription(data: JobPostingOGData): string {

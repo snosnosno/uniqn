@@ -630,7 +630,7 @@ export const logActionHttp = onRequest(
 // --- Performance Optimization Triggers ---
 
 /**
- * Automatically updates applicantCount in job postings when applications are created/deleted
+ * Automatically updates applicationCount in job postings when applications are created/deleted
  */
 export const updateJobPostingApplicantCount = onDocumentWritten(
   { document: "applications/{applicationId}", region: "asia-northeast3" },
@@ -658,16 +658,16 @@ export const updateJobPostingApplicantCount = onDocumentWritten(
         .where("jobPostingId", "==", jobPostingId)
         .get();
 
-      const applicantCount = applicationsSnapshot.size;
+      const applicationCount = applicationsSnapshot.size;
 
       // Update the job posting with the new count
       await db.collection("jobPostings").doc(jobPostingId).update({
-        applicantCount,
-        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        applicationCount,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       logger.info(
-        `Updated applicantCount for job posting ${jobPostingId}: ${applicantCount}`,
+        `Updated applicationCount for job posting ${jobPostingId}: ${applicationCount}`,
       );
     } catch (error) {
       logger.error("Error updating applicant count:", error);

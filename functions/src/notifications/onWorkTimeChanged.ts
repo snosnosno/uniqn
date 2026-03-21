@@ -112,7 +112,7 @@ export const onWorkTimeChanged = onDocumentUpdated(
           link: '/schedule',
           priority: 'high',
           relatedId: workLogId,
-          senderId: jobPosting.ownerId ?? jobPosting.createdBy ?? undefined,
+          senderId: jobPosting.ownerId ?? undefined,
           channelId: 'reminders',
           data: {
             workLogId,

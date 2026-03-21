@@ -1,145 +1,93 @@
-/**
- * UNIQN Mobile - Assignment v3.0 Zod 스키마
- *
- * @version 3.0.0
- * @description Assignment 유효성 검증 스키마 (role/roles → roleIds 통합)
- */
-
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
-import { VALID_STAFF_ROLES } from '@/types/role';
 
-/**
- * 역할 ID 배열 스키마 (v3.0: roleIds 필수, StaffRole 검증)
- */
-export const roleIdsSchema = z
-  .array(z.enum(VALID_STAFF_ROLES))
-  .min(1, { message: '최소 1개 이상의 역할을 선택해주세요' });
+const assignmentRoleIdSchema = z
+  .string()
+  .min(1, { message: '최소 1개 이상의 역할을 선택해주세요' })
+  .refine(xssValidation, { message: '위험한 문자가 포함되어 있습니다' });
 
-/**
- * 시간대 스키마
- */
+export const roleIdsSchema = z.array(assignmentRoleIdSchema).min(1, {
+  message: '최소 1개 이상의 역할을 선택해주세요',
+});
+
 export const timeSlotSchema = z.string().min(1, { message: '시간대를 선택해주세요' });
 
-/**
- * 날짜 스키마 (YYYY-MM-DD)
- */
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
   message: '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)',
 });
 
-/**
- * 날짜 배열 스키마
- */
-export const datesArraySchema = z
-  .array(dateSchema)
-  .min(1, { message: '최소 1개 이상의 날짜를 선택해주세요' });
+export const datesArraySchema = z.array(dateSchema).min(1, {
+  message: '최소 1개 이상의 날짜를 선택해주세요',
+});
 
-/**
- * Duration 타입 스키마
- */
 export const durationTypeSchema = z.enum(['single', 'consecutive', 'multi'], {
   error: '올바른 기간 타입이 아닙니다',
 });
 
-/**
- * Duration 스키마
- */
 export const durationSchema = z.object({
   type: durationTypeSchema,
   startDate: dateSchema,
   endDate: dateSchema.optional(),
 });
 
-/**
- * Check Method 스키마
- */
 export const checkMethodSchema = z.enum(['group', 'individual'], {
   error: '올바른 출퇴근 체크 방식이 아닙니다',
 });
 
-/**
- * Assignment 스키마 (v3.0)
- *
- * @description 역할 필드 통합 (role/roles → roleIds)
- */
 export const assignmentSchema = z.object({
-  /** 역할 ID 배열 (v3.0: 필수, 단일 역할도 배열로) */
   roleIds: roleIdsSchema,
-  /** 시간대 (필수) */
   timeSlot: timeSlotSchema,
-  /** 날짜 배열 (필수) */
   dates: datesArraySchema,
-  /** 연속 날짜 그룹 여부 */
   isGrouped: z.boolean(),
-  /** 그룹 ID */
   groupId: z.string().optional(),
-  /** 출퇴근 체크 방식 */
   checkMethod: checkMethodSchema.optional(),
-  /** 요구사항 ID */
   requirementId: z.string().optional(),
-  /** 기간 설정 */
   duration: durationSchema.optional(),
-  /** 시간 미정 여부 */
   isTimeToBeAnnounced: z.boolean().optional(),
-  /** 미정 사유 */
   tentativeDescription: z
     .string()
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .refine(xssValidation, { message: '위험한 문자가 포함되어 있습니다' })
     .optional(),
 });
 
 export type AssignmentFormData = z.infer<typeof assignmentSchema>;
 
-/**
- * Assignment 배열 스키마
- */
-export const assignmentsArraySchema = z
-  .array(assignmentSchema)
-  .min(1, { message: '최소 1개 이상의 배정을 선택해주세요' });
+export const assignmentsArraySchema = z.array(assignmentSchema).min(1, {
+  message: '최소 1개 이상의 배정을 선택해주세요',
+});
 
 export type AssignmentsArrayData = z.infer<typeof assignmentsArraySchema>;
 
-/**
- * 지원서 생성 v2.0 스키마
- */
 export const createApplicationV2Schema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
   assignments: assignmentsArraySchema,
   message: z
     .string()
     .max(200, { message: '메시지는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .refine(xssValidation, { message: '위험한 문자가 포함되어 있습니다' })
     .optional(),
 });
 
 export type CreateApplicationV2FormData = z.infer<typeof createApplicationV2Schema>;
 
-/**
- * 지원 확정 v2.0 스키마
- */
 export const confirmApplicationV2Schema = z.object({
   applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
-  /** 확정할 assignments (미지정 시 전체 확정) */
   selectedAssignments: assignmentsArraySchema.optional(),
   notes: z
     .string()
     .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .refine(xssValidation, { message: '위험한 문자가 포함되어 있습니다' })
     .optional(),
 });
 
 export type ConfirmApplicationV2Data = z.infer<typeof confirmApplicationV2Schema>;
 
-/**
- * 취소 스키마
- */
 export const cancelConfirmationSchema = z.object({
   applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
   cancelReason: z
     .string()
     .max(200, { message: '취소 사유는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .refine(xssValidation, { message: '위험한 문자가 포함되어 있습니다' })
     .optional(),
 });
 

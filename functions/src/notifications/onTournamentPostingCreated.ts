@@ -26,7 +26,7 @@ interface JobPostingData {
   title: string;
   description?: string;
   postingType?: string;
-  createdBy: string;
+  ownerId: string;
   status: string;
   tournamentConfig?: {
     approvalStatus?: string;
@@ -66,14 +66,14 @@ export const onTournamentPostingCreated = onDocumentCreated(
     logger.info('대회공고 승인 요청', {
       jobPostingId,
       title: jobPosting.title,
-      createdBy: jobPosting.createdBy,
+      ownerId: jobPosting.ownerId,
     });
 
     try {
       // 1. 구인자 정보 조회
       const employerDoc = await db
         .collection('users')
-        .doc(jobPosting.createdBy)
+        .doc(jobPosting.ownerId)
         .get();
 
       const employerData = employerDoc.exists
@@ -111,7 +111,7 @@ export const onTournamentPostingCreated = onDocumentCreated(
             jobPostingId,
             jobTitle: jobPosting.title,
             employerName,
-            employerId: jobPosting.createdBy,
+            employerId: jobPosting.ownerId,
           },
         }
       );

@@ -10,6 +10,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getPostingSettlementContext } from '@/domains/job-posting';
 import {
   updateWorkLogCustomSettlement,
   updateJobPostingSettlementSettings,
@@ -66,11 +67,12 @@ interface RoleWithSalary {
   role?: string;
   name?: string;
   customRole?: string;
+  count?: number;
+  filled?: number;
   salary?: SalaryInfo;
 }
 
 interface SalaryConfig {
-  useSameSalary?: boolean;
   defaultSalary?: SalaryInfo;
   roles?: RoleWithSalary[];
   allowances?: Allowances;
@@ -215,6 +217,10 @@ export default function StaffSettlementsScreen() {
 
   // 공고 정보 (시급 포함)
   const { job: posting, refresh: refreshJobDetail } = useJobDetail(jobPostingId || '');
+  const postingSettlement = useMemo(
+    () => (posting ? getPostingSettlementContext(posting) : undefined),
+    [posting]
+  );
 
   // 스태프 관리 훅
   const { stats: staffStats, changeRole } = useConfirmedStaff(jobPostingId || '');
@@ -240,17 +246,18 @@ export default function StaffSettlementsScreen() {
   // 급여 설정 (v2.0 - 역할별 급여, 수당 포함)
   const salaryConfig = useMemo<SalaryConfig>(
     () => ({
-      useSameSalary: posting?.useSameSalary,
-      defaultSalary: posting?.defaultSalary,
+      defaultSalary: postingSettlement?.defaultSalary,
       roles:
-        posting?.roles?.map((r) => ({
+        postingSettlement?.roles?.map((r) => ({
           role: r.role,
           customRole: r.customRole,
+          count: r.count,
+          filled: r.filled,
           salary: r.salary,
         })) || [],
-      allowances: posting?.allowances,
+      allowances: postingSettlement?.allowances,
     }),
-    [posting?.useSameSalary, posting?.defaultSalary, posting?.roles, posting?.allowances]
+    [postingSettlement]
   );
 
   // SettlementList용 역할 목록 (급여 포함)
@@ -534,7 +541,7 @@ export default function StaffSettlementsScreen() {
         // 기존 roles 정보에 급여 정보만 업데이트
         // posting.roles의 count, filled 값은 유지하고 salary만 업데이트
         const mergedRoles =
-          posting?.roles?.map((existingRole) => {
+          salaryConfig.roles?.map((existingRole) => {
             const roleStr = existingRole.role as string;
             const existingRoleKey =
               roleStr === 'other' && existingRole.customRole
@@ -591,7 +598,15 @@ export default function StaffSettlementsScreen() {
         });
       }
     },
-    [jobPostingId, posting?.roles, posting?.ownerId, addToast, refresh, refreshJobDetail, modals]
+    [
+      jobPostingId,
+      salaryConfig.roles,
+      posting?.ownerId,
+      addToast,
+      refresh,
+      refreshJobDetail,
+      modals,
+    ]
   );
 
   // ============================================================================
@@ -654,7 +669,7 @@ export default function StaffSettlementsScreen() {
           roles={rolesForList}
           defaultSalary={salaryConfig.defaultSalary}
           allowances={salaryConfig.allowances}
-          taxSettings={posting?.taxSettings}
+          taxSettings={postingSettlement?.taxSettings}
           isLoading={isLoading}
           error={error}
           onRefresh={() => refresh()}
@@ -717,7 +732,7 @@ export default function StaffSettlementsScreen() {
         )}
         taxSettings={getEffectiveTaxSettings(
           modals.selectedWorkLogForDetail || {},
-          posting?.taxSettings
+          postingSettlement?.taxSettings
         )}
         onEditTime={modals.openEditTimeFromDetail}
         onEditAmount={modals.openEditAmountFromDetail}
@@ -765,7 +780,7 @@ export default function StaffSettlementsScreen() {
         )}
         taxSettings={getEffectiveTaxSettings(
           modals.selectedWorkLogForEdit || {},
-          posting?.taxSettings
+          postingSettlement?.taxSettings
         )}
         onSave={handleSaveAmountEdit}
       />
@@ -776,7 +791,7 @@ export default function StaffSettlementsScreen() {
         onClose={modals.closeSettingsModal}
         roles={rolesForList}
         allowances={salaryConfig.allowances || {}}
-        taxSettings={posting?.taxSettings}
+        taxSettings={postingSettlement?.taxSettings}
         onSave={handleSaveSettings}
       />
 

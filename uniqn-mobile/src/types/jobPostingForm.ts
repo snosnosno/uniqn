@@ -13,7 +13,7 @@ import type {
   PreQuestion,
   TaxSettings,
 } from './index';
-import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
+import type { DateSpecificRequirement, TimeSlot } from './jobPosting/dateRequirement';
 import { STAFF_ROLES } from '@/constants';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 
@@ -129,6 +129,7 @@ export interface JobPostingFormData {
   // --- 날짜별 요구사항 (v2.0) ---
   /** 날짜별 모집 정보 (regular/urgent/tournament 공통) */
   dateSpecificRequirements?: DateSpecificRequirement[];
+  datedTemplateTimeSlots?: TimeSlot[];
 
   // --- fixed: 주 출근일수 ---
   /** 주 출근일수 (0 = 협의, 1-7 = 일수) */
@@ -193,6 +194,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   startTime: '',
   isStartTimeNegotiable: false,
   dateSpecificRequirements: [],
+  datedTemplateTimeSlots: [],
   daysPerWeek: 0, // 0 = 협의 (기본값)
 
   // Step 3

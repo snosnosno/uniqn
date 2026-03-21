@@ -10,7 +10,7 @@
  * @see app2/src/types/application.ts
  */
 
-import type { StaffRole } from './role';
+import { isStaffRole, type StaffRole } from './role';
 
 // ============================================================================
 // Constants - 고정공고 및 시간 미정 마커
@@ -88,7 +88,7 @@ export interface Assignment {
    * - 다중 역할: ['dealer', 'floor']
    * @example ['dealer'], ['dealer', 'floor']
    */
-  roleIds: StaffRole[];
+  roleIds: string[];
 
   /**
    * 시간대 (예: '19:00', '14:00~22:00')
@@ -154,9 +154,9 @@ export interface Assignment {
  * 단일 역할 사용 시 편의를 위한 헬퍼입니다.
  *
  * @param assignment - Assignment 객체
- * @returns 첫 번째 역할 (StaffRole) 또는 undefined
+ * @returns 첫 번째 역할 문자열 또는 undefined
  */
-export function getAssignmentRole(assignment: Assignment): StaffRole | undefined {
+export function getAssignmentRole(assignment: Assignment): string | undefined {
   return assignment.roleIds[0];
 }
 
@@ -168,10 +168,32 @@ export function getAssignmentRole(assignment: Assignment): StaffRole | undefined
  * 기존 코드와의 호환성을 위해 유지됩니다.
  *
  * @param assignment - Assignment 객체
- * @returns 역할 배열 (StaffRole[])
+ * @returns 역할 배열
  */
-export function getAssignmentRoles(assignment: Assignment): StaffRole[] {
+export function getAssignmentRoles(assignment: Assignment): string[] {
   return assignment.roleIds;
+}
+
+export interface NormalizedAssignmentRole {
+  role: StaffRole;
+  customRole?: string;
+}
+
+export function normalizeAssignmentRole(
+  roleId: string | null | undefined
+): NormalizedAssignmentRole {
+  if (!roleId || roleId === 'other') {
+    return { role: 'other' };
+  }
+
+  if (isStaffRole(roleId)) {
+    return { role: roleId };
+  }
+
+  return {
+    role: 'other',
+    customRole: roleId,
+  };
 }
 
 /**
@@ -229,14 +251,14 @@ export interface CreateSimpleAssignmentOptions {
 /**
  * 간단한 Assignment 생성 헬퍼
  *
- * @param role - 역할 (StaffRole, 내부에서 배열로 변환)
+ * @param role - 역할 문자열 (표준 역할 또는 커스텀 역할명)
  * @param timeSlot - 시간대
  * @param date - 단일 날짜
  * @param options - 추가 옵션 (미정 시간 정보 등)
  * @returns Assignment 객체
  */
 export function createSimpleAssignment(
-  role: StaffRole,
+  role: string,
   timeSlot: string,
   date: string,
   options?: CreateSimpleAssignmentOptions
@@ -255,13 +277,13 @@ export function createSimpleAssignment(
 /**
  * 연속 날짜 Assignment 생성 헬퍼
  *
- * @param role - 역할 (StaffRole, 내부에서 배열로 변환)
+ * @param role - 역할 문자열 (표준 역할 또는 커스텀 역할명)
  * @param timeSlot - 시간대
  * @param dates - 날짜 배열
  * @returns Assignment 객체
  */
 export function createGroupedAssignment(
-  role: StaffRole,
+  role: string,
   timeSlot: string,
   dates: string[]
 ): Assignment {
@@ -291,14 +313,14 @@ export function createGroupedAssignment(
 /**
  * 다중 역할 Assignment 생성 헬퍼
  *
- * @param roleIds - 역할 ID 배열 (StaffRole[])
+ * @param roleIds - 역할 ID 배열 (표준 역할 또는 커스텀 역할명 포함)
  * @param timeSlot - 시간대
  * @param date - 단일 날짜
  * @param options - 추가 옵션
  * @returns Assignment 객체
  */
 export function createMultiRoleAssignment(
-  roleIds: StaffRole[],
+  roleIds: string[],
   timeSlot: string,
   date: string,
   options?: CreateSimpleAssignmentOptions

@@ -8,7 +8,8 @@
 import { templateRepository } from '@/repositories';
 import { isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput } from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 // ============================================================================
 // Template Service
@@ -109,7 +110,10 @@ export async function deleteTemplate(templateId: string, userId: string): Promis
 export async function updateTemplate(
   templateId: string,
   input: Partial<
-    Pick<CreateTemplateInput, 'name' | 'description'> & { formData?: JobPostingFormData }
+    Pick<CreateTemplateInput, 'name' | 'description'> & {
+      draft?: JobPostingDraft;
+      formData?: CreateTemplateInput['formData'];
+    }
   >,
   userId: string
 ): Promise<void> {

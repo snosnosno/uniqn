@@ -14,7 +14,6 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
-  increment,
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -30,10 +29,11 @@ import {
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
+import { normalizeAssignmentRole } from '@/types/assignment';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
-import { updateDateSpecificRequirementsFilled } from '@/domains/application';
+import { updatePostingScheduleFilled } from '@/domains/application';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
-import type { Assignment, StaffRole, JobPosting } from '@/types';
+import type { Assignment, JobPosting } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
 
 async function loadApplicationForTransaction(transaction: Transaction, applicationId: string) {
@@ -166,7 +166,7 @@ export async function confirmWithHistoryTransaction(
       const now = serverTimestamp();
 
       for (const assignment of assignmentsToConfirm) {
-        const role = assignment.roleIds[0] || 'other';
+        const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
 
         for (const date of assignment.dates) {
           const workLogRef = doc(workLogsRef);
@@ -176,7 +176,8 @@ export async function confirmWithHistoryTransaction(
             jobPostingId: applicationData.jobPostingId,
             jobPostingName: jobData.title,
             ownerId: jobData.ownerId,
-            role,
+            role: normalizedRole.role,
+            customRole: normalizedRole.customRole ?? null,
             date,
             timeSlot: assignment.timeSlot,
             isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
@@ -210,19 +211,8 @@ export async function confirmWithHistoryTransaction(
         updatedAt: serverTimestamp(),
       });
 
-      const updatedRoles = jobData.roles.map((role) => {
-        const roleAssignments = assignmentsToConfirm.filter((assignment) =>
-          assignment.roleIds.includes(role.role as StaffRole)
-        );
-        const addedCount = roleAssignments.reduce(
-          (sum, assignment) => sum + assignment.dates.length,
-          0
-        );
-        return { ...role, filled: role.filled + addedCount };
-      });
-
-      const updatedDateReqs = updateDateSpecificRequirementsFilled(
-        jobData.dateSpecificRequirements,
+      const updatedSchedule = updatePostingScheduleFilled(
+        jobData.schedule,
         assignmentsToConfirm,
         'increment'
       );
@@ -232,14 +222,10 @@ export async function confirmWithHistoryTransaction(
       const newStatus = shouldClose ? STATUS.JOB_POSTING.CLOSED : jobData.status;
 
       const jobUpdateData: Record<string, unknown> = {
-        filledPositions: increment(assignmentCount),
-        roles: updatedRoles,
+        filledPositions: newFilledPositions,
+        schedule: updatedSchedule,
         updatedAt: serverTimestamp(),
       };
-
-      if (updatedDateReqs) {
-        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
-      }
 
       if (shouldClose && jobData.status !== STATUS.JOB_POSTING.CLOSED) {
         jobUpdateData.status = newStatus;
@@ -344,19 +330,8 @@ export async function cancelConfirmationTransaction(
         return sum + assignment.dates.length;
       }, 0);
 
-      const updatedRoles = jobData.roles.map((role) => {
-        const roleAssignments = cancelledAssignments.filter((assignment) =>
-          assignment.roleIds.includes(role.role as StaffRole)
-        );
-        const removedCount = roleAssignments.reduce(
-          (sum, assignment) => sum + assignment.dates.length,
-          0
-        );
-        return { ...role, filled: Math.max(0, role.filled - removedCount) };
-      });
-
-      const updatedDateReqs = updateDateSpecificRequirementsFilled(
-        jobData.dateSpecificRequirements,
+      const updatedSchedule = updatePostingScheduleFilled(
+        jobData.schedule,
         cancelledAssignments,
         'decrement'
       );
@@ -368,13 +343,9 @@ export async function cancelConfirmationTransaction(
 
       const jobUpdateData: Record<string, unknown> = {
         filledPositions: newFilledPositions,
-        roles: updatedRoles,
+        schedule: updatedSchedule,
         updatedAt: serverTimestamp(),
       };
-
-      if (updatedDateReqs) {
-        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
-      }
 
       if (shouldReopen) {
         jobUpdateData.status = STATUS.JOB_POSTING.ACTIVE;

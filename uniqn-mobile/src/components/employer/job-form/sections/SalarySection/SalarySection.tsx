@@ -15,6 +15,7 @@ import {
   calculateEstimatedCost,
   calculateTotalCount,
 } from '@/utils/salary';
+import { shouldPreserveNonFixedDraftRoles } from '@/utils/job-posting/draftRoles';
 import type { SalaryType, SalaryInfo, TaxSettings } from '@/types';
 import { TaxSettingsEditor } from '@/components/employer/settlement/TaxSettingsEditor';
 import { DEFAULT_TAX_SETTINGS } from '@/utils/settlement';
@@ -52,6 +53,10 @@ export const SalarySection = memo(function SalarySection({
     // fixed 타입은 이미 data.roles를 직접 사용하므로 동기화 불필요
     if (data.postingType === 'fixed') return;
 
+    if (extractedRoles.length === 0 && shouldPreserveNonFixedDraftRoles(data)) {
+      return;
+    }
+
     const updatedRoles = syncRolesWithExtracted(
       extractedRoles,
       data.roles,
@@ -61,7 +66,7 @@ export const SalarySection = memo(function SalarySection({
     if (updatedRoles) {
       onUpdate({ roles: updatedRoles });
     }
-  }, [extractedRoles, data.postingType, data.roles, data.useSameSalary, onUpdate]);
+  }, [extractedRoles, data, onUpdate]);
 
   // 실제 표시할 역할 목록
   const roles = data.roles;

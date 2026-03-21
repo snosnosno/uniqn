@@ -48,7 +48,7 @@ async function sendApprovalNotification(postingId: string, posting: FirebaseFire
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
 
-  const userId = posting.createdBy;
+  const userId = posting.ownerId;
   const title = posting.title;
   const approvedBy = posting.tournamentConfig?.approvedBy;
 
@@ -93,7 +93,7 @@ async function sendRejectionNotification(postingId: string, posting: FirebaseFir
   const db = admin.firestore();
   const FieldValue = admin.firestore.FieldValue;
 
-  const userId = posting.createdBy;
+  const userId = posting.ownerId;
   const title = posting.title;
   const rejectedBy = posting.tournamentConfig?.rejectedBy;
   const reason = posting.tournamentConfig?.rejectionReason;

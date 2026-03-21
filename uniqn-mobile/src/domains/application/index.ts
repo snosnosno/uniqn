@@ -89,6 +89,11 @@ export {
   type ApplicationValidationError,
 } from './ApplicationValidator';
 
+export {
+  updateDateSpecificRequirementsFilled,
+  updatePostingScheduleFilled,
+} from './DateRequirementUpdater';
+
 // ApplicationStatusMachine - 상태 전이 관리
 export {
   ApplicationStatusMachine,
@@ -99,4 +104,3 @@ export {
 } from './ApplicationStatusMachine';
 
 // DateRequirementUpdater - dateSpecificRequirements filled 계산
-export { updateDateSpecificRequirementsFilled } from './DateRequirementUpdater';

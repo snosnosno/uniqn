@@ -27,8 +27,10 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
-import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput } from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 import { extractTemplateData } from '@/types';
+import { formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import { COLLECTIONS, FIELDS } from '@/constants';
 import type { ITemplateRepository } from '../interfaces/ITemplateRepository';
 
@@ -79,12 +81,20 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
     const newDocRef = doc(templatesRef);
 
     // 날짜/일정 관련 필드 제외한 템플릿 데이터 추출
-    const templateData = extractTemplateData(input.formData);
+    const draft = input.draft ?? (input.formData ? formDataToDraft(input.formData) : undefined);
+
+    if (!draft) {
+      throw new BusinessError(ERROR_CODES.VALIDATION_REQUIRED, {
+        userMessage: '템플릿 초안 정보가 필요합니다',
+      });
+    }
+
+    const templateData = extractTemplateData(draft);
 
     // 디버깅: 저장될 데이터 확인
     logger.info('템플릿 데이터 확인', {
       location: templateData.location,
-      detailedAddress: templateData.detailedAddress,
+      detailedAddress: templateData.location?.detailedAddress,
       postingType: templateData.postingType,
       title: templateData.title,
     });
@@ -189,7 +199,10 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
   async updateTemplate(
     templateId: string,
     input: Partial<
-      Pick<CreateTemplateInput, 'name' | 'description'> & { formData?: JobPostingFormData }
+      Pick<CreateTemplateInput, 'name' | 'description'> & {
+        draft?: JobPostingDraft;
+        formData?: CreateTemplateInput['formData'];
+      }
     >,
     userId: string
   ): Promise<void> {
@@ -223,8 +236,9 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
       updateData.description = input.description;
     }
 
-    if (input.formData !== undefined) {
-      updateData.templateData = extractTemplateData(input.formData);
+    const draft = input.draft ?? (input.formData ? formDataToDraft(input.formData) : undefined);
+    if (draft !== undefined) {
+      updateData.templateData = extractTemplateData(draft);
     }
 
     await updateDoc(docRef, updateData);

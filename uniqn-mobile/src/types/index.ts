@@ -282,6 +282,9 @@ export {
   validateForm,
 } from './jobPostingForm';
 
+export type { JobPostingDraft, JobPostingDraftSchedule } from './jobPostingDraft';
+export { INITIAL_JOB_POSTING_DRAFT, DEFAULT_DRAFT_ROLE_CATALOG } from './jobPostingDraft';
+
 // Admin 타입
 export type {
   AdminUser,
@@ -307,13 +310,13 @@ export {
 // 공고 템플릿 타입
 export type {
   TemplateFormData,
-  TemplateExcludedFields,
+  JobPostingTemplateData,
   JobPostingTemplate,
   CreateTemplateInput,
   TemplateListResult,
 } from './jobTemplate';
 
-export { extractTemplateData, templateToFormData } from './jobTemplate';
+export { extractTemplateData, templateToDraft, templateToFormData } from './jobTemplate';
 
 // 확정 스태프 타입 (v2.0 - 스태프 관리 탭)
 export type {

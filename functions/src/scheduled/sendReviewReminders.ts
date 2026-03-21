@@ -67,7 +67,7 @@ export const sendReviewRemindersScheduled = onSchedule(
       const jobPostingMap = new Map(
         jobPostingSnaps
           .filter((s) => s.exists)
-          .map((s) => [s.id, s.data() as { title?: string; ownerId?: string; createdBy?: string }]),
+          .map((s) => [s.id, s.data() as { title?: string; ownerId?: string }]),
       );
 
       // 2. 배치로 리뷰 존재 확인 (workLog당 2건 → 전체 한 번에)
@@ -91,7 +91,7 @@ export const sendReviewRemindersScheduled = onSchedule(
 
         const jobData = jobPostingMap.get(jobPostingId);
         const jobTitle = jobData?.title || "근무";
-        const employerId = (jobData?.ownerId ?? jobData?.createdBy) as string | undefined;
+        const employerId = jobData?.ownerId as string | undefined;
 
         // 스태프 리뷰 미작성 → 스태프에게 리마인더
         if (!reviewExistsSet.has(`${workLogId}_staff`) && staffId) {

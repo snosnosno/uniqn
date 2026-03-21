@@ -23,9 +23,13 @@ import type {
   WorkLogStatus,
   ApplicationStatus,
 } from '@/types';
-import { toJobPostingCard } from '@/domains/job-posting';
 import { IdNormalizer } from '@/shared/id';
-import { ScheduleMerger, ScheduleConverter, type JobPostingCardWithMeta } from '@/domains/schedule';
+import {
+  ScheduleMerger,
+  ScheduleConverter,
+  createSchedulePostingContext,
+  type SchedulePostingContext,
+} from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, jobPostingRepository, applicationRepository } from '@/repositories';
 
@@ -66,13 +70,13 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  * 공고 정보 일괄 조회 (부분 실패 허용)
  * @description JobPostingCard 전체 데이터를 반환하여 스케줄 탭에서 JobCard 사용 가능
  */
-async function fetchJobPostingCardBatch(
+async function fetchJobPostingContextBatch(
   jobPostingIds: string[]
-): Promise<Map<string, JobPostingCardWithMeta>> {
-  const cardMap = new Map<string, JobPostingCardWithMeta>();
+): Promise<Map<string, SchedulePostingContext>> {
+  const postingMap = new Map<string, SchedulePostingContext>();
 
   if (jobPostingIds.length === 0) {
-    return cardMap;
+    return postingMap;
   }
 
   const uniqueIds = [...new Set(jobPostingIds)];
@@ -82,7 +86,7 @@ async function fetchJobPostingCardBatch(
     const jobPostings = await jobPostingRepository.getByIdBatch(uniqueIds);
 
     for (const jobPosting of jobPostings) {
-      const card = toJobPostingCard(jobPosting);
+      postingMap.set(jobPosting.id, createSchedulePostingContext(jobPosting)); /*
       const location =
         typeof jobPosting.location === 'string'
           ? jobPosting.location
@@ -95,14 +99,14 @@ async function fetchJobPostingCardBatch(
           | string
           | undefined,
         ownerId: jobPosting.ownerId,
-      });
+      }); */
     }
   } catch (error) {
     logger.warn('공고 배치 조회 실패', { error });
   }
 
   // 조회되지 않은 ID 로깅 (삭제된 공고 등)
-  const missingIds = uniqueIds.filter((id) => !cardMap.has(id));
+  const missingIds = uniqueIds.filter((id) => !postingMap.has(id));
   if (missingIds.length > 0) {
     logger.debug('일부 공고 정보 없음 (삭제됨)', {
       missingCount: missingIds.length,
@@ -110,7 +114,7 @@ async function fetchJobPostingCardBatch(
     });
   }
 
-  return cardMap;
+  return postingMap;
 }
 
 /**
@@ -333,7 +337,7 @@ export async function getMySchedules(
     // ========================================
     // IdNormalizer로 통합 ID 추출
     const allJobPostingIds = IdNormalizer.extractUnifiedIds(workLogs, applications);
-    const jobPostingCardMap = await fetchJobPostingCardBatch(Array.from(allJobPostingIds));
+    const jobPostingContextMap = await fetchJobPostingContextBatch(Array.from(allJobPostingIds));
 
     // ========================================
     // 5. ScheduleEvent 변환
@@ -341,15 +345,15 @@ export async function getMySchedules(
     // WorkLogs → ScheduleEvent (IdNormalizer로 정규화된 ID 사용)
     const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
       const normalizedId = IdNormalizer.normalizeJobId(workLog);
-      const cardInfo = jobPostingCardMap.get(normalizedId);
-      return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfo);
+      const postingContext = jobPostingContextMap.get(normalizedId);
+      return ScheduleConverter.workLogToScheduleEvent(workLog, postingContext);
     });
 
     // Applications → ScheduleEvent[] (다중 날짜 지원)
     const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) => {
       const normalizedId = IdNormalizer.normalizeJobId(app);
-      const cardInfo = jobPostingCardMap.get(normalizedId);
-      return ScheduleConverter.applicationToScheduleEvents(app, cardInfo);
+      const postingContext = jobPostingContextMap.get(normalizedId);
+      return ScheduleConverter.applicationToScheduleEvents(app, postingContext);
     });
 
     // ========================================
@@ -470,29 +474,29 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 
     // Repository를 통한 공고 정보 조회 (JobPostingCard 포함)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-    let cardInfo: JobPostingCardWithMeta | undefined;
+    let postingContext: SchedulePostingContext | undefined;
     try {
       const jobPosting = await jobPostingRepository.getById(normalizedJobId);
       if (jobPosting) {
-        const location =
+        postingContext = createSchedulePostingContext(jobPosting); /*
           typeof jobPosting.location === 'string'
             ? jobPosting.location
             : (jobPosting.location as { name?: string })?.name || '';
-        cardInfo = {
-          card: toJobPostingCard(jobPosting),
+        removed = {
+          card: undefined,
           title: jobPosting.title || '이벤트',
           location,
           contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as
             | string
             | undefined,
           ownerId: jobPosting.ownerId,
-        };
+        }; */
       }
     } catch (err) {
       logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });
     }
 
-    return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfo);
+    return ScheduleConverter.workLogToScheduleEvent(workLog, postingContext);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '스케줄 상세 조회',
@@ -567,11 +571,14 @@ export function subscribeToSchedules(
         try {
           // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
           const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
-          const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
+          const postingContextMap = await fetchJobPostingContextBatch(jobPostingIds);
 
           const schedules = workLogs.map((workLog) => {
             const normalizedId = IdNormalizer.normalizeJobId(workLog);
-            return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfoMap.get(normalizedId));
+            return ScheduleConverter.workLogToScheduleEvent(
+              workLog,
+              postingContextMap.get(normalizedId)
+            );
           });
 
           onUpdate(schedules);

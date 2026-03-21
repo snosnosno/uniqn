@@ -78,7 +78,7 @@ export const onApplicationSubmitted = onDocumentCreated(
       }
 
       // 3. 고용주 ID 확인
-      const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
+      const employerId = jobPosting.ownerId;
       if (!employerId) {
         logger.error('공고 소유자 정보 누락', {
           applicationId,

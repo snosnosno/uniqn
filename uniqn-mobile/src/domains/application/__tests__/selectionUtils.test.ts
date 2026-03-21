@@ -25,10 +25,16 @@ import {
 /**
  * RoleInfo 테스트 헬퍼
  */
-function createTestRole(roleId: string, requiredCount = 1, filledCount = 0): RoleInfo {
+function createTestRole(
+  roleId: string,
+  requiredCount = 1,
+  filledCount = 0,
+  customName?: string
+): RoleInfo {
   return {
     roleId,
-    displayName: roleId,
+    displayName: customName ?? roleId,
+    customName,
     requiredCount,
     filledCount,
   };
@@ -159,6 +165,27 @@ describe('areTimeSlotsStructureEqual', () => {
     ];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(true);
+  });
+
+  it('커스텀 역할명이 다르면 false', () => {
+    const slots1: TimeSlotInfo[] = [
+      {
+        id: 's1',
+        startTime: '09:00',
+        isTimeToBeAnnounced: false,
+        roles: [createTestRole('other', 1, 0, '사회자')],
+      },
+    ];
+    const slots2: TimeSlotInfo[] = [
+      {
+        id: 's2',
+        startTime: '09:00',
+        isTimeToBeAnnounced: false,
+        roles: [createTestRole('other', 1, 0, '조명담당')],
+      },
+    ];
+
+    expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(false);
   });
 
   it('빈 배열끼리 비교하면 true', () => {
@@ -502,6 +529,39 @@ describe('groupDatedSchedules', () => {
       expect(result[0]!.endDate).toBe('2024-01-18');
       expect(result[1]!.startDate).toBe('2024-01-19');
       expect(result[1]!.endDate).toBe('2024-01-20');
+    });
+
+    it('커스텀 역할명이 다르면 같은 other여도 그룹으로 묶지 않는다', () => {
+      const timeSlotsA: TimeSlotInfo[] = [
+        {
+          id: 's1',
+          startTime: '09:00',
+          isTimeToBeAnnounced: false,
+          roles: [createTestRole('other', 1, 0, '사회자')],
+        },
+      ];
+      const timeSlotsB: TimeSlotInfo[] = [
+        {
+          id: 's2',
+          startTime: '09:00',
+          isTimeToBeAnnounced: false,
+          roles: [createTestRole('other', 1, 0, '조명담당')],
+        },
+      ];
+      const schedules: DatedScheduleInfo[] = [
+        createTestSchedule('2024-01-17', timeSlotsA),
+        createTestSchedule('2024-01-18', timeSlotsB),
+      ];
+      const dateReqs: DateSpecificRequirement[] = [
+        { date: '2024-01-17', timeSlots: [], isGrouped: true },
+        { date: '2024-01-18', timeSlots: [], isGrouped: true },
+      ];
+
+      const result = groupDatedSchedules(schedules, dateReqs, 'tournament');
+
+      expect(result).toHaveLength(2);
+      expect(result[0]!.dates[0]!.timeSlots[0]!.roles[0]!.customName).toBe('사회자');
+      expect(result[1]!.dates[0]!.timeSlots[0]!.roles[0]!.customName).toBe('조명담당');
     });
 
     it('단일 스케줄이면 단일 그룹', () => {

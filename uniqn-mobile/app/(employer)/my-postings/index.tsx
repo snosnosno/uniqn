@@ -9,6 +9,7 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import {
   AddIcon,
   CalendarOutlineIcon,
@@ -27,7 +28,6 @@ import {
 } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
-import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
@@ -119,14 +119,14 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
   // 날짜 범위 표시 (대회 공고: 그룹화)
   const getDateRange = useMemo(() => {
-    const requirements = posting.dateSpecificRequirements;
+    const requirements = createPostingLegacyDateRequirements(posting);
     if (!requirements || requirements.length === 0) {
       return posting.workDate ? formatDate(posting.workDate) : '-';
     }
 
     // 대회 공고: 연속 날짜 그룹화
     if (isTournament) {
-      const groups = groupRequirementsToDateRanges(requirements as DateSpecificRequirement[]);
+      const groups = groupRequirementsToDateRanges(requirements);
       if (groups.length === 1) {
         return formatDateRangeWithCount(groups[0].startDate, groups[0].endDate);
       }
@@ -139,7 +139,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
     // 일반/긴급 공고: 단일 날짜 표시
     return formatDate(requirements[0].date as string);
-  }, [posting.dateSpecificRequirements, posting.workDate, isTournament]);
+  }, [posting, posting.workDate, isTournament]);
 
   return (
     <Pressable

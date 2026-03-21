@@ -1,22 +1,11 @@
-/**
- * UNIQN Mobile - 템플릿 불러오기 모달
- *
- * @description 저장된 템플릿 목록 조회 및 선택
- * @version 1.0.0
- */
-
 import React from 'react';
 import { View, Text, Pressable, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { logger } from '@/utils/logger';
 import { FlashList } from '@shopify/flash-list';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TrashIcon } from '@/components/icons';
 import { toDate, type DateInput } from '@/utils/date';
+import { logger } from '@/utils/logger';
 import type { JobPostingTemplate, JobPostingFormData } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface LoadTemplateModalProps {
   visible: boolean;
@@ -29,10 +18,6 @@ interface LoadTemplateModalProps {
   isDeletingTemplate?: boolean;
 }
 
-// ============================================================================
-// TemplateCard Component
-// ============================================================================
-
 interface TemplateCardProps {
   template: JobPostingTemplate;
   onLoad: () => void;
@@ -44,51 +29,38 @@ interface TemplateCardProps {
 function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: TemplateCardProps) {
   const { name, description, templateData, createdAt, usageCount } = template;
 
-  // 날짜 포맷
   const formatDate = (timestamp: DateInput) => {
     const date = toDate(timestamp);
     if (!date) return '';
     return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
   };
 
-  // 지역 추출
-  const location = templateData?.location
-    ? typeof templateData.location === 'string'
-      ? templateData.location
-      : templateData.location.name || '미지정'
-    : '미지정';
+  const location = templateData?.location?.name || '미지정';
 
-  // 급여 정보 추출 (v2.0: defaultSalary 또는 roles[0].salary)
   const salaryText = (() => {
-    const salary = templateData?.defaultSalary || templateData?.roles?.[0]?.salary;
-    if (!salary) return null;
-    const { type, amount } = salary;
-    if (!amount) return null;
-    const typeLabel = type === 'hourly' ? '시급' : type === 'daily' ? '일급' : '월급';
-    return `${typeLabel} ${amount.toLocaleString()}원`;
+    const salary =
+      templateData?.compensation?.defaultSalary || templateData?.roleCatalog?.[0]?.salary;
+    if (!salary?.amount) return null;
+    const typeLabel = salary.type === 'hourly' ? '시급' : salary.type === 'daily' ? '일급' : '월급';
+    return `${typeLabel} ${salary.amount.toLocaleString()}원`;
   })();
 
-  // 삭제 버튼 클릭
-  const handleDeletePress = () => {
-    onDelete();
-  };
-
   return (
-    <View className="bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay p-4 mb-3">
-      {/* 헤더 */}
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 mr-2">
+    <View className="mb-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+      <View className="mb-2 flex-row items-start justify-between">
+        <View className="mr-2 flex-1">
           <Text className="text-base font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
             {name}
           </Text>
           {description && (
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5" numberOfLines={1}>
+            <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400" numberOfLines={1}>
               {description}
             </Text>
           )}
         </View>
+
         <TouchableOpacity
-          onPress={handleDeletePress}
+          onPress={onDelete}
           disabled={isDeleting}
           activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -108,26 +80,22 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
         </TouchableOpacity>
       </View>
 
-      {/* 태그 */}
-      <View className="flex-row flex-wrap gap-2 mb-3">
-        {/* 지역 */}
-        <View className="bg-gray-100 dark:bg-surface px-2.5 py-1 rounded-md">
+      <View className="mb-3 flex-row flex-wrap gap-2">
+        <View className="rounded-md bg-gray-100 px-2.5 py-1 dark:bg-surface">
           <Text className="text-xs text-gray-600 dark:text-gray-300">{location}</Text>
         </View>
 
-        {/* 급여 */}
         {salaryText && (
-          <View className="bg-green-100 dark:bg-green-900/40 px-2.5 py-1 rounded-md">
+          <View className="rounded-md bg-green-100 px-2.5 py-1 dark:bg-green-900/40">
             <Text className="text-xs text-green-700 dark:text-green-300">{salaryText}</Text>
           </View>
         )}
 
-        {/* 공고 타입 */}
         {templateData?.postingType && (
-          <View className="bg-primary-100 dark:bg-primary-900/40 px-2.5 py-1 rounded-md">
+          <View className="rounded-md bg-primary-100 px-2.5 py-1 dark:bg-primary-900/40">
             <Text className="text-xs text-primary-700 dark:text-primary-300">
               {templateData.postingType === 'regular'
-                ? '지원'
+                ? '일반'
                 : templateData.postingType === 'fixed'
                   ? '고정'
                   : templateData.postingType === 'tournament'
@@ -138,22 +106,21 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
         )}
       </View>
 
-      {/* 푸터 */}
-      <View className="flex-row items-center justify-between pt-2 border-t border-gray-100 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between border-t border-gray-100 pt-2 dark:border-surface-overlay">
         <Text className="text-xs text-gray-400 dark:text-gray-500">
           {formatDate(createdAt)} 생성 {usageCount ? `/ ${usageCount}회 사용` : ''}
         </Text>
         <Pressable
           onPress={onLoad}
           disabled={isLoading}
-          className={`px-4 py-2 rounded-lg ${isLoading ? 'bg-gray-300' : 'bg-primary-600'}`}
+          className={`rounded-lg px-4 py-2 ${isLoading ? 'bg-gray-300' : 'bg-primary-600'}`}
           accessibilityRole="button"
           accessibilityLabel="템플릿 불러오기"
         >
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-white text-sm font-medium">불러오기</Text>
+            <Text className="text-sm font-medium text-white">불러오기</Text>
           )}
         </Pressable>
       </View>
@@ -161,27 +128,19 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
   );
 }
 
-// ============================================================================
-// EmptyState Component
-// ============================================================================
-
 function EmptyState() {
   return (
     <View className="items-center justify-center py-12">
-      <Text className="text-4xl mb-4">📋</Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-2">
+      <Text className="mb-4 text-4xl">템</Text>
+      <Text className="mb-2 text-center text-gray-500 dark:text-gray-400">
         저장된 템플릿이 없습니다
       </Text>
-      <Text className="text-gray-400 dark:text-gray-500 text-sm text-center">
+      <Text className="text-center text-sm text-gray-400 dark:text-gray-500">
         공고 작성 후 템플릿으로 저장해보세요
       </Text>
     </View>
   );
 }
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 export function LoadTemplateModal({
   visible,
@@ -205,13 +164,11 @@ export function LoadTemplateModal({
     }
   };
 
-  // 삭제 클릭 시 확인 모달 열기
   const handleDeleteClick = (id: string, name: string) => {
     logger.info('삭제 확인 모달 열기', { templateId: id, templateName: name });
     setDeleteTarget({ id, name });
   };
 
-  // 삭제 확인
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     await onDeleteTemplate(deleteTarget.id, deleteTarget.name);
@@ -221,18 +178,15 @@ export function LoadTemplateModal({
   return (
     <>
       <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
-        {/* 로딩 상태 */}
         {templatesLoading && (
           <View className="items-center justify-center py-12">
             <ActivityIndicator size="large" color="#A855F7" />
-            <Text className="text-gray-500 dark:text-gray-400 mt-3">템플릿 불러오는 중...</Text>
+            <Text className="mt-3 text-gray-500 dark:text-gray-400">템플릿을 불러오는 중...</Text>
           </View>
         )}
 
-        {/* 빈 상태 */}
         {!templatesLoading && templates.length === 0 && <EmptyState />}
 
-        {/* 템플릿 목록 */}
         {!templatesLoading && templates.length > 0 && (
           <View style={{ height: 400 }}>
             <FlashList
@@ -247,23 +201,21 @@ export function LoadTemplateModal({
                   isDeleting={isDeletingTemplate}
                 />
               )}
-              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+              // @ts-expect-error FlashList v2 typing gap
               estimatedItemSize={140}
               showsVerticalScrollIndicator={false}
-              nestedScrollEnabled={true}
+              nestedScrollEnabled
             />
 
-            {/* 안내 문구 */}
-            <View className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 mt-3">
-              <Text className="text-amber-700 dark:text-amber-300 text-xs text-center">
-                템플릿을 불러온 후 날짜를 설정해주세요
+            <View className="mt-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/30">
+              <Text className="text-center text-xs text-amber-700 dark:text-amber-300">
+                템플릿을 불러온 뒤에는 날짜를 다시 설정해주세요
               </Text>
             </View>
           </View>
         )}
       </Modal>
 
-      {/* 삭제 확인 모달 */}
       <ConfirmModal
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}

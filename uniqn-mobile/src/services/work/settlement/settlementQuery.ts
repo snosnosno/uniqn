@@ -8,6 +8,7 @@
  * - 1.1.0: Repository 패턴 적용 (Firebase 직접 호출 제거)
  */
 
+import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -61,6 +62,7 @@ export async function getWorkLogsByJobPosting(
 
     // 2. 근무 기록 조회 (Repository 사용)
     const parsedWorkLogs = await workLogRepository.getByJobPostingId(jobPostingId);
+    const postingSettlement = getPostingSettlementContext(jobPosting);
 
     let workLogs: SettlementWorkLog[] = parsedWorkLogs.map((wl) => ({
       ...wl,
@@ -95,11 +97,11 @@ export async function getWorkLogsByJobPosting(
       const wlWithOverrides = wl as WorkLogWithOverrides;
       const salaryInfo = getEffectiveSalaryInfoFromRoles(
         wlWithOverrides,
-        jobPosting.roles,
-        jobPosting.defaultSalary
+        postingSettlement.roles,
+        postingSettlement.defaultSalary
       );
-      const allowances = getEffectiveAllowances(wlWithOverrides, jobPosting.allowances);
-      const taxSettings = getEffectiveTaxSettings(wlWithOverrides, jobPosting.taxSettings);
+      const allowances = getEffectiveAllowances(wlWithOverrides, postingSettlement.allowances);
+      const taxSettings = getEffectiveTaxSettings(wlWithOverrides, postingSettlement.taxSettings);
 
       const result = SettlementCalculator.calculate({
         startTime: wl.checkInTime,
@@ -160,6 +162,7 @@ export async function getJobPostingSettlementSummary(
 
     // 2. 근무 기록 조회 (Repository 사용)
     const workLogs = await workLogRepository.getByJobPostingId(jobPostingId);
+    const postingSettlement = getPostingSettlementContext(jobPosting);
 
     // 3. 통계 계산
     let completedWorkLogs = 0;
@@ -215,11 +218,17 @@ export async function getJobPostingSettlementSummary(
           const workLogWithOverrides = workLog as WorkLogWithOverrides;
           const salaryInfo = getEffectiveSalaryInfoFromRoles(
             workLogWithOverrides,
-            jobPosting.roles,
-            jobPosting.defaultSalary
+            postingSettlement.roles,
+            postingSettlement.defaultSalary
           );
-          const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
-          const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
+          const allowances = getEffectiveAllowances(
+            workLogWithOverrides,
+            postingSettlement.allowances
+          );
+          const taxSettings = getEffectiveTaxSettings(
+            workLogWithOverrides,
+            postingSettlement.taxSettings
+          );
 
           const settlementResult = SettlementCalculator.calculate({
             startTime: workLog.checkInTime,

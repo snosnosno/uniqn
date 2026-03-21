@@ -8,6 +8,7 @@
 import { toISODateString, generateId as generateIdBase } from '../date/core';
 import { formatDateWithDay } from '../date/formatting';
 import { groupConsecutiveDates as groupConsecutiveDatesBase } from '../date/grouping';
+import type { PostingSchedule } from '@/types/jobPosting';
 
 // Re-export from date/ for backward compatibility
 export { groupConsecutiveDatesBase as groupConsecutiveDates };
@@ -217,9 +218,69 @@ export function isFullyClosed(requirements: DateRequirementWithSlots[] | undefin
  */
 export function getClosingStatus(jobData: {
   dateSpecificRequirements?: DateRequirementWithSlots[];
+  schedule?: PostingSchedule;
+  totalPositions?: number;
+  filledPositions?: number;
 }): { total: number; filled: number; isClosed: boolean } {
+  if (jobData.schedule?.kind === 'fixed') {
+    const total = (jobData.schedule.roleRequirements ?? []).reduce(
+      (sum, role) => sum + role.count,
+      0
+    );
+    const filled = (jobData.schedule.roleRequirements ?? []).reduce(
+      (sum, role) => sum + (role.filled ?? 0),
+      0
+    );
+
+    return {
+      total,
+      filled,
+      isClosed: total > 0 && filled >= total,
+    };
+  }
+
+  if (jobData.schedule?.kind === 'dated') {
+    const total = jobData.schedule.requirements.reduce(
+      (dateSum, requirement) =>
+        dateSum +
+        requirement.timeSlots.reduce(
+          (slotSum, slot) => slotSum + slot.roles.reduce((sum, role) => sum + role.count, 0),
+          0
+        ),
+      0
+    );
+    const filled = jobData.schedule.requirements.reduce(
+      (dateSum, requirement) =>
+        dateSum +
+        requirement.timeSlots.reduce(
+          (slotSum, slot) =>
+            slotSum + slot.roles.reduce((sum, role) => sum + (role.filled ?? 0), 0),
+          0
+        ),
+      0
+    );
+
+    return {
+      total,
+      filled,
+      isClosed: total > 0 && filled >= total,
+    };
+  }
+
   const total = calculateTotalFromDateReqs(jobData.dateSpecificRequirements);
   const filled = calculateFilledFromDateReqs(jobData.dateSpecificRequirements);
+
+  if (total === 0 && filled === 0) {
+    const fallbackTotal = jobData.totalPositions ?? 0;
+    const fallbackFilled = jobData.filledPositions ?? 0;
+
+    return {
+      total: fallbackTotal,
+      filled: fallbackFilled,
+      isClosed: fallbackTotal > 0 && fallbackFilled >= fallbackTotal,
+    };
+  }
+
   return {
     total,
     filled,

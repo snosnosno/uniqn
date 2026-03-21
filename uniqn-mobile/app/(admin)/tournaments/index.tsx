@@ -8,6 +8,7 @@
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
+import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import {
   CalendarOutlineIcon,
   CheckmarkCircleOutlineIcon,
@@ -106,7 +107,9 @@ const TournamentCard = memo(function TournamentCard({
 
   // 날짜 범위 표시 (메모이제이션)
   const dateRange = useMemo(() => {
-    const dates = posting.dateSpecificRequirements?.map((d) => d.date as string) ?? [];
+    const dates = createPostingLegacyDateRequirements(posting).map((requirement) =>
+      String(requirement.date)
+    );
     if (dates.length === 0) return '-';
     if (dates.length === 1) return formatDate(dates[0]);
 
@@ -114,7 +117,7 @@ const TournamentCard = memo(function TournamentCard({
     return `${formatDate(sortedDates[0])} ~ ${formatDate(
       sortedDates[sortedDates.length - 1]
     )} (${dates.length}일)`;
-  }, [posting.dateSpecificRequirements]);
+  }, [posting]);
 
   return (
     <View className="bg-white dark:bg-surface rounded-xl mb-3 overflow-hidden border border-gray-100 dark:border-surface-overlay">

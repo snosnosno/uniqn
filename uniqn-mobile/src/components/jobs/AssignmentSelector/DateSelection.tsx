@@ -11,6 +11,7 @@ import { formatDateDisplay, formatTimeSlotDisplay } from '@/types/unified';
 import { makeSelectionKey } from '@/utils/assignment';
 import { RoleCheckbox } from './RoleCheckbox';
 import type { DateSelectionProps } from './types';
+import { getEffectiveRoleId, getRoleCheckboxKey } from './utils';
 
 /**
  * 날짜/시간대 선택 항목 (역할 체크박스 포함)
@@ -57,15 +58,13 @@ export const DateSelection = memo(function DateSelection({
               {/* 역할 체크박스들 */}
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
-                  // 커스텀 역할이면 customName을 키로 사용 (roles[].salary 구조와 일치)
-                  const effectiveRoleId =
-                    role.roleId === 'other' && role.customName ? role.customName : role.roleId;
+                  const effectiveRoleId = getEffectiveRoleId(role);
                   const selectionKey = makeSelectionKey(date, slotTime, effectiveRoleId);
                   const isSelected = selectedKeys.has(selectionKey);
 
                   return (
                     <RoleCheckbox
-                      key={role.roleId || roleIndex}
+                      key={getRoleCheckboxKey(role, roleIndex)}
                       role={role}
                       isSelected={isSelected}
                       onToggle={() =>

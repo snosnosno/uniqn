@@ -1,76 +1,60 @@
-import type { JobPosting, JobPostingFormData, UpdateJobPostingInput } from '@/types';
-import { getDateString, type DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
+import type {
+  CreateJobPostingInput,
+  JobPosting,
+  JobPostingFormData,
+  UpdateJobPostingInput,
+} from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import {
+  applyFormDataPatch,
+  draftToCreateJobPostingInput,
+  draftToFormData,
+  draftToUpdateJobPostingInput,
+  formDataToDraft,
+  jobPostingToDraft,
+} from './draftAdapter';
 
-function getPrimaryWorkDate(
-  dateSpecificRequirements?: DateSpecificRequirement[]
-): string | undefined {
-  const requirement = dateSpecificRequirements?.find((candidate) => {
-    return getDateString(candidate.date).length > 0;
-  });
-
-  return requirement ? getDateString(requirement.date) : undefined;
+function isJobPostingDraft(value: JobPostingDraft | JobPostingFormData): value is JobPostingDraft {
+  return 'schedule' in value && 'roleCatalog' in value && 'compensation' in value;
 }
 
-export function shouldAllowLegacyScheduleFallback(
-  jobPosting?: Pick<JobPosting, 'postingType' | 'dateSpecificRequirements'> | null
-): boolean {
-  if (!jobPosting || jobPosting.postingType === 'fixed') {
-    return false;
-  }
-
-  return !jobPosting.dateSpecificRequirements?.length;
+export function buildCreateJobPostingInput(
+  draftOrFormData: JobPostingDraft | JobPostingFormData
+): CreateJobPostingInput {
+  return draftToCreateJobPostingInput(
+    isJobPostingDraft(draftOrFormData) ? draftOrFormData : formDataToDraft(draftOrFormData)
+  );
 }
 
 export function buildUpdateJobPostingInput(
-  formData: JobPostingFormData,
+  draftOrFormData: JobPostingDraft | JobPostingFormData,
   options?: {
     hasConfirmedApplicants?: boolean;
   }
 ): UpdateJobPostingInput {
-  const hasConfirmedApplicants = options?.hasConfirmedApplicants ?? false;
-  const firstRoleWithSalary = formData.roles.find((role) => role.salary);
-  const defaultSalary =
-    formData.useSameSalary && firstRoleWithSalary?.salary
-      ? firstRoleWithSalary.salary
-      : formData.defaultSalary;
-
-  const baseInput: UpdateJobPostingInput = {
-    postingType: formData.postingType,
-    title: formData.title,
-    description: formData.description || undefined,
-    location: formData.location as NonNullable<JobPostingFormData['location']>,
-    detailedAddress: formData.detailedAddress || undefined,
-    contactPhone: formData.contactPhone || undefined,
-    defaultSalary,
-    useSameSalary: formData.useSameSalary,
-    allowances: formData.allowances,
-    taxSettings:
-      formData.taxSettings?.type !== 'none' ? formData.taxSettings : { type: 'none', value: 0 },
-    usesPreQuestions: formData.usesPreQuestions,
-    preQuestions: formData.preQuestions,
-    tags: formData.tags,
-  };
-
-  if (hasConfirmedApplicants) {
-    return baseInput;
-  }
-
-  if (formData.postingType === 'fixed') {
-    return {
-      ...baseInput,
-      startTime: formData.startTime,
-      daysPerWeek: formData.daysPerWeek,
-      isStartTimeNegotiable: formData.isStartTimeNegotiable,
-      roles: formData.roles,
-    };
-  }
-
-  return {
-    ...baseInput,
-    workDate: getPrimaryWorkDate(formData.dateSpecificRequirements) ?? formData.workDate,
-    startTime: formData.startTime,
-    dateSpecificRequirements:
-      formData.dateSpecificRequirements as unknown as UpdateJobPostingInput['dateSpecificRequirements'],
-    roles: formData.roles,
-  };
+  return draftToUpdateJobPostingInput(
+    isJobPostingDraft(draftOrFormData) ? draftOrFormData : formDataToDraft(draftOrFormData),
+    options
+  );
 }
+
+export function buildJobPostingDraft(posting: JobPosting): JobPostingDraft {
+  return jobPostingToDraft(posting);
+}
+
+export function buildJobPostingFormData(posting: JobPosting): JobPostingFormData {
+  return draftToFormData(jobPostingToDraft(posting));
+}
+
+export function buildJobPostingDraftFromFormData(formData: JobPostingFormData): JobPostingDraft {
+  return formDataToDraft(formData);
+}
+
+export function patchJobPostingDraft(
+  draft: JobPostingDraft,
+  patch: Partial<JobPostingFormData>
+): JobPostingDraft {
+  return applyFormDataPatch(draft, patch);
+}
+
+export { draftToFormData, formDataToDraft, jobPostingToDraft, applyFormDataPatch };

@@ -23,6 +23,7 @@ import {
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
+import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
 import {
   BusinessError,
@@ -410,13 +411,14 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
               }
 
               // 정산 금액 계산 (SettlementCalculator 사용)
+              const postingSettlement = getPostingSettlementContext(jobPosting);
               const salaryInfo = getEffectiveSalaryInfoFromRoles(
                 workLog,
-                jobPosting.roles,
-                jobPosting.defaultSalary
+                postingSettlement.roles,
+                postingSettlement.defaultSalary
               );
-              const allowances = getEffectiveAllowances(workLog, jobPosting.allowances);
-              const taxSettings = getEffectiveTaxSettings(workLog, jobPosting.taxSettings);
+              const allowances = getEffectiveAllowances(workLog, postingSettlement.allowances);
+              const taxSettings = getEffectiveTaxSettings(workLog, postingSettlement.taxSettings);
 
               const settlementResult = SettlementCalculator.calculate({
                 startTime: workLog.checkInTime,

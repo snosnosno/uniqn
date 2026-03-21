@@ -101,4 +101,22 @@ describe('applicationDocumentSchema', () => {
 
     expect(reviewedAt.toDate()).toBeInstanceOf(Date);
   });
+
+  it('accepts custom assignment role ids and preserves customRole metadata', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      applicantRole: 'other',
+      customRole: '사회자',
+      assignments: [
+        {
+          ...baseAssignment,
+          roleIds: ['사회자'],
+        },
+      ],
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.assignments[0]?.roleIds).toEqual(['사회자']);
+    expect(result?.customRole).toBe('사회자');
+  });
 });

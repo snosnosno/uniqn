@@ -7,6 +7,7 @@
 
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, LayoutAnimation } from 'react-native';
+import { buildPostingFacts } from '@/domains/job-posting';
 import { useThemeStore } from '@/stores/themeStore';
 import { Card } from '../../../ui/Card';
 import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
@@ -49,9 +50,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   // 고정공고 모드 판단 (props 우선, 없으면 applicant.jobPosting에서 추출)
   const effectivePostingType = postingType ?? applicant.jobPosting?.postingType;
   const isFixedMode = effectivePostingType === 'fixed';
+  const postingFacts = useMemo(
+    () => (applicant.jobPosting ? buildPostingFacts(applicant.jobPosting) : null),
+    [applicant.jobPosting]
+  );
   // 고정공고용 근무 정보 (props 우선, 없으면 jobPosting에서 추출)
-  const effectiveDaysPerWeek = daysPerWeek ?? applicant.jobPosting?.daysPerWeek;
-  const effectiveStartTime = startTime ?? applicant.jobPosting?.timeSlot?.split(/[-~]/)[0]?.trim();
+  const effectiveDaysPerWeek = daysPerWeek ?? postingFacts?.schedule.daysPerWeek;
+  const effectiveStartTime = startTime ?? postingFacts?.schedule.timeSlot?.split(/[-~]/)[0]?.trim();
   // 다크모드 감지 (앱 테마 스토어 사용)
   const { isDarkMode: isDark } = useThemeStore();
 

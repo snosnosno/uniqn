@@ -212,19 +212,20 @@ export default function JobPostingDetailScreen() {
   }, []);
 
   // 수당 정보 (v2.0) - hooks는 조건부 반환 전에 호출해야 함
-  const allowanceItems = useMemo(
-    () => getAllowanceItems(posting?.allowances),
-    [posting?.allowances]
-  );
+  const postingFacts = useMemo(() => (posting ? buildPostingFacts(posting) : null), [posting]);
   const managementView = useMemo(
     () =>
-      posting
-        ? (projectPostingSurface(buildPostingFacts(posting), {
+      postingFacts
+        ? (projectPostingSurface(postingFacts, {
             audience: 'employer',
             surface: 'manage',
           }) as PostingManagementViewModel)
         : null,
-    [posting]
+    [postingFacts]
+  );
+  const allowanceItems = useMemo(
+    () => getAllowanceItems(managementView?.allowances),
+    [managementView?.allowances]
   );
 
   // 로딩 상태
@@ -274,12 +275,10 @@ export default function JobPostingDetailScreen() {
     typeof posting.location === 'string' ? posting.location : posting.location?.name || '장소 미정';
 
   // dateSpecificRequirements 유무 확인 (v2.0)
-  const hasDateRequirements =
-    posting.dateSpecificRequirements && posting.dateSpecificRequirements.length > 0;
+  const hasDateRequirements = (managementView?.dateRequirements.length ?? 0) > 0;
 
   // 사전질문 개수 (v2.0)
-  const preQuestionCount =
-    posting.usesPreQuestions && posting.preQuestions ? posting.preQuestions.length : 0;
+  const preQuestionCount = managementView?.questions.length ?? 0;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -369,13 +368,9 @@ export default function JobPostingDetailScreen() {
                     </View>
                     <View className="ml-6">
                       <FixedScheduleDisplay
-                        daysPerWeek={managementView?.daysPerWeek ?? posting.daysPerWeek}
-                        startTime={
-                          managementView?.startTime || posting.timeSlot?.split(/[-~]/)[0]?.trim()
-                        }
-                        roles={(
-                          managementView?.requiredRolesWithCount ?? posting.requiredRolesWithCount
-                        )?.map((r) => ({
+                        daysPerWeek={managementView?.daysPerWeek}
+                        startTime={managementView?.startTime}
+                        roles={managementView?.requiredRolesWithCount?.map((r) => ({
                           role: r.role,
                           count: r.count,
                         }))}
@@ -394,7 +389,7 @@ export default function JobPostingDetailScreen() {
                     </View>
                     <View className="ml-6">
                       <GroupedDateRequirementDisplay
-                        requirements={posting.dateSpecificRequirements!}
+                        requirements={managementView?.dateRequirements ?? []}
                         showFilledCount={true}
                       />
                     </View>
@@ -403,7 +398,8 @@ export default function JobPostingDetailScreen() {
                   <View className="flex-row items-center mb-3">
                     <ClockIcon size={18} color="#9333EA" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                      {`${posting.workDate || ''} ${posting.timeSlot || ''}`.trim() || '일정 미정'}
+                      {`${managementView?.workDate || ''} ${managementView?.timeSlot || ''}`.trim() ||
+                        '일정 미정'}
                     </Text>
                   </View>
                 )}
@@ -418,9 +414,9 @@ export default function JobPostingDetailScreen() {
                   </View>
                   <View className="ml-6">
                     <RoleSalaryDisplay
-                      roles={posting.roles}
-                      useSameSalary={managementView?.useSameSalary ?? posting.useSameSalary}
-                      defaultSalary={managementView?.defaultSalary ?? posting.defaultSalary}
+                      roles={postingFacts?.posting.roles ?? []}
+                      useSameSalary={managementView?.useSameSalary}
+                      defaultSalary={managementView?.defaultSalary}
                       compact={false}
                     />
                   </View>

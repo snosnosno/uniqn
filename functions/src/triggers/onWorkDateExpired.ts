@@ -49,8 +49,8 @@ export const onWorkDateExpired = onDocumentUpdated(
       return;
     }
 
-    const createdBy = after.createdBy || after.ownerId;
-    if (!createdBy) {
+    const ownerId = after.ownerId;
+    if (!ownerId) {
       logger.warn('작성자 정보 없음', { postingId });
       return;
     }
@@ -59,14 +59,14 @@ export const onWorkDateExpired = onDocumentUpdated(
       title: after.title,
       postingType: after.postingType,
       workDate: after.workDate,
-      createdBy,
+      ownerId,
     });
 
     try {
       const title = after.title || '제목 없음';
 
       await createAndSendNotification(
-        createdBy,
+        ownerId,
         'job_closed',
         '공고가 자동 마감되었습니다',
         `"${title}" 공고의 마지막 근무일이 지나 자동으로 마감 처리되었습니다.`,
@@ -83,7 +83,7 @@ export const onWorkDateExpired = onDocumentUpdated(
 
       logger.info('근무일 만료 알림 전송 완료', {
         postingId,
-        recipientId: createdBy,
+        recipientId: ownerId,
       });
     } catch (error) {
       logger.error('근무일 만료 알림 전송 실패', {

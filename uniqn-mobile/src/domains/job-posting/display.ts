@@ -7,20 +7,28 @@ import type {
   PostingDetailViewModel,
   PostingFacts,
   PostingManagementViewModel,
-  PostingRuntimeSnapshot,
   PostingSalaryRow,
   PostingSurface,
   SalaryInfo,
 } from '@/types/jobPosting';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { RoleWithCount } from '@/types/postingConfig';
 import type { PreQuestion } from '@/types/preQuestion';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { formatSalary } from '@/utils/formatters';
 
+function getRoleKey(role: { role?: string; customRole?: string }): string {
+  if (role.role === 'other' && role.customRole) {
+    return `other:${role.customRole}`;
+  }
+
+  return role.role ?? '';
+}
+
 function getLocationLabels(posting: JobPosting): { shortLabel: string; fullLabel: string } {
   const name = posting.location?.name || '';
-  const detailed = posting.location?.detailedAddress || posting.detailedAddress || '';
+  const detailed = posting.location?.detailedAddress || '';
 
   return {
     shortLabel: name,
@@ -29,7 +37,7 @@ function getLocationLabels(posting: JobPosting): { shortLabel: string; fullLabel
 }
 
 function getTaxLabel(posting: JobPosting): string | undefined {
-  const taxSettings = posting.compensation.taxSettings ?? posting.taxSettings;
+  const taxSettings = posting.compensation.taxSettings;
 
   if (!taxSettings || taxSettings.type === 'none') {
     return undefined;
@@ -84,11 +92,57 @@ function getSalaryRows(posting: JobPosting): PostingSalaryRow[] {
   return Array.from(unique.values());
 }
 
+function getDerivedRoles(posting: JobPosting): PostingFacts['posting']['roles'] {
+  if (posting.schedule.kind === 'fixed') {
+    return (posting.schedule.roleRequirements ?? []).map((role) => {
+      const catalogEntry = posting.roleCatalog.find(
+        (entry) => getRoleKey(entry) === getRoleKey(role)
+      );
+
+      return {
+        role: catalogEntry?.role ?? role.role ?? 'dealer',
+        customRole: role.customRole,
+        count: role.count,
+        filled: role.filled ?? 0,
+        salary: catalogEntry?.salary,
+      };
+    });
+  }
+
+  const totals = new Map<string, PostingFacts['posting']['roles'][number]>();
+
+  posting.schedule.requirements.forEach((requirement) => {
+    requirement.timeSlots.forEach((slot) => {
+      slot.roles.forEach((role) => {
+        const key = getRoleKey(role);
+        const existing = totals.get(key);
+        const catalogEntry = posting.roleCatalog.find((entry) => getRoleKey(entry) === key);
+
+        if (existing) {
+          existing.count += role.count;
+          existing.filled += role.filled ?? 0;
+          return;
+        }
+
+        totals.set(key, {
+          role: catalogEntry?.role ?? role.role ?? 'dealer',
+          customRole: role.customRole,
+          count: role.count,
+          filled: role.filled ?? 0,
+          salary: catalogEntry?.salary,
+        });
+      });
+    });
+  });
+
+  return Array.from(totals.values());
+}
+
 function getDefaultSalary(
   posting: JobPosting,
   salaryRows: PostingSalaryRow[]
 ): SalaryInfo | undefined {
-  return posting.compensation.defaultSalary ?? posting.defaultSalary ?? salaryRows[0]?.salary;
+  return posting.compensation.defaultSalary ?? salaryRows[0]?.salary;
 }
 
 function getDateRequirements(posting: JobPosting): CardDateRequirement[] {
@@ -115,15 +169,37 @@ function getDateRequirements(posting: JobPosting): CardDateRequirement[] {
   }));
 }
 
+export function createPostingLegacyDateRequirements(
+  posting: JobPosting
+): DateSpecificRequirement[] {
+  if (posting.schedule.kind !== 'dated') {
+    return [];
+  }
+
+  return posting.schedule.requirements.map((requirement) => ({
+    date: requirement.date,
+    isGrouped: requirement.isGrouped,
+    timeSlots: requirement.timeSlots.map((slot) => ({
+      id: slot.id,
+      startTime: slot.startTime,
+      isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+      tentativeDescription: slot.tentativeDescription,
+      roles: slot.roles.map((role) => ({
+        id: role.id,
+        role: role.role,
+        customRole: role.customRole,
+        headcount: role.count,
+        filled: role.filled ?? 0,
+      })),
+    })),
+  }));
+}
+
 function getQuestions(posting: JobPosting): PreQuestion[] {
-  return posting.questions.items ?? posting.preQuestions ?? [];
+  return posting.questions.items ?? [];
 }
 
 function getLegacyTimeSlot(posting: JobPosting): string {
-  if (posting.timeSlot) {
-    return posting.timeSlot;
-  }
-
   if (posting.schedule.kind === 'fixed') {
     return posting.schedule.startTime ? `${posting.schedule.startTime}~` : '';
   }
@@ -142,7 +218,7 @@ function getLegacyTimeSlot(posting: JobPosting): string {
 
 function getRequiredRolesWithCount(posting: JobPosting): RoleWithCount[] | undefined {
   if (posting.schedule.kind !== 'fixed') {
-    return posting.requiredRolesWithCount;
+    return undefined;
   }
 
   return posting.schedule.roleRequirements?.map(getRoleWithCount);
@@ -152,13 +228,17 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const salaryRows = getSalaryRows(posting);
   const location = getLocationLabels(posting);
   const dateRequirements = getDateRequirements(posting);
-  const allowances = posting.compensation.allowances ?? posting.allowances;
+  const allowances = posting.compensation.allowances;
   const allowanceLabels = getAllowanceItems(allowances, { includeEmoji: true });
   const defaultSalary = getDefaultSalary(posting, salaryRows);
   const questions = getQuestions(posting);
+  const roles = getDerivedRoles(posting);
 
   return {
-    posting,
+    posting: {
+      ...posting,
+      roles,
+    },
     title: posting.title,
     description: posting.description,
     status: posting.status,
@@ -215,9 +295,9 @@ function projectCard(facts: PostingFacts): PostingCardViewModel {
     roles: facts.posting.roleCatalog.map((role) => role.role),
     dateRequirements: facts.schedule.dateRequirements,
     defaultSalary: facts.compensation.defaultSalary,
-    allowances: facts.posting.compensation.allowances ?? facts.posting.allowances,
+    allowances: facts.posting.compensation.allowances,
     allowanceLabels: facts.compensation.allowanceLabels,
-    taxSettings: facts.posting.compensation.taxSettings ?? facts.posting.taxSettings,
+    taxSettings: facts.posting.compensation.taxSettings,
     taxLabel: facts.compensation.taxLabel,
     useSameSalary: facts.compensation.mode === 'shared',
     status: facts.status,
@@ -256,9 +336,9 @@ function projectDetail(facts: PostingFacts): PostingDetailViewModel {
     salaryRows: facts.compensation.salaryRows,
     defaultSalary: facts.compensation.defaultSalary,
     useSameSalary: facts.compensation.mode === 'shared',
-    allowances: facts.posting.compensation.allowances ?? facts.posting.allowances,
+    allowances: facts.posting.compensation.allowances,
     allowanceLabels: facts.compensation.allowanceLabels,
-    taxSettings: facts.posting.compensation.taxSettings ?? facts.posting.taxSettings,
+    taxSettings: facts.posting.compensation.taxSettings,
     taxLabel: facts.compensation.taxLabel,
     questions: facts.questions.items,
     ownerName: facts.owner.name,
@@ -308,24 +388,6 @@ export function projectPostingSurface(
   }
 
   return projectDetail(facts);
-}
-
-export function createPostingRuntimeSnapshot(posting: JobPosting): PostingRuntimeSnapshot {
-  const facts = buildPostingFacts(posting);
-
-  return {
-    title: facts.title,
-    location: facts.location.shortLabel,
-    detailedAddress: facts.posting.location?.detailedAddress,
-    roles: facts.posting.roles,
-    defaultSalary: facts.compensation.defaultSalary,
-    allowances: facts.posting.compensation.allowances ?? facts.posting.allowances,
-    taxSettings: facts.posting.compensation.taxSettings ?? facts.posting.taxSettings,
-    useSameSalary: facts.compensation.mode === 'shared',
-    dateRequirements: facts.schedule.dateRequirements,
-    workDate: facts.schedule.workDate,
-    timeSlot: facts.schedule.timeSlot,
-  };
 }
 
 export function toJobPostingCard(posting: JobPosting): JobPostingCard {

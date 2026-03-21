@@ -6,17 +6,11 @@ import type {
   JobPostingStatus,
   PostingCompensation,
   PostingDateRequirement,
-  PostingFixedRoleRequirement,
+  PostingFixedSchedule,
   PostingRoleCatalogEntry,
   PostingSchedule,
-  PostingTimeSlot,
-  RoleRequirement,
-  SalaryInfo,
+  UpdateJobPostingInput,
 } from '@/types/jobPosting';
-import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
-import type { PreQuestion } from '@/types/preQuestion';
-import type { StaffRole } from '@/types/role';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 
 interface SerializeJobPostingV3Options {
@@ -26,28 +20,6 @@ interface SerializeJobPostingV3Options {
   current?: Partial<JobPosting>;
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
-}
-
-interface LegacyRoleInput {
-  role?: string;
-  name?: string;
-  customRole?: string;
-  count?: number;
-  headcount?: number;
-  filled?: number;
-  salary?: SalaryInfo;
-}
-
-function normalizePostingType(input: CreateJobPostingInput): CreateJobPostingInput['postingType'] {
-  if (input.postingType) {
-    return input.postingType;
-  }
-
-  if (input.isUrgent) {
-    return 'urgent';
-  }
-
-  return 'regular';
 }
 
 function getRoleKey(role: { role?: string; customRole?: string }): string {
@@ -71,166 +43,96 @@ function getRoleKeysFromCatalog(roleCatalog: PostingRoleCatalogEntry[]): string[
   return Array.from(keys);
 }
 
-function getLegacyRoleCount(role: LegacyRoleInput): number {
-  return role.count ?? role.headcount ?? 0;
-}
-
-function extractStartTime(timeSlot?: string, fallback?: string): string | undefined {
-  if (fallback) {
-    return fallback;
-  }
-
-  if (!timeSlot) {
-    return undefined;
-  }
-
-  return timeSlot.split(/[-~]/)[0]?.trim() || undefined;
-}
-
-function extractQuestions(input: CreateJobPostingInput): PreQuestion[] {
-  if (input.usesPreQuestions === false) {
-    return [];
-  }
-
-  return input.preQuestions ?? [];
-}
-
-function toRoleCatalog(roles: LegacyRoleInput[]): PostingRoleCatalogEntry[] {
-  return roles.map((role) => ({
-    role: ((role.role ?? 'dealer') as StaffRole | 'other') || 'dealer',
-    customRole: role.customRole,
-    salary: role.salary,
-  }));
-}
-
-function toScheduleTimeSlots(
-  slots: TimeSlot[],
-  roleCatalog: PostingRoleCatalogEntry[]
-): PostingTimeSlot[] {
-  const catalogByKey = new Map(roleCatalog.map((role) => [getRoleKey(role), role]));
-
-  return (slots ?? []).map((slot) => ({
-    id: slot.id,
-    startTime: slot.startTime,
-    isTimeToBeAnnounced: slot.isTimeToBeAnnounced ?? false,
-    tentativeDescription: slot.tentativeDescription,
-    roles: (slot.roles ?? []).map((role) => {
-      const normalizedRole = (role.role ?? 'dealer') as StaffRole | 'other';
-      const key =
-        normalizedRole === 'other' && role.customRole ? `other:${role.customRole}` : normalizedRole;
-
-      const catalogEntry = catalogByKey.get(key);
-
-      return {
-        id: role.id,
-        role: catalogEntry?.role ?? normalizedRole,
-        customRole: role.customRole,
-        count: role.headcount ?? 0,
-        filled: role.filled ?? 0,
-      };
-    }),
-  }));
-}
-
-function buildDatedSchedule(
-  input: CreateJobPostingInput,
-  roleCatalog: PostingRoleCatalogEntry[]
-): PostingSchedule {
-  const requirements: PostingDateRequirement[] = (input.dateSpecificRequirements ?? [])
-    .map((requirement) => ({
-      date: getDateString(requirement.date),
-      isGrouped: requirement.isGrouped,
-      timeSlots: toScheduleTimeSlots(requirement.timeSlots ?? [], roleCatalog),
-    }))
-    .filter((requirement) => requirement.date);
-
-  if (requirements.length > 0) {
-    return {
-      kind: 'dated',
-      primaryDate: input.workDate || requirements[0]?.date || '',
-      allDates: requirements.map((requirement) => requirement.date),
-      requirements,
-    };
-  }
-
-  const fallbackRoles = (input.roles as LegacyRoleInput[]).map((role) => ({
-    role: (role.role ?? 'dealer') as StaffRole | 'other',
-    customRole: role.customRole,
-    count: getLegacyRoleCount(role),
-    filled: role.filled ?? 0,
-  }));
-
-  return {
-    kind: 'dated',
-    primaryDate: input.workDate || '',
-    allDates: input.workDate ? [input.workDate] : [],
-    requirements: input.workDate
-      ? [
-          {
-            date: input.workDate,
-            timeSlots: [
-              {
-                startTime: extractStartTime(input.timeSlot, input.startTime),
-                isTimeToBeAnnounced: false,
-                roles: fallbackRoles,
-              },
-            ],
-          },
-        ]
-      : [],
-  };
-}
-
-function buildFixedSchedule(input: CreateJobPostingInput): PostingSchedule {
-  const roleRequirements: PostingFixedRoleRequirement[] = (input.roles as LegacyRoleInput[]).map(
-    (role) => ({
-      role: (role.role ?? 'dealer') as StaffRole | 'other',
-      customRole: role.customRole,
-      count: getLegacyRoleCount(role),
-      filled: role.filled ?? 0,
-    })
-  );
-
-  return {
-    kind: 'fixed',
-    daysPerWeek: input.daysPerWeek,
-    startTime: extractStartTime(input.timeSlot, input.startTime),
-    isStartTimeNegotiable: input.isStartTimeNegotiable,
-    roleRequirements,
-  };
-}
-
-function buildSchedule(
-  input: CreateJobPostingInput,
-  postingType: CreateJobPostingInput['postingType'],
-  roleCatalog: PostingRoleCatalogEntry[]
-): PostingSchedule {
-  if (postingType === 'fixed') {
-    return buildFixedSchedule(input);
-  }
-
-  return buildDatedSchedule(input, roleCatalog);
-}
-
-function buildCompensation(input: CreateJobPostingInput): PostingCompensation {
-  return {
-    mode: input.useSameSalary ? 'shared' : 'by_role',
-    defaultSalary: input.defaultSalary,
-    allowances: input.allowances,
-    taxSettings: input.taxSettings,
-  };
-}
-
 function normalizeOptionalText(value?: string | null): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function normalizeRoleCatalog(
+  roleCatalog: CreateJobPostingInput['roleCatalog']
+): PostingRoleCatalogEntry[] {
+  return roleCatalog.map((role) => ({
+    role: role.role ?? 'dealer',
+    ...(role.customRole ? { customRole: role.customRole } : {}),
+    ...(role.salary ? { salary: role.salary } : {}),
+  }));
+}
+
+function normalizeDatedRequirements(
+  requirements: PostingDateRequirement[]
+): PostingDateRequirement[] {
+  return requirements
+    .map((requirement) => ({
+      date: requirement.date,
+      ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
+      timeSlots: (requirement.timeSlots ?? []).map((slot) => ({
+        ...(slot.id ? { id: slot.id } : {}),
+        ...(slot.startTime ? { startTime: slot.startTime } : {}),
+        ...(slot.isTimeToBeAnnounced !== undefined
+          ? { isTimeToBeAnnounced: slot.isTimeToBeAnnounced }
+          : {}),
+        ...(slot.tentativeDescription ? { tentativeDescription: slot.tentativeDescription } : {}),
+        roles: (slot.roles ?? []).map((role) => ({
+          ...(role.id ? { id: role.id } : {}),
+          ...(role.role ? { role: role.role } : {}),
+          ...(role.customRole ? { customRole: role.customRole } : {}),
+          count: role.count,
+          ...(role.filled !== undefined ? { filled: role.filled } : {}),
+        })),
+      })),
+    }))
+    .filter((requirement) => requirement.date);
+}
+
+function normalizeSchedule(schedule: CreateJobPostingInput['schedule']): PostingSchedule {
+  if (schedule.kind === 'fixed') {
+    const fixedSchedule: PostingFixedSchedule = {
+      kind: 'fixed',
+      ...(schedule.daysPerWeek !== undefined ? { daysPerWeek: schedule.daysPerWeek } : {}),
+      ...(schedule.startTime ? { startTime: schedule.startTime } : {}),
+      ...(schedule.isStartTimeNegotiable !== undefined
+        ? { isStartTimeNegotiable: schedule.isStartTimeNegotiable }
+        : {}),
+      roleRequirements: (schedule.roleRequirements ?? []).map((role) => ({
+        ...(role.role ? { role: role.role } : {}),
+        ...(role.customRole ? { customRole: role.customRole } : {}),
+        count: role.count,
+        ...(role.filled !== undefined ? { filled: role.filled } : {}),
+      })),
+    };
+
+    return fixedSchedule;
+  }
+
+  const requirements = normalizeDatedRequirements(schedule.requirements ?? []);
+
+  return {
+    kind: 'dated',
+    primaryDate: schedule.primaryDate || requirements[0]?.date || '',
+    allDates:
+      schedule.allDates && schedule.allDates.length > 0
+        ? schedule.allDates
+        : requirements.map((requirement) => requirement.date),
+    requirements,
+  };
+}
+
+function normalizeCompensation(
+  compensation: CreateJobPostingInput['compensation']
+): PostingCompensation {
+  return {
+    mode: compensation.mode,
+    ...(compensation.defaultSalary ? { defaultSalary: compensation.defaultSalary } : {}),
+    ...(compensation.allowances ? { allowances: compensation.allowances } : {}),
+    ...(compensation.taxSettings ? { taxSettings: compensation.taxSettings } : {}),
+  };
 }
 
 function buildPostingLocation(input: CreateJobPostingInput): JobPostingDocumentV3['location'] {
   const district =
     normalizeOptionalText(input.location?.district) ??
     normalizeOptionalText(input.location?.address);
-  const detailedAddress = normalizeOptionalText(input.detailedAddress);
+  const detailedAddress = normalizeOptionalText(input.location?.detailedAddress);
 
   return {
     name: input.location.name.trim(),
@@ -244,7 +146,6 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
   filledPositions: number;
   workDate: string;
   workDates?: string[];
-  timeSlot: string;
 } {
   if (schedule.kind === 'fixed') {
     const totalPositions = (schedule.roleRequirements ?? []).reduce(
@@ -261,7 +162,6 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
       filledPositions,
       workDate: '',
       workDates: undefined,
-      timeSlot: schedule.startTime ? `${schedule.startTime}~` : '',
     };
   }
 
@@ -285,20 +185,11 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
     0
   );
 
-  const firstRequirement = schedule.requirements[0];
-  const firstSlot = firstRequirement?.timeSlots[0];
-  const timeSlot = firstSlot
-    ? firstSlot.isTimeToBeAnnounced
-      ? '미정'
-      : firstSlot.startTime || ''
-    : '';
-
   return {
     totalPositions,
     filledPositions,
     workDate: schedule.primaryDate,
     workDates: schedule.allDates.length > 0 ? schedule.allDates : undefined,
-    timeSlot,
   };
 }
 
@@ -306,23 +197,23 @@ export function serializeJobPostingV3(
   input: CreateJobPostingInput,
   options: SerializeJobPostingV3Options
 ): JobPostingDocumentV3 {
-  const postingType = normalizePostingType(input);
   const current = options.current;
-  const roleCatalog = toRoleCatalog(input.roles as LegacyRoleInput[]);
-  const schedule = buildSchedule(input, postingType, roleCatalog);
+  const roleCatalog = normalizeRoleCatalog(input.roleCatalog);
+  const schedule = normalizeSchedule(input.schedule);
+  const compensation = normalizeCompensation(input.compensation);
   const totals = calculateTotalsFromSchedule(schedule);
 
   return {
     id: current?.id || '',
     schemaVersion: JOB_POSTING_SCHEMA_VERSION,
-    title: input.title,
-    description: input.description || '',
+    title: input.title.trim(),
+    ...(input.description !== undefined ? { description: input.description } : {}),
     status: options.status || current?.status || 'active',
     ownerId: options.ownerId,
     ownerName: options.ownerName ?? current?.ownerName,
-    postingType,
+    postingType: input.postingType ?? current?.postingType ?? 'regular',
     workDate: totals.workDate,
-    workDates: totals.workDates,
+    ...(totals.workDates ? { workDates: totals.workDates } : {}),
     roleKeys: getRoleKeysFromCatalog(roleCatalog),
     totalPositions: totals.totalPositions,
     filledPositions: current?.filledPositions ?? totals.filledPositions,
@@ -330,213 +221,67 @@ export function serializeJobPostingV3(
     applicationCount: current?.applicationCount ?? 0,
     createdAt: options.createdAt ?? current?.createdAt,
     updatedAt: options.updatedAt ?? current?.updatedAt,
-    closedAt: current?.closedAt,
-    closedReason: current?.closedReason,
-    tags: input.tags ?? current?.tags,
-    contactPhone: input.contactPhone,
+    ...(current?.closedAt ? { closedAt: current.closedAt } : {}),
+    ...(current?.closedReason ? { closedReason: current.closedReason } : {}),
+    ...(input.tags ? { tags: input.tags } : {}),
+    ...(input.contactPhone ? { contactPhone: input.contactPhone } : {}),
     location: buildPostingLocation(input),
     schedule,
     roleCatalog,
-    compensation: buildCompensation(input),
+    compensation,
     questions: {
-      items: extractQuestions(input),
+      items: input.questions.items ?? [],
     },
-    fixedConfig: current?.fixedConfig,
-    tournamentConfig: current?.tournamentConfig,
-    urgentConfig:
-      postingType === 'urgent'
-        ? current?.urgentConfig || {
+    ...(current?.fixedConfig ? { fixedConfig: current.fixedConfig } : {}),
+    ...(current?.tournamentConfig ? { tournamentConfig: current.tournamentConfig } : {}),
+    ...(input.postingType === 'urgent'
+      ? {
+          urgentConfig: current?.urgentConfig || {
             createdAt: Timestamp.now(),
             priority: 'high',
-          }
-        : undefined,
+          },
+        }
+      : {}),
   };
-}
-
-function toDateSpecificRequirements(posting: JobPosting): DateSpecificRequirement[] {
-  if (posting.dateSpecificRequirements) {
-    return posting.dateSpecificRequirements;
-  }
-
-  if (posting.schedule.kind !== 'dated') {
-    return [];
-  }
-
-  return posting.schedule.requirements.map((requirement) => ({
-    date: requirement.date,
-    isGrouped: requirement.isGrouped,
-    timeSlots: requirement.timeSlots.map((slot) => ({
-      id: slot.id,
-      startTime: slot.startTime,
-      isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
-      tentativeDescription: slot.tentativeDescription,
-      roles: slot.roles.map((role) => ({
-        id: role.id,
-        role: role.role,
-        customRole: role.customRole,
-        headcount: role.count,
-        filled: role.filled ?? 0,
-      })),
-    })),
-  }));
 }
 
 export function toCreateJobPostingInput(posting: JobPosting): CreateJobPostingInput {
-  const compensation = posting.compensation;
-  const questions = posting.questions?.items ?? posting.preQuestions ?? [];
-
   return {
     postingType: posting.postingType,
     title: posting.title,
-    description: posting.description,
-    location: {
-      ...posting.location,
-      address: posting.location.address ?? posting.location.district,
-    },
-    detailedAddress: posting.location.detailedAddress,
-    contactPhone: posting.contactPhone,
-    workDate: posting.workDate,
-    timeSlot: posting.timeSlot,
-    startTime: posting.schedule.kind === 'fixed' ? posting.schedule.startTime : undefined,
-    dateSpecificRequirements: toDateSpecificRequirements(posting),
-    daysPerWeek: posting.schedule.kind === 'fixed' ? posting.schedule.daysPerWeek : undefined,
-    isStartTimeNegotiable:
-      posting.schedule.kind === 'fixed' ? posting.schedule.isStartTimeNegotiable : undefined,
-    roles: posting.roles,
-    defaultSalary: compensation.defaultSalary ?? posting.defaultSalary,
-    allowances: compensation.allowances ?? posting.allowances,
-    taxSettings: compensation.taxSettings ?? posting.taxSettings,
-    useSameSalary: compensation.mode === 'shared',
-    usesPreQuestions: questions.length > 0,
-    preQuestions: questions,
-    tags: posting.tags,
-    isUrgent: posting.postingType === 'urgent',
+    ...(posting.description !== undefined ? { description: posting.description } : {}),
+    location: posting.location,
+    ...(posting.contactPhone ? { contactPhone: posting.contactPhone } : {}),
+    ...(posting.tags ? { tags: posting.tags } : {}),
+    schedule: posting.schedule,
+    roleCatalog: posting.roleCatalog,
+    compensation: posting.compensation,
+    questions: posting.questions,
   };
 }
 
-function aggregateRolesFromDatedRequirements(
-  requirements: PostingDateRequirement[],
-  roleCatalog: PostingRoleCatalogEntry[]
-): RoleRequirement[] {
-  const map = new Map<string, RoleRequirement>();
-  const catalogByKey = new Map(roleCatalog.map((role) => [getRoleKey(role), role]));
-
-  requirements.forEach((requirement) => {
-    requirement.timeSlots.forEach((slot) => {
-      slot.roles.forEach((role) => {
-        const key =
-          role.role === 'other' && role.customRole ? `other:${role.customRole}` : role.role || '';
-        const existing = map.get(key);
-        const catalogEntry = catalogByKey.get(key);
-
-        if (existing) {
-          existing.count += role.count;
-          existing.filled = (existing.filled ?? 0) + (role.filled ?? 0);
-          return;
-        }
-
-        map.set(key, {
-          role: (catalogEntry?.role ?? role.role ?? 'dealer') as StaffRole | 'other',
-          customRole: role.customRole,
-          count: role.count,
-          filled: role.filled ?? 0,
-          salary: catalogEntry?.salary,
-        });
-      });
-    });
-  });
-
-  return Array.from(map.values());
-}
-
-function buildCompatEntity(document: JobPostingDocumentV3): JobPosting {
-  const questions = document.questions?.items ?? [];
-  const useSameSalary = document.compensation.mode === 'shared';
-
-  if (document.schedule.kind === 'fixed') {
-    const roles = (document.schedule.roleRequirements ?? []).map((role) => {
-      const catalogEntry = document.roleCatalog.find(
-        (entry) => getRoleKey(entry) === getRoleKey(role)
-      );
-
-      return {
-        role: (catalogEntry?.role ?? role.role ?? 'dealer') as StaffRole | 'other',
-        customRole: role.customRole,
-        count: role.count,
-        filled: role.filled ?? 0,
-        salary: catalogEntry?.salary,
-      };
-    });
-
-    return {
-      ...document,
-      roles,
-      defaultSalary: document.compensation.defaultSalary,
-      allowances: document.compensation.allowances,
-      taxSettings: document.compensation.taxSettings,
-      useSameSalary,
-      preQuestions: questions,
-      usesPreQuestions: questions.length > 0,
-      detailedAddress: document.location.detailedAddress,
-      isUrgent: document.postingType === 'urgent',
-      timeSlot: document.schedule.startTime ? `${document.schedule.startTime}~` : '',
-      daysPerWeek: document.schedule.daysPerWeek,
-      isStartTimeNegotiable: document.schedule.isStartTimeNegotiable,
-      requiredRolesWithCount: (document.schedule.roleRequirements ?? []).map((role) => ({
-        role: role.role,
-        count: role.count,
-        filled: role.filled ?? 0,
-      })),
-      dateSpecificRequirements: undefined,
-    };
-  }
-
-  const dateSpecificRequirements: DateSpecificRequirement[] = document.schedule.requirements.map(
-    (requirement) => ({
-      date: requirement.date,
-      isGrouped: requirement.isGrouped,
-      timeSlots: requirement.timeSlots.map((slot) => ({
-        id: slot.id,
-        startTime: slot.startTime,
-        isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
-        tentativeDescription: slot.tentativeDescription,
-        roles: slot.roles.map((role) => ({
-          id: role.id,
-          role: role.role,
-          customRole: role.customRole,
-          headcount: role.count,
-          filled: role.filled ?? 0,
-        })),
-      })),
-    })
-  );
-
-  const roles = aggregateRolesFromDatedRequirements(
-    document.schedule.requirements,
-    document.roleCatalog
-  );
-  const firstRequirement = document.schedule.requirements[0];
-  const firstSlot = firstRequirement?.timeSlots[0];
+export function mergeJobPostingInput(
+  current: JobPosting,
+  patch: UpdateJobPostingInput
+): CreateJobPostingInput {
+  const baseInput = toCreateJobPostingInput(current);
 
   return {
-    ...document,
-    roles,
-    dateSpecificRequirements,
-    defaultSalary: document.compensation.defaultSalary,
-    allowances: document.compensation.allowances,
-    taxSettings: document.compensation.taxSettings,
-    useSameSalary,
-    preQuestions: questions,
-    usesPreQuestions: questions.length > 0,
-    detailedAddress: document.location.detailedAddress,
-    isUrgent: document.postingType === 'urgent',
-    timeSlot: firstSlot ? (firstSlot.isTimeToBeAnnounced ? '미정' : firstSlot.startTime || '') : '',
-    daysPerWeek: undefined,
-    isStartTimeNegotiable: undefined,
-    requiredRolesWithCount: undefined,
+    ...baseInput,
+    ...patch,
+    location: patch.location
+      ? {
+          ...baseInput.location,
+          ...patch.location,
+        }
+      : baseInput.location,
+    schedule: patch.schedule ?? baseInput.schedule,
+    roleCatalog: patch.roleCatalog ?? baseInput.roleCatalog,
+    compensation: patch.compensation ?? baseInput.compensation,
+    questions: patch.questions ?? baseInput.questions,
   };
 }
 
 export function deserializeJobPostingDocument(document: JobPostingDocumentV3): JobPosting {
-  return buildCompatEntity(document);
+  return document;
 }

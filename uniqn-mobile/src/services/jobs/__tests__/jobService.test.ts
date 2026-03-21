@@ -101,7 +101,7 @@ function createMockJobPosting(overrides: Record<string, unknown> = {}) {
     status: 'active',
     isUrgent: false,
     roles: [{ role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } }],
-    applicantCount: 0,
+    applicationCount: 0,
     maxApplicants: 10,
     createdAt: { seconds: 1700000000, nanoseconds: 0 },
     updatedAt: { seconds: 1700000000, nanoseconds: 0 },

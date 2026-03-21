@@ -8,6 +8,7 @@ import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { buildPostingFacts } from '@/domains/job-posting';
 import { useHasRole } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import {
@@ -20,7 +21,6 @@ import { JobPostingCard, NonEmployerView } from '@/components/employer';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { TabHeader } from '@/components/headers';
 import { PlusIcon, BriefcaseIcon } from '@/components/icons';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -89,21 +89,16 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
  * 공고의 가장 빠른 날짜+시간 문자열 반환 (정렬용)
  */
 function getEarliestDateTime(posting: JobPosting, today: string): string {
-  const reqs = posting.dateSpecificRequirements ?? [];
+  const reqs = buildPostingFacts(posting).schedule.dateRequirements;
   if (reqs.length > 0) {
     const futureDateTimes: string[] = [];
     const pastDateTimes: string[] = [];
 
     for (const req of reqs) {
-      const dateStr = getDateString(req.date);
+      const dateStr = req.date;
       const times = (req.timeSlots ?? [])
-        .filter((ts) => !(ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced)
-        .map(
-          (ts) =>
-            (ts as { startTime?: string; time?: string }).startTime ||
-            (ts as { startTime?: string; time?: string }).time ||
-            '99:99'
-        )
+        .filter((ts) => !ts.isTimeToBeAnnounced)
+        .map((ts) => ts.startTime || '99:99')
         .sort();
       const earliestTime = times[0] ?? '99:99';
       const dateTime = `${dateStr} ${earliestTime}`;

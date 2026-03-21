@@ -48,7 +48,7 @@ export const resubmitJobPosting = onCall(
 
         const posting = postingDoc.data();
 
-        if (posting?.createdBy !== userId) {
+        if (posting?.ownerId !== userId) {
           throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
             userMessage: '본인이 작성한 공고만 재제출할 수 있습니다',
             metadata: { postingId },

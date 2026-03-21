@@ -231,13 +231,14 @@ function DateRequirementsGroupedDisplay({
 // ============================================================================
 
 export function JobDetail({ job }: JobDetailProps) {
+  const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
   const detail = useMemo(
     () =>
-      projectPostingSurface(buildPostingFacts(job), {
+      projectPostingSurface(postingFacts, {
         audience: 'public',
         surface: 'detail',
       }) as PostingDetailViewModel,
-    [job]
+    [postingFacts]
   );
 
   // 구인자 프로필 (버블 점수 표시용)
@@ -290,7 +291,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay
-          roles={job.roles}
+          roles={postingFacts.posting.roles}
           useSameSalary={detail.useSameSalary}
           defaultSalary={detail.defaultSalary}
         />

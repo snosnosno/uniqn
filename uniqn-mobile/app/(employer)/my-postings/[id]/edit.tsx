@@ -1,11 +1,4 @@
-/**
- * UNIQN Mobile - 공고 수정 화면 (스크롤 폼)
- *
- * @description 구인자가 기존 공고를 수정하는 한 페이지 스크롤 폼
- * @version 2.0.0 - 스크롤 폼으로 변경 (웹앱과 동일한 UX)
- */
-
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,49 +24,13 @@ import {
   getFirstErrorSection,
 } from '@/utils/job-posting/validation';
 import {
+  buildJobPostingDraft,
   buildUpdateJobPostingInput,
-  shouldAllowLegacyScheduleFallback,
+  draftToFormData,
+  patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
-import type { UpdateJobPostingInput, JobPostingFormData, FormRoleWithCount } from '@/types';
-import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types';
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * RoleRequirement[] → FormRoleWithCount[] 변환 (급여 포함)
- */
-function convertRolesToFormRolesWithSalary(
-  roles: {
-    role?: string;
-    name?: string;
-    count: number;
-    filled?: number;
-    salary?: { type: string; amount: number };
-  }[]
-): FormRoleWithCount[] {
-  const ROLE_LABELS: Record<string, string> = {
-    dealer: '딜러',
-    floor: '플로어',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-  };
-
-  return roles.map((r) => ({
-    name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
-    count: r.count,
-    isCustom: !!(r.name && !['딜러', '플로어'].includes(r.name)),
-    salary: r.salary
-      ? { type: r.salary.type as 'hourly' | 'daily' | 'monthly' | 'other', amount: r.salary.amount }
-      : undefined,
-  }));
-}
-
-// ============================================================================
-// Main Component
-// ============================================================================
+import type { UpdateJobPostingInput, JobPostingFormData } from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 export default function EditJobPostingScreen() {
   const router = useRouter();
@@ -81,17 +38,12 @@ export default function EditJobPostingScreen() {
   const { user } = useAuth();
   const { addToast } = useToastStore();
 
-  // 기존 공고 데이터 불러오기
   const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
 
-  // Form State
   const scrollViewRef = useRef<ScrollView>(null);
-  const [formData, setFormData] = useState<JobPostingFormData | null>(null);
+  const [draft, setDraft] = useState<JobPostingDraft | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [hasConfirmedApplicants, setHasConfirmedApplicants] = useState(false);
-
-  // 미저장 변경사항 가드
-  useUnsavedChangesGuard(isDirty);
   const [errors, setErrors] = useState<SectionErrors>({
     basicInfo: {},
     schedule: {},
@@ -100,97 +52,65 @@ export default function EditJobPostingScreen() {
     preQuestions: {},
   });
 
-  // 섹션 위치 저장 (스크롤용)
+  useUnsavedChangesGuard(isDirty);
+
   const sectionPositions = useRef<Record<string, number>>({});
-
-  // Mutations
   const updateJobPosting = useUpdateJobPosting();
+  const formData = useMemo(() => (draft ? draftToFormData(draft) : null), [draft]);
+  const allowScheduleFallback = useMemo(() => {
+    if (!formData || formData.postingType === 'fixed') {
+      return false;
+    }
 
-  // 기존 데이터로 폼 초기화
+    return (formData.dateSpecificRequirements?.length ?? 0) === 0 && !!formData.workDate;
+  }, [formData]);
+
   useEffect(() => {
-    if (existingJob && !formData) {
-      // 기존 타임슬롯에서 출근 시간 추출 ("18:00 - 02:00" → "18:00")
-      const extractStartTime = (timeSlot: string | undefined): string => {
-        if (!timeSlot) return '';
-        const match = timeSlot.match(/^(\d{2}:\d{2})/);
-        return match ? match[1] : '';
-      };
+    if (existingJob && !draft) {
+      setDraft(buildJobPostingDraft(existingJob));
 
-      setFormData({
-        ...INITIAL_JOB_POSTING_FORM_DATA,
-        // 기본 정보
-        postingType: existingJob.postingType || (existingJob.isUrgent ? 'urgent' : 'regular'),
-        title: existingJob.title || '',
-        location: existingJob.location || null,
-        detailedAddress: existingJob.detailedAddress || '',
-        contactPhone: existingJob.contactPhone || '',
-        description: existingJob.description || '',
-        // 일정
-        workDate: existingJob.workDate || '',
-        startTime: extractStartTime(existingJob.timeSlot),
-        dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
-        daysPerWeek: existingJob.daysPerWeek ?? 5,
-        isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,
-        // 역할 (급여 정보 포함)
-        roles: existingJob.roles
-          ? convertRolesToFormRolesWithSalary(
-              existingJob.roles as {
-                role?: string;
-                name?: string;
-                count: number;
-                filled?: number;
-                salary?: { type: string; amount: number };
-              }[]
-            )
-          : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
-        // 급여
-        defaultSalary: existingJob.defaultSalary,
-        allowances: existingJob.allowances || {},
-        taxSettings: existingJob.taxSettings, // undefined면 SalarySection에서 DEFAULT_TAX_SETTINGS 사용
-        useSameSalary: existingJob.useSameSalary ?? false,
-        // 사전질문
-        usesPreQuestions: existingJob.usesPreQuestions || false,
-        preQuestions: existingJob.preQuestions || [],
-        // 기타
-        tags: existingJob.tags || [],
-      });
-
-      // 확정된 지원자가 있는지 확인
       const confirmedCount = existingJob.filledPositions ?? 0;
       setHasConfirmedApplicants(confirmedCount > 0);
 
       if (confirmedCount > 0) {
         addToast({
           type: 'warning',
-          message: '확정된 지원자가 있어 일정/역할 수정이 제한됩니다',
+          message: '확정된 지원자가 있어 일정과 역할 정보 수정이 제한됩니다.',
         });
       }
     }
-  }, [existingJob, formData, addToast]);
+  }, [existingJob, draft, addToast]);
 
-  // 폼 데이터 업데이트
+  useEffect(() => {
+    if (!allowScheduleFallback) {
+      return;
+    }
+
+    addToast({
+      type: 'warning',
+      message: '기존 일정 정보가 비어 있어 날짜를 다시 확인한 뒤 저장해 주세요.',
+    });
+  }, [allowScheduleFallback, addToast]);
+
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
-    setFormData((prev) => (prev ? { ...prev, ...data } : null));
+    setDraft((prev) => (prev ? patchJobPostingDraft(prev, data) : null));
   }, []);
 
-  // 전체 유효성 검증
   const validateAll = useCallback((): boolean => {
     if (!formData) return false;
 
     const skipSections: (keyof SectionErrors)[] = hasConfirmedApplicants
       ? ['schedule', 'roles']
       : [];
-    const allowLegacyScheduleFallback = shouldAllowLegacyScheduleFallback(existingJob);
 
     const newErrors = validateAllSections(formData, {
-      allowLegacyFallback: allowLegacyScheduleFallback,
+      allowLegacyFallback: allowScheduleFallback,
       skipSections,
     });
 
     setErrors(newErrors);
 
-    // 에러가 있는 첫 번째 섹션으로 스크롤
     const firstError = getFirstErrorSection(newErrors);
     if (firstError) {
       const position = sectionPositions.current[firstError];
@@ -201,50 +121,56 @@ export default function EditJobPostingScreen() {
     }
 
     return true;
-  }, [existingJob, formData, hasConfirmedApplicants]);
+  }, [allowScheduleFallback, existingJob, formData, hasConfirmedApplicants]);
 
-  // 공고 수정 제출
   const handleSubmit = useCallback(async () => {
-    if (!user?.uid || !formData?.location || !id) {
-      addToast({ type: 'error', message: '필수 정보가 누락되었습니다' });
+    if (!user?.uid || !formData?.location || !draft || !id) {
+      addToast({ type: 'error', message: '필수 정보가 누락되었습니다.' });
       return;
     }
 
     if (!validateAll()) {
-      addToast({ type: 'error', message: '입력 정보를 확인해주세요' });
+      addToast({ type: 'error', message: '입력 정보를 확인해주세요.' });
       return;
     }
 
     try {
-      const input: UpdateJobPostingInput = buildUpdateJobPostingInput(formData, {
+      const input: UpdateJobPostingInput = buildUpdateJobPostingInput(draft, {
         hasConfirmedApplicants,
       });
 
       await updateJobPosting.mutateAsync({ jobPostingId: id, input });
       setIsDirty(false);
 
-      addToast({ type: 'success', message: '공고가 수정되었습니다' });
+      addToast({ type: 'success', message: '공고가 수정되었습니다.' });
       router.back();
     } catch (error) {
       logger.error('공고 수정 실패', error as Error, { jobPostingId: id });
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다',
+        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다.',
       });
     }
-  }, [user, formData, hasConfirmedApplicants, id, validateAll, updateJobPosting, addToast, router]);
+  }, [
+    user,
+    formData,
+    draft,
+    hasConfirmedApplicants,
+    id,
+    validateAll,
+    updateJobPosting,
+    addToast,
+    router,
+  ]);
 
-  // 섹션 위치 기록
   const handleSectionLayout = useCallback((section: string, y: number) => {
     sectionPositions.current[section] = y;
   }, []);
 
-  // 에러 개수 계산
   const getErrorCount = useCallback((sectionErrors: Record<string, string>): number => {
     return Object.keys(sectionErrors).length;
   }, []);
 
-  // 로딩 상태
   if (isJobLoading || !formData) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -256,19 +182,18 @@ export default function EditJobPostingScreen() {
     );
   }
 
-  // 에러 상태
   if (jobError || !existingJob) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
             공고를 불러올 수 없습니다
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-center mb-4">
+          <Text className="mb-4 text-center text-gray-500 dark:text-gray-400">
             {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
-            <Text className="text-white font-semibold">돌아가기</Text>
+            <Text className="font-semibold text-white">돌아가기</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -288,16 +213,14 @@ export default function EditJobPostingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* 확정된 지원자 경고 */}
           {hasConfirmedApplicants && (
-            <View className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+            <View className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
               <Text className="text-sm text-amber-700 dark:text-amber-300">
                 확정된 지원자가 있어 일정과 역할 정보는 수정할 수 없습니다.
               </Text>
             </View>
           )}
 
-          {/* 기본 정보 섹션 */}
           <View onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}>
             <SectionCard
               title="기본 정보"
@@ -314,7 +237,6 @@ export default function EditJobPostingScreen() {
             </SectionCard>
           </View>
 
-          {/* 일정 섹션 */}
           <View onLayout={(e) => handleSectionLayout('schedule', e.nativeEvent.layout.y)}>
             <SectionCard
               title="일정"
@@ -323,9 +245,9 @@ export default function EditJobPostingScreen() {
               errorCount={getErrorCount(errors.schedule)}
             >
               {hasConfirmedApplicants ? (
-                <View className="p-4 bg-gray-100 dark:bg-surface rounded-lg">
-                  <Text className="text-gray-500 dark:text-gray-400 text-center">
-                    확정된 지원자가 있어 일정을 수정할 수 없습니다.
+                <View className="rounded-lg bg-gray-100 p-4 dark:bg-surface">
+                  <Text className="text-center text-gray-500 dark:text-gray-400">
+                    확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
                 </View>
               ) : formData.postingType === 'fixed' ? (
@@ -344,7 +266,6 @@ export default function EditJobPostingScreen() {
             </SectionCard>
           </View>
 
-          {/* 역할/인원 섹션 - fixed 타입만 표시 (다른 타입은 DateRequirements 내 역할 관리) */}
           {formData.postingType === 'fixed' && (
             <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
               <SectionCard
@@ -354,9 +275,9 @@ export default function EditJobPostingScreen() {
                 errorCount={getErrorCount(errors.roles)}
               >
                 {hasConfirmedApplicants ? (
-                  <View className="p-4 bg-gray-100 dark:bg-surface rounded-lg">
-                    <Text className="text-gray-500 dark:text-gray-400 text-center">
-                      확정된 지원자가 있어 역할을 수정할 수 없습니다.
+                  <View className="rounded-lg bg-gray-100 p-4 dark:bg-surface">
+                    <Text className="text-center text-gray-500 dark:text-gray-400">
+                      확정된 지원자가 있어 역할은 수정할 수 없습니다.
                     </Text>
                   </View>
                 ) : (
@@ -366,7 +287,6 @@ export default function EditJobPostingScreen() {
             </View>
           )}
 
-          {/* 급여 섹션 */}
           <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
             <SectionCard
               title="급여"
@@ -378,7 +298,6 @@ export default function EditJobPostingScreen() {
             </SectionCard>
           </View>
 
-          {/* 사전질문 섹션 */}
           <View onLayout={(e) => handleSectionLayout('preQuestions', e.nativeEvent.layout.y)}>
             <SectionCard
               title="사전질문"
@@ -395,8 +314,7 @@ export default function EditJobPostingScreen() {
           </View>
         </ScrollView>
 
-        {/* 하단 버튼 영역 (고정) */}
-        <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-surface-overlay">
+        <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface-dark">
           <Button
             variant="primary"
             size="lg"
@@ -404,7 +322,7 @@ export default function EditJobPostingScreen() {
             disabled={updateJobPosting.isPending}
             fullWidth
           >
-            <Text className="text-white font-semibold">
+            <Text className="font-semibold text-white">
               {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
             </Text>
           </Button>

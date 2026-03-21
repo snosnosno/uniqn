@@ -59,6 +59,10 @@ export const makeSelectionKey = (date: string, slotTime: string, role: string): 
   return makeSelectionKeyCore(date, slotTime, role);
 };
 
+function getRoleStructureKey(role: TimeSlotInfo['roles'][number]): string {
+  return role.roleId === 'other' && role.customName ? `other:${role.customName}` : role.roleId;
+}
+
 /**
  * 시간대 구조 비교 (동일 여부)
  *
@@ -95,11 +99,11 @@ export const areTimeSlotsStructureEqual = (
     // 역할 수 비교
     if (s1.roles.length !== s2.roles.length) return false;
 
-    // 역할 ID 비교 (정렬 후)
-    const roleIds1 = s1.roles.map((r) => r.roleId).sort();
-    const roleIds2 = s2.roles.map((r) => r.roleId).sort();
-    for (let j = 0; j < roleIds1.length; j++) {
-      if (roleIds1[j] !== roleIds2[j]) return false;
+    // 커스텀 역할은 customName까지 포함해서 비교
+    const roleKeys1 = s1.roles.map(getRoleStructureKey).sort();
+    const roleKeys2 = s2.roles.map(getRoleStructureKey).sort();
+    for (let j = 0; j < roleKeys1.length; j++) {
+      if (roleKeys1[j] !== roleKeys2[j]) return false;
     }
   }
 

@@ -806,6 +806,7 @@ describe('FirebaseJobPostingRepository', () => {
             totalPositions: 5,
           })
         ),
+        set: jest.fn(),
         update: jest.fn(),
       };
 
@@ -824,7 +825,46 @@ describe('FirebaseJobPostingRepository', () => {
       );
 
       expect(result).toBeDefined();
-      expect(mockTransaction.update).toHaveBeenCalledTimes(1);
+      expect(mockTransaction.set).toHaveBeenCalledTimes(1);
+      expect(mockTransaction.update).not.toHaveBeenCalled();
+    });
+
+    it('should replace the document so cleared top-level optional fields are removed', async () => {
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', createValidJobPostingData())),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
+        return callback(mockTransaction);
+      });
+
+      await repository.updateWithTransaction(
+        'job-1',
+        {
+          description: undefined,
+          contactPhone: undefined,
+          location: {
+            name: '서울',
+            district: '강남구',
+            detailedAddress: undefined,
+          },
+        } as Record<string, unknown>,
+        'employer-1'
+      );
+
+      expect(mockTransaction.set).toHaveBeenCalledTimes(1);
+      const [, nextDocument] = mockTransaction.set.mock.calls[0];
+      expect(Object.prototype.hasOwnProperty.call(nextDocument, 'description')).toBe(false);
+      expect(Object.prototype.hasOwnProperty.call(nextDocument, 'contactPhone')).toBe(false);
+      expect(nextDocument.location).toMatchObject({
+        name: '서울',
+        district: '강남구',
+      });
+      expect(Object.prototype.hasOwnProperty.call(nextDocument.location, 'detailedAddress')).toBe(
+        false
+      );
     });
 
     it('should throw when not the owner', async () => {

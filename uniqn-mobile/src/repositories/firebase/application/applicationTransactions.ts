@@ -29,6 +29,7 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator } from '@/domains/application';
+import { normalizeAssignmentRole } from '@/types/assignment';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import type { ApplyContext } from '../../interfaces';
 import type {
@@ -39,7 +40,6 @@ import type {
   RejectApplicationInput,
   RequestCancellationInput,
   ReviewCancellationInput,
-  StaffRole,
   JobPosting,
 } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
@@ -165,7 +165,8 @@ export async function applyWithTransaction(
         });
       }
 
-      if (jobData.usesPreQuestions && jobData.preQuestions?.length) {
+      const questions = jobData.questions.items ?? [];
+      if (questions.length > 0) {
         if (!input.preQuestionAnswers?.length) {
           throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
             userMessage: '사전질문에 답변해주세요',
@@ -221,7 +222,9 @@ export async function applyWithTransaction(
 
       const recruitmentType: RecruitmentType = jobData.postingType === 'fixed' ? 'fixed' : 'event';
       const firstAssignment = input.assignments[0];
-      const primaryRole = (firstAssignment?.roleIds[0] ?? 'dealer') as StaffRole;
+      const normalizedPrimaryRole = normalizeAssignmentRole(
+        firstAssignment?.roleIds[0] ?? 'dealer'
+      );
 
       const now = serverTimestamp();
       const applicationData: Omit<Application, 'id'> = {
@@ -231,7 +234,8 @@ export async function applyWithTransaction(
         ...(context.applicantEmail && { applicantEmail: context.applicantEmail }),
         ...(context.applicantNickname && { applicantNickname: context.applicantNickname }),
         ...(context.applicantPhotoURL && { applicantPhotoURL: context.applicantPhotoURL }),
-        applicantRole: primaryRole,
+        applicantRole: normalizedPrimaryRole.role,
+        ...(normalizedPrimaryRole.customRole && { customRole: normalizedPrimaryRole.customRole }),
         jobPostingId: input.jobPostingId,
         jobPostingTitle: jobData.title || '',
         ...(jobData.workDate && { jobPostingDate: jobData.workDate }),

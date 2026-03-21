@@ -15,9 +15,7 @@ import type {
   UrgentConfig,
   RoleWithCount,
 } from './postingConfig';
-import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
-import type { FormRoleWithCount } from './jobPostingForm';
 import type {
   TaxSettings as SettlementTaxSettings,
   TaxType,
@@ -160,34 +158,14 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   urgentConfig?: UrgentConfig;
 }
 
-/**
- * Canonical runtime entity.
- * Legacy compatibility fields remain temporarily so the wider app can be
- * migrated without breaking every consumer at once.
- */
-export interface JobPostingEntity extends JobPostingDocumentV3 {
-  dateSpecificRequirements?: DateSpecificRequirement[];
-  defaultSalary?: SalaryInfo;
-  allowances?: Allowances;
-  taxSettings?: TaxSettings;
-  useSameSalary?: boolean;
-  preQuestions?: PreQuestion[];
-  usesPreQuestions?: boolean;
-  detailedAddress?: string;
-  isUrgent?: boolean;
-  timeSlot: string;
-  daysPerWeek?: number;
-  isStartTimeNegotiable?: boolean;
-  requiredRolesWithCount?: RoleWithCount[];
-  roleCatalog: PostingRoleCatalogEntry[];
-  /**
-   * Backward-compatible role list consumed by existing screens/services.
-   * Counts for dated postings are derived from schedule requirements.
-   */
-  roles: RoleRequirement[];
-}
+/** Canonical runtime entity. */
+export type JobPostingEntity = JobPostingDocumentV3;
 
 export type JobPosting = JobPostingEntity;
+
+export interface PostingFactsPosting extends JobPosting {
+  roles: RoleRequirement[];
+}
 
 export interface JobPostingFilters {
   status?: JobPostingStatus;
@@ -205,31 +183,22 @@ export interface JobPostingFilters {
   workDate?: string;
 }
 
-export interface CreateJobPostingInput {
+export interface JobPostingInput {
   postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
   title: string;
   description?: string;
-  location: Location;
-  detailedAddress?: string;
+  location: PostingLocation;
   contactPhone?: string;
-  workDate?: string;
-  timeSlot?: string;
-  startTime?: string;
-  dateSpecificRequirements?: DateSpecificRequirement[];
-  daysPerWeek?: number;
-  isStartTimeNegotiable?: boolean;
-  roles: RoleRequirement[] | FormRoleWithCount[];
-  defaultSalary?: SalaryInfo;
-  allowances?: Allowances;
-  taxSettings?: TaxSettings;
-  useSameSalary?: boolean;
-  usesPreQuestions?: boolean;
-  preQuestions?: PreQuestion[];
   tags?: string[];
-  isUrgent?: boolean;
+  schedule: PostingSchedule;
+  roleCatalog: PostingRoleCatalogEntry[];
+  compensation: PostingCompensation;
+  questions: PostingQuestions;
 }
 
-export type UpdateJobPostingInput = Partial<CreateJobPostingInput> & {
+export type CreateJobPostingInput = JobPostingInput;
+
+export type UpdateJobPostingInput = Partial<JobPostingInput> & {
   status?: JobPostingStatus;
 };
 
@@ -266,7 +235,7 @@ export interface PostingSalaryRow {
 }
 
 export interface PostingFacts {
-  posting: JobPosting;
+  posting: PostingFactsPosting;
   title: string;
   description?: string;
   status: JobPostingStatus;
@@ -393,6 +362,12 @@ export interface PostingRuntimeSnapshot {
   taxSettings?: TaxSettings;
   useSameSalary?: boolean;
   dateRequirements: CardDateRequirement[];
+  questions: PreQuestion[];
+  usesPreQuestions: boolean;
+  requiredRolesWithCount?: RoleWithCount[];
+  daysPerWeek?: number;
+  startTime?: string;
+  isStartTimeNegotiable?: boolean;
   workDate: string;
   timeSlot: string;
 }

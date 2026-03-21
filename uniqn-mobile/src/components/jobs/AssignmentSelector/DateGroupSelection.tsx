@@ -12,6 +12,7 @@ import { formatTimeSlotDisplay } from '@/types/unified';
 import { makeSelectionKey } from '@/utils/assignment';
 import { RoleCheckbox } from './RoleCheckbox';
 import type { DateGroupSelectionProps } from './types';
+import { getEffectiveRoleId, getRoleCheckboxKey } from './utils';
 
 /**
  * 날짜 그룹 선택 항목 (대회 공고용)
@@ -74,13 +75,12 @@ export const DateGroupSelection = memo(function DateGroupSelection({
               {/* 역할 체크박스들 */}
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
-                  const effectiveRoleId =
-                    role.roleId === 'other' && role.customName ? role.customName : role.roleId;
+                  const effectiveRoleId = getEffectiveRoleId(role);
                   const isSelected = isGroupRoleSelected(slotTime, effectiveRoleId);
 
                   return (
                     <RoleCheckbox
-                      key={role.roleId || roleIndex}
+                      key={getRoleCheckboxKey(role, roleIndex)}
                       role={role}
                       isSelected={isSelected}
                       onToggle={() =>

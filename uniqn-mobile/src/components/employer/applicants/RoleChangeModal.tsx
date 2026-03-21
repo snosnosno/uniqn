@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
+import { buildPostingFacts } from '@/domains/job-posting';
 import { Modal } from '../../ui/Modal';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { Card } from '../../ui/Card';
@@ -135,8 +136,11 @@ export function RoleChangeModal({
       return availableRoles;
     }
     // v2.0: 공고의 역할 배열에서 추출
-    if (jobPosting?.roles && jobPosting.roles.length > 0) {
-      return jobPosting.roles.map((r) => r.role).filter(Boolean) as string[];
+    if (jobPosting) {
+      const postingFacts = buildPostingFacts(jobPosting);
+      if (postingFacts.posting.roles.length > 0) {
+        return postingFacts.posting.roles.map((role) => role.role).filter(Boolean) as string[];
+      }
     }
     // 기본 역할
     return DEFAULT_ROLES;

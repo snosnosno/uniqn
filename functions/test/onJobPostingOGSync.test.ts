@@ -49,8 +49,6 @@ describe('onJobPostingOGSync helpers', () => {
     expect(description).to.contain('150,000');
     expect(description).to.contain('18:00');
     expect(description).to.contain('외 1일');
-    expect(description).to.contain('딜러 4명');
-    expect(description).to.contain('플로어 1명');
   });
 
   it('builds OG description from fixed schedule fields', () => {
@@ -73,24 +71,22 @@ describe('onJobPostingOGSync helpers', () => {
     expect(description).to.contain('3,000,000');
     expect(description).to.contain('주 3일');
     expect(description).to.contain('시간 협의');
-    expect(description).to.contain('매니저 1명');
   });
 
-  it('falls back to legacy schedule fields when v3 fields are missing', () => {
+  it('falls back to canonical workDate when schedule details are missing', () => {
     const description = buildOGDescription({
       postingType: 'regular',
-      defaultSalary: {
-        type: 'hourly',
-        amount: 12000,
+      compensation: {
+        defaultSalary: {
+          type: 'hourly',
+          amount: 12000,
+        },
       },
       workDate: '2026-04-10',
-      timeSlot: '09:00 - 18:00',
-      roles: [{ role: 'serving', count: 2 }],
     } as never);
 
     expect(description).to.contain('12,000');
-    expect(description).to.contain('09:00~18:00');
-    expect(description).to.contain('서빙 2명');
+    expect(description).to.contain('4/10');
   });
 
   it('treats v3 schedule changes as OG-relevant', () => {

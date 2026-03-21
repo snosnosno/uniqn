@@ -28,25 +28,11 @@ import { logger } from '@/utils/logger';
 import { ValidationError, BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
-import type { Staff, StaffRole } from '@/types';
-import { FIXED_DATE_MARKER } from '@/types/assignment';
-import { VALID_STAFF_ROLES } from '@/types/role';
+import type { Staff } from '@/types';
+import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import type { ConversionResult, ConversionOptions } from '../../interfaces';
-
-// Canonical role keys only. The transaction layer should depend on role ids,
-// not UI-oriented metadata like labels and icons.
-const STANDARD_ROLE_KEYS: string[] = VALID_STAFF_ROLES.filter((role) => role !== 'other');
-
-/**
- * 역할이 표준 역할인지 확인하고, 커스텀 역할이면 { role: 'other', customRole } 반환
- */
-function normalizeRole(roleValue: string): { role: string; customRole?: string } {
-  if (STANDARD_ROLE_KEYS.includes(roleValue)) {
-    return { role: roleValue };
-  }
-  return { role: 'other', customRole: roleValue };
-}
+import { resolvePrimaryApplicationRole } from './applicationRoleUtils';
 
 // ============================================================================
 // Conversion Transaction
@@ -171,12 +157,14 @@ export async function convertApplicantToStaffTransaction(
       // 4. 스태프 문서 생성/업데이트
       const now = serverTimestamp();
       if (isNewStaff) {
+        const primaryRole = resolvePrimaryApplicationRole(applicationData);
         const staffData: Omit<Staff, 'id'> = {
           userId: applicationData.applicantId,
           name: applicationData.applicantName,
           phone: applicationData.applicantPhone ?? '',
           email: applicationData.applicantEmail ?? '',
-          role: (applicationData.assignments[0]?.roleIds?.[0] || 'other') as StaffRole,
+          role: primaryRole.role,
+          ...(primaryRole.customRole && { customRole: primaryRole.customRole }),
           isActive: true,
           totalWorkCount: 0,
           rating: 0,
@@ -199,14 +187,18 @@ export async function convertApplicantToStaffTransaction(
         const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
         // 고정공고 또는 레거시: assignments가 없거나 dates가 FIXED_DATE_MARKER인 경우
-        const isFixedOrLegacy =
-          assignments.length === 0 ||
-          (assignments.length === 1 && assignments[0].dates[0] === FIXED_DATE_MARKER);
+        const isFixedAssignmentFlow =
+          assignments.length === 1 && assignments[0].dates[0] === FIXED_DATE_MARKER;
 
-        if (isFixedOrLegacy) {
+        if (assignments.length === 0) {
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+            userMessage: '배정 정보가 없는 지원서는 스태프로 전환할 수 없습니다',
+          });
+        }
+
+        if (isFixedAssignmentFlow) {
           // 단일 WorkLog 생성 (고정공고/레거시)
-          const rawRole = assignments[0]?.roleIds?.[0] || 'other';
-          const { role, customRole } = normalizeRole(rawRole);
+          const primaryRole = resolvePrimaryApplicationRole(applicationData);
           const workLogRef = doc(workLogsRef);
           const workLogData = {
             staffId: applicationData.applicantId,
@@ -216,8 +208,8 @@ export async function convertApplicantToStaffTransaction(
             jobPostingId,
             jobPostingName: jobData.title,
             ownerId: jobData.ownerId,
-            role,
-            customRole: customRole ?? null,
+            role: primaryRole.role,
+            customRole: primaryRole.customRole ?? null,
             date: null,
             timeSlot: null,
             isFixedPosting: true,
@@ -237,8 +229,7 @@ export async function convertApplicantToStaffTransaction(
         } else {
           // Assignment별 WorkLog 생성 (일반 공고)
           for (const assignment of assignments) {
-            const rawRole = assignment.roleIds[0] || 'other';
-            const { role, customRole } = normalizeRole(rawRole);
+            const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
 
             for (const date of assignment.dates) {
               const workLogRef = doc(workLogsRef);
@@ -250,8 +241,8 @@ export async function convertApplicantToStaffTransaction(
                 jobPostingId,
                 jobPostingName: jobData.title,
                 ownerId: jobData.ownerId,
-                role,
-                customRole: customRole ?? null,
+                role: normalizedRole.role,
+                customRole: normalizedRole.customRole ?? null,
                 date,
                 timeSlot: assignment.timeSlot,
                 isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,

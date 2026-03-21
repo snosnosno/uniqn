@@ -189,7 +189,7 @@ export interface Application extends FirebaseDocument {
   cancellationRequest?: CancellationRequest;
 
   // === 공고 정보 (조회 시 조인) ===
-  jobPosting?: Partial<JobPosting>;
+  jobPosting?: JobPosting;
 }
 
 /**

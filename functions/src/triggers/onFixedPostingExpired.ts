@@ -51,15 +51,15 @@ export const onFixedPostingExpired = onDocumentUpdated(
       return;
     }
 
-    const createdBy = after.createdBy || after.ownerId;
-    if (!createdBy) {
+    const ownerId = after.ownerId;
+    if (!ownerId) {
       logger.warn('작성자 정보 없음', { postingId });
       return;
     }
 
     logger.info(`고정 공고 ${postingId} 만료 감지`, {
       title: after.title,
-      createdBy,
+      ownerId,
       expiresAt: after.fixedConfig?.expiresAt?.toDate(),
       durationDays: after.fixedConfig?.durationDays,
     });
@@ -68,7 +68,7 @@ export const onFixedPostingExpired = onDocumentUpdated(
       const title = after.title || '제목 없음';
 
       await createAndSendNotification(
-        createdBy,
+        ownerId,
         'job_closed',
         '고정 공고가 만료되었습니다',
         `"${title}" 공고의 노출 기간이 종료되어 자동으로 마감 처리되었습니다.`,
@@ -85,7 +85,7 @@ export const onFixedPostingExpired = onDocumentUpdated(
 
       logger.info('만료 알림 전송 완료', {
         postingId,
-        recipientId: createdBy,
+        recipientId: ownerId,
       });
     } catch (error) {
       logger.error('만료 알림 전송 실패', {

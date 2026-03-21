@@ -25,6 +25,8 @@ export interface RoleWithSalary {
   role?: string;
   name?: string;
   customRole?: string;
+  count?: number;
+  filled?: number;
   salary?: SalaryInfo;
 }
 

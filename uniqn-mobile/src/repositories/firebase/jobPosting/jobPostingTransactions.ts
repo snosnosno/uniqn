@@ -24,8 +24,9 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
-import { serializeJobPostingV3, toCreateJobPostingInput } from '@/domains/job-posting';
+import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
+import type { StaffRole } from '@/types/role';
 import type {
   CreateJobPostingContext,
   CreateJobPostingResult,
@@ -35,6 +36,7 @@ import type {
   JobPosting,
   JobPostingStatus,
   CreateJobPostingInput,
+  PostingRoleCatalogEntry,
   UpdateJobPostingInput,
 } from '@/types';
 
@@ -119,6 +121,53 @@ function assertJobPostingStatus(
       userMessage,
     });
   }
+}
+
+type SettlementRolePayload = {
+  role?: StaffRole | 'other';
+  name?: string;
+  customRole?: string;
+  salary?: PostingRoleCatalogEntry['salary'];
+  count?: number;
+  headcount?: number;
+  filled?: number;
+};
+
+function getSettlementRoleKey(role: { role?: string; name?: string; customRole?: string }): string {
+  const roleId = role.role ?? role.name ?? '';
+  return roleId === 'other' && role.customRole ? `other:${role.customRole}` : roleId;
+}
+
+function mergeSettlementRoles(
+  baseRoles: PostingRoleCatalogEntry[],
+  incomingRoles: Record<string, unknown>[]
+): PostingRoleCatalogEntry[] {
+  const typedBaseRoles = [...baseRoles];
+  const typedIncomingRoles = incomingRoles as SettlementRolePayload[];
+
+  if (typedBaseRoles.length === 0) {
+    return typedIncomingRoles.map((role) => ({
+      role: (role.role ?? role.name ?? 'dealer') as StaffRole | 'other',
+      ...(role.customRole ? { customRole: role.customRole } : {}),
+      ...(role.salary ? { salary: role.salary } : {}),
+    }));
+  }
+
+  const incomingByKey = new Map(
+    typedIncomingRoles.map((role) => [getSettlementRoleKey(role), role] as const)
+  );
+
+  return typedBaseRoles.map((role) => {
+    const incomingRole = incomingByKey.get(getSettlementRoleKey(role));
+    if (!incomingRole || !Object.prototype.hasOwnProperty.call(incomingRole, 'salary')) {
+      return role;
+    }
+
+    return {
+      ...role,
+      ...(incomingRole.salary ? { salary: incomingRole.salary } : { salary: undefined }),
+    };
+  });
 }
 
 export async function createWithTransaction(
@@ -215,14 +264,7 @@ export async function updateWithTransaction(
       assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
 
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
-      const hasScheduleMutation =
-        input.workDate !== undefined ||
-        input.timeSlot !== undefined ||
-        input.startTime !== undefined ||
-        input.dateSpecificRequirements !== undefined ||
-        input.daysPerWeek !== undefined ||
-        input.isStartTimeNegotiable !== undefined ||
-        input.roles !== undefined;
+      const hasScheduleMutation = input.schedule !== undefined || input.roleCatalog !== undefined;
 
       if (hasConfirmedApplicants && hasScheduleMutation) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -230,18 +272,7 @@ export async function updateWithTransaction(
         });
       }
 
-      const baseInput = toCreateJobPostingInput(currentData);
-      const mergedInput: CreateJobPostingInput = {
-        ...baseInput,
-        ...input,
-        location: input.location
-          ? {
-              ...baseInput.location,
-              ...input.location,
-            }
-          : baseInput.location,
-        roles: input.roles ?? baseInput.roles,
-      };
+      const mergedInput = mergeJobPostingInput(currentData, input);
       const updatedAt = Timestamp.now();
       const serialized = serializeJobPostingV3(mergedInput, {
         ownerId: currentData.ownerId,
@@ -255,7 +286,7 @@ export async function updateWithTransaction(
         serialized as unknown as Record<string, unknown>
       );
 
-      transaction.update(jobRef, nextDocument);
+      transaction.set(jobRef, nextDocument);
 
       const parsed = parseJobPostingDocument({
         id: jobPostingId,
@@ -438,13 +469,14 @@ export async function updateSettlementSettings(
 
       assertJobPostingOwner(currentData, ownerId, '본인 공고만 수정할 수 있습니다');
 
-      const baseInput = toCreateJobPostingInput(currentData);
-      const mergedInput: CreateJobPostingInput = {
-        ...baseInput,
-        roles: data.roles as unknown as CreateJobPostingInput['roles'],
-        allowances: data.allowances as CreateJobPostingInput['allowances'],
-        taxSettings: data.taxSettings as CreateJobPostingInput['taxSettings'],
-      };
+      const mergedInput: CreateJobPostingInput = mergeJobPostingInput(currentData, {
+        roleCatalog: mergeSettlementRoles(currentData.roleCatalog, data.roles),
+        compensation: {
+          ...currentData.compensation,
+          allowances: data.allowances as CreateJobPostingInput['compensation']['allowances'],
+          taxSettings: data.taxSettings as CreateJobPostingInput['compensation']['taxSettings'],
+        },
+      });
       const updatedAt = Timestamp.now();
       const serialized = serializeJobPostingV3(mergedInput, {
         ownerId: currentData.ownerId,

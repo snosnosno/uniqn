@@ -97,12 +97,16 @@ export class ApplicationValidator {
     };
 
     // dateSpecificRequirements가 있으면 역할별 마감 확인
-    if (jobData.dateSpecificRequirements?.length) {
-      for (const req of jobData.dateSpecificRequirements) {
+    if (jobData.schedule.kind === 'dated') {
+      if (jobData.schedule.requirements.length === 0) {
+        return { available: true };
+      }
+
+      for (const req of jobData.schedule.requirements) {
         for (const slot of req.timeSlots || []) {
           const roleReq = slot.roles?.find(matchesRole);
           if (roleReq) {
-            const total = roleReq.headcount ?? 0;
+            const total = roleReq.count ?? 0;
             const filled = roleReq.filled ?? 0;
             if (total > 0 && filled < total) {
               return {
@@ -121,8 +125,12 @@ export class ApplicationValidator {
     }
 
     // 레거시: roles 배열 확인
-    if (jobData.roles?.length) {
-      const roleReq = jobData.roles.find(matchesRole);
+    if (jobData.schedule.kind === 'fixed') {
+      if (!jobData.schedule.roleRequirements?.length) {
+        return { available: true };
+      }
+
+      const roleReq = jobData.schedule.roleRequirements?.find(matchesRole);
       if (roleReq) {
         const filled = roleReq.filled ?? 0;
         if (filled < roleReq.count) {
@@ -214,7 +222,9 @@ export class ApplicationValidator {
     answers?: PreQuestionAnswer[]
   ): { isValid: boolean; reason?: string } {
     // 사전질문 사용 안 함
-    if (!jobData.usesPreQuestions || !jobData.preQuestions?.length) {
+    const questions = jobData.questions.items ?? [];
+
+    if (questions.length === 0) {
       return { isValid: true };
     }
 

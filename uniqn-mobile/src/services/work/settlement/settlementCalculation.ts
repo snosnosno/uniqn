@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -68,13 +69,17 @@ export async function calculateSettlement(
 
     // 3. 급여/수당/세금 정보 조회 (개별 오버라이드 우선)
     const workLogWithOverrides = workLog as WorkLogWithOverrides;
+    const postingSettlement = getPostingSettlementContext(jobPosting);
     const salaryInfo = getEffectiveSalaryInfoFromRoles(
       workLogWithOverrides,
-      jobPosting.roles,
-      jobPosting.defaultSalary
+      postingSettlement.roles,
+      postingSettlement.defaultSalary
     );
-    const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
-    const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
+    const allowances = getEffectiveAllowances(workLogWithOverrides, postingSettlement.allowances);
+    const taxSettings = getEffectiveTaxSettings(
+      workLogWithOverrides,
+      postingSettlement.taxSettings
+    );
 
     // 4. 정산 금액 계산 (Phase 6 - SettlementCalculator 사용)
     const settlementResult = SettlementCalculator.calculate({

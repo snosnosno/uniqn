@@ -152,11 +152,18 @@ export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
  * Assignment 스키마 (Application 내부용)
  * @see types/assignment.ts
  *
- * @description roleIds는 StaffRole 값만 허용 (타입 안전성 강화)
+ * @description roleIds는 표준 역할 또는 커스텀 역할명을 문자열로 허용
  */
 const assignmentInnerSchema = z
   .object({
-    roleIds: z.array(staffRoleSchema),
+    roleIds: z.array(
+      z
+        .string()
+        .min(1, { message: '역할 ID는 비어 있을 수 없습니다' })
+        .refine((value) => xssValidation(value), {
+          message: '위험한 문자가 포함되어 있습니다',
+        })
+    ),
     timeSlot: z.string(),
     dates: z.array(z.string()),
     isGrouped: z.boolean(),

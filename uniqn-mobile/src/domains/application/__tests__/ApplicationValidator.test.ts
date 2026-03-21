@@ -51,12 +51,169 @@ const mockValidateRequiredAnswers = validateRequiredAnswers as jest.MockedFuncti
 // Helper: JobPosting 팩토리
 // ============================================================================
 
-function createJobPosting(overrides: Partial<JobPosting> = {}): JobPosting {
+function createJobPostingLegacy(overrides: Partial<JobPosting> = {}): JobPosting {
   return {
     id: 'job-1',
     status: 'active',
+    description: 'Test Posting',
+    ownerId: 'owner-1',
+    // legacy fixture fallback
     title: '테스트 공고',
     ...overrides,
+  } as JobPosting;
+}
+void createJobPostingLegacy;
+
+type LegacyDateSpecificRequirement = {
+  date: string;
+  timeSlots: {
+    startTime?: string;
+    roles: {
+      role?: string;
+      customRole?: string;
+      headcount?: number;
+      filled?: number;
+    }[];
+  }[];
+};
+
+type LegacyRoleRequirement = {
+  role?: string;
+  customRole?: string;
+  count: number;
+  filled?: number;
+};
+
+type TestJobPostingOverrides = Partial<JobPosting> & {
+  dateSpecificRequirements?: LegacyDateSpecificRequirement[];
+  roles?: LegacyRoleRequirement[];
+  usesPreQuestions?: boolean;
+  preQuestions?: {
+    id: string;
+    question: string;
+    required?: boolean;
+    type: string;
+  }[];
+};
+
+function createJobPosting(overrides: TestJobPostingOverrides = {}): JobPosting {
+  const questions =
+    overrides.usesPreQuestions === false
+      ? []
+      : ((overrides.preQuestions ?? overrides.questions?.items ?? []) as NonNullable<
+          JobPosting['questions']
+        >['items']);
+
+  const datedRequirements = (overrides.dateSpecificRequirements ?? []).map((requirement) => ({
+    date: requirement.date,
+    timeSlots: requirement.timeSlots.map((slot, slotIndex) => ({
+      id: `slot-${slotIndex}`,
+      startTime: slot.startTime,
+      roles: slot.roles.map((role, roleIndex) => ({
+        id: `role-${roleIndex}`,
+        role: role.role ?? 'dealer',
+        customRole: role.customRole,
+        count: role.headcount ?? 0,
+        filled: role.filled ?? 0,
+      })),
+    })),
+  }));
+
+  const fixedRoles = (overrides.roles ?? []).map((role) => ({
+    role: role.role ?? 'dealer',
+    customRole: role.customRole,
+    count: role.count,
+    filled: role.filled ?? 0,
+  }));
+
+  const roleCatalogSource =
+    overrides.roles ??
+    overrides.dateSpecificRequirements?.flatMap((requirement) =>
+      requirement.timeSlots.flatMap((slot) =>
+        slot.roles.map((role) => ({
+          role: role.role ?? 'dealer',
+          customRole: role.customRole,
+        }))
+      )
+    ) ??
+    [];
+
+  const workDate = overrides.workDate ?? datedRequirements[0]?.date ?? '2025-01-10';
+  const schedule =
+    overrides.schedule ??
+    (datedRequirements.length > 0
+      ? {
+          kind: 'dated' as const,
+          primaryDate: workDate,
+          allDates: datedRequirements.map((requirement) => requirement.date),
+          requirements: datedRequirements,
+        }
+      : {
+          kind: 'fixed' as const,
+          roleRequirements: fixedRoles.length > 0 ? fixedRoles : undefined,
+        });
+
+  const totalPositions =
+    overrides.totalPositions ??
+    (schedule.kind === 'fixed'
+      ? (schedule.roleRequirements ?? []).reduce((sum, role) => sum + role.count, 0)
+      : schedule.requirements.reduce(
+          (sum, requirement) =>
+            sum +
+            requirement.timeSlots.reduce(
+              (slotSum, slot) =>
+                slotSum + slot.roles.reduce((roleSum, role) => roleSum + role.count, 0),
+              0
+            ),
+          0
+        ));
+
+  return {
+    id: 'job-1',
+    schemaVersion: 3,
+    title: 'Test Posting',
+    status: overrides.status ?? 'active',
+    ownerId: overrides.ownerId ?? 'owner-1',
+    workDate,
+    totalPositions,
+    filledPositions: overrides.filledPositions ?? 0,
+    location: overrides.location ?? { name: 'Gangnam', district: 'Seoul' },
+    createdAt: overrides.createdAt ?? new Date(),
+    updatedAt: overrides.updatedAt ?? new Date(),
+    schedule,
+    roleCatalog: roleCatalogSource.map((role) => ({
+      role: role.role ?? 'dealer',
+      customRole: role.customRole,
+    })),
+    compensation: overrides.compensation ?? { mode: 'shared' },
+    questions: overrides.questions ?? { items: questions },
+    /*
+    status: 'active',
+    title: '?뚯뒪??怨듦퀬',
+    ownerId: 'owner-1',
+    * legacy block continues
+    workDate,
+    totalPositions,
+    filledPositions: overrides.filledPositions ?? 0,
+    location: overrides.location ?? { name: '媛뺣궓援?, district: '媛뺣궓援? },
+    schedule,
+    roleCatalog: roleCatalogSource.map((role) => ({
+      role: role.role ?? 'dealer',
+      customRole: role.customRole,
+    })),
+    compensation: overrides.compensation ?? {
+      mode: 'shared',
+      defaultSalary: overrides.defaultSalary,
+      allowances: overrides.allowances,
+      taxSettings: overrides.taxSettings,
+    },
+    */
+    postingType: overrides.postingType,
+    description: overrides.description,
+    ...(overrides.applicationCount !== undefined
+      ? { applicationCount: overrides.applicationCount }
+      : {}),
+    ...(overrides.viewCount !== undefined ? { viewCount: overrides.viewCount } : {}),
   } as JobPosting;
 }
 

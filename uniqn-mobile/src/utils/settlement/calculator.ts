@@ -5,7 +5,7 @@
  */
 
 import type { SettlementBreakdown } from '@/types/schedule';
-import type { JobPostingCard, SalaryInfo } from '@/types/jobPosting';
+import type { JobRoleStats, JobPostingCard, SalaryInfo } from '@/types/jobPosting';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { SettlementCalculator } from '@/domains/settlement';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
@@ -27,6 +27,13 @@ export interface Allowances {
   accommodation?: number;
   /** 추가 수당 (금액만 입력) */
   additional?: number;
+}
+
+export interface PostingSettlementSource {
+  roles?: JobRoleStats[];
+  defaultSalary?: SalaryInfo;
+  allowances?: Allowances;
+  taxSettings?: TaxSettings;
 }
 
 // ============================================================================
@@ -105,6 +112,14 @@ export function getRoleSalaryFromRoles(
   });
 
   return roleData?.salary ?? fallback;
+}
+
+export function getRoleSalaryFromSettlementSource(
+  source: PostingSettlementSource | undefined,
+  targetRole: string | undefined,
+  customRole?: string
+): SalaryInfo {
+  return getRoleSalaryFromRoles(source?.roles, targetRole, customRole, source?.defaultSalary);
 }
 
 /**
@@ -510,7 +525,7 @@ export function calculateSettlementBreakdown(
     customAllowances?: Allowances;
     customTaxSettings?: TaxSettings;
   },
-  jobPostingCard?: JobPostingCard
+  settlementSource?: PostingSettlementSource
 ): SettlementBreakdown | null {
   // 1. 시간 결정 (checkIn/checkOut 우선, 없으면 timeSlot 파싱, legacy scheduledTime 폴백)
   let startTime: TimeInput | undefined = workLogData.checkInTime;
@@ -534,15 +549,15 @@ export function calculateSettlementBreakdown(
   // 2. 급여 정보 결정 (오버라이드 우선)
   const salaryInfo: SalaryInfo =
     workLogData.customSalaryInfo ||
-    getRoleSalaryFromJobPostingCard(jobPostingCard, workLogData.role, workLogData.customRole);
+    getRoleSalaryFromSettlementSource(settlementSource, workLogData.role, workLogData.customRole);
 
   // 3. 수당 정보 결정 (오버라이드 우선)
   const allowances: Allowances | undefined =
-    workLogData.customAllowances || jobPostingCard?.allowances;
+    workLogData.customAllowances || settlementSource?.allowances;
 
   // 4. 세금 설정 결정 (오버라이드 우선)
   const taxSettings: TaxSettings =
-    workLogData.customTaxSettings || jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS;
+    workLogData.customTaxSettings || settlementSource?.taxSettings || DEFAULT_TAX_SETTINGS;
 
   // 5. 정산 계산
   const result = calculateSettlementWithTax(

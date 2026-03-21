@@ -106,7 +106,7 @@ export const onScheduleCreated = onDocumentCreated(
           link: '/schedule',
           priority: 'high',
           relatedId: workLogId,
-          senderId: jobPosting?.ownerId ?? jobPosting?.createdBy ?? undefined,
+          senderId: jobPosting?.ownerId ?? undefined,
           data: {
             workLogId,
             jobPostingId: workLog.jobPostingId,
@@ -190,7 +190,7 @@ export const onScheduleCancelled = onDocumentUpdated(
           link: '/schedule',
           priority: 'high',
           relatedId: workLogId,
-          senderId: jobPosting?.ownerId ?? jobPosting?.createdBy ?? undefined,
+          senderId: jobPosting?.ownerId ?? undefined,
           data: {
             workLogId,
             jobPostingId: after.jobPostingId,

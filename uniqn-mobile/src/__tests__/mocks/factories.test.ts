@@ -87,7 +87,7 @@ describe('Mock Factories', () => {
 
       expect(job.id).toBe('job-1');
       expect(job.status).toBe('active');
-      expect(job.applicantCount).toBe(0);
+      expect(job.applicationCount).toBe(0);
       expect(job.maxApplicants).toBe(10);
       expect(job.defaultSalary?.amount).toBeGreaterThan(0);
       expect(job.roles?.length).toBeGreaterThan(0);

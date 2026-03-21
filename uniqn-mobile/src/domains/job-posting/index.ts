@@ -1,14 +1,21 @@
 export {
+  mergeJobPostingInput,
   serializeJobPostingV3,
   deserializeJobPostingDocument,
   toCreateJobPostingInput,
 } from './serialization';
 export {
   buildPostingFacts,
+  createPostingLegacyDateRequirements,
   projectPostingCard,
   projectPostingDetail,
   projectPostingManagement,
   projectPostingSurface,
-  createPostingRuntimeSnapshot,
   toJobPostingCard,
 } from './display';
+export type { PostingSettlementContext } from './selectors';
+export {
+  getPostingRoleStats,
+  getPostingDefaultSalary,
+  getPostingSettlementContext,
+} from './selectors';

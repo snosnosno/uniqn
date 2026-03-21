@@ -88,7 +88,7 @@ export const onNoShow = onDocumentUpdated(
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
 
-      const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
+      const employerId = jobPosting?.ownerId;
       if (!employerId) {
         logger.warn('공고 작성자를 찾을 수 없습니다', {
           workLogId,

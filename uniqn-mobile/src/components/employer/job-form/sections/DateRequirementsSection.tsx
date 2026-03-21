@@ -1,23 +1,11 @@
-/**
- * UNIQN Mobile - 날짜별 요구사항 섹션 (연속 날짜 그룹화)
- *
- * @description regular/urgent/tournament 타입의 날짜별 요구사항 관리
- * @version 3.0.0
- *
- * 주요 기능:
- * - regular/urgent: 단일 날짜 (1개)
- * - tournament: 복수 날짜 (최대 30개) + 연속 날짜 자동 그룹화
- * - 시작시간만 입력 (종료시간 제거)
- *
- * 연속 날짜 그룹화:
- * - 연속 날짜 + 동일 timeSlots → 하나의 DateRangeCard로 표시
- * - Firebase 저장 시 개별 DateSpecificRequirement로 확장 (호환성 유지)
- */
-
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { DATE_CONSTRAINTS } from '@/constants';
+import type { JobPostingFormData } from '@/types';
+import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
+import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
+import { generateId } from '@/utils/generateId';
 import { DatePickerModal, GroupingConfirmModal } from '../modals';
 import { DateRequirementCard, DateRangeCard } from '../cards';
 import {
@@ -26,17 +14,6 @@ import {
   toDateString,
   type DateRangeGroup,
 } from '@/utils/date';
-import { generateId } from '@/utils/generateId';
-import type { JobPostingFormData } from '@/types';
-import type {
-  DateSpecificRequirement,
-  TimeSlot,
-  RoleRequirement,
-} from '@/types/jobPosting/dateRequirement';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface DateRequirementsSectionProps {
   data: JobPostingFormData;
@@ -44,171 +21,123 @@ interface DateRequirementsSectionProps {
   errors?: Record<string, string>;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirementsSectionProps) {
   const { postingType } = data;
-
-  // 모달 상태
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGroupingModal, setShowGroupingModal] = useState(false);
   const [pendingDates, setPendingDates] = useState<string[]>([]);
 
-  // 대회 공고 여부 (그룹화 활성화)
   const isTournament = postingType === 'tournament';
-
-  // 타입별 제약사항
   const constraints = useMemo(() => {
-    if (!postingType) return { maxDates: 1, label: '단일 날짜' };
+    if (!postingType) {
+      return { maxDates: 1, label: 'single date' };
+    }
+
     return DATE_CONSTRAINTS[postingType];
   }, [postingType]);
 
-  // 현재 날짜 목록
   const dateRequirements = useMemo(() => {
     return (data.dateSpecificRequirements ?? []) as DateSpecificRequirement[];
   }, [data.dateSpecificRequirements]);
 
-  // 대회 공고: 연속 날짜 그룹화 (UI 표시용)
   const dateRangeGroups = useMemo(() => {
-    if (!isTournament) return [];
-    return groupRequirementsToDateRanges(dateRequirements);
-  }, [isTournament, dateRequirements]);
+    if (!isTournament) {
+      return [];
+    }
 
-  // 이미 선택된 날짜 목록
+    return groupRequirementsToDateRanges(dateRequirements);
+  }, [dateRequirements, isTournament]);
+
   const existingDates = useMemo(() => {
     return dateRequirements.map((req) => toDateString(req.date)).filter(Boolean);
   }, [dateRequirements]);
 
-  // 날짜 추가 가능 여부
   const canAddDate = useMemo(() => {
     return dateRequirements.length < constraints.maxDates;
-  }, [dateRequirements.length, constraints.maxDates]);
+  }, [constraints.maxDates, dateRequirements.length]);
 
-  // 그룹으로 날짜 추가 (연속 날짜만 그룹화, 비연속은 개별)
   const handleAddDatesAsGroup = useCallback(
     (dates: string[]) => {
-      // 연속 날짜끼리만 그룹화 (예: [1/19, 1/20, 1/21], [1/23])
       const consecutiveGroups = groupConsecutiveDates(dates);
-
+      const seedTimeSlots = buildSeedTimeSlots(data);
       const newRequirements: DateSpecificRequirement[] = [];
 
-      // 각 연속 그룹마다 별도의 공유 timeSlots 생성
       for (const group of consecutiveGroups) {
-        const sharedTimeSlots: TimeSlot[] = [
-          {
-            id: generateId(),
-            startTime: '09:00',
-            isTimeToBeAnnounced: false,
-            roles: [
-              {
-                id: generateId(),
-                role: 'dealer',
-                headcount: 1,
-              } as RoleRequirement,
-            ],
-          },
-        ];
+        const sharedTimeSlots = deepCloneTimeSlots(seedTimeSlots);
 
-        // 해당 그룹의 모든 날짜에 동일한 timeSlots 복제 적용
         for (const date of group) {
           newRequirements.push({
             date,
             timeSlots: deepCloneTimeSlots(sharedTimeSlots),
-            isGrouped: true, // 그룹으로 표시
+            isGrouped: true,
           });
         }
       }
 
-      const updated = [...dateRequirements, ...newRequirements];
-      onUpdate({ dateSpecificRequirements: updated });
+      onUpdate({ dateSpecificRequirements: [...dateRequirements, ...newRequirements] });
     },
-    [dateRequirements, onUpdate]
+    [data, dateRequirements, onUpdate]
   );
 
-  // 개별로 날짜 추가 (독립 timeSlots)
   const handleAddDatesIndividually = useCallback(
     (dates: string[]) => {
+      const seedTimeSlots = buildSeedTimeSlots(data);
       const newRequirements: DateSpecificRequirement[] = dates.map((date) => ({
         date,
-        timeSlots: [
-          {
-            id: generateId(),
-            startTime: '09:00',
-            isTimeToBeAnnounced: false,
-            roles: [
-              {
-                id: generateId(),
-                role: 'dealer',
-                headcount: 1,
-              } as RoleRequirement,
-            ],
-          },
-        ],
-        isGrouped: false, // 개별로 표시
+        timeSlots: deepCloneTimeSlots(seedTimeSlots),
+        isGrouped: false,
       }));
 
-      const updated = [...dateRequirements, ...newRequirements];
-      onUpdate({ dateSpecificRequirements: updated });
+      onUpdate({ dateSpecificRequirements: [...dateRequirements, ...newRequirements] });
     },
-    [dateRequirements, onUpdate]
+    [data, dateRequirements, onUpdate]
   );
 
-  // 날짜 선택 처리 (다중 날짜 지원 + 그룹화 선택)
   const handleSelectDates = useCallback(
     (dates: string[]) => {
-      // 정렬된 날짜
       const sortedDates = [...dates].sort();
 
-      // 대회 공고이고 2개 이상인 경우, 그룹화 선택 모달 표시 (연속/비연속 모두)
       if (isTournament && sortedDates.length > 1) {
         setPendingDates(sortedDates);
         setShowGroupingModal(true);
-      } else {
-        // 단일 날짜 또는 비대회 공고: 개별로 추가
-        handleAddDatesIndividually(sortedDates);
+        return;
       }
+
+      handleAddDatesIndividually(sortedDates);
     },
-    [isTournament, handleAddDatesIndividually]
+    [handleAddDatesIndividually, isTournament]
   );
 
-  // 그룹화 확인 핸들러
   const handleGroupingConfirm = useCallback(
     (shouldGroup: boolean) => {
       if (shouldGroup) {
-        // 그룹으로 추가 (공유 timeSlots)
         handleAddDatesAsGroup(pendingDates);
       } else {
-        // 개별로 추가 (독립 timeSlots)
         handleAddDatesIndividually(pendingDates);
       }
+
       setPendingDates([]);
       setShowGroupingModal(false);
     },
-    [pendingDates, handleAddDatesAsGroup, handleAddDatesIndividually]
+    [handleAddDatesAsGroup, handleAddDatesIndividually, pendingDates]
   );
 
-  // 그룹화 모달 닫기 핸들러
   const handleGroupingClose = useCallback(() => {
     setPendingDates([]);
     setShowGroupingModal(false);
   }, []);
 
-  // ============================================================================
-  // 개별 날짜 핸들러 (regular/urgent용)
-  // ============================================================================
-
-  // 날짜 삭제 (개별) - 마지막 날짜도 삭제 가능
   const handleRemoveDate = useCallback(
     (index: number) => {
-      const updated = dateRequirements.filter((_, i) => i !== index);
-      onUpdate({ dateSpecificRequirements: updated });
+      onUpdate({
+        dateSpecificRequirements: dateRequirements.filter(
+          (_, currentIndex) => currentIndex !== index
+        ),
+      });
     },
     [dateRequirements, onUpdate]
   );
 
-  // 날짜 업데이트 (개별)
   const handleUpdateDate = useCallback(
     (index: number, requirement: Partial<DateSpecificRequirement>) => {
       const updated = [...dateRequirements];
@@ -218,33 +147,27 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     [dateRequirements, onUpdate]
   );
 
-  // ============================================================================
-  // 그룹 핸들러 (tournament용)
-  // ============================================================================
-
-  // 그룹 업데이트 (timeSlots 변경 시 해당 그룹의 모든 날짜에 반영)
   const handleUpdateGroup = useCallback(
     (groupIndex: number, groupUpdate: Partial<DateRangeGroup>) => {
-      if (!groupUpdate.timeSlots) return;
+      if (!groupUpdate.timeSlots) {
+        return;
+      }
 
-      // 현재 그룹 정보
       const group = dateRangeGroups[groupIndex];
-      if (!group) return;
+      if (!group) {
+        return;
+      }
 
-      // 그룹에 속한 날짜들 찾기
-      const groupStartDate = group.startDate;
-      const groupEndDate = group.endDate;
-
-      // 해당 그룹의 모든 날짜에 새 timeSlots 적용
-      const updated = dateRequirements.map((req) => {
-        const reqDate = toDateString(req.date);
-        if (reqDate >= groupStartDate && reqDate <= groupEndDate) {
+      const updated = dateRequirements.map((requirement) => {
+        const currentDate = toDateString(requirement.date);
+        if (currentDate >= group.startDate && currentDate <= group.endDate) {
           return {
-            ...req,
-            timeSlots: deepCloneTimeSlots(groupUpdate.timeSlots!),
+            ...requirement,
+            timeSlots: deepCloneTimeSlots(groupUpdate.timeSlots ?? []),
           };
         }
-        return req;
+
+        return requirement;
       });
 
       onUpdate({ dateSpecificRequirements: updated });
@@ -252,19 +175,16 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     [dateRangeGroups, dateRequirements, onUpdate]
   );
 
-  // 그룹 삭제 (그룹에 속한 모든 날짜 삭제) - 마지막 그룹도 삭제 가능
   const handleRemoveGroup = useCallback(
     (groupIndex: number) => {
       const group = dateRangeGroups[groupIndex];
-      if (!group) return;
+      if (!group) {
+        return;
+      }
 
-      const groupStartDate = group.startDate;
-      const groupEndDate = group.endDate;
-
-      // 그룹에 속하지 않은 날짜들만 유지
-      const updated = dateRequirements.filter((req) => {
-        const reqDate = toDateString(req.date);
-        return reqDate < groupStartDate || reqDate > groupEndDate;
+      const updated = dateRequirements.filter((requirement) => {
+        const currentDate = toDateString(requirement.date);
+        return currentDate < group.startDate || currentDate > group.endDate;
       });
 
       onUpdate({ dateSpecificRequirements: updated });
@@ -272,13 +192,11 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     [dateRangeGroups, dateRequirements, onUpdate]
   );
 
-  // 총 날짜 수 (그룹 기반)
   const totalDateCount = dateRequirements.length;
   const totalGroupCount = dateRangeGroups.length;
 
   return (
     <View>
-      {/* 헤더 */}
       <View className="mb-4">
         <Text className="text-sm text-gray-600 dark:text-gray-400">
           최대 {constraints.maxDates}개 날짜 추가 가능
@@ -290,19 +208,17 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           )}
         </Text>
         {isTournament && (
-          <Text className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-            연속 날짜 선택 시 그룹화 여부를 선택할 수 있습니다
+          <Text className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            연속 날짜는 그룹으로 묶을지 선택할 수 있습니다.
           </Text>
         )}
       </View>
 
-      {/* 날짜 목록 */}
       {dateRequirements.length === 0 ? (
-        <View className="p-8 items-center">
-          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해주세요</Text>
+        <View className="items-center p-8">
+          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해 주세요</Text>
         </View>
       ) : isTournament ? (
-        // 대회 공고: 그룹 기반 렌더링
         <View className="mb-4">
           {dateRangeGroups.map((group, groupIndex) => (
             <DateRangeCard
@@ -316,12 +232,11 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           ))}
         </View>
       ) : (
-        // 일반/긴급 공고: 개별 날짜 렌더링
         <View className="mb-4">
-          {dateRequirements.map((req, index) => (
+          {dateRequirements.map((requirement, index) => (
             <DateRequirementCard
               key={index}
-              requirement={req}
+              requirement={requirement}
               index={index}
               canRemove={true}
               onUpdate={handleUpdateDate}
@@ -331,14 +246,13 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         </View>
       )}
 
-      {/* 날짜 추가 버튼 */}
       <Pressable
         onPress={() => setShowDatePicker(true)}
         disabled={!canAddDate}
-        className={`flex-row items-center justify-center p-4 rounded-lg border-2 border-dashed ${
+        className={`flex-row items-center justify-center rounded-lg border-2 border-dashed p-4 ${
           canAddDate
-            ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20'
-            : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
+            ? 'border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20'
+            : 'border-gray-300 bg-gray-50 opacity-50 dark:border-surface-overlay dark:bg-surface'
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
@@ -358,14 +272,12 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         </Text>
       </Pressable>
 
-      {/* 에러 메시지 */}
       {errors?.dateSpecificRequirements && (
         <Text className="mt-2 text-sm text-red-600 dark:text-red-400">
           {errors.dateSpecificRequirements}
         </Text>
       )}
 
-      {/* 날짜 선택 모달 */}
       <DatePickerModal
         visible={showDatePicker}
         onClose={() => setShowDatePicker(false)}
@@ -374,7 +286,6 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         existingDates={existingDates}
       />
 
-      {/* 연속 날짜 그룹화 선택 모달 */}
       <GroupingConfirmModal
         visible={showGroupingModal}
         dates={pendingDates}
@@ -385,13 +296,6 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   );
 }
 
-// ============================================================================
-// 헬퍼 함수
-// ============================================================================
-
-/**
- * TimeSlots 깊은 복사
- */
 function deepCloneTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
   return timeSlots.map((slot) => ({
     ...slot,

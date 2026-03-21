@@ -16,11 +16,12 @@ import {
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import { templateToFormData } from '@/types';
+import { templateToDraft } from '@/types';
 import { logger } from '@/utils/logger';
 import { toError, requireAuth } from '@/errors';
 import { extractErrorMessage } from '@/shared/errors';
-import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput } from '@/types';
+import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
 // ============================================================================
 // Types
@@ -29,7 +30,7 @@ import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from
 interface SaveTemplateParams {
   name: string;
   description?: string;
-  formData: JobPostingFormData;
+  draft: JobPostingDraft;
 }
 
 interface DeleteTemplateParams {
@@ -73,7 +74,7 @@ export function useSaveTemplate() {
       const input: CreateTemplateInput = {
         name: params.name,
         description: params.description,
-        formData: params.formData,
+        draft: params.draft,
       };
       return saveTemplate(input, user.uid);
     },
@@ -218,7 +219,7 @@ export function useTemplateManager() {
   // ============================================================
 
   const handleSaveTemplate = useCallback(
-    async (formData: JobPostingFormData) => {
+    async (draft: JobPostingDraft) => {
       if (!templateName.trim()) {
         return;
       }
@@ -226,7 +227,7 @@ export function useTemplateManager() {
       await saveMutation.mutateAsync({
         name: templateName.trim(),
         description: templateDescription.trim() || undefined,
-        formData,
+        draft,
       });
 
       closeTemplateModal();
@@ -239,10 +240,10 @@ export function useTemplateManager() {
   // ============================================================
 
   const handleLoadTemplate = useCallback(
-    async (template: JobPostingTemplate): Promise<Partial<JobPostingFormData>> => {
+    async (template: JobPostingTemplate): Promise<JobPostingDraft> => {
       const loadedTemplate = await loadMutation.mutateAsync(template.id);
       closeLoadTemplateModal();
-      return templateToFormData(loadedTemplate);
+      return templateToDraft(loadedTemplate);
     },
     [loadMutation, closeLoadTemplateModal]
   );

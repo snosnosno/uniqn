@@ -12,7 +12,7 @@ import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { WorkLogCreator } from '@/domains/schedule';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
-import type { Assignment, DateSpecificRequirement } from '@/types';
+import type { Assignment, DateSpecificRequirement, PostingSchedule } from '@/types';
 
 /**
  * Assignment의 timeSlot에서 시작 시간 추출
@@ -146,4 +146,129 @@ export function updateDateSpecificRequirementsFilled(
   }
 
   return updatedRequirements;
+}
+
+export function updatePostingScheduleFilled(
+  schedule: PostingSchedule,
+  assignments: Assignment[],
+  operation: 'increment' | 'decrement'
+): PostingSchedule {
+  if (schedule.kind === 'fixed') {
+    const nextRoleRequirements = (schedule.roleRequirements ?? []).map((role) => ({ ...role }));
+
+    assignments.forEach((assignment) => {
+      const targetRole = assignment.roleIds[0];
+      if (!targetRole) {
+        return;
+      }
+
+      const roleRequirement = nextRoleRequirements.find((role) => {
+        if (role.role === targetRole) return true;
+        if (role.role === 'other' && role.customRole === targetRole) return true;
+        return false;
+      });
+
+      if (!roleRequirement) {
+        return;
+      }
+
+      const delta = assignment.dates.length || 1;
+      const currentFilled = roleRequirement.filled ?? 0;
+      roleRequirement.filled =
+        operation === 'increment' ? currentFilled + delta : Math.max(0, currentFilled - delta);
+    });
+
+    return {
+      ...schedule,
+      roleRequirements: nextRoleRequirements,
+    };
+  }
+
+  const updatedRequirements = schedule.requirements.map((req) => ({
+    ...req,
+    timeSlots: req.timeSlots.map((ts) => ({
+      ...ts,
+      roles: ts.roles.map((role) => ({ ...role })),
+    })),
+  }));
+
+  let expectedUpdates = 0;
+  let successfulUpdates = 0;
+
+  for (const assignment of assignments) {
+    const assignmentStartTime = extractStartTime(assignment.timeSlot);
+    const assignmentRole = assignment.roleIds[0];
+
+    if (!assignmentRole) {
+      logger.warn('Assignment에 역할 정보 없음', { assignment });
+      continue;
+    }
+
+    for (const date of assignment.dates) {
+      expectedUpdates++;
+
+      const dateReq = updatedRequirements.find((req) => req.date === date);
+      if (!dateReq) {
+        logger.warn('schedule.requirements에서 날짜 매칭 실패', {
+          targetDate: date,
+          availableDates: updatedRequirements.map((req) => req.date),
+        });
+        continue;
+      }
+
+      const timeSlot = dateReq.timeSlots.find((ts) => (ts.startTime ?? '') === assignmentStartTime);
+
+      if (!timeSlot) {
+        logger.warn('schedule.requirements에서 시간대 매칭 실패', {
+          targetTime: assignmentStartTime,
+          availableTimes: dateReq.timeSlots.map((ts) => ts.startTime),
+        });
+        continue;
+      }
+
+      const roleReq = timeSlot.roles.find((role) => {
+        if (role.role === assignmentRole) return true;
+        if (role.role === 'other' && role.customRole === assignmentRole) return true;
+        return false;
+      });
+
+      if (!roleReq) {
+        logger.warn('schedule.requirements에서 역할 매칭 실패', {
+          targetRole: assignmentRole,
+          availableRoles: timeSlot.roles.map((role) => role.role),
+        });
+        continue;
+      }
+
+      const currentFilled = roleReq.filled ?? 0;
+      roleReq.filled =
+        operation === 'increment' ? currentFilled + 1 : Math.max(0, currentFilled - 1);
+      successfulUpdates++;
+    }
+  }
+
+  if (expectedUpdates > 0 && successfulUpdates === 0) {
+    if (operation === 'decrement') {
+      logger.error('schedule filled 전체 매칭 실패 (취소 흐름)', {
+        operation,
+        expectedUpdates,
+      });
+    } else {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '모집 현황 업데이트에 실패했습니다. 공고 데이터를 확인해 주세요.',
+      });
+    }
+  } else if (expectedUpdates > 0 && successfulUpdates < expectedUpdates) {
+    logger.warn('schedule filled 업데이트 일부 실패', {
+      operation,
+      expectedUpdates,
+      successfulUpdates,
+      failedUpdates: expectedUpdates - successfulUpdates,
+    });
+  }
+
+  return {
+    ...schedule,
+    requirements: updatedRequirements,
+  };
 }

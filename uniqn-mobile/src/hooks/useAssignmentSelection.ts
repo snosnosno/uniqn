@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { Assignment, TimeSlot, StaffRole } from '@/types';
+import type { Assignment, TimeSlot } from '@/types';
 import { createSimpleAssignment, isValidAssignment, getAssignmentRole } from '@/types';
 
 // ============================================================================
@@ -26,9 +26,9 @@ export interface UseAssignmentSelectionReturn {
   /** 선택된 Assignments */
   assignments: Assignment[];
   /** 선택된 역할 */
-  selectedRole: StaffRole | null;
+  selectedRole: string | null;
   /** 역할 설정 */
-  setSelectedRole: (role: StaffRole) => void;
+  setSelectedRole: (role: string) => void;
   /** Assignment 추가 */
   addAssignment: (assignment: Assignment) => boolean;
   /** Assignment 제거 */
@@ -82,7 +82,7 @@ export function useAssignmentSelection({
 }: UseAssignmentSelectionOptions = {}): UseAssignmentSelectionReturn {
   // 상태
   const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
-  const [selectedRole, setSelectedRole] = useState<StaffRole | null>(
+  const [selectedRole, setSelectedRole] = useState<string | null>(
     initialAssignments[0] ? (getAssignmentRole(initialAssignments[0]) ?? null) : null
   );
 
@@ -244,7 +244,7 @@ export function useAssignmentSelection({
 
   // 역할 설정 (기존 선택 유지하면서 역할만 변경)
   const handleSetSelectedRole = useCallback(
-    (role: StaffRole) => {
+    (role: string) => {
       setSelectedRole(role);
       // 기존 assignments의 역할도 업데이트 (v3.0: roleIds 배열 사용)
       if (assignments.length > 0) {
