@@ -4,6 +4,7 @@ const {
   buildJobPostingSearchIndex,
   formatJobPostingLocation,
   getChangedJobPostingNotificationFields,
+  hasJobPostingSearchIndexSourceChanged,
 } = require("../src/utils/jobPosting") as typeof import("../src/utils/jobPosting");
 
 describe("job posting utils", () => {
@@ -85,5 +86,26 @@ describe("job posting utils", () => {
     );
 
     expect(changedFields).to.deep.equal(["schedule", "compensation"]);
+  });
+
+  it("detects searchIndex source changes and ignores counter-only updates", () => {
+    const before = {
+      title: "Tournament Posting",
+      description: "Main floor",
+      location: { name: "Seoul", district: "Gangnam-gu" },
+      roleCatalog: [{ role: "dealer" }],
+      applicationCount: 1,
+    };
+    const afterCounterOnly = {
+      ...before,
+      applicationCount: 2,
+    };
+    const afterSearchSourceChange = {
+      ...before,
+      description: "Main floor updated",
+    };
+
+    expect(hasJobPostingSearchIndexSourceChanged(before, afterCounterOnly)).to.equal(false);
+    expect(hasJobPostingSearchIndexSourceChanged(before, afterSearchSourceChange)).to.equal(true);
   });
 });
