@@ -29,6 +29,7 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator } from '@/domains/application';
+import { selectPostingWorkflow } from '@/domains/job-posting';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import type { ApplyContext } from '../../interfaces';
@@ -220,7 +221,7 @@ export async function applyWithTransaction(
         }
       }
 
-      const recruitmentType: RecruitmentType = jobData.postingType === 'fixed' ? 'fixed' : 'event';
+      const recruitmentType: RecruitmentType = selectPostingWorkflow(jobData).recruitmentType;
       const firstAssignment = input.assignments[0];
       const normalizedPrimaryRole = normalizeAssignmentRole(
         firstAssignment?.roleIds[0] ?? 'dealer'

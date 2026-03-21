@@ -6,7 +6,16 @@
  */
 
 import type { StaffRole } from '../role';
-import { ROLE_LABELS } from '@/constants';
+import { STAFF_ROLE_LABELS, USER_ROLE_LABELS } from '../role';
+
+const ROLE_DISPLAY_LABELS: Record<string, string> = {
+  ...USER_ROLE_LABELS,
+  ...STAFF_ROLE_LABELS,
+  // Preserve existing UI behavior where the shared `staff` key reads as the generic staff label.
+  staff: '일반',
+  user: '일반 사용자',
+  supervisor: '슈퍼바이저',
+};
 
 // ============================================================================
 // Types
@@ -50,7 +59,7 @@ export function getRoleDisplayName(roleId: string, customName?: string): string 
   if (roleId === 'other' && customName) {
     return customName;
   }
-  return ROLE_LABELS[roleId] ?? roleId;
+  return ROLE_DISPLAY_LABELS[roleId] ?? roleId;
 }
 
 /**
