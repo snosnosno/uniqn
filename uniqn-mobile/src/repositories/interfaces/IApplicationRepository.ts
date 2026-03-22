@@ -198,6 +198,7 @@ export interface IApplicationRepository {
    * @returns 생성된 지원서
    * @throws AlreadyAppliedError, ApplicationClosedError, MaxCapacityReachedError
    */
+  // applicationCount is server-owned and reconciled by Cloud Functions.
   applyWithTransaction(input: CreateApplicationInput, context: ApplyContext): Promise<Application>;
 
   /**
@@ -213,6 +214,7 @@ export interface IApplicationRepository {
    * @param applicantId - 지원자 ID (권한 확인용)
    * @throws BusinessError (이미 취소됨, 확정됨 등)
    */
+  // applicationCount is server-owned and reconciled by Cloud Functions.
   cancelWithTransaction(applicationId: string, applicantId: string): Promise<void>;
 
   /**
@@ -246,6 +248,7 @@ export interface IApplicationRepository {
    * @param reviewerId - 검토자 ID (권한 확인용)
    * @throws PermissionError (소유자 아님), BusinessError (대기 중 아님)
    */
+  // applicationCount is server-owned and reconciled by Cloud Functions.
   reviewCancellationWithTransaction(
     input: ReviewCancellationInput,
     reviewerId: string

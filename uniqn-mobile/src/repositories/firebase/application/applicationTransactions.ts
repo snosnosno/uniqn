@@ -9,7 +9,6 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
-  increment,
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -157,7 +156,7 @@ export async function applyWithTransaction(
     }
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      const { jobRef, jobData } = await loadJobPostingForApply(transaction, input.jobPostingId);
+      const { jobData } = await loadJobPostingForApply(transaction, input.jobPostingId);
 
       if (jobData.status !== STATUS.JOB_POSTING.ACTIVE) {
         throw new ApplicationClosedError({
@@ -251,10 +250,6 @@ export async function applyWithTransaction(
       };
 
       transaction.set(applicationRef, applicationData);
-      transaction.update(jobRef, {
-        applicationCount: increment(1),
-        updatedAt: serverTimestamp(),
-      });
 
       return {
         id: applicationId,
@@ -314,21 +309,10 @@ export async function cancelWithTransaction(
         });
       }
 
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.CANCELLED,
         updatedAt: serverTimestamp(),
       });
-
-      if (jobDoc.exists()) {
-        const currentCount = (jobDoc.data()?.applicationCount as number) ?? 0;
-        transaction.update(jobRef, {
-          applicationCount: Math.max(0, currentCount - 1),
-          updatedAt: serverTimestamp(),
-        });
-      }
     });
 
     logger.info('지원 취소 성공', { applicationId });
@@ -519,10 +503,8 @@ export async function reviewCancellationWithTransaction(
           updatedAt: serverTimestamp(),
         });
 
-        const currentAppCount = (jobData.applicationCount as number | undefined) ?? 0;
         const currentFilled = (jobData.filledPositions as number | undefined) ?? 0;
         transaction.update(jobRef, {
-          applicationCount: Math.max(0, currentAppCount - 1),
           filledPositions: Math.max(0, currentFilled - 1),
           updatedAt: serverTimestamp(),
         });

@@ -81,16 +81,6 @@ service cloud.firestore {
       );
     }
 
-    function canMutateWorkLog(workLogData) {
-      return isSignedIn() && (
-        isAdmin() ||
-        request.auth.uid == workLogData.staffId ||
-        (hasValidRole() &&
-         exists(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(workLogData.jobPostingId)).data.ownerId == request.auth.uid)
-      );
-    }
-
     function canCreateAuthoritativeTimeModificationLog(workLogData) {
       return isSignedIn() && (
         isAdmin() ||
@@ -148,6 +138,64 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return request.auth.uid == userId;
+    }
+
+    function canReadOwnMissingApplication(applicationId) {
+      return isSignedIn() &&
+        !exists(/databases/$(database)/documents/applications/$(applicationId)) &&
+        applicationId.matches('^.+_' + request.auth.uid + '$');
+    }
+
+    function isApplicantReapplyUpdate() {
+      return isSignedIn() &&
+        request.auth.uid == resource.data.applicantId &&
+        resource.data.status == 'cancelled' &&
+        request.resource.data.keys().hasAll(['applicantId', 'status']) &&
+        request.resource.data.keys().hasAny(['jobPostingId']) &&
+        request.resource.data.applicantId == resource.data.applicantId &&
+        request.resource.data.jobPostingId == resource.data.jobPostingId &&
+        request.resource.data.status == 'applied' &&
+        (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
+    }
+
+    function getApplicationChangedFields() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function isApplicantCancellationUpdate() {
+      return isSignedIn() &&
+        request.auth.uid == resource.data.applicantId &&
+        resource.data.status in ['applied', 'pending'] &&
+        request.resource.data.status == 'cancelled' &&
+        getApplicationChangedFields().hasOnly(['status', 'updatedAt']) &&
+        getApplicationChangedFields().hasAll(['status', 'updatedAt']) &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    function isApplicantCancellationRequestUpdate() {
+      let requestData = request.resource.data.cancellationRequest;
+
+      return isSignedIn() &&
+        request.auth.uid == resource.data.applicantId &&
+        resource.data.status == 'confirmed' &&
+        request.resource.data.status == 'cancellation_pending' &&
+        getApplicationChangedFields().hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
+        getApplicationChangedFields().hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        requestData is map &&
+        requestData.keys().hasAll(['requestedAt', 'reason', 'status']) &&
+        requestData.keys().hasOnly(['requestedAt', 'reason', 'status']) &&
+        requestData.requestedAt == request.time &&
+        requestData.status == 'pending' &&
+        requestData.reason is string &&
+        requestData.reason.size() >= 5 &&
+        requestData.reason.size() <= 500;
+    }
+
+    function canApplicantUpdateOwnApplication() {
+      return isApplicantReapplyUpdate() ||
+        isApplicantCancellationUpdate() ||
+        isApplicantCancellationRequestUpdate();
     }
 
     // ================= Employer Registration Validation =================
@@ -463,6 +511,52 @@ service cloud.firestore {
              (!('applicationCount' in data) || data.applicationCount == 0);
     }
 
+    function getCanonicalApplicationCount(data) {
+      return ('applicationCount' in data) ? data.applicationCount : 0;
+    }
+
+    function getCanonicalViewCount(data) {
+      return ('viewCount' in data) ? data.viewCount : 0;
+    }
+
+    function hasCanonicalJobPostingImmutableFields(nextData, currentData) {
+      return nextData.schemaVersion == currentData.schemaVersion &&
+             nextData.ownerId == currentData.ownerId &&
+             nextData.createdAt == currentData.createdAt &&
+             (!('searchIndex' in nextData) ||
+               nextData.searchIndex == currentData.searchIndex) &&
+             getCanonicalViewCount(nextData) == getCanonicalViewCount(currentData);
+    }
+
+    function hasCanonicalJobPostingValidCounters(data) {
+      return data.filledPositions >= 0 &&
+             data.filledPositions <= data.totalPositions &&
+             getCanonicalApplicationCount(data) >= 0 &&
+             getCanonicalViewCount(data) >= 0;
+    }
+
+    function isFilledPositionsOnlyUpdate(changedFields) {
+      return changedFields.hasOnly(['filledPositions', 'updatedAt']) &&
+             changedFields.hasAll(['filledPositions', 'updatedAt']);
+    }
+
+    function isScheduleOccupancyUpdate(changedFields) {
+      return changedFields.hasOnly([
+               'filledPositions',
+               'schedule',
+               'status',
+               'updatedAt',
+               'closedAt',
+               'closedReason'
+             ]) &&
+             changedFields.hasAll(['filledPositions', 'schedule', 'updatedAt']);
+    }
+
+    function hasCanonicalJobPostingStableCounters(nextData, currentData) {
+      return nextData.filledPositions == currentData.filledPositions &&
+             nextData.applicationCount == currentData.applicationCount;
+    }
+
     function validateCanonicalJobPostingUpdate(nextData, currentData) {
       return validateCanonicalJobPosting(nextData) &&
              nextData.schemaVersion == currentData.schemaVersion &&
@@ -475,15 +569,36 @@ service cloud.firestore {
              nextData.viewCount == currentData.viewCount;
     }
 
-    function onlyApprovalFieldsChanged() {
-      let allowedFields = ['tournamentConfig'];
-      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
-      return changedFields.hasOnly(allowedFields) &&
-             request.resource.data.tournamentConfig.approvalStatus in ['approved', 'rejected'] &&
-             ((request.resource.data.tournamentConfig.approvalStatus == 'approved' &&
-               request.resource.data.tournamentConfig.keys().hasAll(['approvedBy', 'approvedAt'])) ||
-              (request.resource.data.tournamentConfig.approvalStatus == 'rejected' &&
-               request.resource.data.tournamentConfig.keys().hasAll(['rejectedBy', 'rejectedAt', 'rejectionReason'])));
+    function validateCanonicalJobPostingOccupancyUpdate(nextData, currentData, changedFields) {
+      return hasCanonicalJobPostingImmutableFields(nextData, currentData) &&
+             hasCanonicalJobPostingValidCounters(nextData) &&
+             (!changedFields.hasAny(['schedule']) ||
+                (validateCanonicalSchedule(nextData.schedule) &&
+                 validateCanonicalDerivedScheduleFields(nextData))) &&
+             (
+                isFilledPositionsOnlyUpdate(changedFields) ||
+                isScheduleOccupancyUpdate(changedFields)
+             );
+    }
+
+    function isDatedWorkLogCreate(data) {
+      return data.keys().hasAll(['staffId', 'jobPostingId', 'date', 'status']) &&
+             data.staffId is string &&
+             data.jobPostingId is string &&
+             data.date is string &&
+             data.status == 'scheduled' &&
+             (!('payrollStatus' in data) || data.payrollStatus == 'pending');
+    }
+
+    function isFixedWorkLogCreate(data) {
+      return data.keys().hasAll(['staffId', 'jobPostingId', 'status', 'isFixedPosting', 'date']) &&
+             data.staffId is string &&
+             data.jobPostingId is string &&
+             data.isFixedPosting == true &&
+             data.status == 'scheduled' &&
+             data.date == null &&
+             (!('timeSlot' in data) || data.timeSlot == null) &&
+             (!('payrollStatus' in data) || data.payrollStatus == 'pending');
     }
 
     // ================= Collection Rules =================
@@ -725,22 +840,40 @@ service cloud.firestore {
 
       // Admin can update any job posting, Manager/Staff can update their own
       // Tournament 승인은 admin만 가능
-      allow update: if (isAdmin() &&
-        validateCanonicalJobPostingUpdate(request.resource.data, resource.data) &&
+      allow update: if hasValidRole() &&
+        (isAdmin() || request.auth.uid == resource.data.ownerId) &&
         request.resource.data.ownerId == resource.data.ownerId &&
-        request.resource.data.postingType == resource.data.postingType) ||
-        (hasValidRole() && request.auth.uid == resource.data.ownerId &&
-         validateCanonicalJobPostingUpdate(request.resource.data, resource.data) &&
-         request.resource.data.ownerId == resource.data.ownerId &&
-         request.resource.data.postingType == resource.data.postingType &&
+        request.resource.data.postingType == resource.data.postingType &&
+        (isAdmin() ||
+         !('tournamentConfig' in request.resource.data) ||
+         (resource.data.postingType == 'tournament' &&
+          request.resource.data.tournamentConfig.approvalStatus ==
+            resource.data.tournamentConfig.approvalStatus)) &&
+        (
+          (hasCanonicalJobPostingStableCounters(request.resource.data, resource.data) &&
+           validateCanonicalJobPostingUpdate(request.resource.data, resource.data)) ||
+          (!hasCanonicalJobPostingStableCounters(request.resource.data, resource.data) &&
+           validateCanonicalJobPostingOccupancyUpdate(
+             request.resource.data,
+             resource.data,
+             request.resource.data.diff(resource.data).affectedKeys()
+           ))
+        );
+         /* legacy duplicate condition removed
+         // (tournament approval check handled above)
+         // duplicate line removed
+         // duplicate line removed
          // Tournament 승인 필드는 admin만 수정 가능
          (!('tournamentConfig' in request.resource.data) ||
-           (resource.data.postingType == 'tournament' &&
-            request.resource.data.tournamentConfig.approvalStatus == resource.data.tournamentConfig.approvalStatus)));
+         // legacy duplicate line removed
+         // legacy duplicate line removed
+         // legacy duplicate line removed
+         // legacy duplicate line removed
         // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - updatedAt 검증 제거
 
       // Phase 4: 조회수 증가 권한 (로그인한 사용자는 누구나 조회수 증가 가능)
       // fixedData.viewCount 필드만 변경되는 경우 허용
+      */
       allow update: if isSignedIn() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
         request.resource.data.viewCount is number &&
@@ -820,6 +953,7 @@ service cloud.firestore {
       // 본인 지원서, 공고 소유자, 관리자만 읽기 가능
       allow read: if isSignedIn() && (
         isPrivileged() ||
+        canReadOwnMissingApplication(applicationId) ||
         request.auth.uid == resource.data.applicantId ||
         (resource.data.keys().hasAny(['jobPostingId']) &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
@@ -835,7 +969,9 @@ service cloud.firestore {
 
       // 관리자 및 구인공고 작성자가 지원서 수정 가능
       // status enum 검증: 허용값 출처 application.schema.ts
-      allow update: if (isPrivileged() ||
+      allow update: if (
+        canApplicantUpdateOwnApplication() ||
+        isPrivileged() ||
         (hasValidRole() && (
           (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid) ||
@@ -843,7 +979,8 @@ service cloud.firestore {
            get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.ownerId == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.ownerId == request.auth.uid)
-        ))) &&
+        ))
+      ) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in
          ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending']);
@@ -903,12 +1040,10 @@ service cloud.firestore {
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
       // Phase 2: jobPostingId 사용 (eventId 대신)
       allow create: if isSignedIn() && hasValidRole() &&
-        request.resource.data.keys().hasAll(['staffId', 'jobPostingId', 'date']) &&
-        request.resource.data.staffId is string &&
-        request.resource.data.jobPostingId is string &&
-        request.resource.data.date is string &&
-        request.resource.data.status == 'scheduled' &&
-        (!('payrollStatus' in request.resource.data) || request.resource.data.payrollStatus == 'pending');
+        (
+          isDatedWorkLogCreate(request.resource.data) ||
+          isFixedWorkLogCreate(request.resource.data)
+        );
 
       // 소유자/공고작성자/admin만 수정 가능 + status/payrollStatus enum 검증
       // 허용값 출처: workLog.schema.ts, statusValues.ts

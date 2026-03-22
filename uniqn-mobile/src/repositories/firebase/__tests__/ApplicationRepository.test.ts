@@ -37,6 +37,20 @@ jest.mock('@/utils/job-posting/dateUtils', () => ({
   getClosingStatus: jest.fn(() => ({ total: 10, filled: 2 })),
 }));
 
+jest.mock('@/domains/application', () => ({
+  applicationValidator: {
+    checkRoleCapacity: jest.fn(() => ({ available: true })),
+  },
+}));
+
+jest.mock('@/domains/job-posting', () => ({
+  selectPostingWorkflow: jest.fn(() => ({ recruitmentType: 'manual' })),
+}));
+
+jest.mock('@/types/assignment', () => ({
+  normalizeAssignmentRole: jest.fn((role: string) => ({ role })),
+}));
+
 jest.mock('@/errors/serviceErrorHandler', () => ({
   handleServiceError: jest.fn((error: unknown) => {
     if (error instanceof Error) return error;
@@ -480,6 +494,48 @@ describe('FirebaseApplicationRepository', () => {
   });
 
   // ==========================================================================
+  // applyWithTransaction
+  // ==========================================================================
+  describe('applyWithTransaction', () => {
+    it('should create an application without updating the job posting counter on the client', async () => {
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              id: 'job-1',
+              title: 'test posting',
+              status: 'active',
+              questions: { items: [] },
+            })
+          )
+          .mockResolvedValueOnce(createMockDocSnap('job-1_staff-1', null)),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) => {
+        return callback(mockTransaction);
+      });
+
+      const result = await repository.applyWithTransaction(
+        {
+          jobPostingId: 'job-1',
+          assignments: [{ roleIds: ['dealer'] }],
+        } as never,
+        {
+          applicantId: 'staff-1',
+          applicantName: 'test applicant',
+        }
+      );
+
+      expect(mockTransaction.set).toHaveBeenCalledTimes(1);
+      expect(mockTransaction.update).not.toHaveBeenCalled();
+      expect(result.id).toBe('job-1_staff-1');
+    });
+  });
+
+  // ==========================================================================
   // cancelWithTransaction
   // ==========================================================================
   describe('cancelWithTransaction', () => {
@@ -502,7 +558,7 @@ describe('FirebaseApplicationRepository', () => {
 
       await repository.cancelWithTransaction('app-1', 'staff-1');
 
-      expect(mockTransaction.update).toHaveBeenCalledTimes(2);
+      expect(mockTransaction.update).toHaveBeenCalledTimes(1);
     });
 
     it('should throw when application does not exist', async () => {
@@ -657,6 +713,60 @@ describe('FirebaseApplicationRepository', () => {
           }),
         })
       );
+    });
+
+    it('should only decrement filledPositions when approving a cancellation request', async () => {
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              jobPostingId: 'job-1',
+              status: 'cancellation_pending',
+              cancellationRequest: {
+                status: 'pending',
+                requestedAt: {
+                  seconds: 1735689600,
+                  nanoseconds: 0,
+                  toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+                },
+                reason: '개인 일정',
+              },
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              id: 'job-1',
+              ownerId: 'employer-1',
+              applicationCount: 3,
+              filledPositions: 1,
+            })
+          ),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await repository.reviewCancellationWithTransaction(
+        {
+          applicationId: 'app-1',
+          approved: true,
+        },
+        'employer-1'
+      );
+
+      expect(mockTransaction.update).toHaveBeenCalledTimes(2);
+
+      const jobUpdate = mockTransaction.update.mock.calls[1][1];
+      expect(jobUpdate).toMatchObject({
+        filledPositions: 0,
+        updatedAt: { _serverTimestamp: true },
+      });
+      expect(jobUpdate).not.toHaveProperty('applicationCount');
     });
   });
 
