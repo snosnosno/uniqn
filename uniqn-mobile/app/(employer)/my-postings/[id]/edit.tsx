@@ -121,7 +121,7 @@ export default function EditJobPostingScreen() {
     }
 
     return true;
-  }, [allowScheduleFallback, existingJob, formData, hasConfirmedApplicants]);
+  }, [allowScheduleFallback, formData, hasConfirmedApplicants]);
 
   const handleSubmit = useCallback(async () => {
     if (!user?.uid || !formData?.location || !draft || !id) {

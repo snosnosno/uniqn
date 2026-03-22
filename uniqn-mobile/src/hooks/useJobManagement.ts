@@ -111,16 +111,11 @@ export function useCreateJobPosting() {
     onSuccess: (data) => {
       // 다중 공고 생성 여부 확인
       if (Array.isArray(data)) {
-        logger.info('다중 공고 생성 완료', {
-          count: data.length,
-          ids: data.map((d) => d.id),
-        });
         addToast({
           type: 'success',
           message: `${data.length}개의 공고가 등록되었습니다.`,
         });
       } else {
-        logger.info('공고 생성 완료', { jobPostingId: data.id });
         addToast({ type: 'success', message: '공고가 등록되었습니다.' });
       }
 

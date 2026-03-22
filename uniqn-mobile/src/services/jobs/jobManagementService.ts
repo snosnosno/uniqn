@@ -93,11 +93,6 @@ async function createMultiplePostingsByDate(
       );
       results.push(result);
       createdIds.push(result.id);
-
-      logger.info('날짜별 공고 생성', {
-        id: result.id,
-        date: requirement.date,
-      });
     }
   } catch (error) {
     if (createdIds.length > 0) {
@@ -145,24 +140,15 @@ export async function createJobPosting(
   ownerName: string
 ): Promise<CreateJobPostingResult | CreateJobPostingResult[]> {
   try {
-    logger.info('공고 생성 시작', { ownerId, title: input.title });
-
     const isMultiDateType = input.postingType === 'regular' || input.postingType === 'urgent';
     const hasMultipleDates =
       input.schedule.kind === 'dated' && input.schedule.requirements.length > 1;
 
     if (isMultiDateType && hasMultipleDates) {
-      const results = await createMultiplePostingsByDate(input, ownerId, ownerName);
-      logger.info('다중 공고 생성 완료', {
-        count: results.length,
-        ids: results.map((result) => result.id),
-      });
-      return results;
+      return await createMultiplePostingsByDate(input, ownerId, ownerName);
     }
 
-    const result = await createSinglePosting(input, ownerId, ownerName);
-    logger.info('공고 생성 완료', { id: result.id, title: input.title });
-    return result;
+    return await createSinglePosting(input, ownerId, ownerName);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 생성',

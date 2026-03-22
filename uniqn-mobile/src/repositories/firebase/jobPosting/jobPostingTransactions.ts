@@ -193,11 +193,6 @@ export async function createWithTransaction(
   context: CreateJobPostingContext
 ): Promise<CreateJobPostingResult> {
   try {
-    logger.info('Job posting create', {
-      ownerId: context.ownerId,
-      title: input.title,
-    });
-
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const newDocRef = doc(jobsRef);
     const now = Timestamp.now();
@@ -248,8 +243,6 @@ export async function createWithTransaction(
     );
 
     await setDoc(newDocRef, jobPostingData);
-
-    logger.info('Job posting created', { id: newDocRef.id });
 
     return { id: newDocRef.id, jobPosting };
   } catch (error) {
