@@ -27,6 +27,7 @@ import {
   draftToFormData,
   patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { UpdateJobPostingInput, JobPostingFormData } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
@@ -65,7 +66,7 @@ export default function EditJobPostingScreen() {
 
   useEffect(() => {
     if (existingJob && !draft) {
-      if (existingJob.schedule.kind === 'fixed') {
+      if (!isCanonicalDatedPosting(existingJob)) {
         addToast({
           type: 'warning',
           message: '고정공고 편집은 V3 통합 범위에서 제외되었습니다.',

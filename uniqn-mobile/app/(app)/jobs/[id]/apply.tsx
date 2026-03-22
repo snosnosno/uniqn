@@ -22,6 +22,7 @@ import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
 
@@ -231,7 +232,7 @@ export default function ApplyScreen() {
     );
   }
 
-  if (job.schedule.kind === 'fixed') {
+  if (!isCanonicalDatedPosting(job)) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen

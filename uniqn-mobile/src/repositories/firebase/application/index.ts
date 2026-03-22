@@ -39,13 +39,6 @@ import {
   cancelConfirmationTransaction,
 } from './applicationHistoryTransactions';
 
-import {
-  convertApplicantToStaffTransaction,
-  revertStaffConversionTransaction,
-  isAlreadyStaffQuery,
-  canConvertToStaffQuery,
-} from './applicationConversionTransactions';
-
 // ============================================================================
 // Facade Class
 // ============================================================================
@@ -81,10 +74,4 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
   // v2.0 History Transactions
   confirmWithHistoryTransaction = confirmWithHistoryTransaction;
   cancelConfirmationTransaction = cancelConfirmationTransaction;
-
-  // Conversion Transactions
-  convertApplicantToStaffTransaction = convertApplicantToStaffTransaction;
-  revertStaffConversionTransaction = revertStaffConversionTransaction;
-  isAlreadyStaff = isAlreadyStaffQuery;
-  canConvertToStaff = canConvertToStaffQuery;
 }

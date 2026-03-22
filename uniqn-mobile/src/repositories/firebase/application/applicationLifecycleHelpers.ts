@@ -8,7 +8,10 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { updatePostingScheduleFilled } from '@/domains/application';
-import { normalizePostingAggregateStats } from '@/domains/job-posting';
+import {
+  normalizePostingAggregateStats,
+  transitionPostingAggregateStats,
+} from '@/domains/job-posting';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import {
@@ -216,14 +219,20 @@ export async function releaseConfirmedAssignmentsInTransaction(params: {
   const shouldReopen =
     jobData.status === STATUS.JOB_POSTING.CLOSED && newFilledPositions < totalPositions;
 
-  const currentStats = normalizePostingAggregateStats(jobData.stats, jobData.schedule);
+  const currentStats = transitionPostingAggregateStats(
+    normalizePostingAggregateStats(jobData.stats, jobData.schedule),
+    {
+      fromStatus: applicationData.status,
+      toStatus: nextApplicationStatus,
+      filledPositionsDelta: -decrementCount,
+    }
+  );
 
   const jobUpdateData: Record<string, unknown> = {
     filledPositions: newFilledPositions,
     schedule: updatedSchedule,
     stats: {
       ...currentStats,
-      filledPositions: newFilledPositions,
     },
     updatedAt: serverTimestamp(),
   };

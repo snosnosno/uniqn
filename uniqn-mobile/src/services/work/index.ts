@@ -60,7 +60,6 @@ export {
   updateWorkTime as updateConfirmedStaffWorkTime,
   cancelConfirmedStaffConfirmation,
   markAsNoShow,
-  updateStaffStatus,
   subscribeToConfirmedStaff,
   type GetConfirmedStaffResult,
 } from './confirmedStaffService';

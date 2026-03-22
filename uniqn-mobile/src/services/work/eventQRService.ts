@@ -98,12 +98,17 @@ export async function generateEventQR(
     const securityCode = generateSecurityCode();
 
     // 기존 활성 QR 비활성화 (같은 공고/날짜/액션) - Repository 사용
-    await eventQRRepository.deactivateByJobAndDate(input.jobPostingId, input.date, input.action);
+    await eventQRRepository.deactivateByJobAndDate(input.jobPostingId, input.date, input.action, {
+      assignmentGroupId: input.assignmentGroupId,
+      timeSlot: input.timeSlot,
+    });
 
     // 새 QR 코드 생성 - Repository 사용
     const qrData: Omit<EventQRCode, 'id'> = {
       jobPostingId: input.jobPostingId,
       date: input.date,
+      assignmentGroupId: input.assignmentGroupId ?? null,
+      timeSlot: input.timeSlot ?? null,
       action: input.action,
       securityCode,
       createdBy: input.createdBy,
@@ -119,6 +124,8 @@ export async function generateEventQR(
       type: 'event',
       jobPostingId: input.jobPostingId,
       date: input.date,
+      assignmentGroupId: input.assignmentGroupId ?? null,
+      timeSlot: input.timeSlot ?? null,
       action: input.action,
       securityCode,
       createdAt: now,
@@ -167,7 +174,11 @@ export async function validateEventQR(qrString: string): Promise<EventQRValidati
       qrData.jobPostingId,
       qrData.date,
       qrData.action,
-      qrData.securityCode
+      qrData.securityCode,
+      {
+        assignmentGroupId: qrData.assignmentGroupId,
+        timeSlot: qrData.timeSlot,
+      }
     );
 
     if (!qrDoc) {
@@ -181,6 +192,8 @@ export async function validateEventQR(qrString: string): Promise<EventQRValidati
       isValid: true,
       jobPostingId: qrData.jobPostingId,
       date: qrData.date,
+      assignmentGroupId: qrData.assignmentGroupId ?? null,
+      timeSlot: qrData.timeSlot ?? null,
       action: qrData.action,
     };
   } catch (error) {
@@ -213,13 +226,15 @@ export async function processEventQRCheckIn(
       });
     }
 
-    const { jobPostingId, date, action } = validation;
+    const { jobPostingId, date, assignmentGroupId, timeSlot, action } = validation;
 
     // 2. 해당 스태프의 WorkLog 찾기 - Repository 사용
     const workLog = await workLogRepository.findByJobPostingStaffDate(
       jobPostingId!,
       staffId,
-      date!
+      date!,
+      assignmentGroupId,
+      timeSlot
     );
 
     if (!workLog) {
@@ -259,6 +274,8 @@ export async function processEventQRCheckIn(
     return {
       success: true,
       workLogId,
+      assignmentGroupId: workLog.assignmentGroupId ?? assignmentGroupId ?? null,
+      timeSlot: workLog.timeSlot ?? timeSlot ?? null,
       action: result.action,
       checkTime,
       message: result.action === 'checkIn' ? '출근이 완료되었습니다.' : '퇴근이 완료되었습니다.',
@@ -284,10 +301,11 @@ export async function processEventQRCheckIn(
 export async function getActiveEventQR(
   jobPostingId: string,
   date: string,
-  action: QRCodeAction
+  action: QRCodeAction,
+  options?: { assignmentGroupId?: string | null; timeSlot?: string | null }
 ): Promise<EventQRCode | null> {
   // Repository로 위임 (만료 시 자동 비활성화 포함)
-  return eventQRRepository.getActiveByJobAndDate(jobPostingId, date, action);
+  return eventQRRepository.getActiveByJobAndDate(jobPostingId, date, action, options);
 }
 
 /**

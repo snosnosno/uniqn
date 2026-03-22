@@ -35,11 +35,19 @@ function formatDate(timestamp: DateInput): string {
   return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 }
 
+function isSupportedTemplateData(templateData?: JobPostingTemplate['templateData']): boolean {
+  if (!templateData?.schedule) {
+    return false;
+  }
+
+  return templateData.postingType !== 'fixed' && templateData.schedule.kind !== 'fixed';
+}
+
 function getPostingTypeLabel(template: JobPostingTemplate): string {
   const postingType = template.templateData?.postingType;
   if (postingType === 'tournament') return '대회';
   if (postingType === 'urgent') return '긴급';
-  if (postingType === 'fixed' || template.templateData?.schedule?.kind === 'fixed') {
+  if (template.templateData && !isSupportedTemplateData(template.templateData)) {
     return '지원 중단';
   }
   return '일반';
@@ -50,8 +58,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
   const location = templateData?.location?.name || '미정';
   const salary =
     templateData?.compensation?.defaultSalary || templateData?.roleCatalog?.[0]?.salary;
-  const isUnsupported =
-    templateData?.postingType === 'fixed' || templateData?.schedule?.kind === 'fixed';
+  const isUnsupported = templateData ? !isSupportedTemplateData(templateData) : false;
 
   const salaryText = salary?.amount
     ? `${salary.type === 'hourly' ? '시급' : salary.type === 'daily' ? '일급' : '급여'} ${salary.amount.toLocaleString()}원`

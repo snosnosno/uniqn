@@ -22,6 +22,7 @@ import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/observability';
 import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
 // ============================================================================
 // Screen Component
@@ -92,7 +93,7 @@ export default function AuthenticatedJobDetailScreen() {
     );
   }
 
-  if (job.postingType === 'fixed' || job.schedule.kind === 'fixed') {
+  if (!isCanonicalDatedPosting(job)) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />

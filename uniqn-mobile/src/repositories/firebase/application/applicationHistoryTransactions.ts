@@ -34,7 +34,10 @@ import {
   type JobPosting,
 } from '@/types';
 import { validateAssignmentSlotCapacity } from '@/domains/application';
-import { normalizePostingAggregateStats } from '@/domains/job-posting';
+import {
+  normalizePostingAggregateStats,
+  transitionPostingAggregateStats,
+} from '@/domains/job-posting';
 import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
 import { COLLECTIONS, STATUS } from '@/constants';
@@ -249,7 +252,14 @@ export async function confirmWithHistoryTransaction(
       });
 
       const nextFilledPositions = Math.max(0, jobData.filledPositions + assignmentCount);
-      const postingStats = normalizePostingAggregateStats(jobData.stats, jobData.schedule);
+      const postingStats = transitionPostingAggregateStats(
+        normalizePostingAggregateStats(jobData.stats, jobData.schedule),
+        {
+          fromStatus: applicationData.status,
+          toStatus: STATUS.APPLICATION.CONFIRMED,
+          filledPositionsDelta: assignmentCount,
+        }
+      );
 
       const shouldClose =
         jobData.totalPositions > 0 && nextFilledPositions >= jobData.totalPositions;
@@ -259,7 +269,6 @@ export async function confirmWithHistoryTransaction(
         schedule: updatedSchedule,
         stats: {
           ...postingStats,
-          filledPositions: nextFilledPositions,
         },
         updatedAt: serverTimestamp(),
       };

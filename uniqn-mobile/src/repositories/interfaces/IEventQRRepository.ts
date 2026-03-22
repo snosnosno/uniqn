@@ -12,6 +12,11 @@
 
 import type { EventQRCode, QRCodeAction } from '@/types';
 
+export interface EventQRScopeOptions {
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
+}
+
 // ============================================================================
 // Interface
 // ============================================================================
@@ -45,7 +50,8 @@ export interface IEventQRRepository {
   getActiveByJobAndDate(
     jobPostingId: string,
     date: string,
-    action: QRCodeAction
+    action: QRCodeAction,
+    options?: EventQRScopeOptions
   ): Promise<EventQRCode | null>;
 
   /**
@@ -57,7 +63,8 @@ export interface IEventQRRepository {
     jobPostingId: string,
     date: string,
     action: QRCodeAction,
-    securityCode: string
+    securityCode: string,
+    options?: EventQRScopeOptions
   ): Promise<EventQRCode | null>;
 
   // ==========================================================================
@@ -86,7 +93,12 @@ export interface IEventQRRepository {
    * @description 새 QR 생성 전 기존 활성 QR 비활성화
    * @returns 비활성화된 QR 코드 수
    */
-  deactivateByJobAndDate(jobPostingId: string, date: string, action: QRCodeAction): Promise<number>;
+  deactivateByJobAndDate(
+    jobPostingId: string,
+    date: string,
+    action: QRCodeAction,
+    options?: EventQRScopeOptions
+  ): Promise<number>;
 
   // ==========================================================================
   // 정리 (Cleanup)

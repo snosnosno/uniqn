@@ -258,7 +258,11 @@ describe('eventQRService - generateEventQR', () => {
     expect(mockEventQRRepositoryDeactivateByJobAndDate).toHaveBeenCalledWith(
       'job-1',
       '2025-01-15',
-      'checkIn'
+      'checkIn',
+      {
+        assignmentGroupId: undefined,
+        timeSlot: undefined,
+      }
     );
   });
 
@@ -778,7 +782,8 @@ describe('eventQRService - getActiveEventQR', () => {
     expect(mockEventQRRepositoryGetActiveByJobAndDate).toHaveBeenCalledWith(
       'job-1',
       '2025-01-15',
-      'checkIn'
+      'checkIn',
+      undefined
     );
   });
 

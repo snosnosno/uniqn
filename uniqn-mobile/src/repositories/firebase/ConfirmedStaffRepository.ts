@@ -33,19 +33,16 @@ import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import type { WorkLog, RoleChangeHistory } from '@/types';
-import {
-  buildLegacyTimeModification,
-  writeTimeModificationLog,
-} from './workLog/timeModificationLogs';
+import { writeTimeModificationLog } from './workLog/timeModificationLogs';
 import type {
   IConfirmedStaffRepository,
   DeleteConfirmedStaffContext,
+  UpdateStaffStatusContext,
 } from '../interfaces/IConfirmedStaffRepository';
 import type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
-  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from '../interfaces';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
@@ -221,26 +218,14 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         }
 
         // ?쒓컙 ?섏젙 ?대젰 ???
-        const modificationHistory = workLog.modificationHistory || [];
         const prevCheckIn = workLog.checkInTime ?? null;
         const prevCheckOut = workLog.checkOutTime ?? null;
-
-        modificationHistory.push(
-          buildLegacyTimeModification({
-            previousStartTime: prevCheckIn,
-            previousEndTime: prevCheckOut,
-            newStartTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
-            newEndTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
-            reason: context.reason,
-            modifiedBy: context.modifiedBy,
-          })
-        );
 
         // ?낅뜲?댄듃 ?곗씠??援ъ꽦 (scheduledStartTime/scheduledEndTime? checkInTime??以묐났?대?濡??쒓굅)
         const updateData: Record<string, unknown> = {
           checkInTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
           checkOutTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
-          modificationHistory,
+          hasTimeModificationLogs: true,
           updatedAt: serverTimestamp(),
         };
 

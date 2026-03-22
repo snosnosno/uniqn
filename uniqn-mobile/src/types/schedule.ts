@@ -426,6 +426,8 @@ export interface WorkLog extends FirebaseDocument {
   staffId: string;
   /** 공고 ID */
   jobPostingId: string;
+  assignmentGroupId?: string | null;
+  hasTimeModificationLogs?: boolean;
   date: string;
   isFixedPosting?: boolean;
 
@@ -578,6 +580,8 @@ export interface EventQRCode {
   /** 근무 날짜 (YYYY-MM-DD) */
   date: string;
   /** 출근/퇴근 */
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
   action: QRCodeAction;
   /** 보안 코드 (UUID) */
   securityCode: string;
@@ -599,6 +603,8 @@ export interface EventQRDisplayData {
   /** 공고 ID */
   jobPostingId: string;
   date: string;
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
   action: QRCodeAction;
   securityCode: string;
   /** 생성 시간 (ms) */
@@ -614,6 +620,8 @@ export interface GenerateEventQRInput {
   /** 공고 ID (정규화된 필드명) */
   jobPostingId: string;
   date: string;
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
   action: QRCodeAction;
   createdBy: string;
 }
@@ -624,6 +632,8 @@ export interface GenerateEventQRInput {
 export interface EventQRScanResult {
   success: boolean;
   workLogId: string;
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
   action: QRCodeAction;
   checkTime: Date;
   message: string;
@@ -637,6 +647,8 @@ export interface EventQRValidationResult {
   /** 공고 ID (정규화된 필드명) */
   jobPostingId?: string;
   date?: string;
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
   action?: QRCodeAction;
   errorMessage?: string;
 }

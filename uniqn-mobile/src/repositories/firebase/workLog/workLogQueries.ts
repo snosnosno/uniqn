@@ -7,7 +7,7 @@
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { BusinessError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
@@ -310,7 +310,6 @@ export async function getTodayCheckedIn(staffId: string): Promise<WorkLog | null
       .whereEqual(FIELDS.WORK_LOG.staffId, staffId)
       .whereEqual(FIELDS.WORK_LOG.date, today)
       .whereEqual(FIELDS.WORK_LOG.status, STATUS.WORK_LOG.CHECKED_IN)
-      .limit(1)
       .build();
 
     const snapshot = await getDocs(q);
@@ -326,6 +325,43 @@ export async function getTodayCheckedIn(staffId: string): Promise<WorkLog | null
     });
 
     return workLog ? await hydrateWorkLogModificationHistory(workLog, { force: true }) : null;
+
+    /* const matchingWorkLogs = snapshot.docs
+      .map((docSnapshot) =>
+        parseWorkLogDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        })
+      )
+      .filter((workLog): workLog is WorkLog => Boolean(workLog))
+      .filter((workLog) => {
+        if (
+          assignmentGroupId !== undefined &&
+          (workLog.assignmentGroupId ?? null) !== assignmentGroupId
+        ) {
+          return false;
+        }
+
+        if (timeSlot !== undefined && (workLog.timeSlot ?? null) !== timeSlot) {
+          return false;
+        }
+
+        return true;
+      });
+
+    if (matchingWorkLogs.length === 0) {
+      return null;
+    }
+
+    if (matchingWorkLogs.length > 1) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '동일 날짜에 여러 배정이 있어 assignment별 QR이 필요합니다.',
+      });
+    }
+
+    const [workLog] = matchingWorkLogs;
+
+    return await hydrateWorkLogModificationHistory(workLog, { force: true }); */
   } catch (error) {
     logger.error('오늘 출근 기록 조회 실패', toError(error), { staffId });
     throw handleServiceError(error, {
@@ -537,7 +573,9 @@ export async function getByDateRange(
 export async function findByJobPostingStaffDate(
   jobPostingId: string,
   staffId: string,
-  date: string
+  date: string,
+  assignmentGroupId?: string | null,
+  timeSlot?: string | null
 ): Promise<WorkLog | null> {
   try {
     logger.info('공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
@@ -548,7 +586,6 @@ export async function findByJobPostingStaffDate(
       .whereEqual(FIELDS.WORK_LOG.jobPostingId, jobPostingId)
       .whereEqual(FIELDS.WORK_LOG.staffId, staffId)
       .whereEqual(FIELDS.WORK_LOG.date, date)
-      .limit(1)
       .build();
 
     const snapshot = await getDocs(q);
@@ -558,11 +595,40 @@ export async function findByJobPostingStaffDate(
       return null;
     }
 
-    const docSnapshot = snapshot.docs[0];
-    const workLog = parseWorkLogDocument({
-      id: docSnapshot.id,
-      ...docSnapshot.data(),
-    });
+    const matchingWorkLogs = snapshot.docs
+      .map((docSnapshot) =>
+        parseWorkLogDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        })
+      )
+      .filter((workLog): workLog is WorkLog => Boolean(workLog))
+      .filter((workLog) => {
+        if (
+          assignmentGroupId !== undefined &&
+          (workLog.assignmentGroupId ?? null) !== assignmentGroupId
+        ) {
+          return false;
+        }
+
+        if (timeSlot !== undefined && (workLog.timeSlot ?? null) !== timeSlot) {
+          return false;
+        }
+
+        return true;
+      });
+
+    if (matchingWorkLogs.length === 0) {
+      return null;
+    }
+
+    if (matchingWorkLogs.length > 1) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '동일 날짜에 여러 배정이 있어 assignment별 QR이 필요합니다.',
+      });
+    }
+
+    const [workLog] = matchingWorkLogs;
 
     logger.info('공고-스태프-날짜 근무 기록 조회 완료', {
       jobPostingId,
@@ -571,7 +637,7 @@ export async function findByJobPostingStaffDate(
       found: !!workLog,
     });
 
-    return workLog ? await hydrateWorkLogModificationHistory(workLog, { force: true }) : null;
+    return await hydrateWorkLogModificationHistory(workLog, { force: true });
   } catch (error) {
     logger.error('공고-스태프-날짜 근무 기록 조회 실패', toError(error), {
       jobPostingId,

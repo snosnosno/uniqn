@@ -29,7 +29,11 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator } from '@/domains/application';
-import { selectPostingWorkflow } from '@/domains/job-posting';
+import {
+  normalizePostingAggregateStats,
+  selectPostingWorkflow,
+  transitionPostingAggregateStats,
+} from '@/domains/job-posting';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import type { ApplyContext } from '../../interfaces';
@@ -170,6 +174,30 @@ async function prefetchRelatedWorkLogIds(applicationId: string): Promise<string[
   }
 }
 
+function updateJobPostingStatsInTransaction(params: {
+  transaction: Transaction;
+  jobRef: ReturnType<typeof doc>;
+  jobData: JobPosting;
+  fromStatus?: ApplicationStatus | null;
+  toStatus?: ApplicationStatus | null;
+  totalApplicantsDelta?: number;
+}) {
+  const currentStats = normalizePostingAggregateStats(
+    params.jobData.stats,
+    params.jobData.schedule
+  );
+  const nextStats = transitionPostingAggregateStats(currentStats, {
+    fromStatus: params.fromStatus,
+    toStatus: params.toStatus,
+    totalApplicantsDelta: params.totalApplicantsDelta,
+  });
+
+  params.transaction.update(params.jobRef, {
+    stats: nextStats,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function applyWithTransaction(
   input: CreateApplicationInput,
   context: ApplyContext
@@ -190,7 +218,7 @@ export async function applyWithTransaction(
     }
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      const { jobData } = await loadJobPostingForApply(transaction, input.jobPostingId);
+      const { jobRef, jobData } = await loadJobPostingForApply(transaction, input.jobPostingId);
 
       if (jobData.status !== STATUS.JOB_POSTING.ACTIVE) {
         throw new ApplicationClosedError({
@@ -281,6 +309,14 @@ export async function applyWithTransaction(
       };
 
       transaction.set(applicationRef, applicationData);
+      updateJobPostingStatsInTransaction({
+        transaction,
+        jobRef,
+        jobData,
+        fromStatus: existingData?.status ?? null,
+        toStatus: STATUS.APPLICATION.APPLIED,
+        totalApplicantsDelta: existingData ? 0 : 1,
+      });
 
       return {
         id: applicationId,
@@ -325,7 +361,10 @@ export async function cancelWithTransaction(
         transaction,
         applicationId
       );
-      await loadJobPostingForTransaction(transaction, applicationData.jobPostingId);
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
+        transaction,
+        applicationData.jobPostingId
+      );
 
       assertApplicationApplicant(applicationData, applicantId, '본인 지원만 취소할 수 있습니다.');
 
@@ -344,6 +383,13 @@ export async function cancelWithTransaction(
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.CANCELLED,
         updatedAt: serverTimestamp(),
+      });
+      updateJobPostingStatsInTransaction({
+        transaction,
+        jobRef,
+        jobData,
+        fromStatus: applicationData.status,
+        toStatus: STATUS.APPLICATION.CANCELLED,
       });
     });
 
@@ -382,7 +428,10 @@ export async function requestCancellationWithTransaction(
         transaction,
         input.applicationId
       );
-      await loadJobPostingForTransaction(transaction, applicationData.jobPostingId);
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
+        transaction,
+        applicationData.jobPostingId
+      );
 
       assertApplicationApplicant(
         applicationData,
@@ -412,6 +461,13 @@ export async function requestCancellationWithTransaction(
         status: STATUS.APPLICATION.CANCELLATION_PENDING as ApplicationStatus,
         cancellationRequest,
         updatedAt: serverTimestamp(),
+      });
+      updateJobPostingStatsInTransaction({
+        transaction,
+        jobRef,
+        jobData,
+        fromStatus: applicationData.status,
+        toStatus: STATUS.APPLICATION.CANCELLATION_PENDING,
       });
     });
 
@@ -508,7 +564,7 @@ export async function reviewCancellationWithTransaction(
           transaction,
           input.applicationId
         );
-        const { jobData } = await loadJobPostingForTransaction(
+        const { jobRef, jobData } = await loadJobPostingForTransaction(
           transaction,
           applicationData.jobPostingId
         );
@@ -543,6 +599,13 @@ export async function reviewCancellationWithTransaction(
           status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
           cancellationRequest: updatedCancellationRequest,
           updatedAt: serverTimestamp(),
+        });
+        updateJobPostingStatsInTransaction({
+          transaction,
+          jobRef,
+          jobData,
+          fromStatus: applicationData.status,
+          toStatus: STATUS.APPLICATION.CONFIRMED,
         });
       });
     }
@@ -584,7 +647,7 @@ export async function rejectWithTransaction(
         transaction,
         input.applicationId
       );
-      const { jobData } = await loadJobPostingForTransaction(
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
         transaction,
         applicationData.jobPostingId
       );
@@ -603,6 +666,13 @@ export async function rejectWithTransaction(
         processedBy: reviewerId,
         processedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+      });
+      updateJobPostingStatsInTransaction({
+        transaction,
+        jobRef,
+        jobData,
+        fromStatus: applicationData.status,
+        toStatus: STATUS.APPLICATION.REJECTED,
       });
     });
 

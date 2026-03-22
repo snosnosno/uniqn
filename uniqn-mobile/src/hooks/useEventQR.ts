@@ -38,6 +38,8 @@ const MAX_RETRY_COUNT = 3;
 export interface UseEventQROptions {
   /** 자동 갱신 활성화 (기본: true) */
   autoRefresh?: boolean;
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
 }
 
 export interface UseEventQRReturn {
@@ -79,7 +81,7 @@ export function useEventQR(
   createdBy: string,
   options: UseEventQROptions = {}
 ): UseEventQRReturn {
-  const { autoRefresh = true } = options;
+  const { autoRefresh = true, assignmentGroupId, timeSlot } = options;
   const { addToast } = useToastStore();
 
   // State
@@ -186,6 +188,8 @@ export function useEventQR(
         const result = await generateEventQR({
           jobPostingId,
           date,
+          assignmentGroupId,
+          timeSlot,
           action,
           createdBy,
         });
@@ -274,7 +278,18 @@ export function useEventQR(
         }
       }
     },
-    [jobPostingId, date, createdBy, autoRefresh, isActive, startCountdown, addToast, clearTimers]
+    [
+      jobPostingId,
+      date,
+      createdBy,
+      autoRefresh,
+      assignmentGroupId,
+      timeSlot,
+      isActive,
+      startCountdown,
+      addToast,
+      clearTimers,
+    ]
   );
 
   // ============================================================================

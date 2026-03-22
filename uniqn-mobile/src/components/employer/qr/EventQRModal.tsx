@@ -49,6 +49,8 @@ export interface EventQRModalProps {
   jobPostingId: string;
   jobTitle?: string;
   eventDate?: string; // YYYY-MM-DD
+  assignmentGroupId?: string | null;
+  timeSlot?: string | null;
 }
 
 type QRMode = 'checkIn' | 'checkOut';
@@ -221,6 +223,8 @@ export function EventQRModal({
   jobPostingId,
   jobTitle,
   eventDate,
+  assignmentGroupId,
+  timeSlot,
 }: EventQRModalProps) {
   // 오늘 날짜 기본값
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -248,6 +252,8 @@ export function EventQRModal({
     refresh,
   } = useEventQR(jobPostingId, targetDate, createdBy, {
     autoRefresh: visible,
+    assignmentGroupId,
+    timeSlot,
   });
 
   // 모달 열릴 때 자동 QR 생성
@@ -326,6 +332,9 @@ export function EventQRModal({
             </Text>
           )}
           <Text className="text-sm text-gray-400 dark:text-gray-500 mb-5">{formattedDate}</Text>
+          {timeSlot ? (
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-5">{timeSlot}</Text>
+          ) : null}
 
           {/* 모드 토글 */}
           <View className="w-full mb-5">

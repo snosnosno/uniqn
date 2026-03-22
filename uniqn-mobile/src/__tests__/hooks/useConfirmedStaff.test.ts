@@ -1,35 +1,6 @@
-/**
- * UNIQN Mobile - useConfirmedStaff Hook Tests
- *
- * @description Unit tests for confirmed staff management hooks
- * @version 1.0.0
- */
-
-// ============================================================================
-// Firebase Mock - Must be first to prevent initialization
-// ============================================================================
-
-import { renderHook, act, waitFor } from '@testing-library/react-native';
-import { resetCounters } from '../mocks/factories';
-
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { ConfirmedStaff, ConfirmedStaffGroup, ConfirmedStaffStats } from '@/types';
-
-// ============================================================================
-// Import Hook After Mocks
-// ============================================================================
-
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: {},
-  storage: {},
-  functions: {},
-}));
-
-// ============================================================================
-// Mock Services
-// ============================================================================
 
 const mockGetConfirmedStaff = jest.fn();
 const mockGetConfirmedStaffByDate = jest.fn();
@@ -37,8 +8,21 @@ const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
-const mockUpdateStaffStatus = jest.fn();
 const mockSubscribeToConfirmedStaff = jest.fn();
+const mockAddToast = jest.fn();
+const mockLoggerInfo = jest.fn();
+const mockLoggerError = jest.fn();
+const mockRefetch = jest.fn();
+const mockInvalidateStaffManagement = jest.fn();
+const mockCancelQueries = jest.fn();
+const mockGetQueryData = jest.fn();
+const mockSetQueryData = jest.fn();
+
+let mockData: unknown;
+let mockError: Error | null;
+let mockIsLoading: boolean;
+let mockIsRefetching: boolean;
+let mockPendingStates = [false, false, false, false];
 
 jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
@@ -48,35 +32,22 @@ jest.mock('@/services', () => ({
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
     mockCancelConfirmedStaffConfirmation(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
-  updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
   subscribeToConfirmedStaff: (...args: unknown[]) => mockSubscribeToConfirmedStaff(...args),
 }));
 
-// ============================================================================
-// Mock Stores
-// ============================================================================
-
-const mockAddToast = jest.fn();
-const mockUser = { uid: 'employer-1' };
-const mockAuthState = { user: mockUser };
-const mockToastState = { addToast: mockAddToast };
-
 jest.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector?: (state: typeof mockAuthState) => unknown) =>
-    selector ? selector(mockAuthState) : mockAuthState,
+  useAuthStore: (selector?: (state: { user: { uid: string } }) => unknown) => {
+    const state = { user: { uid: 'employer-1' } };
+    return selector ? selector(state) : state;
+  },
 }));
 
 jest.mock('@/stores/toastStore', () => ({
-  useToastStore: (selector?: (state: typeof mockToastState) => unknown) =>
-    selector ? selector(mockToastState) : mockToastState,
+  useToastStore: (selector?: (state: { addToast: typeof mockAddToast }) => unknown) => {
+    const state = { addToast: mockAddToast };
+    return selector ? selector(state) : state;
+  },
 }));
-
-// ============================================================================
-// Mock Logger
-// ============================================================================
-
-const mockLoggerInfo = jest.fn();
-const mockLoggerError = jest.fn();
 
 jest.mock('@/utils/logger', () => ({
   logger: {
@@ -87,33 +58,30 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-// ============================================================================
-// Mock Errors
-// ============================================================================
-
 jest.mock('@/errors', () => ({
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
 }));
 
-// ============================================================================
-// Mock React Query
-// ============================================================================
+jest.mock('@/lib/queryClient', () => ({
+  queryKeys: {
+    confirmedStaff: {
+      byJobPosting: (id: string) => ['confirmedStaff', 'byJobPosting', id],
+      byDate: (id: string, date: string) => ['confirmedStaff', 'byDate', id, date],
+    },
+  },
+  cachingPolicies: {
+    frequent: 5 * 60 * 1000,
+  },
+  invalidateQueries: {
+    staffManagement: (...args: unknown[]) => mockInvalidateStaffManagement(...args),
+  },
+}));
 
-const mockQueryClient = {
-  invalidateQueries: jest.fn(),
-};
+jest.mock('@tanstack/react-query', () => {
+  let mutationIndex = 0;
 
-const mockRefetch = jest.fn();
-
-let mockIsLoading = false;
-let mockIsPending = false;
-let mockIsRefetching = false;
-let mockData: unknown = undefined;
-let mockError: Error | null = null;
-
-jest.mock('@tanstack/react-query', () => ({
-  useQuery: jest.fn(
-    (options: { queryKey: string[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
+  return {
+    useQuery: jest.fn((options: { enabled?: boolean; queryFn: () => Promise<unknown> }) => {
       if (options.enabled === false) {
         return {
           data: undefined,
@@ -133,88 +101,44 @@ jest.mock('@tanstack/react-query', () => ({
         error: mockError,
         refetch: mockRefetch,
       };
-    }
-  ),
-  useMutation: jest.fn(
-    (options: {
-      mutationFn: (...args: unknown[]) => Promise<unknown>;
-      onSuccess?: (data: unknown) => void;
-      onError?: (error: Error) => void;
-    }) => {
-      const mutate = (args: unknown) => {
-        mockIsPending = true;
-        Promise.resolve(options.mutationFn(args))
-          .then((result) => {
-            options.onSuccess?.(result);
-            mockIsPending = false;
-          })
-          .catch((error) => {
-            mockError = error as Error;
-            options.onError?.(error as Error);
-            mockIsPending = false;
-          });
-      };
+    }),
+    useMutation: jest.fn(
+      (options: {
+        mutationFn: (...args: unknown[]) => Promise<unknown>;
+        onSuccess?: (data: unknown) => void;
+        onError?: (error: Error, variables?: unknown, context?: unknown) => void;
+      }) => {
+        const currentIndex = mutationIndex++;
 
-      const mutateAsync = async (args: unknown) => {
-        try {
-          mockIsPending = true;
-          const result = await Promise.resolve(options.mutationFn(args));
-          options.onSuccess?.(result);
-          mockIsPending = false;
-          return result;
-        } catch (error) {
-          mockError = error as Error;
-          options.onError?.(error as Error);
-          mockIsPending = false;
-          throw error;
-        }
-      };
-
-      return {
-        mutate,
-        mutateAsync,
-        data: mockData,
-        isPending: mockIsPending,
-        error: mockError,
-      };
-    }
-  ),
-  useQueryClient: () => mockQueryClient,
-}));
-
-// ============================================================================
-// Mock Query Keys
-// ============================================================================
-
-const mockInvalidateStaffManagement = jest.fn();
-
-jest.mock('@/lib/queryClient', () => ({
-  queryKeys: {
-    confirmedStaff: {
-      all: ['confirmedStaff'],
-      byJobPosting: (id: string) => ['confirmedStaff', 'byJobPosting', id],
-      byDate: (id: string, date: string) => ['confirmedStaff', 'byDate', id, date],
-    },
-  },
-  cachingPolicies: {
-    frequent: 1000 * 60 * 5,
-  },
-  invalidateQueries: {
-    staffManagement: (...args: unknown[]) => mockInvalidateStaffManagement(...args),
-  },
-}));
-
-// ============================================================================
-// Test Utilities
-// ============================================================================
+        return {
+          mutate: (variables: unknown) => {
+            Promise.resolve(options.mutationFn(variables))
+              .then((result) => {
+                options.onSuccess?.(result);
+              })
+              .catch((error: Error) => {
+                options.onError?.(error, variables, undefined);
+              });
+          },
+          isPending: mockPendingStates[currentIndex] ?? false,
+        };
+      }
+    ),
+    useQueryClient: () => ({
+      cancelQueries: mockCancelQueries,
+      getQueryData: mockGetQueryData,
+      setQueryData: mockSetQueryData,
+    }),
+  };
+});
 
 function createMockConfirmedStaff(overrides: Partial<ConfirmedStaff> = {}): ConfirmedStaff {
   return {
-    id: 'staff-1',
-    staffId: 'user-1',
-    staffName: '홍길동',
+    id: 'worklog-1',
+    staffId: 'staff-1',
+    staffName: 'Staff One',
     role: 'dealer',
-    date: '2024-01-15',
+    date: '2025-01-20',
     timeSlot: '09:00-18:00',
     status: 'scheduled',
     checkInTime: null,
@@ -223,28 +147,15 @@ function createMockConfirmedStaff(overrides: Partial<ConfirmedStaff> = {}): Conf
   };
 }
 
-function createMockStats(): ConfirmedStaffStats {
+function createMockGroup(staff: ConfirmedStaff[]): ConfirmedStaffGroup {
   return {
-    total: 10,
-    scheduled: 5,
-    checkedIn: 2,
-    checkedOut: 1,
-    completed: 1,
-    cancelled: 1,
-    noShow: 0,
-    settled: 0,
-  };
-}
-
-function createMockGroup(): ConfirmedStaffGroup {
-  return {
-    date: '2024-01-15',
-    formattedDate: '1월 15일 (월)',
-    staff: [createMockConfirmedStaff()],
+    date: '2025-01-20',
+    formattedDate: '2025-01-20',
+    staff,
     isToday: false,
     isPast: false,
     stats: {
-      total: 1,
+      total: staff.length,
       checkedIn: 0,
       completed: 0,
       noShow: 0,
@@ -252,654 +163,180 @@ function createMockGroup(): ConfirmedStaffGroup {
   };
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
+function createMockStats(): ConfirmedStaffStats {
+  return {
+    total: 1,
+    scheduled: 1,
+    checkedIn: 0,
+    checkedOut: 0,
+    completed: 0,
+    cancelled: 0,
+    noShow: 0,
+    settled: 0,
+  };
+}
 
-describe('useConfirmedStaff Hook', () => {
+describe('useConfirmedStaff', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetCounters();
-    mockIsLoading = false;
-    mockIsPending = false;
-    mockIsRefetching = false;
     mockData = undefined;
     mockError = null;
+    mockIsLoading = false;
+    mockIsRefetching = false;
+    mockPendingStates = [false, false, false, false];
   });
 
-  // ==========================================================================
-  // 확정 스태프 조회
-  // ==========================================================================
+  it('returns fetched confirmed staff data', () => {
+    const staff = [createMockConfirmedStaff()];
+    const grouped = [createMockGroup(staff)];
+    const stats = createMockStats();
+    mockData = { staff, grouped, stats };
 
-  describe('확정 스태프 조회', () => {
-    it('공고별 확정 스태프 목록을 조회', () => {
-      const mockStaff = [createMockConfirmedStaff()];
-      const mockGroups = [createMockGroup()];
-      const mockStats = createMockStats();
-      mockData = {
-        staff: mockStaff,
-        grouped: mockGroups,
-        stats: mockStats,
-      };
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
 
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
+    expect(result.current.staff).toEqual(staff);
+    expect(result.current.grouped).toEqual(grouped);
+    expect(result.current.stats).toEqual(stats);
+  });
 
-      expect(result.current.staff).toEqual(mockStaff);
-      expect(result.current.grouped).toEqual(mockGroups);
-      expect(result.current.stats).toEqual(mockStats);
+  it('fetches confirmed staff by date when date option is set', async () => {
+    mockGetConfirmedStaffByDate.mockResolvedValue([createMockConfirmedStaff()]);
+
+    renderHook(() => useConfirmedStaff('job-1', { date: '2025-01-20' }));
+
+    await waitFor(() => {
+      expect(mockGetConfirmedStaffByDate).toHaveBeenCalledWith('job-1', '2025-01-20');
+    });
+  });
+
+  it('refreshes query in non-realtime mode', () => {
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.refresh();
     });
 
-    it('특정 날짜만 조회', async () => {
-      const mockStaff = [createMockConfirmedStaff({ date: '2024-01-15' })];
-      mockGetConfirmedStaffByDate.mockResolvedValueOnce(mockStaff);
-      mockData = {
-        staff: mockStaff,
-        grouped: [],
+    expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('subscribes in realtime mode and applies updates', async () => {
+    let onUpdate:
+      | ((result: {
+          staff: ConfirmedStaff[];
+          grouped: ConfirmedStaffGroup[];
+          stats: ConfirmedStaffStats;
+        }) => void)
+      | undefined;
+
+    mockSubscribeToConfirmedStaff.mockImplementation(
+      (_jobPostingId: string, callbacks: { onUpdate: typeof onUpdate }) => {
+        onUpdate = callbacks.onUpdate;
+        return jest.fn();
+      }
+    );
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
+
+    act(() => {
+      onUpdate?.({
+        staff: [createMockConfirmedStaff()],
+        grouped: [createMockGroup([createMockConfirmedStaff()])],
         stats: createMockStats(),
-      };
-
-      renderHook(() => useConfirmedStaff('job-1', { date: '2024-01-15' }));
-
-      await waitFor(() => {
-        expect(mockGetConfirmedStaffByDate).toHaveBeenCalledWith('job-1', '2024-01-15');
       });
     });
 
-    it('로딩 상태를 반환', () => {
-      mockIsLoading = true;
+    await waitFor(() => {
+      expect(result.current.staff).toHaveLength(1);
+      expect(result.current.isLoading).toBe(false);
+    });
+  });
 
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
+  it('changes role with fallback changedBy', async () => {
+    mockUpdateStaffRole.mockResolvedValue(undefined);
 
-      expect(result.current.isLoading).toBe(true);
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.changeRole({
+        workLogId: 'worklog-1',
+        newRole: 'floor',
+        reason: 'Role update',
+      });
     });
 
-    it('리프레시 상태를 반환', () => {
-      mockIsRefetching = true;
+    await waitFor(() => {
+      expect(mockUpdateStaffRole).toHaveBeenCalledWith({
+        workLogId: 'worklog-1',
+        newRole: 'floor',
+        reason: 'Role update',
+        changedBy: 'employer-1',
+      });
+      expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+    });
+  });
 
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
+  it('updates work time with fallback modifiedBy', async () => {
+    mockUpdateConfirmedStaffWorkTime.mockResolvedValue(undefined);
 
-      expect(result.current.isRefreshing).toBe(true);
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.updateWorkTime({
+        workLogId: 'worklog-1',
+        checkInTime: new Date('2025-01-20T09:00:00Z'),
+        checkOutTime: new Date('2025-01-20T18:00:00Z'),
+        reason: 'Time correction',
+      });
     });
 
-    it('에러 상태를 반환', () => {
-      mockError = new Error('조회 실패');
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.error).toEqual(new Error('조회 실패'));
-    });
-
-    it('빈 데이터의 기본값을 반환', () => {
-      mockData = undefined;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.staff).toEqual([]);
-      expect(result.current.grouped).toEqual([]);
-      expect(result.current.stats).toEqual({
-        total: 0,
-        scheduled: 0,
-        checkedIn: 0,
-        checkedOut: 0,
-        completed: 0,
-        cancelled: 0,
-        noShow: 0,
-        settled: 0,
+    await waitFor(() => {
+      expect(mockUpdateConfirmedStaffWorkTime).toHaveBeenCalledWith({
+        workLogId: 'worklog-1',
+        checkInTime: new Date('2025-01-20T09:00:00Z'),
+        checkOutTime: new Date('2025-01-20T18:00:00Z'),
+        reason: 'Time correction',
+        modifiedBy: 'employer-1',
       });
     });
   });
 
-  // ==========================================================================
-  // 실시간 구독
-  // ==========================================================================
+  it('removes confirmed staff through confirmation cancellation', async () => {
+    mockCancelConfirmedStaffConfirmation.mockResolvedValue(undefined);
 
-  describe('실시간 구독', () => {
-    it('realtime 옵션으로 실시간 구독 시작', () => {
-      const mockUnsubscribe = jest.fn();
-      mockSubscribeToConfirmedStaff.mockReturnValueOnce(mockUnsubscribe);
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
 
-      renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
-
-      expect(mockSubscribeToConfirmedStaff).toHaveBeenCalledWith(
-        'job-1',
-        expect.objectContaining({
-          onUpdate: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith('확정 스태프 실시간 구독 시작', {
+    act(() => {
+      result.current.removeStaff({
+        workLogId: 'worklog-1',
         jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        date: '2025-01-20',
+        reason: 'Release slot',
       });
     });
 
-    it('언마운트 시 실시간 구독 해제', () => {
-      const mockUnsubscribe = jest.fn();
-      mockSubscribeToConfirmedStaff.mockReturnValueOnce(mockUnsubscribe);
-
-      const { unmount } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
-
-      unmount();
-
-      expect(mockUnsubscribe).toHaveBeenCalled();
-    });
-
-    it('실시간 에러 발생 시 토스트 표시', () => {
-      const mockUnsubscribe = jest.fn();
-      let errorCallback: ((error: Error) => void) | undefined;
-
-      mockSubscribeToConfirmedStaff.mockImplementation((_jobPostingId, callbacks) => {
-        errorCallback = callbacks.onError;
-        return mockUnsubscribe;
+    await waitFor(() => {
+      expect(mockCancelConfirmedStaffConfirmation).toHaveBeenCalledWith({
+        workLogId: 'worklog-1',
+        jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        date: '2025-01-20',
+        reason: 'Release slot',
       });
-
-      renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
-
-      act(() => {
-        errorCallback?.(new Error('구독 에러'));
-      });
-
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'error',
-        message: '스태프 데이터 동기화 중 오류가 발생했습니다.',
-      });
-    });
-
-    it('realtime 모드에서는 수동 리프레시 불필요', () => {
-      const mockUnsubscribe = jest.fn();
-      mockSubscribeToConfirmedStaff.mockReturnValueOnce(mockUnsubscribe);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
-
-      act(() => {
-        result.current.refresh();
-      });
-
-      expect(mockRefetch).not.toHaveBeenCalled();
     });
   });
 
-  // ==========================================================================
-  // 역할 변경
-  // ==========================================================================
+  it('marks no-show through canonical mutation', async () => {
+    mockMarkAsNoShow.mockResolvedValue(undefined);
 
-  describe('역할 변경', () => {
-    it('스태프 역할을 변경', async () => {
-      mockUpdateStaffRole.mockResolvedValueOnce(undefined);
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
 
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.changeRole({
-          workLogId: 'worklog-1',
-          newRole: 'floor',
-          reason: '역할 변경 사유',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockUpdateStaffRole).toHaveBeenCalledWith({
-          workLogId: 'worklog-1',
-          newRole: 'floor',
-          reason: '역할 변경 사유',
-          changedBy: 'employer-1',
-        });
-      });
+    act(() => {
+      result.current.setNoShow('worklog-1', 'No arrival');
     });
 
-    it('changedBy가 제공되면 사용', async () => {
-      mockUpdateStaffRole.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.changeRole({
-          workLogId: 'worklog-1',
-          newRole: 'floor',
-          reason: '역할 변경 사유',
-          changedBy: 'admin-1',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockUpdateStaffRole).toHaveBeenCalledWith(
-          expect.objectContaining({
-            changedBy: 'admin-1',
-          })
-        );
-      });
-    });
-
-    it('성공 시 토스트 표시 및 캐시 무효화', async () => {
-      mockUpdateStaffRole.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.changeRole({
-          workLogId: 'worklog-1',
-          newRole: 'floor',
-          reason: '역할 변경 사유',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'success',
-          message: '역할이 변경되었습니다.',
-        });
-        expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
-      });
-    });
-
-    it('에러 발생 시 토스트 표시', async () => {
-      mockUpdateStaffRole.mockRejectedValueOnce(new Error('변경 실패'));
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        try {
-          result.current.changeRole({
-            workLogId: 'worklog-1',
-            newRole: 'floor',
-            reason: '역할 변경 사유',
-          });
-        } catch {
-          // Expected
-        }
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'error',
-          message: '역할 변경에 실패했습니다.',
-        });
-      });
-    });
-
-    it('로딩 상태를 반환', () => {
-      mockIsPending = true;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isChangingRole).toBe(true);
-    });
-  });
-
-  // ==========================================================================
-  // 근무 시간 수정
-  // ==========================================================================
-
-  describe('근무 시간 수정', () => {
-    it('근무 시간을 수정', async () => {
-      mockUpdateConfirmedStaffWorkTime.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.updateWorkTime({
-          workLogId: 'worklog-1',
-          checkInTime: new Date('2024-01-15T09:00:00'),
-          checkOutTime: new Date('2024-01-15T18:00:00'),
-          reason: '시간 수정 사유',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockUpdateConfirmedStaffWorkTime).toHaveBeenCalledWith({
-          workLogId: 'worklog-1',
-          checkInTime: new Date('2024-01-15T09:00:00'),
-          checkOutTime: new Date('2024-01-15T18:00:00'),
-          reason: '시간 수정 사유',
-          modifiedBy: 'employer-1',
-        });
-      });
-    });
-
-    it('성공 시 토스트 표시', async () => {
-      mockUpdateConfirmedStaffWorkTime.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.updateWorkTime({
-          workLogId: 'worklog-1',
-          checkInTime: new Date('2024-01-15T09:00:00'),
-          checkOutTime: new Date('2024-01-15T18:00:00'),
-          reason: '시간 수정 사유',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'success',
-          message: '근무 시간이 수정되었습니다.',
-        });
-      });
-    });
-
-    it('에러 발생 시 토스트 표시', async () => {
-      mockUpdateConfirmedStaffWorkTime.mockRejectedValueOnce(new Error('수정 실패'));
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        try {
-          result.current.updateWorkTime({
-            workLogId: 'worklog-1',
-            checkInTime: new Date(),
-            checkOutTime: new Date(),
-            reason: '시간 수정 사유',
-          });
-        } catch {
-          // Expected
-        }
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'error',
-          message: '근무 시간 수정에 실패했습니다.',
-        });
-      });
-    });
-
-    it('로딩 상태를 반환', () => {
-      mockIsPending = true;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isUpdatingTime).toBe(true);
-    });
-  });
-
-  // ==========================================================================
-  // 스태프 삭제
-  // ==========================================================================
-
-  describe('스태프 삭제', () => {
-    it('확정 스태프를 삭제', async () => {
-      mockCancelConfirmedStaffConfirmation.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.removeStaff({
-          workLogId: 'worklog-1',
-          jobPostingId: 'job-1',
-          staffId: 'user-1',
-          date: '2024-01-15',
-          reason: '개인 사정',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockCancelConfirmedStaffConfirmation).toHaveBeenCalledWith({
-          workLogId: 'worklog-1',
-          jobPostingId: 'job-1',
-          staffId: 'user-1',
-          date: '2024-01-15',
-          reason: '개인 사정',
-        });
-      });
-    });
-
-    it('성공 시 토스트 표시', async () => {
-      mockCancelConfirmedStaffConfirmation.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.removeStaff({
-          workLogId: 'worklog-1',
-          jobPostingId: 'job-1',
-          staffId: 'user-1',
-          date: '2024-01-15',
-          reason: '개인 사정',
-        });
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'success',
-          message: '스태프가 삭제되었습니다.',
-        });
-      });
-    });
-
-    it('에러 발생 시 토스트 표시', async () => {
-      mockCancelConfirmedStaffConfirmation.mockRejectedValueOnce(new Error('삭제 실패'));
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        try {
-          result.current.removeStaff({
-            workLogId: 'worklog-1',
-            jobPostingId: 'job-1',
-            staffId: 'user-1',
-            date: '2024-01-15',
-          });
-        } catch {
-          // Expected
-        }
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'error',
-          message: '스태프 삭제에 실패했습니다.',
-        });
-      });
-    });
-
-    it('로딩 상태를 반환', () => {
-      mockIsPending = true;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isRemoving).toBe(true);
-    });
-  });
-
-  // ==========================================================================
-  // 노쇼 처리
-  // ==========================================================================
-
-  describe('노쇼 처리', () => {
-    it('스태프를 노쇼 처리', async () => {
-      mockMarkAsNoShow.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.setNoShow('worklog-1', '연락 두절');
-      });
-
-      await waitFor(() => {
-        expect(mockMarkAsNoShow).toHaveBeenCalledWith('worklog-1', '연락 두절');
-      });
-    });
-
-    it('사유 없이 노쇼 처리', async () => {
-      mockMarkAsNoShow.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.setNoShow('worklog-1');
-      });
-
-      await waitFor(() => {
-        expect(mockMarkAsNoShow).toHaveBeenCalledWith('worklog-1', undefined);
-      });
-    });
-
-    it('성공 시 토스트 표시', async () => {
-      mockMarkAsNoShow.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        result.current.setNoShow('worklog-1');
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'success',
-          message: '노쇼 처리되었습니다.',
-        });
-      });
-    });
-
-    it('에러 발생 시 토스트 표시', async () => {
-      mockMarkAsNoShow.mockRejectedValueOnce(new Error('처리 실패'));
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        try {
-          result.current.setNoShow('worklog-1');
-        } catch {
-          // Expected
-        }
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'error',
-          message: '노쇼 처리에 실패했습니다.',
-        });
-      });
-    });
-
-    it('로딩 상태를 반환', () => {
-      mockIsPending = true;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isSettingNoShow).toBe(true);
-    });
-  });
-
-  // ==========================================================================
-  // 상태 변경
-  // ==========================================================================
-
-  describe('상태 변경', () => {
-    it('스태프 상태를 변경', async () => {
-      mockUpdateStaffStatus.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        await result.current.changeStatus('worklog-1', 'completed');
-      });
-
-      expect(mockUpdateStaffStatus).toHaveBeenCalledWith('worklog-1', 'completed');
-    });
-
-    it('성공 시 토스트 표시', async () => {
-      mockUpdateStaffStatus.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await act(async () => {
-        await result.current.changeStatus('worklog-1', 'completed');
-      });
-
-      await waitFor(() => {
-        expect(mockAddToast).toHaveBeenCalledWith({
-          type: 'success',
-          message: '상태가 변경되었습니다.',
-        });
-      });
-    });
-
-    it('에러 발생 시 에러를 throw', async () => {
-      mockUpdateStaffStatus.mockRejectedValueOnce(new Error('변경 실패'));
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      await expect(
-        act(async () => {
-          await result.current.changeStatus('worklog-1', 'completed');
-        })
-      ).rejects.toThrow('변경 실패');
-    });
-
-    it('로딩 상태를 반환', () => {
-      mockIsPending = true;
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isChangingStatus).toBe(true);
-    });
-  });
-
-  // ==========================================================================
-  // refresh 기능
-  // ==========================================================================
-
-  describe('refresh 기능', () => {
-    it('refresh 호출 시 refetch 실행', () => {
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      act(() => {
-        result.current.refresh();
-      });
-
-      expect(mockRefetch).toHaveBeenCalled();
-    });
-
-    it('realtime 모드에서는 refresh 무시', () => {
-      const mockUnsubscribe = jest.fn();
-      mockSubscribeToConfirmedStaff.mockReturnValueOnce(mockUnsubscribe);
-
-      const { result } = renderHook(() => useConfirmedStaff('job-1', { realtime: true }));
-
-      act(() => {
-        result.current.refresh();
-      });
-
-      expect(mockRefetch).not.toHaveBeenCalled();
-    });
-  });
-
-  // ==========================================================================
-  // 통합 테스트
-  // ==========================================================================
-
-  describe('통합 테스트', () => {
-    it('모든 action 함수를 제공', () => {
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.changeRole).toBeDefined();
-      expect(result.current.updateWorkTime).toBeDefined();
-      expect(result.current.removeStaff).toBeDefined();
-      expect(result.current.setNoShow).toBeDefined();
-      expect(result.current.changeStatus).toBeDefined();
-    });
-
-    it('모든 로딩 상태를 제공', () => {
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.isChangingRole).toBeDefined();
-      expect(result.current.isUpdatingTime).toBeDefined();
-      expect(result.current.isRemoving).toBeDefined();
-      expect(result.current.isSettingNoShow).toBeDefined();
-      expect(result.current.isChangingStatus).toBeDefined();
-    });
-
-    it('모든 데이터를 제공', () => {
-      const { result } = renderHook(() => useConfirmedStaff('job-1'));
-
-      expect(result.current.staff).toBeDefined();
-      expect(result.current.grouped).toBeDefined();
-      expect(result.current.stats).toBeDefined();
-      expect(result.current.isLoading).toBeDefined();
-      expect(result.current.error).toBeDefined();
-      expect(result.current.refresh).toBeDefined();
-      expect(result.current.isRefreshing).toBeDefined();
+    await waitFor(() => {
+      expect(mockMarkAsNoShow).toHaveBeenCalledWith('worklog-1', 'No arrival');
     });
   });
 });

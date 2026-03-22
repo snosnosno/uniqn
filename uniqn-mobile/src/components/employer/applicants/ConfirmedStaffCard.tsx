@@ -1,63 +1,39 @@
 /**
- * UNIQN Mobile - 확정 스태프 카드 컴포넌트
- *
- * @description 구인자가 확정된 스태프 정보를 확인하고 관리하는 카드
- * @version 1.0.0
+ * UNIQN Mobile - Confirmed Staff Card
  */
 
-import React, { useMemo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { STATUS } from '@/constants';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useThemeStore } from '@/stores/themeStore';
-import { Card } from '../../ui/Card';
-import { Badge } from '../../ui/Badge';
+import { getRoleDisplayName } from '@/types/unified';
+import type { ConfirmedStaff, ConfirmedStaffStatus } from '@/types';
+import { WorkTimeDisplay } from '@/shared/time';
 import { Avatar } from '../../ui/Avatar';
+import { Badge } from '../../ui/Badge';
+import { Card } from '../../ui/Card';
 import {
+  BriefcaseIcon,
+  CheckCircleIcon,
+  ChevronRightIcon,
   ClockIcon,
   EditIcon,
   ExclamationTriangleIcon,
   TrashIcon,
-  ChevronRightIcon,
-  BriefcaseIcon,
-  CheckCircleIcon,
 } from '../../icons';
-import {
-  CONFIRMED_STAFF_STATUS_LABELS,
-  type ConfirmedStaff,
-  type ConfirmedStaffStatus,
-} from '@/types';
-import { getRoleDisplayName } from '@/types/unified';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { WorkTimeDisplay } from '@/shared/time';
-import { STATUS } from '@/constants';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface ConfirmedStaffCardProps {
   staff: ConfirmedStaff;
   onPress?: (staff: ConfirmedStaff) => void;
-  /** 프로필 상세보기 */
   onViewProfile?: (staff: ConfirmedStaff) => void;
-  /** 시간 수정 */
   onEditTime?: (staff: ConfirmedStaff) => void;
-  /** 역할 변경 */
   onChangeRole?: (staff: ConfirmedStaff) => void;
-  /** 신고 (노쇼 포함) */
   onReport?: (staff: ConfirmedStaff) => void;
-  /** 삭제 */
   onDelete?: (staff: ConfirmedStaff) => void;
-  /** 상태 변경 (뱃지 클릭) */
-  onStatusChange?: (staff: ConfirmedStaff) => void;
-  /** 액션 버튼 표시 여부 */
   showActions?: boolean;
-  /** 컴팩트 모드 */
   compact?: boolean;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
 
 const STATUS_BADGE_VARIANT: Record<
   ConfirmedStaffStatus,
@@ -71,9 +47,14 @@ const STATUS_BADGE_VARIANT: Record<
   no_show: 'warning',
 };
 
-// ============================================================================
-// Component
-// ============================================================================
+const STATUS_LABELS: Record<ConfirmedStaffStatus, string> = {
+  scheduled: 'Scheduled',
+  checked_in: 'Checked in',
+  checked_out: 'Checked out',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No-show',
+};
 
 export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   staff,
@@ -83,93 +64,69 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onChangeRole,
   onReport,
   onDelete,
-  onStatusChange,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
-  // 다크모드 감지 (앱 테마 스토어 사용)
-  const { isDarkMode: isDark } = useThemeStore();
-
-  // 사용자 프로필 조회 (프로필 사진, 닉네임)
+  const { isDarkMode } = useThemeStore();
   const { displayName, profilePhotoURL } = useUserProfile({
     userId: staff.staffId,
     fallbackName: staff.staffName,
   });
 
-  // 출석 체크 여부 (QR 출근 찍었는지)
   const isCheckedIn =
     staff.status === STATUS.WORK_LOG.CHECKED_IN ||
     staff.status === STATUS.WORK_LOG.CHECKED_OUT ||
     staff.status === STATUS.WORK_LOG.COMPLETED;
 
-  // 시간 표시 정보 (WorkTimeDisplay 사용 - 직원 화면과 일관성 확보)
-  const timeInfo = useMemo(() => {
-    return WorkTimeDisplay.getDisplayInfo({
-      checkInTime: staff.checkInTime,
-      checkOutTime: staff.checkOutTime,
-      timeSlot: staff.timeSlot,
-      date: staff.date,
-    });
-  }, [staff.checkInTime, staff.checkOutTime, staff.timeSlot, staff.date]);
+  const timeInfo = useMemo(
+    () =>
+      WorkTimeDisplay.getDisplayInfo({
+        checkInTime: staff.checkInTime,
+        checkOutTime: staff.checkOutTime,
+        timeSlot: staff.timeSlot,
+        date: staff.date,
+      }),
+    [staff.checkInTime, staff.checkOutTime, staff.date, staff.timeSlot]
+  );
 
-  // 통합 시간: 실제 > timeSlot 파싱 > '미정'
-  const startTimeStr = timeInfo.effectiveStart;
-  const endTimeStr = timeInfo.effectiveEnd;
-
-  // 근무 시간 계산 (effective 시간 기반)
   const workDuration = timeInfo.duration !== '-' ? timeInfo.duration : null;
-
-  // 액션 버튼 표시 조건
   const canEditTime =
     staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete =
     staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
 
-  // 핸들러
   const handlePress = useCallback(() => {
     onPress?.(staff);
-  }, [staff, onPress]);
+  }, [onPress, staff]);
 
   const handleViewProfile = useCallback(() => {
     onViewProfile?.(staff);
-  }, [staff, onViewProfile]);
+  }, [onViewProfile, staff]);
 
   const handleEditTime = useCallback(() => {
     onEditTime?.(staff);
-  }, [staff, onEditTime]);
+  }, [onEditTime, staff]);
 
   const handleChangeRole = useCallback(() => {
     onChangeRole?.(staff);
-  }, [staff, onChangeRole]);
+  }, [onChangeRole, staff]);
 
   const handleReport = useCallback(() => {
     onReport?.(staff);
-  }, [staff, onReport]);
+  }, [onReport, staff]);
 
   const handleDelete = useCallback(() => {
     onDelete?.(staff);
-  }, [staff, onDelete]);
-
-  const handleStatusChange = useCallback(() => {
-    onStatusChange?.(staff);
-  }, [staff, onStatusChange]);
-
-  // 상태 변경 가능 여부 (scheduled, checked_in, checked_out 간 자유 전환)
-  const canChangeStatus =
-    staff.status === STATUS.WORK_LOG.SCHEDULED ||
-    staff.status === STATUS.WORK_LOG.CHECKED_IN ||
-    staff.status === STATUS.WORK_LOG.CHECKED_OUT;
+  }, [onDelete, staff]);
 
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>
       <Pressable onPress={handlePress} disabled={!onPress}>
-        {/* 헤더 */}
         <View className="flex-row items-center">
-          {/* 프로필 영역 (이름/사진 클릭 시 프로필 모달) */}
           <Pressable
             onPress={handleViewProfile}
             disabled={!onViewProfile}
-            className="flex-row items-center flex-1 active:opacity-80"
+            className="flex-1 flex-row items-center active:opacity-80"
           >
             <Avatar
               source={profilePhotoURL}
@@ -182,11 +139,11 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                 <Text className="text-base font-semibold text-gray-900 dark:text-white">
                   {displayName}
                 </Text>
-                {staff.isRead === false && (
+                {staff.isRead === false ? (
                   <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
-                )}
+                ) : null}
               </View>
-              <View className="flex-row items-center mt-0.5">
+              <View className="mt-0.5 flex-row items-center">
                 <BriefcaseIcon size={12} color="#6B7280" />
                 <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
                   {getRoleDisplayName(staff.role, staff.customRole)}
@@ -194,119 +151,111 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               </View>
             </View>
           </Pressable>
-          <Pressable
-            onPress={handleStatusChange}
-            disabled={!canChangeStatus || !onStatusChange}
-            className={canChangeStatus && onStatusChange ? 'active:opacity-70' : ''}
-          >
-            <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
-              {CONFIRMED_STAFF_STATUS_LABELS[staff.status]}
-            </Badge>
-          </Pressable>
-          {onPress && <ChevronRightIcon size={20} color="#9CA3AF" />}
+
+          <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
+            {STATUS_LABELS[staff.status]}
+          </Badge>
+          {onPress ? <ChevronRightIcon size={20} color="#9CA3AF" /> : null}
         </View>
 
-        {/* 시간 정보 (컴팩트 아닐 때) */}
-        {!compact && (
-          <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
+        {compact ? null : (
+          <View className="mt-3 flex-row items-center border-t border-gray-100 pt-3 dark:border-surface-overlay">
             <ClockIcon size={16} color="#6B7280" />
-            <View className="flex-row flex-1 ml-2">
+            <View className="ml-2 flex-1 flex-row">
               <View className="flex-1">
                 <View className="flex-row items-center">
                   <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {timeInfo.isEffectiveStartActual ? '출근' : '예정'}
+                    {timeInfo.isEffectiveStartActual ? 'Started' : 'Start'}
                   </Text>
-                  {isCheckedIn && (
+                  {isCheckedIn ? (
                     <View className="ml-1">
                       <CheckCircleIcon size={12} color="#22C55E" />
                     </View>
-                  )}
+                  ) : null}
                 </View>
                 <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                  {startTimeStr}
+                  {timeInfo.effectiveStart}
                 </Text>
               </View>
+
               <View className="flex-1">
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
-                  {timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
+                  {timeInfo.isEffectiveEndActual ? 'Ended' : 'End'}
                 </Text>
                 <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                  {endTimeStr}
+                  {timeInfo.effectiveEnd}
                 </Text>
               </View>
-              {workDuration && (
+
+              {workDuration ? (
                 <View className="flex-1">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">근무시간</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">Duration</Text>
                   <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                     {workDuration}
                   </Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
         )}
 
-        {/* 비고 */}
-        {staff.notes && !compact && (
-          <View className="mt-2 p-2 bg-gray-50 dark:bg-surface rounded-lg">
+        {staff.notes && !compact ? (
+          <View className="mt-2 rounded-lg bg-gray-50 p-2 dark:bg-surface">
             <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
               {staff.notes}
             </Text>
           </View>
-        )}
+        ) : null}
       </Pressable>
 
-      {/* 액션 버튼 */}
-      {showActions && (
-        <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay gap-2">
-          {/* 시간 수정 */}
-          {onEditTime && canEditTime && (
+      {showActions ? (
+        <View className="mt-3 flex-row gap-2 border-t border-gray-100 pt-3 dark:border-surface-overlay">
+          {onEditTime && canEditTime ? (
             <Pressable
               onPress={handleEditTime}
-              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
+              className="flex-1 flex-row items-center justify-center rounded-lg bg-gray-100 py-2 active:opacity-70 dark:bg-surface"
             >
-              <EditIcon size={14} color={isDark ? '#93C5FD' : '#9333EA'} />
+              <EditIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
-                시간 수정
+                Edit time
               </Text>
             </Pressable>
-          )}
+          ) : null}
 
-          {/* 역할 변경 */}
-          {onChangeRole && canEditTime && (
+          {onChangeRole && canEditTime ? (
             <Pressable
               onPress={handleChangeRole}
-              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
+              className="flex-1 flex-row items-center justify-center rounded-lg bg-gray-100 py-2 active:opacity-70 dark:bg-surface"
             >
-              <BriefcaseIcon size={14} color={isDark ? '#93C5FD' : '#9333EA'} />
+              <BriefcaseIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
-                역할 변경
+                Change role
               </Text>
             </Pressable>
-          )}
+          ) : null}
 
-          {/* 신고 (노쇼 포함) */}
-          {onReport && (
+          {onReport ? (
             <Pressable
               onPress={handleReport}
-              className="flex-row items-center justify-center py-2 px-3 rounded-lg bg-red-50 dark:bg-red-900/20 active:opacity-70"
+              className="flex-row items-center justify-center rounded-lg bg-red-50 px-3 py-2 active:opacity-70 dark:bg-red-900/20"
             >
               <ExclamationTriangleIcon size={14} color="#EF4444" />
-              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">신고</Text>
+              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">
+                Report
+              </Text>
             </Pressable>
-          )}
+          ) : null}
 
-          {/* 삭제 */}
-          {onDelete && canDelete && (
+          {onDelete && canDelete ? (
             <Pressable
               onPress={handleDelete}
-              className="flex-row items-center justify-center py-2 px-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
+              className="flex-row items-center justify-center rounded-lg bg-gray-100 px-3 py-2 active:opacity-70 dark:bg-surface"
             >
               <TrashIcon size={14} color="#6B7280" />
             </Pressable>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
     </Card>
   );
 });

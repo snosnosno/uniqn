@@ -86,7 +86,10 @@ function sortModificationHistory(history: WorkTimeModification[]): WorkTimeModif
 }
 
 function shouldFetchAuthoritativeLogs(workLog: WorkLog): boolean {
-  return Array.isArray(workLog.modificationHistory) && workLog.modificationHistory.length > 0;
+  return (
+    workLog.hasTimeModificationLogs === true ||
+    (Array.isArray(workLog.modificationHistory) && workLog.modificationHistory.length > 0)
+  );
 }
 
 function chunkWorkLogIds(workLogIds: string[]): string[][] {

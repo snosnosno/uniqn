@@ -1,31 +1,23 @@
 /**
- * UNIQN Mobile - 확정 스태프 목록 컴포넌트
- *
- * @description 날짜별 그룹화된 확정 스태프 목록 (FlashList 기반)
- * @version 1.0.0
+ * UNIQN Mobile - Confirmed Staff List
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, SectionList, RefreshControl } from 'react-native';
-import { ConfirmedStaffCard } from './ConfirmedStaffCard';
-import { Loading } from '../../ui/Loading';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
+import { STATUS } from '@/constants';
+import { getTodayString } from '@/utils/date';
+import type {
+  ConfirmedStaff,
+  ConfirmedStaffGroup,
+  ConfirmedStaffStats,
+  ConfirmedStaffStatus,
+} from '@/types';
+import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, UsersIcon } from '../../icons';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
-import { UsersIcon, CalendarIcon, ChevronDownIcon, ChevronUpIcon } from '../../icons';
-import {
-  CONFIRMED_STAFF_STATUS_LABELS,
-  type ConfirmedStaff,
-  type ConfirmedStaffGroup,
-  type ConfirmedStaffStatus,
-  type ConfirmedStaffStats,
-} from '@/types';
-import { STATUS } from '@/constants';
-import { getTodayString } from '@/utils/date';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { Loading } from '../../ui/Loading';
+import { ConfirmedStaffCard } from './ConfirmedStaffCard';
 
 export interface ConfirmedStaffListProps {
   grouped: ConfirmedStaffGroup[];
@@ -35,34 +27,32 @@ export interface ConfirmedStaffListProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onStaffPress?: (staff: ConfirmedStaff) => void;
-  /** 프로필 상세보기 */
   onViewProfile?: (staff: ConfirmedStaff) => void;
   onEditTime?: (staff: ConfirmedStaff) => void;
   onChangeRole?: (staff: ConfirmedStaff) => void;
-  /** 신고 (노쇼 포함) */
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
-  /** 상태 변경 (뱃지 클릭) */
-  onStatusChange?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
 }
 
 type FilterStatus = 'all' | ConfirmedStaffStatus;
 
-// ============================================================================
-// Constants
-// ============================================================================
+const FILTER_LABELS: Record<FilterStatus, string> = {
+  all: 'All',
+  scheduled: 'Scheduled',
+  checked_in: 'Checked in',
+  checked_out: 'Checked out',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No-show',
+};
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
-  { value: 'all', label: '전체' },
-  { value: STATUS.WORK_LOG.SCHEDULED, label: '예정' },
-  { value: STATUS.WORK_LOG.CHECKED_IN, label: '근무중' },
-  { value: STATUS.WORK_LOG.CHECKED_OUT, label: '퇴근' },
+  { value: 'all', label: FILTER_LABELS.all },
+  { value: STATUS.WORK_LOG.SCHEDULED, label: FILTER_LABELS.scheduled },
+  { value: STATUS.WORK_LOG.CHECKED_IN, label: FILTER_LABELS.checked_in },
+  { value: STATUS.WORK_LOG.CHECKED_OUT, label: FILTER_LABELS.checked_out },
 ];
-
-// ============================================================================
-// Sub-components
-// ============================================================================
 
 interface SectionHeaderProps {
   group: ConfirmedStaffGroup;
@@ -74,47 +64,41 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
   return (
     <Pressable
       onPress={onToggle}
-      className={`
-        flex-row items-center justify-between px-4 py-3 mb-2
-        bg-gray-50 dark:bg-surface/50 rounded-lg mx-4
-        ${group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''}
-      `}
+      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-surface/50 ${
+        group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''
+      }`}
     >
       <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#9333EA' : '#6B7280'} />
+        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : '#6B7280'} />
         <Text
-          className={`
-          ml-2 text-base font-semibold
-          ${
+          className={`ml-2 text-base font-semibold ${
             group.isToday
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-gray-900 dark:text-white'
-          }
-        `}
+          }`}
         >
           {group.formattedDate}
-          {group.isToday && ' (오늘)'}
+          {group.isToday ? ' (Today)' : ''}
         </Text>
       </View>
 
       <View className="flex-row items-center">
-        {/* 통계 배지 */}
-        <View className="flex-row items-center mr-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">{group.stats.total}명</Text>
-          {group.stats.checkedIn > 0 && (
-            <View className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded">
+        <View className="mr-2 flex-row items-center">
+          <Text className="text-sm text-gray-500 dark:text-gray-400">{group.stats.total}</Text>
+          {group.stats.checkedIn > 0 ? (
+            <View className="ml-1 rounded bg-green-100 px-1.5 py-0.5 dark:bg-green-900/30">
               <Text className="text-xs text-green-600 dark:text-green-400">
                 {group.stats.checkedIn}
               </Text>
             </View>
-          )}
-          {group.stats.noShow > 0 && (
-            <View className="ml-1 px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/30 rounded">
+          ) : null}
+          {group.stats.noShow > 0 ? (
+            <View className="ml-1 rounded bg-orange-100 px-1.5 py-0.5 dark:bg-orange-900/30">
               <Text className="text-xs text-orange-600 dark:text-orange-400">
                 {group.stats.noShow}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {isExpanded ? (
@@ -126,10 +110,6 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
     </Pressable>
   );
 }
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 export function ConfirmedStaffList({
   grouped,
@@ -144,62 +124,64 @@ export function ConfirmedStaffList({
   onChangeRole,
   onReport,
   onDelete,
-  onStatusChange,
   showActions = true,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [expandedDates, setExpandedDates] = useState<Set<string>>(() => {
-    // 기본: 오늘과 미래 날짜 펼침
     const today = getTodayString();
-    const expanded = new Set<string>();
+    const initial = new Set<string>();
+
     grouped.forEach((group) => {
       if (group.date >= today) {
-        expanded.add(group.date);
+        initial.add(group.date);
       }
     });
-    return expanded;
+
+    return initial;
   });
 
-  // 필터 옵션 (카운트 포함)
   const filterOptions = useMemo(() => {
     const counts: Partial<Record<FilterStatus, number>> = { all: 0 };
+
     grouped.forEach((group) => {
-      group.staff.forEach((s) => {
-        counts.all = (counts.all || 0) + 1;
-        counts[s.status as FilterStatus] = (counts[s.status as FilterStatus] || 0) + 1;
+      group.staff.forEach((staff) => {
+        counts.all = (counts.all ?? 0) + 1;
+        counts[staff.status as FilterStatus] = (counts[staff.status as FilterStatus] ?? 0) + 1;
       });
     });
+
     return FILTER_OPTIONS.map((option) => ({
       ...option,
       count: counts[option.value] ?? 0,
     }));
   }, [grouped]);
 
-  // 필터링된 그룹
   const filteredGrouped = useMemo(() => {
-    if (selectedFilter === 'all') return grouped;
+    if (selectedFilter === 'all') {
+      return grouped;
+    }
 
     return grouped
       .map((group) => ({
         ...group,
-        staff: group.staff.filter((s) => s.status === selectedFilter),
+        staff: group.staff.filter((staff) => staff.status === selectedFilter),
       }))
       .filter((group) => group.staff.length > 0);
   }, [grouped, selectedFilter]);
 
-  // 섹션 데이터
-  const sections = useMemo(() => {
-    return filteredGrouped.map((group) => ({
-      title: group.date,
-      group,
-      data: expandedDates.has(group.date) ? group.staff : [],
-    }));
-  }, [filteredGrouped, expandedDates]);
+  const sections = useMemo(
+    () =>
+      filteredGrouped.map((group) => ({
+        title: group.date,
+        group,
+        data: expandedDates.has(group.date) ? group.staff : [],
+      })),
+    [expandedDates, filteredGrouped]
+  );
 
-  // 섹션 토글
   const toggleSection = useCallback((date: string) => {
-    setExpandedDates((prev) => {
-      const next = new Set(prev);
+    setExpandedDates((previous) => {
+      const next = new Set(previous);
       if (next.has(date)) {
         next.delete(date);
       } else {
@@ -209,10 +191,9 @@ export function ConfirmedStaffList({
     });
   }, []);
 
-  // 렌더 아이템
   const renderItem = useCallback(
     ({ item }: { item: ConfirmedStaff }) => (
-      <View className="px-4 mb-3">
+      <View className="mb-3 px-4">
         <ConfirmedStaffCard
           staff={item}
           onPress={onStaffPress}
@@ -221,24 +202,13 @@ export function ConfirmedStaffList({
           onChangeRole={onChangeRole}
           onReport={onReport}
           onDelete={onDelete}
-          onStatusChange={onStatusChange}
           showActions={showActions}
         />
       </View>
     ),
-    [
-      onStaffPress,
-      onViewProfile,
-      onEditTime,
-      onChangeRole,
-      onReport,
-      onDelete,
-      onStatusChange,
-      showActions,
-    ]
+    [onChangeRole, onDelete, onEditTime, onReport, onStaffPress, onViewProfile, showActions]
   );
 
-  // 섹션 헤더 렌더
   const renderSectionHeader = useCallback(
     ({ section }: { section: { title: string; group: ConfirmedStaffGroup } }) => (
       <SectionHeader
@@ -252,52 +222,47 @@ export function ConfirmedStaffList({
 
   const keyExtractor = useCallback((item: ConfirmedStaff) => item.id, []);
 
-  // 로딩 상태
   if (isLoading && !isRefreshing) {
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">스태프 목록을 불러오는 중...</Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">Loading confirmed staff...</Text>
       </View>
     );
   }
 
-  // 에러 상태
   if (error) {
     return (
       <ErrorState
-        title="스태프 목록을 불러올 수 없습니다"
+        title="Failed to load confirmed staff"
         message={error.message}
         onRetry={onRefresh}
       />
     );
   }
 
-  // 빈 상태
-  if (!grouped.length) {
+  if (grouped.length === 0) {
     return (
       <EmptyState
         icon={<UsersIcon size={48} color="#9CA3AF" />}
-        title="확정된 스태프가 없습니다"
-        description="지원자를 확정하면 여기에 표시됩니다."
+        title="No confirmed staff yet"
+        description="Confirmed staff will appear here after applicants are approved."
       />
     );
   }
 
   return (
     <View className="flex-1">
-      {/* 필터 탭 */}
       <FilterTabs
         options={filterOptions}
         selectedValue={selectedFilter}
         onSelect={setSelectedFilter}
       />
 
-      {/* 스태프 목록 (날짜별 섹션) */}
       {filteredGrouped.length === 0 ? (
         <EmptyState
-          title={`${CONFIRMED_STAFF_STATUS_LABELS[selectedFilter as ConfirmedStaffStatus] || '해당'} 상태의 스태프가 없습니다`}
-          description="다른 필터를 선택해 보세요."
+          title={`No ${FILTER_LABELS[selectedFilter]} staff`}
+          description="Try a different filter to see other confirmed staff."
         />
       ) : (
         <SectionList
@@ -310,7 +275,7 @@ export function ConfirmedStaffList({
               <RefreshControl
                 refreshing={isRefreshing ?? false}
                 onRefresh={onRefresh}
-                tintColor="#6366f1"
+                tintColor="#6366F1"
               />
             ) : undefined
           }

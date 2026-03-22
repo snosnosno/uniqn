@@ -21,6 +21,18 @@ import { requireAuth } from '@/errors/guardErrors';
 import { ERROR_CODES } from '@/errors';
 import type { ConfirmApplicationInput, RejectApplicationInput } from '@/types';
 
+function getApplicantCacheId(item: Record<string, unknown>): string | undefined {
+  if (typeof item.id === 'string' && item.id.length > 0) {
+    return item.id;
+  }
+
+  if (typeof item.applicationId === 'string' && item.applicationId.length > 0) {
+    return item.applicationId;
+  }
+
+  return undefined;
+}
+
 // ============================================================================
 // 지원자 확정/거절 훅
 // ============================================================================
@@ -52,7 +64,7 @@ export function useConfirmApplication() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              a.applicationId === input.applicationId ? { ...a, status: 'confirmed' } : a
+              getApplicantCacheId(a) === input.applicationId ? { ...a, status: 'confirmed' } : a
             ),
           };
         }
@@ -115,7 +127,7 @@ export function useRejectApplication() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              a.applicationId === input.applicationId ? { ...a, status: 'rejected' } : a
+              getApplicantCacheId(a) === input.applicationId ? { ...a, status: 'rejected' } : a
             ),
           };
         }
@@ -174,7 +186,9 @@ export function useBulkConfirmApplications() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              applicationIds.includes(a.applicationId as string) ? { ...a, status: 'confirmed' } : a
+              applicationIds.includes(getApplicantCacheId(a) ?? '')
+                ? { ...a, status: 'confirmed' }
+                : a
             ),
           };
         }

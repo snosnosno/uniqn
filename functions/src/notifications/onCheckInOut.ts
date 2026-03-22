@@ -1,36 +1,21 @@
-/**
- * QR 출퇴근 확인 알림 Firebase Functions
- *
- * @description
- * WorkLog에 checkInTime/checkOutTime이 설정되면 근무자+구인자에게 FCM 푸시 알림 전송
- * - checkInTime 설정: 출근 확인 알림
- * - checkOutTime 설정: 퇴근 확인 알림
- *
- * @trigger Firestore onUpdate
- * @collection workLogs/{workLogId}
- * @version 3.0.0
- * @since 2025-01-18
- */
-
-import { onDocumentUpdated } from "firebase-functions/v2/firestore";
-import { logger } from "firebase-functions";
-import * as admin from "firebase-admin";
-import { createAndSendNotification } from "../utils/notificationUtils";
-import { handleTriggerError } from "../errors/errorHandler";
-import { formatTime, extractUserId } from "../utils/helpers";
-import { type JobPostingLocationInput } from "../utils/jobPosting";
+import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { handleTriggerError } from '../errors';
+import { createAndSendNotification } from '../utils/notificationUtils';
+import { extractUserId, formatTime } from '../utils/helpers';
 
 const db = admin.firestore();
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface JobPostingData {
   title?: string;
-  location?: JobPostingLocationInput;
   ownerId?: string;
   createdBy?: string;
+}
+
+interface UserData {
+  name?: string;
+  nickname?: string;
 }
 
 interface WorkLogData {
@@ -41,55 +26,28 @@ interface WorkLogData {
   checkOutTime?: admin.firestore.Timestamp | null;
 }
 
-// ============================================================================
-// Triggers
-// ============================================================================
-
-/**
- * QR 출퇴근 확인 알림 트리거
- *
- * @description
- * - WorkLog checkInTime/checkOutTime 변경 감지
- * - 근무자에게 check_in_confirmed/check_out_confirmed 알림 전송
- * - 구인자에게 staff_checked_in/staff_checked_out 알림 전송
- */
 export const onCheckInOut = onDocumentUpdated(
-  { document: "workLogs/{workLogId}", region: "asia-northeast3" },
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
   async (event) => {
     const workLogId = event.params.workLogId;
     const before = event.data?.before.data() as WorkLogData | undefined;
     const after = event.data?.after.data() as WorkLogData | undefined;
-    if (!before || !after) return;
 
-    // 출근/퇴근 시간 변경 확인
-    const isCheckIn = !before.checkInTime && after.checkInTime;
-    const isCheckOut = !before.checkOutTime && after.checkOutTime;
-
-    if (!isCheckIn && !isCheckOut) {
-      return; // 출퇴근 시간 변경 없음
+    if (!before || !after) {
+      return;
     }
 
-    // 출근+퇴근 동시 설정 시 (데이터 복구 등) 각각 처리
-    const checkTypes: Array<"check_in" | "check_out"> = [];
-    if (isCheckIn) checkTypes.push("check_in");
-    if (isCheckOut) checkTypes.push("check_out");
+    const didCheckIn = !before.checkInTime && !!after.checkInTime;
+    const didCheckOut = !before.checkOutTime && !!after.checkOutTime;
 
-    logger.info("QR 출퇴근 감지", {
-      workLogId,
-      staffId: after.staffId,
-      jobPostingId: after.jobPostingId,
-      checkTypes,
-    });
+    if (!didCheckIn && !didCheckOut) {
+      return;
+    }
 
     try {
-      // 1. 공고 정보 조회
-      const jobPostingDoc = await db
-        .collection("jobPostings")
-        .doc(after.jobPostingId)
-        .get();
-
+      const jobPostingDoc = await db.collection('jobPostings').doc(after.jobPostingId).get();
       if (!jobPostingDoc.exists) {
-        logger.warn("공고를 찾을 수 없습니다", {
+        logger.warn('Job posting not found for check-in/out notification', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -97,135 +55,142 @@ export const onCheckInOut = onDocumentUpdated(
       }
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
+      const staffUserId = extractUserId(after.staffId);
+      const staffDoc = await db.collection('users').doc(staffUserId).get();
+      const staffData = (staffDoc.data() as UserData | undefined) ?? {};
+      const staffName = staffData.nickname ?? staffData.name ?? 'Staff';
+      const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
 
-      // 2. 근무자 정보 조회 (스태프 이름 - 구인자 알림용)
-      const actualUserId = extractUserId(after.staffId);
-      const staffDoc = await db.collection("users").doc(actualUserId).get();
+      if (didCheckIn) {
+        const checkInTime = formatTime(after.checkInTime);
 
-      if (!staffDoc.exists) {
-        logger.warn("근무자를 찾을 수 없습니다", {
-          workLogId,
-          staffId: after.staffId,
-          actualUserId,
-        });
-        return;
-      }
-
-      const staffName = staffDoc.data()?.name || "스태프";
-      const employerId = jobPosting?.ownerId;
-
-      // 3. 각 체크 타입별 알림 전송 (동시 출퇴근 시 양쪽 모두 처리)
-      for (const checkType of checkTypes) {
-        const isIn = checkType === "check_in";
-        const checkTime = isIn ? after.checkInTime : after.checkOutTime;
-        const formattedTime = formatTime(checkTime);
-
-        // 근무자 알림
-        const staffResult = await createAndSendNotification(
-          actualUserId,
-          isIn ? "check_in_confirmed" : "check_out_confirmed",
-          isIn ? "✅ 출근 확인" : "✅ 퇴근 확인",
-          `'${jobPosting?.title || "이벤트"}' ${isIn ? "출근" : "퇴근"}이 확인되었습니다. (${formattedTime})`,
+        await createAndSendNotification(
+          staffUserId,
+          'check_in_confirmed',
+          'Check-in confirmed',
+          `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} check-in was recorded at ${checkInTime}.`,
           {
-            link: "/schedule",
+            link: '/schedule',
+            relatedId: workLogId,
             data: {
               workLogId,
               jobPostingId: after.jobPostingId,
-              jobPostingTitle: jobPosting?.title || "",
-              date: after.date || "",
-              checkTime: formattedTime,
+              jobPostingTitle: jobPosting.title ?? '',
+              date: after.date ?? '',
+              checkTime: checkInTime,
             },
-          },
+          }
         );
 
-        logger.info(`${checkType} 알림 전송 완료 (근무자)`, {
-          notificationId: staffResult.notificationId,
-          staffId: after.staffId,
-          fcmSent: staffResult.fcmSent,
-        });
-
-        // 구인자 알림
         if (employerId) {
-          const employerResult = await createAndSendNotification(
+          await createAndSendNotification(
             employerId,
-            isIn ? "staff_checked_in" : "staff_checked_out",
-            isIn ? "🟢 출근 알림" : "🔴 퇴근 알림",
-            `${staffName}님이 ${formattedTime}에 ${isIn ? "출근" : "퇴근"}했습니다.`,
+            'staff_checked_in',
+            'Staff checked in',
+            `${staffName} checked in at ${checkInTime}.`,
             {
               link: `/employer/applicants/${after.jobPostingId}`,
+              relatedId: workLogId,
+              senderId: staffUserId,
               data: {
                 workLogId,
                 jobPostingId: after.jobPostingId,
-                jobPostingTitle: jobPosting?.title || "",
+                jobPostingTitle: jobPosting.title ?? '',
                 staffId: after.staffId,
                 staffName,
-                date: after.date || "",
-                checkTime: formattedTime,
+                date: after.date ?? '',
+                checkTime: checkInTime,
               },
-            },
+            }
           );
+        }
+      }
 
-          logger.info(`${checkType} 알림 전송 완료 (구인자)`, {
-            notificationId: employerResult.notificationId,
+      if (didCheckOut) {
+        const checkOutTime = formatTime(after.checkOutTime);
+
+        await createAndSendNotification(
+          staffUserId,
+          'check_out_confirmed',
+          'Check-out confirmed',
+          `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} check-out was recorded at ${checkOutTime}.`,
+          {
+            link: '/schedule',
+            relatedId: workLogId,
+            data: {
+              workLogId,
+              jobPostingId: after.jobPostingId,
+              jobPostingTitle: jobPosting.title ?? '',
+              date: after.date ?? '',
+              checkTime: checkOutTime,
+            },
+          }
+        );
+
+        if (employerId) {
+          await createAndSendNotification(
             employerId,
-            fcmSent: employerResult.fcmSent,
-          });
+            'staff_checked_out',
+            'Staff checked out',
+            `${staffName} checked out at ${checkOutTime}.`,
+            {
+              link: `/employer/applicants/${after.jobPostingId}`,
+              relatedId: workLogId,
+              senderId: staffUserId,
+              data: {
+                workLogId,
+                jobPostingId: after.jobPostingId,
+                jobPostingTitle: jobPosting.title ?? '',
+                staffId: after.staffId,
+                staffName,
+                date: after.date ?? '',
+                checkTime: checkOutTime,
+              },
+            }
+          );
         }
 
-        // 퇴근 시 평가 요청 알림 (양쪽에게) — 에러 격리: 출퇴근 알림에 영향 없음
-        if (!isIn) {
-          try {
-            const jobTitle = jobPosting?.title || "근무";
-
-            // 스태프에게: 구인자 평가 요청
-            await createAndSendNotification(
-              actualUserId,
-              "review_request",
-              "📝 평가를 남겨주세요",
-              `"${jobTitle}" 근무가 완료되었습니다. 구인자에 대한 평가를 남겨주세요.`,
-              {
-                link: `/reviews/${workLogId}`,
-                data: {
-                  workLogId,
-                  jobPostingId: after.jobPostingId,
-                  jobPostingTitle: jobTitle,
-                },
-              },
-            );
-
-            // 구인자에게: 스태프 평가 요청
-            if (employerId) {
-              await createAndSendNotification(
-                employerId,
-                "review_request",
-                "📝 평가를 남겨주세요",
-                `"${jobTitle}" 근무가 완료되었습니다. ${staffName}님에 대한 평가를 남겨주세요.`,
-                {
-                  link: `/reviews/${workLogId}`,
-                  data: {
-                    workLogId,
-                    jobPostingId: after.jobPostingId,
-                    jobPostingTitle: jobTitle,
-                    staffName,
-                  },
-                },
-              );
-            }
-
-            logger.info("평가 요청 알림 전송 완료", { workLogId });
-          } catch (reviewNotifError: unknown) {
-            handleTriggerError(reviewNotifError, {
-              operation: "퇴근 후 평가 요청 알림",
-              context: { workLogId },
-            });
+        await createAndSendNotification(
+          staffUserId,
+          'review_request',
+          'Leave a review',
+          `Your shift ${jobPosting.title ? `for '${jobPosting.title}'` : ''} is complete. Please leave a review.`,
+          {
+            link: `/reviews/${workLogId}`,
+            relatedId: workLogId,
+            data: {
+              workLogId,
+              jobPostingId: after.jobPostingId,
+              jobPostingTitle: jobPosting.title ?? '',
+            },
           }
+        );
+
+        if (employerId) {
+          await createAndSendNotification(
+            employerId,
+            'review_request',
+            'Leave a review',
+            `The shift is complete. Please review ${staffName}.`,
+            {
+              link: `/reviews/${workLogId}`,
+              relatedId: workLogId,
+              senderId: staffUserId,
+              data: {
+                workLogId,
+                jobPostingId: after.jobPostingId,
+                jobPostingTitle: jobPosting.title ?? '',
+                staffName,
+              },
+            }
+          );
         }
       }
     } catch (error: unknown) {
       handleTriggerError(error, {
-        operation: "출퇴근 알림 처리",
-        context: { workLogId },
+        operation: 'onCheckInOut',
+        context: { workLogId, staffId: after.staffId },
       });
     }
-  },
+  }
 );

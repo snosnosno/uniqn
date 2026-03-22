@@ -158,7 +158,9 @@ export interface IWorkLogRepository {
   findByJobPostingStaffDate(
     jobPostingId: string,
     staffId: string,
-    date: string
+    date: string,
+    assignmentGroupId?: string | null,
+    timeSlot?: string | null
   ): Promise<WorkLog | null>;
 
   // ==========================================================================

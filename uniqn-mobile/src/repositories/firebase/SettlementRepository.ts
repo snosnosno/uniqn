@@ -138,6 +138,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         const prevCheckIn = workLog.checkInTime ?? null;
         const prevCheckOut = workLog.checkOutTime ?? null;
 
+        updateData.hasTimeModificationLogs = true;
         const modificationLog = {
           modifiedAt: Timestamp.now(),
           modifiedBy: ownerId,
@@ -158,7 +159,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
               : undefined,
         };
 
-        updateData.modificationHistory = [...(workLog.modificationHistory || []), modificationLog];
+        void modificationLog;
 
         writeTimeModificationLog(transaction, context.workLogId, {
           modifiedBy: ownerId,

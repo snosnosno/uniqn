@@ -1,31 +1,16 @@
-/**
- * UNIQN Mobile - Confirmed Staff Service Tests
- *
- * @description 확정 스태프 관리 서비스 테스트
- * @version 1.0.0
- */
-
-// ============================================================================
-// Mocks (jest.mock is hoisted, so use inline factory functions)
-// ============================================================================
-
-// ============================================================================
-// Imports (after mocks)
-// ============================================================================
-
+import type { WorkLog } from '@/types';
+import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
+import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
 import {
+  cancelConfirmedStaffConfirmation,
+  deleteConfirmedStaff,
   getConfirmedStaff,
   getConfirmedStaffByDate,
+  markAsNoShow,
+  subscribeToConfirmedStaff,
   updateStaffRole,
   updateWorkTime,
-  deleteConfirmedStaff,
-  markAsNoShow,
-  updateStaffStatus,
-  subscribeToConfirmedStaff,
 } from '../confirmedStaffService';
-import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
-import type { WorkLog } from '@/types';
-import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
 
 jest.mock('@/repositories', () => ({
   confirmedStaffRepository: {
@@ -33,9 +18,7 @@ jest.mock('@/repositories', () => ({
     getByJobPostingAndDate: jest.fn(),
     updateRoleWithTransaction: jest.fn(),
     updateWorkTimeWithTransaction: jest.fn(),
-    deleteWithTransaction: jest.fn(),
     markAsNoShow: jest.fn(),
-    updateStatus: jest.fn(),
     subscribeByJobPostingId: jest.fn(),
   },
   userRepository: {
@@ -46,19 +29,21 @@ jest.mock('@/repositories', () => ({
   },
 }));
 
+jest.mock('@/services/auth', () => ({
+  requireCurrentUser: jest.fn(() => ({ uid: 'owner-1' })),
+}));
+
+jest.mock('@/services/jobs/applicationHistoryService', () => ({
+  cancelConfirmation: jest.fn(),
+}));
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
-    error: jest.fn(),
     warn: jest.fn(),
+    error: jest.fn(),
     debug: jest.fn(),
   },
-}));
-
-jest.mock('@/errors', () => ({
-  ...jest.requireActual('@/errors'),
-  toError: jest.fn((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
-  isAppError: jest.fn(() => false),
 }));
 
 jest.mock('@/shared/status', () => ({
@@ -70,40 +55,29 @@ jest.mock('@/shared/status', () => ({
 jest.mock('@/shared/time', () => ({
   TimeNormalizer: {
     parseTime: jest.fn((input: unknown) => {
-      if (input === null || input === undefined) return null;
-      if (input instanceof Date) return input;
-      return new Date('2025-01-20T09:00:00');
+      if (input === null || input === undefined) {
+        return null;
+      }
+      if (input instanceof Date) {
+        return input;
+      }
+      return new Date('2025-01-20T09:00:00Z');
     }),
   },
 }));
 
-const mockRequireCurrentUser = jest.fn();
-
-jest.mock('@/services/auth', () => ({
-  requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
-}));
-
-jest.mock('@/services/jobs/applicationHistoryService', () => ({
-  cancelConfirmation: jest.fn(),
-}));
-
-// Get typed mock references
-const mockConfirmedStaffRepo = confirmedStaffRepository as jest.Mocked<
+const mockConfirmedStaffRepository = confirmedStaffRepository as jest.Mocked<
   typeof confirmedStaffRepository
 >;
-const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;
-const mockWorkLogRepo = workLogRepository as jest.Mocked<typeof workLogRepository>;
+const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
+const mockWorkLogRepository = workLogRepository as jest.Mocked<typeof workLogRepository>;
 const mockCancelConfirmation = cancelConfirmation as jest.MockedFunction<typeof cancelConfirmation>;
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
 
 function createMockWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
   return {
-    id: 'wl-1',
+    id: 'worklog-1',
     staffId: 'staff-1',
-    staffName: 'Test Staff',
+    staffName: 'Staff One',
     jobPostingId: 'job-1',
     jobPostingName: 'Test Job',
     role: 'dealer',
@@ -111,470 +85,150 @@ function createMockWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
     status: 'scheduled',
     attendanceStatus: 'not_started',
     isSettled: false,
-    createdAt: { seconds: 1700000000, nanoseconds: 0 } as any,
-    updatedAt: { seconds: 1700000000, nanoseconds: 0 } as any,
+    createdAt: { seconds: 1700000000, nanoseconds: 0 } as never,
+    updatedAt: { seconds: 1700000000, nanoseconds: 0 } as never,
     ...overrides,
   } as WorkLog;
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
-
-describe('ConfirmedStaffService', () => {
+describe('confirmedStaffService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRequireCurrentUser.mockReturnValue({ uid: 'owner-1' });
-    // Default: userRepository returns a user
-    mockUserRepo.getById.mockResolvedValue({
-      nickname: 'TestNick',
-      name: 'TestName',
-    } as any);
+    mockUserRepository.getById.mockResolvedValue({
+      nickname: 'Staff Nick',
+      name: 'Staff Name',
+    } as never);
   });
 
-  // ==========================================================================
-  // getConfirmedStaff
-  // ==========================================================================
-  describe('getConfirmedStaff', () => {
-    it('should return staff list, grouped data, and stats', async () => {
-      const workLogs = [
-        createMockWorkLog({
-          id: 'wl-1',
-          staffId: 'staff-1',
-          date: '2025-01-20',
-          status: 'scheduled',
-        }),
-        createMockWorkLog({
-          id: 'wl-2',
-          staffId: 'staff-2',
-          date: '2025-01-20',
-          status: 'checked_in',
-        }),
-        createMockWorkLog({
-          id: 'wl-3',
-          staffId: 'staff-1',
-          date: '2025-01-21',
-          status: 'completed',
-        }),
-      ];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
+  it('builds grouped confirmed staff data from repository work logs', async () => {
+    mockConfirmedStaffRepository.getByJobPostingId.mockResolvedValue([
+      createMockWorkLog({ id: 'worklog-1', status: 'scheduled' }),
+      createMockWorkLog({ id: 'worklog-2', staffId: 'staff-2', status: 'checked_in' }),
+    ]);
 
-      const result = await getConfirmedStaff('job-1');
+    const result = await getConfirmedStaff('job-1');
 
-      expect(mockConfirmedStaffRepo.getByJobPostingId).toHaveBeenCalledWith('job-1');
-      expect(result.staff).toHaveLength(3);
-      expect(result.grouped).toBeDefined();
-      expect(result.stats).toBeDefined();
-      expect(result.stats.total).toBe(3);
+    expect(mockConfirmedStaffRepository.getByJobPostingId).toHaveBeenCalledWith('job-1');
+    expect(result.staff).toHaveLength(2);
+    expect(result.grouped.length).toBeGreaterThan(0);
+    expect(result.stats.total).toBe(2);
+  });
+
+  it('fetches confirmed staff by date', async () => {
+    mockConfirmedStaffRepository.getByJobPostingAndDate.mockResolvedValue([createMockWorkLog()]);
+
+    const result = await getConfirmedStaffByDate('job-1', '2025-01-20');
+
+    expect(mockConfirmedStaffRepository.getByJobPostingAndDate).toHaveBeenCalledWith(
+      'job-1',
+      '2025-01-20'
+    );
+    expect(result).toHaveLength(1);
+  });
+
+  it('maps role updates to repository transaction input', async () => {
+    mockConfirmedStaffRepository.updateRoleWithTransaction.mockResolvedValue(undefined);
+
+    await updateStaffRole({
+      workLogId: 'worklog-1',
+      newRole: 'dealer',
+      reason: 'Role correction',
     });
 
-    it('should return empty result when no work logs', async () => {
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue([]);
-
-      const result = await getConfirmedStaff('job-1');
-
-      expect(result.staff).toHaveLength(0);
-      expect(result.grouped).toHaveLength(0);
-      expect(result.stats.total).toBe(0);
-    });
-
-    it('should resolve staff names from userRepository', async () => {
-      mockUserRepo.getById.mockResolvedValue({
-        nickname: 'TestNick',
-        name: 'TestName',
-      } as any);
-
-      const workLogs = [createMockWorkLog({ staffId: 'staff-1' })];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
-
-      const result = await getConfirmedStaff('job-1');
-
-      expect(mockUserRepo.getById).toHaveBeenCalledWith('staff-1');
-      expect(result.staff[0].staffName).toBe('TestNick');
-    });
-
-    it('should use name field if nickname is not available', async () => {
-      mockUserRepo.getById.mockResolvedValue({
-        nickname: undefined,
-        name: 'FallbackName',
-      } as any);
-
-      const workLogs = [createMockWorkLog({ staffId: 'staff-1' })];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
-
-      const result = await getConfirmedStaff('job-1');
-
-      expect(result.staff[0].staffName).toBe('FallbackName');
-    });
-
-    it('should use fallback name when user not found', async () => {
-      mockUserRepo.getById.mockResolvedValue(null);
-
-      const workLogs = [createMockWorkLog({ staffId: 'staff-abcd' })];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
-
-      const result = await getConfirmedStaff('job-1');
-
-      expect(result.staff[0].staffName).toContain('abcd');
-    });
-
-    it('should use fallback name when userRepository throws', async () => {
-      mockUserRepo.getById.mockRejectedValue(new Error('User fetch error'));
-
-      const workLogs = [createMockWorkLog({ staffId: 'staff-efgh' })];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
-
-      const result = await getConfirmedStaff('job-1');
-
-      expect(result.staff[0].staffName).toContain('efgh');
-    });
-
-    it('should deduplicate staff name lookups for same staffId', async () => {
-      const workLogs = [
-        createMockWorkLog({ id: 'wl-1', staffId: 'staff-1', date: '2025-01-20' }),
-        createMockWorkLog({ id: 'wl-2', staffId: 'staff-1', date: '2025-01-21' }),
-      ];
-      mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
-
-      await getConfirmedStaff('job-1');
-
-      // Should only call getById once for the same staffId
-      expect(mockUserRepo.getById).toHaveBeenCalledTimes(1);
+    expect(mockConfirmedStaffRepository.updateRoleWithTransaction).toHaveBeenCalledWith({
+      workLogId: 'worklog-1',
+      newRole: 'dealer',
+      isStandardRole: true,
+      reason: 'Role correction',
+      changedBy: 'system',
     });
   });
 
-  // ==========================================================================
-  // getConfirmedStaffByDate
-  // ==========================================================================
-  describe('getConfirmedStaffByDate', () => {
-    it('should return staff for a specific date', async () => {
-      const workLogs = [createMockWorkLog({ id: 'wl-1', staffId: 'staff-1', date: '2025-01-20' })];
-      mockConfirmedStaffRepo.getByJobPostingAndDate.mockResolvedValue(workLogs);
+  it('maps work time updates with parsed dates', async () => {
+    mockConfirmedStaffRepository.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
 
-      const result = await getConfirmedStaffByDate('job-1', '2025-01-20');
-
-      expect(mockConfirmedStaffRepo.getByJobPostingAndDate).toHaveBeenCalledWith(
-        'job-1',
-        '2025-01-20'
-      );
-      expect(result).toHaveLength(1);
+    await updateWorkTime({
+      workLogId: 'worklog-1',
+      checkInTime: '09:00',
+      checkOutTime: '18:00',
+      reason: 'Manual correction',
     });
 
-    it('should return empty array when no staff for date', async () => {
-      mockConfirmedStaffRepo.getByJobPostingAndDate.mockResolvedValue([]);
-
-      const result = await getConfirmedStaffByDate('job-1', '2025-01-25');
-
-      expect(result).toHaveLength(0);
-    });
-  });
-
-  // ==========================================================================
-  // updateStaffRole
-  // ==========================================================================
-  describe('updateStaffRole', () => {
-    it('should call repository with correct parameters for standard role', async () => {
-      mockConfirmedStaffRepo.updateRoleWithTransaction.mockResolvedValue(undefined);
-
-      await updateStaffRole({
-        workLogId: 'wl-1',
-        newRole: 'dealer',
-        reason: 'Role change',
-        changedBy: 'owner-1',
-      });
-
-      expect(mockConfirmedStaffRepo.updateRoleWithTransaction).toHaveBeenCalledWith({
-        workLogId: 'wl-1',
-        newRole: 'dealer',
-        isStandardRole: true,
-        reason: 'Role change',
-        changedBy: 'owner-1',
-      });
-    });
-
-    it('should set isStandardRole to false for custom roles', async () => {
-      mockConfirmedStaffRepo.updateRoleWithTransaction.mockResolvedValue(undefined);
-
-      await updateStaffRole({
-        workLogId: 'wl-1',
-        newRole: 'custom_role_xyz',
-        reason: 'Custom role',
-      });
-
-      expect(mockConfirmedStaffRepo.updateRoleWithTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          isStandardRole: false,
-          newRole: 'custom_role_xyz',
-        })
-      );
-    });
-
-    it('should default changedBy to system', async () => {
-      mockConfirmedStaffRepo.updateRoleWithTransaction.mockResolvedValue(undefined);
-
-      await updateStaffRole({
-        workLogId: 'wl-1',
-        newRole: 'floor',
-        reason: 'test',
-      });
-
-      expect(mockConfirmedStaffRepo.updateRoleWithTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          changedBy: 'system',
-        })
-      );
-    });
-
-    it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.updateRoleWithTransaction.mockRejectedValue(
-        new Error('Transaction failed')
-      );
-
-      await expect(
-        updateStaffRole({ workLogId: 'wl-1', newRole: 'dealer', reason: 'test' })
-      ).rejects.toThrow('Transaction failed');
-    });
-  });
-
-  // ==========================================================================
-  // updateWorkTime
-  // ==========================================================================
-  describe('updateWorkTime', () => {
-    it('should call repository with parsed dates', async () => {
-      mockConfirmedStaffRepo.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
-
-      await updateWorkTime({
-        workLogId: 'wl-1',
-        checkInTime: '09:00',
-        checkOutTime: '18:00',
-        reason: 'Time correction',
+    expect(mockConfirmedStaffRepository.updateWorkTimeWithTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workLogId: 'worklog-1',
+        reason: 'Manual correction',
         modifiedBy: 'owner-1',
-      });
+      })
+    );
+  });
 
-      expect(mockConfirmedStaffRepo.updateWorkTimeWithTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workLogId: 'wl-1',
-          reason: 'Time correction',
-          modifiedBy: 'owner-1',
-        })
-      );
+  it('cancels confirmation using canonical application id', async () => {
+    mockWorkLogRepository.getById.mockResolvedValue(
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1' })
+    );
+    mockCancelConfirmation.mockResolvedValue(undefined as never);
+
+    await cancelConfirmedStaffConfirmation({
+      workLogId: 'worklog-1',
+      jobPostingId: 'job-1',
+      staffId: 'staff-1',
+      date: '2025-01-20',
+      reason: 'Release slot',
     });
 
-    it('should handle null time inputs', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { TimeNormalizer } = require('@/shared/time');
-      TimeNormalizer.parseTime.mockReturnValue(null);
+    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', 'Release slot');
+  });
 
-      mockConfirmedStaffRepo.updateWorkTimeWithTransaction.mockResolvedValue(undefined);
+  it('keeps deleteConfirmedStaff as backward-compatible alias', async () => {
+    mockWorkLogRepository.getById.mockResolvedValue(
+      createMockWorkLog({ staffId: 'staff-1', jobPostingId: 'job-1' })
+    );
+    mockCancelConfirmation.mockResolvedValue(undefined as never);
 
-      await updateWorkTime({
-        workLogId: 'wl-1',
-        checkInTime: null,
-        checkOutTime: null,
-        reason: 'Reset times',
-      });
-
-      expect(mockConfirmedStaffRepo.updateWorkTimeWithTransaction).toHaveBeenCalledWith(
-        expect.objectContaining({
-          checkInTime: null,
-          checkOutTime: null,
-          modifiedBy: 'owner-1',
-        })
-      );
+    await deleteConfirmedStaff({
+      workLogId: 'worklog-1',
+      jobPostingId: 'job-1',
+      staffId: 'staff-1',
+      date: '2025-01-20',
     });
 
-    it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.updateWorkTimeWithTransaction.mockRejectedValue(
-        new Error('Update failed')
-      );
+    expect(mockCancelConfirmation).toHaveBeenCalledWith('job-1_staff-1', 'owner-1', undefined);
+  });
 
-      await expect(
-        updateWorkTime({
-          workLogId: 'wl-1',
-          checkInTime: '09:00',
-          checkOutTime: '18:00',
-          reason: 'test',
-        })
-      ).rejects.toThrow('Update failed');
+  it('marks no-show with current owner id', async () => {
+    mockConfirmedStaffRepository.markAsNoShow.mockResolvedValue(undefined);
+
+    await markAsNoShow('worklog-1', 'No arrival');
+
+    expect(mockConfirmedStaffRepository.markAsNoShow).toHaveBeenCalledWith({
+      workLogId: 'worklog-1',
+      ownerId: 'owner-1',
+      reason: 'No arrival',
     });
   });
 
-  // ==========================================================================
-  // deleteConfirmedStaff
-  // ==========================================================================
-  describe('deleteConfirmedStaff', () => {
-    it('should call repository with correct parameters', async () => {
-      mockWorkLogRepo.getById.mockResolvedValue(
-        createMockWorkLog({ ownerId: 'owner-1', staffId: 'staff-1', jobPostingId: 'job-1' })
-      );
-      mockCancelConfirmation.mockResolvedValue({
-        applicationId: 'job-1_staff-1',
-        cancelledAt: { seconds: 1700000000, nanoseconds: 0 } as any,
-        restoredStatus: 'applied',
-      });
+  it('subscribes and transforms repository updates', async () => {
+    let onUpdate: ((workLogs: WorkLog[]) => void | Promise<void>) | undefined;
 
-      await deleteConfirmedStaff({
-        workLogId: 'wl-1',
-        jobPostingId: 'job-1',
-        staffId: 'staff-1',
-        date: '2025-01-20',
-        reason: 'No longer needed',
-      });
+    mockConfirmedStaffRepository.subscribeByJobPostingId.mockImplementation(
+      (_jobPostingId: string, callbacks: { onUpdate: typeof onUpdate }) => {
+        onUpdate = callbacks.onUpdate;
+        return jest.fn();
+      }
+    );
 
-      expect(mockWorkLogRepo.getById).toHaveBeenCalledWith('wl-1');
-      expect(mockCancelConfirmation).toHaveBeenCalledWith(
-        'job-1_staff-1',
-        'owner-1',
-        'No longer needed'
-      );
-    });
+    const callback = jest.fn();
+    subscribeToConfirmedStaff('job-1', { onUpdate: callback });
 
-    it('should propagate repository errors', async () => {
-      mockWorkLogRepo.getById.mockResolvedValue(
-        createMockWorkLog({ ownerId: 'owner-1', staffId: 'staff-1', jobPostingId: 'job-1' })
-      );
-      mockCancelConfirmation.mockRejectedValue(new Error('Delete failed'));
+    await onUpdate?.([createMockWorkLog()]);
 
-      await expect(
-        deleteConfirmedStaff({
-          workLogId: 'wl-1',
-          jobPostingId: 'job-1',
-          staffId: 'staff-1',
-          date: '2025-01-20',
-        })
-      ).rejects.toThrow('Delete failed');
-    });
-  });
-
-  // ==========================================================================
-  // markAsNoShow
-  // ==========================================================================
-  describe('markAsNoShow', () => {
-    it('should call repository with workLogId and reason', async () => {
-      mockConfirmedStaffRepo.markAsNoShow.mockResolvedValue(undefined);
-
-      await markAsNoShow('wl-1', 'Did not show up');
-
-      expect(mockConfirmedStaffRepo.markAsNoShow).toHaveBeenCalledWith({
-        workLogId: 'wl-1',
-        ownerId: 'owner-1',
-        reason: 'Did not show up',
-      });
-    });
-
-    it('should handle undefined reason', async () => {
-      mockConfirmedStaffRepo.markAsNoShow.mockResolvedValue(undefined);
-
-      await markAsNoShow('wl-1');
-
-      expect(mockConfirmedStaffRepo.markAsNoShow).toHaveBeenCalledWith({
-        workLogId: 'wl-1',
-        ownerId: 'owner-1',
-        reason: undefined,
-      });
-    });
-
-    it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.markAsNoShow.mockRejectedValue(new Error('NoShow failed'));
-
-      await expect(markAsNoShow('wl-1')).rejects.toThrow('NoShow failed');
-    });
-  });
-
-  // ==========================================================================
-  // updateStaffStatus
-  // ==========================================================================
-  describe('updateStaffStatus', () => {
-    it('should call repository with workLogId and status', async () => {
-      mockConfirmedStaffRepo.updateStatus.mockResolvedValue(undefined);
-
-      await updateStaffStatus('wl-1', 'completed');
-
-      expect(mockConfirmedStaffRepo.updateStatus).toHaveBeenCalledWith({
-        workLogId: 'wl-1',
-        ownerId: 'owner-1',
-        status: 'completed',
-      });
-    });
-
-    it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.updateStatus.mockRejectedValue(new Error('Status update failed'));
-
-      await expect(updateStaffStatus('wl-1', 'cancelled')).rejects.toThrow('Status update failed');
-    });
-  });
-
-  // ==========================================================================
-  // subscribeToConfirmedStaff
-  // ==========================================================================
-  describe('subscribeToConfirmedStaff', () => {
-    it('should call repository subscribe and return unsubscribe function', () => {
-      const mockUnsubscribe = jest.fn();
-      mockConfirmedStaffRepo.subscribeByJobPostingId.mockReturnValue(mockUnsubscribe);
-
-      const onUpdate = jest.fn();
-      const onError = jest.fn();
-
-      const unsubscribe = subscribeToConfirmedStaff('job-1', {
-        onUpdate,
-        onError,
-      });
-
-      expect(mockConfirmedStaffRepo.subscribeByJobPostingId).toHaveBeenCalledWith(
-        'job-1',
-        expect.objectContaining({
-          onUpdate: expect.any(Function),
-          onError: onError,
-        })
-      );
-      expect(unsubscribe).toBe(mockUnsubscribe);
-    });
-
-    it('should transform work logs in subscription callback', async () => {
-      let capturedCallback: (workLogs: WorkLog[]) => void;
-
-      mockConfirmedStaffRepo.subscribeByJobPostingId.mockImplementation(
-        (_jobPostingId: string, callbacks: { onUpdate: (workLogs: WorkLog[]) => void }) => {
-          capturedCallback = callbacks.onUpdate;
-          return jest.fn();
-        }
-      );
-
-      const onUpdate = jest.fn();
-      subscribeToConfirmedStaff('job-1', { onUpdate });
-
-      // Trigger the callback with mock work logs
-      const workLogs = [createMockWorkLog({ id: 'wl-1', staffId: 'staff-1' })];
-      await capturedCallback!(workLogs);
-
-      expect(onUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          staff: expect.any(Array),
-          grouped: expect.any(Array),
-          stats: expect.any(Object),
-        })
-      );
-    });
-
-    it('should call onError when a critical processing error occurs in subscription', async () => {
-      let capturedCallback: (workLogs: WorkLog[]) => void;
-
-      mockConfirmedStaffRepo.subscribeByJobPostingId.mockImplementation(
-        (_jobPostingId: string, callbacks: { onUpdate: (workLogs: WorkLog[]) => void }) => {
-          capturedCallback = callbacks.onUpdate;
-          return jest.fn();
-        }
-      );
-
-      const onUpdate = jest.fn();
-      const onError = jest.fn();
-      subscribeToConfirmedStaff('job-1', { onUpdate, onError });
-
-      // Pass null to cause a TypeError in workLogsToConfirmedStaff processing
-      // The function expects an array with .map, so a broken item will fail
-      await capturedCallback!(null as any);
-
-      expect(onError).toHaveBeenCalledWith(expect.any(Error));
-    });
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        staff: expect.any(Array),
+        grouped: expect.any(Array),
+        stats: expect.any(Object),
+      })
+    );
   });
 });

@@ -10,6 +10,7 @@ import { useApplications, useJobDetail } from '@/hooks';
 import { trackJobView } from '@/services/observability';
 import { useAuthStore, useThemeStore } from '@/stores';
 import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 
 export default function JobDetailScreen() {
@@ -64,7 +65,7 @@ export default function JobDetailScreen() {
     );
   }
 
-  if (job.postingType === 'fixed' || job.schedule.kind === 'fixed') {
+  if (!isCanonicalDatedPosting(job)) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />

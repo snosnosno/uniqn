@@ -1,34 +1,21 @@
-/**
- * 노쇼 알림 Firebase Functions
- *
- * @description
- * WorkLog status가 'no_show'로 변경되면 구인자에게 FCM 푸시 알림 전송
- *
- * @trigger Firestore onUpdate
- * @collection workLogs/{workLogId}
- * @version 2.0.0
- * @since 2025-02-01
- */
-
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
-import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { handleTriggerError } from '../errors';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
-import { handleTriggerError } from '../errors';
-import { type JobPostingLocationInput } from '../utils/jobPosting';
 
 const db = admin.firestore();
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface JobPostingData {
   title?: string;
-  location?: JobPostingLocationInput;
   ownerId?: string;
   createdBy?: string;
+}
+
+interface UserData {
+  name?: string;
+  nickname?: string;
 }
 
 interface WorkLogData {
@@ -36,53 +23,27 @@ interface WorkLogData {
   jobPostingId: string;
   date?: string;
   noShowAt?: admin.firestore.Timestamp | string | null;
-  status?: string;
-  scheduledStartTime?: admin.firestore.Timestamp | string;
 }
 
-// ============================================================================
-// Triggers
-// ============================================================================
-
-/**
- * 노쇼 알림 트리거
- *
- * @description
- * - WorkLog noShowAt marker가 생성되면 실행
- * - 구인자(jobPosting.ownerId/createdBy)에게 알림 전송
- */
 export const onNoShow = onDocumentUpdated(
   { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
   async (event) => {
     const workLogId = event.params.workLogId;
     const before = event.data?.before.data() as WorkLogData | undefined;
     const after = event.data?.after.data() as WorkLogData | undefined;
-    if (!before || !after) return;
 
-    const hadNoShowBefore = Boolean(before.noShowAt);
-    const hasNoShowAfter = Boolean(after.noShowAt);
-
-    if (hadNoShowBefore || !hasNoShowAfter) {
+    if (!before || !after) {
       return;
     }
 
-    logger.info('노쇼 감지', {
-      workLogId,
-      staffId: after.staffId,
-      jobPostingId: after.jobPostingId,
-      status: after.status,
-      noShowAt: after.noShowAt,
-    });
+    if (Boolean(before.noShowAt) || !Boolean(after.noShowAt)) {
+      return;
+    }
 
     try {
-      // 1. 공고 정보 조회
-      const jobPostingDoc = await db
-        .collection('jobPostings')
-        .doc(after.jobPostingId)
-        .get();
-
+      const jobPostingDoc = await db.collection('jobPostings').doc(after.jobPostingId).get();
       if (!jobPostingDoc.exists) {
-        logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('Job posting not found for no-show notification', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -90,50 +51,44 @@ export const onNoShow = onDocumentUpdated(
       }
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
-
-      const employerId = jobPosting?.ownerId;
+      const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
       if (!employerId) {
-        logger.warn('공고 작성자를 찾을 수 없습니다', {
+        logger.warn('Employer not found for no-show notification', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
         return;
       }
 
-      // 2. 스태프 이름 조회
-      const actualUserId = extractUserId(after.staffId);
-      const staffDoc = await db.collection('users').doc(actualUserId).get();
-      const staffName = staffDoc.exists
-        ? staffDoc.data()?.name || '스태프'
-        : '스태프';
+      const staffUserId = extractUserId(after.staffId);
+      const staffDoc = await db.collection('users').doc(staffUserId).get();
+      const staffData = (staffDoc.data() as UserData | undefined) ?? {};
+      const staffName = staffData.nickname ?? staffData.name ?? 'Staff';
 
-      // 3. 알림 전송
       const result = await createAndSendNotification(
         employerId,
         'no_show_alert',
-        '⚠️ 노쇼 알림',
-        `${staffName}님이 '${jobPosting.title || '공고'}'에 출근하지 않았습니다.`,
+        'No-show alert',
+        `${staffName} was marked as no-show${jobPosting.title ? ` for '${jobPosting.title}'` : ''}.`,
         {
           link: `/employer/applicants/${after.jobPostingId}`,
           priority: 'urgent',
           relatedId: workLogId,
-          senderId: actualUserId,
+          senderId: staffUserId,
           data: {
             workLogId,
             jobPostingId: after.jobPostingId,
-            jobPostingTitle: jobPosting.title || '',
+            jobPostingTitle: jobPosting.title ?? '',
             staffId: after.staffId,
             staffName,
-            date: after.date || '',
+            date: after.date ?? '',
           },
         }
       );
 
-      logger.info('노쇼 알림 전송 완료', {
+      logger.info('Sent no-show notification', {
+        workLogId,
         notificationId: result.notificationId,
-        employerId,
-        fcmSent: result.fcmSent,
-        successCount: result.successCount,
       });
     } catch (error: unknown) {
       handleTriggerError(error, {
@@ -141,4 +96,5 @@ export const onNoShow = onDocumentUpdated(
         context: { workLogId, staffId: after.staffId },
       });
     }
-  });
+  }
+);

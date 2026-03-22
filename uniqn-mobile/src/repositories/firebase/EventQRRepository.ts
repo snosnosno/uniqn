@@ -29,13 +29,38 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
-import type { IEventQRRepository } from '../interfaces/IEventQRRepository';
+import type { EventQRScopeOptions, IEventQRRepository } from '../interfaces/IEventQRRepository';
 import type { EventQRCode, QRCodeAction } from '@/types';
 import { COLLECTIONS, FIELDS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
 // ============================================================================
+
+function matchesScope(
+  qrCode: Pick<EventQRCode, 'assignmentGroupId' | 'timeSlot'>,
+  options?: EventQRScopeOptions
+): boolean {
+  if (!options) {
+    return true;
+  }
+
+  if (options.assignmentGroupId !== undefined) {
+    const assignmentGroupId = qrCode.assignmentGroupId ?? null;
+    if (assignmentGroupId !== (options.assignmentGroupId ?? null)) {
+      return false;
+    }
+  }
+
+  if (options.timeSlot !== undefined) {
+    const timeSlot = qrCode.timeSlot ?? null;
+    if (timeSlot !== (options.timeSlot ?? null)) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /**
  * Firebase Event QR Repository
@@ -71,7 +96,8 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
   async getActiveByJobAndDate(
     jobPostingId: string,
     date: string,
-    action: QRCodeAction
+    action: QRCodeAction,
+    options?: EventQRScopeOptions
   ): Promise<EventQRCode | null> {
     try {
       const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
@@ -81,15 +107,24 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
         where(FIELDS.EVENT_QR.date, '==', date),
         where(FIELDS.EVENT_QR.action, '==', action),
         where(FIELDS.EVENT_QR.isActive, '==', true),
-        orderBy(FIELDS.EVENT_QR.createdAt, 'desc'),
-        limit(1)
+        orderBy(FIELDS.EVENT_QR.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
       if (snapshot.empty) return null;
 
-      const docSnap = snapshot.docs[0];
-      const data = docSnap.data() as Omit<EventQRCode, 'id'>;
+      const matchedEntry = snapshot.docs
+        .map((docSnap) => ({
+          docSnap,
+          data: docSnap.data() as Omit<EventQRCode, 'id'>,
+        }))
+        .find(({ data }) => matchesScope(data, options));
+
+      if (!matchedEntry) {
+        return null;
+      }
+
+      const { docSnap, data } = matchedEntry;
 
       // 만료 확인 및 자동 비활성화 (트랜잭션으로 TOCTOU 방지)
       if (data.expiresAt.toMillis() < Date.now()) {
@@ -121,7 +156,8 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
     jobPostingId: string,
     date: string,
     action: QRCodeAction,
-    securityCode: string
+    securityCode: string,
+    options?: EventQRScopeOptions
   ): Promise<EventQRCode | null> {
     try {
       const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
@@ -142,6 +178,10 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
       const docSnap = snapshot.docs[0];
       const data = docSnap.data() as Omit<EventQRCode, 'id'>;
+
+      if (!matchesScope(data, options)) {
+        return null;
+      }
 
       // 서버 시간 기준 만료 확인
       if (data.expiresAt.toMillis() < Date.now()) {
@@ -196,7 +236,8 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
   async deactivateByJobAndDate(
     jobPostingId: string,
     date: string,
-    action: QRCodeAction
+    action: QRCodeAction,
+    options?: EventQRScopeOptions
   ): Promise<number> {
     try {
       const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
@@ -212,16 +253,22 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
       if (snapshot.empty) return 0;
 
+      const scopedDocs = snapshot.docs.filter((docSnap) =>
+        matchesScope(docSnap.data() as Omit<EventQRCode, 'id'>, options)
+      );
+
+      if (scopedDocs.length === 0) return 0;
+
       // writeBatch로 원자적 배치 비활성화
       const batch = writeBatch(getFirebaseDb());
-      snapshot.docs.forEach((docSnap) => {
+      scopedDocs.forEach((docSnap) => {
         batch.update(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
           isActive: false,
         });
       });
       await batch.commit();
 
-      return snapshot.docs.length;
+      return scopedDocs.length;
     } catch (error) {
       // 기존 QR 비활성화 실패는 새 QR 생성에 영향 없음 - 명시적 silent 처리
       handleSilentError(error, {

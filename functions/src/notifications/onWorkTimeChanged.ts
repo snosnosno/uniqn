@@ -1,22 +1,9 @@
-/**
- * 근무시간 변경 알림 Firebase Functions
- *
- * @description
- * 근무 로그의 예정 근무시간이 변경되면 근무자에게 FCM 푸시 알림 전송
- * - scheduledStartTime 변경
- * - scheduledEndTime 변경
- *
- * @trigger Firestore onUpdate
- * @collection workLogs/{workLogId}
- * @version 3.0.0
- * @since 2025-10-15
- */
-
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
-import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { handleTriggerError } from '../errors';
 import { createAndSendNotification } from '../utils/notificationUtils';
-import { formatTime, extractUserId } from '../utils/helpers';
+import { extractUserId, formatTime } from '../utils/helpers';
 import {
   formatJobPostingLocation,
   getJobPostingDistrict,
@@ -28,115 +15,115 @@ const db = admin.firestore();
 interface JobPostingData {
   title?: string;
   location?: JobPostingLocationInput;
-  district?: string;
   ownerId?: string;
-  createdBy?: string;
 }
 
-/**
- * 근무시간 변경 알림 트리거
- *
- * @description
- * - scheduledStartTime 또는 scheduledEndTime 변경 감지
- * - 근무자에게 FCM 푸시 알림 전송
- */
-export const onWorkTimeChanged = onDocumentUpdated(
-  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+interface WorkLogData {
+  staffId: string;
+  jobPostingId: string;
+  date?: string;
+  timeSlot?: string;
+  checkInTime?: admin.firestore.Timestamp | string | null;
+  checkOutTime?: admin.firestore.Timestamp | string | null;
+}
+
+interface TimeModificationLogData {
+  workLogId?: string;
+  previousStartTime?: admin.firestore.Timestamp | string | null;
+  previousEndTime?: admin.firestore.Timestamp | string | null;
+  newStartTime?: admin.firestore.Timestamp | string | null;
+  newEndTime?: admin.firestore.Timestamp | string | null;
+}
+
+export const onWorkTimeChanged = onDocumentCreated(
+  {
+    document: 'workLogs/{workLogId}/timeModificationLogs/{logId}',
+    region: 'asia-northeast3',
+  },
   async (event) => {
     const workLogId = event.params.workLogId;
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-    if (!before || !after) return;
+    const modification = event.data?.data() as TimeModificationLogData | undefined;
 
-    // scheduledStartTime 또는 scheduledEndTime 변경 감지
-    const startTimeChanged =
-      formatTime(before.scheduledStartTime) !== formatTime(after.scheduledStartTime);
-    const endTimeChanged =
-      formatTime(before.scheduledEndTime) !== formatTime(after.scheduledEndTime);
-
-    if (!startTimeChanged && !endTimeChanged) {
-      return; // 근무시간 변경 없음
+    if (!modification) {
+      return;
     }
 
-    logger.info('근무시간 변경 감지', {
-      workLogId,
-      staffId: after.staffId,
-      jobPostingId: after.jobPostingId,
-      beforeStart: formatTime(before.scheduledStartTime),
-      afterStart: formatTime(after.scheduledStartTime),
-      beforeEnd: formatTime(before.scheduledEndTime),
-      afterEnd: formatTime(after.scheduledEndTime),
-    });
+    const startChanged =
+      formatTime(modification.previousStartTime) !== formatTime(modification.newStartTime);
+    const endChanged =
+      formatTime(modification.previousEndTime) !== formatTime(modification.newEndTime);
+
+    if (!startChanged && !endChanged) {
+      return;
+    }
 
     try {
-      // 1. 공고 정보 조회
-      const jobPostingDoc = await db
-        .collection('jobPostings')
-        .doc(after.jobPostingId)
-        .get();
+      const workLogDoc = await db.collection('workLogs').doc(workLogId).get();
+      if (!workLogDoc.exists) {
+        logger.warn('WorkLog not found for work time change notification', { workLogId });
+        return;
+      }
 
+      const workLog = workLogDoc.data() as WorkLogData;
+      const jobPostingDoc = await db.collection('jobPostings').doc(workLog.jobPostingId).get();
       if (!jobPostingDoc.exists) {
-        logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('Job posting not found for work time change notification', {
           workLogId,
-          jobPostingId: after.jobPostingId,
+          jobPostingId: workLog.jobPostingId,
         });
         return;
       }
 
-      const jobPosting = jobPostingDoc.data() as JobPostingData | undefined;
-      if (!jobPosting) {
-        logger.warn('공고 데이터가 없습니다', { workLogId });
-        return;
+      const jobPosting = jobPostingDoc.data() as JobPostingData;
+      const recipientId = extractUserId(workLog.staffId);
+      const changes: string[] = [];
+
+      if (startChanged) {
+        changes.push(
+          `start ${formatTime(modification.previousStartTime)} -> ${formatTime(modification.newStartTime)}`
+        );
       }
 
-      // 2. 변경 내용 메시지 생성
-      let changeDetails = '';
-      if (startTimeChanged && endTimeChanged) {
-        changeDetails = `시작: ${formatTime(before.scheduledStartTime)} → ${formatTime(after.scheduledStartTime)}, 종료: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
-      } else if (startTimeChanged) {
-        changeDetails = `시작시간: ${formatTime(before.scheduledStartTime)} → ${formatTime(after.scheduledStartTime)}`;
-      } else if (endTimeChanged) {
-        changeDetails = `종료시간: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
+      if (endChanged) {
+        changes.push(
+          `end ${formatTime(modification.previousEndTime)} -> ${formatTime(modification.newEndTime)}`
+        );
       }
 
-      // 3. 근무자 userId 추출
-      const actualUserId = extractUserId(after.staffId);
-
-      // 4. 알림 전송
       const result = await createAndSendNotification(
-        actualUserId,
+        recipientId,
         'schedule_change',
-        '⏰ 근무 시간이 변경되었습니다!',
-        `'${jobPosting.title}'\n${changeDetails}`,
+        'Work time updated',
+        `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} was updated: ${changes.join(', ')}`,
         {
           link: '/schedule',
           priority: 'high',
           relatedId: workLogId,
-          senderId: jobPosting.ownerId ?? undefined,
+          senderId: jobPosting.ownerId,
           channelId: 'reminders',
           data: {
             workLogId,
-            jobPostingId: after.jobPostingId,
-            jobPostingTitle: jobPosting.title || '',
-            scheduledStartTime: formatTime(after.scheduledStartTime),
-            scheduledEndTime: formatTime(after.scheduledEndTime),
+            jobPostingId: workLog.jobPostingId,
+            jobPostingTitle: jobPosting.title ?? '',
+            date: workLog.date ?? '',
+            timeSlot: workLog.timeSlot ?? '',
+            checkInTime: formatTime(workLog.checkInTime ?? modification.newStartTime),
+            checkOutTime: formatTime(workLog.checkOutTime ?? modification.newEndTime),
             location: formatJobPostingLocation(jobPosting.location),
             district: getJobPostingDistrict(jobPosting.location),
           },
         }
       );
 
-      logger.info('근무시간 변경 알림 전송 완료', {
+      logger.info('Sent work time changed notification', {
+        workLogId,
         notificationId: result.notificationId,
-        staffId: after.staffId,
-        fcmSent: result.fcmSent,
-        successCount: result.successCount,
       });
     } catch (error: unknown) {
-      logger.error('근무시간 변경 알림 처리 중 오류 발생', {
-        workLogId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: 'onWorkTimeChanged',
+        context: { workLogId },
       });
     }
-  });
+  }
+);
