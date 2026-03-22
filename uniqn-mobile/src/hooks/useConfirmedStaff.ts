@@ -10,9 +10,10 @@ import {
   type GetConfirmedStaffResult,
   updateConfirmedStaffWorkTime,
   updateStaffRole,
+  updateStaffStatus,
 } from '@/services';
 import { toError } from '@/errors';
-import type { ConfirmedStaffStatus } from '@/shared/status';
+import type { ConfirmedStaffStatus, WorkLogStatus } from '@/shared/status';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type {
@@ -42,10 +43,12 @@ export interface UseConfirmedStaffReturn {
   updateWorkTime: (input: UpdateWorkTimeInput) => void;
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   setNoShow: (workLogId: string, reason?: string) => void;
+  changeStatus: (workLogId: string, status: WorkLogStatus) => void;
   isChangingRole: boolean;
   isUpdatingTime: boolean;
   isRemoving: boolean;
   isSettingNoShow: boolean;
+  isChangingStatus: boolean;
 }
 
 const emptyStats: ConfirmedStaffStats = {
@@ -190,6 +193,38 @@ export function useConfirmedStaff(
     },
   });
 
+  const changeStatusMutation = useMutation({
+    mutationFn: ({ workLogId, status }: { workLogId: string; status: WorkLogStatus }) =>
+      updateStaffStatus(workLogId, status),
+    onMutate: async ({ workLogId, status }) => {
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
+
+      if (previous) {
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
+          ...previous,
+          staff: previous.staff.map((staff) =>
+            staff.id === workLogId ? { ...staff, status: status as ConfirmedStaffStatus } : staff
+          ),
+        });
+      }
+
+      return { previous };
+    },
+    onSuccess: () => {
+      invalidateQueries.staffManagement(jobPostingId);
+      addToast({ type: 'success', message: 'Status updated.' });
+    },
+    onError: (mutationError: Error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(staffQueryKey, context.previous);
+      }
+
+      logger.error('Failed to change confirmed staff status', mutationError, { jobPostingId });
+      addToast({ type: 'error', message: 'Failed to update status.' });
+    },
+  });
+
   const refresh = useCallback(() => {
     if (!realtime) {
       refetch();
@@ -230,6 +265,13 @@ export function useConfirmedStaff(
     [setNoShowMutation]
   );
 
+  const changeStatus = useCallback(
+    (workLogId: string, status: WorkLogStatus) => {
+      changeStatusMutation.mutate({ workLogId, status });
+    },
+    [changeStatusMutation]
+  );
+
   const resultData = realtime ? realtimeData : data;
 
   return {
@@ -244,10 +286,12 @@ export function useConfirmedStaff(
     updateWorkTime,
     removeStaff,
     setNoShow,
+    changeStatus,
     isChangingRole: changeRoleMutation.isPending,
     isUpdatingTime: updateWorkTimeMutation.isPending,
     isRemoving: removeStaffMutation.isPending,
     isSettingNoShow: setNoShowMutation.isPending,
+    isChangingStatus: changeStatusMutation.isPending,
   };
 }
 

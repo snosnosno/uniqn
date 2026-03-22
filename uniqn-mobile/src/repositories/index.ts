@@ -94,6 +94,7 @@ export type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
+  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
   // Announcement
   IAnnouncementRepository,

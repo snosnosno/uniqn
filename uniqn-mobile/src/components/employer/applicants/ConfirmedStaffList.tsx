@@ -32,6 +32,7 @@ export interface ConfirmedStaffListProps {
   onChangeRole?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
+  onStatusChange?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
 }
 
@@ -124,6 +125,7 @@ export function ConfirmedStaffList({
   onChangeRole,
   onReport,
   onDelete,
+  onStatusChange,
   showActions = true,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -202,11 +204,21 @@ export function ConfirmedStaffList({
           onChangeRole={onChangeRole}
           onReport={onReport}
           onDelete={onDelete}
+          onStatusChange={onStatusChange}
           showActions={showActions}
         />
       </View>
     ),
-    [onChangeRole, onDelete, onEditTime, onReport, onStaffPress, onViewProfile, showActions]
+    [
+      onChangeRole,
+      onDelete,
+      onEditTime,
+      onReport,
+      onStaffPress,
+      onStatusChange,
+      onViewProfile,
+      showActions,
+    ]
   );
 
   const renderSectionHeader = useCallback(

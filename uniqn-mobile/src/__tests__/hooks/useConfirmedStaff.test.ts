@@ -8,6 +8,7 @@ const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
 const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
+const mockUpdateStaffStatus = jest.fn();
 const mockSubscribeToConfirmedStaff = jest.fn();
 const mockAddToast = jest.fn();
 const mockLoggerInfo = jest.fn();
@@ -22,7 +23,7 @@ let mockData: unknown;
 let mockError: Error | null;
 let mockIsLoading: boolean;
 let mockIsRefetching: boolean;
-let mockPendingStates = [false, false, false, false];
+let mockPendingStates = [false, false, false, false, false];
 
 jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
@@ -32,6 +33,7 @@ jest.mock('@/services', () => ({
   cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
     mockCancelConfirmedStaffConfirmation(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
+  updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
   subscribeToConfirmedStaff: (...args: unknown[]) => mockSubscribeToConfirmedStaff(...args),
 }));
 
@@ -183,7 +185,7 @@ describe('useConfirmedStaff', () => {
     mockError = null;
     mockIsLoading = false;
     mockIsRefetching = false;
-    mockPendingStates = [false, false, false, false];
+    mockPendingStates = [false, false, false, false, false];
   });
 
   it('returns fetched confirmed staff data', () => {
@@ -337,6 +339,21 @@ describe('useConfirmedStaff', () => {
 
     await waitFor(() => {
       expect(mockMarkAsNoShow).toHaveBeenCalledWith('worklog-1', 'No arrival');
+    });
+  });
+
+  it('changes staff status through manual mutation path', async () => {
+    mockUpdateStaffStatus.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useConfirmedStaff('job-1'));
+
+    act(() => {
+      result.current.changeStatus('worklog-1', 'completed');
+    });
+
+    await waitFor(() => {
+      expect(mockUpdateStaffStatus).toHaveBeenCalledWith('worklog-1', 'completed');
+      expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
     });
   });
 });

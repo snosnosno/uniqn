@@ -4,10 +4,13 @@
 
 import React, { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
-import { QRCodeIcon, RefreshIcon } from '../../icons';
+import type { WorkLogStatus } from '@/shared/status';
+import { CalendarIcon, CheckCircleIcon, ClockIcon, QRCodeIcon, RefreshIcon } from '../../icons';
+import { ActionSheet, type ActionSheetOption } from '../../ui/ActionSheet';
 import { ErrorState } from '../../ui/ErrorState';
 import { Loading } from '../../ui/Loading';
 import { ConfirmModal } from '../../ui/Modal';
@@ -70,6 +73,7 @@ export function StaffManagementTab({
     refresh,
     updateWorkTime,
     removeStaff,
+    changeStatus,
     isUpdatingTime,
   } = useConfirmedStaff(jobPostingId);
 
@@ -78,6 +82,7 @@ export function StaffManagementTab({
   const [deleteTarget, setDeleteTarget] = useState<ConfirmedStaff | null>(null);
   const [profileStaff, setProfileStaff] = useState<ConfirmedStaff | null>(null);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  const [statusSheetTarget, setStatusSheetTarget] = useState<ConfirmedStaff | null>(null);
 
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     logger.debug('Confirmed staff pressed', { workLogId: staff.id });
@@ -161,6 +166,64 @@ export function StaffManagementTab({
     onShowEventQR?.();
   }, [onShowEventQR]);
 
+  const handleStatusChange = useCallback((staff: ConfirmedStaff) => {
+    setStatusSheetTarget(staff);
+  }, []);
+
+  const handleStatusSelect = useCallback(
+    (status: string) => {
+      if (!statusSheetTarget) {
+        return;
+      }
+
+      changeStatus(statusSheetTarget.id, status as WorkLogStatus);
+    },
+    [changeStatus, statusSheetTarget]
+  );
+
+  const getStatusOptions = useCallback((): ActionSheetOption[] => {
+    if (!statusSheetTarget) {
+      return [];
+    }
+
+    const currentStatus = statusSheetTarget.status;
+    const options: ActionSheetOption[] = [];
+
+    if (currentStatus !== STATUS.WORK_LOG.SCHEDULED) {
+      options.push({
+        label: 'Set as scheduled',
+        value: STATUS.WORK_LOG.SCHEDULED,
+        icon: <CalendarIcon size={20} color="#6B7280" />,
+      });
+    }
+
+    if (currentStatus !== STATUS.WORK_LOG.CHECKED_IN) {
+      options.push({
+        label: 'Mark checked in',
+        value: STATUS.WORK_LOG.CHECKED_IN,
+        icon: <CheckCircleIcon size={20} color="#22C55E" />,
+      });
+    }
+
+    if (currentStatus !== STATUS.WORK_LOG.CHECKED_OUT) {
+      options.push({
+        label: 'Mark checked out',
+        value: STATUS.WORK_LOG.CHECKED_OUT,
+        icon: <ClockIcon size={20} color="#4F46E5" />,
+      });
+    }
+
+    if (currentStatus !== STATUS.WORK_LOG.COMPLETED) {
+      options.push({
+        label: 'Mark completed',
+        value: STATUS.WORK_LOG.COMPLETED,
+        icon: <CheckCircleIcon size={20} color="#059669" />,
+      });
+    }
+
+    return options;
+  }, [statusSheetTarget]);
+
   const selectedWorkLog: WorkLog | null = selectedStaff?.workLog
     ? {
         ...selectedStaff.workLog,
@@ -206,6 +269,7 @@ export function StaffManagementTab({
           onChangeRole={handleChangeRole}
           onReport={handleReport}
           onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
           showActions
         />
       </View>
@@ -236,6 +300,19 @@ export function StaffManagementTab({
         visible={isProfileModalVisible}
         onClose={handleCloseProfileModal}
         staff={profileStaff}
+      />
+
+      <ActionSheet
+        visible={Boolean(statusSheetTarget)}
+        onClose={() => setStatusSheetTarget(null)}
+        title="Change status"
+        description={
+          statusSheetTarget
+            ? `Choose the work status for ${statusSheetTarget.staffName ?? 'this staff member'}.`
+            : undefined
+        }
+        options={getStatusOptions()}
+        onSelect={handleStatusSelect}
       />
     </View>
   );

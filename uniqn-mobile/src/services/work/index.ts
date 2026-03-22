@@ -57,6 +57,7 @@ export {
   getConfirmedStaff,
   getConfirmedStaffByDate,
   updateStaffRole,
+  updateStaffStatus,
   updateWorkTime as updateConfirmedStaffWorkTime,
   cancelConfirmedStaffConfirmation,
   markAsNoShow,

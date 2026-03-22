@@ -9,6 +9,7 @@ import {
   markAsNoShow,
   subscribeToConfirmedStaff,
   updateStaffRole,
+  updateStaffStatus,
   updateWorkTime,
 } from '../confirmedStaffService';
 
@@ -19,6 +20,7 @@ jest.mock('@/repositories', () => ({
     updateRoleWithTransaction: jest.fn(),
     updateWorkTimeWithTransaction: jest.fn(),
     markAsNoShow: jest.fn(),
+    updateStatus: jest.fn(),
     subscribeByJobPostingId: jest.fn(),
   },
   userRepository: {
@@ -205,6 +207,18 @@ describe('confirmedStaffService', () => {
       workLogId: 'worklog-1',
       ownerId: 'owner-1',
       reason: 'No arrival',
+    });
+  });
+
+  it('updates confirmed staff status with current owner id', async () => {
+    mockConfirmedStaffRepository.updateStatus.mockResolvedValue(undefined);
+
+    await updateStaffStatus('worklog-1', 'completed');
+
+    expect(mockConfirmedStaffRepository.updateStatus).toHaveBeenCalledWith({
+      workLogId: 'worklog-1',
+      ownerId: 'owner-1',
+      status: 'completed',
     });
   });
 

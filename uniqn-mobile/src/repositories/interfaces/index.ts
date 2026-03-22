@@ -76,6 +76,7 @@ export type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   MarkNoShowContext,
+  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from './IConfirmedStaffRepository';
 

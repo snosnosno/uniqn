@@ -16,7 +16,7 @@ import {
   type DeleteConfirmedStaffInput,
 } from '@/types/confirmedStaff';
 import { STAFF_ROLES, STATUS } from '@/constants';
-import { StatusMapper } from '@/shared/status';
+import { StatusMapper, type WorkLogStatus } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
 
@@ -191,6 +191,15 @@ export async function markAsNoShow(workLogId: string, reason?: string): Promise<
   await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.uid, reason });
 
   logger.info('Marked confirmed staff as no-show', { workLogId });
+}
+
+export async function updateStaffStatus(workLogId: string, status: WorkLogStatus): Promise<void> {
+  const currentUser = requireCurrentUser();
+  logger.info('Updating confirmed staff status', { workLogId, status });
+
+  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.uid, status });
+
+  logger.info('Updated confirmed staff status', { workLogId, status });
 }
 
 export function subscribeToConfirmedStaff(

@@ -48,6 +48,7 @@ export interface IConfirmedStaffRepository {
   updateRoleWithTransaction(context: UpdateRoleContext): Promise<void>;
   updateWorkTimeWithTransaction(context: UpdateConfirmedStaffWorkTimeContext): Promise<void>;
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
+  updateStatus(context: UpdateStaffStatusContext): Promise<void>;
   subscribeByJobPostingId(
     jobPostingId: string,
     callbacks: ConfirmedStaffSubscriptionCallbacks

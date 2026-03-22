@@ -31,6 +31,7 @@ export interface ConfirmedStaffCardProps {
   onChangeRole?: (staff: ConfirmedStaff) => void;
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
+  onStatusChange?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
   compact?: boolean;
 }
@@ -64,6 +65,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onChangeRole,
   onReport,
   onDelete,
+  onStatusChange,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
@@ -94,6 +96,11 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete =
     staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
+  const canChangeStatus =
+    staff.status === STATUS.WORK_LOG.SCHEDULED ||
+    staff.status === STATUS.WORK_LOG.CHECKED_IN ||
+    staff.status === STATUS.WORK_LOG.CHECKED_OUT ||
+    staff.status === STATUS.WORK_LOG.COMPLETED;
 
   const handlePress = useCallback(() => {
     onPress?.(staff);
@@ -118,6 +125,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const handleDelete = useCallback(() => {
     onDelete?.(staff);
   }, [onDelete, staff]);
+
+  const handleStatusChange = useCallback(() => {
+    onStatusChange?.(staff);
+  }, [onStatusChange, staff]);
 
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>
@@ -152,9 +163,15 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             </View>
           </Pressable>
 
-          <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
-            {STATUS_LABELS[staff.status]}
-          </Badge>
+          <Pressable
+            onPress={handleStatusChange}
+            disabled={!canChangeStatus || !onStatusChange}
+            className={canChangeStatus && onStatusChange ? 'active:opacity-70' : ''}
+          >
+            <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
+              {STATUS_LABELS[staff.status]}
+            </Badge>
+          </Pressable>
           {onPress ? <ChevronRightIcon size={20} color="#9CA3AF" /> : null}
         </View>
 
