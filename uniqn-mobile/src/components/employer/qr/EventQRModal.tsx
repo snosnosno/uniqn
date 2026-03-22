@@ -1,14 +1,5 @@
 /**
- * UNIQN Mobile - 현장 QR 코드 모달 (구인자용)
- *
- * @description 구인자가 스태프에게 보여줄 출퇴근 QR 코드
- * @version 2.0.0
- *
- * 개선 사항:
- * - 모달 열릴 때 QR 자동 생성
- * - 원형 프로그레스 바로 남은 시간 시각화
- * - 모드 토글 아이콘 추가
- * - 갱신 인디케이터 추가
+ * UNIQN Mobile - Event QR modal (employer)
  */
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
@@ -22,6 +13,10 @@ import {
   Easing,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { useAuth } from '@/hooks/useAuth';
+import { useEventQR } from '@/hooks/useEventQR';
+import { useJobDetail } from '@/hooks/useJobDetail';
+import { formatDate } from '@/utils/date';
 import { Modal } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
@@ -35,41 +30,34 @@ import {
   LogInIcon,
   LogOutIcon,
 } from '../../icons';
-import { useEventQR } from '@/hooks/useEventQR';
-import { useAuth } from '@/hooks/useAuth';
-import { formatDate } from '@/utils/date';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { buildEventQRScopes, findPreferredEventQRScope, type EventQRScope } from './eventQRScope';
 
 export interface EventQRModalProps {
   visible: boolean;
   onClose: () => void;
   jobPostingId: string;
   jobTitle?: string;
-  eventDate?: string; // YYYY-MM-DD
+  eventDate?: string;
   assignmentGroupId?: string | null;
   timeSlot?: string | null;
 }
 
 type QRMode = 'checkIn' | 'checkOut';
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const QR_SIZE = Math.min(SCREEN_WIDTH * 0.55, 220);
-const TOTAL_SECONDS = 180; // 3분
-
-// ============================================================================
-// Sub-components
-// ============================================================================
+const TOTAL_SECONDS = 180;
 
 interface ModeToggleProps {
   mode: QRMode;
   onModeChange: (mode: QRMode) => void;
+  disabled?: boolean;
+}
+
+interface ScopeSelectionPanelProps {
+  scopes: EventQRScope[];
+  selectedScopeKey: string | null;
+  onSelect: (key: string) => void;
   disabled?: boolean;
 }
 
@@ -79,9 +67,9 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
 
   return (
     <View
-      className="flex-row bg-gray-100 dark:bg-surface rounded-2xl p-1.5"
+      className="flex-row rounded-2xl bg-gray-100 p-1.5 dark:bg-surface"
       accessibilityRole="tablist"
-      accessibilityLabel="출퇴근 모드 선택"
+      accessibilityLabel="QR mode"
     >
       <Pressable
         onPress={() => onModeChange('checkIn')}
@@ -99,8 +87,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         }}
         accessibilityRole="tab"
         accessibilityState={{ selected: checkInActive }}
-        accessibilityLabel="출근 모드"
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Check-in mode"
       >
         <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : '#9CA3AF'} />
         <Text
@@ -111,7 +98,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
             color: checkInActive ? '#FFFFFF' : '#6B7280',
           }}
         >
-          출근
+          Check in
         </Text>
       </Pressable>
 
@@ -131,8 +118,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         }}
         accessibilityRole="tab"
         accessibilityState={{ selected: checkOutActive }}
-        accessibilityLabel="퇴근 모드"
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Check-out mode"
       >
         <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : '#9CA3AF'} />
         <Text
@@ -143,31 +129,71 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
             color: checkOutActive ? '#FFFFFF' : '#6B7280',
           }}
         >
-          퇴근
+          Check out
         </Text>
       </Pressable>
     </View>
   );
 }
 
-interface QRRefreshOverlayProps {
-  visible: boolean;
+function ScopeSelectionPanel({
+  scopes,
+  selectedScopeKey,
+  onSelect,
+  disabled,
+}: ScopeSelectionPanelProps) {
+  return (
+    <View className="mb-5 w-full">
+      <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        Select schedule
+      </Text>
+      <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        Choose the dated assignment slot to generate this QR.
+      </Text>
+
+      <View className="mt-3 gap-2">
+        {scopes.map((scope) => {
+          const isSelected = scope.key === selectedScopeKey;
+
+          return (
+            <Pressable
+              key={scope.key}
+              onPress={() => onSelect(scope.key)}
+              disabled={disabled}
+              className={`rounded-2xl border px-4 py-3 ${
+                isSelected
+                  ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
+                  : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+              } ${disabled ? 'opacity-50' : 'active:opacity-80'}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${formatDate(scope.date)} ${scope.timeLabel}`}
+            >
+              <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {formatDate(scope.date)} · {scope.timeLabel}
+              </Text>
+              <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {scope.roleSummary}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
-function QRRefreshOverlay({ visible }: QRRefreshOverlayProps) {
+function QRRefreshOverlay({ visible }: { visible: boolean }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // 페이드 인
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
       }).start();
 
-      // 회전 애니메이션
       const rotateLoop = Animated.loop(
         Animated.timing(rotateAnim, {
           toValue: 1,
@@ -176,46 +202,45 @@ function QRRefreshOverlay({ visible }: QRRefreshOverlayProps) {
           useNativeDriver: true,
         })
       );
+
       rotateLoop.start();
 
       return () => rotateLoop.stop();
-    } else {
-      // 페이드 아웃
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-      rotateAnim.setValue(0);
-      return undefined;
     }
-  }, [visible, fadeAnim, rotateAnim]);
+
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+    rotateAnim.setValue(0);
+
+    return undefined;
+  }, [fadeAnim, rotateAnim, visible]);
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   return (
     <Animated.View
       style={{ opacity: fadeAnim }}
-      className="absolute inset-0 bg-white/80 dark:bg-surface/80 rounded-2xl items-center justify-center z-10"
+      className="absolute inset-0 z-10 items-center justify-center rounded-2xl bg-white/80 dark:bg-surface/80"
     >
       <Animated.View style={{ transform: [{ rotate }] }}>
         <RefreshIcon size={32} color="#A855F7" />
       </Animated.View>
-      <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400 font-medium">
-        QR 갱신 중...
+      <Text className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+        Refreshing QR...
       </Text>
     </Animated.View>
   );
 }
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 export function EventQRModal({
   visible,
@@ -226,21 +251,66 @@ export function EventQRModal({
   assignmentGroupId,
   timeSlot,
 }: EventQRModalProps) {
-  // 오늘 날짜 기본값
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
-  const targetDate = eventDate || today;
-
-  // 현재 사용자 (QR 생성자)
+  const today = useMemo(() => new Date().toISOString().split('T')[0] ?? '', []);
   const { user } = useAuth();
   const createdBy = user?.uid || '';
+  const {
+    job,
+    isLoading: isJobLoading,
+    error: jobError,
+  } = useJobDetail(jobPostingId, {
+    enabled: visible && !!jobPostingId,
+  });
 
-  // 모드 상태
+  const scopeOptions = useMemo(() => buildEventQRScopes(job), [job]);
+  const preferredScope = useMemo(
+    () =>
+      findPreferredEventQRScope(scopeOptions, {
+        eventDate,
+        assignmentGroupId,
+        timeSlot,
+      }),
+    [assignmentGroupId, eventDate, scopeOptions, timeSlot]
+  );
+
   const [mode, setMode] = useState<QRMode>('checkIn');
+  const [selectedScopeKey, setSelectedScopeKey] = useState<string | null>(
+    preferredScope?.key ?? null
+  );
+  const lastGeneratedSignatureRef = useRef<string | null>(null);
 
-  // 자동 생성 실행 여부 추적
-  const hasAutoGenerated = useRef(false);
+  useEffect(() => {
+    if (!visible) {
+      setSelectedScopeKey(preferredScope?.key ?? null);
+      setMode('checkIn');
+      lastGeneratedSignatureRef.current = null;
+      return;
+    }
 
-  // QR 훅
+    if (scopeOptions.length === 1) {
+      setSelectedScopeKey(scopeOptions[0]?.key ?? null);
+      return;
+    }
+
+    if (preferredScope) {
+      setSelectedScopeKey(preferredScope.key);
+      return;
+    }
+
+    setSelectedScopeKey((current) =>
+      scopeOptions.some((scope) => scope.key === current) ? current : null
+    );
+  }, [preferredScope, scopeOptions, visible]);
+
+  const selectedScope = useMemo(
+    () => scopeOptions.find((scope) => scope.key === selectedScopeKey) ?? null,
+    [scopeOptions, selectedScopeKey]
+  );
+
+  const targetDate = selectedScope?.date ?? eventDate ?? today;
+  const scopedAssignmentGroupId = selectedScope?.assignmentGroupId ?? null;
+  const scopedTimeSlot = selectedScope?.timeSlot ?? null;
+
   const {
     qrValue,
     displayData,
@@ -250,147 +320,287 @@ export function EventQRModal({
     isRefreshing,
     generate,
     refresh,
+    deactivate,
   } = useEventQR(jobPostingId, targetDate, createdBy, {
-    autoRefresh: visible,
-    assignmentGroupId,
-    timeSlot,
+    autoRefresh: visible && !!selectedScope,
+    assignmentGroupId: scopedAssignmentGroupId,
+    timeSlot: scopedTimeSlot,
   });
 
-  // 모달 열릴 때 자동 QR 생성
   useEffect(() => {
-    if (visible && createdBy && !hasAutoGenerated.current) {
-      hasAutoGenerated.current = true;
-      // 다음 틱에서 실행하여 컴포넌트가 완전히 마운트된 후 generate 호출
-      const timeoutId = setTimeout(() => {
-        generate(mode);
-      }, 0);
-      return () => clearTimeout(timeoutId);
+    if ((!visible || !selectedScope) && isActive) {
+      lastGeneratedSignatureRef.current = null;
+      deactivate().catch(() => undefined);
+    }
+  }, [deactivate, isActive, selectedScope, visible]);
+
+  useEffect(() => {
+    if (!visible || !createdBy || !selectedScope) {
+      return;
     }
 
-    // 모달 닫힐 때 플래그 리셋
-    if (!visible) {
-      hasAutoGenerated.current = false;
+    const signature = `${selectedScope.key}:${mode}`;
+    if (lastGeneratedSignatureRef.current === signature) {
+      return;
     }
-    return undefined;
-  }, [visible, createdBy, mode, generate]);
 
-  // QR 데이터 유무 확인
-  const hasQRData = !!displayData && isActive;
-  // 만료 여부
+    lastGeneratedSignatureRef.current = signature;
+
+    const timeoutId = setTimeout(() => {
+      generate(mode).catch(() => undefined);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [createdBy, generate, mode, selectedScope, visible]);
+
+  const hasDatedSchedule = job?.schedule.kind === 'dated';
+  const isScopeLoading = visible && isJobLoading && !job;
+  const formattedDate = selectedScope ? formatDate(selectedScope.date) : null;
+  const scopeSubtitle = selectedScope
+    ? `${selectedScope.timeLabel}${selectedScope.roleSummary ? ` · ${selectedScope.roleSummary}` : ''}`
+    : null;
+  const qrMatchesSelectedScope =
+    Boolean(selectedScope) &&
+    Boolean(displayData) &&
+    displayData?.date === selectedScope?.date &&
+    (displayData?.assignmentGroupId ?? null) === (selectedScope?.assignmentGroupId ?? null) &&
+    (displayData?.timeSlot ?? null) === (selectedScope?.timeSlot ?? null);
+  const hasQRData = Boolean(selectedScope && displayData && isActive && qrMatchesSelectedScope);
   const isExpired = remainingSeconds <= 0 && hasQRData;
+  const scopeBlockReason = useMemo(() => {
+    if (isScopeLoading) {
+      return 'loading';
+    }
 
-  // 모드 변경 핸들러
-  const handleModeChange = useCallback(
-    (newMode: QRMode) => {
-      setMode(newMode);
-      generate(newMode);
-    },
-    [generate]
-  );
+    if (jobError) {
+      return 'error';
+    }
 
-  // 새로고침 핸들러
+    if (!job) {
+      return 'missing';
+    }
+
+    if (!hasDatedSchedule) {
+      return 'unsupported';
+    }
+
+    if (scopeOptions.length === 0) {
+      return 'empty';
+    }
+
+    if (!selectedScope) {
+      return 'selection';
+    }
+
+    return null;
+  }, [hasDatedSchedule, isScopeLoading, job, jobError, scopeOptions.length, selectedScope]);
+
+  const handleModeChange = useCallback((newMode: QRMode) => {
+    setMode(newMode);
+  }, []);
+
   const handleRefresh = useCallback(() => {
+    if (!selectedScope) {
+      return;
+    }
+
     refresh();
-  }, [refresh]);
+  }, [refresh, selectedScope]);
 
-  // 포맷된 날짜
-  const formattedDate = useMemo(() => formatDate(targetDate), [targetDate]);
+  const handleScopeSelect = useCallback((key: string) => {
+    lastGeneratedSignatureRef.current = null;
+    setSelectedScopeKey(key);
+  }, []);
 
-  // 모드별 색상
   const modeColor = mode === 'checkIn' ? '#16A34A' : '#9333EA';
-  const modeLabel = mode === 'checkIn' ? '출근' : '퇴근';
+  const modeLabel = mode === 'checkIn' ? 'Check-in' : 'Check-out';
+
+  let qrPanelContent: React.ReactNode;
+
+  if (scopeBlockReason === 'loading') {
+    qrPanelContent = (
+      <View style={{ width: QR_SIZE, height: QR_SIZE }} className="items-center justify-center">
+        <ActivityIndicator size="large" color={modeColor} />
+        <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading QR scope...</Text>
+      </View>
+    );
+  } else if (scopeBlockReason === 'error') {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#EF4444" />
+        <Text className="mt-3 text-center text-sm font-medium text-red-500">
+          Failed to load QR scope.
+        </Text>
+        <Text className="mt-2 text-center text-xs text-gray-500">
+          {jobError?.message || 'Try reopening this modal.'}
+        </Text>
+      </View>
+    );
+  } else if (scopeBlockReason === 'unsupported') {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#F59E0B" />
+        <Text className="mt-3 text-center text-sm font-medium text-gray-800">
+          QR is available only for dated schedule postings.
+        </Text>
+      </View>
+    );
+  } else if (scopeBlockReason === 'empty') {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#F59E0B" />
+        <Text className="mt-3 text-center text-sm font-medium text-gray-800">
+          No dated slots are available for QR generation.
+        </Text>
+      </View>
+    );
+  } else if (scopeBlockReason === 'missing') {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#F59E0B" />
+        <Text className="mt-3 text-center text-sm font-medium text-gray-800">
+          This posting could not be loaded for QR generation.
+        </Text>
+      </View>
+    );
+  } else if (scopeBlockReason === 'selection') {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#6366F1" />
+        <Text className="mt-3 text-center text-sm font-medium text-gray-800">
+          Select a dated slot to generate QR.
+        </Text>
+      </View>
+    );
+  } else if (isLoading) {
+    qrPanelContent = (
+      <View style={{ width: QR_SIZE, height: QR_SIZE }} className="items-center justify-center">
+        <ActivityIndicator size="large" color={modeColor} />
+        <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">Generating QR...</Text>
+      </View>
+    );
+  } else if (isExpired) {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-100"
+      >
+        <AlertCircleIcon size={48} color="#EF4444" />
+        <Text className="mb-4 mt-3 text-center font-medium text-red-500">QR code expired.</Text>
+        <Button
+          variant="primary"
+          size="sm"
+          onPress={() => {
+            if (selectedScope) {
+              void generate(mode);
+            }
+          }}
+          icon={<RefreshIcon size={16} color="#FFFFFF" />}
+          disabled={!selectedScope}
+        >
+          Regenerate QR
+        </Button>
+      </View>
+    );
+  } else if (hasQRData) {
+    qrPanelContent = (
+      <QRCode value={qrValue || ''} size={QR_SIZE} backgroundColor="white" color="black" />
+    );
+  } else {
+    qrPanelContent = (
+      <View
+        style={{ width: QR_SIZE, height: QR_SIZE }}
+        className="items-center justify-center rounded-xl bg-gray-50"
+      >
+        <ActivityIndicator size="large" color={modeColor} />
+      </View>
+    );
+  }
 
   return (
     <Modal visible={visible} onClose={onClose} position="center" size="lg" showCloseButton={false}>
       <View>
-        {/* 커스텀 닫기 버튼 */}
-        <View className="flex-row justify-end mb-2">
+        <View className="mb-2 flex-row justify-end">
           <Pressable
             onPress={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-surface items-center justify-center"
+            className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-surface"
             accessibilityRole="button"
-            accessibilityLabel="닫기"
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Close"
           >
             <XMarkIcon size={20} color="#6B7280" />
           </Pressable>
         </View>
 
         <View className="items-center pb-4">
-          {/* 헤더 */}
-          <View className="flex-row items-center mb-1">
+          <View className="mb-1 flex-row items-center">
             <QrCodeIcon size={26} color={modeColor} />
-            <Text className="text-xl font-bold text-gray-900 dark:text-gray-100 ml-2">
-              현장 {modeLabel} QR
+            <Text className="ml-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+              Event {modeLabel} QR
             </Text>
           </View>
 
-          {/* 공고 정보 */}
           {jobTitle && (
-            <Text className="text-base text-gray-700 dark:text-gray-300 font-medium mb-0.5">
+            <Text className="mb-0.5 text-base font-medium text-gray-700 dark:text-gray-300">
               {jobTitle}
             </Text>
           )}
-          <Text className="text-sm text-gray-400 dark:text-gray-500 mb-5">{formattedDate}</Text>
-          {timeSlot ? (
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-5">{timeSlot}</Text>
+          {formattedDate ? (
+            <Text className="text-sm text-gray-400 dark:text-gray-500">{formattedDate}</Text>
+          ) : null}
+          {scopeSubtitle ? (
+            <Text className="mb-5 text-xs text-gray-500 dark:text-gray-400">{scopeSubtitle}</Text>
+          ) : (
+            <View className="mb-5" />
+          )}
+
+          {scopeOptions.length > 1 ? (
+            <ScopeSelectionPanel
+              scopes={scopeOptions}
+              selectedScopeKey={selectedScopeKey}
+              onSelect={handleScopeSelect}
+              disabled={isLoading || isRefreshing}
+            />
+          ) : selectedScope ? (
+            <Card variant="filled" padding="sm" className="mb-5 w-full bg-gray-50 dark:bg-surface">
+              <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Selected slot
+              </Text>
+              <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {formattedDate} · {scopeSubtitle}
+              </Text>
+            </Card>
           ) : null}
 
-          {/* 모드 토글 */}
-          <View className="w-full mb-5">
+          <View className="mb-5 w-full">
             <ModeToggle
               mode={mode}
               onModeChange={handleModeChange}
-              disabled={isLoading || isRefreshing}
+              disabled={Boolean(scopeBlockReason) || isLoading || isRefreshing}
             />
           </View>
 
-          {/* QR 코드 영역 */}
-          <View className="relative bg-white rounded-2xl p-5 shadow-lg mb-4">
-            {/* 갱신 오버레이 */}
+          <View className="relative mb-4 rounded-2xl bg-white p-5 shadow-lg">
             <QRRefreshOverlay visible={isRefreshing} />
-
-            {isLoading ? (
-              <View
-                style={{ width: QR_SIZE, height: QR_SIZE }}
-                className="items-center justify-center"
-              >
-                <ActivityIndicator size="large" color={modeColor} />
-                <Text className="text-gray-500 mt-4 text-sm">QR 코드 생성 중...</Text>
-              </View>
-            ) : isExpired ? (
-              <View
-                style={{ width: QR_SIZE, height: QR_SIZE }}
-                className="items-center justify-center bg-gray-50 dark:bg-gray-100 rounded-xl"
-              >
-                <AlertCircleIcon size={48} color="#EF4444" />
-                <Text className="text-red-500 text-center mt-3 mb-4 font-medium">
-                  QR 코드가 만료되었습니다
-                </Text>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onPress={() => generate(mode)}
-                  icon={<RefreshIcon size={16} color="#FFFFFF" />}
-                >
-                  QR 재생성
-                </Button>
-              </View>
-            ) : hasQRData ? (
-              <QRCode value={qrValue || ''} size={QR_SIZE} backgroundColor="white" color="black" />
-            ) : (
-              <View
-                style={{ width: QR_SIZE, height: QR_SIZE }}
-                className="items-center justify-center bg-gray-50 rounded-xl"
-              >
-                <ActivityIndicator size="large" color={modeColor} />
-              </View>
-            )}
+            {qrPanelContent}
           </View>
 
-          {/* 프로그레스 바 & 새로고침 */}
-          {hasQRData && !isLoading && !isExpired && (
-            <View className="flex-row items-center gap-5 mb-4">
+          {hasQRData && !isLoading && !isExpired ? (
+            <View className="mb-4 flex-row items-center gap-5">
               <CircularProgress
                 remainingSeconds={remainingSeconds}
                 totalSeconds={TOTAL_SECONDS}
@@ -401,50 +611,49 @@ export function EventQRModal({
 
               <Pressable
                 onPress={handleRefresh}
-                disabled={isLoading || isRefreshing}
-                className={`flex-row items-center px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-surface active:opacity-70 ${
-                  isRefreshing ? 'opacity-50' : ''
+                disabled={isLoading || isRefreshing || !selectedScope}
+                className={`flex-row items-center rounded-xl bg-gray-100 px-4 py-2.5 dark:bg-surface ${
+                  isRefreshing ? 'opacity-50' : 'active:opacity-70'
                 }`}
               >
                 <RefreshIcon size={18} color="#6B7280" />
-                <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400 font-medium">
-                  수동 갱신
+                <Text className="ml-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Refresh
                 </Text>
               </Pressable>
             </View>
-          )}
+          ) : null}
 
-          {/* 안내 문구 */}
           <Card
             variant="filled"
             padding="md"
             className="w-full bg-primary-50 dark:bg-primary-900/20"
           >
-            <View className="flex-row items-start mb-2">
+            <View className="mb-2 flex-row items-start">
               <CheckCircleIcon size={16} color="#9333EA" />
               <Text className="ml-2 text-sm font-medium text-primary-800 dark:text-primary-300">
-                스태프 {modeLabel} 방법
+                How staff use this {modeLabel.toLowerCase()} QR
               </Text>
             </View>
 
             <View className="ml-6 gap-1">
               <Text className="text-xs text-primary-600 dark:text-primary-400">
-                1. 스태프가 앱 하단의 QR 탭 선택
+                1. Open the staff QR scanner.
               </Text>
               <Text className="text-xs text-primary-600 dark:text-primary-400">
-                2. 카메라로 이 QR 코드 스캔
+                2. Scan the QR code shown here.
               </Text>
               <Text className="text-xs text-primary-600 dark:text-primary-400">
-                3. {modeLabel} 자동 처리 완료
+                3. {modeLabel} is processed for the selected dated slot.
               </Text>
             </View>
           </Card>
 
-          {/* 주의 사항 */}
           <View className="mt-3 flex-row items-start px-1">
             <AlertCircleIcon size={14} color="#9CA3AF" />
-            <Text className="ml-1.5 text-xs text-gray-400 dark:text-gray-500 flex-1">
-              QR 코드는 3분간 유효하며, 자동으로 갱신됩니다.
+            <Text className="ml-1.5 flex-1 text-xs text-gray-400 dark:text-gray-500">
+              QR codes stay valid for 3 minutes and refresh automatically while this modal remains
+              open.
             </Text>
           </View>
         </View>
