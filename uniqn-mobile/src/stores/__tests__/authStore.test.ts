@@ -485,6 +485,32 @@ describe('AuthStore', () => {
       expect(useAuthStore.getState().status).toBe('unauthenticated');
     });
 
+    it('should preserve a phone-only signup session when the profile is not created yet', async () => {
+      const firebaseUser = {
+        uid: 'phone-only-user',
+        email: null,
+        displayName: null,
+        photoURL: null,
+        emailVerified: false,
+        phoneNumber: '+821012345678',
+        providerData: [{ providerId: 'phone' }],
+      };
+
+      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUserProfile.mockResolvedValue(null);
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState();
+      });
+
+      expect(mockSyncSignOut).not.toHaveBeenCalled();
+      expect(useAuthStore.getState().user?.uid).toBe('phone-only-user');
+      expect(useAuthStore.getState().profile).toBeNull();
+      expect(useAuthStore.getState().status).toBe('authenticated');
+      expect(useAuthStore.getState().bootstrapSource).toBe('none');
+      expect(useAuthStore.getState().needsServerReconcile).toBe(false);
+    });
+
     it('should request server reconcile when profile refresh fails', async () => {
       const firebaseUser = {
         uid: 'firebase-user',

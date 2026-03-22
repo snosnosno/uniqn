@@ -119,6 +119,20 @@ function isExplicitSnapshotStale(firebaseUser: FirebaseUser | null | undefined):
   return !liveUser || liveUser.uid !== firebaseUser.uid;
 }
 
+function isPhoneOnlySignupSession(firebaseUser: FirebaseUser): boolean {
+  const hasPhoneNumber =
+    typeof firebaseUser.phoneNumber === 'string' && firebaseUser.phoneNumber.length > 0;
+  const hasEmail = typeof firebaseUser.email === 'string' && firebaseUser.email.length > 0;
+  const providerIds =
+    firebaseUser.providerData
+      ?.map((provider) => provider.providerId)
+      .filter((providerId): providerId is string => Boolean(providerId)) ?? [];
+  const hasPhoneProvider = providerIds.includes('phone');
+  const hasNonPhoneProvider = providerIds.some((providerId) => providerId !== 'phone');
+
+  return hasPhoneNumber && !hasEmail && (hasPhoneProvider || !hasNonPhoneProvider);
+}
+
 async function clearRejectedServerSession(get: () => AuthState, uid: string) {
   logger.warn('Profile document missing for authenticated user, clearing session', {
     component: 'authStore',
@@ -400,6 +414,18 @@ export const useAuthStore = create<AuthState>()(
               bootstrapSource: 'server',
             });
           } else {
+            if (isPhoneOnlySignupSession(currentUser)) {
+              logger.info('Preserving phone-only signup session until profile creation completes', {
+                component: 'authStore',
+                uid: currentUser.uid,
+              });
+              set({
+                needsServerReconcile: false,
+                bootstrapSource: 'none',
+              });
+              return;
+            }
+
             await clearRejectedServerSession(get, currentUser.uid);
             return;
           }
