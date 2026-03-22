@@ -8,8 +8,7 @@ export type StatusAction =
   | 'CANCEL'
   | 'REQUEST_CANCEL'
   | 'APPROVE_CANCEL'
-  | 'REJECT_CANCEL'
-  | 'COMPLETE';
+  | 'REJECT_CANCEL';
 
 export interface TransitionResult {
   allowed: boolean;
@@ -39,7 +38,6 @@ const TRANSITION_TABLE: Record<
   },
   confirmed: {
     REQUEST_CANCEL: STATUS.APPLICATION.CANCELLATION_PENDING,
-    COMPLETE: STATUS.APPLICATION.COMPLETED,
   },
   rejected: {},
   cancelled: {},

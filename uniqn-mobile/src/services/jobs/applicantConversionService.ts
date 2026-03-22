@@ -14,7 +14,10 @@ import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { applicationRepository, jobPostingRepository } from '@/repositories';
-import type { ConversionResult, ConversionOptions } from '@/repositories';
+import type {
+  ConversionOptions,
+  ConversionResult,
+} from '@/repositories/interfaces/IApplicationRepository';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 
 // ============================================================================
@@ -22,6 +25,20 @@ import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 // ============================================================================
 
 export type { ConversionResult, ConversionOptions };
+
+interface LegacyApplicationRepository {
+  convertApplicantToStaffTransaction(
+    applicationId: string,
+    jobPostingId: string,
+    managerId: string,
+    options?: ConversionOptions
+  ): Promise<ConversionResult>;
+  revertStaffConversionTransaction(applicationId: string, managerId: string): Promise<void>;
+  isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean>;
+  canConvertToStaff(applicationId: string): Promise<{ canConvert: boolean; reason?: string }>;
+}
+
+const legacyApplicationRepository = applicationRepository as unknown as LegacyApplicationRepository;
 
 export interface BulkConversionResult {
   successCount: number;
@@ -51,7 +68,7 @@ export async function convertApplicantToStaff(
   try {
     logger.info('지원자→스태프 변환 시작', { applicationId, jobPostingId, managerId });
 
-    const result = await applicationRepository.convertApplicantToStaffTransaction(
+    const result = await legacyApplicationRepository.convertApplicantToStaffTransaction(
       applicationId,
       jobPostingId,
       managerId,
@@ -165,7 +182,7 @@ export async function batchConvertApplicants(
  * @description Repository 조회로 위임
  */
 export async function isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean> {
-  return applicationRepository.isAlreadyStaff(userId, jobPostingId);
+  return legacyApplicationRepository.isAlreadyStaff(userId, jobPostingId);
 }
 
 /**
@@ -177,7 +194,7 @@ export async function canConvertToStaff(applicationId: string): Promise<{
   canConvert: boolean;
   reason?: string;
 }> {
-  return applicationRepository.canConvertToStaff(applicationId);
+  return legacyApplicationRepository.canConvertToStaff(applicationId);
 }
 
 /**
@@ -192,7 +209,7 @@ export async function revertStaffConversion(
   try {
     logger.info('스태프 변환 취소 시작', { applicationId, managerId });
 
-    await applicationRepository.revertStaffConversionTransaction(applicationId, managerId);
+    await legacyApplicationRepository.revertStaffConversionTransaction(applicationId, managerId);
 
     logger.info('스태프 변환 취소 완료', { applicationId });
   } catch (error) {

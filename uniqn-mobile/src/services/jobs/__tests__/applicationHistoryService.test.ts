@@ -27,6 +27,10 @@ import { findActiveConfirmation } from '@/types';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { WorkLogCreator } from '@/domains/schedule';
 
+const mockValidateAssignmentSlotCapacity = jest.fn<{ available: boolean }, [unknown, unknown]>(
+  () => ({ available: true })
+);
+
 const mockTransaction = {
   get: jest.fn(),
   set: jest.fn(),
@@ -109,6 +113,15 @@ jest.mock('@/domains/schedule', () => {
       extractStartTime,
       createTimestampFromDateTime,
     },
+  };
+});
+
+jest.mock('@/domains/application', () => {
+  const actual = jest.requireActual('@/domains/application');
+  return {
+    ...actual,
+    validateAssignmentSlotCapacity: (jobData: unknown, assignments: unknown) =>
+      mockValidateAssignmentSlotCapacity(jobData, assignments),
   };
 });
 
@@ -312,6 +325,7 @@ describe('ApplicationHistoryService', () => {
     jest.clearAllMocks();
     mockFindActiveConfirmation.mockReturnValue(null);
     mockGetClosingStatus.mockReturnValue({ total: 10, filled: 2 });
+    mockValidateAssignmentSlotCapacity.mockReturnValue({ available: true });
 
     // Default: doc() returns sequential ids for worklog refs
     let docCallCount = 0;
@@ -598,8 +612,7 @@ describe('ApplicationHistoryService', () => {
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
-      // total=3, filled=2, trying to add 3 => 2+3=5 > 3
-      mockGetClosingStatus.mockReturnValue({ total: 3, filled: 2 });
+      mockValidateAssignmentSlotCapacity.mockReturnValue({ available: false });
 
       await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
         '모집 인원이 마감되었습니다'
@@ -669,9 +682,23 @@ describe('ApplicationHistoryService', () => {
         confirmationHistory: [activeConfirmation],
       });
       const jobData = createMockJobData();
+      const workLogData = {
+        id: 'wl-1',
+        jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        status: 'scheduled',
+        date: '2025-01-20',
+        timeSlot: '18:00~02:00',
+        role: 'dealer',
+        assignmentGroupId: null,
+        customRole: null,
+      };
 
+      mockGetDoc.mockResolvedValue(createDocSnapshot('app-1', appData));
+      mockGetDocs.mockResolvedValue({ docs: [{ id: 'wl-1' }] } as any);
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('wl-1', workLogData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
@@ -717,9 +744,12 @@ describe('ApplicationHistoryService', () => {
         status: 'confirmed',
         confirmationHistory: [],
       });
+      const jobData = createMockJobData();
 
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
+      mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(null);
 
       await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
@@ -779,9 +809,23 @@ describe('ApplicationHistoryService', () => {
         confirmationHistory: [activeConfirmation],
       });
       const jobData = createMockJobData({ status: 'closed' });
+      const workLogData = {
+        id: 'wl-1',
+        jobPostingId: 'job-1',
+        staffId: 'staff-1',
+        status: 'scheduled',
+        date: '2025-01-20',
+        timeSlot: '18:00~02:00',
+        role: 'dealer',
+        assignmentGroupId: null,
+        customRole: null,
+      };
 
+      mockGetDoc.mockResolvedValue(createDocSnapshot('app-1', appData));
+      mockGetDocs.mockResolvedValue({ docs: [{ id: 'wl-1' }] } as any);
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('wl-1', workLogData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);

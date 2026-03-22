@@ -35,6 +35,7 @@ interface WorkLogData {
   staffId: string;
   jobPostingId: string;
   date?: string;
+  noShowAt?: admin.firestore.Timestamp | string | null;
   status?: string;
   scheduledStartTime?: admin.firestore.Timestamp | string;
 }
@@ -47,7 +48,7 @@ interface WorkLogData {
  * 노쇼 알림 트리거
  *
  * @description
- * - WorkLog status가 'no_show'로 변경되면 실행
+ * - WorkLog noShowAt marker가 생성되면 실행
  * - 구인자(jobPosting.ownerId/createdBy)에게 알림 전송
  */
 export const onNoShow = onDocumentUpdated(
@@ -58,8 +59,10 @@ export const onNoShow = onDocumentUpdated(
     const after = event.data?.after.data() as WorkLogData | undefined;
     if (!before || !after) return;
 
-    // status가 no_show로 변경된 경우만 처리
-    if (before.status === after.status || after.status !== 'no_show') {
+    const hadNoShowBefore = Boolean(before.noShowAt);
+    const hasNoShowAfter = Boolean(after.noShowAt);
+
+    if (hadNoShowBefore || !hasNoShowAfter) {
       return;
     }
 
@@ -67,8 +70,8 @@ export const onNoShow = onDocumentUpdated(
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
-      beforeStatus: before.status,
-      afterStatus: after.status,
+      status: after.status,
+      noShowAt: after.noShowAt,
     });
 
     try {

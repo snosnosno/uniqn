@@ -1,44 +1,30 @@
-/**
- * UNIQN Mobile - 지원자 카드 컴포넌트
- *
- * @description 구인자가 지원자 정보를 확인하는 카드 (v2.4 - 리팩토링)
- * @version 2.4.0
- */
-
-import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, LayoutAnimation } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { LayoutAnimation, Text, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
+import { STATUS } from '@/constants';
+import { getRoleDisplayName } from '@/types/unified';
 import { useThemeStore } from '@/stores/themeStore';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { formatRelativeTime } from '@/utils/date';
 import { Card } from '../../../ui/Card';
 import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
-import { formatRelativeTime } from '@/utils/date';
-import { useUserProfile } from '@/hooks/useUserProfile';
-
-// 분리된 모듈 import
 import type { ApplicantCardProps, IconColors } from './types';
-import { getRoleDisplayName } from '@/types/unified';
-import { STATUS } from '@/constants';
 import { useAssignmentSelection } from './useAssignmentSelection';
 import {
-  CardHeader,
   AppliedActions,
-  ConfirmedActions,
-  GroupedAssignmentSelector,
   AssignmentReadOnly,
+  CardHeader,
+  ConfirmedActions,
   ContactInfo,
+  GroupedAssignmentSelector,
   StatusInfo,
 } from './components';
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export const ApplicantCard = React.memo(function ApplicantCard({
   applicant,
   onConfirm,
   onReject,
   onCancelConfirmation,
-  onConvertToStaff,
   onViewProfile,
   showActions = true,
   showConfirmationHistory = true,
@@ -47,22 +33,18 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   daysPerWeek,
   startTime,
 }: ApplicantCardProps) {
-  // 고정공고 모드 판단 (props 우선, 없으면 applicant.jobPosting에서 추출)
   const postingFacts = useMemo(
     () => (applicant.jobPosting ? buildPostingFacts(applicant.jobPosting) : null),
     [applicant.jobPosting]
   );
   const isFixedMode = postingFacts?.workflow.isFixed ?? postingType === 'fixed';
-  // 고정공고용 근무 정보 (props 우선, 없으면 jobPosting에서 추출)
   const effectiveDaysPerWeek = daysPerWeek ?? postingFacts?.schedule.display.fixed?.daysPerWeek;
   const effectiveStartTime =
     startTime ??
     postingFacts?.schedule.display.fixed?.startTime ??
     postingFacts?.schedule.timeSlot?.split(/[-~]/)[0]?.trim();
-  // 다크모드 감지 (앱 테마 스토어 사용)
   const { isDarkMode: isDark } = useThemeStore();
 
-  // 아이콘 색상 (다크모드 대응)
   const iconColors = useMemo<IconColors>(
     () => ({
       checked: isDark ? '#93C5FD' : '#1D4ED8',
@@ -71,10 +53,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     [isDark]
   );
 
-  // 펼침/접힘 상태
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
 
-  // 일정 선택 훅 사용
   const {
     selectedKeys,
     assignmentDisplays,
@@ -90,67 +70,53 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     isFixedMode,
   });
 
-  // 사용자 프로필 조회
   const { displayName, profilePhotoURL, userProfile } = useUserProfile({
     userId: applicant.applicantId,
     fallbackName: applicant.applicantName,
   });
 
-  // 지원일 계산
-  const appliedTimeAgo = useMemo(() => {
-    return formatRelativeTime(applicant.createdAt);
-  }, [applicant.createdAt]);
+  const appliedTimeAgo = useMemo(
+    () => formatRelativeTime(applicant.createdAt),
+    [applicant.createdAt]
+  );
 
-  // 펼침/접힘 토글
   const toggleExpand = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // 프로필 보기 핸들러
   const handleViewProfile = useCallback(() => {
     onViewProfile?.(applicant);
   }, [applicant, onViewProfile]);
 
-  // 확정 핸들러
   const handleConfirm = useCallback(() => {
     const selectedAssignments = getSelectedAssignments();
     if (selectedAssignments.length > 0) {
       onConfirm?.(applicant, selectedAssignments);
-    } else {
-      onConfirm?.(applicant);
+      return;
     }
-  }, [applicant, onConfirm, getSelectedAssignments]);
 
-  // 거절 핸들러
+    onConfirm?.(applicant);
+  }, [applicant, getSelectedAssignments, onConfirm]);
+
   const handleReject = useCallback(() => {
     onReject?.(applicant);
   }, [applicant, onReject]);
 
-  // 확정 취소 핸들러
   const handleCancelConfirmation = useCallback(() => {
     onCancelConfirmation?.(applicant);
   }, [applicant, onCancelConfirmation]);
 
-  // 스태프 변환 핸들러
-  const handleConvertToStaff = useCallback(() => {
-    onConvertToStaff?.(applicant);
-  }, [applicant, onConvertToStaff]);
-
-  // 확정 상태 액션 표시 여부
   const canShowConfirmedActions =
     showActions &&
     !isFixedMode &&
     applicant.status === STATUS.APPLICATION.CONFIRMED &&
-    (onCancelConfirmation || onConvertToStaff);
-
-  // 액션 버튼 표시 여부
+    Boolean(onCancelConfirmation);
   const canShowActions =
     showActions && !isFixedMode && applicant.status === STATUS.APPLICATION.APPLIED;
 
   return (
     <Card variant="elevated" padding="md">
-      {/* 헤더 */}
       <CardHeader
         displayName={displayName}
         profilePhotoURL={profilePhotoURL}
@@ -161,11 +127,9 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         onViewProfile={onViewProfile ? handleViewProfile : undefined}
       />
 
-      {/* === 펼침 영역 === */}
       {isExpanded && (
-        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
-          {/* 지원 역할 & 시간 요약 */}
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        <View className="mt-3 border-t border-gray-100 pt-3 dark:border-surface-overlay">
+          <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
             {getRoleDisplayName(
               applicant.assignments[0]?.roleIds?.[0] || 'other',
               applicant.customRole
@@ -173,14 +137,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             지원 · {appliedTimeAgo}
           </Text>
 
-          {/* 고정공고: 근무 조건 표시 (날짜 선택 없음) */}
           {isFixedMode && (
             <View
-              className={`mb-3 p-3 rounded-lg border ${
-                isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+              className={`mb-3 rounded-lg border p-3 ${
+                isDark ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-gray-50'
               }`}
             >
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 조건</Text>
+              <Text className="mb-2 text-xs text-gray-500 dark:text-gray-400">근무 조건</Text>
               <FixedScheduleDisplay
                 daysPerWeek={effectiveDaysPerWeek}
                 startTime={effectiveStartTime}
@@ -189,7 +152,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             </View>
           )}
 
-          {/* 일정 선택 - 그룹화된 뷰 (고정공고 제외, applied 상태) */}
           {!isFixedMode && canShowActions && (
             <GroupedAssignmentSelector
               groupedAssignments={groupedAssignments}
@@ -204,7 +166,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             />
           )}
 
-          {/* 일정 읽기 전용 (고정공고 제외, confirmed/rejected 상태) */}
           {!isFixedMode && !canShowActions && (
             <AssignmentReadOnly
               assignmentDisplays={assignmentDisplays}
@@ -213,14 +174,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             />
           )}
 
-          {/* 연락처 정보 */}
           <ContactInfo
             phone={userProfile?.phone || applicant.applicantPhone}
             message={applicant.message}
             preQuestionAnswers={applicant.preQuestionAnswers}
           />
 
-          {/* 상태 정보 */}
           <StatusInfo
             status={applicant.status}
             rejectionReason={applicant.rejectionReason}
@@ -230,15 +189,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         </View>
       )}
 
-      {/* 확정 상태 액션 버튼 */}
       {canShowConfirmedActions && (
         <ConfirmedActions
           onCancelConfirmation={onCancelConfirmation ? handleCancelConfirmation : undefined}
-          onConvertToStaff={onConvertToStaff ? handleConvertToStaff : undefined}
         />
       )}
 
-      {/* 액션 버튼 */}
       {canShowActions && (
         <AppliedActions
           isFixedMode={isFixedMode}

@@ -53,8 +53,6 @@ export type {
   ApplyContext,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
-  ConversionResult,
-  ConversionOptions,
   // JobPosting
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -95,7 +93,6 @@ export type {
   IConfirmedStaffRepository,
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
-  DeleteConfirmedStaffContext,
   MarkNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
@@ -328,7 +325,7 @@ export const settlementRepository = new FirebaseSettlementRepository();
  * await confirmedStaffRepository.updateRoleWithTransaction(context);
  *
  * // 스태프 삭제 (멀티 컬렉션 트랜잭션)
- * await confirmedStaffRepository.deleteWithTransaction(context);
+ * await confirmedStaffRepository.updateStatus(context);
  *
  * // 실시간 구독
  * const unsubscribe = confirmedStaffRepository.subscribeByJobPostingId(jobPostingId, callbacks);

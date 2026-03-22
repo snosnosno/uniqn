@@ -14,7 +14,7 @@
 
 import type { Unsubscribe } from 'firebase/firestore';
 import type { WorkLog } from '@/types';
-import type { ConfirmedStaffStatus } from '@/types/confirmedStaff';
+import type { WorkLogStatus } from '@/shared/status';
 
 // ============================================================================
 // Input Types (Service → Repository)
@@ -70,7 +70,7 @@ export interface MarkNoShowContext {
 export interface UpdateStaffStatusContext {
   workLogId: string;
   ownerId: string;
-  status: ConfirmedStaffStatus;
+  status: WorkLogStatus;
 }
 
 // ============================================================================
@@ -157,7 +157,6 @@ export interface IConfirmedStaffRepository {
    * @throws BusinessError 근무 기록/공고를 찾을 수 없는 경우
    * @throws BusinessError 이미 출퇴근한 스태프인 경우
    */
-  deleteWithTransaction(context: DeleteConfirmedStaffContext): Promise<void>;
 
   /**
    * 노쇼 처리 (트랜잭션)

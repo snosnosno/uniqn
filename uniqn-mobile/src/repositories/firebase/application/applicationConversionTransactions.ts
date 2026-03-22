@@ -17,7 +17,7 @@ import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff } from '@/types';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
-import type { ConversionResult, ConversionOptions } from '../../interfaces';
+import type { ConversionOptions, ConversionResult } from '../../interfaces/IApplicationRepository';
 import { resolvePrimaryApplicationRole } from './applicationRoleUtils';
 
 export async function convertApplicantToStaffTransaction(

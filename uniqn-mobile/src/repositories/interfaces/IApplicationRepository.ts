@@ -342,12 +342,6 @@ export interface IApplicationRepository {
    * 4. Assignment별 WorkLog 생성
    * 5. 지원서 상태를 completed로 변경
    */
-  convertApplicantToStaffTransaction(
-    applicationId: string,
-    jobPostingId: string,
-    managerId: string,
-    options?: ConversionOptions
-  ): Promise<ConversionResult>;
 
   /**
    * 스태프 변환 취소 (롤백 트랜잭션)
@@ -357,17 +351,14 @@ export interface IApplicationRepository {
    * 2. 관련 WorkLog cancelled 처리 (scheduled 상태만)
    * 3. 지원서 상태를 confirmed로 복원
    */
-  revertStaffConversionTransaction(applicationId: string, managerId: string): Promise<void>;
 
   /**
    * 스태프 존재 여부 확인
    */
-  isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean>;
 
   /**
    * 변환 가능 여부 확인
    */
-  canConvertToStaff(applicationId: string): Promise<{ canConvert: boolean; reason?: string }>;
 
   // ==========================================================================
   // 구인자 전용 (Employer)

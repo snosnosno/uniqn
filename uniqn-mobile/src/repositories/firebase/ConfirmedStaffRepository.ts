@@ -39,9 +39,11 @@ import {
 } from './workLog/timeModificationLogs';
 import type {
   IConfirmedStaffRepository,
+  DeleteConfirmedStaffContext,
+} from '../interfaces/IConfirmedStaffRepository';
+import type {
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
-  DeleteConfirmedStaffContext,
   MarkNoShowContext,
   UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
@@ -402,7 +404,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 3. WorkLog ?낅뜲?댄듃
         transaction.update(workLogRef, {
-          status: STATUS.CONFIRMED_STAFF.NO_SHOW,
+          status: STATUS.WORK_LOG.CANCELLED,
           noShowReason: context.reason,
           noShowAt: serverTimestamp(),
           updatedAt: serverTimestamp(),

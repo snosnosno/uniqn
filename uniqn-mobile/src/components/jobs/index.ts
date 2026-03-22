@@ -26,7 +26,7 @@ export { DateRequirementList } from './DateRequirementList';
 // PostingType Components
 // ============================================================================
 
-export { PostingTypeBadge, UrgentBadge, TournamentBadge, FixedBadge } from './PostingTypeBadge';
+export { PostingTypeBadge, UrgentBadge, TournamentBadge } from './PostingTypeBadge';
 
 export { TournamentStatusBadge } from './TournamentStatusBadge';
 export { ResubmitButton } from './ResubmitButton';

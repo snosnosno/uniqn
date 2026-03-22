@@ -34,10 +34,7 @@ import {
   type JobPosting,
 } from '@/types';
 import { validateAssignmentSlotCapacity } from '@/domains/application';
-import {
-  normalizePostingAggregateStats,
-  transitionPostingAggregateStats,
-} from '@/domains/job-posting';
+import { normalizePostingAggregateStats } from '@/domains/job-posting';
 import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
 import { COLLECTIONS, STATUS } from '@/constants';
@@ -135,7 +132,7 @@ export async function confirmWithHistoryTransaction(
         applicationData.jobPostingId
       );
 
-      assertJobPostingOwner(jobData, ownerId, '본인 공고만 관리할 수 있습니다.');
+      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
 
       if (jobData.schedule.kind !== 'dated') {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -146,14 +143,14 @@ export async function confirmWithHistoryTransaction(
       const assignmentsToConfirm = selectedAssignments ?? applicationData.assignments ?? [];
       if (assignmentsToConfirm.length === 0) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '확정할 일정을 선택해 주세요.',
+          userMessage: '확정할 일정을 선택해주세요',
         });
       }
 
       const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
       if (!slotCapacity.available) {
         throw new MaxCapacityReachedError({
-          userMessage: '선택한 날짜 또는 역할의 모집이 마감되었습니다.',
+          userMessage: '모집 인원이 마감되었습니다.',
           jobPostingId: applicationData.jobPostingId,
         });
       }
@@ -252,14 +249,7 @@ export async function confirmWithHistoryTransaction(
       });
 
       const nextFilledPositions = Math.max(0, jobData.filledPositions + assignmentCount);
-      const postingStats = transitionPostingAggregateStats(
-        normalizePostingAggregateStats(jobData.stats, jobData.schedule),
-        {
-          fromStatus: applicationData.status,
-          toStatus: STATUS.APPLICATION.CONFIRMED,
-          filledPositionsDelta: assignmentCount,
-        }
-      );
+      const postingStats = normalizePostingAggregateStats(jobData.stats, jobData.schedule);
 
       const shouldClose =
         jobData.totalPositions > 0 && nextFilledPositions >= jobData.totalPositions;
@@ -353,7 +343,7 @@ export async function cancelConfirmationTransaction(
         applicationData.jobPostingId
       );
 
-      assertJobPostingOwner(jobData, ownerId, '본인 공고만 관리할 수 있습니다.');
+      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
 
       return releaseConfirmedAssignmentsInTransaction({
         transaction,

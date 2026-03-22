@@ -109,6 +109,9 @@ export interface ConfirmedStaff {
 
   /** 출퇴근 상태 */
   status: ConfirmedStaffStatus;
+  isNoShow?: boolean;
+  noShowReason?: string;
+  noShowAt?: TimeInput;
 
   /** 근무 시간대 (예: "09:00-18:00", "18:00~02:00") */
   timeSlot?: string;
@@ -268,9 +271,13 @@ export function workLogToConfirmedStaff(
     checkInTime?: TimeInput;
     checkOutTime?: TimeInput;
     customRole?: string;
+    noShowAt?: TimeInput;
+    noShowReason?: string;
   },
   staffName?: string
 ): ConfirmedStaff {
+  const isNoShow = Boolean(workLog.noShowAt);
+
   return {
     id: workLog.id,
     staffId: workLog.staffId,
@@ -278,7 +285,10 @@ export function workLogToConfirmedStaff(
     role: workLog.role,
     customRole: workLog.customRole,
     date: workLog.date,
-    status: workLog.status as ConfirmedStaffStatus,
+    status: isNoShow ? 'no_show' : (workLog.status as ConfirmedStaffStatus),
+    isNoShow,
+    noShowReason: workLog.noShowReason,
+    noShowAt: workLog.noShowAt,
     timeSlot: workLog.timeSlot,
     checkInTime: workLog.checkInTime,
     checkOutTime: workLog.checkOutTime,

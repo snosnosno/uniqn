@@ -53,6 +53,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   };
   const salaryRows = getPostingSalaryRows(posting);
   const defaultSalary = getPostingDefaultSalary(posting);
+  const filledPositions = posting.stats?.filledPositions ?? posting.filledPositions;
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances, {
     includeEmoji: true,
   });
@@ -88,8 +89,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     useSameSalary: posting.compensation.mode === 'shared',
     hasRoleSpecificSalary: posting.compensation.mode === 'by_role' && salaryRows.length > 0,
   };
-  const postingFull =
-    posting.totalPositions > 0 && posting.filledPositions >= posting.totalPositions;
+  const postingFull = posting.totalPositions > 0 && filledPositions >= posting.totalPositions;
   const canApply =
     posting.status === 'active' && !postingFull && roleAvailability.hasAvailableRoles;
   let applicationReason: PostingApplicationEligibility['reason'];
@@ -156,7 +156,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     application,
     stats: {
       totalPositions: posting.totalPositions,
-      filledPositions: posting.filledPositions,
+      filledPositions,
       totalApplicants: posting.stats?.totalApplicants ?? 0,
       activeApplicants: posting.stats?.activeApplicants ?? 0,
       confirmedApplicants: posting.stats?.confirmedApplicants ?? 0,

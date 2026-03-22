@@ -459,6 +459,8 @@ export interface WorkLog extends FirebaseDocument {
   payrollAmount?: number;
   payrollDate?: Timestamp;
   payrollNotes?: string;
+  noShowAt?: TimeInput;
+  noShowReason?: string;
 
   // 수정 이력 (구인자에 의한 시간 수정)
   modificationHistory?: WorkTimeModification[];

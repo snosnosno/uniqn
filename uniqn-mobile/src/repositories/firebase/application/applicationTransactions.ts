@@ -29,11 +29,7 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator } from '@/domains/application';
-import {
-  normalizePostingAggregateStats,
-  transitionPostingAggregateStats,
-  selectPostingWorkflow,
-} from '@/domains/job-posting';
+import { selectPostingWorkflow } from '@/domains/job-posting';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import type { ApplyContext } from '../../interfaces';
@@ -49,10 +45,6 @@ import type {
 } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
 import { releaseConfirmedAssignmentsInTransaction } from './applicationLifecycleHelpers';
-
-function getPostingStatsSnapshot(jobData: JobPosting) {
-  return normalizePostingAggregateStats(jobData.stats, jobData.schedule);
-}
 
 async function loadApplicationForTransaction(transaction: Transaction, applicationId: string) {
   const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
@@ -516,7 +508,7 @@ export async function reviewCancellationWithTransaction(
           transaction,
           input.applicationId
         );
-        const { jobRef, jobData } = await loadJobPostingForTransaction(
+        const { jobData } = await loadJobPostingForTransaction(
           transaction,
           applicationData.jobPostingId
         );
@@ -550,16 +542,6 @@ export async function reviewCancellationWithTransaction(
         transaction.update(applicationRef, {
           status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
           cancellationRequest: updatedCancellationRequest,
-          updatedAt: serverTimestamp(),
-        });
-
-        const nextStats = transitionPostingAggregateStats(getPostingStatsSnapshot(jobData), {
-          fromStatus: applicationData.status,
-          toStatus: STATUS.APPLICATION.CONFIRMED,
-        });
-
-        transaction.update(jobRef, {
-          stats: nextStats,
           updatedAt: serverTimestamp(),
         });
       });
@@ -602,7 +584,7 @@ export async function rejectWithTransaction(
         transaction,
         input.applicationId
       );
-      const { jobRef, jobData } = await loadJobPostingForTransaction(
+      const { jobData } = await loadJobPostingForTransaction(
         transaction,
         applicationData.jobPostingId
       );
@@ -620,16 +602,6 @@ export async function rejectWithTransaction(
         rejectionReason: input.reason || '',
         processedBy: reviewerId,
         processedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      const nextStats = transitionPostingAggregateStats(getPostingStatsSnapshot(jobData), {
-        fromStatus: applicationData.status,
-        toStatus: STATUS.APPLICATION.REJECTED,
-      });
-
-      transaction.update(jobRef, {
-        stats: nextStats,
         updatedAt: serverTimestamp(),
       });
     });

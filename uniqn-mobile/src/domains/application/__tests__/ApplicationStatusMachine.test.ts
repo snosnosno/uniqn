@@ -10,7 +10,6 @@ describe('ApplicationStatusMachine', () => {
       ['applied', 'REJECT', 'rejected'],
       ['applied', 'CANCEL', 'cancelled'],
       ['confirmed', 'REQUEST_CANCEL', 'cancellation_pending'],
-      ['confirmed', 'COMPLETE', 'completed'],
       ['cancellation_pending', 'APPROVE_CANCEL', 'cancelled'],
       ['cancellation_pending', 'REJECT_CANCEL', 'confirmed'],
     ] as const)('%s + %s -> %s', (current, action, expected) => {
@@ -57,7 +56,7 @@ describe('ApplicationStatusMachine', () => {
 
     it('returns expected actions for confirmed', () => {
       expect(machine.getAvailableActions('confirmed')).toEqual(
-        expect.arrayContaining(['REQUEST_CANCEL', 'COMPLETE'])
+        expect.arrayContaining(['REQUEST_CANCEL'])
       );
     });
 

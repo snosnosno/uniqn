@@ -1,11 +1,11 @@
 /**
- * UNIQN Mobile - Jobs 도메인 배럴 Export
+ * UNIQN Mobile - jobs domain barrel
  *
- * @description 구인공고, 지원, 지원자 관리, 템플릿, 검색 서비스
- * @version 1.0.0
+ * @description Active public services for job postings, applications, and
+ * employer management. Legacy applicant-to-staff conversion is intentionally
+ * excluded from this barrel.
  */
 
-// Job Service
 export {
   getJobPostings,
   getJobPostingById,
@@ -17,7 +17,6 @@ export {
   type PaginatedJobPostings,
 } from './jobService';
 
-// Application Service
 export {
   applyToJobV2,
   getMyApplications,
@@ -31,7 +30,6 @@ export {
   type ApplicationWithJob,
 } from './applicationService';
 
-// Application History Service (확정/취소 이력 관리)
 export {
   confirmApplicationWithHistory,
   cancelConfirmation,
@@ -43,19 +41,6 @@ export {
   type CancelConfirmationResult,
 } from './applicationHistoryService';
 
-// Applicant Conversion Service (지원자→스태프 변환)
-export {
-  convertApplicantToStaff,
-  batchConvertApplicants,
-  isAlreadyStaff,
-  canConvertToStaff,
-  revertStaffConversion,
-  type ConversionResult,
-  type BulkConversionResult,
-  type ConversionOptions,
-} from './applicantConversionService';
-
-// Job Management Service (구인자용 공고 관리)
 export {
   createJobPosting,
   updateJobPosting,
@@ -69,7 +54,6 @@ export {
   type JobPostingStats,
 } from './jobManagementService';
 
-// Template Service (공고 템플릿 관리)
 export {
   getTemplates,
   saveTemplate,
@@ -78,7 +62,6 @@ export {
   updateTemplate,
 } from './templateService';
 
-// Applicant Management Service (구인자용 지원자 관리)
 export {
   getApplicantsByJobPosting,
   subscribeToApplicants,
@@ -96,7 +79,6 @@ export {
   type SubscribeToApplicantsCallbacks,
 } from './applicantManagementService';
 
-// Search Service
 export {
   ClientSideSearchProvider,
   AlgoliaSearchProvider,

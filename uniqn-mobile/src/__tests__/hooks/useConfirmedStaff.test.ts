@@ -35,7 +35,7 @@ const mockGetConfirmedStaff = jest.fn();
 const mockGetConfirmedStaffByDate = jest.fn();
 const mockUpdateStaffRole = jest.fn();
 const mockUpdateConfirmedStaffWorkTime = jest.fn();
-const mockDeleteConfirmedStaff = jest.fn();
+const mockCancelConfirmedStaffConfirmation = jest.fn();
 const mockMarkAsNoShow = jest.fn();
 const mockUpdateStaffStatus = jest.fn();
 const mockSubscribeToConfirmedStaff = jest.fn();
@@ -45,7 +45,8 @@ jest.mock('@/services', () => ({
   getConfirmedStaffByDate: (...args: unknown[]) => mockGetConfirmedStaffByDate(...args),
   updateStaffRole: (...args: unknown[]) => mockUpdateStaffRole(...args),
   updateConfirmedStaffWorkTime: (...args: unknown[]) => mockUpdateConfirmedStaffWorkTime(...args),
-  deleteConfirmedStaff: (...args: unknown[]) => mockDeleteConfirmedStaff(...args),
+  cancelConfirmedStaffConfirmation: (...args: unknown[]) =>
+    mockCancelConfirmedStaffConfirmation(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
   updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
   subscribeToConfirmedStaff: (...args: unknown[]) => mockSubscribeToConfirmedStaff(...args),
@@ -617,7 +618,7 @@ describe('useConfirmedStaff Hook', () => {
 
   describe('스태프 삭제', () => {
     it('확정 스태프를 삭제', async () => {
-      mockDeleteConfirmedStaff.mockResolvedValueOnce(undefined);
+      mockCancelConfirmedStaffConfirmation.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() => useConfirmedStaff('job-1'));
 
@@ -632,7 +633,7 @@ describe('useConfirmedStaff Hook', () => {
       });
 
       await waitFor(() => {
-        expect(mockDeleteConfirmedStaff).toHaveBeenCalledWith({
+        expect(mockCancelConfirmedStaffConfirmation).toHaveBeenCalledWith({
           workLogId: 'worklog-1',
           jobPostingId: 'job-1',
           staffId: 'user-1',
@@ -643,7 +644,7 @@ describe('useConfirmedStaff Hook', () => {
     });
 
     it('성공 시 토스트 표시', async () => {
-      mockDeleteConfirmedStaff.mockResolvedValueOnce(undefined);
+      mockCancelConfirmedStaffConfirmation.mockResolvedValueOnce(undefined);
 
       const { result } = renderHook(() => useConfirmedStaff('job-1'));
 
@@ -666,7 +667,7 @@ describe('useConfirmedStaff Hook', () => {
     });
 
     it('에러 발생 시 토스트 표시', async () => {
-      mockDeleteConfirmedStaff.mockRejectedValueOnce(new Error('삭제 실패'));
+      mockCancelConfirmedStaffConfirmation.mockRejectedValueOnce(new Error('삭제 실패'));
 
       const { result } = renderHook(() => useConfirmedStaff('job-1'));
 

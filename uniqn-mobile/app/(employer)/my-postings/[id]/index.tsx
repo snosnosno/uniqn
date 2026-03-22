@@ -37,7 +37,6 @@ import {
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
-import { useApplicantManagement } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { useThemeStore } from '@/stores/themeStore';
@@ -87,7 +86,6 @@ export default function JobPostingDetailScreen() {
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
   const { job: posting, isLoading, isRefreshing, error, refresh } = useJobDetail(id || '');
-  const { cancellationPendingCount, stats: applicantStats } = useApplicantManagement(id || '');
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
@@ -168,11 +166,12 @@ export default function JobPostingDetailScreen() {
     );
   }
 
-  const totalApplicants = applicantStats?.total || posting.stats?.totalApplicants || 0;
-  const confirmedApplicants = applicantStats?.confirmed || 0;
-  const pendingApplicants = applicantStats?.applied || 0;
-  const filledPositions = posting.filledPositions || 0;
-  const totalPositions = posting.totalPositions || 0;
+  const totalApplicants = managementView.totalApplicants;
+  const confirmedApplicants = managementView.confirmedApplicants;
+  const pendingApplicants = managementView.pendingApplicants;
+  const cancellationPendingCount = posting.stats?.cancellationPendingApplicants ?? 0;
+  const filledPositions = managementView.filledPositions;
+  const totalPositions = managementView.totalPositions;
   const title = posting.title || '제목 없음';
   const locationLabel = managementView.locationLabel || posting.location?.name || '위치 미정';
   const allowanceItems = managementView.allowanceLabels ?? [];

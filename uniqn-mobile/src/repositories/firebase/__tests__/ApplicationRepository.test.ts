@@ -756,9 +756,33 @@ describe('FirebaseApplicationRepository', () => {
             createMockDocSnap('job-1', {
               ...createMockDatedJobPosting(),
             })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('wl-1', {
+              id: 'wl-1',
+              jobPostingId: 'job-1',
+              staffId: 'staff-1',
+              status: 'scheduled',
+              date: '2025-01-01',
+              timeSlot: '09:00',
+              role: 'dealer',
+              assignmentGroupId: null,
+              customRole: null,
+            })
           ),
         update: jest.fn(),
       };
+
+      (getDoc as jest.Mock).mockResolvedValue(
+        createMockDocSnap('app-1', {
+          id: 'app-1',
+          applicantId: 'staff-1',
+          jobPostingId: 'job-1',
+        })
+      );
+      (getDocs as jest.Mock).mockResolvedValue({
+        docs: [{ id: 'wl-1' }],
+      });
 
       (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
         callback(mockTransaction)
@@ -829,9 +853,33 @@ describe('FirebaseApplicationRepository', () => {
             createMockDocSnap('job-1', {
               ...createMockDatedJobPosting(),
             })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('wl-1', {
+              id: 'wl-1',
+              jobPostingId: 'job-1',
+              staffId: 'staff-1',
+              status: 'scheduled',
+              date: '2025-01-01',
+              timeSlot: '09:00',
+              role: 'dealer',
+              assignmentGroupId: null,
+              customRole: null,
+            })
           ),
         update: jest.fn(),
       };
+
+      (getDoc as jest.Mock).mockResolvedValue(
+        createMockDocSnap('app-1', {
+          id: 'app-1',
+          applicantId: 'staff-1',
+          jobPostingId: 'job-1',
+        })
+      );
+      (getDocs as jest.Mock).mockResolvedValue({
+        docs: [{ id: 'wl-1' }],
+      });
 
       (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
         callback(mockTransaction)
@@ -845,7 +893,7 @@ describe('FirebaseApplicationRepository', () => {
         'employer-1'
       );
 
-      expect(mockTransaction.update).toHaveBeenCalledTimes(2);
+      expect(mockTransaction.update).toHaveBeenCalledTimes(3);
 
       const jobUpdate = mockTransaction.update.mock.calls
         .map(([, update]) => update)

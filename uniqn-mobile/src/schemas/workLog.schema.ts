@@ -152,6 +152,8 @@ export const workLogDocumentSchema = z
     payrollAmount: z.number().nullable().optional(),
     payrollDate: optionalTimestampSchema,
     payrollNotes: z.string().nullable().optional(),
+    noShowAt: optionalTimestampSchema.or(z.string()).optional(),
+    noShowReason: z.string().nullable().optional(),
 
     // 메타
     notes: z.string().nullable().optional(),
@@ -191,6 +193,8 @@ export function parseWorkLogDocument(data: unknown): WorkLog | null {
     customRole: result.data.customRole ?? undefined,
     notes: result.data.notes ?? undefined,
     timeSlot: result.data.timeSlot ?? undefined,
+    noShowAt: result.data.noShowAt ?? undefined,
+    noShowReason: result.data.noShowReason ?? undefined,
   } as WorkLog;
 }
 

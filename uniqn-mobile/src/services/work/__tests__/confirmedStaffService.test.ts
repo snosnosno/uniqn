@@ -23,8 +23,9 @@ import {
   updateStaffStatus,
   subscribeToConfirmedStaff,
 } from '../confirmedStaffService';
-import { confirmedStaffRepository, userRepository } from '@/repositories';
+import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import type { WorkLog } from '@/types';
+import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
 
 jest.mock('@/repositories', () => ({
   confirmedStaffRepository: {
@@ -38,6 +39,9 @@ jest.mock('@/repositories', () => ({
     subscribeByJobPostingId: jest.fn(),
   },
   userRepository: {
+    getById: jest.fn(),
+  },
+  workLogRepository: {
     getById: jest.fn(),
   },
 }));
@@ -79,11 +83,17 @@ jest.mock('@/services/auth', () => ({
   requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
 }));
 
+jest.mock('@/services/jobs/applicationHistoryService', () => ({
+  cancelConfirmation: jest.fn(),
+}));
+
 // Get typed mock references
 const mockConfirmedStaffRepo = confirmedStaffRepository as jest.Mocked<
   typeof confirmedStaffRepository
 >;
 const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;
+const mockWorkLogRepo = workLogRepository as jest.Mocked<typeof workLogRepository>;
+const mockCancelConfirmation = cancelConfirmation as jest.MockedFunction<typeof cancelConfirmation>;
 
 // ============================================================================
 // Test Helpers
@@ -394,7 +404,14 @@ describe('ConfirmedStaffService', () => {
   // ==========================================================================
   describe('deleteConfirmedStaff', () => {
     it('should call repository with correct parameters', async () => {
-      mockConfirmedStaffRepo.deleteWithTransaction.mockResolvedValue(undefined);
+      mockWorkLogRepo.getById.mockResolvedValue(
+        createMockWorkLog({ ownerId: 'owner-1', staffId: 'staff-1', jobPostingId: 'job-1' })
+      );
+      mockCancelConfirmation.mockResolvedValue({
+        applicationId: 'job-1_staff-1',
+        cancelledAt: { seconds: 1700000000, nanoseconds: 0 } as any,
+        restoredStatus: 'applied',
+      });
 
       await deleteConfirmedStaff({
         workLogId: 'wl-1',
@@ -404,16 +421,19 @@ describe('ConfirmedStaffService', () => {
         reason: 'No longer needed',
       });
 
-      expect(mockConfirmedStaffRepo.deleteWithTransaction).toHaveBeenCalledWith({
-        workLogId: 'wl-1',
-        jobPostingId: 'job-1',
-        staffId: 'staff-1',
-        reason: 'No longer needed',
-      });
+      expect(mockWorkLogRepo.getById).toHaveBeenCalledWith('wl-1');
+      expect(mockCancelConfirmation).toHaveBeenCalledWith(
+        'job-1_staff-1',
+        'owner-1',
+        'No longer needed'
+      );
     });
 
     it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.deleteWithTransaction.mockRejectedValue(new Error('Delete failed'));
+      mockWorkLogRepo.getById.mockResolvedValue(
+        createMockWorkLog({ ownerId: 'owner-1', staffId: 'staff-1', jobPostingId: 'job-1' })
+      );
+      mockCancelConfirmation.mockRejectedValue(new Error('Delete failed'));
 
       await expect(
         deleteConfirmedStaff({

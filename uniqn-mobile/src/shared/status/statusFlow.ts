@@ -10,7 +10,7 @@ export const WORK_LOG_STATUS_FLOW: Record<WorkLogStatus, WorkLogStatus[]> = {
 
 export const APPLICATION_STATUS_FLOW: Record<ApplicationStatus, ApplicationStatus[]> = {
   applied: ['confirmed', 'rejected', 'cancelled'],
-  confirmed: ['completed', 'cancellation_pending'],
+  confirmed: ['cancellation_pending'],
   cancellation_pending: ['confirmed', 'cancelled'],
   rejected: [],
   cancelled: [],
