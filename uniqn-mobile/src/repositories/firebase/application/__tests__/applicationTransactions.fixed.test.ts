@@ -6,7 +6,7 @@ import {
 import {
   convertApplicantToStaffTransaction,
   revertStaffConversionTransaction,
-} from '../applicationConversionTransactions';
+} from '../deprecated/applicationConversionTransactions';
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseDb: jest.fn(() => ({ app: 'db' })),
@@ -261,7 +261,18 @@ describe('fixed application transaction compatibility', () => {
       })
     );
     (getDocs as jest.Mock).mockResolvedValue({
-      docs: [{ id: 'wl-fixed' }],
+      docs: [
+        {
+          id: 'wl-fixed',
+          data: () => ({
+            status: 'scheduled',
+            role: 'dealer',
+            date: 'FIXED_SCHEDULE',
+            timeSlot: 'FIXED_TIME',
+            assignmentGroupId: null,
+          }),
+        },
+      ],
     });
 
     const transaction = {
@@ -275,7 +286,17 @@ describe('fixed application transaction compatibility', () => {
               applicantName: 'Alice',
               jobPostingId: 'job-1',
               assignments: [],
-              confirmationHistory: [{ assignments: [{ dates: ['FIXED_SCHEDULE'] }] }],
+              confirmationHistory: [
+                {
+                  assignments: [
+                    {
+                      roleIds: ['dealer'],
+                      dates: ['FIXED_SCHEDULE'],
+                      timeSlot: 'FIXED_TIME',
+                    },
+                  ],
+                },
+              ],
               originalApplication: { assignments: [] },
             })
           );
@@ -291,7 +312,15 @@ describe('fixed application transaction compatibility', () => {
           );
         }
 
-        return Promise.resolve(createDocSnap('wl-fixed', { status: 'scheduled' }));
+        return Promise.resolve(
+          createDocSnap('wl-fixed', {
+            status: 'scheduled',
+            role: 'dealer',
+            date: 'FIXED_SCHEDULE',
+            timeSlot: 'FIXED_TIME',
+            assignmentGroupId: null,
+          })
+        );
       }),
       update: jest.fn(),
     };

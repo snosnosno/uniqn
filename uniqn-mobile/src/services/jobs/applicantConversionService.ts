@@ -8,12 +8,20 @@
 
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { logger } from '@/utils/logger';
-import type {
-  ConversionOptions,
-  ConversionResult,
-} from '@/repositories/interfaces/IApplicationRepository';
 
-export type { ConversionResult, ConversionOptions };
+export interface ConversionResult {
+  applicationId: string;
+  staffId: string;
+  workLogIds: string[];
+  isNewStaff: boolean;
+  message: string;
+}
+
+export interface ConversionOptions {
+  skipExisting?: boolean;
+  createWorkLogs?: boolean;
+  notes?: string;
+}
 
 export interface BulkConversionResult {
   successCount: number;

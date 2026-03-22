@@ -1,3 +1,11 @@
+/**
+ * Deprecated applicant-to-staff conversion transactions.
+ *
+ * Runtime usage is blocked in the canonical V3 workflow. This module is kept
+ * only so deprecated tests and references remain explicit while the remaining
+ * cleanup is phased out.
+ */
+
 import {
   collection,
   doc,
@@ -17,8 +25,21 @@ import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff } from '@/types';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
-import type { ConversionOptions, ConversionResult } from '../../interfaces/IApplicationRepository';
-import { resolvePrimaryApplicationRole } from './applicationRoleUtils';
+import { resolvePrimaryApplicationRole } from '../applicationRoleUtils';
+
+export interface ConversionResult {
+  applicationId: string;
+  staffId: string;
+  workLogIds: string[];
+  isNewStaff: boolean;
+  message: string;
+}
+
+export interface ConversionOptions {
+  skipExisting?: boolean;
+  createWorkLogs?: boolean;
+  notes?: string;
+}
 
 export async function convertApplicantToStaffTransaction(
   applicationId: string,
