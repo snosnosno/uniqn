@@ -20,6 +20,9 @@ import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 
+const EMPLOYER_TERMS_VERSION = 'v3-2026-03-22';
+const EMPLOYER_LIABILITY_WAIVER_VERSION = 'v3-2026-03-22';
+
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -135,7 +138,10 @@ export default function EmployerRegisterScreen() {
 
     try {
       // 서비스에서 업데이트된 프로필 반환
-      const updatedProfile = await registerAsEmployer();
+      const updatedProfile = await registerAsEmployer({
+        termsVersion: EMPLOYER_TERMS_VERSION,
+        liabilityWaiverVersion: EMPLOYER_LIABILITY_WAIVER_VERSION,
+      });
 
       // 프로필 저장 (Timestamp → Date 변환)
       setProfile({

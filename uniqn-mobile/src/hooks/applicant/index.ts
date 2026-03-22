@@ -255,7 +255,7 @@ export function useApplicantManagement(
     countByStatus,
 
     // 상태별 카운트 단축키
-    pendingCount: countByStatus(STATUS.APPLICATION.PENDING),
+    pendingCount: 0,
     confirmedCount: countByStatus(STATUS.APPLICATION.CONFIRMED),
     rejectedCount: countByStatus(STATUS.APPLICATION.REJECTED),
     completedCount: countByStatus(STATUS.APPLICATION.COMPLETED),

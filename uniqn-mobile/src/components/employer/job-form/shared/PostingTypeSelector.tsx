@@ -1,10 +1,3 @@
-/**
- * PostingTypeSelector - 공고 타입 선택 컴포넌트
- *
- * @description 4가지 공고 타입(지원/고정/대회/긴급)을 선택하는 칩 UI
- * @version 1.1.0
- */
-
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { CheckCircleIcon } from '@/components/icons';
@@ -12,26 +5,14 @@ import { CheckCircleIcon } from '@/components/icons';
 import type { PostingType } from '@/types';
 import { POSTING_TYPE_INFO } from '@/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface PostingTypeSelectorProps {
-  /** 선택된 공고 타입 */
   value: PostingType;
-  /** 타입 변경 핸들러 */
   onChange: (type: PostingType) => void;
-  /** 비활성화 여부 (수정 모드에서 true) */
   disabled?: boolean;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
+const AVAILABLE_POSTING_TYPES: PostingType[] = ['regular', 'tournament', 'urgent'];
 
-/**
- * 공고 타입 선택 카드
- */
 const TypeCard = memo(function TypeCard({
   type,
   isSelected,
@@ -50,7 +31,7 @@ const TypeCard = memo(function TypeCard({
       onPress={onPress}
       disabled={disabled}
       className={`
-        flex-1 p-3 rounded-xl border
+        flex-1 rounded-xl border p-3
         ${
           isSelected
             ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
@@ -63,10 +44,7 @@ const TypeCard = memo(function TypeCard({
       accessibilityLabel={`${info.label} 공고 타입`}
     >
       <View className="flex-row items-center">
-        {/* 아이콘 */}
-        <Text className="text-xl mr-2">{info.icon}</Text>
-
-        {/* 라벨 + 설명 */}
+        <Text className="mr-2 text-xl">{info.icon}</Text>
         <View className="flex-1">
           <Text
             className={`
@@ -85,17 +63,12 @@ const TypeCard = memo(function TypeCard({
             {info.description}
           </Text>
         </View>
-
-        {/* 체크 */}
         {isSelected && <CheckCircleIcon size={16} color="#A855F7" />}
       </View>
     </Pressable>
   );
 });
 
-/**
- * PostingTypeSelector 메인 컴포넌트
- */
 export const PostingTypeSelector = memo(function PostingTypeSelector({
   value,
   onChange,
@@ -112,66 +85,50 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
   return (
     <View className="mb-4">
-      {/* 라벨 */}
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        공고 타입 <Text className="text-red-500">*</Text>
+      <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        공고 타입<Text className="text-red-500">*</Text>
       </Text>
 
-      {/* 2x2 그리드 */}
       <View className="gap-2">
         <View className="flex-row gap-2">
-          <TypeCard
-            type="regular"
-            isSelected={value === 'regular'}
-            disabled={disabled}
-            onPress={() => handlePress('regular')}
-          />
-          <TypeCard
-            type="fixed"
-            isSelected={value === 'fixed'}
-            disabled={disabled}
-            onPress={() => handlePress('fixed')}
-          />
-        </View>
-        <View className="flex-row gap-2">
-          <TypeCard
-            type="tournament"
-            isSelected={value === 'tournament'}
-            disabled={disabled}
-            onPress={() => handlePress('tournament')}
-          />
-          <TypeCard
-            type="urgent"
-            isSelected={value === 'urgent'}
-            disabled={disabled}
-            onPress={() => handlePress('urgent')}
-          />
+          {AVAILABLE_POSTING_TYPES.map((type) => (
+            <TypeCard
+              key={type}
+              type={type}
+              isSelected={value === type}
+              disabled={disabled}
+              onPress={() => handlePress(type)}
+            />
+          ))}
         </View>
       </View>
 
-      {/* 대회 공고 안내 */}
+      <View className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-2.5 dark:border-blue-800 dark:bg-blue-900/20">
+        <Text className="text-sm text-blue-700 dark:text-blue-300">
+          고정공고는 이번 V3 통합 범위에서 제외되어 생성할 수 없습니다.
+        </Text>
+      </View>
+
       {value === 'tournament' && (
-        <View className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+        <View className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-800 dark:bg-amber-900/20">
           <Text className="text-sm text-amber-700 dark:text-amber-300">
-            대회 공고는 관리자 승인 후 게시됩니다.
+            대회공고는 관리자 승인 후 게시됩니다.
           </Text>
         </View>
       )}
 
-      {/* 긴급 공고 안내 */}
       {value === 'urgent' && (
-        <View className="mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <View className="mt-3 rounded-lg border border-red-200 bg-red-50 p-2.5 dark:border-red-800 dark:bg-red-900/20">
           <Text className="text-sm text-red-700 dark:text-red-300">
-            긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
+            긴급 공고는 오늘 기준 7일 이내 날짜만 선택할 수 있습니다.
           </Text>
         </View>
       )}
 
-      {/* 수정 모드 안내 */}
       {disabled && (
-        <View className="mt-2 p-2 bg-gray-100 dark:bg-surface rounded">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            공고 타입은 수정할 수 없습니다
+        <View className="mt-2 rounded bg-gray-100 p-2 dark:bg-surface">
+          <Text className="text-center text-xs text-gray-500 dark:text-gray-400">
+            공고 타입은 수정할 수 없습니다.
           </Text>
         </View>
       )}

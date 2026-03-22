@@ -375,7 +375,7 @@ interface StaffQRCode {
 > Query helper fields kept top-level:
 > `status`, `ownerId`, `ownerName`, `postingType`, `workDate`, `workDates`, `roleKeys`,
 > `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`,
-> `applicationCount`
+> `stats`
 
 ```typescript
 interface JobPosting {
@@ -393,7 +393,13 @@ interface JobPosting {
   totalPositions: number
   filledPositions: number
   viewCount?: number
-  applicationCount?: number
+  stats?: {
+    totalApplicants: number
+    activeApplicants: number
+    confirmedApplicants: number
+    cancellationPendingApplicants: number
+    filledPositions: number
+  }
   createdAt: Timestamp
   updatedAt: Timestamp
   closedAt?: Timestamp
@@ -523,7 +529,7 @@ interface Application {
   postTitle: string
 
   // === ?곹깭 ===
-  status: 'applied' | 'confirmed' | 'cancelled' | 'pending' | 'pending_confirmation'
+  status: 'applied' | 'confirmed' | 'cancelled' | 'rejected' | 'completed' | 'cancellation_pending'
   recruitmentType?: 'event' | 'fixed'
 
   // === 諛곗젙 ?뺣낫 (Single Source of Truth) ===
@@ -1000,7 +1006,7 @@ export function isConfirmedApplication(app: Application): boolean {
 }
 
 export function isPendingApplication(app: Application): boolean {
-  return app.status === 'applied' || app.status === 'pending'
+  return app.status === 'applied' || app.status === 'cancellation_pending'
 }
 ```
 

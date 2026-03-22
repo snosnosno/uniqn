@@ -35,7 +35,6 @@ const STATUS_BADGE_VARIANT: Record<
   'default' | 'primary' | 'success' | 'warning' | 'error'
 > = {
   applied: 'primary',
-  pending: 'warning',
   confirmed: 'success',
   rejected: 'error',
   cancelled: 'default',

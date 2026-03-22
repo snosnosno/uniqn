@@ -216,11 +216,11 @@ export async function processEventQRCheckIn(
     const { jobPostingId, date, action } = validation;
 
     // 2. 해당 스태프의 WorkLog 찾기 - Repository 사용
-    let workLog = await workLogRepository.findByJobPostingStaffDate(jobPostingId!, staffId, date!);
-
-    if (!workLog) {
-      workLog = await workLogRepository.findActiveFixedByJobPostingStaff(jobPostingId!, staffId);
-    }
+    const workLog = await workLogRepository.findByJobPostingStaffDate(
+      jobPostingId!,
+      staffId,
+      date!
+    );
 
     if (!workLog) {
       throw new InvalidQRCodeError({
@@ -240,7 +240,7 @@ export async function processEventQRCheckIn(
       jobPostingId!,
       action!,
       checkTime,
-      workLog.isFixedPosting ? workLog.date || '' : date!
+      date!
     );
 
     // 4. Analytics (트랜잭션 외부 — 실패해도 출퇴근은 성공)

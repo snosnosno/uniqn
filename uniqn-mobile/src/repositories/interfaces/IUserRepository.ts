@@ -61,6 +61,11 @@ export interface UserDataExport {
   exportedAt: string;
 }
 
+export interface EmployerRegistrationInput {
+  termsVersion: string;
+  liabilityWaiverVersion: string;
+}
+
 // ============================================================================
 // Interface
 // ============================================================================
@@ -172,7 +177,10 @@ export interface IUserRepository {
    * @param userId - 사용자 ID
    * @returns 업데이트된 프로필
    */
-  registerAsEmployer(userId: string): Promise<FirestoreUserProfile>;
+  registerAsEmployer(
+    userId: string,
+    input: EmployerRegistrationInput
+  ): Promise<FirestoreUserProfile>;
 
   // ==========================================================================
   // 데이터 내보내기 / 삭제

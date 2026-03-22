@@ -197,10 +197,10 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       </View>
 
       {/* 지원자 수 */}
-      {(posting.applicationCount ?? 0) > 0 && (
+      {(posting.stats?.totalApplicants ?? 0) > 0 && (
         <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-primary-600 dark:text-primary-400">
-            지원자 {posting.applicationCount}명
+            지원자 {posting.stats?.totalApplicants ?? 0}명
           </Text>
         </View>
       )}

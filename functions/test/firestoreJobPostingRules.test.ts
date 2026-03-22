@@ -33,7 +33,13 @@ function createCanonicalJobPosting(
     totalPositions: 1,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt: Timestamp.fromDate(new Date("2026-04-01T09:00:00.000Z")),
     updatedAt: Timestamp.fromDate(new Date("2026-04-01T09:00:00.000Z")),
     location: {
@@ -91,7 +97,13 @@ function createCanonicalFixedJobPosting(
     totalPositions: 1,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt,
     updatedAt: createdAt,
     location: {

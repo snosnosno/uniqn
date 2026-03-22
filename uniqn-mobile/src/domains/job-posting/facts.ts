@@ -157,7 +157,10 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     stats: {
       totalPositions: posting.totalPositions,
       filledPositions: posting.filledPositions,
-      applicationCount: posting.applicationCount ?? 0,
+      totalApplicants: posting.stats?.totalApplicants ?? 0,
+      activeApplicants: posting.stats?.activeApplicants ?? 0,
+      confirmedApplicants: posting.stats?.confirmedApplicants ?? 0,
+      cancellationPendingApplicants: posting.stats?.cancellationPendingApplicants ?? 0,
     },
     questions: {
       items: questions,

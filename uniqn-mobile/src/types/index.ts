@@ -75,6 +75,7 @@ export type {
   SalaryInfo,
   Allowances,
   TaxSettings,
+  JobPostingAggregateStats,
   JobRoleStats,
   RoleRequirement,
   JobPosting,

@@ -161,11 +161,11 @@ Executed on `2026-03-22` after reproducing the employer-side “job posting not 
     - repository read returned `null`
     - service layer surfaced `공고를 찾을 수 없음`
 - Integration remediation:
-  - read compatibility was widened in `uniqn-mobile/src/schemas/jobPosting.schema.ts`
-  - legacy `applicantCount` is normalized to canonical `applicationCount` on read
-  - legacy `lastUpdated` is accepted and discarded on read
-  - canonical write contract remains unchanged:
-    - `applicationCount`
+  - the temporary read-compat shim was removed once the V3 cutover completed
+  - legacy `applicantCount` is no longer normalized on read
+  - legacy `lastUpdated` is no longer part of the canonical document contract
+  - canonical write contract is now:
+    - `stats`
     - `updatedAt`
 - Validation:
   - `cd uniqn-mobile && npm test -- --runInBand src/schemas/__tests__/jobPosting.schema.test.ts`
@@ -174,7 +174,7 @@ Executed on `2026-03-22` after reproducing the employer-side “job posting not 
   - `cd uniqn-mobile && npm run quality`
   - Result: all passed, with the pre-existing lint warning only
 - Operational interpretation:
-  - current integration source does not write `applicantCount` or `lastUpdated` in the application flow
+  - current integration source does not write legacy applicant counters or `lastUpdated`
   - if those fields continue to appear in the production Firebase project, an older deployed writer or legacy client likely still exists
   - Firebase `functions` deployment may still be required outside the integration codebase to stop future legacy writes
 

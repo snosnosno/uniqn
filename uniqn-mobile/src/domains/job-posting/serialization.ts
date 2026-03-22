@@ -14,6 +14,7 @@ import type {
   UpdateJobPostingInput,
 } from '@/types/jobPosting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
+import { normalizePostingAggregateStats } from './stats';
 
 interface SerializeJobPostingV3Options {
   ownerId: string;
@@ -249,6 +250,7 @@ export function serializeJobPostingV3(
   const schedule = normalizeSchedule(input.schedule);
   const compensation = normalizeCompensation(input.compensation);
   const totals = calculateTotalsFromSchedule(schedule);
+  const stats = normalizePostingAggregateStats(current?.stats, schedule);
 
   return {
     id: current?.id || '',
@@ -263,9 +265,9 @@ export function serializeJobPostingV3(
     ...(totals.workDates ? { workDates: totals.workDates } : {}),
     roleKeys: getRoleKeysFromCatalog(roleCatalog),
     totalPositions: totals.totalPositions,
-    filledPositions: current?.filledPositions ?? totals.filledPositions,
+    filledPositions: stats.filledPositions,
     viewCount: current?.viewCount ?? 0,
-    applicationCount: current?.applicationCount ?? 0,
+    stats,
     createdAt: options.createdAt ?? current?.createdAt,
     updatedAt: options.updatedAt ?? current?.updatedAt,
     ...(current?.closedAt ? { closedAt: current.closedAt } : {}),
@@ -385,6 +387,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
           })),
         };
   const derivedDates = deriveWorkDateFieldsFromSchedule(schedule);
+  const stats = normalizePostingAggregateStats(document.stats, schedule);
 
   return {
     id: document.id,
@@ -399,11 +402,9 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
     ...(derivedDates.workDates ? { workDates: derivedDates.workDates } : {}),
     ...(document.roleKeys ? { roleKeys: [...document.roleKeys] } : {}),
     totalPositions: document.totalPositions,
-    filledPositions: document.filledPositions,
+    filledPositions: stats.filledPositions,
     ...(document.viewCount !== undefined ? { viewCount: document.viewCount } : {}),
-    ...(document.applicationCount !== undefined
-      ? { applicationCount: document.applicationCount }
-      : {}),
+    stats,
     ...(document.createdAt !== undefined ? { createdAt: document.createdAt } : {}),
     ...(document.updatedAt !== undefined ? { updatedAt: document.updatedAt } : {}),
     ...(document.closedAt ? { closedAt: document.closedAt } : {}),

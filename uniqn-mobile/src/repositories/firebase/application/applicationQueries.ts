@@ -138,7 +138,7 @@ export async function getByApplicantId(applicantId: string): Promise<Application
 
     logger.info('내 지원 내역 조회 완료', {
       applicantId,
-      applicationCount: applications.length,
+      totalApplications: applications.length,
       jobPostingCount: jobPostingMap.size,
     });
 
@@ -270,7 +270,6 @@ export async function getStatsByApplicantId(
 
     const stats: Record<ApplicationStatus, number> = {
       applied: 0,
-      pending: 0,
       confirmed: 0,
       rejected: 0,
       cancelled: 0,

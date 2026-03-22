@@ -13,7 +13,7 @@ Public Firebase exports are organized through three barrels:
 These modules are the main contract-sensitive paths for job postings:
 
 - `src/api/jobPostings/`: admin approval, rejection, resubmission, and manual fixed-post expiration entry points
-- `src/triggers/jobPostings.ts`: derived `searchIndex` sync and canonical `applicationCount` maintenance
+- `src/triggers/jobPostings.ts`: derived `searchIndex` sync and canonical `stats` reconciliation
 - `src/triggers/onJobPostingOGSync.ts`: reads canonical job posting fields for OG projection without reshaping the document
 
-When adding new job posting functions, prefer touching only canonical fields already allowed by the V3 contract. Derived fields should stay explicitly scoped, such as `searchIndex` and `applicationCount`.
+When adding new job posting functions, prefer touching only canonical fields already allowed by the V3 contract. Derived fields should stay explicitly scoped, such as `searchIndex` and `stats`.

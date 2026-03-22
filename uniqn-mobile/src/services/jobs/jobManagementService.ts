@@ -6,59 +6,10 @@ import type {
   CreateJobPostingInput,
   JobPosting,
   JobPostingStatus,
-  PostingRoleCatalogEntry,
   UpdateJobPostingInput,
 } from '@/types';
-import type { PostingDateRequirement } from '@/types/jobPosting';
 
 export type { CreateJobPostingResult, JobPostingStats };
-
-function getRoleKey(role: { role?: string; customRole?: string }): string {
-  if (role.role === 'other' && role.customRole) {
-    return `other:${role.customRole}`;
-  }
-
-  return role.role ?? '';
-}
-
-function extractRequirementRoleKeys(requirement: PostingDateRequirement): Set<string> {
-  const roleKeys = new Set<string>();
-
-  requirement.timeSlots.forEach((slot) => {
-    slot.roles.forEach((role) => {
-      const key = getRoleKey(role);
-      if (key) {
-        roleKeys.add(key);
-      }
-    });
-  });
-
-  return roleKeys;
-}
-
-function filterRoleCatalogByRequirement(
-  roleCatalog: PostingRoleCatalogEntry[],
-  requirement: PostingDateRequirement
-): PostingRoleCatalogEntry[] {
-  const allowedKeys = extractRequirementRoleKeys(requirement);
-  return roleCatalog.filter((role) => allowedKeys.has(getRoleKey(role)));
-}
-
-function buildSingleDatePostingInput(
-  input: CreateJobPostingInput,
-  requirement: PostingDateRequirement
-): CreateJobPostingInput {
-  return {
-    ...input,
-    schedule: {
-      kind: 'dated',
-      primaryDate: requirement.date,
-      allDates: [requirement.date],
-      requirements: [requirement],
-    },
-    roleCatalog: filterRoleCatalogByRequirement(input.roleCatalog, requirement),
-  };
-}
 
 async function createSinglePosting(
   input: CreateJobPostingInput,
@@ -71,83 +22,12 @@ async function createSinglePosting(
   });
 }
 
-async function createMultiplePostingsByDate(
-  input: CreateJobPostingInput,
-  ownerId: string,
-  ownerName: string
-): Promise<CreateJobPostingResult[]> {
-  if (input.schedule.kind !== 'dated') {
-    return [await createSinglePosting(input, ownerId, ownerName)];
-  }
-
-  const requirements = input.schedule.requirements ?? [];
-  const results: CreateJobPostingResult[] = [];
-  const createdIds: string[] = [];
-
-  try {
-    for (const requirement of requirements) {
-      const result = await createSinglePosting(
-        buildSingleDatePostingInput(input, requirement),
-        ownerId,
-        ownerName
-      );
-      results.push(result);
-      createdIds.push(result.id);
-    }
-  } catch (error) {
-    if (createdIds.length > 0) {
-      await rollbackCreatedPostings(createdIds);
-    }
-    throw error;
-  }
-
-  return results;
-}
-
-async function rollbackCreatedPostings(createdIds: string[]): Promise<void> {
-  const failedIds: string[] = [];
-
-  for (const id of createdIds) {
-    try {
-      const posting = await jobPostingRepository.getById(id);
-      if (posting?.status === 'cancelled') {
-        continue;
-      }
-
-      await jobPostingRepository.updateStatus(id, 'cancelled');
-    } catch (rollbackError) {
-      failedIds.push(id);
-      logger.error('공고 롤백 실패', rollbackError as Error, {
-        id,
-        component: 'jobManagementService',
-      });
-    }
-  }
-
-  if (failedIds.length > 0) {
-    logger.error('일부 공고 롤백 실패, 수동 정리 필요', {
-      failedIds,
-      totalCreated: createdIds.length,
-      failedCount: failedIds.length,
-      component: 'jobManagementService',
-    });
-  }
-}
-
 export async function createJobPosting(
   input: CreateJobPostingInput,
   ownerId: string,
   ownerName: string
-): Promise<CreateJobPostingResult | CreateJobPostingResult[]> {
+): Promise<CreateJobPostingResult> {
   try {
-    const isMultiDateType = input.postingType === 'regular' || input.postingType === 'urgent';
-    const hasMultipleDates =
-      input.schedule.kind === 'dated' && input.schedule.requirements.length > 1;
-
-    if (isMultiDateType && hasMultipleDates) {
-      return await createMultiplePostingsByDate(input, ownerId, ownerName);
-    }
-
     return await createSinglePosting(input, ownerId, ownerName);
   } catch (error) {
     throw handleServiceError(error, {

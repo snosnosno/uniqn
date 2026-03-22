@@ -33,7 +33,6 @@ const mockEventQRRepositoryValidateSecurityCode = jest.fn();
 const mockEventQRRepositoryDeactivateExpired = jest.fn();
 
 const mockWorkLogRepositoryFindByJobPostingStaffDate = jest.fn();
-const mockWorkLogRepositoryFindActiveFixedByJobPostingStaff = jest.fn();
 const mockWorkLogRepositoryProcessQRCheckInOutTransaction = jest.fn();
 
 jest.mock('@/repositories', () => ({
@@ -51,8 +50,6 @@ jest.mock('@/repositories', () => ({
   workLogRepository: {
     findByJobPostingStaffDate: (...args: unknown[]) =>
       mockWorkLogRepositoryFindByJobPostingStaffDate(...args),
-    findActiveFixedByJobPostingStaff: (...args: unknown[]) =>
-      mockWorkLogRepositoryFindActiveFixedByJobPostingStaff(...args),
     processQRCheckInOutTransaction: (...args: unknown[]) =>
       mockWorkLogRepositoryProcessQRCheckInOutTransaction(...args),
   },
@@ -441,7 +438,6 @@ describe('eventQRService - processEventQRCheckIn', () => {
     mockIsAppError.mockReturnValue(false);
     // Repository mock 반환값 초기화 (clearAllMocks는 반환값을 초기화하지 않음)
     mockWorkLogRepositoryFindByJobPostingStaffDate.mockReset();
-    mockWorkLogRepositoryFindActiveFixedByJobPostingStaff.mockReset();
     mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockReset();
   });
 

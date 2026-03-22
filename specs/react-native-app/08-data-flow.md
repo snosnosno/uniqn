@@ -121,7 +121,13 @@ interface JobPosting {
   totalPositions: number;
   filledPositions: number;
   viewCount?: number;
-  applicationCount?: number;
+  stats?: {
+    totalApplicants: number;
+    activeApplicants: number;
+    confirmedApplicants: number;
+    cancellationPendingApplicants: number;
+    filledPositions: number;
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
   closedAt?: Timestamp;
@@ -294,12 +300,12 @@ interface Application {
 }
 
 type ApplicationStatus =
-  | 'pending'           // 대기중
+  | 'applied'           // 지원 완료
   | 'confirmed'         // 확정
   | 'rejected'          // 거절
   | 'cancelled'         // 취소 (지원자)
   | 'completed'         // 완료
-  | 'no_show';          // 노쇼
+  | 'cancellation_pending'; // 확정 취소 요청 대기
 ```
 
 ### Repository 패턴 적용
@@ -323,7 +329,7 @@ export class ApplicationRepository implements IApplicationRepository {
       collection(db, 'applications'),
       where('jobPostingId', '==', jobPostingId),
       where('applicantId', '==', userId),
-      where('status', 'in', ['pending', 'confirmed']),
+      where('status', 'in', ['applied', 'confirmed', 'cancellation_pending']),
       limit(1)
     );
 
@@ -359,10 +365,10 @@ export class ApplicationRepository implements IApplicationRepository {
       const appRef = doc(collection(db, 'applications'));
       transaction.set(appRef, {
         ...data,
-        status: 'pending',
+        status: 'applied',
         statusHistory: [{
           from: null,
-          to: 'pending',
+          to: 'applied',
           changedAt: serverTimestamp(),
           changedBy: data.applicantId,
         }],
@@ -370,10 +376,7 @@ export class ApplicationRepository implements IApplicationRepository {
         updatedAt: serverTimestamp(),
       });
 
-      // 5. 공고 지원자 수 증가
-      transaction.update(postingRef, {
-        applicantCount: increment(1),
-      });
+      // 5. 공고 aggregate stats 는 shared lifecycle / reconciliation 경로에서 갱신
 
       return { id: appRef.id, ...data } as Application;
     });
@@ -524,7 +527,7 @@ export const applicantManagementService = {
           confirmedAt: serverTimestamp(),
           confirmedBy: employerId,
           statusHistory: arrayUnion({
-            from: 'pending',
+            from: 'applied',
             to: 'confirmed',
             changedAt: serverTimestamp(),
             changedBy: employerId,
@@ -1033,7 +1036,7 @@ import { RealtimeManager } from '@/shared/realtime';
 export const scheduleService = {
   /**
    * 내 스케줄 조회 (통합)
-   * - applications (pending) + workLogs (confirmed 이후)
+   * - applications (applied) + workLogs (confirmed 이후)
    */
   async getMySchedules(
     userId: string,
@@ -1042,12 +1045,12 @@ export const scheduleService = {
     try {
       const events: ScheduleEvent[] = [];
 
-      // 1. 대기 중인 지원 (아직 WorkLog 없음)
-      const pendingApplications = await applicationRepository.findByUser(userId, {
-        status: ['pending'],
+      // 1. 지원 완료 상태 (아직 WorkLog 없음)
+      const appliedApplications = await applicationRepository.findByUser(userId, {
+        status: ['applied'],
       });
 
-      for (const app of pendingApplications) {
+      for (const app of appliedApplications) {
         for (const date of app.appliedDates) {
           events.push({
             id: `app-${app.id}-${date}`,
@@ -1056,7 +1059,7 @@ export const scheduleService = {
             date,
             title: app.jobTitle,
             role: app.appliedRole,
-            status: 'pending',
+            status: 'applied',
           });
         }
       }
@@ -1166,8 +1169,8 @@ const flags = RoleResolver.computeRoleFlags(role); // { isAdmin, isEmployer, isS
 
 // StatusMapper - 상태 흐름
 import { StatusMapper } from '@/shared/status';
-const canTransition = StatusMapper.canTransition('pending', 'confirmed'); // true
-const validNext = StatusMapper.getValidTransitions('pending'); // ['confirmed', 'rejected', 'cancelled']
+const canTransition = StatusMapper.canTransition('applied', 'confirmed'); // true
+const validNext = StatusMapper.getValidTransitions('applied'); // ['confirmed', 'rejected', 'cancelled']
 const label = StatusMapper.getLabel('confirmed', 'application'); // '확정'
 
 // TimeNormalizer - 시간 정규화

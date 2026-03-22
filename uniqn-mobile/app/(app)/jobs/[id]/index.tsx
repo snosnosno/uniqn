@@ -92,6 +92,19 @@ export default function AuthenticatedJobDetailScreen() {
     );
   }
 
+  if (job.postingType === 'fixed' || job.schedule.kind === 'fixed') {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+        <ErrorState
+          message="고정 공고는 V3 canonical 전환 동안 앱에서 열 수 없습니다."
+          onRetry={refresh}
+        />
+      </SafeAreaView>
+    );
+  }
+
   // 지원 상태 확인
   const alreadyApplied = hasApplied(job.id);
   const applicationStatus = getApplicationStatus(job.id);

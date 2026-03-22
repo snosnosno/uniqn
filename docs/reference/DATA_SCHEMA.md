@@ -139,7 +139,7 @@ Document ID: Auto-generated
   "applicantPhone"?: string,   // 지원자 전화번호 (역정규화)
 
   // 상태 (v3.0 확장)
-  "status": "applied" | "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "cancellation_pending",
+  "status": "applied" | "confirmed" | "rejected" | "cancelled" | "completed" | "cancellation_pending",
 
   // Assignment 기반 지원 (v3.0 필수) ✅
   "assignments": Assignment[], // 지원 날짜/역할 정보 (필수)
@@ -204,10 +204,10 @@ interface ConfirmationHistoryEntry {
 
 **상태 흐름**:
 ```
-applied → pending → confirmed → completed
-                  ↘ rejected
-                  ↘ cancelled
-                  ↘ cancellation_pending → cancelled (승인) 또는 confirmed (거절)
+applied → confirmed → completed
+       ↘ rejected
+       ↘ cancelled
+confirmed → cancellation_pending → cancelled (승인) 또는 confirmed (거절)
 ```
 
 **필드 변경 이력 (v3.0)**:
@@ -235,7 +235,7 @@ applied → pending → confirmed → completed
 > Top-level query helper fields:
 > `schemaVersion`, `status`, `ownerId`, `ownerName`, `postingType`, `workDate`, `workDates`,
 > `roleKeys`, `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`,
-> `applicationCount`
+> `stats`
 >
 > Canonical nested sections:
 > `location`, `schedule`, `roleCatalog`, `compensation`, `questions`, `fixedConfig`,
@@ -260,7 +260,13 @@ Document ID: Auto-generated
   "totalPositions": number,
   "filledPositions": number,
   "viewCount"?: number,
-  "applicationCount"?: number,
+  "stats"?: {
+    "totalApplicants": number,
+    "activeApplicants": number,
+    "confirmedApplicants": number,
+    "cancellationPendingApplicants": number,
+    "filledPositions": number
+  },
   "createdAt": Timestamp,
   "updatedAt": Timestamp,
   "closedAt"?: Timestamp,
@@ -380,7 +386,7 @@ Document ID: Auto-generated
 | `tournament` | 토너먼트 공고 |
 | `urgent` | 긴급 공고 |
 
-**인덱스/조회 helper**: `status`, `ownerId`, `postingType`, `workDate`, `workDates`, `roleKeys`, `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`, `applicationCount`
+**인덱스/조회 helper**: `status`, `ownerId`, `postingType`, `workDate`, `workDates`, `roleKeys`, `createdAt`, `updatedAt`, `totalPositions`, `filledPositions`, `viewCount`, `stats`
 
 ### 5. attendanceRecords (출석 기록)
 
@@ -1103,7 +1109,7 @@ export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
 
 // 기타 유니언 타입 정의
 export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
-export type ApplicationStatus = 'applied' | 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'completed' | 'cancellation_pending';
+export type ApplicationStatus = 'applied' | 'confirmed' | 'rejected' | 'cancelled' | 'completed' | 'cancellation_pending';
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 // 복합 타입 정의 (v3.0)

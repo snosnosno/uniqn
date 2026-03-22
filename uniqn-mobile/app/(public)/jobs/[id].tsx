@@ -64,6 +64,21 @@ export default function JobDetailScreen() {
     );
   }
 
+  if (job.postingType === 'fixed' || job.schedule.kind === 'fixed') {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <JobDetailHeader title={job.title} />
+        <PostingSurfaceState
+          mode="error"
+          scope="detail"
+          message="고정 공고는 V3 canonical 전환 동안 공개 상세 화면에서 제공되지 않습니다."
+          onRetry={refresh}
+        />
+      </SafeAreaView>
+    );
+  }
+
   const alreadyApplied = hasApplied(job.id);
   const applicationStatus = getApplicationStatus(job.id);
 

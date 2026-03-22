@@ -1,21 +1,19 @@
 import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text } from 'react-native';
-import { useJobSchedule } from '@/hooks';
+import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
+import { useJobSchedule } from '@/hooks';
 import type { Assignment } from '@/types';
-import { createSimpleAssignment, FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types';
+import { createSimpleAssignment } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import {
-  makeSelectionKey,
   groupDatedSchedules,
-  type SelectionKey,
+  makeSelectionKey,
   type ScheduleGroup,
+  type SelectionKey,
 } from '@/utils/assignment';
-import { RoleCheckbox } from './RoleCheckbox';
-import { DateSelection } from './DateSelection';
 import { DateGroupSelection } from './DateGroupSelection';
+import { DateSelection } from './DateSelection';
 import type { AssignmentSelectorProps, TimeOptions } from './types';
-import { getEffectiveRoleId, getRoleCheckboxKey } from './utils';
 
 export type { AssignmentSelectorProps } from './types';
 
@@ -27,7 +25,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   disabled = false,
   error,
 }: AssignmentSelectorProps) {
-  const { datedSchedules, isFixed, fixedSchedule } = useJobSchedule(jobPosting);
+  const { datedSchedules, isFixed } = useJobSchedule(jobPosting);
   const postingFacts = useMemo(() => buildPostingFacts(jobPosting), [jobPosting]);
 
   const selectedKeys = useMemo(() => {
@@ -35,8 +33,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
     selectedAssignments.forEach((assignment) => {
       assignment.dates.forEach((date) => {
-        const key = makeSelectionKey(date, assignment.timeSlot, assignment.roleIds[0] ?? '');
-        keys.add(key);
+        keys.add(makeSelectionKey(date, assignment.timeSlot, assignment.roleIds[0] ?? ''));
       });
     });
 
@@ -48,16 +45,15 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       const selectionKey = makeSelectionKey(date, slotTime, role);
       const isSelected = selectedKeys.has(selectionKey);
 
-      let newAssignments: Assignment[];
+      let nextAssignments: Assignment[];
 
       if (isSelected) {
-        newAssignments = selectedAssignments.filter((assignment) => {
+        nextAssignments = selectedAssignments.filter((assignment) => {
           const assignmentKey = makeSelectionKey(
             assignment.dates[0] ?? '',
             assignment.timeSlot,
             assignment.roleIds[0] ?? ''
           );
-
           return assignmentKey !== selectionKey;
         });
       } else {
@@ -65,56 +61,30 @@ export const AssignmentSelector = memo(function AssignmentSelector({
           return;
         }
 
-        const newAssignment = createSimpleAssignment(role, slotTime, date, {
-          isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
-          tentativeDescription: timeOptions?.tentativeDescription,
-        });
-
-        newAssignments = [...selectedAssignments, newAssignment];
+        nextAssignments = [
+          ...selectedAssignments,
+          createSimpleAssignment(role, slotTime, date, {
+            isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
+            tentativeDescription: timeOptions?.tentativeDescription,
+          }),
+        ];
       }
 
-      onSelectionChange(newAssignments);
+      onSelectionChange(nextAssignments);
     },
-    [selectedKeys, selectedAssignments, maxSelections, onSelectionChange]
+    [maxSelections, onSelectionChange, selectedAssignments, selectedKeys]
   );
-
-  const selectionSummary = useMemo(() => {
-    if (selectedAssignments.length === 0) {
-      return '';
-    }
-
-    const roleCount = new Map<string, number>();
-
-    selectedAssignments.forEach((assignment) => {
-      const label = getRoleDisplayName(assignment.roleIds[0] ?? 'unknown');
-      roleCount.set(label, (roleCount.get(label) ?? 0) + 1);
-    });
-
-    return Array.from(roleCount.entries())
-      .map(([role, count]) => `${role} ${count}건`)
-      .join(', ');
-  }, [selectedAssignments]);
-
-  const isTournament = postingFacts.workflow.isTournament;
-  const groupedRequirements = useMemo(
-    () => createPostingLegacyDateRequirements(jobPosting),
-    [jobPosting]
-  );
-
-  const scheduleGroups = useMemo(() => {
-    return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
-  }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
 
   const handleGroupRoleToggle = useCallback(
     (group: ScheduleGroup, slotTime: string, role: string, timeOptions?: TimeOptions) => {
       const firstKey = makeSelectionKey(group.startDate, slotTime, role);
       const isSelected = selectedKeys.has(firstKey);
 
-      let newAssignments: Assignment[];
+      let nextAssignments: Assignment[];
 
       if (isSelected) {
-        const groupDates = new Set(group.dates.map((date) => date.date));
-        newAssignments = selectedAssignments.filter((assignment) => {
+        const groupDates = new Set(group.dates.map((item) => item.date));
+        nextAssignments = selectedAssignments.filter((assignment) => {
           const assignmentDate = assignment.dates[0] ?? '';
           const assignmentRole = assignment.roleIds[0] ?? '';
           const isInGroup = groupDates.has(assignmentDate);
@@ -128,79 +98,69 @@ export const AssignmentSelector = memo(function AssignmentSelector({
           return;
         }
 
-        const groupAssignments = group.dates.map((schedule) =>
-          createSimpleAssignment(role, slotTime, schedule.date, {
-            isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
-            tentativeDescription: timeOptions?.tentativeDescription,
-          })
-        );
-
-        newAssignments = [...selectedAssignments, ...groupAssignments];
+        nextAssignments = [
+          ...selectedAssignments,
+          ...group.dates.map((schedule) =>
+            createSimpleAssignment(role, slotTime, schedule.date, {
+              isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
+              tentativeDescription: timeOptions?.tentativeDescription,
+            })
+          ),
+        ];
       }
 
-      onSelectionChange(newAssignments);
+      onSelectionChange(nextAssignments);
     },
-    [selectedKeys, selectedAssignments, maxSelections, onSelectionChange]
+    [maxSelections, onSelectionChange, selectedAssignments, selectedKeys]
   );
 
-  if (isFixed && fixedSchedule) {
+  const selectionSummary = useMemo(() => {
+    if (selectedAssignments.length === 0) {
+      return '';
+    }
+
+    const roleCount = new Map<string, number>();
+    selectedAssignments.forEach((assignment) => {
+      const label = getRoleDisplayName(assignment.roleIds[0] ?? 'unknown');
+      roleCount.set(label, (roleCount.get(label) ?? 0) + 1);
+    });
+
+    return Array.from(roleCount.entries())
+      .map(([role, count]) => `${role} ${count}건`)
+      .join(', ');
+  }, [selectedAssignments]);
+
+  const groupedRequirements = useMemo(
+    () => createPostingLegacyDateRequirements(jobPosting),
+    [jobPosting]
+  );
+  const isTournament = postingFacts.workflow.isTournament;
+  const scheduleGroups = useMemo(() => {
+    return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
+  }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
+
+  if (isFixed) {
     return (
-      <View className="bg-white dark:bg-surface rounded-xl p-4">
-        <View className="mb-3">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-            역할 선택 <Text className="text-error-500">*</Text>
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            원하는 역할을 선택해 주세요
-            {maxSelections ? ` (최대 ${maxSelections}개)` : ''}
-          </Text>
-        </View>
-
-        <View className="flex-row flex-wrap">
-          {fixedSchedule.roles.map((role, index) => {
-            const effectiveRoleId = getEffectiveRoleId(role);
-            const selectionKey = makeSelectionKey(
-              FIXED_DATE_MARKER,
-              FIXED_TIME_MARKER,
-              effectiveRoleId
-            );
-            const isSelected = selectedKeys.has(selectionKey);
-
-            return (
-              <RoleCheckbox
-                key={getRoleCheckboxKey(role, index)}
-                role={role}
-                isSelected={isSelected}
-                onToggle={() =>
-                  handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, effectiveRoleId)
-                }
-                disabled={disabled}
-              />
-            );
-          })}
-        </View>
-
-        {selectedAssignments.length > 0 && (
-          <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
-            <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-              선택됨: {selectionSummary}
-            </Text>
-          </View>
-        )}
-
-        {error && <Text className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</Text>}
+      <View className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
+        <Text className="text-sm font-medium text-amber-800 dark:text-amber-200">
+          고정공고 지원은 현재 비활성화되어 있습니다.
+        </Text>
+        <Text className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
+          날짜 기반 requirement 선택 공고만 지원할 수 있습니다.
+        </Text>
+        {error && <Text className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</Text>}
       </View>
     );
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4">
+    <View className="rounded-xl bg-white p-4 dark:bg-surface">
       <View className="mb-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+        <Text className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
           날짜 및 역할 선택 <Text className="text-error-500">*</Text>
         </Text>
         <Text className="text-xs text-gray-500 dark:text-gray-400">
-          원하는 시간대와 역할을 선택해 주세요
+          원하는 시간과 역할을 선택해 주세요
           {maxSelections ? ` (최대 ${maxSelections}개)` : ''}
         </Text>
       </View>
@@ -228,15 +188,15 @@ export const AssignmentSelector = memo(function AssignmentSelector({
             ))}
       </View>
 
-      {selectedAssignments.length > 0 && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-            선택됨: {selectionSummary}
+      {selectionSummary ? (
+        <View className="mt-4 border-t border-gray-100 pt-4 dark:border-surface-overlay">
+          <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
+            선택됨 {selectionSummary}
           </Text>
         </View>
-      )}
+      ) : null}
 
-      {error && <Text className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</Text>}
+      {error && <Text className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</Text>}
     </View>
   );
 });

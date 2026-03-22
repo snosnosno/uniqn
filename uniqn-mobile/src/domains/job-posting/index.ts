@@ -28,3 +28,9 @@ export {
   getPostingDefaultSalary,
   getPostingSettlementContext,
 } from './selectors';
+export {
+  calculateFilledPositionsFromSchedule,
+  createInitialPostingStats,
+  normalizePostingAggregateStats,
+  transitionPostingAggregateStats,
+} from './stats';

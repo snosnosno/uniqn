@@ -49,12 +49,18 @@ export function createTestJob(options: JobFactoryOptions = {}) {
     })),
     totalPositions: roles.reduce((sum, r) => sum + r.count, 0),
     filledPositions: roles.reduce((sum, r) => sum + (r.filled ?? 0), 0),
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: roles.reduce((sum, r) => sum + (r.filled ?? 0), 0),
+    },
     defaultSalary: { type: 'daily', amount: 150000 },
     useSameSalary: true,
     ownerId: options.ownerId ?? 'test-employer-uid-001',
     ownerName: options.ownerName ?? '테스트구인자',
     viewCount: 0,
-    applicationCount: 0,
     dateSpecificRequirements: [
       {
         date: workDate,
@@ -95,8 +101,6 @@ export function createFullJob(options: JobFactoryOptions = {}) {
   return createTestJob({
     ...options,
     title: options.title ?? `정원마감 공고${jobCounter + 1}`,
-    roles: [
-      { role: 'dealer', count: 1, filled: 1 },
-    ],
+    roles: [{ role: 'dealer', count: 1, filled: 1 }],
   });
 }

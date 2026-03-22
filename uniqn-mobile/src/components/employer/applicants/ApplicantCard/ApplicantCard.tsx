@@ -114,18 +114,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 확정 핸들러
   const handleConfirm = useCallback(() => {
-    if (isFixedMode) {
-      onConfirm?.(applicant);
-      return;
-    }
-
     const selectedAssignments = getSelectedAssignments();
     if (selectedAssignments.length > 0) {
       onConfirm?.(applicant, selectedAssignments);
     } else {
       onConfirm?.(applicant);
     }
-  }, [applicant, onConfirm, getSelectedAssignments, isFixedMode]);
+  }, [applicant, onConfirm, getSelectedAssignments]);
 
   // 거절 핸들러
   const handleReject = useCallback(() => {
@@ -145,11 +140,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   // 확정 상태 액션 표시 여부
   const canShowConfirmedActions =
     showActions &&
+    !isFixedMode &&
     applicant.status === STATUS.APPLICATION.CONFIRMED &&
     (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
-  const canShowActions = showActions && applicant.status === STATUS.APPLICATION.APPLIED;
+  const canShowActions =
+    showActions && !isFixedMode && applicant.status === STATUS.APPLICATION.APPLIED;
 
   return (
     <Card variant="elevated" padding="md">

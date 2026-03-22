@@ -210,9 +210,6 @@ function createJobPosting(overrides: TestJobPostingOverrides = {}): JobPosting {
     */
     postingType: overrides.postingType,
     description: overrides.description,
-    ...(overrides.applicationCount !== undefined
-      ? { applicationCount: overrides.applicationCount }
-      : {}),
     ...(overrides.viewCount !== undefined ? { viewCount: overrides.viewCount } : {}),
   } as JobPosting;
 }
@@ -290,7 +287,7 @@ describe('ApplicationValidator', () => {
 
       const result = validator.checkRoleCapacity(jobData, 'dealer');
       expect(result.available).toBe(false);
-      expect(result.reason).toBe('해당 역할의 모집이 마감되었습니다');
+      expect(result.reason).toBe('해당 역할은 모집이 마감되었습니다.');
     });
 
     it('dateSpecificRequirements에서 해당 역할이 없으면 available: false', () => {
@@ -467,7 +464,7 @@ describe('ApplicationValidator', () => {
 
       const result = validator.checkTotalCapacity(createJobPosting());
       expect(result.available).toBe(false);
-      expect(result.reason).toBe('모집 인원이 마감되었습니다');
+      expect(result.reason).toBe('모집 인원이 마감되었습니다.');
     });
 
     it('totalPositions가 0이면 available: true (제한 없음)', () => {
@@ -565,7 +562,7 @@ describe('ApplicationValidator', () => {
       });
       const result = validator.validatePreQuestionAnswers(jobData, undefined);
       expect(result.isValid).toBe(false);
-      expect(result.reason).toBe('사전질문에 답변해주세요');
+      expect(result.reason).toBe('사전질문에 답변해 주세요');
     });
 
     it('사전질문이 활성화되었는데 답변 배열이 비어있으면 무효', () => {
@@ -575,7 +572,7 @@ describe('ApplicationValidator', () => {
       });
       const result = validator.validatePreQuestionAnswers(jobData, []);
       expect(result.isValid).toBe(false);
-      expect(result.reason).toBe('사전질문에 답변해주세요');
+      expect(result.reason).toBe('사전질문에 답변해 주세요');
     });
 
     it('필수 답변이 모두 채워지면 유효', () => {
@@ -602,7 +599,7 @@ describe('ApplicationValidator', () => {
       ];
       const result = validator.validatePreQuestionAnswers(jobData, answers);
       expect(result.isValid).toBe(false);
-      expect(result.reason).toBe('필수 질문에 모두 답변해주세요');
+      expect(result.reason).toBe('필수 질문에 모두 답변해 주세요');
     });
 
     it('preQuestions 배열이 비어있으면 유효', () => {
@@ -704,7 +701,7 @@ describe('ApplicationValidator', () => {
       const result = validator.validateApplication(jobData, assignments);
       expect(result.errors.some((e) => e.code === 'ROLE_CAPACITY_REACHED')).toBe(true);
       const roleErr = result.errors.find((e) => e.code === 'ROLE_CAPACITY_REACHED');
-      expect(roleErr?.field).toBe('assignments[1].roleIds[0]');
+      expect(roleErr?.field).toBe('assignments:2025-01-10:19:00:dealer');
     });
 
     it('사전질문 미답변 시 MISSING_PRE_QUESTION_ANSWERS 에러', () => {

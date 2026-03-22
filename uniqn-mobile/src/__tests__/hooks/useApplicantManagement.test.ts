@@ -230,10 +230,10 @@ function createMockApplicantListResult(applicants = [createMockApplicantWithDeta
   const stats = {
     total: applicants.length,
     applied: 0,
-    pending: 0,
     confirmed: 0,
     rejected: 0,
     completed: 0,
+    cancellation_pending: 0,
   };
 
   applicants.forEach((app) => {
@@ -457,7 +457,7 @@ describe('useApplicantManagement Hooks', () => {
       const mockApplicantList = createMockApplicantListResult([
         createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
         createMockApplicantWithDetails({ id: 'app-2', status: 'confirmed' }),
-        createMockApplicantWithDetails({ id: 'app-3', status: 'pending' }),
+        createMockApplicantWithDetails({ id: 'app-3', status: 'cancellation_pending' }),
       ]);
       mockData = mockApplicantList;
 
@@ -475,8 +475,8 @@ describe('useApplicantManagement Hooks', () => {
 
     it('should provide status counts', () => {
       const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', status: 'pending' }),
-        createMockApplicantWithDetails({ id: 'app-2', status: 'pending' }),
+        createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
+        createMockApplicantWithDetails({ id: 'app-2', status: 'applied' }),
         createMockApplicantWithDetails({ id: 'app-3', status: 'confirmed' }),
         createMockApplicantWithDetails({ id: 'app-4', status: 'rejected' }),
       ]);
@@ -484,23 +484,24 @@ describe('useApplicantManagement Hooks', () => {
 
       const { result } = renderHook(() => useApplicantManagement('job-1'));
 
-      expect(result.current.pendingCount).toBe(2);
+      expect(result.current.pendingCount).toBe(0);
+      expect(result.current.countByStatus('applied')).toBe(2);
       expect(result.current.confirmedCount).toBe(1);
       expect(result.current.rejectedCount).toBe(1);
     });
 
     it('should filter applicants by status', () => {
       const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', status: 'pending' }),
+        createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
         createMockApplicantWithDetails({ id: 'app-2', status: 'confirmed' }),
       ]);
       mockData = mockApplicantList;
 
       const { result } = renderHook(() => useApplicantManagement('job-1'));
 
-      const filteredPending = result.current.filterApplicants({ status: 'pending' });
-      expect(filteredPending).toHaveLength(1);
-      expect(filteredPending[0].status).toBe('pending');
+      const filteredApplied = result.current.filterApplicants({ status: 'applied' });
+      expect(filteredApplied).toHaveLength(1);
+      expect(filteredApplied[0].status).toBe('applied');
 
       const filteredConfirmed = result.current.filterApplicants({ status: 'confirmed' });
       expect(filteredConfirmed).toHaveLength(1);

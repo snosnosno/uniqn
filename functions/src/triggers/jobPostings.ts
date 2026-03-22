@@ -7,10 +7,17 @@ import {
   hasJobPostingSearchIndexSourceChanged,
 } from "../utils/jobPosting";
 
-export { onFixedPostingExpired } from "./onFixedPostingExpired";
 export { onJobPostingOGSync } from "./onJobPostingOGSync";
 export { onTournamentApprovalChange } from "./onTournamentApprovalChange";
 export { onWorkDateExpired } from "./onWorkDateExpired";
+
+type PostingStats = {
+  totalApplicants: number;
+  activeApplicants: number;
+  confirmedApplicants: number;
+  cancellationPendingApplicants: number;
+  filledPositions: number;
+};
 
 function normalizeSearchIndex(value: unknown): string[] {
   return Array.isArray(value)
@@ -26,10 +33,6 @@ function areStringArraysEqual(left: string[], right: string[]): boolean {
   return left.every((value, index) => value === right[index]);
 }
 
-function isCountedApplicationStatus(status: unknown): boolean {
-  return typeof status === "string" && status !== "cancelled";
-}
-
 function collectImpactedJobPostingIds(
   beforeData: admin.firestore.DocumentData | null | undefined,
   afterData: admin.firestore.DocumentData | null | undefined,
@@ -38,26 +41,69 @@ function collectImpactedJobPostingIds(
     typeof beforeData?.jobPostingId === "string" ? beforeData.jobPostingId : null;
   const afterJobPostingId =
     typeof afterData?.jobPostingId === "string" ? afterData.jobPostingId : null;
-  const beforeCounted = isCountedApplicationStatus(beforeData?.status);
-  const afterCounted = isCountedApplicationStatus(afterData?.status);
+  const beforeStatus = typeof beforeData?.status === "string" ? beforeData.status : null;
+  const afterStatus = typeof afterData?.status === "string" ? afterData.status : null;
 
-  if (
-    beforeJobPostingId === afterJobPostingId &&
-    beforeCounted === afterCounted
-  ) {
+  if (beforeJobPostingId === afterJobPostingId && beforeStatus === afterStatus) {
     return [];
   }
 
   return Array.from(
     new Set(
-      [beforeCounted ? beforeJobPostingId : null, afterCounted ? afterJobPostingId : null].filter(
+      [beforeJobPostingId, afterJobPostingId].filter(
         (jobPostingId): jobPostingId is string => typeof jobPostingId === "string",
       ),
     ),
   );
 }
 
-async function reconcileApplicationCount(
+function isActiveApplicationStatus(status: unknown): boolean {
+  return status === "applied" || status === "confirmed" || status === "cancellation_pending";
+}
+
+function isConfirmedApplicationStatus(status: unknown): boolean {
+  return status === "confirmed";
+}
+
+function isCancellationPendingStatus(status: unknown): boolean {
+  return status === "cancellation_pending";
+}
+
+function normalizePostingStats(
+  postingData: admin.firestore.DocumentData | undefined,
+): PostingStats {
+  const stats = postingData?.stats;
+  const filledPositions =
+    typeof stats?.filledPositions === "number"
+      ? stats.filledPositions
+      : typeof postingData?.filledPositions === "number"
+        ? postingData.filledPositions
+        : 0;
+
+  return {
+    totalApplicants: typeof stats?.totalApplicants === "number" ? stats.totalApplicants : 0,
+    activeApplicants: typeof stats?.activeApplicants === "number" ? stats.activeApplicants : 0,
+    confirmedApplicants:
+      typeof stats?.confirmedApplicants === "number" ? stats.confirmedApplicants : 0,
+    cancellationPendingApplicants:
+      typeof stats?.cancellationPendingApplicants === "number"
+        ? stats.cancellationPendingApplicants
+        : 0,
+    filledPositions,
+  };
+}
+
+function arePostingStatsEqual(left: PostingStats, right: PostingStats): boolean {
+  return (
+    left.totalApplicants === right.totalApplicants &&
+    left.activeApplicants === right.activeApplicants &&
+    left.confirmedApplicants === right.confirmedApplicants &&
+    left.cancellationPendingApplicants === right.cancellationPendingApplicants &&
+    left.filledPositions === right.filledPositions
+  );
+}
+
+async function reconcilePostingStats(
   db: admin.firestore.Firestore,
   jobPostingId: string,
 ): Promise<void> {
@@ -72,36 +118,55 @@ async function reconcileApplicationCount(
   ]);
 
   if (!postingSnapshot.exists) {
-    logger.warn("Skipping applicationCount sync for missing job posting", {
+    logger.warn("Skipping posting stats sync for missing job posting", {
       jobPostingId,
     });
     return;
   }
 
-  const currentCount =
-    typeof postingSnapshot.data()?.applicationCount === "number"
-      ? postingSnapshot.data()?.applicationCount
-      : 0;
-  const nextCount = applicationsSnapshot.docs.reduce((count, snapshot) => {
-    return count + (isCountedApplicationStatus(snapshot.get("status")) ? 1 : 0);
-  }, 0);
+  const currentStats = normalizePostingStats(postingSnapshot.data());
+  const nextStats = applicationsSnapshot.docs.reduce<PostingStats>(
+    (accumulator, snapshot) => {
+      const status = snapshot.get("status");
+      accumulator.totalApplicants += 1;
 
-  if (currentCount === nextCount) {
-    logger.debug("Skipped applicationCount sync because canonical counter is already current", {
+      if (isActiveApplicationStatus(status)) {
+        accumulator.activeApplicants += 1;
+      }
+      if (isConfirmedApplicationStatus(status)) {
+        accumulator.confirmedApplicants += 1;
+      }
+      if (isCancellationPendingStatus(status)) {
+        accumulator.cancellationPendingApplicants += 1;
+      }
+
+      return accumulator;
+    },
+    {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: currentStats.filledPositions,
+    },
+  );
+
+  if (arePostingStatsEqual(currentStats, nextStats)) {
+    logger.debug("Skipped posting stats sync because counters are already current", {
       jobPostingId,
-      applicationCount: currentCount,
+      stats: currentStats,
     });
     return;
   }
 
   await postingRef.update({
-    applicationCount: nextCount,
+    stats: nextStats,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  logger.info(`Reconciled applicationCount for job posting ${jobPostingId}`, {
-    previousCount: currentCount,
-    nextCount,
+  logger.info(`Reconciled posting stats for job posting ${jobPostingId}`, {
+    previousStats: currentStats,
+    nextStats,
   });
 }
 
@@ -164,18 +229,14 @@ export const validateJobPostingData = onDocumentWritten(
 );
 
 /**
- * Updates the canonical applicationCount counter on the owning job posting.
+ * Reconciles canonical posting stats from application lifecycle writes.
  */
 export const updateJobPostingApplicantCount = onDocumentWritten(
   { document: "applications/{applicationId}", region: "asia-northeast3" },
   async (event) => {
     const db = admin.firestore();
-    const applicationData = event.data?.after?.exists
-      ? event.data.after.data()
-      : null;
-    const previousData = event.data?.before?.exists
-      ? event.data.before.data()
-      : null;
+    const applicationData = event.data?.after?.exists ? event.data.after.data() : null;
+    const previousData = event.data?.before?.exists ? event.data.before.data() : null;
     const impactedJobPostingIds = collectImpactedJobPostingIds(previousData, applicationData);
 
     if (impactedJobPostingIds.length === 0) {
@@ -184,10 +245,10 @@ export const updateJobPostingApplicantCount = onDocumentWritten(
 
     try {
       await Promise.all(
-        impactedJobPostingIds.map((jobPostingId) => reconcileApplicationCount(db, jobPostingId)),
+        impactedJobPostingIds.map((jobPostingId) => reconcilePostingStats(db, jobPostingId)),
       );
     } catch (error) {
-      logger.error("Error updating applicant count", error);
+      logger.error("Error updating posting stats", error);
       throw handleTriggerError(error, {
         operation: "updateJobPostingApplicantCount",
         context: { jobPostingIds: impactedJobPostingIds },

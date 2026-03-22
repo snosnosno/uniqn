@@ -36,7 +36,13 @@ function createCanonicalJobPosting(
     totalPositions: 1,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 1,
+    stats: {
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt,
     updatedAt: createdAt,
     location: {
@@ -103,14 +109,29 @@ function createApplication(
   };
 }
 
-function createConfirmedApplication(
+function createCancellationPendingApplication(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
   const createdAt = Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z"));
 
   return {
     ...createApplication({
-      status: "confirmed",
+      status: "cancellation_pending",
+      confirmationHistory: [
+        {
+          confirmedAt: createdAt,
+          assignments: [
+            {
+              roleIds: ["dealer"],
+              dates: ["2026-04-01"],
+              timeSlot: "18:00",
+              isGrouped: false,
+              checkMethod: "individual",
+            },
+          ],
+          confirmedBy: "employer-1",
+        },
+      ],
       cancellationRequest: {
         requestedAt: createdAt,
         reason: "Need to cancel due to schedule conflict",
@@ -191,6 +212,27 @@ describe("Firestore occupancy rules", () => {
 
         transaction.update(applicationRef, {
           status: "confirmed",
+          assignments: [
+            {
+              roleIds: ["dealer"],
+              dates: ["2026-04-01"],
+              timeSlot: "18:00",
+              isGrouped: false,
+              checkMethod: "individual",
+            },
+          ],
+          originalApplication: {
+            assignments: [
+              {
+                roleIds: ["dealer"],
+                dates: ["2026-04-01"],
+                timeSlot: "18:00",
+                isGrouped: false,
+                checkMethod: "individual",
+              },
+            ],
+            appliedAt: confirmedAt,
+          },
           confirmationHistory: [
             {
               confirmedAt,
@@ -206,6 +248,7 @@ describe("Firestore occupancy rules", () => {
               ],
             },
           ],
+          confirmedAt,
           processedBy: "employer-1",
           processedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -213,6 +256,13 @@ describe("Firestore occupancy rules", () => {
 
         transaction.update(jobRef, {
           filledPositions: 1,
+          stats: {
+            totalApplicants: 1,
+            activeApplicants: 1,
+            confirmedApplicants: 1,
+            cancellationPendingApplicants: 0,
+            filledPositions: 1,
+          },
           schedule: {
             kind: "dated",
             primaryDate: "2026-04-01",
@@ -235,7 +285,7 @@ describe("Firestore occupancy rules", () => {
     );
   });
 
-  it("allows an employer cancellation-review-style transaction that only updates filledPositions on the client", async () => {
+  it("allows an employer cancellation-review-style transaction that releases occupancy canonically", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
 
@@ -243,7 +293,13 @@ describe("Firestore occupancy rules", () => {
         doc(db, "jobPostings", "job-1"),
         createCanonicalJobPosting({
           filledPositions: 1,
-          applicationCount: 1,
+          stats: {
+            totalApplicants: 1,
+            activeApplicants: 1,
+            confirmedApplicants: 0,
+            cancellationPendingApplicants: 1,
+            filledPositions: 1,
+          },
           schedule: {
             kind: "dated",
             primaryDate: "2026-04-01",
@@ -264,8 +320,31 @@ describe("Firestore occupancy rules", () => {
       );
       await setDoc(
         doc(db, "applications", "job-1_staff-1"),
-        createConfirmedApplication(),
+        createCancellationPendingApplication(),
       );
+      await setDoc(doc(db, "workLogs", "wl-dated-1"), {
+        staffId: "staff-1",
+        staffName: "Applicant",
+        jobPostingId: "job-1",
+        jobPostingName: "Canonical posting",
+        ownerId: "employer-1",
+        role: "dealer",
+        customRole: null,
+        date: "2026-04-01",
+        timeSlot: "18:00",
+        isTimeToBeAnnounced: false,
+        tentativeDescription: null,
+        status: "scheduled",
+        checkInTime: null,
+        checkOutTime: null,
+        workDuration: null,
+        payrollAmount: null,
+        isSettled: false,
+        assignmentGroupId: null,
+        checkMethod: "individual",
+        createdAt: Timestamp.fromDate(new Date("2026-04-01T10:30:00.000Z")),
+        updatedAt: Timestamp.fromDate(new Date("2026-04-01T10:30:00.000Z")),
+      });
     });
 
     const employerDb = testEnv.authenticatedContext("employer-1").firestore();
@@ -274,12 +353,41 @@ describe("Firestore occupancy rules", () => {
       runTransaction(employerDb, async (transaction) => {
         const jobRef = doc(employerDb, "jobPostings", "job-1");
         const applicationRef = doc(employerDb, "applications", "job-1_staff-1");
+        const workLogRef = doc(employerDb, "workLogs", "wl-dated-1");
 
         await transaction.get(jobRef);
         await transaction.get(applicationRef);
+        await transaction.get(workLogRef);
 
         transaction.update(applicationRef, {
           status: "cancelled",
+          assignments: [
+            {
+              roleIds: ["dealer"],
+              dates: ["2026-04-01"],
+              timeSlot: "18:00",
+              isGrouped: false,
+              checkMethod: "individual",
+            },
+          ],
+          confirmationHistory: [
+            {
+              confirmedAt: Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z")),
+              confirmedBy: "employer-1",
+              assignments: [
+                {
+                  roleIds: ["dealer"],
+                  dates: ["2026-04-01"],
+                  timeSlot: "18:00",
+                  isGrouped: false,
+                  checkMethod: "individual",
+                },
+              ],
+              cancelledAt: Timestamp.fromDate(new Date("2026-04-01T12:00:00.000Z")),
+              cancelledBy: "employer-1",
+              cancelReason: "Need to cancel due to schedule conflict",
+            },
+          ],
           cancellationRequest: {
             requestedAt: Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z")),
             reason: "Need to cancel due to schedule conflict",
@@ -291,8 +399,36 @@ describe("Firestore occupancy rules", () => {
           updatedAt: serverTimestamp(),
         });
 
+        transaction.update(workLogRef, {
+          status: "cancelled",
+          updatedAt: serverTimestamp(),
+        });
+
         transaction.update(jobRef, {
           filledPositions: 0,
+          stats: {
+            totalApplicants: 1,
+            activeApplicants: 0,
+            confirmedApplicants: 0,
+            cancellationPendingApplicants: 0,
+            filledPositions: 0,
+          },
+          schedule: {
+            kind: "dated",
+            primaryDate: "2026-04-01",
+            allDates: ["2026-04-01"],
+            requirements: [
+              {
+                date: "2026-04-01",
+                timeSlots: [
+                  {
+                    startTime: "18:00",
+                    roles: [{ role: "dealer", count: 1, filled: 0 }],
+                  },
+                ],
+              },
+            ],
+          },
           updatedAt: serverTimestamp(),
         });
       }),
@@ -315,10 +451,10 @@ describe("Firestore occupancy rules", () => {
     );
   });
 
-  it("allows fixed workLog creation with null date/timeSlot when isFixedPosting is true", async () => {
+  it("rejects fixed workLog creation because dated workLogs are the only public canonical flow", async () => {
     const employerDb = testEnv.authenticatedContext("employer-1").firestore();
 
-    await assertSucceeds(
+    await assertFails(
       setDoc(doc(employerDb, "workLogs", "wl-fixed-1"), {
         staffId: "staff-1",
         staffName: "Applicant",

@@ -202,7 +202,7 @@ export function JobDetail({ job }: JobDetailProps) {
         </View>
       ) : null}
 
-      {typeof detail.viewCount === 'number' || typeof detail.applicationCount === 'number' ? (
+      {typeof detail.viewCount === 'number' || typeof detail.totalApplicants === 'number' ? (
         <View className="border-t border-gray-100 p-4 dark:border-surface-overlay">
           <View className="flex-row">
             {typeof detail.viewCount === 'number' ? (
@@ -210,9 +210,9 @@ export function JobDetail({ job }: JobDetailProps) {
                 조회 {detail.viewCount}
               </Text>
             ) : null}
-            {typeof detail.applicationCount === 'number' ? (
+            {typeof detail.totalApplicants === 'number' ? (
               <Text className="text-xs text-gray-400 dark:text-gray-500">
-                지원 {detail.applicationCount}
+                지원 {detail.totalApplicants}
               </Text>
             ) : null}
           </View>

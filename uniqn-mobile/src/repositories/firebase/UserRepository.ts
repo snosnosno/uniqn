@@ -31,7 +31,12 @@ import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseUserDocument } from '@/schemas';
-import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
+import type {
+  IUserRepository,
+  DeletionRequest,
+  UserDataExport,
+  EmployerRegistrationInput,
+} from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import { toDate } from '@/utils/date';
@@ -347,10 +352,14 @@ export class FirebaseUserRepository implements IUserRepository {
     }
   }
 
-  async registerAsEmployer(userId: string): Promise<FirestoreUserProfile> {
+  async registerAsEmployer(
+    userId: string,
+    input: EmployerRegistrationInput
+  ): Promise<FirestoreUserProfile> {
     try {
       const db = getFirebaseDb();
       const userRef = doc(db, COLLECTIONS.USERS, userId);
+      const consentRef = doc(db, COLLECTIONS.USERS, userId, 'consents', 'employer_registration');
 
       // Transaction으로 원자적 처리 (Race Condition 방지)
       const updatedProfile = await runTransaction(db, async (transaction) => {
@@ -385,13 +394,30 @@ export class FirebaseUserRepository implements IUserRepository {
           role: 'employer' as const,
           employerAgreements: {
             termsAgreedAt: now,
+            termsVersion: input.termsVersion,
             liabilityWaiverAgreedAt: now,
+            liabilityWaiverVersion: input.liabilityWaiverVersion,
           },
           employerRegisteredAt: now,
           updatedAt: now,
         };
 
         transaction.update(userRef, updateData);
+        transaction.set(consentRef, {
+          kind: 'employer_registration',
+          userId,
+          agreedAt: now,
+          terms: {
+            agreed: true,
+            version: input.termsVersion,
+            agreedAt: now,
+          },
+          liabilityWaiver: {
+            agreed: true,
+            version: input.liabilityWaiverVersion,
+            agreedAt: now,
+          },
+        });
 
         // 5. 업데이트된 프로필 반환 (serverTimestamp는 실제 값으로 대체)
         const timestamp = Timestamp.now();
@@ -400,7 +426,9 @@ export class FirebaseUserRepository implements IUserRepository {
           role: 'employer' as const,
           employerAgreements: {
             termsAgreedAt: timestamp,
+            termsVersion: input.termsVersion,
             liabilityWaiverAgreedAt: timestamp,
+            liabilityWaiverVersion: input.liabilityWaiverVersion,
           },
           employerRegisteredAt: timestamp,
           updatedAt: timestamp,

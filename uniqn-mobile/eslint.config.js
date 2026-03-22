@@ -140,6 +140,7 @@ module.exports = [
       'ios/',
       '*.d.ts',
       'coverage/',
+      'playwright-report/',
       'functions/',
       'scripts/',
       'e2e/',

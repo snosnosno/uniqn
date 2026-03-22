@@ -941,7 +941,7 @@ describe('applicationService', () => {
   });
 
   describe('cancelApplication', () => {
-    it('pending 상태의 지원만 취소할 수 있어야 한다', async () => {
+    it('applied 상태의 지원만 취소할 수 있어야 한다', async () => {
       // Test implementation
     });
   });

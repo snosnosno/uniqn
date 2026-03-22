@@ -234,17 +234,16 @@ describe('ApplicationService', () => {
     it('should return zero counts when no applications', async () => {
       mockGetStatsByApplicantId.mockResolvedValue({
         applied: 0,
-        pending: 0,
         confirmed: 0,
         rejected: 0,
         cancelled: 0,
-        cancellation_requested: 0,
+        completed: 0,
+        cancellation_pending: 0,
       });
 
       const result = await getApplicationStats(applicantId);
 
       expect(result.applied).toBe(0);
-      expect(result.pending).toBe(0);
       expect(result.confirmed).toBe(0);
       expect(result.rejected).toBe(0);
       expect(result.cancelled).toBe(0);
@@ -253,11 +252,11 @@ describe('ApplicationService', () => {
     it('should count applications by status', async () => {
       mockGetStatsByApplicantId.mockResolvedValue({
         applied: 2,
-        pending: 0,
         confirmed: 1,
         rejected: 0,
         cancelled: 1,
-        cancellation_requested: 0,
+        completed: 0,
+        cancellation_pending: 0,
       });
 
       const result = await getApplicationStats(applicantId);

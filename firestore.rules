@@ -147,14 +147,45 @@ service cloud.firestore {
     }
 
     function isApplicantReapplyUpdate() {
+      let changedFields = getApplicationChangedFields();
+
       return isSignedIn() &&
         request.auth.uid == resource.data.applicantId &&
         resource.data.status == 'cancelled' &&
-        request.resource.data.keys().hasAll(['applicantId', 'status']) &&
-        request.resource.data.keys().hasAny(['jobPostingId']) &&
         request.resource.data.applicantId == resource.data.applicantId &&
         request.resource.data.jobPostingId == resource.data.jobPostingId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.status == 'applied' &&
+        request.resource.data.isRead == false &&
+        request.resource.data.updatedAt == request.time &&
+        changedFields.hasOnly([
+          'applicantName',
+          'applicantPhone',
+          'applicantEmail',
+          'applicantRole',
+          'applicantNickname',
+          'applicantPhotoURL',
+          'jobPostingTitle',
+          'jobPostingDate',
+          'status',
+          'customRole',
+          'message',
+          'recruitmentType',
+          'assignments',
+          'preQuestionAnswers',
+          'originalApplication',
+          'confirmationHistory',
+          'processedBy',
+          'processedAt',
+          'rejectionReason',
+          'confirmedAt',
+          'cancelledAt',
+          'notes',
+          'cancellationRequest',
+          'isRead',
+          'updatedAt'
+        ]) &&
+        request.resource.data.assignments is list &&
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
     }
 
@@ -162,10 +193,72 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    function isCanonicalApplicationCreate(applicationId) {
+      let data = request.resource.data;
+
+      return isSignedIn() &&
+        request.auth.uid == data.applicantId &&
+        data.keys().hasAll([
+          'applicantId',
+          'applicantName',
+          'jobPostingId',
+          'status',
+          'recruitmentType',
+          'assignments',
+          'isRead',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'applicantId',
+          'applicantName',
+          'applicantPhone',
+          'applicantEmail',
+          'applicantRole',
+          'applicantNickname',
+          'applicantPhotoURL',
+          'jobPostingId',
+          'jobPostingTitle',
+          'jobPostingDate',
+          'status',
+          'customRole',
+          'message',
+          'recruitmentType',
+          'assignments',
+          'preQuestionAnswers',
+          'isRead',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.jobPostingId is string &&
+        applicationId == data.jobPostingId + '_' + request.auth.uid &&
+        exists(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)).data.status == 'active' &&
+        get(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)).data.schedule.kind == 'dated' &&
+        data.applicantName is string &&
+        (!('applicantPhone' in data) || data.applicantPhone is string) &&
+        (!('applicantEmail' in data) || data.applicantEmail is string) &&
+        (!('applicantRole' in data) || data.applicantRole is string) &&
+        (!('applicantNickname' in data) || data.applicantNickname is string) &&
+        (!('applicantPhotoURL' in data) || data.applicantPhotoURL is string) &&
+        (!('jobPostingTitle' in data) || data.jobPostingTitle is string) &&
+        (!('jobPostingDate' in data) || data.jobPostingDate is string) &&
+        (!('customRole' in data) || data.customRole is string) &&
+        (!('message' in data) || data.message is string) &&
+        data.status == 'applied' &&
+        data.recruitmentType == 'event' &&
+        data.assignments is list &&
+        data.assignments.size() > 0 &&
+        (!('preQuestionAnswers' in data) || data.preQuestionAnswers is list) &&
+        data.isRead == false &&
+        data.createdAt == request.time &&
+        data.updatedAt == request.time;
+    }
+
     function isApplicantCancellationUpdate() {
       return isSignedIn() &&
         request.auth.uid == resource.data.applicantId &&
-        resource.data.status in ['applied', 'pending'] &&
+        resource.data.status == 'applied' &&
         request.resource.data.status == 'cancelled' &&
         getApplicationChangedFields().hasOnly(['status', 'updatedAt']) &&
         getApplicationChangedFields().hasAll(['status', 'updatedAt']) &&
@@ -193,9 +286,267 @@ service cloud.firestore {
     }
 
     function canApplicantUpdateOwnApplication() {
-      return isApplicantReapplyUpdate() ||
-        isApplicantCancellationUpdate() ||
-        isApplicantCancellationRequestUpdate();
+      let changedFields = getApplicationChangedFields();
+      let requestData = request.resource.data.cancellationRequest;
+
+      return isSignedIn() &&
+        request.auth.uid == resource.data.applicantId &&
+        request.resource.data.applicantId == resource.data.applicantId &&
+        request.resource.data.jobPostingId == resource.data.jobPostingId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        (
+          (
+            resource.data.status == 'cancelled' &&
+            request.resource.data.status == 'applied' &&
+            request.resource.data.keys().hasAll([
+              'applicantId',
+              'applicantName',
+              'jobPostingId',
+              'status',
+              'recruitmentType',
+              'assignments',
+              'isRead',
+              'createdAt',
+              'updatedAt'
+            ]) &&
+            request.resource.data.recruitmentType == 'event' &&
+            request.resource.data.assignments is list &&
+            request.resource.data.assignments.size() > 0 &&
+            (!('preQuestionAnswers' in request.resource.data) ||
+              request.resource.data.preQuestionAnswers is list) &&
+            request.resource.data.isRead == false &&
+            request.resource.data.updatedAt == request.time
+          ) ||
+          (
+            resource.data.status == 'applied' &&
+            request.resource.data.status == 'cancelled' &&
+            changedFields.hasOnly(['status', 'updatedAt']) &&
+            changedFields.hasAll(['status', 'updatedAt']) &&
+            request.resource.data.updatedAt == request.time
+          ) ||
+          (
+            resource.data.status == 'confirmed' &&
+            request.resource.data.status == 'cancellation_pending' &&
+            changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
+            changedFields.hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
+            request.resource.data.updatedAt == request.time &&
+            requestData is map &&
+            requestData.keys().hasAll(['requestedAt', 'reason', 'status']) &&
+            requestData.keys().hasOnly(['requestedAt', 'reason', 'status']) &&
+            requestData.requestedAt == request.time &&
+            requestData.status == 'pending' &&
+            requestData.reason is string &&
+            requestData.reason.size() >= 5 &&
+            requestData.reason.size() <= 500
+          )
+        );
+    }
+
+    function applicationPostingOwnerMatches(jobPostingId) {
+      return jobPostingId is string &&
+        exists(/databases/$(database)/documents/jobPostings/$(jobPostingId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(jobPostingId)).data.ownerId ==
+          request.auth.uid;
+    }
+
+    function isApplicationPostingOwner() {
+      return hasValidRole() && applicationPostingOwnerMatches(resource.data.jobPostingId);
+    }
+
+    function isOwnerConfirmApplicationUpdate() {
+      let changedFields = getApplicationChangedFields();
+
+      return isApplicationPostingOwner() &&
+        resource.data.status == 'applied' &&
+        request.resource.data.status == 'confirmed' &&
+        changedFields.hasOnly([
+          'status',
+          'assignments',
+          'originalApplication',
+          'confirmationHistory',
+          'confirmedAt',
+          'processedBy',
+          'processedAt',
+          'notes',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAll([
+          'status',
+          'assignments',
+          'confirmationHistory',
+          'confirmedAt',
+          'processedBy',
+          'processedAt',
+          'updatedAt'
+        ]) &&
+        request.resource.data.assignments is list &&
+        request.resource.data.confirmationHistory is list &&
+        'originalApplication' in request.resource.data &&
+        request.resource.data.processedBy == request.auth.uid;
+    }
+
+    function isOwnerRejectApplicationUpdate() {
+      let changedFields = getApplicationChangedFields();
+
+      return isApplicationPostingOwner() &&
+        resource.data.status == 'applied' &&
+        request.resource.data.status == 'rejected' &&
+        changedFields.hasOnly([
+          'status',
+          'rejectionReason',
+          'processedBy',
+          'processedAt',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAll(['status', 'processedBy', 'processedAt', 'updatedAt']) &&
+        request.resource.data.processedBy == request.auth.uid &&
+        (!('rejectionReason' in request.resource.data) || request.resource.data.rejectionReason is string);
+    }
+
+    function isOwnerCancelConfirmationUpdate() {
+      let changedFields = getApplicationChangedFields();
+
+      return isApplicationPostingOwner() &&
+        resource.data.status == 'confirmed' &&
+        request.resource.data.status == 'applied' &&
+        changedFields.hasOnly([
+          'status',
+          'assignments',
+          'confirmationHistory',
+          'cancelledAt',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAll([
+          'status',
+          'assignments',
+          'confirmationHistory',
+          'cancelledAt',
+          'updatedAt'
+        ]) &&
+        request.resource.data.assignments is list &&
+        request.resource.data.confirmationHistory is list;
+    }
+
+    function isOwnerApproveCancellationUpdate() {
+      let changedFields = getApplicationChangedFields();
+      let requestData = request.resource.data.cancellationRequest;
+
+      return isApplicationPostingOwner() &&
+        resource.data.status == 'cancellation_pending' &&
+        resource.data.cancellationRequest.status == 'pending' &&
+        request.resource.data.status == 'cancelled' &&
+        changedFields.hasOnly([
+          'status',
+          'assignments',
+          'confirmationHistory',
+          'cancelledAt',
+          'cancellationRequest',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAll([
+          'status',
+          'assignments',
+          'confirmationHistory',
+          'cancelledAt',
+          'cancellationRequest',
+          'updatedAt'
+        ]) &&
+        request.resource.data.assignments is list &&
+        request.resource.data.confirmationHistory is list &&
+        requestData is map &&
+        requestData.status == 'approved' &&
+        requestData.reviewedBy == request.auth.uid;
+    }
+
+    function isOwnerRejectCancellationUpdate() {
+      let changedFields = getApplicationChangedFields();
+      let requestData = request.resource.data.cancellationRequest;
+
+      return isApplicationPostingOwner() &&
+        resource.data.status == 'cancellation_pending' &&
+        resource.data.cancellationRequest.status == 'pending' &&
+        request.resource.data.status == 'confirmed' &&
+        changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
+        changedFields.hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
+        requestData is map &&
+        requestData.status == 'rejected' &&
+        requestData.reviewedBy == request.auth.uid &&
+        requestData.rejectionReason is string;
+    }
+
+    function isOwnerMarkAsReadUpdate() {
+      let changedFields = getApplicationChangedFields();
+
+      return isApplicationPostingOwner() &&
+        changedFields.hasOnly(['isRead', 'updatedAt']) &&
+        changedFields.hasAll(['isRead', 'updatedAt']) &&
+        request.resource.data.isRead == true;
+    }
+
+    function canOwnerUpdateApplicationLifecycle() {
+      let changedFields = getApplicationChangedFields();
+      let requestData = request.resource.data.cancellationRequest;
+      let ownerMatch = hasValidRole() && applicationPostingOwnerMatches(resource.data.jobPostingId);
+      let sameIdentity =
+        request.resource.data.applicantId == resource.data.applicantId &&
+        request.resource.data.jobPostingId == resource.data.jobPostingId &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      return ownerMatch &&
+        sameIdentity &&
+        (
+          (
+            resource.data.status == 'applied' &&
+            request.resource.data.status == 'confirmed' &&
+            request.resource.data.assignments is list &&
+            request.resource.data.confirmationHistory is list &&
+            'originalApplication' in request.resource.data &&
+            'confirmedAt' in request.resource.data &&
+            request.resource.data.processedBy == request.auth.uid &&
+            'processedAt' in request.resource.data
+          ) ||
+          (
+            resource.data.status == 'applied' &&
+            request.resource.data.status == 'rejected' &&
+            request.resource.data.processedBy == request.auth.uid &&
+            'processedAt' in request.resource.data &&
+            (!('rejectionReason' in request.resource.data) ||
+              request.resource.data.rejectionReason is string)
+          ) ||
+          (
+            resource.data.status == 'confirmed' &&
+            request.resource.data.status == 'applied' &&
+            request.resource.data.assignments is list &&
+            request.resource.data.confirmationHistory is list &&
+            'cancelledAt' in request.resource.data
+          ) ||
+          (
+            resource.data.status == 'cancellation_pending' &&
+            'cancellationRequest' in resource.data &&
+            resource.data.cancellationRequest.status == 'pending' &&
+            request.resource.data.status == 'cancelled' &&
+            request.resource.data.assignments is list &&
+            request.resource.data.confirmationHistory is list &&
+            'cancelledAt' in request.resource.data &&
+            requestData is map &&
+            requestData.status == 'approved' &&
+            requestData.reviewedBy == request.auth.uid
+          ) ||
+          (
+            resource.data.status == 'cancellation_pending' &&
+            'cancellationRequest' in resource.data &&
+            resource.data.cancellationRequest.status == 'pending' &&
+            request.resource.data.status == 'confirmed' &&
+            requestData is map &&
+            requestData.status == 'rejected' &&
+            requestData.reviewedBy == request.auth.uid &&
+            requestData.rejectionReason is string
+          ) ||
+          (
+            changedFields.hasOnly(['isRead', 'updatedAt']) &&
+            request.resource.data.isRead == true
+          )
+        );
     }
 
     // ================= Employer Registration Validation =================
@@ -220,9 +571,26 @@ service cloud.firestore {
         currentData.phoneVerified == true &&
         // 5. employerAgreements 필수 필드 확인
         'employerAgreements' in newData &&
-        newData.employerAgreements.keys().hasAll(['termsAgreedAt', 'liabilityWaiverAgreedAt']) &&
+        newData.employerAgreements.keys().hasAll([
+          'termsAgreedAt',
+          'termsVersion',
+          'liabilityWaiverAgreedAt',
+          'liabilityWaiverVersion'
+        ]) &&
+        newData.employerAgreements.termsVersion is string &&
+        newData.employerAgreements.liabilityWaiverVersion is string &&
         // 6. employerRegisteredAt 존재 확인
-        'employerRegisteredAt' in newData;
+        'employerRegisteredAt' in newData &&
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration) &&
+        existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration) &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.kind == 'employer_registration' &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.userId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.terms.agreed == true &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.terms.version ==
+          newData.employerAgreements.termsVersion &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.liabilityWaiver.agreed == true &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.liabilityWaiver.version ==
+          newData.employerAgreements.liabilityWaiverVersion;
     }
 
     // ================= Job Posting Type Validation Functions =================
@@ -290,7 +658,7 @@ service cloud.firestore {
                'totalPositions',
                'filledPositions',
                'viewCount',
-               'applicationCount',
+               'stats',
                'createdAt',
                'updatedAt',
                'searchIndex',
@@ -385,32 +753,37 @@ service cloud.firestore {
              questions.items is list;
     }
 
+    function validateCanonicalPostingStats(stats) {
+      return stats is map &&
+             stats.keys().hasAll([
+               'totalApplicants',
+               'activeApplicants',
+               'confirmedApplicants',
+               'cancellationPendingApplicants',
+               'filledPositions'
+             ]) &&
+             stats.keys().hasOnly([
+               'totalApplicants',
+               'activeApplicants',
+               'confirmedApplicants',
+               'cancellationPendingApplicants',
+               'filledPositions'
+             ]) &&
+             stats.totalApplicants is number &&
+             stats.activeApplicants is number &&
+             stats.confirmedApplicants is number &&
+             stats.cancellationPendingApplicants is number &&
+             stats.filledPositions is number;
+    }
+
     function validateCanonicalSchedule(schedule) {
-      return schedule is map && (
-        (
-          schedule.kind == 'dated' &&
-          schedule.keys().hasAll(['kind', 'primaryDate', 'allDates', 'requirements']) &&
-          schedule.keys().hasOnly(['kind', 'primaryDate', 'allDates', 'requirements']) &&
-          schedule.primaryDate is string &&
-          schedule.allDates is list &&
-          schedule.requirements is list
-        ) ||
-        (
-          schedule.kind == 'fixed' &&
-          schedule.keys().hasAll(['kind']) &&
-          schedule.keys().hasOnly([
-            'kind',
-            'daysPerWeek',
-            'startTime',
-            'isStartTimeNegotiable',
-            'roleRequirements'
-          ]) &&
-          (!('daysPerWeek' in schedule) || schedule.daysPerWeek is number) &&
-          (!('startTime' in schedule) || schedule.startTime is string) &&
-          (!('isStartTimeNegotiable' in schedule) || schedule.isStartTimeNegotiable is bool) &&
-          (!('roleRequirements' in schedule) || schedule.roleRequirements is list)
-        )
-      );
+      return schedule is map &&
+        schedule.kind == 'dated' &&
+        schedule.keys().hasAll(['kind', 'primaryDate', 'allDates', 'requirements']) &&
+        schedule.keys().hasOnly(['kind', 'primaryDate', 'allDates', 'requirements']) &&
+        schedule.primaryDate is string &&
+        schedule.allDates is list &&
+        schedule.requirements is list;
     }
 
     function getCanonicalPostingType(data) {
@@ -419,36 +792,23 @@ service cloud.firestore {
 
     function validateCanonicalPostingTypeSchedule(data) {
       let postingType = getCanonicalPostingType(data);
-      return (postingType == 'fixed' && data.schedule.kind == 'fixed') ||
-             (postingType != 'fixed' && data.schedule.kind == 'dated');
+      return postingType != 'fixed' && data.schedule.kind == 'dated';
     }
 
     function validateCanonicalDerivedScheduleFields(data) {
-      return (
-        data.schedule.kind == 'fixed' &&
-        data.workDate == '' &&
-        !('workDates' in data)
-      ) || (
-        data.schedule.kind == 'dated' &&
+      return data.schedule.kind == 'dated' &&
         data.workDate == data.schedule.primaryDate &&
         (
           (data.schedule.allDates.size() == 0 && !('workDates' in data)) ||
           (data.schedule.allDates.size() > 0 &&
            'workDates' in data &&
            data.workDates == data.schedule.allDates)
-        )
-      );
+        );
     }
 
     function validateCanonicalPostingTypeConfigs(data) {
       let postingType = getCanonicalPostingType(data);
       return (
-        postingType == 'fixed' &&
-        'fixedConfig' in data &&
-        validateFixedConfig(data.fixedConfig) &&
-        !('tournamentConfig' in data) &&
-        !('urgentConfig' in data)
-      ) || (
         postingType == 'tournament' &&
         !('fixedConfig' in data) &&
         'tournamentConfig' in data &&
@@ -485,7 +845,7 @@ service cloud.firestore {
              data.totalPositions is number &&
              data.filledPositions is number &&
              (!('viewCount' in data) || data.viewCount is number) &&
-             (!('applicationCount' in data) || data.applicationCount is number) &&
+             (!('stats' in data) || validateCanonicalPostingStats(data.stats)) &&
              (!('searchIndex' in data) || data.searchIndex is list) &&
              (!('closedReason' in data) || data.closedReason in ['manual', 'expired', 'expired_by_work_date']) &&
              (!('tags' in data) || data.tags is list) &&
@@ -496,7 +856,7 @@ service cloud.firestore {
              validateCanonicalCompensation(data.compensation) &&
              validateCanonicalQuestions(data.questions) &&
              data.status in ['active', 'closed', 'cancelled'] &&
-             (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
+             (!('postingType' in data) || data.postingType in ['regular', 'tournament', 'urgent']) &&
              validateCanonicalPostingTypeConfigs(data);
     }
 
@@ -508,11 +868,13 @@ service cloud.firestore {
              !('closedReason' in data) &&
              data.filledPositions == 0 &&
              (!('viewCount' in data) || data.viewCount == 0) &&
-             (!('applicationCount' in data) || data.applicationCount == 0);
-    }
-
-    function getCanonicalApplicationCount(data) {
-      return ('applicationCount' in data) ? data.applicationCount : 0;
+             (!('stats' in data) || (
+               data.stats.totalApplicants == 0 &&
+               data.stats.activeApplicants == 0 &&
+               data.stats.confirmedApplicants == 0 &&
+               data.stats.cancellationPendingApplicants == 0 &&
+               data.stats.filledPositions == 0
+             ));
     }
 
     function getCanonicalViewCount(data) {
@@ -531,54 +893,141 @@ service cloud.firestore {
     function hasCanonicalJobPostingValidCounters(data) {
       return data.filledPositions >= 0 &&
              data.filledPositions <= data.totalPositions &&
-             getCanonicalApplicationCount(data) >= 0 &&
-             getCanonicalViewCount(data) >= 0;
+             getCanonicalViewCount(data) >= 0 &&
+             (!('stats' in data) || (
+               data.stats.totalApplicants >= 0 &&
+               data.stats.activeApplicants >= 0 &&
+               data.stats.confirmedApplicants >= 0 &&
+               data.stats.cancellationPendingApplicants >= 0 &&
+               data.stats.filledPositions == data.filledPositions
+             ));
     }
 
     function isFilledPositionsOnlyUpdate(changedFields) {
-      return changedFields.hasOnly(['filledPositions', 'updatedAt']) &&
-             changedFields.hasAll(['filledPositions', 'updatedAt']);
+      return changedFields.hasOnly(['filledPositions', 'stats', 'updatedAt']) &&
+             changedFields.hasAll(['filledPositions', 'stats', 'updatedAt']);
+    }
+
+    function isStatsOnlyUpdate(changedFields) {
+      return changedFields.hasOnly(['stats', 'updatedAt']) &&
+             changedFields.hasAll(['stats', 'updatedAt']);
     }
 
     function isScheduleOccupancyUpdate(changedFields) {
       return changedFields.hasOnly([
                'filledPositions',
                'schedule',
+               'stats',
                'status',
                'updatedAt',
                'closedAt',
                'closedReason'
              ]) &&
-             changedFields.hasAll(['filledPositions', 'schedule', 'updatedAt']);
+             changedFields.hasAll(['filledPositions', 'schedule', 'stats', 'updatedAt']);
+    }
+
+    function isCanonicalBodyUpdate(changedFields) {
+      return !changedFields.hasAny(['filledPositions', 'stats', 'schedule', 'viewCount']);
+    }
+
+    function isCanonicalOccupancyUpdate(changedFields) {
+      return changedFields.hasAny(['filledPositions', 'stats', 'schedule']);
+    }
+
+    function hasSameCanonicalPostingStats(nextData, currentData) {
+      return (
+        (!('stats' in nextData) && !('stats' in currentData)) ||
+        (
+          'stats' in nextData &&
+          'stats' in currentData &&
+          nextData.stats.totalApplicants == currentData.stats.totalApplicants &&
+          nextData.stats.activeApplicants == currentData.stats.activeApplicants &&
+          nextData.stats.confirmedApplicants == currentData.stats.confirmedApplicants &&
+          nextData.stats.cancellationPendingApplicants ==
+            currentData.stats.cancellationPendingApplicants &&
+          nextData.stats.filledPositions == currentData.stats.filledPositions
+        )
+      );
     }
 
     function hasCanonicalJobPostingStableCounters(nextData, currentData) {
       return nextData.filledPositions == currentData.filledPositions &&
-             nextData.applicationCount == currentData.applicationCount;
+             hasSameCanonicalPostingStats(nextData, currentData);
     }
 
     function validateCanonicalJobPostingUpdate(nextData, currentData) {
-      return validateCanonicalJobPosting(nextData) &&
+      return hasCanonicalJobPostingKeys(nextData) &&
+             hasNoLegacyJobPostingFields(nextData) &&
              nextData.schemaVersion == currentData.schemaVersion &&
              nextData.ownerId == currentData.ownerId &&
              nextData.createdAt == currentData.createdAt &&
+             validateCanonicalPostingTypeSchedule(nextData) &&
+             validateCanonicalDerivedScheduleFields(nextData) &&
+             validateCanonicalPostingTypeConfigs(nextData) &&
+             validateCanonicalSchedule(nextData.schedule) &&
+             nextData.totalPositions is number &&
+             nextData.filledPositions is number &&
+             nextData.filledPositions >= 0 &&
+             nextData.filledPositions <= nextData.totalPositions &&
+             nextData.status in ['active', 'closed', 'cancelled'] &&
+             (!('stats' in nextData) ||
+               (validateCanonicalPostingStats(nextData.stats) &&
+                nextData.stats.filledPositions == nextData.filledPositions)) &&
              (!('searchIndex' in nextData) ||
-               nextData.searchIndex == currentData.searchIndex) &&
-             nextData.filledPositions == currentData.filledPositions &&
-             nextData.applicationCount == currentData.applicationCount &&
-             nextData.viewCount == currentData.viewCount;
+               nextData.searchIndex == currentData.searchIndex);
     }
 
     function validateCanonicalJobPostingOccupancyUpdate(nextData, currentData, changedFields) {
       return hasCanonicalJobPostingImmutableFields(nextData, currentData) &&
              hasCanonicalJobPostingValidCounters(nextData) &&
+             nextData.totalPositions == currentData.totalPositions &&
+             nextData.status in ['active', 'closed', 'cancelled'] &&
              (!changedFields.hasAny(['schedule']) ||
                 (validateCanonicalSchedule(nextData.schedule) &&
-                 validateCanonicalDerivedScheduleFields(nextData))) &&
+                 nextData.schedule.primaryDate == currentData.schedule.primaryDate &&
+                 nextData.schedule.allDates == currentData.schedule.allDates)) &&
              (
-                isFilledPositionsOnlyUpdate(changedFields) ||
-                isScheduleOccupancyUpdate(changedFields)
+               isStatsOnlyUpdate(changedFields) ||
+               isFilledPositionsOnlyUpdate(changedFields) ||
+               isScheduleOccupancyUpdate(changedFields)
              );
+    }
+
+    function isValidGenericConsentDocument(userId) {
+      return request.resource.data.keys().hasAll([
+          'version',
+          'userId',
+          'termsOfService',
+          'privacyPolicy'
+        ]) &&
+        request.resource.data.userId == userId &&
+        request.resource.data.termsOfService.agreed == true &&
+        request.resource.data.privacyPolicy.agreed == true;
+    }
+
+    function isValidEmployerRegistrationConsent(userId) {
+      return request.resource.data.keys().hasAll([
+          'kind',
+          'userId',
+          'agreedAt',
+          'terms',
+          'liabilityWaiver'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'kind',
+          'userId',
+          'agreedAt',
+          'terms',
+          'liabilityWaiver'
+        ]) &&
+        request.resource.data.kind == 'employer_registration' &&
+        request.resource.data.userId == userId &&
+        request.resource.data.terms.agreed == true &&
+        request.resource.data.terms.version is string &&
+        'agreedAt' in request.resource.data.terms &&
+        request.resource.data.liabilityWaiver.agreed == true &&
+        request.resource.data.liabilityWaiver.version is string &&
+        'agreedAt' in request.resource.data.liabilityWaiver;
     }
 
     function isDatedWorkLogCreate(data) {
@@ -587,17 +1036,6 @@ service cloud.firestore {
              data.jobPostingId is string &&
              data.date is string &&
              data.status == 'scheduled' &&
-             (!('payrollStatus' in data) || data.payrollStatus == 'pending');
-    }
-
-    function isFixedWorkLogCreate(data) {
-      return data.keys().hasAll(['staffId', 'jobPostingId', 'status', 'isFixedPosting', 'date']) &&
-             data.staffId is string &&
-             data.jobPostingId is string &&
-             data.isFixedPosting == true &&
-             data.status == 'scheduled' &&
-             data.date == null &&
-             (!('timeSlot' in data) || data.timeSlot == null) &&
              (!('payrollStatus' in data) || data.payrollStatus == 'pending');
     }
 
@@ -669,11 +1107,22 @@ service cloud.firestore {
         allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
 
         // 본인만 동의 정보 생성/수정 가능
-        allow create, update: if isSignedIn() && isOwner(userId) &&
-          request.resource.data.keys().hasAll(['version', 'userId', 'termsOfService', 'privacyPolicy']) &&
-          request.resource.data.userId == userId &&
-          request.resource.data.termsOfService.agreed == true &&
-          request.resource.data.privacyPolicy.agreed == true;
+        allow create: if isSignedIn() && isOwner(userId) &&
+          (
+            (consentId == 'employer_registration' &&
+             isValidEmployerRegistrationConsent(userId) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.role == 'staff' &&
+             getAfter(/databases/$(database)/documents/users/$(userId)).data.role == 'employer' &&
+             getAfter(/databases/$(database)/documents/users/$(userId)).data.employerAgreements.termsVersion ==
+               request.resource.data.terms.version &&
+             getAfter(/databases/$(database)/documents/users/$(userId)).data.employerAgreements.liabilityWaiverVersion ==
+               request.resource.data.liabilityWaiver.version) ||
+            (consentId != 'employer_registration' && isValidGenericConsentDocument(userId))
+          );
+
+        allow update: if isSignedIn() && isOwner(userId) &&
+          consentId != 'employer_registration' &&
+          isValidGenericConsentDocument(userId);
 
         // 동의 정보는 삭제 불가 (법적 요구사항)
         allow delete: if false;
@@ -849,16 +1298,9 @@ service cloud.firestore {
          (resource.data.postingType == 'tournament' &&
           request.resource.data.tournamentConfig.approvalStatus ==
             resource.data.tournamentConfig.approvalStatus)) &&
-        (
-          (hasCanonicalJobPostingStableCounters(request.resource.data, resource.data) &&
-           validateCanonicalJobPostingUpdate(request.resource.data, resource.data)) ||
-          (!hasCanonicalJobPostingStableCounters(request.resource.data, resource.data) &&
-           validateCanonicalJobPostingOccupancyUpdate(
-             request.resource.data,
-             resource.data,
-             request.resource.data.diff(resource.data).affectedKeys()
-           ))
-        );
+        validateCanonicalJobPostingUpdate(request.resource.data, resource.data);
+
+      allow update: if false;
          /* legacy duplicate condition removed
          // (tournament approval check handled above)
          // duplicate line removed
@@ -961,7 +1403,7 @@ service cloud.firestore {
       );
 
       // 사용자는 본인 지원서 생성 가능
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
+      allow create: if isCanonicalApplicationCreate(applicationId) &&
         request.resource.data.keys().hasAll(['applicantId', 'status']) &&
         (request.resource.data.keys().hasAny(['jobPostingId', 'postId', 'eventId'])) &&  // jobPostingId 우선, 하위 호환성 유지
         request.resource.data.status == 'applied' &&
@@ -971,19 +1413,11 @@ service cloud.firestore {
       // status enum 검증: 허용값 출처 application.schema.ts
       allow update: if (
         canApplicantUpdateOwnApplication() ||
-        isPrivileged() ||
-        (hasValidRole() && (
-          (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid) ||
-          (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.ownerId == request.auth.uid) ||
-          (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.ownerId == request.auth.uid)
-        ))
+        canOwnerUpdateApplicationLifecycle()
       ) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in
-         ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending']);
+         ['applied', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending']);
 
       // 사용자는 본인 지원서 삭제 가능, 관리자 및 구인공고 작성자도 삭제 가능
       allow delete: if isSignedIn() && (
@@ -1040,10 +1474,7 @@ service cloud.firestore {
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
       // Phase 2: jobPostingId 사용 (eventId 대신)
       allow create: if isSignedIn() && hasValidRole() &&
-        (
-          isDatedWorkLogCreate(request.resource.data) ||
-          isFixedWorkLogCreate(request.resource.data)
-        );
+        isDatedWorkLogCreate(request.resource.data);
 
       // 소유자/공고작성자/admin만 수정 가능 + status/payrollStatus enum 검증
       // 허용값 출처: workLog.schema.ts, statusValues.ts

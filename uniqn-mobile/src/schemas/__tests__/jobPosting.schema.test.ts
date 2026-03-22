@@ -40,7 +40,13 @@ function createValidDocument() {
     totalPositions: 2,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt: createMockTimestamp(),
     updatedAt: createMockTimestamp(),
     location: {
@@ -277,15 +283,13 @@ describe('jobPosting schemas', () => {
       ).toBe(false);
     });
 
-    it('accepts legacy operational fields while keeping canonical parsing stable', () => {
+    it('rejects legacy operational fields that are no longer part of V3 canonical', () => {
       expect(
         jobPostingDocumentSchema.safeParse({
           ...createValidDocument(),
-          applicationCount: undefined,
           applicantCount: 3,
-          lastUpdated: createMockTimestamp(1700000100),
         }).success
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('rejects non-canonical tournamentConfig keys added by functions or clients', () => {
@@ -393,16 +397,13 @@ describe('jobPosting schemas', () => {
       expect(isJobPostingDocument({ bad: true })).toBe(false);
     });
 
-    it('normalizes legacy applicantCount to canonical applicationCount on read', () => {
+    it('rejects legacy applicantCount on read', () => {
       const parsed = parseJobPostingDocument({
         ...createValidDocument(),
-        applicationCount: undefined,
         applicantCount: 2,
-        lastUpdated: createMockTimestamp(1700000100),
       });
 
-      expect(parsed).not.toBeNull();
-      expect(parsed?.applicationCount).toBe(2);
+      expect(parsed).toBeNull();
     });
 
     it('parses canonical serializer output', () => {

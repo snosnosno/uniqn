@@ -154,7 +154,7 @@ function createJobCard(overrides: Partial<JobPostingCard> = {}): JobPostingCard 
     useSameSalary,
     status: 'active',
     isUrgent: false,
-    applicationCount: 5,
+    totalApplicants: 5,
     workflow,
     scheduleDisplay,
     salaryDisplay,

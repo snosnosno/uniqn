@@ -29,7 +29,7 @@ export interface PostingTypeAvailability {
 // ============================================================================
 
 /** 자동 탭 선택 우선순위 (공고가 있는 첫 번째 타입 선택) */
-export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular', 'fixed'];
+export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular'];
 
 // ============================================================================
 // Helper Functions
@@ -48,7 +48,7 @@ async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> 
       urgent: counts.urgent > 0,
       tournament: counts.tournament > 0,
       regular: counts.regular > 0,
-      fixed: counts.fixed > 0,
+      fixed: false,
     };
   } catch (error) {
     logger.warn('공고 타입 존재 확인 실패', { error });

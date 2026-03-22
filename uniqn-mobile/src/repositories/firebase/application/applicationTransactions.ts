@@ -1,23 +1,24 @@
 /**
- * UNIQN Mobile - Application Repository Transactions
- *
- * @description 지원 관련 쓰기/트랜잭션 연산
+ * UNIQN Mobile - Application repository transactions
  */
 
 import {
+  collection,
   doc,
+  getDoc,
+  getDocs,
+  query,
   runTransaction,
   serverTimestamp,
   Timestamp,
+  where,
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import {
   AlreadyAppliedError,
   ApplicationClosedError,
-  MaxCapacityReachedError,
   ValidationError,
   BusinessError,
   PermissionError,
@@ -28,7 +29,11 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator } from '@/domains/application';
-import { selectPostingWorkflow } from '@/domains/job-posting';
+import {
+  normalizePostingAggregateStats,
+  transitionPostingAggregateStats,
+  selectPostingWorkflow,
+} from '@/domains/job-posting';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import type { ApplyContext } from '../../interfaces';
@@ -43,6 +48,11 @@ import type {
   JobPosting,
 } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
+import { releaseConfirmedAssignmentsInTransaction } from './applicationLifecycleHelpers';
+
+function getPostingStatsSnapshot(jobData: JobPosting) {
+  return normalizePostingAggregateStats(jobData.stats, jobData.schedule);
+}
 
 async function loadApplicationForTransaction(transaction: Transaction, applicationId: string) {
   const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
@@ -50,7 +60,7 @@ async function loadApplicationForTransaction(transaction: Transaction, applicati
 
   if (!applicationDoc.exists()) {
     throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-      userMessage: '지원 내역을 찾을 수 없습니다',
+      userMessage: '지원 내역을 찾을 수 없습니다.',
     });
   }
 
@@ -61,7 +71,7 @@ async function loadApplicationForTransaction(transaction: Transaction, applicati
 
   if (!applicationData) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '지원 데이터가 올바르지 않습니다',
+      userMessage: '지원 데이터가 올바르지 않습니다.',
     });
   }
 
@@ -81,14 +91,14 @@ async function loadJobPostingForTransaction(
 
   if (!jobDoc.exists()) {
     throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-      userMessage: options?.notFoundMessage ?? '공고를 찾을 수 없습니다',
+      userMessage: options?.notFoundMessage ?? '공고를 찾을 수 없습니다.',
     });
   }
 
   const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
   if (!jobData) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: options?.invalidStateMessage ?? '공고 데이터가 올바르지 않습니다',
+      userMessage: options?.invalidStateMessage ?? '공고 데이터가 올바르지 않습니다.',
     });
   }
 
@@ -109,7 +119,7 @@ async function loadJobPostingForApply(transaction: Transaction, jobPostingId: st
   const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
   if (!jobData) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '공고 데이터가 올바르지 않습니다',
+      userMessage: '공고 데이터가 올바르지 않습니다.',
     });
   }
 
@@ -136,6 +146,38 @@ function assertJobPostingOwner(jobData: JobPosting, ownerId: string, userMessage
   }
 }
 
+async function prefetchRelatedWorkLogIds(applicationId: string): Promise<string[]> {
+  try {
+    const applicationPreCheck = await getDoc(
+      doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId)
+    );
+    if (!applicationPreCheck.exists()) {
+      return [];
+    }
+
+    const preData = applicationPreCheck.data();
+    if (!preData?.applicantId || !preData?.jobPostingId) {
+      return [];
+    }
+
+    const workLogsSnapshot = await getDocs(
+      query(
+        collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS),
+        where('staffId', '==', preData.applicantId),
+        where('jobPostingId', '==', preData.jobPostingId)
+      )
+    );
+
+    return workLogsSnapshot.docs.map((docSnapshot) => docSnapshot.id);
+  } catch (error) {
+    logger.warn('WorkLog 사전 조회 실패', {
+      applicationId,
+      error: toError(error),
+    });
+    return [];
+  }
+}
+
 export async function applyWithTransaction(
   input: CreateApplicationInput,
   context: ApplyContext
@@ -150,7 +192,7 @@ export async function applyWithTransaction(
     for (const assignment of input.assignments) {
       if (!isValidAssignment(assignment)) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해주세요.',
+          userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해 주세요.',
         });
       }
     }
@@ -165,39 +207,36 @@ export async function applyWithTransaction(
         });
       }
 
+      if (jobData.schedule.kind !== 'dated') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정공고 지원은 현재 지원하지 않습니다.',
+        });
+      }
+
+      const validation = applicationValidator.validateApplication(
+        jobData,
+        input.assignments,
+        input.preQuestionAnswers
+      );
+      if (!validation.isValid) {
+        const firstError = validation.errors[0];
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: firstError?.message ?? '지원 정보를 확인해 주세요.',
+        });
+      }
+
       const questions = jobData.questions.items ?? [];
       if (questions.length > 0) {
         if (!input.preQuestionAnswers?.length) {
           throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '사전질문에 답변해주세요',
+            userMessage: '사전질문에 답변해 주세요',
           });
         }
 
         const isValid = validateRequiredAnswers(input.preQuestionAnswers);
         if (!isValid) {
           throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '필수 질문에 모두 답변해주세요',
-          });
-        }
-      }
-
-      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-      if (totalPositions > 0 && currentFilled >= totalPositions) {
-        throw new MaxCapacityReachedError({
-          userMessage: '모집 인원이 마감되었습니다.',
-          jobPostingId: input.jobPostingId,
-          maxCapacity: totalPositions,
-          currentCount: currentFilled,
-        });
-      }
-
-      const firstAssignmentRole = input.assignments[0]?.roleIds[0];
-      if (firstAssignmentRole) {
-        const roleCapacity = applicationValidator.checkRoleCapacity(jobData, firstAssignmentRole);
-        if (!roleCapacity.available) {
-          throw new MaxCapacityReachedError({
-            userMessage: roleCapacity.reason ?? '해당 역할은 모집이 마감되었습니다.',
-            jobPostingId: input.jobPostingId,
+            userMessage: '필수 질문에 모두 답변해 주세요',
           });
         }
       }
@@ -205,19 +244,19 @@ export async function applyWithTransaction(
       const applicationId = `${input.jobPostingId}_${context.applicantId}`;
       const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
       const existingApp = await transaction.get(applicationRef);
+      const existingData = existingApp.exists()
+        ? parseApplicationDocument({
+            id: existingApp.id,
+            ...existingApp.data(),
+          })
+        : null;
 
-      if (existingApp.exists()) {
-        const existingData = parseApplicationDocument({
-          id: existingApp.id,
-          ...existingApp.data(),
+      if (existingData && existingData.status !== STATUS.APPLICATION.CANCELLED) {
+        throw new AlreadyAppliedError({
+          userMessage: '이미 지원한 공고입니다.',
+          jobPostingId: input.jobPostingId,
+          applicationId: existingApp.id,
         });
-        if (existingData && existingData.status !== STATUS.APPLICATION.CANCELLED) {
-          throw new AlreadyAppliedError({
-            userMessage: '이미 지원한 공고입니다.',
-            jobPostingId: input.jobPostingId,
-            applicationId: existingApp.id,
-          });
-        }
       }
 
       const recruitmentType: RecruitmentType = selectPostingWorkflow(jobData).recruitmentType;
@@ -245,7 +284,7 @@ export async function applyWithTransaction(
         assignments: input.assignments,
         ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
         isRead: false,
-        createdAt: now as Timestamp,
+        createdAt: existingData?.createdAt ?? (now as Timestamp),
         updatedAt: now as Timestamp,
       };
 
@@ -294,18 +333,19 @@ export async function cancelWithTransaction(
         transaction,
         applicationId
       );
+      await loadJobPostingForTransaction(transaction, applicationData.jobPostingId);
 
-      assertApplicationApplicant(applicationData, applicantId, '본인 지원만 취소할 수 있습니다');
+      assertApplicationApplicant(applicationData, applicantId, '본인 지원만 취소할 수 있습니다.');
 
       if (applicationData.status === STATUS.APPLICATION.CANCELLED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_CANCELLED, {
-          userMessage: '이미 취소된 지원입니다',
+          userMessage: '이미 취소된 지원입니다.',
         });
       }
 
       if (applicationData.status === STATUS.APPLICATION.CONFIRMED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED, {
-          userMessage: '확정된 지원은 취소할 수 없습니다. 취소 요청을 이용해주세요.',
+          userMessage: '확정된 지원은 직접 취소할 수 없습니다. 취소 요청을 이용해 주세요.',
         });
       }
 
@@ -341,7 +381,7 @@ export async function requestCancellationWithTransaction(
 
     if (!input.reason || input.reason.trim().length < 5) {
       throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '취소 사유를 5자 이상 입력해주세요',
+        userMessage: '취소 사유를 5자 이상 입력해 주세요.',
       });
     }
 
@@ -350,58 +390,24 @@ export async function requestCancellationWithTransaction(
         transaction,
         input.applicationId
       );
+      await loadJobPostingForTransaction(transaction, applicationData.jobPostingId);
 
       assertApplicationApplicant(
         applicationData,
         applicantId,
-        '본인 지원만 취소 요청할 수 있습니다'
+        '본인 지원만 취소 요청할 수 있습니다.'
       );
 
       if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
-        if (
-          applicationData.status === STATUS.APPLICATION.APPLIED ||
-          applicationData.status === STATUS.APPLICATION.PENDING
-        ) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
-          });
-        }
-        if (applicationData.status === STATUS.APPLICATION.CANCELLED) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '이미 취소된 지원입니다',
-          });
-        }
-        if (applicationData.status === STATUS.APPLICATION.REJECTED) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '거절된 지원은 취소 요청이 불가능합니다',
-          });
-        }
-        if (applicationData.status === STATUS.APPLICATION.COMPLETED) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '이미 완료된 근무는 취소 요청이 불가능합니다',
-          });
-        }
-        if (applicationData.status === STATUS.APPLICATION.CANCELLATION_PENDING) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
-            userMessage: '이미 취소 요청이 진행 중입니다',
-          });
-        }
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '취소 요청이 불가능한 상태입니다.',
+          userMessage: '확정된 지원만 취소 요청할 수 있습니다.',
         });
       }
 
-      if (applicationData.cancellationRequest) {
-        if (applicationData.cancellationRequest.status === STATUS.CANCELLATION_REQUEST.PENDING) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
-            userMessage: '이미 취소 요청이 진행 중입니다',
-          });
-        }
-        if (applicationData.cancellationRequest.status === STATUS.CANCELLATION_REQUEST.REJECTED) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
-            userMessage: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
-          });
-        }
+      if (applicationData.cancellationRequest?.status === STATUS.CANCELLATION_REQUEST.PENDING) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
+          userMessage: '이미 취소 요청이 진행 중입니다.',
+        });
       }
 
       const cancellationRequest = {
@@ -449,73 +455,115 @@ export async function reviewCancellationWithTransaction(
 
     if (!input.approved && (!input.rejectionReason || input.rejectionReason.trim().length < 3)) {
       throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '거절 사유를 3자 이상 입력해주세요',
+        userMessage: '거절 사유를 3자 이상 입력해 주세요.',
       });
     }
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const { applicationRef, applicationData } = await loadApplicationForTransaction(
-        transaction,
-        input.applicationId
-      );
-      const { jobRef, jobData } = await loadJobPostingForTransaction(
-        transaction,
-        applicationData.jobPostingId
-      );
+    if (input.approved) {
+      const relatedWorkLogIds = await prefetchRelatedWorkLogIds(input.applicationId);
 
-      assertJobPostingOwner(jobData, reviewerId, '본인 공고의 취소 요청만 검토할 수 있습니다');
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const { applicationRef, applicationData } = await loadApplicationForTransaction(
+          transaction,
+          input.applicationId
+        );
+        const { jobRef, jobData } = await loadJobPostingForTransaction(
+          transaction,
+          applicationData.jobPostingId
+        );
 
-      if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '검토 대기 중인 취소 요청이 없습니다',
+        assertJobPostingOwner(jobData, reviewerId, '본인 공고의 취소 요청만 검토할 수 있습니다.');
+
+        if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '검토 대기 중인 취소 요청이 없습니다.',
+          });
+        }
+
+        if (
+          !applicationData.cancellationRequest ||
+          applicationData.cancellationRequest.status !== STATUS.CANCELLATION_REQUEST.PENDING
+        ) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '유효한 취소 요청이 없습니다.',
+          });
+        }
+
+        const approvedCancellationRequest = {
+          requestedAt: applicationData.cancellationRequest.requestedAt,
+          reason: applicationData.cancellationRequest.reason,
+          reviewedAt: serverTimestamp(),
+          reviewedBy: reviewerId,
+          status: STATUS.CANCELLATION_REQUEST.APPROVED,
+        };
+
+        await releaseConfirmedAssignmentsInTransaction({
+          transaction,
+          applicationRef,
+          applicationData,
+          jobRef,
+          jobData,
+          relatedWorkLogIds,
+          ownerId: reviewerId,
+          nextApplicationStatus: STATUS.APPLICATION.CANCELLED,
+          cancelReason: applicationData.cancellationRequest.reason,
+          cancellationRequest: approvedCancellationRequest,
         });
-      }
+      });
+    } else {
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const { applicationRef, applicationData } = await loadApplicationForTransaction(
+          transaction,
+          input.applicationId
+        );
+        const { jobRef, jobData } = await loadJobPostingForTransaction(
+          transaction,
+          applicationData.jobPostingId
+        );
 
-      if (
-        !applicationData.cancellationRequest ||
-        applicationData.cancellationRequest.status !== STATUS.CANCELLATION_REQUEST.PENDING
-      ) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '유효한 취소 요청이 없습니다',
-        });
-      }
+        assertJobPostingOwner(jobData, reviewerId, '본인 공고의 취소 요청만 검토할 수 있습니다.');
 
-      const baseFields = {
-        requestedAt: applicationData.cancellationRequest.requestedAt,
-        reason: applicationData.cancellationRequest.reason,
-        reviewedAt: serverTimestamp(),
-        reviewedBy: reviewerId,
-      };
+        if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '검토 대기 중인 취소 요청이 없습니다.',
+          });
+        }
 
-      const updatedCancellationRequest = input.approved
-        ? { ...baseFields, status: STATUS.CANCELLATION_REQUEST.APPROVED }
-        : {
-            ...baseFields,
-            status: STATUS.CANCELLATION_REQUEST.REJECTED,
-            rejectionReason: input.rejectionReason?.trim() || '거절됨',
-          };
+        if (
+          !applicationData.cancellationRequest ||
+          applicationData.cancellationRequest.status !== STATUS.CANCELLATION_REQUEST.PENDING
+        ) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '유효한 취소 요청이 없습니다.',
+          });
+        }
 
-      if (input.approved) {
-        transaction.update(applicationRef, {
-          status: STATUS.APPLICATION.CANCELLED as ApplicationStatus,
-          cancellationRequest: updatedCancellationRequest,
-          cancelledAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
+        const updatedCancellationRequest = {
+          requestedAt: applicationData.cancellationRequest.requestedAt,
+          reason: applicationData.cancellationRequest.reason,
+          reviewedAt: serverTimestamp(),
+          reviewedBy: reviewerId,
+          status: STATUS.CANCELLATION_REQUEST.REJECTED,
+          rejectionReason: input.rejectionReason?.trim() || '거절됨',
+        };
 
-        const currentFilled = (jobData.filledPositions as number | undefined) ?? 0;
-        transaction.update(jobRef, {
-          filledPositions: Math.max(0, currentFilled - 1),
-          updatedAt: serverTimestamp(),
-        });
-      } else {
         transaction.update(applicationRef, {
           status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
           cancellationRequest: updatedCancellationRequest,
           updatedAt: serverTimestamp(),
         });
-      }
-    });
+
+        const nextStats = transitionPostingAggregateStats(getPostingStatsSnapshot(jobData), {
+          fromStatus: applicationData.status,
+          toStatus: STATUS.APPLICATION.CONFIRMED,
+        });
+
+        transaction.update(jobRef, {
+          stats: nextStats,
+          updatedAt: serverTimestamp(),
+        });
+      });
+    }
 
     logger.info('취소 요청 검토 성공', {
       applicationId: input.applicationId,
@@ -554,17 +602,14 @@ export async function rejectWithTransaction(
         transaction,
         input.applicationId
       );
-      const { jobData } = await loadJobPostingForTransaction(
+      const { jobRef, jobData } = await loadJobPostingForTransaction(
         transaction,
         applicationData.jobPostingId
       );
 
-      assertJobPostingOwner(jobData, reviewerId, '본인 공고의 지원자만 거절할 수 있습니다');
+      assertJobPostingOwner(jobData, reviewerId, '본인 공고의 지원자만 거절할 수 있습니다.');
 
-      if (
-        applicationData.status !== STATUS.APPLICATION.APPLIED &&
-        applicationData.status !== STATUS.APPLICATION.PENDING
-      ) {
+      if (applicationData.status !== STATUS.APPLICATION.APPLIED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 거절할 수 있습니다.`,
         });
@@ -575,6 +620,16 @@ export async function rejectWithTransaction(
         rejectionReason: input.reason || '',
         processedBy: reviewerId,
         processedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      const nextStats = transitionPostingAggregateStats(getPostingStatsSnapshot(jobData), {
+        fromStatus: applicationData.status,
+        toStatus: STATUS.APPLICATION.REJECTED,
+      });
+
+      transaction.update(jobRef, {
+        stats: nextStats,
         updatedAt: serverTimestamp(),
       });
     });
@@ -612,11 +667,11 @@ export async function markAsRead(applicationId: string, ownerId: string): Promis
         applicationData.jobPostingId,
         {
           notFoundMessage: '존재하지 않는 공고입니다.',
-          invalidStateMessage: '데이터가 올바르지 않습니다',
+          invalidStateMessage: '데이터가 올바르지 않습니다.',
         }
       );
 
-      assertJobPostingOwner(jobData, ownerId, '본인 공고만 조회할 수 있습니다');
+      assertJobPostingOwner(jobData, ownerId, '본인 공고만 조회할 수 있습니다.');
 
       transaction.update(applicationRef, {
         isRead: true,

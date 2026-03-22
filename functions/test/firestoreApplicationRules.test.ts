@@ -37,7 +37,13 @@ function createCanonicalJobPosting(
     totalPositions: 1,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt,
     updatedAt: createdAt,
     location: {
@@ -88,7 +94,17 @@ function createApplication(
     applicantName: "Applicant",
     jobPostingId: "job-1",
     status: "applied",
-    assignments: [{ roleIds: ["dealer"] }],
+    recruitmentType: "event",
+    assignments: [
+      {
+        roleIds: ["dealer"],
+        dates: ["2026-04-01"],
+        timeSlot: "18:00",
+        isGrouped: false,
+        checkMethod: "individual",
+      },
+    ],
+    isRead: false,
     createdAt,
     updatedAt: createdAt,
     ...overrides,
@@ -194,11 +210,13 @@ describe("Firestore application rules", () => {
   });
 
   it("allows an applicant to reapply after a cancelled application", async () => {
+    const originalCreatedAt = Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z"));
+
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
       await setDoc(
         doc(db, "applications", "job-1_staff-1"),
-        createApplication({ status: "cancelled" }),
+        createApplication({ status: "cancelled", createdAt: originalCreatedAt, updatedAt: originalCreatedAt }),
       );
     });
 
@@ -212,8 +230,9 @@ describe("Firestore application rules", () => {
           ...createApplication({
             applicantName: "Applicant Retry",
             message: "Retrying after a cancellation",
+            createdAt: originalCreatedAt,
+            updatedAt: originalCreatedAt,
           }),
-          createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
       }),

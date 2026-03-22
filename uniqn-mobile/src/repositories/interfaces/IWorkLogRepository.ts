@@ -161,14 +161,6 @@ export interface IWorkLogRepository {
     date: string
   ): Promise<WorkLog | null>;
 
-  /**
-   * fixed 공고의 현재 QR 가능 WorkLog 조회
-   * @param jobPostingId - 공고 ID
-   * @param staffId - 스태프 ID
-   * @returns scheduled/checked_in 상태의 fixed WorkLog 또는 null
-   */
-  findActiveFixedByJobPostingStaff(jobPostingId: string, staffId: string): Promise<WorkLog | null>;
-
   // ==========================================================================
   // 실시간 구독 (Realtime)
   // ==========================================================================

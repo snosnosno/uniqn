@@ -14,12 +14,13 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
 import {
-  FIXED_POSTING_DURATION_DAYS,
+  createInitialPostingStats,
   mergeJobPostingInput,
   serializeJobPostingV3,
 } from '@/domains/job-posting';
@@ -37,6 +38,17 @@ import type {
   PostingRoleCatalogEntry,
   UpdateJobPostingInput,
 } from '@/types';
+
+function assertFixedPostingDisabled(input: {
+  postingType?: CreateJobPostingInput['postingType'];
+  schedule?: CreateJobPostingInput['schedule'];
+}) {
+  if (input.postingType === 'fixed' || input.schedule?.kind === 'fixed') {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: 'Fixed 공고는 현재 생성 및 수정할 수 없습니다.',
+    });
+  }
+}
 
 export async function incrementViewCount(jobPostingId: string): Promise<void> {
   try {
@@ -193,30 +205,21 @@ export async function createWithTransaction(
   context: CreateJobPostingContext
 ): Promise<CreateJobPostingResult> {
   try {
+    assertFixedPostingDisabled(input);
+
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const newDocRef = doc(jobsRef);
     const now = Timestamp.now();
     const current: Partial<JobPosting> = {
       id: newDocRef.id,
       viewCount: 0,
-      applicationCount: 0,
       filledPositions: 0,
+      stats: createInitialPostingStats(input.schedule),
       ...(input.postingType === 'tournament'
         ? {
             tournamentConfig: {
               approvalStatus: STATUS.TOURNAMENT.PENDING,
               submittedAt: now,
-            },
-          }
-        : {}),
-      ...(input.postingType === 'fixed'
-        ? {
-            fixedConfig: {
-              durationDays: FIXED_POSTING_DURATION_DAYS,
-              createdAt: now,
-              expiresAt: Timestamp.fromDate(
-                new Date(Date.now() + FIXED_POSTING_DURATION_DAYS * 24 * 60 * 60 * 1000)
-              ),
             },
           }
         : {}),
@@ -264,6 +267,7 @@ export async function updateWithTransaction(
 ): Promise<JobPosting> {
   try {
     logger.info('Job posting update transaction', { jobPostingId, ownerId });
+    assertFixedPostingDisabled(input);
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
@@ -431,16 +435,6 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
         updatedAt: serverTimestamp(),
       };
 
-      if (currentData.postingType === 'fixed') {
-        updateData.fixedConfig = {
-          ...currentData.fixedConfig,
-          durationDays: FIXED_POSTING_DURATION_DAYS,
-          expiresAt: Timestamp.fromDate(
-            new Date(Date.now() + FIXED_POSTING_DURATION_DAYS * 24 * 60 * 60 * 1000)
-          ),
-        };
-      }
-
       transaction.update(jobRef, updateData);
     });
 
@@ -548,9 +542,9 @@ export async function getStatsByOwnerId(ownerId: string): Promise<JobPostingStat
       totalViews: 0,
     };
 
-    jobPostings.forEach((data) => {
+    jobPostings.filter(isCanonicalDatedPosting).forEach((data) => {
       stats.total++;
-      stats.totalApplications += data.applicationCount ?? 0;
+      stats.totalApplications += data.stats?.totalApplicants ?? 0;
       stats.totalViews += data.viewCount ?? 0;
 
       switch (data.status) {

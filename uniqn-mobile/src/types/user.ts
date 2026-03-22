@@ -80,8 +80,10 @@ export interface UserProfile<T = Date> {
   employerAgreements?: {
     /** 구인자 이용약관 동의 일시 */
     termsAgreedAt: T;
+    termsVersion?: string;
     /** 서약서 동의 일시 */
     liabilityWaiverAgreedAt: T;
+    liabilityWaiverVersion?: string;
   };
   /** 구인자 등록 일시 */
   employerRegisteredAt?: T;

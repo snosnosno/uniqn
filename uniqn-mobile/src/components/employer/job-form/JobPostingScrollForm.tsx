@@ -1,19 +1,10 @@
-/**
- * UNIQN Mobile - 공고 작성 스크롤 폼
- *
- * @description 한 페이지로 구성된 공고 작성 폼 (웹앱과 동일한 UX)
- * @version 1.0.0
- */
-
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { Button } from '@/components';
 import {
   SectionCard,
   BasicInfoSection,
-  ScheduleSection,
   DateRequirementsSection,
-  RolesSection,
   SalarySection,
   PreQuestionsSection,
 } from './sections';
@@ -24,10 +15,6 @@ import {
   getFirstErrorSection,
 } from '@/utils/job-posting/validation';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface JobPostingScrollFormProps {
   data: JobPostingFormData;
   onUpdate: (data: Partial<JobPostingFormData>) => void;
@@ -37,10 +24,6 @@ interface JobPostingScrollFormProps {
   isSubmitting?: boolean;
   isSavingTemplate?: boolean;
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export function JobPostingScrollForm({
   data,
@@ -60,15 +43,12 @@ export function JobPostingScrollForm({
     preQuestions: {},
   });
 
-  // 섹션 위치 저장 (스크롤용)
   const sectionPositions = useRef<Record<string, number>>({});
 
-  // 전체 유효성 검증
   const validateAll = useCallback((): boolean => {
     const newErrors = validateAllSections(data);
     setErrors(newErrors);
 
-    // 에러가 있는 첫 번째 섹션으로 스크롤
     const firstError = getFirstErrorSection(newErrors);
     if (firstError) {
       const position = sectionPositions.current[firstError];
@@ -81,24 +61,20 @@ export function JobPostingScrollForm({
     return true;
   }, [data]);
 
-  // 제출 핸들러
   const handleSubmit = useCallback(() => {
     if (validateAll()) {
       onSubmit();
     }
   }, [validateAll, onSubmit]);
 
-  // 섹션 위치 기록
   const handleSectionLayout = useCallback((section: string, y: number) => {
     sectionPositions.current[section] = y;
   }, []);
 
-  // 에러 개수 계산
   const getErrorCount = useCallback((sectionErrors: Record<string, string>): number => {
     return Object.keys(sectionErrors).length;
   }, []);
 
-  // 대회 공고 여부 확인
   const isTournament = data.postingType === 'tournament';
 
   return (
@@ -110,7 +86,6 @@ export function JobPostingScrollForm({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* 기본 정보 섹션 */}
         <View onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}>
           <SectionCard
             title="기본 정보"
@@ -122,7 +97,6 @@ export function JobPostingScrollForm({
           </SectionCard>
         </View>
 
-        {/* 일정 섹션 */}
         <View onLayout={(e) => handleSectionLayout('schedule', e.nativeEvent.layout.y)}>
           <SectionCard
             title="일정"
@@ -130,30 +104,10 @@ export function JobPostingScrollForm({
             hasError={getErrorCount(errors.schedule) > 0}
             errorCount={getErrorCount(errors.schedule)}
           >
-            {data.postingType === 'fixed' ? (
-              <ScheduleSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
-            ) : (
-              <DateRequirementsSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
-            )}
+            <DateRequirementsSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
           </SectionCard>
         </View>
 
-        {/* 역할/인원 섹션 (fixed 타입만 표시) */}
-        {/* regular/urgent/tournament는 DateRequirementsSection의 TimeSlot에서 역할 관리 */}
-        {data.postingType === 'fixed' && (
-          <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="역할/인원"
-              required
-              hasError={getErrorCount(errors.roles) > 0}
-              errorCount={getErrorCount(errors.roles)}
-            >
-              <RolesSection data={data} onUpdate={onUpdate} errors={errors.roles} />
-            </SectionCard>
-          </View>
-        )}
-
-        {/* 급여 섹션 */}
         <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
           <SectionCard
             title="급여"
@@ -165,7 +119,6 @@ export function JobPostingScrollForm({
           </SectionCard>
         </View>
 
-        {/* 사전질문 섹션 */}
         <View onLayout={(e) => handleSectionLayout('preQuestions', e.nativeEvent.layout.y)}>
           <SectionCard
             title="사전질문"
@@ -177,25 +130,29 @@ export function JobPostingScrollForm({
           </SectionCard>
         </View>
 
-        {/* 대회 공고 안내 */}
+        <View className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+          <Text className="text-sm text-blue-700 dark:text-blue-300">
+            고정공고는 이번 V3 정비 범위에서 제외되었습니다. 날짜/시간/역할을 가진 행사형 공고만
+            생성할 수 있습니다.
+          </Text>
+        </View>
+
         {isTournament && (
-          <View className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700 mb-4">
-            <Text className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
-              대회 공고 안내
+          <View className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+            <Text className="mb-1 text-sm font-medium text-amber-800 dark:text-amber-200">
+              대회공고 안내
             </Text>
             <Text className="text-xs text-amber-700 dark:text-amber-300">
-              대회 공고는 관리자 승인 후 게시됩니다.{'\n'}
+              대회공고는 관리자 승인 후 게시됩니다.
+              {'\n'}
               승인까지 1-2 영업일이 소요될 수 있습니다.
             </Text>
           </View>
         )}
       </ScrollView>
 
-      {/* 하단 버튼 영역 (고정) - 컴팩트 */}
-      <View className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-surface-overlay">
-        {/* 템플릿 버튼 + 등록 버튼을 한 줄에 */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface-dark">
         <View className="flex-row items-center gap-2">
-          {/* 템플릿 버튼들 */}
           {onLoadTemplate && (
             <Button variant="ghost" size="sm" onPress={onLoadTemplate}>
               <Text className="text-sm text-primary-600 dark:text-primary-400">불러오기</Text>
@@ -210,7 +167,6 @@ export function JobPostingScrollForm({
               </Text>
             </Button>
           )}
-          {/* 등록 버튼 */}
           <View className="flex-1">
             <Button
               variant="primary"
@@ -219,7 +175,7 @@ export function JobPostingScrollForm({
               disabled={isSubmitting}
               fullWidth
             >
-              <Text className="text-white font-semibold text-sm">
+              <Text className="text-sm font-semibold text-white">
                 {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
               </Text>
             </Button>

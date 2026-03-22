@@ -47,7 +47,7 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
 
     logger.info('내 지원 내역 조회 완료', {
       applicantId,
-      applicationCount: applications.length,
+      totalApplications: applications.length,
     });
 
     return applications;

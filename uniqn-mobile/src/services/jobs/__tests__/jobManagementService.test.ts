@@ -131,8 +131,14 @@ function createPosting(overrides: Partial<JobPosting> = {}): JobPosting {
     roleKeys: ['dealer', 'manager'],
     totalPositions: 3,
     filledPositions: 0,
-    applicationCount: 0,
     viewCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
     location: input.location,
@@ -164,7 +170,7 @@ describe('jobManagementService', () => {
       });
     });
 
-    it('splits regular multi-date postings by date and filters roleCatalog per requirement', async () => {
+    it('keeps regular multi-date postings as a single canonical post', async () => {
       const input = createInput({
         schedule: {
           kind: 'dated',
@@ -193,51 +199,28 @@ describe('jobManagementService', () => {
         },
       });
 
-      mockCreateWithTransaction.mockImplementation(
-        async (payload: CreateJobPostingInput, context: { ownerId: string; ownerName: string }) => {
-          const date = payload.schedule.kind === 'dated' ? payload.schedule.primaryDate : 'fixed';
-
-          return {
-            id: `job-${date}`,
-            jobPosting: createPosting({
-              id: `job-${date}`,
-              ownerId: context.ownerId,
-              ownerName: context.ownerName,
-              workDate: date,
-              workDates: payload.schedule.kind === 'dated' ? payload.schedule.allDates : undefined,
-              schedule: payload.schedule,
-              roleCatalog: payload.roleCatalog,
-            }),
-          };
-        }
-      );
+      mockCreateWithTransaction.mockResolvedValue({
+        id: 'job-1',
+        jobPosting: createPosting({
+          schedule: input.schedule,
+          workDate: '2026-04-01',
+          workDates: ['2026-04-01', '2026-04-02'],
+          roleCatalog: input.roleCatalog,
+        }),
+      });
 
       const result = await createJobPosting(input, 'employer-1', 'Owner');
 
-      expect(Array.isArray(result)).toBe(true);
-      if (Array.isArray(result)) {
-        expect(result).toHaveLength(2);
+      expect(Array.isArray(result)).toBe(false);
+      expect(mockCreateWithTransaction).toHaveBeenCalledTimes(1);
+
+      const payload = mockCreateWithTransaction.mock.calls[0]?.[0] as CreateJobPostingInput;
+      expect(payload.schedule.kind).toBe('dated');
+      if (payload.schedule.kind === 'dated') {
+        expect(payload.schedule.allDates).toEqual(['2026-04-01', '2026-04-02']);
+        expect(payload.schedule.requirements).toHaveLength(2);
       }
-
-      expect(mockCreateWithTransaction).toHaveBeenCalledTimes(2);
-
-      const firstPayload = mockCreateWithTransaction.mock.calls[0]?.[0] as CreateJobPostingInput;
-      const secondPayload = mockCreateWithTransaction.mock.calls[1]?.[0] as CreateJobPostingInput;
-
-      expect(firstPayload.schedule).toEqual({
-        kind: 'dated',
-        primaryDate: '2026-04-01',
-        allDates: ['2026-04-01'],
-        requirements: [
-          input.schedule.kind === 'dated' ? input.schedule.requirements[0] : undefined,
-        ].filter(Boolean),
-      });
-      expect(firstPayload.roleCatalog).toEqual([
-        { role: 'dealer', salary: { type: 'hourly', amount: 15000 } },
-      ]);
-      expect(secondPayload.roleCatalog).toEqual([
-        { role: 'manager', salary: { type: 'hourly', amount: 18000 } },
-      ]);
+      expect(payload.roleCatalog).toEqual(input.roleCatalog);
     });
 
     it('does not split tournament postings even if dated schedule has multiple requirements', async () => {
@@ -324,7 +307,7 @@ describe('jobManagementService', () => {
       expect(firstPayload.schedule.kind).toBe('dated');
     });
 
-    it('rolls back previously created postings if a later split write fails', async () => {
+    it('propagates repository create failures without split rollback logic', async () => {
       const input = createInput({
         schedule: {
           kind: 'dated',
@@ -337,15 +320,10 @@ describe('jobManagementService', () => {
         },
       });
 
-      mockCreateWithTransaction
-        .mockResolvedValueOnce({ id: 'job-2026-04-01', jobPosting: createPosting() })
-        .mockRejectedValueOnce(new Error('write failed'));
-      mockGetById.mockResolvedValue({ status: 'active' });
-      mockUpdateStatus.mockResolvedValue(undefined);
+      mockCreateWithTransaction.mockRejectedValueOnce(new Error('write failed'));
 
       await expect(createJobPosting(input, 'employer-1', 'Owner')).rejects.toThrow('write failed');
-
-      expect(mockUpdateStatus).toHaveBeenCalledWith('job-2026-04-01', 'cancelled');
+      expect(mockCreateWithTransaction).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -372,7 +350,7 @@ describe('jobManagementService', () => {
       expect(result.compensation.defaultSalary?.amount).toBe(20000);
     });
 
-    it('supports canonical fixed schedule updates', async () => {
+    it('rejects canonical fixed schedule updates in V3 mode', async () => {
       const update: UpdateJobPostingInput = {
         schedule: {
           kind: 'fixed',
@@ -380,20 +358,11 @@ describe('jobManagementService', () => {
         },
         roleCatalog: [{ role: 'dealer' }],
       };
-      mockUpdateWithTransaction.mockResolvedValue(
-        createPosting({
-          schedule: update.schedule!,
-          roleCatalog: update.roleCatalog!,
-          filledPositions: 2,
-        })
+      mockUpdateWithTransaction.mockRejectedValueOnce(new Error('Fixed postings are disabled'));
+
+      await expect(updateJobPosting('job-1', update, 'employer-1')).rejects.toThrow(
+        'Fixed postings are disabled'
       );
-
-      const result = await updateJobPosting('job-1', update, 'employer-1');
-
-      expect(result.schedule.kind).toBe('fixed');
-      if (result.schedule.kind === 'fixed') {
-        expect(result.schedule.roleRequirements?.[0]?.filled).toBe(2);
-      }
     });
   });
 

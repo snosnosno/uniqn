@@ -14,6 +14,7 @@
 
 import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
@@ -156,7 +157,7 @@ export async function searchJobPostings(
 
     const searchProvider = new ClientSideSearchProvider(async () => {
       const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE }, 300);
-      return items;
+      return items.filter(isCanonicalDatedPosting);
     });
 
     const result = await searchProvider.search(trimmed, {
@@ -210,7 +211,7 @@ export async function getMyJobPostings(
         getJobPostings({ ownerId, status: STATUS.JOB_POSTING.ACTIVE }, 100),
         getJobPostings({ ownerId, status: STATUS.JOB_POSTING.CLOSED }, 100),
       ]);
-      return [...results[0].items, ...results[1].items];
+      return [...results[0].items, ...results[1].items].filter(isCanonicalDatedPosting);
     }
 
     const { items } = await getJobPostings(
@@ -221,7 +222,7 @@ export async function getMyJobPostings(
       100
     );
 
-    return items;
+    return items.filter(isCanonicalDatedPosting);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '내 공고 조회',

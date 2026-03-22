@@ -6,9 +6,7 @@ import { Button, Loading } from '@/components';
 import {
   SectionCard,
   BasicInfoSection,
-  ScheduleSection,
   DateRequirementsSection,
-  RolesSection,
   SalarySection,
   PreQuestionsSection,
 } from '@/components/employer/job-form';
@@ -58,7 +56,7 @@ export default function EditJobPostingScreen() {
   const updateJobPosting = useUpdateJobPosting();
   const formData = useMemo(() => (draft ? draftToFormData(draft) : null), [draft]);
   const allowScheduleFallback = useMemo(() => {
-    if (!formData || formData.postingType === 'fixed') {
+    if (!formData) {
       return false;
     }
 
@@ -67,6 +65,15 @@ export default function EditJobPostingScreen() {
 
   useEffect(() => {
     if (existingJob && !draft) {
+      if (existingJob.schedule.kind === 'fixed') {
+        addToast({
+          type: 'warning',
+          message: '고정공고 편집은 V3 통합 범위에서 제외되었습니다.',
+        });
+        router.replace('/(app)/(tabs)/employer');
+        return;
+      }
+
       setDraft(buildJobPostingDraft(existingJob));
 
       const confirmedCount = existingJob.filledPositions ?? 0;
@@ -79,7 +86,7 @@ export default function EditJobPostingScreen() {
         });
       }
     }
-  }, [existingJob, draft, addToast]);
+  }, [existingJob, draft, addToast, router]);
 
   useEffect(() => {
     if (!allowScheduleFallback) {
@@ -88,7 +95,7 @@ export default function EditJobPostingScreen() {
 
     addToast({
       type: 'warning',
-      message: '기존 일정 정보가 비어 있어 날짜를 다시 확인한 뒤 저장해 주세요.',
+      message: '기존 일정 정보가 비어 있어 날짜 정보를 다시 확인해 주세요.',
     });
   }, [allowScheduleFallback, addToast]);
 
@@ -130,7 +137,7 @@ export default function EditJobPostingScreen() {
     }
 
     if (!validateAll()) {
-      addToast({ type: 'error', message: '입력 정보를 확인해주세요.' });
+      addToast({ type: 'error', message: '입력 정보를 확인해 주세요.' });
       return;
     }
 
@@ -250,12 +257,6 @@ export default function EditJobPostingScreen() {
                     확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
                 </View>
-              ) : formData.postingType === 'fixed' ? (
-                <ScheduleSection
-                  data={formData}
-                  onUpdate={updateFormData}
-                  errors={errors.schedule}
-                />
               ) : (
                 <DateRequirementsSection
                   data={formData}
@@ -265,27 +266,6 @@ export default function EditJobPostingScreen() {
               )}
             </SectionCard>
           </View>
-
-          {formData.postingType === 'fixed' && (
-            <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
-              <SectionCard
-                title="역할/인원"
-                required
-                hasError={getErrorCount(errors.roles) > 0}
-                errorCount={getErrorCount(errors.roles)}
-              >
-                {hasConfirmedApplicants ? (
-                  <View className="rounded-lg bg-gray-100 p-4 dark:bg-surface">
-                    <Text className="text-center text-gray-500 dark:text-gray-400">
-                      확정된 지원자가 있어 역할은 수정할 수 없습니다.
-                    </Text>
-                  </View>
-                ) : (
-                  <RolesSection data={formData} onUpdate={updateFormData} errors={errors.roles} />
-                )}
-              </SectionCard>
-            </View>
-          )}
 
           <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
             <SectionCard

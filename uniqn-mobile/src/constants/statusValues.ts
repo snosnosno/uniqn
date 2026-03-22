@@ -1,17 +1,3 @@
-/**
- * UNIQN Mobile - Firestore 쿼리용 상태값 런타임 상수
- *
- * @description where() 쿼리에서 문자열 리터럴 대신 사용하는 상수 객체
- * @version 1.0.0
- *
- * 기존 타입 정의에서 파생된 런타임 상수:
- * - shared/status/types.ts (WorkLogStatus, ApplicationStatus, PayrollStatus)
- * - constants/statusConfig.ts (ApplicationStatusType, JobPostingStatusType, InquiryStatusType)
- * - types/report.ts (ReportStatus)
- * - types/announcement.ts (AnnouncementStatus)
- * - types/postingConfig.ts (TournamentApprovalStatus)
- */
-
 import type {
   ApplicationStatusType,
   JobPostingStatusType,
@@ -30,13 +16,8 @@ import type { TournamentApprovalStatus } from '@/types/postingConfig';
 import type { CancellationRequestStatus } from '@/types/application';
 import type { DeletionRequest } from '@/repositories/interfaces/IUserRepository';
 
-// ============================================================================
-// 상태값 상수
-// ============================================================================
-
 export const APPLICATION_STATUS_VALUES = {
   APPLIED: 'applied',
-  PENDING: 'pending',
   CONFIRMED: 'confirmed',
   REJECTED: 'rejected',
   CANCELLED: 'cancelled',
@@ -122,10 +103,6 @@ export const DELETION_REQUEST_STATUS_VALUES = {
   CANCELLED: 'cancelled',
   COMPLETED: 'completed',
 } as const satisfies Record<string, DeletionRequest['status']>;
-
-// ============================================================================
-// 통합 객체
-// ============================================================================
 
 export const STATUS = {
   APPLICATION: APPLICATION_STATUS_VALUES,

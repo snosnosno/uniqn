@@ -99,9 +99,22 @@ function createMockJobPosting(overrides: Record<string, unknown> = {}) {
     ownerName: '테스트 업주',
     ownerId: 'owner-1',
     status: 'active',
+    postingType: 'regular',
+    schedule: {
+      kind: 'dated',
+      primaryDate: '2026-04-01',
+      allDates: ['2026-04-01'],
+      requirements: [],
+    },
     isUrgent: false,
     roles: [{ role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } }],
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     maxApplicants: 10,
     createdAt: { seconds: 1700000000, nanoseconds: 0 },
     updatedAt: { seconds: 1700000000, nanoseconds: 0 },
@@ -442,6 +455,33 @@ describe('JobService', () => {
       const result = await getMyJobPostings('owner-1');
 
       expect(result).toHaveLength(3);
+    });
+
+    it('should exclude fixed postings from employer-visible lists', async () => {
+      const activeJobs = [
+        createMockJobPosting({ id: 'dated-1', status: 'active' }),
+        createMockJobPosting({
+          id: 'fixed-1',
+          status: 'active',
+          postingType: 'fixed',
+          schedule: {
+            kind: 'fixed',
+            daysPerWeek: 5,
+            startTime: '18:00',
+            isStartTimeNegotiable: false,
+            roles: [],
+          },
+        }),
+      ];
+
+      mockRepo.getList
+        .mockResolvedValueOnce(createMockPaginatedResult(activeJobs) as any)
+        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+
+      const result = await getMyJobPostings('owner-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.id).toBe('dated-1');
     });
 
     it('should filter by specific status when provided', async () => {

@@ -88,7 +88,6 @@ export async function findByJobPostingWithStats(
     const stats: ApplicationStats = {
       total: 0,
       applied: 0,
-      pending: 0,
       confirmed: 0,
       rejected: 0,
       cancelled: 0,
@@ -224,7 +223,6 @@ export function subscribeByJobPosting(
         const stats: ApplicationStats = {
           total: 0,
           applied: 0,
-          pending: 0,
           confirmed: 0,
           rejected: 0,
           cancelled: 0,

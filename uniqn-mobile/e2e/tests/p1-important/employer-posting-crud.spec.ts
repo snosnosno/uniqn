@@ -61,8 +61,7 @@ test.describe('구인자 공고 CRUD', () => {
         await expect(myPostings.headerTitle).toBeVisible({ timeout: 30_000 });
 
         // 결과 개수 텍스트 표시 또는 총 공고 수 표시
-        const resultOrTotal = myPostings.getResultCount()
-          .or(myPostings.getTotalCountText());
+        const resultOrTotal = myPostings.getResultCount().or(myPostings.getTotalCountText());
         await expect(resultOrTotal.first()).toBeVisible({ timeout: 15_000 });
       } finally {
         await deleteDocument('jobPostings', activeJob.id);
@@ -77,9 +76,7 @@ test.describe('구인자 공고 CRUD', () => {
 
       // 공고가 없으면 빈 상태 메시지 또는 목록이 표시됨
       // 에뮬레이터에 시딩 데이터가 없으면 빈 상태
-      const emptyOrList = myPostings
-        .getEmptyState()
-        .or(myPostings.getResultCount());
+      const emptyOrList = myPostings.getEmptyState().or(myPostings.getResultCount());
       await expect(emptyOrList.first()).toBeVisible({ timeout: 15_000 });
     });
   });
@@ -95,7 +92,7 @@ test.describe('구인자 공고 CRUD', () => {
 
       // 공고 타입 선택 버튼 표시 (PostingTypeSelector에서 accessibilityRole="radio" 사용)
       await expect(createPage.postingTypeRegular).toBeVisible({ timeout: 30_000 });
-      await expect(createPage.postingTypeFixed).toBeVisible();
+      await expect(createPage.postingTypeFixed).toHaveCount(0);
       await expect(createPage.postingTypeTournament).toBeVisible();
       await expect(createPage.postingTypeUrgent).toBeVisible();
 
@@ -158,22 +155,18 @@ test.describe('구인자 공고 CRUD', () => {
       // 폼 로드 대기
       await expect(createPage.postingTypeRegular).toBeVisible({ timeout: 30_000 });
 
-      // 고정공고 타입 선택
-      await createPage.selectPostingType('fixed');
-      await page.waitForTimeout(1_000);
-
-      // 고정공고 선택 시 관련 UI 변경 (주당 근무일 등)
-      const fixedUI = page.getByText(/주 |요일|근무/).first();
-      await expect(fixedUI).toBeVisible({ timeout: 10_000 });
+      // fixed 공고는 더 이상 선택할 수 없고 안내 문구만 노출된다.
+      await expect(createPage.postingTypeFixed).toHaveCount(0);
+      await expect(page.getByText(/고정공고는.*생성할 수 없습니다/)).toBeVisible({
+        timeout: 10_000,
+      });
 
       // 대회 타입으로 전환
       await createPage.selectPostingType('tournament');
       await page.waitForTimeout(1_000);
 
       // 대회 관련 안내 메시지: "대회 공고는 관리자 승인 후 게시됩니다."
-      const tournamentNotice = page.getByText(
-        /관리자 승인 후 게시/
-      );
+      const tournamentNotice = page.getByText(/관리자 승인 후 게시/);
       const hasTournamentUI = await tournamentNotice.isVisible().catch(() => false);
       // 타입 전환 자체는 에러 없이 완료
       expect(true).toBeTruthy();
@@ -194,12 +187,14 @@ test.describe('구인자 공고 CRUD', () => {
         await detailPage.goto(testJob.id, { waitUntil: 'domcontentloaded' });
 
         // 관리 섹션 또는 에러 상태 확인 (공고 데이터 로드 대기)
-        const managementOrError = detailPage.getManagementSection()
-          .or(detailPage.getErrorState());
+        const managementOrError = detailPage.getManagementSection().or(detailPage.getErrorState());
         await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
         // 에러 상태가 아닌 경우에만 관리 메뉴 확인
-        const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
+        const hasError = await detailPage
+          .getErrorState()
+          .isVisible()
+          .catch(() => false);
         if (!hasError) {
           // 관리 액션 카드들 표시
           await expect(detailPage.applicantsAction).toBeVisible({ timeout: 10_000 });
@@ -223,13 +218,22 @@ test.describe('구인자 공고 CRUD', () => {
         await page.waitForTimeout(3_000);
 
         // 에러 상태 확인 (공고를 불러올 수 없거나 문제가 발생한 경우)
-        const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
-        const hasOtherError = await page.getByText(/문제가 발생|공고를 찾을 수 없습니다/).first().isVisible().catch(() => false);
+        const hasError = await detailPage
+          .getErrorState()
+          .isVisible()
+          .catch(() => false);
+        const hasOtherError = await page
+          .getByText(/문제가 발생|공고를 찾을 수 없습니다/)
+          .first()
+          .isVisible()
+          .catch(() => false);
 
         if (!hasError && !hasOtherError) {
           // "상세" 텍스트 대기 (토글 버튼)
           const detailButton = page.getByText('상세').first();
-          const hasDetailButton = await detailButton.isVisible({ timeout: 10_000 }).catch(() => false);
+          const hasDetailButton = await detailButton
+            .isVisible({ timeout: 10_000 })
+            .catch(() => false);
 
           if (hasDetailButton) {
             // 펼치기
@@ -237,8 +241,12 @@ test.describe('구인자 공고 CRUD', () => {
             await page.waitForTimeout(1_000);
 
             // 장소, 일정, 급여 등 상세 정보 표시 확인
-            const locationOrSchedule = page.getByText(/테스트포커룸|근무 일정|급여|일당|시급/).first();
-            const hasExpanded = await locationOrSchedule.isVisible({ timeout: 10_000 }).catch(() => false);
+            const locationOrSchedule = page
+              .getByText(/테스트포커룸|근무 일정|급여|일당|시급/)
+              .first();
+            const hasExpanded = await locationOrSchedule
+              .isVisible({ timeout: 10_000 })
+              .catch(() => false);
 
             if (hasExpanded) {
               // 접기
@@ -261,11 +269,13 @@ test.describe('구인자 공고 CRUD', () => {
         await detailPage.goto(testJob.id, { waitUntil: 'domcontentloaded' });
 
         // 페이지 로드 대기 (관리 섹션 또는 에러)
-        const managementOrError = detailPage.getManagementSection()
-          .or(detailPage.getErrorState());
+        const managementOrError = detailPage.getManagementSection().or(detailPage.getErrorState());
         await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
-        const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
+        const hasError = await detailPage
+          .getErrorState()
+          .isVisible()
+          .catch(() => false);
         if (!hasError) {
           // 삭제 버튼 스크롤 후 클릭
           await detailPage.clickDelete();

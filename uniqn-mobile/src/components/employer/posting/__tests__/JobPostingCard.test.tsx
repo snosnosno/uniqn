@@ -86,7 +86,13 @@ describe('JobPostingCard', () => {
     filledPositions: 0,
     ownerId: 'owner-1',
     ownerName: 'Owner',
-    applicationCount: 1,
+    stats: {
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt: { seconds: 0, nanoseconds: 0, toDate: () => new Date('2026-03-01') } as never,
     updatedAt: { seconds: 0, nanoseconds: 0, toDate: () => new Date('2026-03-01') } as never,
   };

@@ -302,10 +302,8 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       };
 
       transaction.set(applicationRef, applicationData);
-      transaction.update(jobRef, {
-        applicationCount: increment(1),
-        updatedAt: serverTimestamp(),
-      });
+      // V3 canonical: posting aggregates are reconciled into jobPostings.stats
+      // by the shared lifecycle helper / server-side reconciliation path.
 
       return { id: applicationId, ...applicationData } as Application;
     });

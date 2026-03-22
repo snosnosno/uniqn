@@ -289,7 +289,7 @@ export async function getMySchedules(
       }),
       applicationRepository.getByApplicantIdWithStatuses(
         staffId,
-        [STATUS.APPLICATION.APPLIED, STATUS.APPLICATION.PENDING] as ApplicationStatus[],
+        [STATUS.APPLICATION.APPLIED] as ApplicationStatus[],
         pageSize
       ),
     ]);

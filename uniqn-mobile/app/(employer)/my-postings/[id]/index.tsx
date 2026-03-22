@@ -168,9 +168,9 @@ export default function JobPostingDetailScreen() {
     );
   }
 
-  const totalApplicants = applicantStats?.total || posting.applicationCount || 0;
+  const totalApplicants = applicantStats?.total || posting.stats?.totalApplicants || 0;
   const confirmedApplicants = applicantStats?.confirmed || 0;
-  const pendingApplicants = (applicantStats?.applied || 0) + (applicantStats?.pending || 0);
+  const pendingApplicants = applicantStats?.applied || 0;
   const filledPositions = posting.filledPositions || 0;
   const totalPositions = posting.totalPositions || 0;
   const title = posting.title || '제목 없음';

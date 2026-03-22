@@ -123,11 +123,15 @@ export function selectPostingApplicationEligibility(
   const roleAvailability = selectPostingRoleAvailability(posting);
   const postingFull =
     posting.totalPositions > 0 && posting.filledPositions >= posting.totalPositions;
+  const fixedDisabled = workflow.isFixed;
   const canApply =
-    posting.status === 'active' && !postingFull && roleAvailability.hasAvailableRoles;
+    posting.status === 'active' &&
+    !postingFull &&
+    roleAvailability.hasAvailableRoles &&
+    !fixedDisabled;
 
   let reason: PostingApplicationEligibility['reason'];
-  if (posting.status !== 'active') {
+  if (fixedDisabled || posting.status !== 'active') {
     reason = 'inactive';
   } else if (postingFull) {
     reason = 'posting_full';

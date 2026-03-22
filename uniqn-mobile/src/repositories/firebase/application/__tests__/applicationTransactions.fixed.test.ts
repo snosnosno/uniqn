@@ -120,7 +120,6 @@ jest.mock('@/constants', () => ({
   STATUS: {
     APPLICATION: {
       APPLIED: 'applied',
-      PENDING: 'pending',
       CONFIRMED: 'confirmed',
       COMPLETED: 'completed',
     },
@@ -196,7 +195,7 @@ describe('fixed application transaction compatibility', () => {
     jest.clearAllMocks();
   });
 
-  it('confirm writes a canonical fixed worklog for FIXED_DATE_MARKER assignments', async () => {
+  it('blocks fixed confirmation writes during the V3 cutover', async () => {
     const transaction = {
       get: jest.fn((ref: { path: string }) => {
         if (ref.path === 'applications/app-1') {
@@ -233,27 +232,24 @@ describe('fixed application transaction compatibility', () => {
       callback(transaction)
     );
 
-    const result = await confirmWithHistoryTransaction(
-      'app-1',
-      [
-        {
-          roleIds: ['dealer'],
-          dates: ['FIXED_SCHEDULE'],
-          timeSlot: 'FIXED_TIME',
-        },
-      ] as never,
-      'owner-1'
-    );
+    await expect(
+      confirmWithHistoryTransaction(
+        'app-1',
+        [
+          {
+            roleIds: ['dealer'],
+            dates: ['FIXED_SCHEDULE'],
+            timeSlot: 'FIXED_TIME',
+          },
+        ] as never,
+        'owner-1'
+      )
+    ).rejects.toThrow('고정공고 확정은 현재 지원하지 않습니다.');
 
-    expect(result.workLogIds).toHaveLength(1);
-    expect(transaction.set).toHaveBeenCalledWith(
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(transaction.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringMatching(/^workLogs\/auto-/) }),
-      expect.objectContaining({
-        date: null,
-        timeSlot: null,
-        isFixedPosting: true,
-        status: 'scheduled',
-      })
+      expect.anything()
     );
   });
 
@@ -315,7 +311,7 @@ describe('fixed application transaction compatibility', () => {
     );
   });
 
-  it('convert writes the same canonical fixed worklog contract', async () => {
+  it('blocks fixed conversion worklog writes during the V3 cutover', async () => {
     (getDoc as jest.Mock).mockResolvedValue(
       createDocSnap('app-1', {
         applicantId: 'staff-1',
@@ -347,6 +343,7 @@ describe('fixed application transaction compatibility', () => {
               id: 'job-1',
               title: 'Fixed Job',
               ownerId: 'owner-1',
+              schedule: { kind: 'fixed' },
             })
           );
         }
@@ -361,17 +358,13 @@ describe('fixed application transaction compatibility', () => {
       callback(transaction)
     );
 
-    const result = await convertApplicantToStaffTransaction('app-1', 'job-1', 'owner-1');
+    await expect(convertApplicantToStaffTransaction('app-1', 'job-1', 'owner-1')).rejects.toThrow(
+      '고정 공고 스태프 전환은 V3 canonical 전환에서 지원하지 않습니다.'
+    );
 
-    expect(result.workLogIds).toHaveLength(1);
-    expect(transaction.set).toHaveBeenCalledWith(
+    expect(transaction.set).not.toHaveBeenCalledWith(
       expect.objectContaining({ path: expect.stringMatching(/^workLogs\/auto-/) }),
-      expect.objectContaining({
-        date: null,
-        timeSlot: null,
-        isFixedPosting: true,
-        status: 'scheduled',
-      })
+      expect.anything()
     );
   });
 
@@ -422,7 +415,7 @@ describe('fixed application transaction compatibility', () => {
       expect.objectContaining({ path: 'workLogs/wl-fixed' }),
       expect.objectContaining({
         status: 'cancelled',
-        cancelledReason: '스태프 변환 취소',
+        cancelledReason: '스태프 전환 취소',
         cancelledAt: { _serverTimestamp: true },
       })
     );

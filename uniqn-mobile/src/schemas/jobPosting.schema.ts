@@ -247,6 +247,16 @@ const postingQuestionsSchema = z
   })
   .strict();
 
+const postingStatsSchema = z
+  .object({
+    totalApplicants: z.number(),
+    activeApplicants: z.number(),
+    confirmedApplicants: z.number(),
+    cancellationPendingApplicants: z.number(),
+    filledPositions: z.number(),
+  })
+  .strict();
+
 function addContractIssue(ctx: z.RefinementCtx, path: (string | number)[], message: string): void {
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
@@ -301,6 +311,10 @@ export const createJobPostingSchema = z
   .strict()
   .superRefine((data, ctx) => {
     validatePostingTypeScheduleContract(data, ctx);
+  })
+  .refine((data) => data.postingType !== 'fixed' && data.schedule.kind !== 'fixed', {
+    message: 'Fixed postings are disabled in V3 canonical mode',
+    path: ['postingType'],
   })
   .refine(
     (data) => {
@@ -451,12 +465,9 @@ export const jobPostingDocumentSchema = z
     totalPositions: z.number(),
     filledPositions: z.number(),
     viewCount: z.number().optional(),
-    applicationCount: z.number().optional(),
-    // Legacy derived counters may still exist on persisted documents.
-    applicantCount: z.number().optional(),
+    stats: postingStatsSchema.optional(),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
-    lastUpdated: optionalTimestampSchema,
     searchIndex: z.array(z.string()).optional(),
     closedAt: optionalTimestampSchema,
     closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
@@ -479,16 +490,10 @@ export const jobPostingDocumentSchema = z
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
 
 function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDocumentV3 {
-  const {
-    searchIndex: _searchIndex,
-    applicantCount: legacyApplicantCount,
-    lastUpdated: _legacyLastUpdated,
-    ...rest
-  } = document;
+  const { searchIndex: _searchIndex, ...rest } = document;
 
   return {
     ...rest,
-    applicationCount: rest.applicationCount ?? legacyApplicantCount,
     closedAt: rest.closedAt ?? undefined,
     tournamentConfig: rest.tournamentConfig
       ? {

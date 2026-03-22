@@ -78,6 +78,22 @@ function AlreadyAppliedState() {
   );
 }
 
+function UnsupportedPostingState() {
+  return (
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
+      <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+        현재 지원할 수 없는 공고입니다
+      </Text>
+      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
+        V3 canonical 통합 동안 고정공고 지원은 비활성화되어 있습니다.
+      </Text>
+      <Button onPress={() => router.back()} variant="outline">
+        돌아가기
+      </Button>
+    </View>
+  );
+}
+
 // ============================================================================
 // Screen Component
 // ============================================================================
@@ -211,6 +227,24 @@ export default function ApplyScreen() {
           }}
         />
         <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
+      </SafeAreaView>
+    );
+  }
+
+  if (job.schedule.kind === 'fixed') {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: '지원하기',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+            },
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+          }}
+        />
+        <UnsupportedPostingState />
       </SafeAreaView>
     );
   }

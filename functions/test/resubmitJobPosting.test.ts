@@ -37,7 +37,13 @@ describe("resubmitJobPosting canonical contract", () => {
       totalPositions: 1,
       filledPositions: 0,
       viewCount: 0,
-      applicationCount: 0,
+      stats: {
+        totalApplicants: 0,
+        activeApplicants: 0,
+        confirmedApplicants: 0,
+        cancellationPendingApplicants: 0,
+        filledPositions: 0,
+      },
       createdAt: submittedAt,
       updatedAt: rejectedAt,
       location: {

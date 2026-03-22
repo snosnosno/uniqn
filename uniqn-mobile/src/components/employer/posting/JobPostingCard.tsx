@@ -42,7 +42,7 @@ export const JobPostingCard = memo(function JobPostingCard({
             <View className="flex-row items-center">
               <UsersIcon size={14} color="#9333EA" />
               <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
-                지원자 {posting.applicationCount || 0}
+                지원자 {posting.stats?.totalApplicants ?? 0}
               </Text>
             </View>
 

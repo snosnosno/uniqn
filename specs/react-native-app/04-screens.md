@@ -346,7 +346,7 @@
 
 **상태 색상:**
 - 🟢 확정 (confirmed)
-- 🟡 대기 (pending/applied)
+- 🟡 대기 (applied)
 - 🔵 완료 (completed)
 - ⚫ 취소 (cancelled)
 

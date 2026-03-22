@@ -8,13 +8,13 @@
 
 ## Contract Changes
 
-- `jobPostings.applicationCount` is a server-owned derived field.
-- Client transactions may update `filledPositions`, `schedule`, and application status, but must not write `applicationCount`.
+- `jobPostings.stats` is the server-owned derived aggregate field.
+- Client transactions must not write legacy applicant counter fields.
 - Applicant self-service updates are limited to:
-  - `applied/pending -> cancelled`
+  - `applied -> cancelled`
   - `confirmed -> cancellation_pending`
   - `cancelled -> applied`
-- Fixed posting `workLogs` may be created with `date: null` and `timeSlot: null` when `isFixedPosting == true`.
+- Fixed posting public flows are disabled during the V3 cutover.
 - Auth bootstrap now allows `authenticated + profile=null` for phone-only signup sessions that have not created a profile document yet.
 
 ## Automated Verification
@@ -33,8 +33,8 @@ Scenario coverage map:
 - `confirmed -> cancellation_pending`
   - `functions/test/firestoreApplicationRules.test.ts`
   - `functions/test/firestoreOccupancyRules.test.ts`
-- `fixed posting workLog 생성`
-  - `functions/test/firestoreOccupancyRules.test.ts`
+- `fixed public flow disabled`
+  - employer create/apply/detail UI regression coverage
 - `phone-only signup -> profile 미생성 상태 유지`
   - `uniqn-mobile/src/stores/__tests__/authStore.test.ts`
 
@@ -54,9 +54,9 @@ Run these in staging or emulator before the mobile rollout:
    - Confirm an applicant from the employer surface.
    - Submit a cancellation request from the applicant surface.
    - Confirm the employer sees `cancellation_pending` and can review it.
-3. `fixed posting workLog 생성`
-   - Confirm a fixed posting assignment.
-   - Verify the created work log uses `isFixedPosting == true`, `date == null`, and `timeSlot == null`.
+3. `fixed public flow disabled`
+   - Confirm the public home chips do not expose `고정`.
+   - Confirm employer create/detail surfaces block fixed posting access with the V3 cutover message.
 4. `phone-only signup -> profile 미생성 상태 유지`
    - Sign in with a phone-only account that does not have a profile document yet.
    - Confirm the app stays authenticated with `profile == null` instead of forcing sign-out.

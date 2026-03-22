@@ -272,7 +272,6 @@ export async function getApplicantStatsByRole(
         statsByRole[effectiveRole] = {
           total: 0,
           applied: 0,
-          pending: 0,
           confirmed: 0,
           rejected: 0,
           cancelled: 0,

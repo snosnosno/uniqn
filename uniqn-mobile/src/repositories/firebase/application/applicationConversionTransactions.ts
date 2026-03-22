@@ -1,27 +1,13 @@
-/**
- * UNIQN Mobile - Application Conversion Transactions
- *
- * @description 지원자 → 스태프 변환 관련 트랜잭션
- * @version 1.0.0
- *
- * applicantConversionService에서 Firebase 직접 호출을 분리하여
- * Repository 패턴으로 이동한 모듈
- *
- * 수정사항:
- * - getDocs를 트랜잭션 밖(pre-fetch)으로 이동 → 원자적 검증
- * - revertConversion에서 WorkLog 취소 처리 추가
- */
-
 import {
   collection,
   doc,
   getDoc,
   getDocs,
   query,
-  where,
   runTransaction,
   serverTimestamp,
   Timestamp,
+  where,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -29,26 +15,11 @@ import { ValidationError, BusinessError, ERROR_CODES, toError, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff } from '@/types';
-import { FIXED_DATE_MARKER, normalizeAssignmentRole } from '@/types/assignment';
+import { normalizeAssignmentRole } from '@/types/assignment';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import type { ConversionResult, ConversionOptions } from '../../interfaces';
 import { resolvePrimaryApplicationRole } from './applicationRoleUtils';
 
-// ============================================================================
-// Conversion Transaction
-// ============================================================================
-
-/**
- * 지원자를 스태프로 변환 (트랜잭션)
- *
- * 비즈니스 로직:
- * 1. 기존 WorkLog pre-fetch (트랜잭션 밖에서 조회)
- * 2. 지원서/공고/스태프 문서 읽기 (트랜잭션 내)
- * 3. 기존 WorkLog 재검증 (트랜잭션 내 transaction.get)
- * 4. staff 문서 생성 또는 업데이트
- * 5. Assignment별 WorkLog 생성
- * 6. 지원서 상태를 completed로 변경
- */
 export async function convertApplicantToStaffTransaction(
   applicationId: string,
   jobPostingId: string,
@@ -58,14 +29,12 @@ export async function convertApplicantToStaffTransaction(
   const { skipExisting = false, createWorkLogs = true, notes } = options;
 
   try {
-    logger.info('지원자→스태프 변환 시작', { applicationId, jobPostingId, managerId });
+    logger.info('지원자 스태프 전환 시작', { applicationId, jobPostingId, managerId });
 
-    // Pre-read: 지원서를 먼저 읽어 applicantId 확보 (트랜잭션 내에서 재검증됨)
     const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
     const applicationPreSnap = await getDoc(applicationRef);
     const applicantId = applicationPreSnap.data()?.applicantId as string | undefined;
 
-    // Pre-fetch: 기존 WorkLog 조회 (staffId + jobPostingId로 범위 축소)
     const existingWorkLogIds: string[] = [];
     if (!skipExisting && applicantId) {
       const existingWorkLogsQuery = query(
@@ -74,16 +43,15 @@ export async function convertApplicantToStaffTransaction(
         where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId)
       );
       const existingWorkLogsSnap = await getDocs(existingWorkLogsQuery);
-      existingWorkLogsSnap.docs.forEach((d) => existingWorkLogIds.push(d.id));
+      existingWorkLogsSnap.docs.forEach((snapshot) => existingWorkLogIds.push(snapshot.id));
     }
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 지원서 읽기 (트랜잭션 내 재검증)
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '존재하지 않는 지원입니다',
+          userMessage: '존재하지 않는 지원서입니다.',
         });
       }
 
@@ -94,24 +62,22 @@ export async function convertApplicantToStaffTransaction(
 
       if (!applicationData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '지원서 데이터 형식이 올바르지 않습니다',
+          userMessage: '지원서 데이터 형식이 올바르지 않습니다.',
         });
       }
 
-      // 확정 상태 확인
       if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '확정된 지원만 스태프로 변환할 수 있습니다',
+          userMessage: '확정된 지원만 스태프로 전환할 수 있습니다.',
         });
       }
 
-      // 2. 공고 읽기 (권한 확인)
       const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '존재하지 않는 공고입니다',
+          userMessage: '존재하지 않는 공고입니다.',
         });
       }
 
@@ -119,43 +85,48 @@ export async function convertApplicantToStaffTransaction(
 
       if (!jobData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '공고 데이터 형식이 올바르지 않습니다',
+          userMessage: '공고 데이터 형식이 올바르지 않습니다.',
         });
       }
 
-      // 공고 소유자 확인
       if (jobData.ownerId !== managerId) {
         throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-          userMessage: '본인의 공고만 관리할 수 있습니다',
+          userMessage: '본인 공고만 관리할 수 있습니다.',
         });
       }
 
-      // 3. 스태프 중복 확인
+      if (jobData.schedule.kind !== 'dated') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정 공고 스태프 전환은 V3 canonical 전환에서 지원하지 않습니다.',
+        });
+      }
+
       const staffRef = doc(getFirebaseDb(), COLLECTIONS.STAFF, applicationData.applicantId);
       const staffDoc = await transaction.get(staffRef);
       const isNewStaff = !staffDoc.exists();
 
       if (staffDoc.exists() && !skipExisting) {
-        // Pre-fetch한 WorkLog ID들을 트랜잭션 내에서 재검증
-        for (const wlId of existingWorkLogIds) {
-          const wlRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, wlId);
-          const wlSnap = await transaction.get(wlRef);
-          if (wlSnap.exists()) {
-            const wlData = wlSnap.data();
-            if (
-              wlData?.staffId === applicationData.applicantId &&
-              wlData?.jobPostingId === jobPostingId
-            ) {
-              throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_APPLIED, {
-                userMessage: '이미 해당 공고의 스태프입니다',
-              });
-            }
+        for (const workLogId of existingWorkLogIds) {
+          const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+          const workLogSnap = await transaction.get(workLogRef);
+          if (!workLogSnap.exists()) {
+            continue;
+          }
+
+          const workLogData = workLogSnap.data();
+          if (
+            workLogData?.staffId === applicationData.applicantId &&
+            workLogData?.jobPostingId === jobPostingId
+          ) {
+            throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_APPLIED, {
+              userMessage: '이미 해당 공고의 스태프입니다.',
+            });
           }
         }
       }
 
-      // 4. 스태프 문서 생성/업데이트
       const now = serverTimestamp();
+
       if (isNewStaff) {
         const primaryRole = resolvePrimaryApplicationRole(applicationData);
         const staffData: Omit<Staff, 'id'> = {
@@ -164,7 +135,7 @@ export async function convertApplicantToStaffTransaction(
           phone: applicationData.applicantPhone ?? '',
           email: applicationData.applicantEmail ?? '',
           role: primaryRole.role,
-          ...(primaryRole.customRole && { customRole: primaryRole.customRole }),
+          ...(primaryRole.customRole ? { customRole: primaryRole.customRole } : {}),
           isActive: true,
           totalWorkCount: 0,
           rating: 0,
@@ -179,94 +150,55 @@ export async function convertApplicantToStaffTransaction(
         });
       }
 
-      // 5. WorkLog 생성 (Assignment별)
       const workLogIds: string[] = [];
 
       if (createWorkLogs) {
         const assignments = applicationData.assignments ?? [];
-        const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-
-        // 고정공고 또는 레거시: assignments가 없거나 dates가 FIXED_DATE_MARKER인 경우
-        const isFixedAssignmentFlow =
-          assignments.length === 1 && assignments[0].dates[0] === FIXED_DATE_MARKER;
-
         if (assignments.length === 0) {
           throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '배정 정보가 없는 지원서는 스태프로 전환할 수 없습니다',
+            userMessage: '배정 정보가 없는 지원서는 스태프로 전환할 수 없습니다.',
           });
         }
 
-        if (isFixedAssignmentFlow) {
-          // 단일 WorkLog 생성 (고정공고/레거시)
-          const primaryRole = resolvePrimaryApplicationRole(applicationData);
-          const workLogRef = doc(workLogsRef);
-          const workLogData = {
-            staffId: applicationData.applicantId,
-            staffName: applicationData.applicantName,
-            staffNickname: applicationData.applicantNickname ?? null,
-            staffPhotoURL: applicationData.applicantPhotoURL ?? null,
-            jobPostingId,
-            jobPostingName: jobData.title,
-            ownerId: jobData.ownerId,
-            role: primaryRole.role,
-            customRole: primaryRole.customRole ?? null,
-            date: null,
-            timeSlot: null,
-            isFixedPosting: true,
-            status: STATUS.WORK_LOG.SCHEDULED,
-            checkInTime: null,
-            checkOutTime: null,
-            workDuration: null,
-            payrollAmount: null,
-            isSettled: false,
-            checkMethod: 'individual',
-            createdAt: now,
-            updatedAt: now,
-          };
+        const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
-          transaction.set(workLogRef, workLogData);
-          workLogIds.push(workLogRef.id);
-        } else {
-          // Assignment별 WorkLog 생성 (일반 공고)
-          for (const assignment of assignments) {
-            const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
+        for (const assignment of assignments) {
+          const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
 
-            for (const date of assignment.dates) {
-              const workLogRef = doc(workLogsRef);
-              const workLogData = {
-                staffId: applicationData.applicantId,
-                staffName: applicationData.applicantName,
-                staffNickname: applicationData.applicantNickname ?? null,
-                staffPhotoURL: applicationData.applicantPhotoURL ?? null,
-                jobPostingId,
-                jobPostingName: jobData.title,
-                ownerId: jobData.ownerId,
-                role: normalizedRole.role,
-                customRole: normalizedRole.customRole ?? null,
-                date,
-                timeSlot: assignment.timeSlot,
-                isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
-                tentativeDescription: assignment.tentativeDescription ?? null,
-                status: STATUS.WORK_LOG.SCHEDULED,
-                checkInTime: null,
-                checkOutTime: null,
-                workDuration: null,
-                payrollAmount: null,
-                isSettled: false,
-                assignmentGroupId: assignment.groupId,
-                checkMethod: assignment.checkMethod ?? 'individual',
-                createdAt: now,
-                updatedAt: now,
-              };
+          for (const date of assignment.dates) {
+            const workLogRef = doc(workLogsRef);
+            const workLogData = {
+              staffId: applicationData.applicantId,
+              staffName: applicationData.applicantName,
+              staffNickname: applicationData.applicantNickname ?? null,
+              staffPhotoURL: applicationData.applicantPhotoURL ?? null,
+              jobPostingId,
+              jobPostingName: jobData.title,
+              ownerId: jobData.ownerId,
+              role: normalizedRole.role,
+              customRole: normalizedRole.customRole ?? null,
+              date,
+              timeSlot: assignment.timeSlot,
+              isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
+              tentativeDescription: assignment.tentativeDescription ?? null,
+              status: STATUS.WORK_LOG.SCHEDULED,
+              checkInTime: null,
+              checkOutTime: null,
+              workDuration: null,
+              payrollAmount: null,
+              isSettled: false,
+              assignmentGroupId: assignment.groupId,
+              checkMethod: assignment.checkMethod ?? 'individual',
+              createdAt: now,
+              updatedAt: now,
+            };
 
-              transaction.set(workLogRef, workLogData);
-              workLogIds.push(workLogRef.id);
-            }
+            transaction.set(workLogRef, workLogData);
+            workLogIds.push(workLogRef.id);
           }
         }
       }
 
-      // 6. 지원서 상태 업데이트
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.COMPLETED,
         processedBy: managerId,
@@ -280,11 +212,11 @@ export async function convertApplicantToStaffTransaction(
         staffId: applicationData.applicantId,
         workLogIds,
         isNewStaff,
-        message: `${applicationData.applicantName}님이 스태프로 ${isNewStaff ? '등록' : '배정'}되었습니다`,
+        message: `${applicationData.applicantName}님이 스태프로 ${isNewStaff ? '등록' : '배정'}되었습니다.`,
       };
     });
 
-    logger.info('지원자→스태프 변환 완료', {
+    logger.info('지원자 스태프 전환 완료', {
       applicationId,
       staffId: result.staffId,
       workLogIds: result.workLogIds,
@@ -296,34 +228,20 @@ export async function convertApplicantToStaffTransaction(
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '지원자→스태프 변환',
+      operation: '지원자 스태프 전환',
       component: 'ApplicationRepository',
       context: { applicationId },
     });
   }
 }
 
-// ============================================================================
-// Revert Conversion Transaction
-// ============================================================================
-
-/**
- * 스태프 변환 취소 (롤백 트랜잭션)
- *
- * 비즈니스 로직:
- * 1. 관련 WorkLog pre-fetch (트랜잭션 밖)
- * 2. 지원서/공고 읽기 + 권한 확인
- * 3. 지원서 상태 confirmed로 복원
- * 4. 관련 WorkLog cancelled 처리
- */
 export async function revertStaffConversionTransaction(
   applicationId: string,
   managerId: string
 ): Promise<void> {
   try {
-    logger.info('스태프 변환 취소 시작', { applicationId, managerId });
+    logger.info('스태프 전환 취소 시작', { applicationId, managerId });
 
-    // Pre-fetch: 관련 WorkLog 조회
     const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
     const applicationSnap = await getDoc(applicationRef);
     const applicationRaw = applicationSnap.data();
@@ -336,16 +254,15 @@ export async function revertStaffConversionTransaction(
         where(FIELDS.WORK_LOG.jobPostingId, '==', applicationRaw.jobPostingId)
       );
       const workLogsSnap = await getDocs(workLogsQuery);
-      workLogDocIds = workLogsSnap.docs.map((d) => d.id);
+      workLogDocIds = workLogsSnap.docs.map((snapshot) => snapshot.id);
     }
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 지원서 읽기
       const appDoc = await transaction.get(applicationRef);
 
       if (!appDoc.exists()) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '존재하지 않는 지원입니다',
+          userMessage: '존재하지 않는 지원서입니다.',
         });
       }
 
@@ -356,23 +273,22 @@ export async function revertStaffConversionTransaction(
 
       if (!applicationData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '지원서 데이터 형식이 올바르지 않습니다',
+          userMessage: '지원서 데이터 형식이 올바르지 않습니다.',
         });
       }
 
       if (applicationData.status !== STATUS.APPLICATION.COMPLETED) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '완료된 지원만 취소할 수 있습니다',
+          userMessage: '완료된 지원만 취소할 수 있습니다.',
         });
       }
 
-      // 공고 소유자 확인
       const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '존재하지 않는 공고입니다',
+          userMessage: '존재하지 않는 공고입니다.',
         });
       }
 
@@ -380,42 +296,41 @@ export async function revertStaffConversionTransaction(
 
       if (!jobData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '공고 데이터 형식이 올바르지 않습니다',
+          userMessage: '공고 데이터 형식이 올바르지 않습니다.',
         });
       }
 
       if (jobData.ownerId !== managerId) {
         throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-          userMessage: '본인의 공고만 관리할 수 있습니다',
+          userMessage: '본인 공고만 관리할 수 있습니다.',
         });
       }
 
-      // 관련 WorkLog 취소 처리 (pre-fetch한 ID를 트랜잭션 내에서 재검증)
-      for (const wlId of workLogDocIds) {
-        const wlRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, wlId);
-        const wlSnap = await transaction.get(wlRef);
-        if (wlSnap.exists()) {
-          const wlData = wlSnap.data();
-          // scheduled 상태만 취소 (이미 출퇴근한 건 유지)
-          if (wlData?.status === STATUS.WORK_LOG.SCHEDULED) {
-            transaction.update(wlRef, {
-              status: STATUS.WORK_LOG.CANCELLED,
-              cancelledReason: '스태프 변환 취소',
-              cancelledAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            });
-          }
+      for (const workLogId of workLogDocIds) {
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+        const workLogSnap = await transaction.get(workLogRef);
+        if (!workLogSnap.exists()) {
+          continue;
+        }
+
+        const workLogData = workLogSnap.data();
+        if (workLogData?.status === STATUS.WORK_LOG.SCHEDULED) {
+          transaction.update(workLogRef, {
+            status: STATUS.WORK_LOG.CANCELLED,
+            cancelledReason: '스태프 전환 취소',
+            cancelledAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
         }
       }
 
-      // 지원서 상태 복원
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.CONFIRMED,
         updatedAt: serverTimestamp(),
       });
     });
 
-    logger.info('스태프 변환 취소 완료', {
+    logger.info('스태프 전환 취소 완료', {
       applicationId,
       cancelledWorkLogs: workLogDocIds.length,
     });
@@ -424,20 +339,13 @@ export async function revertStaffConversionTransaction(
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '스태프 변환 취소',
+      operation: '스태프 전환 취소',
       component: 'ApplicationRepository',
       context: { applicationId },
     });
   }
 }
 
-// ============================================================================
-// Query Functions
-// ============================================================================
-
-/**
- * 스태프 존재 여부 확인
- */
 export async function isAlreadyStaffQuery(userId: string, jobPostingId?: string): Promise<boolean> {
   try {
     const staffRef = doc(getFirebaseDb(), COLLECTIONS.STAFF, userId);
@@ -459,14 +367,11 @@ export async function isAlreadyStaffQuery(userId: string, jobPostingId?: string)
 
     return true;
   } catch (error) {
-    logger.error('스태프 존재 확인 실패', toError(error), { userId, jobPostingId });
+    logger.error('스태프 존재 여부 확인 실패', toError(error), { userId, jobPostingId });
     return false;
   }
 }
 
-/**
- * 변환 가능 여부 확인
- */
 export async function canConvertToStaffQuery(applicationId: string): Promise<{
   canConvert: boolean;
   reason?: string;
@@ -476,7 +381,7 @@ export async function canConvertToStaffQuery(applicationId: string): Promise<{
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
-      return { canConvert: false, reason: '존재하지 않는 지원입니다' };
+      return { canConvert: false, reason: '존재하지 않는 지원서입니다.' };
     }
 
     const applicationData = parseApplicationDocument({
@@ -485,23 +390,23 @@ export async function canConvertToStaffQuery(applicationId: string): Promise<{
     });
 
     if (!applicationData) {
-      return { canConvert: false, reason: '지원서 데이터 형식이 올바르지 않습니다' };
+      return { canConvert: false, reason: '지원서 데이터 형식이 올바르지 않습니다.' };
     }
 
     if (applicationData.status === STATUS.APPLICATION.COMPLETED) {
-      return { canConvert: false, reason: '이미 스태프로 변환되었습니다' };
+      return { canConvert: false, reason: '이미 스태프로 전환되었습니다.' };
     }
 
     if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
       return {
         canConvert: false,
-        reason: `확정된 지원만 변환 가능합니다 (현재: ${applicationData.status})`,
+        reason: `확정된 지원만 전환할 수 있습니다. 현재 상태: ${applicationData.status}`,
       };
     }
 
     return { canConvert: true };
   } catch (error) {
-    logger.error('변환 가능 여부 확인 실패', toError(error), { applicationId });
-    return { canConvert: false, reason: '확인 중 오류가 발생했습니다' };
+    logger.error('전환 가능 여부 확인 실패', toError(error), { applicationId });
+    return { canConvert: false, reason: '확인 중 오류가 발생했습니다.' };
   }
 }

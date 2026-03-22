@@ -93,6 +93,12 @@ export {
   updateDateSpecificRequirementsFilled,
   updatePostingScheduleFilled,
 } from './DateRequirementUpdater';
+export {
+  buildPostingSlotCapacityMap,
+  validateAssignmentSlotCapacity,
+  type SlotCapacityIssue,
+  type SlotCapacityValidationResult,
+} from './slotCapacity';
 
 // ApplicationStatusMachine - 상태 전이 관리
 export {

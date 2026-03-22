@@ -6,15 +6,17 @@
  * @version 2.0.0
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { View, Text, Pressable } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { QRCodeIcon } from '@/components/icons';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { HeaderBackButton } from '@/components/navigation';
 import { useThemeStore } from '@/stores/themeStore';
+import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor } from '@/constants/colors';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
 /**
  * 헤더 QR 버튼
@@ -64,7 +66,9 @@ function HeaderTitle({
 
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const isDark = useThemeStore((s) => s.isDarkMode);
+  const { addToast } = useToastStore();
   const { job, isLoading } = useJobDetail(id || '');
 
   // QR 모달 상태
@@ -83,6 +87,22 @@ export default function JobPostingDetailLayout() {
     if (isLoading) return '';
     return job?.title || '';
   }, [isLoading, job?.title]);
+
+  useEffect(() => {
+    if (!job || isCanonicalDatedPosting(job)) {
+      return;
+    }
+
+    addToast({
+      type: 'warning',
+      message: '고정공고는 이번 V3 canonical 범위에서 제외되어 접근할 수 없습니다.',
+    });
+    router.replace('/(app)/(tabs)/employer');
+  }, [addToast, job, router]);
+
+  if (job && !isCanonicalDatedPosting(job)) {
+    return null;
+  }
 
   return (
     <View className="flex-1 bg-gray-50 dark:bg-surface-dark">

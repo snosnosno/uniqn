@@ -17,7 +17,6 @@ import type { StatusBadgeVariant } from './types';
  */
 export const STATUS_BADGE_VARIANT: Record<ApplicationStatus, StatusBadgeVariant> = {
   applied: 'primary',
-  pending: 'warning',
   confirmed: 'success',
   rejected: 'error',
   cancelled: 'default',

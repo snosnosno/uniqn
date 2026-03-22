@@ -10,6 +10,7 @@
 
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { SettlementCalculator } from '@/domains/settlement';
@@ -293,7 +294,9 @@ export async function getMySettlementSummary(
     logger.info('전체 정산 요약 조회', { ownerId, dateRange });
 
     // 1. 내 공고 조회 (Repository 사용)
-    const jobPostings = await jobPostingRepository.getByOwnerId(ownerId);
+    const jobPostings = (await jobPostingRepository.getByOwnerId(ownerId)).filter(
+      isCanonicalDatedPosting
+    );
 
     // 2. 각 공고별 정산 요약 조회
     const summaries: JobPostingSettlementSummary[] = [];

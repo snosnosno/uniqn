@@ -85,7 +85,6 @@ const getStatusBadgeVariant = (
 ): 'primary' | 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
     case STATUS.APPLICATION.APPLIED:
-    case STATUS.APPLICATION.PENDING:
       return 'primary';
     case STATUS.APPLICATION.CONFIRMED:
     case STATUS.APPLICATION.COMPLETED:
@@ -298,7 +297,7 @@ const ActionButtons = memo(function ActionButtons({
   isLoading?: boolean;
 }) {
   // 처리 가능한 상태인지 확인
-  const canProcess = status === STATUS.APPLICATION.APPLIED || status === STATUS.APPLICATION.PENDING;
+  const canProcess = status === STATUS.APPLICATION.APPLIED;
 
   if (!canProcess) return null;
 

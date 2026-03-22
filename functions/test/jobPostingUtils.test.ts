@@ -94,11 +94,11 @@ describe("job posting utils", () => {
       description: "Main floor",
       location: { name: "Seoul", district: "Gangnam-gu" },
       roleCatalog: [{ role: "dealer" }],
-      applicationCount: 1,
+      stats: { totalApplicants: 1 },
     };
     const afterCounterOnly = {
       ...before,
-      applicationCount: 2,
+      stats: { totalApplicants: 2 },
     };
     const afterSearchSourceChange = {
       ...before,

@@ -71,7 +71,7 @@ export interface ConfirmWithHistoryResult {
 export interface CancelConfirmationResult {
   applicationId: string;
   cancelledAt: Timestamp;
-  restoredStatus: 'applied' | 'pending';
+  restoredStatus: 'applied';
 }
 
 /**
@@ -138,7 +138,7 @@ export interface IApplicationRepository {
   /**
    * 지원자의 지원 내역을 상태 필터와 함께 조회
    *
-   * @description scheduleService에서 applied/pending 상태만 조회할 때 사용
+   * @description scheduleService에서 applied/confirmed 상태 조회에 사용
    * @param applicantId - 지원자 ID
    * @param statuses - 조회할 상태 배열
    * @param pageSize - 페이지 크기 (기본 50)
@@ -191,14 +191,14 @@ export interface IApplicationRepository {
    * 1. 중복 지원 검사
    * 2. 공고 상태/정원 확인
    * 3. 지원서 생성
-   * 4. 공고의 applicationCount 증가
+   * 4. 공고 stats 재계산은 서버가 담당
    *
    * @param input - 지원 정보 (assignments, preQuestionAnswers 등)
    * @param context - 지원자 정보
    * @returns 생성된 지원서
    * @throws AlreadyAppliedError, ApplicationClosedError, MaxCapacityReachedError
    */
-  // applicationCount is server-owned and reconciled by Cloud Functions.
+  // Job posting stats are server-owned and reconciled by Cloud Functions.
   applyWithTransaction(input: CreateApplicationInput, context: ApplyContext): Promise<Application>;
 
   /**
@@ -206,15 +206,15 @@ export interface IApplicationRepository {
    *
    * 원자적으로 처리되는 작업:
    * 1. 본인 확인
-   * 2. 취소 가능 상태 확인 (applied/pending만 가능)
+   * 2. 취소 가능 상태 확인 (applied만 가능)
    * 3. 지원 상태를 cancelled로 변경
-   * 4. 공고의 applicationCount 감소
+   * 4. 공고 stats 재계산은 서버가 담당
    *
    * @param applicationId - 지원서 ID
    * @param applicantId - 지원자 ID (권한 확인용)
    * @throws BusinessError (이미 취소됨, 확정됨 등)
    */
-  // applicationCount is server-owned and reconciled by Cloud Functions.
+  // Job posting stats are server-owned and reconciled by Cloud Functions.
   cancelWithTransaction(applicationId: string, applicantId: string): Promise<void>;
 
   /**
@@ -241,14 +241,14 @@ export interface IApplicationRepository {
    * 원자적으로 처리되는 작업:
    * 1. 공고 소유자 확인
    * 2. 취소 요청 상태 확인
-   * 3. 승인 시: 지원 상태 cancelled로 변경 + applicationCount 감소
+   * 3. 승인 시: 지원 상태 cancelled로 변경 + occupancy/stats 정리
    * 4. 거절 시: 지원 상태 confirmed로 복원
    *
    * @param input - 검토 결과
    * @param reviewerId - 검토자 ID (권한 확인용)
    * @throws PermissionError (소유자 아님), BusinessError (대기 중 아님)
    */
-  // applicationCount is server-owned and reconciled by Cloud Functions.
+  // Job posting stats are server-owned and reconciled by Cloud Functions.
   reviewCancellationWithTransaction(
     input: ReviewCancellationInput,
     reviewerId: string
@@ -259,7 +259,7 @@ export interface IApplicationRepository {
    *
    * 원자적으로 처리되는 작업:
    * 1. 공고 소유자 확인
-   * 2. 지원 상태 확인 (applied/pending만 가능)
+   * 2. 지원 상태 확인 (applied만 가능)
    * 3. 지원 상태를 rejected로 변경
    * 4. 거절 사유 저장
    *

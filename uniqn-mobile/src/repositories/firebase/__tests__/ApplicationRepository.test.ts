@@ -40,11 +40,21 @@ jest.mock('@/utils/job-posting/dateUtils', () => ({
 jest.mock('@/domains/application', () => ({
   applicationValidator: {
     checkRoleCapacity: jest.fn(() => ({ available: true })),
+    validateApplication: jest.fn(() => ({ isValid: true, errors: [] })),
   },
+  updatePostingScheduleFilled: jest.fn((schedule: Record<string, unknown>) => schedule),
 }));
 
 jest.mock('@/domains/job-posting', () => ({
   selectPostingWorkflow: jest.fn(() => ({ recruitmentType: 'manual' })),
+  normalizePostingAggregateStats: jest.fn((stats: Record<string, unknown> = {}) => ({
+    totalApplicants: Number(stats.totalApplicants ?? 0),
+    activeApplicants: Number(stats.activeApplicants ?? 0),
+    confirmedApplicants: Number(stats.confirmedApplicants ?? 0),
+    cancellationPendingApplicants: Number(stats.cancellationPendingApplicants ?? 0),
+    filledPositions: Number(stats.filledPositions ?? 0),
+  })),
+  transitionPostingAggregateStats: jest.fn((stats: Record<string, unknown> = {}) => stats),
 }));
 
 jest.mock('@/types/assignment', () => ({
@@ -134,12 +144,22 @@ jest.mock('@/errors', () => {
 jest.mock('@/types', () => ({
   isValidAssignment: jest.fn(() => true),
   validateRequiredAnswers: jest.fn(() => true),
+  findActiveConfirmation: jest.fn(
+    (history: Record<string, unknown>[] = []) => history.find((entry) => !entry.cancelledAt) ?? null
+  ),
+  addCancellationToEntry: jest.fn(
+    (entry: Record<string, unknown>, cancelReason?: string, ownerId?: string) => ({
+      ...entry,
+      cancelledAt: { _serverTimestamp: true },
+      cancelReason,
+      cancelledBy: ownerId,
+    })
+  ),
 }));
 
 jest.mock('@/constants/statusConfig', () => ({
   STATUS_TO_STATS_KEY: {
     applied: 'applied',
-    pending: 'pending',
     confirmed: 'confirmed',
     rejected: 'rejected',
     cancelled: 'cancelled',
@@ -177,7 +197,6 @@ jest.mock('@/constants', () => ({
   STATUS: {
     APPLICATION: {
       APPLIED: 'applied',
-      PENDING: 'pending',
       CONFIRMED: 'confirmed',
       REJECTED: 'rejected',
       CANCELLED: 'cancelled',
@@ -234,6 +253,42 @@ function createMockQuerySnap(docs: { id: string; data: Record<string, unknown> }
   };
 }
 
+function createMockDatedJobPosting(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'job-1',
+    title: 'test posting',
+    ownerId: 'employer-1',
+    status: 'active',
+    workDate: '2025-01-01',
+    schedule: {
+      kind: 'dated',
+      primaryDate: '2025-01-01',
+      allDates: ['2025-01-01'],
+      requirements: [
+        {
+          date: '2025-01-01',
+          timeSlots: [
+            {
+              startTime: '09:00',
+              roles: [{ role: 'dealer', count: 1, filled: 1 }],
+            },
+          ],
+        },
+      ],
+    },
+    questions: { items: [] },
+    stats: {
+      totalApplicants: 3,
+      activeApplicants: 1,
+      confirmedApplicants: 1,
+      cancellationPendingApplicants: 1,
+      filledPositions: 1,
+    },
+    filledPositions: 1,
+    ...overrides,
+  };
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -244,6 +299,14 @@ describe('FirebaseApplicationRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = new FirebaseApplicationRepository();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const schemas = require('@/schemas');
+    schemas.parseApplicationDocument.mockImplementation((data: Record<string, unknown>) =>
+      !data || !data.id ? null : data
+    );
+    schemas.parseJobPostingDocument.mockImplementation((data: Record<string, unknown>) =>
+      !data || !data.id ? null : data
+    );
   });
 
   // ==========================================================================
@@ -502,12 +565,19 @@ describe('FirebaseApplicationRepository', () => {
         get: jest
           .fn()
           .mockResolvedValueOnce(
-            createMockDocSnap('job-1', {
-              id: 'job-1',
-              title: 'test posting',
-              status: 'active',
-              questions: { items: [] },
-            })
+            createMockDocSnap(
+              'job-1',
+              createMockDatedJobPosting({
+                stats: {
+                  totalApplicants: 0,
+                  activeApplicants: 0,
+                  confirmedApplicants: 0,
+                  cancellationPendingApplicants: 0,
+                  filledPositions: 0,
+                },
+                filledPositions: 0,
+              })
+            )
           )
           .mockResolvedValueOnce(createMockDocSnap('job-1_staff-1', null)),
         set: jest.fn(),
@@ -521,7 +591,14 @@ describe('FirebaseApplicationRepository', () => {
       const result = await repository.applyWithTransaction(
         {
           jobPostingId: 'job-1',
-          assignments: [{ roleIds: ['dealer'] }],
+          assignments: [
+            {
+              roleIds: ['dealer'],
+              timeSlot: '09:00',
+              dates: ['2025-01-01'],
+              isGrouped: false,
+            },
+          ],
         } as never,
         {
           applicantId: 'staff-1',
@@ -677,10 +754,7 @@ describe('FirebaseApplicationRepository', () => {
           )
           .mockResolvedValueOnce(
             createMockDocSnap('job-1', {
-              id: 'job-1',
-              ownerId: 'employer-1',
-              applicationCount: 3,
-              filledPositions: 1,
+              ...createMockDatedJobPosting(),
             })
           ),
         update: jest.fn(),
@@ -716,6 +790,12 @@ describe('FirebaseApplicationRepository', () => {
     });
 
     it('should only decrement filledPositions when approving a cancellation request', async () => {
+      const requestedAt = {
+        seconds: 1735689600,
+        nanoseconds: 0,
+        toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+      };
+
       const mockTransaction = {
         get: jest
           .fn()
@@ -725,23 +805,29 @@ describe('FirebaseApplicationRepository', () => {
               applicantId: 'staff-1',
               jobPostingId: 'job-1',
               status: 'cancellation_pending',
+              confirmationHistory: [
+                {
+                  confirmedAt: requestedAt,
+                  assignments: [
+                    {
+                      roleIds: ['dealer'],
+                      timeSlot: '09:00',
+                      dates: ['2025-01-01'],
+                      isGrouped: false,
+                    },
+                  ],
+                },
+              ],
               cancellationRequest: {
                 status: 'pending',
-                requestedAt: {
-                  seconds: 1735689600,
-                  nanoseconds: 0,
-                  toDate: () => new Date('2025-01-01T00:00:00.000Z'),
-                },
+                requestedAt,
                 reason: '개인 일정',
               },
             })
           )
           .mockResolvedValueOnce(
             createMockDocSnap('job-1', {
-              id: 'job-1',
-              ownerId: 'employer-1',
-              applicationCount: 3,
-              filledPositions: 1,
+              ...createMockDatedJobPosting(),
             })
           ),
         update: jest.fn(),
@@ -761,9 +847,18 @@ describe('FirebaseApplicationRepository', () => {
 
       expect(mockTransaction.update).toHaveBeenCalledTimes(2);
 
-      const jobUpdate = mockTransaction.update.mock.calls[1][1];
+      const jobUpdate = mockTransaction.update.mock.calls
+        .map(([, update]) => update)
+        .find(
+          (update) =>
+            typeof update === 'object' &&
+            update !== null &&
+            ('schedule' in (update as Record<string, unknown>) ||
+              'stats' in (update as Record<string, unknown>))
+        );
+
       expect(jobUpdate).toMatchObject({
-        filledPositions: 0,
+        filledPositions: 1,
         updatedAt: { _serverTimestamp: true },
       });
       expect(jobUpdate).not.toHaveProperty('applicationCount');

@@ -17,6 +17,7 @@ import { setUserProperties } from '@/services/observability/analyticsService';
 import type { EditableProfileFields } from '@/types';
 import type { UserProfile } from './authTypes';
 import { requireCurrentUser } from './authCoreService';
+import type { EmployerRegistrationInput } from '@/repositories/interfaces/IUserRepository';
 
 // ============================================================================
 // Profile Management
@@ -148,7 +149,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
  *
  * @returns 업데이트된 프로필 (Timestamp 타입)
  */
-export async function registerAsEmployer(): Promise<UserProfile> {
+export async function registerAsEmployer(input: EmployerRegistrationInput): Promise<UserProfile> {
   try {
     const user = getFirebaseAuth().currentUser;
 
@@ -161,7 +162,7 @@ export async function registerAsEmployer(): Promise<UserProfile> {
     logger.info('구인자 등록 시도', { uid: user.uid });
 
     // Repository를 통한 Transaction 처리
-    const updatedProfile = await userRepository.registerAsEmployer(user.uid);
+    const updatedProfile = await userRepository.registerAsEmployer(user.uid, input);
 
     logger.info('구인자 등록 성공', { uid: user.uid });
 

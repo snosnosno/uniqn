@@ -38,7 +38,13 @@ function createCanonicalTournamentPosting(
     totalPositions: 1,
     filledPositions: 0,
     viewCount: 0,
-    applicationCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     createdAt: submittedAt,
     updatedAt: submittedAt,
     location: {
@@ -196,7 +202,7 @@ describe("job posting function canonical contracts", () => {
     );
   });
 
-  it("updateJobPostingApplicantCount only updates canonical counters", async () => {
+  it("updateJobPostingApplicantCount only updates canonical stats", async () => {
     const db = admin.firestore();
 
     await db
@@ -207,7 +213,7 @@ describe("job posting function canonical contracts", () => {
     await db.collection("applications").doc("app-1").set({
       jobPostingId: "job-count",
       applicantId: "staff-1",
-      status: "submitted",
+      status: "applied",
     });
 
     const afterSnapshot = await db.collection("applications").doc("app-1").get();
@@ -224,11 +230,17 @@ describe("job posting function canonical contracts", () => {
     const posting = postingSnapshot.data() as Record<string, unknown>;
 
     expectNoLegacyJobPostingFields(posting);
-    expect(posting.applicationCount).to.equal(1);
+    expect(posting.stats).to.deep.equal({
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    });
     expect(posting.updatedAt).to.exist;
   });
 
-  it("updateJobPostingApplicantCount skips no-op creates when the canonical counter is already current", async () => {
+  it("updateJobPostingApplicantCount skips no-op creates when canonical stats are already current", async () => {
     const db = admin.firestore();
     const stableUpdatedAt = admin.firestore.Timestamp.fromDate(
       new Date("2026-04-01T10:00:00.000Z"),
@@ -238,14 +250,20 @@ describe("job posting function canonical contracts", () => {
       .collection("jobPostings")
       .doc("job-count-stable")
       .set(createCanonicalTournamentPosting({
-        applicationCount: 1,
+        stats: {
+          totalApplicants: 1,
+          activeApplicants: 1,
+          confirmedApplicants: 0,
+          cancellationPendingApplicants: 0,
+          filledPositions: 0,
+        },
         updatedAt: stableUpdatedAt,
       }));
 
     await db.collection("applications").doc("app-stable").set({
       jobPostingId: "job-count-stable",
       applicantId: "staff-1",
-      status: "submitted",
+      status: "applied",
     });
 
     const afterSnapshot = await db.collection("applications").doc("app-stable").get();
@@ -261,11 +279,17 @@ describe("job posting function canonical contracts", () => {
     const postingSnapshot = await db.collection("jobPostings").doc("job-count-stable").get();
     const posting = postingSnapshot.data() as Record<string, unknown>;
 
-    expect(posting.applicationCount).to.equal(1);
+    expect(posting.stats).to.deep.equal({
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    });
     expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(true);
   });
 
-  it("updateJobPostingApplicantCount skips status-only churn when count membership did not change", async () => {
+  it("updateJobPostingApplicantCount recalculates canonical breakdown when status changes", async () => {
     const db = admin.firestore();
     const stableUpdatedAt = admin.firestore.Timestamp.fromDate(
       new Date("2026-04-01T11:00:00.000Z"),
@@ -275,14 +299,20 @@ describe("job posting function canonical contracts", () => {
       .collection("jobPostings")
       .doc("job-count-status")
       .set(createCanonicalTournamentPosting({
-        applicationCount: 1,
+        stats: {
+          totalApplicants: 1,
+          activeApplicants: 1,
+          confirmedApplicants: 0,
+          cancellationPendingApplicants: 0,
+          filledPositions: 0,
+        },
         updatedAt: stableUpdatedAt,
       }));
 
     await db.collection("applications").doc("app-status").set({
       jobPostingId: "job-count-status",
       applicantId: "staff-1",
-      status: "submitted",
+      status: "applied",
     });
 
     const beforeSnapshot = await db.collection("applications").doc("app-status").get();
@@ -306,7 +336,13 @@ describe("job posting function canonical contracts", () => {
     const postingSnapshot = await db.collection("jobPostings").doc("job-count-status").get();
     const posting = postingSnapshot.data() as Record<string, unknown>;
 
-    expect(posting.applicationCount).to.equal(1);
-    expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(true);
+    expect(posting.stats).to.deep.equal({
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 1,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    });
+    expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(false);
   });
 });

@@ -36,19 +36,7 @@ export default function CreateJobPostingScreen() {
 
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setIsDirty(true);
-    setDraft((prev) => {
-      const currentFormData = draftToFormData(prev);
-      const nextPatch = { ...data };
-
-      if (data.postingType === 'fixed' && currentFormData.postingType !== 'fixed') {
-        nextPatch.roles = [
-          { name: '직원', count: 1, isCustom: false },
-          { name: '매니저', count: 1, isCustom: false },
-        ];
-      }
-
-      return patchJobPostingDraft(prev, nextPatch);
-    });
+    setDraft((prev) => patchJobPostingDraft(prev, data));
   }, []);
 
   const handleSaveTemplate = useCallback(async () => {
@@ -78,7 +66,7 @@ export default function CreateJobPostingScreen() {
 
       const successMessage =
         formData.postingType === 'tournament'
-          ? '공고가 등록되었습니다. 관리자 확인 후 게시됩니다.'
+          ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
           : '공고가 등록되었습니다.';
       addToast({ type: 'success', message: successMessage });
       router.replace('/(app)/(tabs)/employer');

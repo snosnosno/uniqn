@@ -42,6 +42,7 @@ export type {
   DeletionReason,
   DeletionRequest,
   UserDataExport,
+  EmployerRegistrationInput,
 } from './IUserRepository';
 
 // EventQR Repository

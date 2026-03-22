@@ -1,9 +1,3 @@
-/**
- * StatusConfig 테스트
- *
- * @description Phase 1.2 - 상태 설정 통합 테스트
- */
-
 import {
   APPLICATION_STATUS,
   SCHEDULE_STATUS,
@@ -21,14 +15,10 @@ import {
 } from '../statusConfig';
 
 describe('StatusConfig', () => {
-  // ==========================================================================
-  // APPLICATION_STATUS
-  // ==========================================================================
   describe('APPLICATION_STATUS', () => {
     it('should have all expected status types', () => {
       const expectedStatuses: ApplicationStatusType[] = [
         'applied',
-        'pending',
         'confirmed',
         'rejected',
         'cancelled',
@@ -53,9 +43,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // SCHEDULE_STATUS
-  // ==========================================================================
   describe('SCHEDULE_STATUS', () => {
     it('should have all expected status types', () => {
       const expectedStatuses: ScheduleStatusType[] = [
@@ -71,9 +58,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // ATTENDANCE_STATUS
-  // ==========================================================================
   describe('ATTENDANCE_STATUS', () => {
     it('should have all expected attendance statuses', () => {
       expect(ATTENDANCE_STATUS.not_started).toBeDefined();
@@ -88,9 +72,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // PAYROLL_STATUS
-  // ==========================================================================
   describe('PAYROLL_STATUS', () => {
     it('should have pending and completed statuses', () => {
       expect(PAYROLL_STATUS.pending).toBeDefined();
@@ -103,9 +84,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // JOB_POSTING_STATUS
-  // ==========================================================================
   describe('JOB_POSTING_STATUS', () => {
     it('should have all posting statuses', () => {
       expect(JOB_POSTING_STATUS.active).toBeDefined();
@@ -114,9 +92,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // INQUIRY_STATUS
-  // ==========================================================================
   describe('INQUIRY_STATUS', () => {
     it('should have all inquiry statuses', () => {
       expect(INQUIRY_STATUS.open).toBeDefined();
@@ -125,9 +100,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // ANNOUNCEMENT_PRIORITY
-  // ==========================================================================
   describe('ANNOUNCEMENT_PRIORITY', () => {
     it('should have all priority levels', () => {
       expect(ANNOUNCEMENT_PRIORITY.urgent).toBeDefined();
@@ -136,9 +108,6 @@ describe('StatusConfig', () => {
     });
   });
 
-  // ==========================================================================
-  // Helper Functions
-  // ==========================================================================
   describe('getStatusConfig', () => {
     it('should return correct config for valid status', () => {
       const config = getStatusConfig(APPLICATION_STATUS, 'confirmed');
@@ -147,7 +116,7 @@ describe('StatusConfig', () => {
 
     it('should return default config for invalid status', () => {
       const config = getStatusConfig(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
-      expect(config.label).toBe('알 수 없음');
+      expect(config.label).toBe('상태 없음');
       expect(config.variant).toBe('default');
     });
   });
@@ -158,9 +127,9 @@ describe('StatusConfig', () => {
       expect(getStatusLabel(APPLICATION_STATUS, 'confirmed')).toBe('확정');
     });
 
-    it('should return "알 수 없음" for invalid status', () => {
+    it('should return fallback for invalid status', () => {
       expect(getStatusLabel(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)).toBe(
-        '알 수 없음'
+        '상태 없음'
       );
     });
   });
@@ -173,7 +142,7 @@ describe('StatusConfig', () => {
 
     it('should return gray for invalid status', () => {
       const color = getStatusHexColor(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
-      expect(color).toBe('#6B7280'); // gray-500
+      expect(color).toBe('#6B7280');
     });
   });
 
@@ -183,7 +152,7 @@ describe('StatusConfig', () => {
       expect(getStatusVariant(APPLICATION_STATUS, 'rejected')).toBe('error');
     });
 
-    it('should return "default" for invalid status', () => {
+    it('should return default for invalid status', () => {
       expect(getStatusVariant(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)).toBe(
         'default'
       );

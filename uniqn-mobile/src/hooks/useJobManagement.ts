@@ -1,8 +1,5 @@
 /**
- * UNIQN Mobile - 공고 관리 훅 (구인자용)
- *
- * @description 공고 생성, 수정, 삭제, 상태 관리
- * @version 1.0.0
+ * UNIQN Mobile - Employer job posting management hooks
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -30,10 +27,6 @@ import {
 } from '@/services/offline/remoteMutationGuard';
 import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface CreateJobParams {
   input: CreateJobPostingInput;
 }
@@ -48,13 +41,6 @@ interface BulkStatusParams {
   status: JobPostingStatus;
 }
 
-// ============================================================================
-// 내 공고 목록 조회 훅
-// ============================================================================
-
-/**
- * 내 공고 목록 조회 (구인자)
- */
 export function useMyJobPostings() {
   const { user } = useAuthStore();
 
@@ -66,13 +52,6 @@ export function useMyJobPostings() {
   });
 }
 
-// ============================================================================
-// 공고 통계 조회 훅
-// ============================================================================
-
-/**
- * 내 공고 통계 조회 (구인자)
- */
 export function useJobPostingStats() {
   const { user } = useAuthStore();
 
@@ -84,17 +63,6 @@ export function useJobPostingStats() {
   });
 }
 
-// ============================================================================
-// 공고 CRUD 훅
-// ============================================================================
-
-/**
- * 공고 생성 뮤테이션 훅
- *
- * @description
- * - regular/urgent 타입에서 여러 날짜 선택 시 날짜별로 개별 공고 생성
- * - 단일 생성 시 CreateJobPostingResult, 다중 생성 시 CreateJobPostingResult[] 반환
- */
 export function useCreateJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -103,23 +71,12 @@ export function useCreateJobPosting() {
   return useMutation({
     mutationFn: (params: CreateJobParams) => {
       requireAuth(user?.uid, 'useJobManagement');
-      // Firestore profile의 name/nickname 우선 사용, 없으면 Firebase Auth displayName
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
       requireOnlineForMutation('useJobManagement.createJobPosting');
       return createJobPosting(params.input, user.uid, ownerName);
     },
-    onSuccess: (data) => {
-      // 다중 공고 생성 여부 확인
-      if (Array.isArray(data)) {
-        addToast({
-          type: 'success',
-          message: `${data.length}개의 공고가 등록되었습니다.`,
-        });
-      } else {
-        addToast({ type: 'success', message: '공고가 등록되었습니다.' });
-      }
-
-      // 캐시 무효화
+    onSuccess: () => {
+      addToast({ type: 'success', message: '공고가 등록되었습니다.' });
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
@@ -131,9 +88,6 @@ export function useCreateJobPosting() {
   });
 }
 
-/**
- * 공고 수정 뮤테이션 훅
- */
 export function useUpdateJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -149,14 +103,12 @@ export function useUpdateJobPosting() {
       logger.info('공고 수정 완료', { jobPostingId: params.jobPostingId });
       addToast({ type: 'success', message: '공고가 수정되었습니다.' });
 
-      // 캐시 무효화
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
         queryKey: getJobDetailQueryKey(params.jobPostingId, user?.uid),
       });
-      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
@@ -165,9 +117,6 @@ export function useUpdateJobPosting() {
   });
 }
 
-/**
- * 공고 삭제 뮤테이션 훅
- */
 export function useDeleteJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -200,7 +149,6 @@ export function useDeleteJobPosting() {
       logger.info('공고 삭제 완료', { jobPostingId });
       addToast({ type: 'success', message: '공고가 삭제되었습니다.' });
 
-      // 캐시 무효화
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
@@ -219,13 +167,6 @@ export function useDeleteJobPosting() {
   });
 }
 
-// ============================================================================
-// 공고 상태 변경 훅
-// ============================================================================
-
-/**
- * 공고 마감 뮤테이션 훅
- */
 export function useCloseJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -256,14 +197,12 @@ export function useCloseJobPosting() {
       logger.info('공고 마감 완료', { jobPostingId });
       addToast({ type: 'success', message: '공고가 마감되었습니다.' });
 
-      // 캐시 무효화
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
         queryKey: getJobDetailQueryKey(jobPostingId, user?.uid),
       });
-      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
@@ -279,9 +218,6 @@ export function useCloseJobPosting() {
   });
 }
 
-/**
- * 공고 재오픈 뮤테이션 훅
- */
 export function useReopenJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -312,14 +248,12 @@ export function useReopenJobPosting() {
       logger.info('공고 재오픈 완료', { jobPostingId });
       addToast({ type: 'success', message: '공고가 다시 활성화되었습니다.' });
 
-      // 캐시 무효화
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
       queryClient.invalidateQueries({
         queryKey: getJobDetailQueryKey(jobPostingId, user?.uid),
       });
-      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.lists(),
       });
@@ -335,9 +269,6 @@ export function useReopenJobPosting() {
   });
 }
 
-/**
- * 공고 일괄 상태 변경 뮤테이션 훅
- */
 export function useBulkUpdateStatus() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -368,10 +299,9 @@ export function useBulkUpdateStatus() {
       logger.info('공고 일괄 상태 변경 완료', { successCount });
       addToast({
         type: 'success',
-        message: `${successCount}개 공고 상태가 변경되었습니다.`,
+        message: `${successCount}개 공고의 상태가 변경되었습니다.`,
       });
 
-      // 캐시 무효화
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobManagement.all,
       });
@@ -390,15 +320,6 @@ export function useBulkUpdateStatus() {
   });
 }
 
-// ============================================================================
-// 통합 훅
-// ============================================================================
-
-/**
- * 공고 관리 통합 훅 (구인자)
- *
- * @description 공고 관리에 필요한 모든 기능 제공
- */
 export function useJobManagement() {
   const myPostingsQuery = useMyJobPostings();
   const statsQuery = useJobPostingStats();
@@ -411,17 +332,14 @@ export function useJobManagement() {
   const bulkStatusMutation = useBulkUpdateStatus();
 
   return {
-    // 내 공고 목록
     myPostings: myPostingsQuery.data ?? [],
     isLoadingPostings: myPostingsQuery.isLoading,
     postingsError: myPostingsQuery.error,
     refreshPostings: myPostingsQuery.refetch,
 
-    // 통계
     stats: statsQuery.data,
     isLoadingStats: statsQuery.isLoading,
 
-    // 공고 CRUD - 1초 throttle
     createJobPosting: useThrottledCallback(createMutation.mutate, 1000),
     createJobPostingAsync: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
@@ -433,7 +351,6 @@ export function useJobManagement() {
     deleteJobPosting: useThrottledCallback(deleteMutation.mutate, 1000),
     isDeleting: deleteMutation.isPending,
 
-    // 상태 변경
     closeJobPosting: closeMutation.mutate,
     isClosing: closeMutation.isPending,
 

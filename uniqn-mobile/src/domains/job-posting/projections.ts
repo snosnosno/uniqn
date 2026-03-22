@@ -30,7 +30,7 @@ function projectCard(facts: PostingFacts): PostingCardViewModel {
     useSameSalary: facts.compensation.display.useSameSalary,
     status: facts.status,
     isUrgent: facts.isUrgent,
-    applicationCount: facts.stats.applicationCount,
+    totalApplicants: facts.stats.totalApplicants,
     postingType: facts.postingType,
     ownerName: facts.owner.name,
     contactPhone: facts.owner.contactPhone,
@@ -77,7 +77,7 @@ function projectDetail(facts: PostingFacts): PostingDetailViewModel {
     questions: facts.questions.items,
     ownerName: facts.owner.name,
     ownerId: facts.owner.id,
-    applicationCount: facts.stats.applicationCount,
+    totalApplicants: facts.stats.totalApplicants,
     viewCount: facts.posting.viewCount,
     totalPositions: facts.stats.totalPositions,
     filledPositions: facts.stats.filledPositions,
@@ -92,9 +92,14 @@ function projectDetail(facts: PostingFacts): PostingDetailViewModel {
 function projectManagement(facts: PostingFacts): PostingManagementViewModel {
   return {
     ...projectDetail(facts),
-    totalApplicants: facts.stats.applicationCount,
-    confirmedApplicants: 0,
-    pendingApplicants: facts.stats.applicationCount,
+    totalApplicants: facts.stats.totalApplicants,
+    confirmedApplicants: facts.stats.confirmedApplicants,
+    pendingApplicants: Math.max(
+      0,
+      facts.stats.activeApplicants -
+        facts.stats.confirmedApplicants -
+        facts.stats.cancellationPendingApplicants
+    ),
   };
 }
 

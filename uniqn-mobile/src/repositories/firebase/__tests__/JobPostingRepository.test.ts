@@ -248,8 +248,14 @@ function createValidJobPostingData(
     },
     totalPositions: 5,
     filledPositions: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
     viewCount: 0,
-    applicationCount: 0,
     createdAt: new Date('2025-06-01T00:00:00.000Z'),
     updatedAt: new Date('2025-06-01T00:00:00.000Z'),
     ...overrides,
@@ -307,6 +313,16 @@ describe('FirebaseJobPostingRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository = new FirebaseJobPostingRepository();
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const schemas = require('@/schemas');
+    schemas.parseJobPostingDocument.mockReset();
+    schemas.parseJobPostingDocuments.mockReset();
+    schemas.parseJobPostingDocument.mockImplementation((data: Record<string, unknown>) =>
+      !data || !data.id ? null : data
+    );
+    schemas.parseJobPostingDocuments.mockImplementation((docs: Record<string, unknown>[]) =>
+      docs.filter((doc) => doc && doc.id)
+    );
   });
 
   describe('getById', () => {
@@ -560,12 +576,14 @@ describe('FirebaseJobPostingRepository', () => {
     it('should soft-delete job posting (set status to cancelled)', async () => {
       const mockTransaction = {
         get: jest.fn().mockResolvedValue(
-          createMockDocSnap('job-1', {
-            id: 'job-1',
-            ownerId: 'employer-1',
-            status: 'active',
-            filledPositions: 0,
-          })
+          createMockDocSnap(
+            'job-1',
+            createValidJobPostingData({
+              ownerId: 'employer-1',
+              status: 'active',
+              filledPositions: 0,
+            })
+          )
         ),
         update: jest.fn(),
       };
@@ -786,7 +804,14 @@ describe('FirebaseJobPostingRepository', () => {
             id: 'job-1',
             ownerId: 'employer-1',
             status: 'active',
-            applicationCount: 5,
+            postingType: 'regular',
+            schedule: {
+              kind: 'dated',
+              primaryDate: '2026-04-01',
+              allDates: ['2026-04-01'],
+              requirements: [],
+            },
+            stats: { totalApplicants: 5 },
             viewCount: 100,
           },
         },
@@ -796,7 +821,14 @@ describe('FirebaseJobPostingRepository', () => {
             id: 'job-2',
             ownerId: 'employer-1',
             status: 'closed',
-            applicationCount: 3,
+            postingType: 'urgent',
+            schedule: {
+              kind: 'dated',
+              primaryDate: '2026-04-02',
+              allDates: ['2026-04-02'],
+              requirements: [],
+            },
+            stats: { totalApplicants: 3 },
             viewCount: 50,
           },
         },
@@ -806,7 +838,15 @@ describe('FirebaseJobPostingRepository', () => {
             id: 'job-3',
             ownerId: 'employer-1',
             status: 'cancelled',
-            applicationCount: 0,
+            postingType: 'fixed',
+            schedule: {
+              kind: 'fixed',
+              daysPerWeek: 5,
+              startTime: '18:00',
+              isStartTimeNegotiable: false,
+              roles: [],
+            },
+            stats: { totalApplicants: 0 },
             viewCount: 10,
           },
         },
@@ -816,12 +856,12 @@ describe('FirebaseJobPostingRepository', () => {
 
       const stats = await repository.getStatsByOwnerId('employer-1');
 
-      expect(stats.total).toBe(3);
+      expect(stats.total).toBe(2);
       expect(stats.active).toBe(1);
       expect(stats.closed).toBe(1);
-      expect(stats.cancelled).toBe(1);
+      expect(stats.cancelled).toBe(0);
       expect(stats.totalApplications).toBe(8);
-      expect(stats.totalViews).toBe(160);
+      expect(stats.totalViews).toBe(150);
     });
   });
 

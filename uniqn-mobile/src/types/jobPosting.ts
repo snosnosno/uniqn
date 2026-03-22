@@ -123,6 +123,14 @@ export interface PostingQuestions {
   items: PreQuestion[];
 }
 
+export interface JobPostingAggregateStats {
+  totalApplicants: number;
+  activeApplicants: number;
+  confirmedApplicants: number;
+  cancellationPendingApplicants: number;
+  filledPositions: number;
+}
+
 /**
  * Canonical V3 Firestore document shape.
  * Query-critical fields stay top-level for Firestore indexes.
@@ -141,7 +149,7 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   totalPositions: number;
   filledPositions: number;
   viewCount?: number;
-  applicationCount?: number;
+  stats?: JobPostingAggregateStats;
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
   closedAt?: Timestamp;
@@ -354,7 +362,10 @@ export interface PostingFacts {
   stats: {
     totalPositions: number;
     filledPositions: number;
-    applicationCount: number;
+    totalApplicants: number;
+    activeApplicants: number;
+    confirmedApplicants: number;
+    cancellationPendingApplicants: number;
   };
   questions: {
     items: PreQuestion[];
@@ -385,7 +396,7 @@ export interface PostingCardViewModel {
   useSameSalary?: boolean;
   status: JobPostingStatus;
   isUrgent?: boolean;
-  applicationCount?: number;
+  totalApplicants?: number;
   postingType?: PostingType;
   ownerName?: string;
   contactPhone?: string;
@@ -430,7 +441,7 @@ export interface PostingDetailViewModel {
   questions: PreQuestion[];
   ownerName?: string;
   ownerId?: string;
-  applicationCount?: number;
+  totalApplicants?: number;
   viewCount?: number;
   totalPositions: number;
   filledPositions: number;

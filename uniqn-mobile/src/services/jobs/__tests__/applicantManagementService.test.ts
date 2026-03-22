@@ -113,7 +113,6 @@ jest.mock('@/errors', () => {
 jest.mock('@/constants/statusConfig', () => ({
   STATUS_TO_STATS_KEY: {
     applied: 'applied',
-    pending: 'pending',
     confirmed: 'confirmed',
     rejected: 'rejected',
     cancelled: 'cancelled',
@@ -145,7 +144,6 @@ function createMockStats(overrides: Partial<ApplicationStats> = {}): Application
   return {
     total: 0,
     applied: 0,
-    pending: 0,
     confirmed: 0,
     rejected: 0,
     cancelled: 0,
@@ -211,22 +209,22 @@ describe('applicantManagementService', () => {
       const mockResult: ApplicantListWithStats = {
         applications: [
           createMockApplication({ id: 'app-1', status: 'confirmed' }),
-          createMockApplication({ id: 'app-2', status: 'pending' }),
+          createMockApplication({ id: 'app-2', status: 'applied' }),
         ],
-        stats: createMockStats({ total: 2, confirmed: 1, pending: 1 }),
+        stats: createMockStats({ total: 2, confirmed: 1, applied: 1 }),
       };
 
       mockFindByJobPostingWithStats.mockResolvedValue(mockResult);
 
       const result = await getApplicantsByJobPosting('job-1', 'employer-1', [
         'confirmed',
-        'pending',
+        'applied',
       ]);
 
       expect(result.applicants).toHaveLength(2);
       expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith('job-1', 'employer-1', [
         'confirmed',
-        'pending',
+        'applied',
       ]);
     });
 
