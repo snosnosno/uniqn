@@ -8,6 +8,7 @@ import type {
 } from '@/types';
 import { FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
+import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import {
   createPostingLegacyDateRequirements,
   getPostingDateGroups,
@@ -123,15 +124,17 @@ export function selectPostingApplicationEligibility(
   const roleAvailability = selectPostingRoleAvailability(posting);
   const postingFull =
     posting.totalPositions > 0 && posting.filledPositions >= posting.totalPositions;
-  const fixedDisabled = workflow.isFixed;
+  const unsupportedWorkflow = !isSupportedReleasePosting(posting);
   const canApply =
     posting.status === 'active' &&
     !postingFull &&
     roleAvailability.hasAvailableRoles &&
-    !fixedDisabled;
+    !unsupportedWorkflow;
 
   let reason: PostingApplicationEligibility['reason'];
-  if (fixedDisabled || posting.status !== 'active') {
+  if (unsupportedWorkflow) {
+    reason = 'unsupported_workflow';
+  } else if (posting.status !== 'active') {
     reason = 'inactive';
   } else if (postingFull) {
     reason = 'posting_full';

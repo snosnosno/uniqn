@@ -20,6 +20,7 @@ export class StatusMapper {
     switch (status) {
       case STATUS.WORK_LOG.SCHEDULED:
       case STATUS.WORK_LOG.CANCELLED:
+      case STATUS.WORK_LOG.NO_SHOW:
         return STATUS.ATTENDANCE.NOT_STARTED as AttendanceStatus;
       case STATUS.WORK_LOG.CHECKED_IN:
         return STATUS.ATTENDANCE.CHECKED_IN as AttendanceStatus;
@@ -40,6 +41,7 @@ export class StatusMapper {
       case STATUS.WORK_LOG.COMPLETED:
         return STATUS.SCHEDULE.COMPLETED as ScheduleType;
       case STATUS.WORK_LOG.CANCELLED:
+      case STATUS.WORK_LOG.NO_SHOW:
         return STATUS.SCHEDULE.CANCELLED as ScheduleType;
       default:
         return STATUS.SCHEDULE.CONFIRMED as ScheduleType;

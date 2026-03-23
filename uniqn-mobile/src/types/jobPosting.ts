@@ -170,6 +170,12 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
 export type JobPostingEntity = JobPostingDocumentV3;
 
 export type JobPosting = JobPostingEntity;
+export type SupportedReleasePostingType = Exclude<PostingType, 'fixed'>;
+export type SupportedReleasePostingSchedule = PostingDatedSchedule;
+export type SupportedReleaseJobPosting = JobPosting & {
+  postingType?: SupportedReleasePostingType;
+  schedule: SupportedReleasePostingSchedule;
+};
 
 export interface PostingFactsPosting extends JobPosting {
   roles: RoleRequirement[];
@@ -311,7 +317,7 @@ export interface PostingApplicationEligibility {
   requiresPreQuestions: boolean;
   fixedAssignmentTimeSlot: string;
   availableRoleOptions: PostingRoleAvailabilityItem[];
-  reason?: 'inactive' | 'posting_full' | 'role_full';
+  reason?: 'inactive' | 'posting_full' | 'role_full' | 'unsupported_workflow';
 }
 
 export interface PostingSettlementContext {

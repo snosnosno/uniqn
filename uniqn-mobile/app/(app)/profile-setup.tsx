@@ -10,11 +10,12 @@ import { useState, useCallback } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SignupStepProfile } from '@/components/auth/signup/SignupStepProfile';
 import { completeProfile, checkNicknameExists, getUserProfile } from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToast } from '@/stores/toastStore';
+import { normalizePostAuthRedirect } from '@/shared/navigation/authRedirect';
 import { toStoreProfile } from '@/utils/profileConverter';
 import { logger } from '@/utils/logger';
 import type { SignUpProfileData } from '@/schemas';
@@ -24,10 +25,12 @@ import type { SignUpProfileData } from '@/schemas';
 // ============================================================================
 
 export default function ProfileSetupScreen() {
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const setProfile = useAuthStore((s) => s.setProfile);
   const user = useAuthStore((s) => s.user);
+  const postAuthRedirect = normalizePostAuthRedirect(redirect);
 
   const handleSubmit = useCallback(
     async (data: SignUpProfileData) => {
@@ -59,7 +62,7 @@ export default function ProfileSetupScreen() {
         }
 
         toast.success('프로필이 완성되었습니다!');
-        router.replace('/(app)/(tabs)');
+        router.replace(postAuthRedirect ?? '/(app)/(tabs)');
       } catch (error) {
         logger.error('프로필 완성 실패', error as Error, {
           component: 'ProfileSetupScreen',
@@ -69,7 +72,7 @@ export default function ProfileSetupScreen() {
         setIsLoading(false);
       }
     },
-    [user, setProfile, toast]
+    [postAuthRedirect, user, setProfile, toast]
   );
 
   // 뒤로가기 방지 (프로필 완성 필수)

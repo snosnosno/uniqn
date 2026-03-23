@@ -1,6 +1,12 @@
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
-export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
+export type WorkLogStatus =
+  | 'scheduled'
+  | 'checked_in'
+  | 'checked_out'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show';
 
 export type ConfirmedStaffStatus =
   | 'scheduled'
@@ -33,7 +39,8 @@ export const WORK_LOG_STATUS_LABELS: Record<WorkLogStatus, string> = {
   checked_in: '근무 중',
   checked_out: '퇴근 완료',
   completed: '정산 완료',
-  cancelled: '취소됨',
+  cancelled: '취소',
+  no_show: '노쇼',
 };
 
 export const CONFIRMED_STAFF_STATUS_LABELS: Record<ConfirmedStaffStatus, string> = {
@@ -41,15 +48,15 @@ export const CONFIRMED_STAFF_STATUS_LABELS: Record<ConfirmedStaffStatus, string>
   checked_in: '근무 중',
   checked_out: '퇴근 완료',
   completed: '정산 대기',
-  cancelled: '취소됨',
+  cancelled: '취소',
   no_show: '노쇼',
 };
 
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   applied: '지원 완료',
   confirmed: '확정',
-  rejected: '거절됨',
-  cancelled: '취소됨',
+  rejected: '거절',
+  cancelled: '취소',
   completed: '근무 완료',
   cancellation_pending: '취소 요청 중',
 };
@@ -58,7 +65,7 @@ export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
   applied: '지원 중',
   confirmed: '확정',
   completed: '완료',
-  cancelled: '취소됨',
+  cancelled: '취소',
 };
 
 export const PAYROLL_STATUS_LABELS: Record<PayrollStatus, string> = {

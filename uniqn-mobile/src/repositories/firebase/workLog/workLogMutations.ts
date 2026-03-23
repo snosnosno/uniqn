@@ -19,6 +19,7 @@ import { parseWorkLogDocument } from '@/schemas';
 import type { PayrollStatus, QRCodeAction } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
 import { TimeNormalizer } from '@/shared/time';
+import { buildCanonicalWorkTimeUpdateData } from './workTimeUpdate';
 
 // ============================================================================
 // Write Operations
@@ -138,7 +139,17 @@ export async function updateWorkTimeTransaction(
         updateData.workDuration = Math.round((durationMinutes / 60) * 100) / 100;
       }
 
-      transaction.update(workLogRef, updateData);
+      const canonicalUpdateData = buildCanonicalWorkTimeUpdateData(workLog, {
+        checkInTime: updates.checkInTime,
+        checkOutTime: updates.checkOutTime,
+        notes: updates.notes,
+        preserveCompletedStatus: true,
+      });
+
+      transaction.update(workLogRef, {
+        ...updateData,
+        ...canonicalUpdateData,
+      });
     });
   } catch (error) {
     if (isAppError(error)) {

@@ -59,7 +59,7 @@ function createBasePosting(overrides: Partial<JobPosting> = {}): JobPosting {
 }
 
 describe('job-posting workflow selectors', () => {
-  it('uses schedule.kind as the single fixed workflow source and filters full fixed roles', () => {
+  it('marks fixed postings as unsupported release workflow', () => {
     const posting = createBasePosting({
       postingType: 'fixed',
       totalPositions: 3,
@@ -92,7 +92,8 @@ describe('job-posting workflow selectors', () => {
     });
     expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['floor']);
     expect(application).toMatchObject({
-      canApply: true,
+      canApply: false,
+      reason: 'unsupported_workflow',
       selectionMode: 'fixed_role',
       requiresRoleSelection: true,
       requiresAssignmentSelection: false,

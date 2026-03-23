@@ -31,6 +31,7 @@ export const WORK_LOG_STATUS_VALUES = {
   CHECKED_OUT: 'checked_out',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+  NO_SHOW: 'no_show',
 } as const satisfies Record<string, WorkLogStatus>;
 
 export const JOB_POSTING_STATUS_VALUES = {

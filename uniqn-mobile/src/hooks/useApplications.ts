@@ -24,7 +24,7 @@ import { requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { STATUS } from '@/constants';
-import type { Application, Assignment, PreQuestionAnswer } from '@/types';
+import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
 
 interface SubmitApplicationV2Params {
   jobPostingId: string;
@@ -39,6 +39,11 @@ interface RequestCancellationParams {
 }
 
 const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
+const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
+  STATUS.APPLICATION.APPLIED,
+  STATUS.APPLICATION.CONFIRMED,
+  STATUS.APPLICATION.CANCELLATION_PENDING,
+]);
 
 export function useApplications() {
   const queryClient = useQueryClient();
@@ -159,6 +164,14 @@ export function useApplications() {
     },
     onSuccess: (_, applicationId) => {
       logger.info('Application cancelled', { applicationId });
+      const targetApplication = effectiveApplications.find(
+        (application) => application.id === applicationId
+      );
+      if (targetApplication) {
+        void queryClient.invalidateQueries({
+          queryKey: getJobDetailQueryKey(targetApplication.jobPostingId, user?.uid),
+        });
+      }
       addToast({ type: 'success', message: '지원이 취소되었습니다.' });
     },
     onError: createMutationErrorHandler('지원 취소', addToast, {
@@ -215,6 +228,14 @@ export function useApplications() {
     },
     onSuccess: (_, { applicationId }) => {
       logger.info('Cancellation request submitted', { applicationId });
+      const targetApplication = effectiveApplications.find(
+        (application) => application.id === applicationId
+      );
+      if (targetApplication) {
+        void queryClient.invalidateQueries({
+          queryKey: getJobDetailQueryKey(targetApplication.jobPostingId, user?.uid),
+        });
+      }
       addToast({ type: 'success', message: '취소 요청이 제출되었습니다.' });
     },
     onError: createMutationErrorHandler('취소 요청', addToast, {
@@ -240,7 +261,7 @@ export function useApplications() {
     return effectiveApplications.some(
       (application) =>
         application.jobPostingId === jobPostingId &&
-        application.status !== STATUS.APPLICATION.CANCELLED
+        ACTIVE_APPLICATION_STATUSES.has(application.status)
     );
   };
 
@@ -249,7 +270,7 @@ export function useApplications() {
       effectiveApplications.find(
         (application) =>
           application.jobPostingId === jobPostingId &&
-          application.status !== STATUS.APPLICATION.CANCELLED
+          ACTIVE_APPLICATION_STATUSES.has(application.status)
       ) ?? null
     );
   };

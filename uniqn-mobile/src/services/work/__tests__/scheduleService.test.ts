@@ -51,6 +51,7 @@ const mockWorkLogRepositoryGetByStaffIdWithFilters = jest.fn();
 const mockWorkLogRepositoryGetById = jest.fn();
 const mockWorkLogRepositorySubscribeByStaffId = jest.fn();
 const mockApplicationRepositoryGetByApplicantIdWithStatuses = jest.fn();
+const mockApplicationRepositorySubscribeByApplicantIdWithStatuses = jest.fn(() => jest.fn());
 const mockJobPostingRepositoryGetById = jest.fn();
 const mockJobPostingRepositoryGetByIdBatch = jest.fn();
 
@@ -64,6 +65,8 @@ jest.mock('@/repositories', () => ({
   applicationRepository: {
     getByApplicantIdWithStatuses: (...args: unknown[]) =>
       mockApplicationRepositoryGetByApplicantIdWithStatuses(...args),
+    subscribeByApplicantIdWithStatuses: (...args: unknown[]) =>
+      mockApplicationRepositorySubscribeByApplicantIdWithStatuses.apply(null, args),
   },
   jobPostingRepository: {
     getById: (...args: unknown[]) => mockJobPostingRepositoryGetById(...args),
@@ -644,6 +647,16 @@ describe('scheduleService - getUpcomingSchedules', () => {
 describe('scheduleService - subscribeToSchedules', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockScheduleMergerMerge.mockImplementation(
+      (workLogs: ScheduleEvent[], apps: ScheduleEvent[]) => [...workLogs, ...apps]
+    );
+    mockApplicationRepositorySubscribeByApplicantIdWithStatuses.mockImplementation(
+      (...params: unknown[]) => {
+        const callback = params[2] as (applications: Application[]) => void;
+        callback([]);
+        return jest.fn();
+      }
+    );
   });
 
   it('실시간 구독을 설정해야 함', () => {

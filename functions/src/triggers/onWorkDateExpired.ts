@@ -45,7 +45,7 @@ export const onWorkDateExpired = onDocumentUpdated(
     }
 
     // fixed 공고는 onFixedPostingExpired에서 처리
-    if (after.postingType === 'fixed') {
+    if (after.schemaVersion !== 3 || after.schedule?.kind !== 'dated') {
       return;
     }
 

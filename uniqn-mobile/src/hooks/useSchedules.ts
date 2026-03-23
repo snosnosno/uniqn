@@ -50,6 +50,7 @@ interface ScheduleQueryPayload {
   stats?: ScheduleStats;
   groupedSchedules?: ScheduleGroup[];
   markedDates?: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }>;
+  warning?: string;
 }
 
 interface NormalizedScheduleQueryPayload extends ScheduleQueryPayload {
@@ -78,6 +79,7 @@ function normalizeScheduleQueryPayload(
     stats: payload.stats,
     groupedSchedules: payload.groupedSchedules ?? groupSchedulesByDate(schedules),
     markedDates: payload.markedDates ?? getCalendarMarkedDates(schedules),
+    warning: payload.warning,
   };
 }
 
@@ -170,6 +172,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const stats = realtime ? undefined : effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
   const markedDates = effectivePayload.markedDates;
+  const warning = realtime ? undefined : effectivePayload.warning;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -186,6 +189,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
     groupedSchedules,
     markedDates,
     stats,
+    warning,
     isLoading: schedules.length === 0 ? query.isLoading : false,
     isRefreshing: isOnline ? query.isRefetching : false,
     error: isOnline ? query.error : null,
@@ -244,6 +248,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const stats = queryPayload.stats;
   const groupedSchedules = queryPayload.groupedSchedules;
   const markedDates = queryPayload.markedDates;
+  const warning = queryPayload.warning;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -260,6 +265,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     groupedSchedules,
     markedDates,
     stats,
+    warning,
     isLoading: schedules.length === 0 ? query.isLoading : false,
     isRefreshing: isOnline ? query.isRefetching : false,
     error: isOnline ? query.error : null,

@@ -17,14 +17,19 @@ import { signUp, completeSocialProfile, getCurrentUser } from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
+import {
+  getResolvedAuthenticatedRoute,
+  normalizePostAuthRedirect,
+} from '@/shared/navigation/authRedirect';
 import { logger } from '@/utils/logger';
 import { toStoreProfile } from '@/utils/profileConverter';
 import { extractUserMessage } from '@/errors';
 import type { SignUpFormData } from '@/schemas';
 
 export default function SignUpScreen() {
-  const { mode } = useLocalSearchParams<{ mode?: 'social' }>();
+  const { mode, redirect } = useLocalSearchParams<{ mode?: 'social'; redirect?: string }>();
   const isSocialMode = mode === 'social';
+  const postAuthRedirect = normalizePostAuthRedirect(redirect);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToastStore();
   const { setUser, setProfile, profile } = useAuthStore();
@@ -42,7 +47,14 @@ export default function SignUpScreen() {
 
           logger.info('회원가입 성공', { userId: result.user.uid });
           addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
-          router.replace('/(app)/(tabs)');
+          router.replace(
+            getResolvedAuthenticatedRoute({
+              socialProvider: result.profile.socialProvider,
+              phoneVerified: result.profile.phoneVerified,
+              profileCompleted: result.profile.profileCompleted,
+              redirect: postAuthRedirect,
+            })
+          );
         }
       } catch (error) {
         logger.error('회원가입 실패', error as Error);
@@ -54,7 +66,7 @@ export default function SignUpScreen() {
         setIsLoading(false);
       }
     },
-    [addToast, setUser, setProfile]
+    [addToast, postAuthRedirect, setUser, setProfile]
   );
 
   // 소셜 로그인 프로필 완성 핸들러
@@ -65,7 +77,11 @@ export default function SignUpScreen() {
         const user = getCurrentUser();
         if (!user) {
           addToast({ type: 'error', message: '인증 정보가 없습니다. 다시 로그인해주세요.' });
-          router.replace('/(auth)/login');
+          router.replace(
+            postAuthRedirect
+              ? `/(auth)/login?redirect=${encodeURIComponent(postAuthRedirect)}`
+              : '/(auth)/login'
+          );
           return;
         }
 
@@ -87,7 +103,14 @@ export default function SignUpScreen() {
 
           logger.info('소셜 프로필 등록 완료', { userId: result.user.uid });
           addToast({ type: 'success', message: '프로필 등록이 완료되었습니다!' });
-          router.replace('/(app)/(tabs)');
+          router.replace(
+            getResolvedAuthenticatedRoute({
+              socialProvider: result.profile.socialProvider,
+              phoneVerified: result.profile.phoneVerified,
+              profileCompleted: result.profile.profileCompleted,
+              redirect: postAuthRedirect,
+            })
+          );
         }
       } catch (error) {
         logger.error('소셜 프로필 등록 실패', error as Error);
@@ -99,7 +122,7 @@ export default function SignUpScreen() {
         setIsLoading(false);
       }
     },
-    [addToast, setUser, setProfile]
+    [addToast, postAuthRedirect, setUser, setProfile]
   );
 
   const handleBack = () => {

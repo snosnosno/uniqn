@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Divider } from '@/components/ui';
 import { BiometricButton, LoginForm, SocialLoginButtons } from '@/components/auth';
@@ -9,11 +9,16 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { login, signInWithApple, signOut, type AuthResult } from '@/services';
 import { extractErrorMessage } from '@/shared/errors';
+import {
+  getResolvedAuthenticatedRoute,
+  normalizePostAuthRedirect,
+} from '@/shared/navigation/authRedirect';
 import { logger } from '@/utils/logger';
 import { toStoreProfile } from '@/utils/profileConverter';
 import type { LoginFormData } from '@/schemas';
 
 export default function LoginScreen() {
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<'apple' | null>(null);
   const [loginAutoLoginEnabled, setLoginAutoLoginEnabled] = useState(true);
@@ -32,6 +37,7 @@ export default function LoginScreen() {
     loginWithBiometric,
     updateCredentials: updateBiometricCredentials,
   } = useBiometricAuth();
+  const postAuthRedirect = normalizePostAuthRedirect(redirect);
 
   useEffect(() => {
     setLoginAutoLoginEnabled(storedAutoLoginEnabled);
@@ -54,17 +60,24 @@ export default function LoginScreen() {
 
       logger.info(`${providerLabel} 로그인 성공`, { userId: result.user.uid });
       addToast({ type: 'success', message: '로그인되었습니다.' });
-      router.replace('/(app)/(tabs)');
+      router.replace(
+        getResolvedAuthenticatedRoute({
+          socialProvider: result.profile.socialProvider,
+          phoneVerified: result.profile.phoneVerified,
+          profileCompleted: result.profile.profileCompleted,
+          redirect: postAuthRedirect,
+        })
+      );
     },
-    [addToast, setProfile, setUser, updateBiometricCredentials]
+    [addToast, postAuthRedirect, setProfile, setUser, updateBiometricCredentials]
   );
 
   const handleBiometricLogin = useCallback(async () => {
     const success = await loginWithBiometric();
     if (success) {
-      router.replace('/(app)/(tabs)');
+      router.replace(postAuthRedirect ?? '/(app)/(tabs)');
     }
-  }, [loginWithBiometric]);
+  }, [loginWithBiometric, postAuthRedirect]);
 
   const handleLogin = useCallback(
     async (data: LoginFormData) => {
@@ -112,7 +125,14 @@ export default function LoginScreen() {
       if (result.profile.socialProvider && !result.profile.phoneVerified) {
         setUser(result.user);
         setProfile(toStoreProfile(result.profile));
-        router.replace('/(auth)/signup?mode=social');
+        router.replace(
+          getResolvedAuthenticatedRoute({
+            socialProvider: result.profile.socialProvider,
+            phoneVerified: result.profile.phoneVerified,
+            profileCompleted: result.profile.profileCompleted,
+            redirect: postAuthRedirect,
+          })
+        );
         return;
       }
 
@@ -126,7 +146,14 @@ export default function LoginScreen() {
     } finally {
       setLoadingProvider(null);
     }
-  }, [addToast, handleLoginSuccess, persistAutoLoginPreference, setProfile, setUser]);
+  }, [
+    addToast,
+    handleLoginSuccess,
+    persistAutoLoginPreference,
+    postAuthRedirect,
+    setProfile,
+    setUser,
+  ]);
 
   const authActionDisabled = isAutoLoginLoading;
   const isSocialLoading = loadingProvider !== null;

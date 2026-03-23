@@ -26,6 +26,7 @@ export const workLogStatusSchema = z.enum([
   'checked_out',
   'completed',
   'cancelled',
+  'no_show',
 ]);
 
 export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;

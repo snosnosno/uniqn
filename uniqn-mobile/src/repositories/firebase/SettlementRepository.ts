@@ -43,6 +43,7 @@ import {
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
+import { buildCanonicalWorkTimeUpdateData } from './workLog/workTimeUpdate';
 import { writeTimeModificationLog } from './workLog/timeModificationLogs';
 import type {
   ISettlementRepository,
@@ -137,6 +138,12 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         // 수정 이력 기록
         const prevCheckIn = workLog.checkInTime ?? null;
         const prevCheckOut = workLog.checkOutTime ?? null;
+        const canonicalUpdateData = buildCanonicalWorkTimeUpdateData(workLog, {
+          checkInTime: context.checkInTime,
+          checkOutTime: context.checkOutTime,
+          notes: context.notes,
+          preserveCompletedStatus: true,
+        });
 
         updateData.hasTimeModificationLogs = true;
         const modificationLog = {
@@ -180,7 +187,10 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
               : undefined,
         });
 
-        transaction.update(workLogRef, updateData);
+        transaction.update(workLogRef, {
+          ...updateData,
+          ...canonicalUpdateData,
+        });
       });
 
       logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });

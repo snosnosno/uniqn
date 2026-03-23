@@ -38,6 +38,11 @@ import { workLogRepository, jobPostingRepository, applicationRepository } from '
 // ============================================================================
 
 const DEFAULT_PAGE_SIZE = 50;
+const ACTIVE_SCHEDULE_APPLICATION_STATUSES: ApplicationStatus[] = [
+  STATUS.APPLICATION.APPLIED as ApplicationStatus,
+  STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
+  STATUS.APPLICATION.CANCELLATION_PENDING as ApplicationStatus,
+];
 
 function hasScheduleDate(date: string | undefined): boolean {
   return typeof date === 'string' && date.trim().length > 0;
@@ -289,7 +294,7 @@ export async function getMySchedules(
       }),
       applicationRepository.getByApplicantIdWithStatuses(
         staffId,
-        [STATUS.APPLICATION.APPLIED] as ApplicationStatus[],
+        ACTIVE_SCHEDULE_APPLICATION_STATUSES,
         pageSize
       ),
     ]);
@@ -553,17 +558,62 @@ export function subscribeToSchedules(
 
     // 에러 콜백 중복 실행 방지 (Firebase SDK 내부 재시도로 인한 무한 루프 차단)
     let hasErrored = false;
+    let currentWorkLogs: WorkLog[] = [];
+    let currentApplications: Application[] = [];
 
-    const repoUnsubscribe = workLogRepository.subscribeByStaffId(
+    const emitSchedules = async () => {
+      if (hasErrored) return;
+
+      try {
+        const jobPostingIds = IdNormalizer.extractUnifiedIds(currentWorkLogs, currentApplications);
+        const postingContextMap = await fetchJobPostingContextBatch(Array.from(jobPostingIds));
+
+        const workLogSchedules = currentWorkLogs.map((workLog) => {
+          const normalizedId = IdNormalizer.normalizeJobId(workLog);
+          return ScheduleConverter.workLogToScheduleEvent(
+            workLog,
+            postingContextMap.get(normalizedId)
+          );
+        });
+
+        const applicationSchedules = currentApplications.flatMap((application) => {
+          const normalizedId = IdNormalizer.normalizeJobId(application);
+          return ScheduleConverter.applicationToScheduleEvents(
+            application,
+            postingContextMap.get(normalizedId)
+          );
+        });
+
+        const schedules = mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules);
+        onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
+      } catch (error) {
+        logger.error('?ㅼ?以?援щ룆 泥섎━ ?ㅽ뙣', toError(error));
+        onError?.(toError(error));
+      }
+    };
+
+    const handleSubscriptionError = (error: Error) => {
+      if (hasErrored) return;
+      hasErrored = true;
+
+      logger.error('?ㅼ?以?援щ룆 ?먮윭', error);
+      onError?.(error);
+    };
+
+    const workLogUnsubscribe = workLogRepository.subscribeByStaffId(
       staffId,
       async (workLogs: WorkLog[]) => {
+        currentWorkLogs = workLogs;
         if (hasErrored) return;
         try {
           // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
-          const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
-          const postingContextMap = await fetchJobPostingContextBatch(jobPostingIds);
+          const jobPostingIds = IdNormalizer.extractUnifiedIds(
+            currentWorkLogs,
+            currentApplications
+          );
+          const postingContextMap = await fetchJobPostingContextBatch(Array.from(jobPostingIds));
 
-          const schedules = workLogs.map((workLog) => {
+          const workLogSchedules = workLogs.map((workLog) => {
             const normalizedId = IdNormalizer.normalizeJobId(workLog);
             return ScheduleConverter.workLogToScheduleEvent(
               workLog,
@@ -571,6 +621,15 @@ export function subscribeToSchedules(
             );
           });
 
+          const applicationSchedules = currentApplications.flatMap((application) => {
+            const normalizedId = IdNormalizer.normalizeJobId(application);
+            return ScheduleConverter.applicationToScheduleEvents(
+              application,
+              postingContextMap.get(normalizedId)
+            );
+          });
+
+          const schedules = mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules);
           onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
         } catch (error) {
           logger.error('스케줄 구독 처리 실패', toError(error));
@@ -586,9 +645,20 @@ export function subscribeToSchedules(
       }
     );
 
+    const applicationUnsubscribe = applicationRepository.subscribeByApplicantIdWithStatuses(
+      staffId,
+      ACTIVE_SCHEDULE_APPLICATION_STATUSES,
+      (applications: Application[]) => {
+        currentApplications = applications;
+        void emitSchedules();
+      },
+      handleSubscriptionError
+    );
+
     return () => {
       hasErrored = true;
-      repoUnsubscribe();
+      workLogUnsubscribe();
+      applicationUnsubscribe();
     };
   });
 }

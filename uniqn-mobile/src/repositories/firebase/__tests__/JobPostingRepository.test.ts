@@ -802,6 +802,7 @@ describe('FirebaseJobPostingRepository', () => {
           id: 'job-1',
           data: {
             id: 'job-1',
+            schemaVersion: 3,
             ownerId: 'employer-1',
             status: 'active',
             postingType: 'regular',
@@ -819,6 +820,7 @@ describe('FirebaseJobPostingRepository', () => {
           id: 'job-2',
           data: {
             id: 'job-2',
+            schemaVersion: 3,
             ownerId: 'employer-1',
             status: 'closed',
             postingType: 'urgent',
@@ -836,6 +838,7 @@ describe('FirebaseJobPostingRepository', () => {
           id: 'job-3',
           data: {
             id: 'job-3',
+            schemaVersion: 3,
             ownerId: 'employer-1',
             status: 'cancelled',
             postingType: 'fixed',

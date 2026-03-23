@@ -4,7 +4,18 @@
  * @description 지원서 읽기 연산 (7개 메서드)
  */
 
-import { collection, doc, getDoc, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES, toError, isAppError } from '@/errors';
@@ -22,6 +33,12 @@ let _jobPostingRepository: FirebaseJobPostingRepository | null = null;
 function getJobPostingRepository(): FirebaseJobPostingRepository {
   return (_jobPostingRepository ??= new FirebaseJobPostingRepository());
 }
+
+const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
+  STATUS.APPLICATION.APPLIED,
+  STATUS.APPLICATION.CONFIRMED,
+  STATUS.APPLICATION.CANCELLATION_PENDING,
+]);
 
 // ============================================================================
 // Read Operations
@@ -199,6 +216,61 @@ export async function getByApplicantIdWithStatuses(
   }
 }
 
+export function subscribeByApplicantIdWithStatuses(
+  applicantId: string,
+  statuses: ApplicationStatus[],
+  onData: (applications: Application[]) => void,
+  onError: (error: Error) => void,
+  pageSize: number = 50
+): Unsubscribe {
+  logger.info('지원 상태 필터 실시간 구독 시작', { applicantId, statuses, pageSize });
+
+  if (statuses.length === 0) {
+    onData([]);
+    return () => undefined;
+  }
+
+  const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
+  const q = query(
+    applicationsRef,
+    where(FIELDS.APPLICATION.applicantId, '==', applicantId),
+    where(FIELDS.APPLICATION.status, 'in', statuses),
+    orderBy(FIELDS.APPLICATION.createdAt, 'desc'),
+    limit(pageSize)
+  );
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const applications: Application[] = [];
+
+      for (const docSnapshot of snapshot.docs) {
+        const application = parseApplicationDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (application) {
+          applications.push(application);
+        }
+      }
+
+      logger.debug('지원 상태 필터 실시간 구독 업데이트', {
+        applicantId,
+        count: applications.length,
+      });
+
+      onData(applications);
+    },
+    (error) => {
+      logger.error('지원 상태 필터 실시간 구독 실패', toError(error), {
+        applicantId,
+        statuses,
+      });
+      onError(error);
+    }
+  );
+}
+
 export async function getByJobPostingId(jobPostingId: string): Promise<Application[]> {
   try {
     logger.info('공고별 지원서 조회', { jobPostingId });
@@ -248,7 +320,7 @@ export async function hasApplied(jobPostingId: string, applicantId: string): Pro
     if (!data) {
       return false;
     }
-    return data.status !== STATUS.APPLICATION.CANCELLED;
+    return ACTIVE_APPLICATION_STATUSES.has(data.status);
   } catch (error) {
     logger.error('지원 여부 확인 실패', toError(error), { jobPostingId, applicantId });
     return false;

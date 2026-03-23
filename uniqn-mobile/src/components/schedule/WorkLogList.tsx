@@ -39,6 +39,7 @@ const WORK_STATUS_CONFIG: Record<
   checked_out: { label: '퇴근', variant: 'default' },
   completed: { label: '완료', variant: 'success' },
   cancelled: { label: '취소', variant: 'error' },
+  no_show: { label: '노쇼', variant: 'warning' },
 };
 
 const PAYROLL_STATUS_CONFIG: Record<

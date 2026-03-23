@@ -79,6 +79,7 @@ jest.mock('@/utils/logger', () => ({
 }));
 
 jest.mock('@/schemas', () => ({
+  parseApplicationDocument: jest.fn((data: unknown) => data),
   parseWorkLogDocument: jest.fn((data: unknown) => data),
   parseWorkLogDocuments: jest.fn((data: unknown[]) => data.filter(Boolean)),
   parseJobPostingDocument: jest.fn((data: unknown) => data),

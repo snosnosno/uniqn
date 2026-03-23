@@ -9,6 +9,7 @@ import type {
 import { FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
+import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import {
   getPostingDefaultSalary,
   getPostingDateGroups,
@@ -90,10 +91,16 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
     hasRoleSpecificSalary: posting.compensation.mode === 'by_role' && salaryRows.length > 0,
   };
   const postingFull = posting.totalPositions > 0 && filledPositions >= posting.totalPositions;
+  const unsupportedWorkflow = !isSupportedReleasePosting(posting);
   const canApply =
-    posting.status === 'active' && !postingFull && roleAvailability.hasAvailableRoles;
+    posting.status === 'active' &&
+    !postingFull &&
+    roleAvailability.hasAvailableRoles &&
+    !unsupportedWorkflow;
   let applicationReason: PostingApplicationEligibility['reason'];
-  if (posting.status !== 'active') {
+  if (unsupportedWorkflow) {
+    applicationReason = 'unsupported_workflow';
+  } else if (posting.status !== 'active') {
     applicationReason = 'inactive';
   } else if (postingFull) {
     applicationReason = 'posting_full';

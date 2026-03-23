@@ -70,7 +70,7 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('../../observability/crashlyticsService', () => ({
+jest.mock('@/services/observability', () => ({
   crashlyticsService: {
     recordError: (...args: unknown[]) => mockRecordError(...args),
   },

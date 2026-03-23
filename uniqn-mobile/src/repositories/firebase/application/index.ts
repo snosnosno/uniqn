@@ -17,6 +17,7 @@ import {
   getById,
   getByApplicantId,
   getByApplicantIdWithStatuses,
+  subscribeByApplicantIdWithStatuses,
   getByJobPostingId,
   hasApplied,
   getStatsByApplicantId,
@@ -54,6 +55,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
   getById = getById;
   getByApplicantId = getByApplicantId;
   getByApplicantIdWithStatuses = getByApplicantIdWithStatuses;
+  subscribeByApplicantIdWithStatuses = subscribeByApplicantIdWithStatuses;
   getByJobPostingId = getByJobPostingId;
   hasApplied = hasApplied;
   getStatsByApplicantId = getStatsByApplicantId;

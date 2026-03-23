@@ -39,6 +39,7 @@ const ROLE_LABELS: Record<string, string> = {
 const WEEKDAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 const WEB_DOMAIN = 'https://uniqn.app';
 const OG_DEFAULT_IMAGE = `${WEB_DOMAIN}/og-default.png`;
+const SUPPORTED_RELEASE_POSTING_TYPES = new Set(['regular', 'tournament', 'urgent']);
 
 type OGSalary = {
   type?: string;
@@ -99,6 +100,7 @@ type OGCompensation = {
 };
 
 type JobPostingOGData = Record<string, unknown> & {
+  schemaVersion?: number;
   title?: string;
   status?: string;
   location?: OGLocation | string;
@@ -108,6 +110,14 @@ type JobPostingOGData = Record<string, unknown> & {
   compensation?: OGCompensation;
   roleCatalog?: OGRoleCatalogEntry[];
 };
+
+function isSupportedReleasePosting(data: JobPostingOGData): boolean {
+  return (
+    data.schemaVersion === 3 &&
+    data.schedule?.kind === 'dated' &&
+    SUPPORTED_RELEASE_POSTING_TYPES.has(data.postingType ?? 'regular')
+  );
+}
 
 function formatShortDate(dateStr: string): string {
   try {
@@ -409,6 +419,17 @@ export const onJobPostingOGSync = onDocumentWritten(
           });
           await kvDelete(kvKey);
         }
+        return;
+      }
+
+      if (!isSupportedReleasePosting(after)) {
+        logger.info('Deleting OG KV for unsupported release posting', {
+          jobId,
+          postingType: after.postingType,
+          scheduleKind: after.schedule?.kind,
+          schemaVersion: after.schemaVersion,
+        });
+        await kvDelete(kvKey);
         return;
       }
 

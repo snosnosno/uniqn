@@ -150,6 +150,14 @@ export interface IApplicationRepository {
     pageSize?: number
   ): Promise<Application[]>;
 
+  subscribeByApplicantIdWithStatuses(
+    applicantId: string,
+    statuses: ApplicationStatus[],
+    onData: (applications: Application[]) => void,
+    onError: (error: Error) => void,
+    pageSize?: number
+  ): Unsubscribe;
+
   /**
    * 특정 공고의 지원서 목록 조회
    * @param jobPostingId - 공고 ID

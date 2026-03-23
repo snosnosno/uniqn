@@ -33,6 +33,7 @@ import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import type { WorkLog, RoleChangeHistory } from '@/types';
+import { buildCanonicalWorkTimeUpdateData } from './workLog/workTimeUpdate';
 import { writeTimeModificationLog } from './workLog/timeModificationLogs';
 import type {
   IConfirmedStaffRepository,
@@ -218,24 +219,26 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         }
 
         // ?쒓컙 ?섏젙 ?대젰 ???
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+            userMessage: '이미 정산이 완료된 근무 기록은 수정할 수 없습니다.',
+          });
+        }
+
         const prevCheckIn = workLog.checkInTime ?? null;
         const prevCheckOut = workLog.checkOutTime ?? null;
 
         // ?낅뜲?댄듃 ?곗씠??援ъ꽦 (scheduledStartTime/scheduledEndTime? checkInTime??以묐났?대?濡??쒓굅)
         const updateData: Record<string, unknown> = {
-          checkInTime: context.checkInTime ? Timestamp.fromDate(context.checkInTime) : null,
-          checkOutTime: context.checkOutTime ? Timestamp.fromDate(context.checkOutTime) : null,
+          ...buildCanonicalWorkTimeUpdateData(workLog, {
+            checkInTime: context.checkInTime,
+            checkOutTime: context.checkOutTime,
+            preserveCompletedStatus: true,
+          }),
           hasTimeModificationLogs: true,
-          updatedAt: serverTimestamp(),
         };
 
         // ?쒓컙???곕Ⅸ ?곹깭 蹂寃?
-        if (context.checkOutTime) {
-          updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
-        } else if (!context.checkInTime) {
-          updateData.status = STATUS.WORK_LOG.SCHEDULED;
-        }
-
         writeTimeModificationLog(transaction, context.workLogId, {
           previousStartTime: prevCheckIn,
           previousEndTime: prevCheckOut,
@@ -315,7 +318,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 1. WorkLog ?곹깭瑜?cancelled濡?蹂寃?
         transaction.update(workLogRef, {
-          status: STATUS.WORK_LOG.CANCELLED,
+          status: STATUS.WORK_LOG.NO_SHOW,
           cancelledReason: context.reason,
           cancelledAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
