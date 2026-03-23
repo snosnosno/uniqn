@@ -4,16 +4,14 @@ import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
-import {
-  workLogToConfirmedStaff,
-  groupStaffByDate,
-  calculateStaffStats,
-  type ConfirmedStaff,
-  type ConfirmedStaffGroup,
-  type ConfirmedStaffStats,
-  type UpdateStaffRoleInput,
-  type UpdateWorkTimeInput,
-  type DeleteConfirmedStaffInput,
+import { workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats } from '@/domains/staff';
+import type {
+  ConfirmedStaff,
+  ConfirmedStaffGroup,
+  ConfirmedStaffStats,
+  UpdateStaffRoleInput,
+  UpdateWorkTimeInput,
+  DeleteConfirmedStaffInput,
 } from '@/types/confirmedStaff';
 import { STAFF_ROLES, STATUS } from '@/constants';
 import { StatusMapper, type WorkLogStatus } from '@/shared/status';
@@ -45,7 +43,7 @@ async function getStaffName(staffId: string): Promise<string> {
 }
 
 function isNoShowWorkLog(workLog: WorkLog): boolean {
-  return Boolean(workLog.noShowAt);
+  return workLog.status === STATUS.WORK_LOG.NO_SHOW || Boolean(workLog.noShowAt);
 }
 
 function isVisibleConfirmedStaffWorkLog(workLog: WorkLog): boolean {

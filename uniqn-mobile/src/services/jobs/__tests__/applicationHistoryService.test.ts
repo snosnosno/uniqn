@@ -23,7 +23,7 @@ import {
   getApplicationHistorySummary,
   updateDateSpecificRequirementsFilled,
 } from '../applicationHistoryService';
-import { findActiveConfirmation } from '@/types';
+import { findActiveConfirmation } from '@/domains/application';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { WorkLogCreator } from '@/domains/schedule';
 

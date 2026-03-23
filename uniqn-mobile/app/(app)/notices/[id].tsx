@@ -30,7 +30,7 @@ import {
 import { useAnnouncementDetail, useIncrementViewCount } from '@/hooks/useAnnouncement';
 import type { AnnouncementCategory } from '@/types';
 import type { AnnouncementImage } from '@/types/announcement';
-import { getAnnouncementImages } from '@/types';
+import { getAnnouncementImages } from '@/types/announcement';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';

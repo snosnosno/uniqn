@@ -1,14 +1,14 @@
 /**
- * UNIQN Mobile - InquiryStatusBadge 컴포넌트
+ * UNIQN Mobile - InquiryStatusBadge 而댄룷?뚰듃
  *
- * @description 문의 상태를 표시하는 배지
+ * @description 臾몄쓽 ?곹깭瑜??쒖떆?섎뒗 諛곗?
  * @version 1.0.0
  */
 
 import React from 'react';
 import { View, Text } from 'react-native';
 import type { InquiryStatus } from '@/types';
-import { INQUIRY_STATUS_CONFIG } from '@/types';
+import { INQUIRY_STATUS_CONFIG } from '@/types/inquiry';
 
 export interface InquiryStatusBadgeProps {
   status: InquiryStatus;
@@ -38,7 +38,7 @@ export function InquiryStatusBadge({
   return (
     <View
       className={`rounded-full ${config.bgColor} ${sizeStyle.container} ${className}`}
-      accessibilityLabel={`상태: ${config.label}`}
+      accessibilityLabel={`?곹깭: ${config.label}`}
     >
       <Text className={`font-medium ${config.color} ${sizeStyle.text}`}>{config.label}</Text>
     </View>

@@ -1,9 +1,4 @@
-/**
- * UNIQN Mobile - 정산 계산 유틸리티 (Barrel Export)
- * @version 2.0.0
- */
-
-export { DEFAULT_SALARY_INFO, SALARY_TYPE_LABELS, PROVIDED_FLAG } from './constants';
+export { SALARY_TYPE_LABELS } from './constants';
 
 export {
   formatCurrency,
@@ -24,10 +19,18 @@ export {
   calculateAfterTaxAmount,
 } from './tax';
 
+export type { SalaryType, SalaryInfo } from '@/types/jobPosting';
+export type { TaxType } from '@/types/schedule';
+export type {
+  SettlementResult,
+  Allowances,
+  ExtendedSettlementResult,
+  PostingSettlementSource,
+} from '@/domains/settlement';
+
 export {
-  type SettlementResult,
-  type Allowances,
-  type ExtendedSettlementResult,
+  DEFAULT_SALARY_INFO,
+  PROVIDED_FLAG,
   parseTimestamp,
   calculateHoursWorked,
   calculatePayByType,
@@ -44,8 +47,4 @@ export {
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
   getEffectiveTaxSettings,
-} from './calculator';
-
-// Re-export types for backward compatibility
-export type { SalaryType, SalaryInfo } from '@/types/jobPosting';
-export type { TaxType } from '@/types/schedule';
+} from '@/domains/settlement';

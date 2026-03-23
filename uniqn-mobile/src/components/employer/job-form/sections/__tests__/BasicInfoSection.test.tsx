@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 import { TextInput } from 'react-native';
 import { BasicInfoSection } from '../BasicInfoSection';
-import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types';
+import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 
 function BasicInfoSectionHarness() {
   const [data, setData] = useState(INITIAL_JOB_POSTING_FORM_DATA);

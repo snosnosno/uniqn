@@ -1,4 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
+import type { ApplicationStatus } from '@/shared/status';
 import type { FirebaseDocument } from './common';
 import type { StaffRole } from './role';
 import type { Assignment } from './assignment';
@@ -6,15 +7,9 @@ import type { OriginalApplication, ConfirmationHistoryEntry } from './applicatio
 import type { PreQuestionAnswer } from './preQuestion';
 import type { JobPosting } from './jobPosting';
 
-type CancellationRequestTimestamp = string | Timestamp;
+export type { ApplicationStatus };
 
-export type ApplicationStatus =
-  | 'applied'
-  | 'confirmed'
-  | 'rejected'
-  | 'cancelled'
-  | 'completed'
-  | 'cancellation_pending';
+type CancellationRequestTimestamp = string | Timestamp;
 
 export type CancellationRequestStatus = 'pending' | 'approved' | 'rejected';
 

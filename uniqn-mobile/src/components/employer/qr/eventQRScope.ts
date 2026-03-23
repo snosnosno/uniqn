@@ -1,5 +1,5 @@
 import type { JobPosting } from '@/types';
-import { TBA_TIME_MARKER } from '@/types';
+import { TBA_TIME_MARKER } from '@/domains/application';
 import type { PostingSlotRoleRequirement, PostingTimeSlot } from '@/types/jobPosting';
 
 export interface EventQRScope {

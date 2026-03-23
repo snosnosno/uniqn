@@ -10,7 +10,7 @@ import { View, Text, Pressable, useColorScheme } from 'react-native';
 
 import { Avatar, Badge } from '@/components/ui';
 import { ChevronUpIcon, ChevronDownIcon } from '@/components/icons';
-import { APPLICATION_STATUS_LABELS } from '@/types';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import type { ApplicationStatus } from '@/types';
 import { STATUS_BADGE_VARIANT } from '../constants';
 import { getIconColor } from '@/constants';

@@ -18,7 +18,7 @@ import {
 import { shouldPreserveNonFixedDraftRoles } from '@/utils/job-posting/draftRoles';
 import type { SalaryType, SalaryInfo, TaxSettings } from '@/types';
 import { TaxSettingsEditor } from '@/components/employer/settlement/TaxSettingsEditor';
-import { DEFAULT_TAX_SETTINGS } from '@/utils/settlement';
+import { DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 
 // Sub-components
 import { RoleSalaryInput } from './RoleSalaryInput';

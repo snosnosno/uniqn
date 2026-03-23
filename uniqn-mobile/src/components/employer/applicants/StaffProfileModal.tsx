@@ -6,15 +6,12 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
+import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
 import { SheetModal } from '../../ui/SheetModal';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { CalendarIcon, ClockIcon, BriefcaseIcon, CheckCircleIcon } from '../../icons';
-import {
-  CONFIRMED_STAFF_STATUS_LABELS,
-  type ConfirmedStaff,
-  type ConfirmedStaffStatus,
-} from '@/types';
+import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime } from '@/utils/date';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
@@ -32,18 +29,6 @@ export interface StaffProfileModalProps {
   onClose: () => void;
   staff: ConfirmedStaff | null;
 }
-
-const STATUS_BADGE_VARIANT: Record<
-  ConfirmedStaffStatus,
-  'default' | 'primary' | 'success' | 'warning' | 'error'
-> = {
-  scheduled: 'default',
-  checked_in: 'success',
-  checked_out: 'primary',
-  completed: 'success',
-  cancelled: 'error',
-  no_show: 'warning',
-};
 
 const parseTimestamp = (value: TimeInput): Date | null => {
   return TimeNormalizer.parseTime(value);
@@ -99,8 +84,8 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           )}
           <View className="flex-row items-center gap-2 mb-1">
             <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
-            <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm" dot>
-              {CONFIRMED_STAFF_STATUS_LABELS[staff.status]}
+            <Badge variant={CONFIRMED_STAFF_STATUS[staff.status].variant} size="sm" dot>
+              {CONFIRMED_STAFF_STATUS[staff.status].label}
             </Badge>
           </View>
           <Text className="text-sm text-gray-500 dark:text-gray-400">

@@ -48,7 +48,7 @@ export {
   CompositeErrorBoundary,
   // 타입
   type ErrorBoundaryProps,
-} from './ErrorBoundary';
+} from './error-boundary';
 
 // ============================================================================
 // Feedback Components

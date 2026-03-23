@@ -1,4 +1,18 @@
 import type { BadgeVariant } from '@/components/ui/Badge';
+import {
+  APPLICATION_STATUS_LABELS,
+  ATTENDANCE_STATUS_LABELS,
+  CONFIRMED_STAFF_STATUS_LABELS,
+  PAYROLL_STATUS_LABELS,
+  SCHEDULE_TYPE_LABELS,
+} from '@/shared/status';
+import type {
+  ApplicationStatus,
+  AttendanceStatus,
+  ConfirmedStaffStatus,
+  PayrollStatus,
+  ScheduleType,
+} from '@/shared/status';
 
 export interface StatusConfig {
   label: string;
@@ -13,13 +27,7 @@ export interface AttendanceStatusConfig extends StatusConfig {
   textColor: string;
 }
 
-export type ApplicationStatusType =
-  | 'applied'
-  | 'confirmed'
-  | 'rejected'
-  | 'cancelled'
-  | 'completed'
-  | 'cancellation_pending';
+export type ApplicationStatusType = ApplicationStatus;
 
 export type ApplicationStatsKey =
   | 'total'
@@ -41,42 +49,42 @@ export const STATUS_TO_STATS_KEY: Record<ApplicationStatusType, ApplicationStats
 
 export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
   applied: {
-    label: '지원완료',
+    label: APPLICATION_STATUS_LABELS.applied,
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     hexColor: '#A855F7',
   },
   confirmed: {
-    label: '확정',
+    label: APPLICATION_STATUS_LABELS.confirmed,
     variant: 'success',
     textColor: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     hexColor: '#22C55E',
   },
   rejected: {
-    label: '거절',
+    label: APPLICATION_STATUS_LABELS.rejected,
     variant: 'error',
     textColor: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-100 dark:bg-red-900/30',
     hexColor: '#EF4444',
   },
   cancelled: {
-    label: '취소',
+    label: APPLICATION_STATUS_LABELS.cancelled,
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
     bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
   completed: {
-    label: '완료',
+    label: APPLICATION_STATUS_LABELS.completed,
     variant: 'default',
     textColor: 'text-purple-600 dark:text-purple-400',
     bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     hexColor: '#8B5CF6',
   },
   cancellation_pending: {
-    label: '취소요청',
+    label: APPLICATION_STATUS_LABELS.cancellation_pending,
     variant: 'warning',
     textColor: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-100 dark:bg-orange-900/30',
@@ -84,32 +92,32 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
   },
 };
 
-export type ScheduleStatusType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
+export type ScheduleStatusType = ScheduleType;
 
 export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
   applied: {
-    label: '지원 중',
+    label: SCHEDULE_TYPE_LABELS.applied,
     variant: 'warning',
     textColor: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
     hexColor: '#F59E0B',
   },
   confirmed: {
-    label: '확정',
+    label: SCHEDULE_TYPE_LABELS.confirmed,
     variant: 'success',
     textColor: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     hexColor: '#22C55E',
   },
   completed: {
-    label: '완료',
+    label: SCHEDULE_TYPE_LABELS.completed,
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
     bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
   cancelled: {
-    label: '취소',
+    label: SCHEDULE_TYPE_LABELS.cancelled,
     variant: 'error',
     textColor: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-100 dark:bg-red-900/30',
@@ -117,25 +125,25 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
   },
 };
 
-export type AttendanceStatusType = 'not_started' | 'checked_in' | 'checked_out';
+export type AttendanceStatusType = AttendanceStatus;
 
 export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusConfig> = {
   not_started: {
-    label: '출근 전',
+    label: ATTENDANCE_STATUS_LABELS.not_started,
     variant: 'default',
     bgColor: 'bg-gray-100 dark:bg-surface',
     textColor: 'text-gray-600 dark:text-gray-400',
     hexColor: '#6B7280',
   },
   checked_in: {
-    label: '근무 중',
+    label: ATTENDANCE_STATUS_LABELS.checked_in,
     variant: 'success',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     textColor: 'text-green-700 dark:text-green-300',
     hexColor: '#22C55E',
   },
   checked_out: {
-    label: '퇴근 완료',
+    label: ATTENDANCE_STATUS_LABELS.checked_out,
     variant: 'primary',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     textColor: 'text-primary-700 dark:text-primary-300',
@@ -143,29 +151,76 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
   },
 };
 
-export type PayrollStatusType = 'pending' | 'processing' | 'completed';
+export type PayrollStatusType = PayrollStatus;
 
 export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
   pending: {
-    label: '정산 대기',
+    label: PAYROLL_STATUS_LABELS.pending,
     variant: 'warning',
     textColor: 'text-yellow-600 dark:text-yellow-400',
     bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
     hexColor: '#F59E0B',
   },
   processing: {
-    label: '정산 진행',
+    label: PAYROLL_STATUS_LABELS.processing,
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     hexColor: '#A855F7',
   },
   completed: {
-    label: '정산 완료',
+    label: PAYROLL_STATUS_LABELS.completed,
     variant: 'success',
     textColor: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     hexColor: '#22C55E',
+  },
+};
+
+export type ConfirmedStaffStatusType = ConfirmedStaffStatus;
+
+export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConfig> = {
+  scheduled: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.scheduled,
+    variant: 'default',
+    textColor: 'text-gray-600 dark:text-gray-300',
+    bgColor: 'bg-gray-100 dark:bg-surface',
+    hexColor: '#6B7280',
+  },
+  checked_in: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.checked_in,
+    variant: 'success',
+    textColor: 'text-green-600 dark:text-green-300',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    hexColor: '#22C55E',
+  },
+  checked_out: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.checked_out,
+    variant: 'primary',
+    textColor: 'text-primary-600 dark:text-primary-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    hexColor: '#A855F7',
+  },
+  completed: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.completed,
+    variant: 'success',
+    textColor: 'text-purple-600 dark:text-purple-300',
+    bgColor: 'bg-purple-100 dark:bg-purple-900/30',
+    hexColor: '#8B5CF6',
+  },
+  cancelled: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.cancelled,
+    variant: 'error',
+    textColor: 'text-red-600 dark:text-red-300',
+    bgColor: 'bg-red-100 dark:bg-red-900/30',
+    hexColor: '#EF4444',
+  },
+  no_show: {
+    label: CONFIRMED_STAFF_STATUS_LABELS.no_show,
+    variant: 'warning',
+    textColor: 'text-orange-600 dark:text-orange-300',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+    hexColor: '#F97316',
   },
 };
 
@@ -260,6 +315,7 @@ export function getStatusConfig<T extends string>(
       hexColor: '#6B7280',
     };
   }
+
   return configMap[status as T];
 }
 

@@ -1,13 +1,11 @@
 /**
- * UNIQN Mobile - 일정 선택 커스텀 훅
- *
- * @description 지원자 카드에서 일정 선택 상태 관리
- *   + 그룹 선택 기능 지원 (연속/다중 날짜 통합)
+ * UNIQN Mobile - ?쇱젙 ?좏깮 而ㅼ뒪? ?? *
+ * @description 吏?먯옄 移대뱶?먯꽌 ?쇱젙 ?좏깮 ?곹깭 愿由? *   + 洹몃９ ?좏깮 湲곕뒫 吏??(?곗냽/?ㅼ쨷 ?좎쭨 ?듯빀)
  * @version 1.1.0
  */
 
 import { useState, useMemo, useCallback } from 'react';
-import { getAssignmentRoles } from '@/types';
+import { getAssignmentRoles } from '@/domains/application';
 import type { Assignment } from '@/types';
 import { formatAssignments, createAssignmentKey, getDateFromKey } from './utils';
 import { isConsecutiveDates } from '@/utils/scheduleGrouping';
@@ -18,37 +16,37 @@ import type { AssignmentDisplay, GroupedAssignmentDisplay } from './types';
 // ============================================================================
 
 export interface UseAssignmentSelectionProps {
-  /** 지원자의 assignments 배열 */
+  /** 吏?먯옄??assignments 諛곗뿴 */
   assignments?: Assignment[];
-  /** 고정공고 모드 (일정 선택 비활성화) */
+  /** 怨좎젙怨듦퀬 紐⑤뱶 (?쇱젙 ?좏깮 鍮꾪솢?깊솕) */
   isFixedMode?: boolean;
 }
 
-/** 그룹 선택 상태 */
+/** 洹몃９ ?좏깮 ?곹깭 */
 export type GroupSelectionState = 'all' | 'some' | 'none';
 
 export interface UseAssignmentSelectionReturn {
-  /** 선택된 일정 키 Set */
+  /** ?좏깮???쇱젙 ??Set */
   selectedKeys: Set<string>;
-  /** 포맷된 일정 표시 배열 */
+  /** ?щ㎎???쇱젙 ?쒖떆 諛곗뿴 */
   assignmentDisplays: AssignmentDisplay[];
-  /** 그룹화된 일정 표시 배열 (연속/다중 날짜 통합) */
+  /** 洹몃９?붾맂 ?쇱젙 ?쒖떆 諛곗뿴 (?곗냽/?ㅼ쨷 ?좎쭨 ?듯빀) */
   groupedAssignments: GroupedAssignmentDisplay[];
-  /** 모든 일정 키 배열 */
+  /** 紐⑤뱺 ?쇱젙 ??諛곗뿴 */
   allAssignmentKeys: string[];
-  /** 선택된 일정 개수 */
+  /** ?좏깮???쇱젙 媛쒖닔 */
   selectedCount: number;
-  /** 전체 일정 개수 */
+  /** ?꾩껜 ?쇱젙 媛쒖닔 */
   totalCount: number;
-  /** 일정 선택/해제 토글 (같은 날짜에는 하나만 선택) */
+  /** ?쇱젙 ?좏깮/?댁젣 ?좉? (媛숈? ?좎쭨?먮뒗 ?섎굹留??좏깮) */
   toggleAssignment: (key: string) => void;
-  /** 그룹 전체 선택/해제 토글 */
+  /** 洹몃９ ?꾩껜 ?좏깮/?댁젣 ?좉? */
   toggleGroup: (groupId: string) => void;
-  /** 그룹 선택 상태 확인 */
+  /** 洹몃９ ?좏깮 ?곹깭 ?뺤씤 */
   getGroupSelectionState: (groupId: string) => GroupSelectionState;
-  /** 선택된 일정을 Assignment 배열로 반환 */
+  /** ?좏깮???쇱젙??Assignment 諛곗뿴濡?諛섑솚 */
   getSelectedAssignments: () => Assignment[];
-  /** 선택 초기화 */
+  /** ?좏깮 珥덇린??*/
   clearSelection: () => void;
 }
 
@@ -57,13 +55,10 @@ export interface UseAssignmentSelectionReturn {
 // ============================================================================
 
 /**
- * 일정 선택 상태 관리 훅
- *
+ * ?쇱젙 ?좏깮 ?곹깭 愿由??? *
  * @description
- * - 일정 선택/해제 상태 관리
- * - 같은 날짜에는 하나의 역할/시간만 선택 가능 (자동 교체)
- * - 선택된 일정을 Assignment 배열로 변환
- *
+ * - ?쇱젙 ?좏깮/?댁젣 ?곹깭 愿由? * - 媛숈? ?좎쭨?먮뒗 ?섎굹????븷/?쒓컙留??좏깮 媛??(?먮룞 援먯껜)
+ * - ?좏깮???쇱젙??Assignment 諛곗뿴濡?蹂?? *
  * @example
  * ```tsx
  * const {
@@ -77,18 +72,18 @@ export interface UseAssignmentSelectionReturn {
  *   isFixedMode: false,
  * });
  *
- * // 체크박스 토글
+ * // 泥댄겕諛뺤뒪 ?좉?
  * <Pressable onPress={() => toggleAssignment(key)}>
  *   ...
  * </Pressable>
  *
- * // 확정 시 선택된 일정 전달
+ * // ?뺤젙 ???좏깮???쇱젙 ?꾨떖
  * const selected = getSelectedAssignments();
  * onConfirm(applicant, selected);
  * ```
  */
 /**
- * 그룹 ID 생성 (timeSlot + role 조합)
+ * 洹몃９ ID ?앹꽦 (timeSlot + role 議고빀)
  */
 function createGroupId(timeSlot: string, role: string): string {
   return `${timeSlot}_${role}`;
@@ -98,17 +93,17 @@ export function useAssignmentSelection({
   assignments,
   isFixedMode = false,
 }: UseAssignmentSelectionProps): UseAssignmentSelectionReturn {
-  // 일정 선택 상태 (key: "date_timeSlot_role")
+  // ?쇱젙 ?좏깮 ?곹깭 (key: "date_timeSlot_role")
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
-  // Assignments 정보 포맷
+  // Assignments ?뺣낫 ?щ㎎
   const assignmentDisplays = useMemo(() => formatAssignments(assignments), [assignments]);
 
-  // 그룹화된 일정 (같은 timeSlot + role 묶음)
+  // 洹몃９?붾맂 ?쇱젙 (媛숈? timeSlot + role 臾띠쓬)
   const groupedAssignments = useMemo<GroupedAssignmentDisplay[]>(() => {
     if (assignmentDisplays.length === 0) return [];
 
-    // 그룹 맵: groupId -> items
+    // 洹몃９ 留? groupId -> items
     const groupMap = new Map<string, AssignmentDisplay[]>();
 
     for (const display of assignmentDisplays) {
@@ -119,10 +114,10 @@ export function useAssignmentSelection({
       groupMap.get(groupId)!.push(display);
     }
 
-    // 그룹 배열 생성
+    // 洹몃９ 諛곗뿴 ?앹꽦
     const groups: GroupedAssignmentDisplay[] = [];
     for (const [groupId, items] of groupMap.entries()) {
-      // 날짜순 정렬
+      // ?좎쭨???뺣젹
       const sortedItems = [...items].sort((a, b) => a.date.localeCompare(b.date));
       const dates = sortedItems.map((item) => item.date);
       const firstItem = sortedItems[0];
@@ -144,11 +139,11 @@ export function useAssignmentSelection({
       });
     }
 
-    // 시작 날짜순 정렬
+    // ?쒖옉 ?좎쭨???뺣젹
     return groups.sort((a, b) => a.dateRange.start.localeCompare(b.dateRange.start));
   }, [assignmentDisplays]);
 
-  // 모든 일정 키 목록 (역할별로 분리)
+  // 紐⑤뱺 ?쇱젙 ??紐⑸줉 (??븷蹂꾨줈 遺꾨━)
   const allAssignmentKeys = useMemo(() => {
     const keys: string[] = [];
     for (const display of assignmentDisplays) {
@@ -157,30 +152,30 @@ export function useAssignmentSelection({
     return keys;
   }, [assignmentDisplays]);
 
-  // 선택된 일정 개수
+  // ?좏깮???쇱젙 媛쒖닔
   const selectedCount = selectedKeys.size;
   const totalCount = allAssignmentKeys.length;
 
   /**
-   * 일정 토글 (같은 날짜에는 하나만 선택 가능)
+   * ?쇱젙 ?좉? (媛숈? ?좎쭨?먮뒗 ?섎굹留??좏깮 媛??
    *
    * @description
-   * - 이미 선택된 항목 클릭 시: 해제
-   * - 새로 선택 시: 같은 날짜의 다른 항목 자동 제거
+   * - ?대? ?좏깮????ぉ ?대┃ ?? ?댁젣
+   * - ?덈줈 ?좏깮 ?? 媛숈? ?좎쭨???ㅻⅨ ??ぉ ?먮룞 ?쒓굅
    */
   const toggleAssignment = useCallback(
     (key: string) => {
-      if (isFixedMode) return; // 고정공고 모드에서는 선택 불가
+      if (isFixedMode) return; // 怨좎젙怨듦퀬 紐⑤뱶?먯꽌???좏깮 遺덇?
 
       setSelectedKeys((prev) => {
         const next = new Set(prev);
         if (next.has(key)) {
-          // 이미 선택된 항목 클릭 시 해제
+          // ?대? ?좏깮????ぉ ?대┃ ???댁젣
           next.delete(key);
         } else {
-          // 새로 선택 시, 같은 날짜의 다른 항목들 제거
+          // ?덈줈 ?좏깮 ?? 媛숈? ?좎쭨???ㅻⅨ ??ぉ???쒓굅
           const selectedDate = getDateFromKey(key);
-          // 같은 날짜의 기존 선택 항목 제거
+          // 媛숈? ?좎쭨??湲곗〈 ?좏깮 ??ぉ ?쒓굅
           for (const existingKey of prev) {
             const existingDate = getDateFromKey(existingKey);
             if (existingDate === selectedDate) {
@@ -196,7 +191,7 @@ export function useAssignmentSelection({
   );
 
   /**
-   * 선택된 일정으로 Assignment 배열 생성 (역할별로 분리)
+   * ?좏깮???쇱젙?쇰줈 Assignment 諛곗뿴 ?앹꽦 (??븷蹂꾨줈 遺꾨━)
    */
   const getSelectedAssignments = useCallback((): Assignment[] => {
     if (!assignments || isFixedMode) return [];
@@ -212,7 +207,7 @@ export function useAssignmentSelection({
         if (selectedDates.length > 0) {
           result.push({
             ...assignment,
-            roleIds: [role], // v3.0: roleIds 배열로 설정
+            roleIds: [role], // v3.0: roleIds 諛곗뿴濡??ㅼ젙
             dates: selectedDates,
           });
         }
@@ -222,7 +217,7 @@ export function useAssignmentSelection({
   }, [assignments, selectedKeys, isFixedMode]);
 
   /**
-   * 그룹 선택 상태 확인
+   * 洹몃９ ?좏깮 ?곹깭 ?뺤씤
    */
   const getGroupSelectionState = useCallback(
     (groupId: string): GroupSelectionState => {
@@ -243,13 +238,12 @@ export function useAssignmentSelection({
   );
 
   /**
-   * 그룹 전체 선택/해제 토글
+   * 洹몃９ ?꾩껜 ?좏깮/?댁젣 ?좉?
    *
    * @description
-   * - 전체 선택 상태: 전체 해제
-   * - 일부/미선택 상태: 전체 선택
-   * - 같은 날짜의 다른 그룹 항목은 자동 제거됨
-   */
+   * - ?꾩껜 ?좏깮 ?곹깭: ?꾩껜 ?댁젣
+   * - ?쇰?/誘몄꽑???곹깭: ?꾩껜 ?좏깮
+   * - 媛숈? ?좎쭨???ㅻⅨ 洹몃９ ??ぉ? ?먮룞 ?쒓굅??   */
   const toggleGroup = useCallback(
     (groupId: string) => {
       if (isFixedMode) return;
@@ -263,17 +257,17 @@ export function useAssignmentSelection({
         const next = new Set(prev);
 
         if (state === 'all') {
-          // 전체 해제
+          // ?꾩껜 ?댁젣
           for (const item of group.items) {
             const key = createAssignmentKey(item.date, item.timeSlot, item.role);
             next.delete(key);
           }
         } else {
-          // 전체 선택 (같은 날짜의 다른 항목 제거)
+          // ?꾩껜 ?좏깮 (媛숈? ?좎쭨???ㅻⅨ ??ぉ ?쒓굅)
           for (const item of group.items) {
             const key = createAssignmentKey(item.date, item.timeSlot, item.role);
 
-            // 같은 날짜의 기존 선택 항목 제거
+            // 媛숈? ?좎쭨??湲곗〈 ?좏깮 ??ぉ ?쒓굅
             for (const existingKey of prev) {
               const existingDate = getDateFromKey(existingKey);
               if (existingDate === item.date && !next.has(key)) {
@@ -292,8 +286,7 @@ export function useAssignmentSelection({
   );
 
   /**
-   * 선택 초기화
-   */
+   * ?좏깮 珥덇린??   */
   const clearSelection = useCallback(() => {
     setSelectedKeys(new Set());
   }, []);

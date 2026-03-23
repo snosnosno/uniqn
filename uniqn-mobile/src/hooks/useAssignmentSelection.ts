@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import type { Assignment, TimeSlot } from '@/types';
-import { createSimpleAssignment, isValidAssignment, getAssignmentRole } from '@/types';
+import { createSimpleAssignment, isValidAssignment, getAssignmentRole } from '@/types/assignment';
 
 // ============================================================================
 // Types

@@ -1,7 +1,6 @@
 /**
- * UNIQN Mobile - 공고 템플릿 관리 훅
- *
- * @description 템플릿 저장, 불러오기, 삭제 기능
+ * UNIQN Mobile - 怨듦퀬 ?쒗뵆由?愿由??? *
+ * @description ?쒗뵆由???? 遺덈윭?ㅺ린, ??젣 湲곕뒫
  * @version 1.0.0
  */
 
@@ -16,7 +15,7 @@ import {
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import { templateToDraft } from '@/types';
+import { templateToDraft } from '@/types/jobTemplate';
 import { logger } from '@/utils/logger';
 import { toError, requireAuth } from '@/errors';
 import { extractErrorMessage } from '@/shared/errors';
@@ -39,12 +38,10 @@ interface DeleteTemplateParams {
 }
 
 // ============================================================================
-// 템플릿 목록 조회 훅
-// ============================================================================
+// ?쒗뵆由?紐⑸줉 議고쉶 ??// ============================================================================
 
 /**
- * 템플릿 목록 조회 훅
- */
+ * ?쒗뵆由?紐⑸줉 議고쉶 ?? */
 export function useTemplates() {
   const { user } = useAuthStore();
 
@@ -57,12 +54,10 @@ export function useTemplates() {
 }
 
 // ============================================================================
-// 템플릿 저장 훅
-// ============================================================================
+// ?쒗뵆由??????// ============================================================================
 
 /**
- * 템플릿 저장 뮤테이션 훅
- */
+ * ?쒗뵆由????裕ㅽ뀒?댁뀡 ?? */
 export function useSaveTemplate() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -79,58 +74,54 @@ export function useSaveTemplate() {
       return saveTemplate(input, user.uid);
     },
     onSuccess: () => {
-      logger.info('템플릿 저장 완료');
-      addToast({ type: 'success', message: '템플릿이 저장되었습니다.' });
+      logger.info('?쒗뵆由?????꾨즺');
+      addToast({ type: 'success', message: '?쒗뵆由우씠 ??λ릺?덉뒿?덈떎.' });
       queryClient.invalidateQueries({
         queryKey: queryKeys.templates.all,
       });
     },
     onError: (error) => {
-      logger.error('템플릿 저장 실패', toError(error));
+      logger.error('?쒗뵆由?????ㅽ뙣', toError(error));
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '템플릿 저장에 실패했습니다.'),
+        message: extractErrorMessage(error, '?쒗뵆由???μ뿉 ?ㅽ뙣?덉뒿?덈떎.'),
       });
     },
   });
 }
 
 // ============================================================================
-// 템플릿 불러오기 훅
-// ============================================================================
+// ?쒗뵆由?遺덈윭?ㅺ린 ??// ============================================================================
 
 /**
- * 템플릿 불러오기 뮤테이션 훅
- */
+ * ?쒗뵆由?遺덈윭?ㅺ린 裕ㅽ뀒?댁뀡 ?? */
 export function useLoadTemplate() {
   const { addToast } = useToastStore();
 
   return useMutation({
     mutationFn: (templateId: string) => loadTemplate(templateId),
     onSuccess: (template) => {
-      logger.info('템플릿 불러오기 완료', { templateId: template.id });
+      logger.info('?쒗뵆由?遺덈윭?ㅺ린 ?꾨즺', { templateId: template.id });
       addToast({
         type: 'success',
-        message: `'${template.name}' 템플릿을 불러왔습니다. 날짜를 설정해주세요.`,
+        message: `'${template.name}' ?쒗뵆由우쓣 遺덈윭?붿뒿?덈떎. ?좎쭨瑜??ㅼ젙?댁＜?몄슂.`,
       });
     },
     onError: (error) => {
-      logger.error('템플릿 불러오기 실패', toError(error));
+      logger.error('?쒗뵆由?遺덈윭?ㅺ린 ?ㅽ뙣', toError(error));
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '템플릿 불러오기에 실패했습니다.'),
+        message: extractErrorMessage(error, '?쒗뵆由?遺덈윭?ㅺ린???ㅽ뙣?덉뒿?덈떎.'),
       });
     },
   });
 }
 
 // ============================================================================
-// 템플릿 삭제 훅
-// ============================================================================
+// ?쒗뵆由???젣 ??// ============================================================================
 
 /**
- * 템플릿 삭제 뮤테이션 훅
- */
+ * ?쒗뵆由???젣 裕ㅽ뀒?댁뀡 ?? */
 export function useDeleteTemplate() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
@@ -142,44 +133,42 @@ export function useDeleteTemplate() {
       return deleteTemplate(params.templateId, user.uid);
     },
     onSuccess: (_, params) => {
-      logger.info('템플릿 삭제 완료', { templateId: params.templateId });
+      logger.info('?쒗뵆由???젣 ?꾨즺', { templateId: params.templateId });
       addToast({
         type: 'success',
-        message: `'${params.templateName}' 템플릿이 삭제되었습니다.`,
+        message: `'${params.templateName}' ?쒗뵆由우씠 ??젣?섏뿀?듬땲??`,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.templates.all,
       });
     },
     onError: (error) => {
-      logger.error('템플릿 삭제 실패', toError(error));
+      logger.error('?쒗뵆由???젣 ?ㅽ뙣', toError(error));
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '템플릿 삭제에 실패했습니다.'),
+        message: extractErrorMessage(error, '?쒗뵆由???젣???ㅽ뙣?덉뒿?덈떎.'),
       });
     },
   });
 }
 
 // ============================================================================
-// 통합 템플릿 관리 훅
-// ============================================================================
+// ?듯빀 ?쒗뵆由?愿由???// ============================================================================
 
 /**
- * 템플릿 관리 통합 훅
- *
- * @description 모달 상태 관리 및 템플릿 CRUD 기능 통합
+ * ?쒗뵆由?愿由??듯빀 ?? *
+ * @description 紐⑤떖 ?곹깭 愿由?諛??쒗뵆由?CRUD 湲곕뒫 ?듯빀
  */
 export function useTemplateManager() {
-  // 모달 상태
+  // 紐⑤떖 ?곹깭
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
 
-  // 템플릿 입력 상태
+  // ?쒗뵆由??낅젰 ?곹깭
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
 
-  // 삭제 확인 상태
+  // ??젣 ?뺤씤 ?곹깭
   const [deleteConfirmTemplate, setDeleteConfirmTemplate] = useState<{
     id: string;
     name: string;
@@ -192,7 +181,7 @@ export function useTemplateManager() {
   const deleteMutation = useDeleteTemplate();
 
   // ============================================================
-  // 모달 제어
+  // 紐⑤떖 ?쒖뼱
   // ============================================================
 
   const openTemplateModal = useCallback(() => {
@@ -215,8 +204,7 @@ export function useTemplateManager() {
   }, []);
 
   // ============================================================
-  // 템플릿 저장
-  // ============================================================
+  // ?쒗뵆由????  // ============================================================
 
   const handleSaveTemplate = useCallback(
     async (draft: JobPostingDraft) => {
@@ -236,7 +224,7 @@ export function useTemplateManager() {
   );
 
   // ============================================================
-  // 템플릿 불러오기
+  // ?쒗뵆由?遺덈윭?ㅺ린
   // ============================================================
 
   const handleLoadTemplate = useCallback(
@@ -249,13 +237,13 @@ export function useTemplateManager() {
   );
 
   // ============================================================
-  // 템플릿 삭제
+  // ?쒗뵆由???젣
   // ============================================================
 
   /**
-   * 템플릿 직접 삭제 (Alert 확인 후 호출용)
+   * ?쒗뵆由?吏곸젒 ??젣 (Alert ?뺤씤 ???몄텧??
    *
-   * @description LoadTemplateModal에서 Alert 확인 후 직접 호출
+   * @description LoadTemplateModal?먯꽌 Alert ?뺤씤 ??吏곸젒 ?몄텧
    */
   const handleDeleteTemplate = useCallback(
     async (templateId: string, templateName: string) => {
@@ -272,7 +260,7 @@ export function useTemplateManager() {
     [deleteMutation]
   );
 
-  // 삭제 확인 상태 기반 핸들러 (별도 확인 모달 사용 시)
+  // ??젣 ?뺤씤 ?곹깭 湲곕컲 ?몃뱾??(蹂꾨룄 ?뺤씤 紐⑤떖 ?ъ슜 ??
   const handleDeleteTemplateClick = useCallback((id: string, name: string) => {
     setDeleteConfirmTemplate({ id, name });
   }, []);
@@ -299,16 +287,16 @@ export function useTemplateManager() {
   }, []);
 
   // ============================================================
-  // 반환
+  // 諛섑솚
   // ============================================================
 
   return {
-    // 템플릿 목록
+    // ?쒗뵆由?紐⑸줉
     templates: templatesQuery.data ?? [],
     templatesLoading: templatesQuery.isLoading,
     templatesError: templatesQuery.error,
 
-    // 템플릿 저장 모달
+    // ?쒗뵆由????紐⑤떖
     isTemplateModalOpen,
     templateName,
     templateDescription,
@@ -319,15 +307,15 @@ export function useTemplateManager() {
     handleSaveTemplate,
     isSavingTemplate: saveMutation.isPending,
 
-    // 템플릿 불러오기 모달
+    // ?쒗뵆由?遺덈윭?ㅺ린 紐⑤떖
     isLoadTemplateModalOpen,
     openLoadTemplateModal,
     closeLoadTemplateModal,
     handleLoadTemplate,
     isLoadingTemplate: loadMutation.isPending,
 
-    // 템플릿 삭제
-    handleDeleteTemplate, // 직접 삭제 (Alert 확인 후 호출)
+    // ?쒗뵆由???젣
+    handleDeleteTemplate, // 吏곸젒 ??젣 (Alert ?뺤씤 ???몄텧)
     deleteConfirmTemplate,
     handleDeleteTemplateClick,
     handleDeleteTemplateConfirm,

@@ -7,6 +7,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
+import { DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 import { SheetModal } from '../../ui/SheetModal';
 import { Avatar } from '../../ui/Avatar';
 import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
@@ -51,15 +52,6 @@ export interface SettlementEditData {
   taxSettings: TaxSettings;
   reason?: string;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const DEFAULT_TAX_SETTINGS: TaxSettings = {
-  type: 'none',
-  value: 0,
-};
 
 // ============================================================================
 // Sub-components

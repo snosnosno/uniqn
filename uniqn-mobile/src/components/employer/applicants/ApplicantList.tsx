@@ -18,7 +18,7 @@ import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
-import { APPLICATION_STATUS_LABELS } from '@/types';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 // ============================================================================
 // Types

@@ -1,6 +1,7 @@
 import type { JobPosting, Assignment, PreQuestionAnswer } from '@/types';
 import { selectPostingRoleAvailability } from '@/domains/job-posting';
-import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { isValidAssignment } from '@/types/assignment';
+import { validateRequiredAnswers } from '@/domains/application';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { STATUS } from '@/constants';
 import { validateAssignmentSlotCapacity } from './slotCapacity';

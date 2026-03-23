@@ -1,7 +1,7 @@
 /**
- * UNIQN Mobile - 지원자 프로필 헤더
+ * UNIQN Mobile - 吏?먯옄 ?꾨줈???ㅻ뜑
  *
- * @description 지원자 아바타, 이름, 상태 뱃지, 지원 역할/시간 표시
+ * @description 吏?먯옄 ?꾨컮?, ?대쫫, ?곹깭 諭껋?, 吏????븷/?쒓컙 ?쒖떆
  * @version 1.0.0
  */
 
@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
-import { APPLICATION_STATUS_LABELS } from '@/types';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
@@ -67,7 +67,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
           className="mb-2"
         />
       )}
-      {/* 이름 + 상태 뱃지 (같은 행) */}
+      {/* ?대쫫 + ?곹깭 諭껋? (媛숈? ?? */}
       <View className="flex-row items-center gap-2 mb-1">
         <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
         <Badge variant={STATUS_BADGE_VARIANT[applicant.status]} size="sm" dot>
@@ -79,7 +79,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
           applicant.assignments[0]?.roleIds?.[0] || 'other',
           applicant.customRole
         )}{' '}
-        지원 · {appliedTimeAgo}
+        吏??쨌 {appliedTimeAgo}
       </Text>
     </View>
   );

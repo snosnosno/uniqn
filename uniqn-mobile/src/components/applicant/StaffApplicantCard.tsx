@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
 import type { Application, ApplicationStatus, Assignment } from '@/types';
-import { APPLICATION_STATUS_LABELS } from '@/types';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { STATUS } from '@/constants';
 import { formatAppliedDate } from '@/utils/date';
 

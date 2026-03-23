@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { CalendarIcon, ClockIcon, BriefcaseIcon } from '../../icons';
-import { getAssignmentRoles } from '@/types';
+import { getAssignmentRoles } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { toDate } from '@/utils/date';
 import type { Assignment } from '@/types';

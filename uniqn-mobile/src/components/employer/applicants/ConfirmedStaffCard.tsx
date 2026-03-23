@@ -5,10 +5,11 @@
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
+import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
-import type { ConfirmedStaff, ConfirmedStaffStatus } from '@/types';
+import type { ConfirmedStaff } from '@/types/confirmedStaff';
 import { WorkTimeDisplay } from '@/shared/time';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -35,27 +36,6 @@ export interface ConfirmedStaffCardProps {
   showActions?: boolean;
   compact?: boolean;
 }
-
-const STATUS_BADGE_VARIANT: Record<
-  ConfirmedStaffStatus,
-  'default' | 'primary' | 'success' | 'warning' | 'error'
-> = {
-  scheduled: 'default',
-  checked_in: 'success',
-  checked_out: 'primary',
-  completed: 'success',
-  cancelled: 'error',
-  no_show: 'warning',
-};
-
-const STATUS_LABELS: Record<ConfirmedStaffStatus, string> = {
-  scheduled: 'Scheduled',
-  checked_in: 'Checked in',
-  checked_out: 'Checked out',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  no_show: 'No-show',
-};
 
 export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   staff,
@@ -168,8 +148,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             disabled={!canChangeStatus || !onStatusChange}
             className={canChangeStatus && onStatusChange ? 'active:opacity-70' : ''}
           >
-            <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
-              {STATUS_LABELS[staff.status]}
+            <Badge variant={CONFIRMED_STAFF_STATUS[staff.status].variant} size="sm">
+              {CONFIRMED_STAFF_STATUS[staff.status].label}
             </Badge>
           </Pressable>
           {onPress ? <ChevronRightIcon size={20} color="#9CA3AF" /> : null}

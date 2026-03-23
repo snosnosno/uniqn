@@ -16,7 +16,7 @@ import {
   XMarkIcon,
 } from '@/components/icons';
 import type { JobPostingFormData, PreQuestion } from '@/types';
-import { PRE_QUESTION_TYPE_LABELS } from '@/types';
+import { PRE_QUESTION_TYPE_LABELS } from '@/domains/application';
 import { generateId } from '@/utils/generateId';
 
 // ============================================================================

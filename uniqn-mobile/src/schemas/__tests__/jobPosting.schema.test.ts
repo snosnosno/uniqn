@@ -15,7 +15,7 @@ import {
   salaryTypeSchema,
 } from '../jobPosting.schema';
 import { serializeJobPostingV3 } from '@/domains/job-posting';
-import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 
 const createMockTimestamp = (seconds = 1700000000, nanoseconds = 0) => ({
   seconds,

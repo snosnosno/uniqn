@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { getRoleDisplayName } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 import { PostingCompensationContent, PostingScheduleContent, PostingSurfaceState } from '../shared';
 
 describe('Posting shared content', () => {

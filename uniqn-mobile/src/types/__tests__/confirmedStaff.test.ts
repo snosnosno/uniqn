@@ -5,15 +5,15 @@
  *   sortStaffByStatus, CONFIRMED_STAFF_STATUS_LABELS/COLORS 테스트
  */
 
+import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
+import { CONFIRMED_STAFF_STATUS_LABELS } from '@/shared/status';
 import type { ConfirmedStaff } from '../confirmedStaff';
 import {
-  CONFIRMED_STAFF_STATUS_LABELS,
-  CONFIRMED_STAFF_STATUS_COLORS,
   workLogToConfirmedStaff,
   groupStaffByDate,
   calculateStaffStats,
   sortStaffByStatus,
-} from '../confirmedStaff';
+} from '@/domains/staff';
 
 // =============================================================================
 // Helpers
@@ -63,8 +63,8 @@ describe('confirmedStaff', () => {
     });
   });
 
-  describe('CONFIRMED_STAFF_STATUS_COLORS', () => {
-    it('should have bg and text for all statuses', () => {
+  describe('CONFIRMED_STAFF_STATUS', () => {
+    it('should have color config for all statuses', () => {
       const statuses = [
         'scheduled',
         'checked_in',
@@ -75,11 +75,11 @@ describe('confirmedStaff', () => {
       ] as const;
 
       for (const status of statuses) {
-        const color = CONFIRMED_STAFF_STATUS_COLORS[status];
-        expect(color).toHaveProperty('bg');
-        expect(color).toHaveProperty('text');
-        expect(typeof color.bg).toBe('string');
-        expect(typeof color.text).toBe('string');
+        const color = CONFIRMED_STAFF_STATUS[status];
+        expect(color).toHaveProperty('bgColor');
+        expect(color).toHaveProperty('textColor');
+        expect(typeof color.bgColor).toBe('string');
+        expect(typeof color.textColor).toBe('string');
       }
     });
   });

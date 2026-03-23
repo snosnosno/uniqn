@@ -9,7 +9,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, LayoutAnimation } from 'react-native';
 import { AccordionItem } from '@/components/ui';
 import type { FAQItem, InquiryCategory } from '@/types';
-import { INQUIRY_CATEGORY_LABELS } from '@/types';
+import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 
 export interface FAQListProps {
   /** FAQ 아이템 목록 */

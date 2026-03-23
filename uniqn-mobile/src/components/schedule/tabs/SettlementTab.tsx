@@ -9,17 +9,19 @@ import { BanknotesIcon } from '@/components/icons';
 import {
   formatCurrency,
   formatDuration,
-  calculateSettlementWithTax,
-  calculateHoursWorked,
   SALARY_TYPE_LABELS,
-  PROVIDED_FLAG,
-  DEFAULT_SALARY_INFO,
-  DEFAULT_TAX_SETTINGS,
-  getRoleSalaryFromSettlementSource,
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
+import {
+  calculateSettlementWithTax,
+  calculateHoursWorked,
+  PROVIDED_FLAG,
+  DEFAULT_SALARY_INFO,
+  DEFAULT_TAX_SETTINGS,
+  getRoleSalaryFromSettlementSource,
+} from '@/domains/settlement';
 import { STATUS } from '@/constants';
 import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';

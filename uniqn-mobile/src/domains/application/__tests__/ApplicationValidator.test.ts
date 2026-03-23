@@ -14,7 +14,8 @@ import { ApplicationValidator, applicationValidator } from '../ApplicationValida
 import type { JobPosting, Assignment, PreQuestionAnswer } from '@/types';
 
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { isValidAssignment } from '@/types/assignment';
+import { validateRequiredAnswers } from '@/domains/application';
 
 // ============================================================================
 // Mocks

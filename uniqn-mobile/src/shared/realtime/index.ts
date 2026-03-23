@@ -27,7 +27,6 @@ export { RealtimeManager } from './RealtimeManager';
 // 고수준 Hook (Phase 2.2)
 export {
   useRealtimeSubscription,
-  useRealtimeDocument,
   type UseRealtimeSubscriptionOptions,
   type UseRealtimeSubscriptionResult,
   type DocumentParser,

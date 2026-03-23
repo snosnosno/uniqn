@@ -1,13 +1,12 @@
 /**
- * ErrorBoundary 모듈 배럴 export
+ * ErrorBoundary module barrel export
  *
- * @description Phase 5 - ErrorBoundary 모듈 분리
+ * @description Phase 5 - ErrorBoundary module split
  * @version 1.0.0
  *
- * 기존 import 경로 호환성 유지:
- * - import { ErrorBoundary } from '@/components/ui/ErrorBoundary' → 동작
- * - import { ErrorBoundary } from '@/components/ui/error-boundary' → 동작
- * - import { ErrorBoundary } from '@/components/ui' → 동작
+ * Recommended import paths:
+ * - import { ErrorBoundary } from '@/components/ui/error-boundary'
+ * - import { ErrorBoundary } from '@/components/ui'
  */
 
 // ============================================================================

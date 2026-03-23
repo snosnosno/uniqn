@@ -1,8 +1,6 @@
 /**
- * UNIQN Mobile - 지원서 이력 관리 서비스
- *
- * @description confirmationHistory 기반 확정/취소 이력 관리
- * @version 1.0.0
+ * UNIQN Mobile - 吏?먯꽌 ?대젰 愿由??쒕퉬?? *
+ * @description confirmationHistory 湲곕컲 ?뺤젙/痍⑥냼 ?대젰 愿由? * @version 1.0.0
  */
 
 import type { Timestamp } from 'firebase/firestore';
@@ -10,14 +8,14 @@ import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { Application, Assignment } from '@/types';
-import { findActiveConfirmation } from '@/types';
+import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '@/repositories';
 
-// Re-export from domain (하위 호환성)
+// Re-export from domain (?섏쐞 ?명솚??
 export { updateDateSpecificRequirementsFilled } from '@/domains/application';
 
-// Re-export types from repository interfaces (하위 호환성)
+// Re-export types from repository interfaces (?섏쐞 ?명솚??
 export type { ConfirmWithHistoryResult, CancelConfirmationResult } from '@/repositories';
 
 // ============================================================================
@@ -25,15 +23,15 @@ export type { ConfirmWithHistoryResult, CancelConfirmationResult } from '@/repos
 // ============================================================================
 
 /**
- * 지원 확정 (v2.0 - confirmationHistory 지원)
+ * 吏???뺤젙 (v2.0 - confirmationHistory 吏??
  *
- * 비즈니스 로직:
- * 1. 공고 소유자 확인
- * 2. 정원 확인 (날짜별/역할별)
- * 3. originalApplication 보존 (최초 확정 시)
- * 4. confirmationHistory에 이력 추가
- * 5. Assignment별 WorkLog 생성
- * 6. 공고 filledPositions 업데이트
+ * 鍮꾩쫰?덉뒪 濡쒖쭅:
+ * 1. 怨듦퀬 ?뚯쑀???뺤씤
+ * 2. ?뺤썝 ?뺤씤 (?좎쭨蹂???븷蹂?
+ * 3. originalApplication 蹂댁〈 (理쒖큹 ?뺤젙 ??
+ * 4. confirmationHistory???대젰 異붽?
+ * 5. Assignment蹂?WorkLog ?앹꽦
+ * 6. 怨듦퀬 filledPositions ?낅뜲?댄듃
  */
 export async function confirmApplicationWithHistory(
   applicationId: string,
@@ -42,9 +40,9 @@ export async function confirmApplicationWithHistory(
   notes?: string
 ): Promise<ConfirmWithHistoryResult> {
   try {
-    logger.info('지원 확정 (v2.0) 시작', { applicationId, ownerId });
+    logger.info('吏???뺤젙 (v2.0) ?쒖옉', { applicationId, ownerId });
 
-    // Repository 트랜잭션으로 위임
+    // Repository ?몃옖??뀡?쇰줈 ?꾩엫
     const result = await applicationRepository.confirmWithHistoryTransaction(
       applicationId,
       selectedAssignments,
@@ -52,7 +50,7 @@ export async function confirmApplicationWithHistory(
       notes
     );
 
-    logger.info('지원 확정 (v2.0) 완료', {
+    logger.info('吏???뺤젙 (v2.0) ?꾨즺', {
       applicationId,
       workLogIds: result.workLogIds,
     });
@@ -63,7 +61,7 @@ export async function confirmApplicationWithHistory(
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '지원 확정 (v2.0)',
+      operation: '吏???뺤젙 (v2.0)',
       component: 'applicationHistoryService',
       context: { applicationId },
     });
@@ -71,14 +69,14 @@ export async function confirmApplicationWithHistory(
 }
 
 /**
- * 확정 취소 (v2.0 - confirmationHistory 지원)
+ * ?뺤젙 痍⑥냼 (v2.0 - confirmationHistory 吏??
  *
- * 비즈니스 로직:
- * 1. 활성 확정 존재 확인
- * 2. confirmationHistory에 취소 정보 추가
- * 3. 연관 WorkLog 삭제 또는 취소 처리
- * 4. 공고 filledPositions 감소
- * 5. 상태를 원본(applied)으로 복원
+ * 鍮꾩쫰?덉뒪 濡쒖쭅:
+ * 1. ?쒖꽦 ?뺤젙 議댁옱 ?뺤씤
+ * 2. confirmationHistory??痍⑥냼 ?뺣낫 異붽?
+ * 3. ?곌? WorkLog ??젣 ?먮뒗 痍⑥냼 泥섎━
+ * 4. 怨듦퀬 filledPositions 媛먯냼
+ * 5. ?곹깭瑜??먮낯(applied)?쇰줈 蹂듭썝
  */
 export async function cancelConfirmation(
   applicationId: string,
@@ -86,16 +84,16 @@ export async function cancelConfirmation(
   cancelReason?: string
 ): Promise<CancelConfirmationResult> {
   try {
-    logger.info('확정 취소 시작', { applicationId, ownerId });
+    logger.info('?뺤젙 痍⑥냼 ?쒖옉', { applicationId, ownerId });
 
-    // Repository 트랜잭션으로 위임
+    // Repository ?몃옖??뀡?쇰줈 ?꾩엫
     const result = await applicationRepository.cancelConfirmationTransaction(
       applicationId,
       ownerId,
       cancelReason
     );
 
-    logger.info('확정 취소 완료', { applicationId });
+    logger.info('?뺤젙 痍⑥냼 ?꾨즺', { applicationId });
 
     return result;
   } catch (error) {
@@ -103,7 +101,7 @@ export async function cancelConfirmation(
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '확정 취소',
+      operation: '?뺤젙 痍⑥냼',
       component: 'applicationHistoryService',
       context: { applicationId },
     });
@@ -111,9 +109,9 @@ export async function cancelConfirmation(
 }
 
 /**
- * 최초 지원 데이터 조회
+ * 理쒖큹 吏???곗씠??議고쉶
  *
- * @description originalApplication이 있으면 반환, 없으면 현재 assignments 반환
+ * @description originalApplication???덉쑝硫?諛섑솚, ?놁쑝硫??꾩옱 assignments 諛섑솚
  */
 export function getOriginalApplicationData(application: Application): Assignment[] {
   if (application.originalApplication?.assignments) {
@@ -124,14 +122,14 @@ export function getOriginalApplicationData(application: Application): Assignment
     return application.assignments;
   }
 
-  // assignments가 없으면 빈 배열 반환
+  // assignments媛 ?놁쑝硫?鍮?諛곗뿴 諛섑솚
   return [];
 }
 
 /**
- * 현재 확정된 선택 조회
+ * ?꾩옱 ?뺤젙???좏깮 議고쉶
  *
- * @description 활성 confirmationHistory에서 assignments 반환
+ * @description ?쒖꽦 confirmationHistory?먯꽌 assignments 諛섑솚
  */
 export function getConfirmedSelections(application: Application): Assignment[] {
   if (!application.confirmationHistory?.length) {
@@ -143,14 +141,14 @@ export function getConfirmedSelections(application: Application): Assignment[] {
 }
 
 /**
- * 지원서가 v2.0 형식인지 확인
+ * 吏?먯꽌媛 v2.0 ?뺤떇?몄? ?뺤씤
  */
 export function isV2Application(application: Application): boolean {
   return Array.isArray(application.assignments) && application.assignments.length > 0;
 }
 
 /**
- * 확정 이력 요약 조회
+ * ?뺤젙 ?대젰 ?붿빟 議고쉶
  */
 export async function getApplicationHistorySummary(applicationId: string): Promise<{
   totalConfirmations: number;
@@ -160,7 +158,7 @@ export async function getApplicationHistorySummary(applicationId: string): Promi
   lastCancelledAt?: Timestamp;
 } | null> {
   try {
-    // Repository로 지원서 조회
+    // Repository濡?吏?먯꽌 議고쉶
     const applicationData = await applicationRepository.getById(applicationId);
 
     if (!applicationData) {
@@ -185,7 +183,7 @@ export async function getApplicationHistorySummary(applicationId: string): Promi
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '확정 이력 요약 조회',
+      operation: '?뺤젙 ?대젰 ?붿빟 議고쉶',
       component: 'applicationHistoryService',
       context: { applicationId },
     });

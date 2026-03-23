@@ -1,5 +1,5 @@
 import type { JobPostingFormData, JobPostingTemplate } from '@/types';
-import { extractTemplateData, templateToFormData } from '@/types';
+import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import {

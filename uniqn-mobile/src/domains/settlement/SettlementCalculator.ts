@@ -9,6 +9,8 @@ import type { JobPostingCard } from '@/types/jobPosting';
 import { type SalaryInfo, type Allowances, type TaxSettings } from '@/utils/settlement';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
+import { DEFAULT_SALARY_INFO, PROVIDED_FLAG } from '@/utils/settlement/constants';
+import { DEFAULT_TAX_SETTINGS } from '@/utils/settlement/tax';
 import { TaxCalculator } from './TaxCalculator';
 import { SettlementCache, type CachedSettlement } from './SettlementCache';
 
@@ -49,25 +51,6 @@ export interface SettlementBreakdown extends SettlementResult {
   isEstimate: boolean;
   calculatedAt: string;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
-
-/** 기본 급여 정보 */
-const DEFAULT_SALARY_INFO: SalaryInfo = {
-  type: 'hourly',
-  amount: 15000,
-};
-
-/** 기본 세금 설정 */
-const DEFAULT_TAX_SETTINGS: TaxSettings = {
-  type: 'none',
-  value: 0,
-};
 
 // ============================================================================
 // SettlementCalculator

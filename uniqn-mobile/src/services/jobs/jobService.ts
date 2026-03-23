@@ -19,7 +19,7 @@ import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHand
 import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
-import { toJobPostingCard } from '@/types';
+import { toJobPostingCard } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
 
 // ============================================================================

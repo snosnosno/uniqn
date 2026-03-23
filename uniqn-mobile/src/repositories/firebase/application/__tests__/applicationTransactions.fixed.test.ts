@@ -3,10 +3,6 @@ import {
   confirmWithHistoryTransaction,
   cancelConfirmationTransaction,
 } from '../applicationHistoryTransactions';
-import {
-  convertApplicantToStaffTransaction,
-  revertStaffConversionTransaction,
-} from '../deprecated/applicationConversionTransactions';
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseDb: jest.fn(() => ({ app: 'db' })),
@@ -336,116 +332,6 @@ describe('fixed application transaction compatibility', () => {
       expect.objectContaining({
         status: 'cancelled',
         updatedAt: { _serverTimestamp: true },
-      })
-    );
-  });
-
-  it('blocks fixed conversion worklog writes during the V3 cutover', async () => {
-    (getDoc as jest.Mock).mockResolvedValue(
-      createDocSnap('app-1', {
-        applicantId: 'staff-1',
-      })
-    );
-    (getDocs as jest.Mock).mockResolvedValue({ docs: [], empty: true });
-
-    const transaction = {
-      get: jest.fn((ref: { path: string }) => {
-        if (ref.path === 'applications/app-1') {
-          return Promise.resolve(
-            createDocSnap('app-1', {
-              id: 'app-1',
-              status: 'confirmed',
-              applicantId: 'staff-1',
-              applicantName: 'Alice',
-              applicantPhone: '010',
-              applicantEmail: 'alice@example.com',
-              jobPostingId: 'job-1',
-              assignments: [
-                { roleIds: ['dealer'], dates: ['FIXED_SCHEDULE'], timeSlot: 'FIXED_TIME' },
-              ],
-            })
-          );
-        }
-        if (ref.path === 'jobPostings/job-1') {
-          return Promise.resolve(
-            createDocSnap('job-1', {
-              id: 'job-1',
-              title: 'Fixed Job',
-              ownerId: 'owner-1',
-              schedule: { kind: 'fixed' },
-            })
-          );
-        }
-
-        return Promise.resolve(createDocSnap('staff-1', null));
-      }),
-      set: jest.fn(),
-      update: jest.fn(),
-    };
-
-    (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
-      callback(transaction)
-    );
-
-    await expect(convertApplicantToStaffTransaction('app-1', 'job-1', 'owner-1')).rejects.toThrow(
-      '고정 공고 스태프 전환은 V3 canonical 전환에서 지원하지 않습니다.'
-    );
-
-    expect(transaction.set).not.toHaveBeenCalledWith(
-      expect.objectContaining({ path: expect.stringMatching(/^workLogs\/auto-/) }),
-      expect.anything()
-    );
-  });
-
-  it('revert cancels scheduled fixed worklogs created during conversion', async () => {
-    (getDoc as jest.Mock).mockResolvedValue(
-      createDocSnap('app-1', {
-        applicantId: 'staff-1',
-        jobPostingId: 'job-1',
-      })
-    );
-    (getDocs as jest.Mock).mockResolvedValue({
-      docs: [{ id: 'wl-fixed' }],
-    });
-
-    const transaction = {
-      get: jest.fn((ref: { path: string }) => {
-        if (ref.path === 'applications/app-1') {
-          return Promise.resolve(
-            createDocSnap('app-1', {
-              id: 'app-1',
-              status: 'completed',
-              applicantId: 'staff-1',
-              jobPostingId: 'job-1',
-            })
-          );
-        }
-        if (ref.path === 'jobPostings/job-1') {
-          return Promise.resolve(
-            createDocSnap('job-1', {
-              id: 'job-1',
-              ownerId: 'owner-1',
-            })
-          );
-        }
-
-        return Promise.resolve(createDocSnap('wl-fixed', { status: 'scheduled' }));
-      }),
-      update: jest.fn(),
-    };
-
-    (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
-      callback(transaction)
-    );
-
-    await revertStaffConversionTransaction('app-1', 'owner-1');
-
-    expect(transaction.update).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'workLogs/wl-fixed' }),
-      expect.objectContaining({
-        status: 'cancelled',
-        cancelledReason: '스태프 전환 취소',
-        cancelledAt: { _serverTimestamp: true },
       })
     );
   });

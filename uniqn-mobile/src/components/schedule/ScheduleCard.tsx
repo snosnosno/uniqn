@@ -16,13 +16,15 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import {
   formatCurrency,
-  calculateSettlementWithTax,
-  DEFAULT_SALARY_INFO,
-  DEFAULT_TAX_SETTINGS,
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
+import {
+  calculateSettlementWithTax,
+  DEFAULT_SALARY_INFO,
+  DEFAULT_TAX_SETTINGS,
+} from '@/domains/settlement';
 import {
   formatTime,
   formatDate,

@@ -1,11 +1,11 @@
 /**
- * UNIQN Mobile - ApplicantCard 유틸리티 함수
+ * UNIQN Mobile - ApplicantCard ?좏떥由ы떚 ?⑥닔
  *
- * @description 지원자 카드 컴포넌트 헬퍼 함수
- * @version 1.2.0 - selectionCore.ts로 키 생성 통합
+ * @description 吏?먯옄 移대뱶 而댄룷?뚰듃 ?ы띁 ?⑥닔
+ * @version 1.2.0 - selectionCore.ts濡????앹꽦 ?듯빀
  */
 
-import { getAssignmentRoles } from '@/types';
+import { getAssignmentRoles } from '@/domains/application';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatAppliedDate } from '@/utils/date';
 import {
@@ -23,10 +23,9 @@ export { formatAppliedDate };
 // Role Helpers
 // ============================================================================
 
-// getRoleDisplayName은 '@/types/unified'에서 직접 import하세요
-
+// getRoleDisplayName? '@/types/unified'?먯꽌 吏곸젒 import?섏꽭??
 /**
- * 시간대 표시 포맷 (미정 시간 사유 포함)
+ * ?쒓컙? ?쒖떆 ?щ㎎ (誘몄젙 ?쒓컙 ?ъ쑀 ?ы븿)
  */
 export const formatTimeSlotDisplay = (
   timeSlot: string,
@@ -34,7 +33,7 @@ export const formatTimeSlotDisplay = (
   tentativeDescription?: string
 ): string => {
   if (isTimeToBeAnnounced || !timeSlot || timeSlot.trim() === '') {
-    return tentativeDescription ? `미정 (${tentativeDescription})` : '미정';
+    return tentativeDescription ? `誘몄젙 (${tentativeDescription})` : '誘몄젙';
   }
   return timeSlot;
 };
@@ -44,16 +43,15 @@ export const formatTimeSlotDisplay = (
 // ============================================================================
 
 /**
- * Assignment 배열을 역할별로 분리하여 표시용 형태로 변환
- *
- * @param assignments - Assignment 배열
- * @returns AssignmentDisplay 배열 (날짜순 → 시간순 → 역할순 정렬)
+ * Assignment 諛곗뿴????븷蹂꾨줈 遺꾨━?섏뿬 ?쒖떆???뺥깭濡?蹂?? *
+ * @param assignments - Assignment 諛곗뿴
+ * @returns AssignmentDisplay 諛곗뿴 (?좎쭨?????쒓컙??????븷???뺣젹)
  */
 export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay[] => {
   if (!assignments || assignments.length === 0) return [];
 
   const result: AssignmentDisplay[] = [];
-  const seen = new Set<string>(); // 중복 방지
+  const seen = new Set<string>(); // 以묐났 諛⑹?
 
   for (const assignment of assignments) {
     const roles = getAssignmentRoles(assignment);
@@ -63,7 +61,7 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
         const key = makeSelectionKey(date, assignment.timeSlot, role, {
           separator: APPLICANT_SEPARATOR,
         });
-        if (seen.has(key)) continue; // 중복 스킵
+        if (seen.has(key)) continue; // 以묐났 ?ㅽ궢
         seen.add(key);
 
         result.push({
@@ -82,11 +80,11 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
     }
   }
 
-  // 날짜순 → 시간순 → 역할순 정렬 (미정은 맨 뒤로)
+  // ?좎쭨?????쒓컙??????븷???뺣젹 (誘몄젙? 留??ㅻ줈)
   return result.sort((a, b) => {
     const dateCompare = a.date.localeCompare(b.date);
     if (dateCompare !== 0) return dateCompare;
-    // 시간 미정은 맨 뒤로
+    // ?쒓컙 誘몄젙? 留??ㅻ줈
     if (!a.timeSlot && b.timeSlot) return 1;
     if (a.timeSlot && !b.timeSlot) return -1;
     const timeCompare = a.timeSlot.localeCompare(b.timeSlot);
@@ -96,16 +94,16 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
 };
 
 /**
- * Assignment 키 생성 (date_timeSlot_role 형식)
- * @see selectionCore.ts - 통합 구현
+ * Assignment ???앹꽦 (date_timeSlot_role ?뺤떇)
+ * @see selectionCore.ts - ?듯빀 援ы쁽
  */
 export const createAssignmentKey = (date: string, timeSlot: string, role: string): string => {
   return makeSelectionKey(date, timeSlot, role, { separator: APPLICANT_SEPARATOR });
 };
 
 /**
- * Assignment 키에서 날짜 추출
- * @see selectionCore.ts - 통합 구현
+ * Assignment ?ㅼ뿉???좎쭨 異붿텧
+ * @see selectionCore.ts - ?듯빀 援ы쁽
  */
 export const getDateFromKey = (key: string): string => {
   return getDateFromKeyCore(key, { separator: APPLICANT_SEPARATOR });

@@ -29,7 +29,7 @@ import {
 import { jobPostingRepository } from '@/repositories';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability/performanceService';
-import { toJobPostingCard } from '@/types';
+import { toJobPostingCard } from '@/domains/job-posting';
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {

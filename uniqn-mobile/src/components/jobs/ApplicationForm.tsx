@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SheetModal } from '@/components/ui/SheetModal';
 import type { Assignment, JobPosting, PostingType, PreQuestionAnswer } from '@/types';
-import { findUnansweredRequired, initializePreQuestionAnswers } from '@/types';
+import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 
 interface ApplicationFormProps {
   job: JobPosting;

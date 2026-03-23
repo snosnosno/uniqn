@@ -1,5 +1,5 @@
 import type { CreateJobPostingInput, JobPosting, StaffRole, UpdateJobPostingInput } from '@/types';
-import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import {
   bulkUpdateJobPostingStatus,
   closeJobPosting,

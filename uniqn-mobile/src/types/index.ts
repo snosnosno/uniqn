@@ -19,17 +19,6 @@
 
 // 역할 타입 (Phase 8 - 통합)
 export type { UserRole, StaffRole, RoleFlags } from './role';
-export {
-  USER_ROLE_HIERARCHY,
-  USER_ROLE_LABELS,
-  VALID_USER_ROLES,
-  STAFF_ROLE_LABELS,
-  VALID_STAFF_ROLES,
-  isUserRole,
-  isStaffRole,
-  getUserRoleLabel,
-  getStaffRoleLabel,
-} from './role';
 
 // 공통 타입
 export type {
@@ -82,6 +71,9 @@ export type {
   JobPostingFilters,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  SupportedReleasePostingType,
+  SupportedReleasePostingSchedule,
+  SupportedReleaseJobPosting,
   PostingLocation,
   PostingRoleCatalogEntry,
   PostingSchedule,
@@ -109,31 +101,15 @@ export type {
   JobPostingCard,
 } from './jobPosting';
 
-export { JOB_POSTING_SCHEMA_VERSION } from './jobPosting';
-export { toJobPostingCard } from '@/domains/job-posting';
-
-// 날짜별 요구사항 타입 (정식 버전 - 신규 코드에서 사용)
-export type {
-  RoleRequirement as FormRoleRequirement,
-  TimeSlot as FormTimeSlot,
-  DateSpecificRequirement as FormDateSpecificRequirement,
-  DateConstraint,
-} from './jobPosting/dateRequirement';
-
-export {
-  getDateString,
-  sortDateRequirements as sortFormDateRequirements,
-  createDefaultTimeSlot,
-  createDefaultRole,
-} from './jobPosting/dateRequirement';
-
 // 지원서 타입
 export type {
   ApplicationStatus,
+  RecruitmentType,
   Application,
   CreateApplicationInput,
   ApplicationFilters,
   ConfirmApplicationInput,
+  ConfirmApplicationInputV2,
   RejectApplicationInput,
   ApplicationStats,
   // 취소 요청 관련 타입
@@ -143,33 +119,13 @@ export type {
   ReviewCancellationInput,
 } from './application';
 
-export { APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from './application';
-export { APPLICATION_STATUS_LABELS } from '@/shared/status';
-
-// 지원서 v2.0 추가 타입
-export type { RecruitmentType, ConfirmApplicationInputV2 } from './application';
-
-// Assignment v3.0 타입 (role/roles → roleIds 통합)
+// Assignment 타입
 export type {
-  DurationType,
-  AssignmentDuration,
-  CheckMethod,
   Assignment,
-  CreateSimpleAssignmentOptions,
-} from './assignment';
-
-export {
-  // 상수
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-  TBA_TIME_MARKER,
-  // 함수
-  getAssignmentRole,
-  getAssignmentRoles,
-  isValidAssignment,
-  createSimpleAssignment,
-  createGroupedAssignment,
-  createMultiRoleAssignment,
+  AssignmentDuration,
+  DurationType,
+  CheckMethod,
+  NormalizedAssignmentRole,
 } from './assignment';
 
 // 공고 타입별 설정
@@ -185,38 +141,17 @@ export type {
   DateSpecificRequirement,
 } from './postingConfig';
 
-export {
-  POSTING_TYPE_LABELS,
-  POSTING_TYPE_BADGE_STYLES,
-  getDateFromRequirement,
-  sortDateRequirements,
-} from './postingConfig';
+// 공고 작성 폼 타입
+export type { FormRoleWithCount, JobPostingFormData } from './jobPostingForm';
 
 // 사전질문 타입
 export type { PreQuestion, PreQuestionAnswer } from './preQuestion';
-
-export {
-  PRE_QUESTION_TYPE_LABELS,
-  initializePreQuestionAnswers,
-  validateRequiredAnswers,
-  findUnansweredRequired,
-  updateAnswer,
-} from './preQuestion';
 
 // 지원서 이력 관리
 export type {
   OriginalApplication,
   ConfirmationHistoryEntry,
   HistorySummary,
-} from './applicationHistory';
-
-export {
-  createHistoryEntry,
-  addCancellationToEntry,
-  findActiveConfirmation,
-  countConfirmations,
-  countCancellations,
-  createHistorySummary,
 } from './applicationHistory';
 
 // 알림 타입
@@ -228,14 +163,6 @@ export type {
   NotificationSettings,
   NotificationFilter,
   NotificationStats,
-} from './notification';
-
-export {
-  NotificationCategory as NotificationCategoryConst,
-  NotificationType as NotificationTypeConst,
-  NOTIFICATION_TYPE_LABELS,
-  NOTIFICATION_CATEGORY_LABELS,
-  createDefaultNotificationSettings,
 } from './notification';
 
 // 스케줄 타입
@@ -270,53 +197,23 @@ export type {
   GroupedScheduleEvent,
 } from './schedule';
 
-export {
-  toAttendanceStatus,
-  isGroupedScheduleEvent,
-  SCHEDULE_COLORS,
-  ATTENDANCE_STATUS_COLORS,
-} from './schedule';
-export { SCHEDULE_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/shared/status';
+// 확정 스태프 타입
+export type {
+  ConfirmedStaffStatus,
+  ConfirmedStaff,
+  ConfirmedStaffGroup,
+  UpdateWorkTimeInput,
+  UpdateStaffRoleInput,
+  DeleteConfirmedStaffInput,
+  ConfirmedStaffFilters,
+  GroupedConfirmedStaff,
+  ConfirmedStaffStats,
+} from './confirmedStaff';
 
-// 정산 그룹핑 타입
+// 정산 그룹 타입
 export type { DateSettlementStatus, GroupedSettlement, GroupSettlementOptions } from './settlement';
 
-export { isGroupedSettlement } from './settlement';
-
-// 공고 작성 폼 타입 (v2.0)
-export type { JobPostingFormData, FormRoleWithCount } from './jobPostingForm';
-export {
-  INITIAL_JOB_POSTING_FORM_DATA,
-  DEFAULT_ROLES,
-  POSTING_TYPE_INFO,
-  validateStep,
-  validateForm,
-} from './jobPostingForm';
-
 export type { JobPostingDraft, JobPostingDraftSchedule } from './jobPostingDraft';
-export { INITIAL_JOB_POSTING_DRAFT, DEFAULT_DRAFT_ROLE_CATALOG } from './jobPostingDraft';
-
-// Admin 타입
-export type {
-  AdminUser,
-  AdminUserProfile,
-  AdminPenalty,
-  PenaltyType,
-  AdminUserFilters,
-  AdminUserSortField,
-  UpdateUserRoleInput,
-  UpdateUserInput,
-  CreatePenaltyInput,
-} from './admin';
-
-export {
-  PENALTY_TYPE_LABELS,
-  ADMIN_USER_SORT_LABELS,
-  // USER_ROLE_LABELS는 role.ts에서 export (Phase 8)
-  USER_ROLE_BADGE_VARIANT,
-  COUNTRIES,
-  getCountryByCode,
-} from './admin';
 
 // 공고 템플릿 타입
 export type {
@@ -327,30 +224,6 @@ export type {
   TemplateListResult,
 } from './jobTemplate';
 
-export { extractTemplateData, templateToDraft, templateToFormData } from './jobTemplate';
-
-// 확정 스태프 타입 (v2.0 - 스태프 관리 탭)
-export type {
-  ConfirmedStaffStatus,
-  ConfirmedStaff,
-  ConfirmedStaffGroup,
-  GroupedConfirmedStaff,
-  ConfirmedStaffFilters,
-  UpdateStaffRoleInput,
-  UpdateWorkTimeInput,
-  DeleteConfirmedStaffInput,
-  ConfirmedStaffStats,
-} from './confirmedStaff';
-
-export {
-  CONFIRMED_STAFF_STATUS_LABELS,
-  CONFIRMED_STAFF_STATUS_COLORS,
-  groupStaffByDate,
-  sortStaffByStatus,
-  workLogToConfirmedStaff,
-  calculateStaffStats,
-} from './confirmedStaff';
-
 // 신고 타입 (구인자 → 스태프)
 export type {
   EmployeeReportType,
@@ -359,15 +232,6 @@ export type {
   Report,
   CreateReportInput,
   ReviewReportInput,
-} from './report';
-
-export {
-  EMPLOYEE_REPORT_TYPES,
-  EMPLOYEE_REPORT_TYPE_LABELS,
-  REPORT_SEVERITY_COLORS,
-  REPORT_STATUS_LABELS,
-  REPORT_STATUS_COLORS,
-  getReportSeverity,
 } from './report';
 
 // 리뷰/평가 타입 (버블 시스템)
@@ -385,51 +249,15 @@ export type {
   ReviewBlindResult,
 } from './review';
 
-export {
-  EMPLOYER_TO_STAFF_TAGS,
-  STAFF_TO_EMPLOYER_TAGS,
-  BUBBLE_SCORE,
-  REVIEW_DEADLINE_DAYS,
-  REVIEW_TAG_LIMITS,
-  REVIEW_COMMENT_MAX_LENGTH,
-  SENTIMENT_LABELS,
-  SENTIMENT_EMOJI,
-  SENTIMENT_COLORS,
-  BUBBLE_SCORE_COLORS,
-  getTagsForReviewerType,
-  getAllowedTagKeys,
-  getBubbleScoreColor,
-  getSentimentScoreChange,
-  calculateNewBubbleScore,
-} from './review';
-
 // ============================================================================
 // 통합 타입 (Unified Types)
 // ============================================================================
 
 // 역할 통합 타입
 export type { RoleInfo } from './unified';
-export {
-  getRoleDisplayName,
-  createRoleInfo,
-  isRoleFilled,
-  getRemainingCount,
-  findRoleById,
-  filterAvailableRoles,
-  getTotalRequiredCount,
-  getTotalFilledCount,
-  isAllRolesFilled,
-} from './unified';
 
 // 시간대 통합 타입
 export type { TimeSlotInfo } from './unified';
-export {
-  createTimeSlotInfo,
-  formatTimeSlotDisplay,
-  getSlotTotalRequired,
-  getSlotTotalFilled,
-  isSlotFilled,
-} from './unified';
 
 // 일정 통합 타입 (Discriminated Union)
 export type {
@@ -438,16 +266,6 @@ export type {
   FixedScheduleInfo,
   NormalizedSchedule,
   NormalizedScheduleList,
-} from './unified';
-export {
-  isDatedSchedule,
-  isFixedSchedule,
-  createDatedSchedule,
-  createFixedSchedule,
-  extractAllDates,
-  extractAllRoles,
-  formatFixedScheduleDisplay,
-  formatDateDisplay,
 } from './unified';
 
 // 문의 타입
@@ -463,16 +281,6 @@ export type {
   InquiryCategoryInfo,
 } from './inquiry';
 
-export {
-  INQUIRY_CATEGORIES,
-  INQUIRY_CATEGORY_LABELS,
-  INQUIRY_STATUS_CONFIG,
-  INQUIRY_STATUS_LABELS,
-  FAQ_DATA,
-  filterFAQByCategory,
-  getCategoryInfo,
-} from './inquiry';
-
 // 공지사항 타입
 export type {
   AnnouncementCategory,
@@ -485,19 +293,4 @@ export type {
   UpdateAnnouncementInput,
   AnnouncementFilters,
   AnnouncementCategoryInfo,
-} from './announcement';
-
-export {
-  MAX_ANNOUNCEMENT_IMAGES,
-  ANNOUNCEMENT_CATEGORIES,
-  ANNOUNCEMENT_CATEGORY_LABELS,
-  ANNOUNCEMENT_STATUS_CONFIG,
-  ANNOUNCEMENT_STATUS_LABELS,
-  ANNOUNCEMENT_PRIORITY_CONFIG,
-  ANNOUNCEMENT_PRIORITY_LABELS,
-  TARGET_AUDIENCE_LABELS,
-  getCategoryInfo as getAnnouncementCategoryInfo,
-  isAnnouncementForRole,
-  getAnnouncementImages,
-  sortAnnouncements,
 } from './announcement';

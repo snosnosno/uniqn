@@ -19,12 +19,14 @@ import { getRoleDisplayName } from '@/types/unified';
 import {
   formatCurrency,
   SALARY_TYPE_LABELS,
-  PROVIDED_FLAG,
-  DEFAULT_TAX_SETTINGS,
-  getRoleSalaryFromSettlementSource,
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
+import {
+  PROVIDED_FLAG,
+  DEFAULT_TAX_SETTINGS,
+  getRoleSalaryFromSettlementSource,
+} from '@/domains/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
 import { formatPhoneNumber } from '@/utils/phone';
 import { STATUS } from '@/constants';

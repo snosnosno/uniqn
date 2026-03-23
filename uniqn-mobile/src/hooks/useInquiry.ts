@@ -29,7 +29,7 @@ import type {
   InquiryFilters,
   InquiryCategory,
 } from '@/types';
-import { FAQ_DATA, filterFAQByCategory } from '@/types';
+import { FAQ_DATA, filterFAQByCategory } from '@/types/inquiry';
 import type { InquiryPaginationCursor } from '@/repositories';
 import { stableFilters } from '@/utils/queryUtils';
 

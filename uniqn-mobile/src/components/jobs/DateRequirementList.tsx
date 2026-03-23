@@ -10,7 +10,7 @@ import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { DateSpecificRequirement, TimeSlot } from '@/types';
 import { formatDateShortWithDay } from '@/utils/date';
-import { getDateFromRequirement, sortDateRequirements } from '@/types';
+import { getDateFromRequirement, sortDateRequirements } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================

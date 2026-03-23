@@ -7,9 +7,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { DEFAULT_SALARY_INFO, DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 import { SheetModal } from '../../ui/SheetModal';
 import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
-import { type SalaryInfo, type Allowances, DEFAULT_SALARY_INFO } from '@/utils/settlement';
+import { type SalaryInfo, type Allowances } from '@/utils/settlement';
 import { SalaryTypeSelector } from './SalaryTypeSelector';
 import { AllowanceEditor } from './AllowanceEditor';
 import { TaxSettingsEditor, type TaxSettings } from './TaxSettingsEditor';
@@ -49,15 +50,6 @@ export interface SettlementSettingsData {
   allowances: Allowances;
   taxSettings: TaxSettings;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const DEFAULT_TAX_SETTINGS: TaxSettings = {
-  type: 'none',
-  value: 0,
-};
 
 // ============================================================================
 // Helpers

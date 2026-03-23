@@ -29,7 +29,7 @@ import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import type { JobPostingTemplate, CreateTemplateInput } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
-import { extractTemplateData } from '@/types';
+import { extractTemplateData } from '@/types/jobTemplate';
 import { formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import { COLLECTIONS, FIELDS } from '@/constants';
 import type { ITemplateRepository } from '../interfaces/ITemplateRepository';

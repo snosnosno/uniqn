@@ -1,5 +1,5 @@
 import type { JobPostingFormData, JobPostingTemplate } from '@/types';
-import { extractTemplateData, templateToFormData } from '@/types';
+import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
 
@@ -21,7 +21,7 @@ describe('jobTemplate dated template helpers', () => {
       title: 'Tournament Template',
       roles: [
         {
-          name: '딜러',
+          name: '?쒕윭',
           count: 6,
           salary: { type: 'hourly', amount: 13000 },
         },
@@ -104,7 +104,7 @@ describe('jobTemplate dated template helpers', () => {
 
     expect(loaded.roles).toMatchObject([
       {
-        name: '딜러',
+        name: '?쒕윭',
         count: 2,
         salary: { type: 'hourly', amount: 13000 },
       },
@@ -131,7 +131,7 @@ describe('jobTemplate dated template helpers', () => {
       title: 'Reusable Template',
       roles: [
         {
-          name: '딜러',
+          name: '?쒕윭',
           count: 2,
           salary: { type: 'hourly', amount: 13000 },
         },
@@ -165,7 +165,7 @@ describe('jobTemplate dated template helpers', () => {
       ...loaded,
       roles: [
         {
-          name: '딜러',
+          name: '?쒕윭',
           count: 2,
           salary: { type: 'hourly', amount: 15000 },
         },
@@ -193,7 +193,7 @@ describe('jobTemplate dated template helpers', () => {
       ...loaded,
       roles: [
         {
-          name: '딜러',
+          name: '?쒕윭',
           count: 3,
           salary: { type: 'hourly', amount: 15000 },
         },

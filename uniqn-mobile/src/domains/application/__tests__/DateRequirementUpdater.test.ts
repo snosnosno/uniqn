@@ -1,9 +1,5 @@
-import {
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-  type Assignment,
-  type PostingSchedule,
-} from '@/types';
+import { type Assignment, type PostingSchedule } from '@/types';
+import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
 import { updatePostingScheduleFilled } from '../DateRequirementUpdater';
 
 describe('updatePostingScheduleFilled', () => {

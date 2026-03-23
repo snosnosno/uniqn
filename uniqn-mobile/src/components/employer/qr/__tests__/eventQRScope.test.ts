@@ -1,5 +1,5 @@
 import type { JobPosting } from '@/types';
-import { TBA_TIME_MARKER } from '@/types';
+import { TBA_TIME_MARKER } from '@/domains/application';
 import { buildEventQRScopes, findPreferredEventQRScope } from '../eventQRScope';
 
 function createDatedPosting(overrides: Partial<JobPosting> = {}): JobPosting {

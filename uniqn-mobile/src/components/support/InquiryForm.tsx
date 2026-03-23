@@ -11,7 +11,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { Button, FormField, FormSelect } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
 import type { InquiryCategory, CreateInquiryInput } from '@/types';
-import { INQUIRY_CATEGORIES } from '@/types';
+import { INQUIRY_CATEGORIES } from '@/types/inquiry';
 import { createInquirySchema } from '@/schemas';
 import { z } from 'zod';
 

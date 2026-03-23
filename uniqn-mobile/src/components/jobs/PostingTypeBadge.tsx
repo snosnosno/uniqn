@@ -8,7 +8,7 @@
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import type { PostingType } from '@/types';
-import { POSTING_TYPE_LABELS, POSTING_TYPE_BADGE_STYLES } from '@/types';
+import { POSTING_TYPE_LABELS, POSTING_TYPE_BADGE_STYLES } from '@/types/postingConfig';
 
 // ============================================================================
 // Types

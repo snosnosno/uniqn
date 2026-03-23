@@ -12,7 +12,7 @@ import {
   getCanonicalPostingType,
   isScheduleKindCompatibleWithPostingType,
 } from '@/domains/job-posting';
-import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { isWithinUrgentDateLimit } from '@/utils/date';
 
 export const postingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urgent'], {

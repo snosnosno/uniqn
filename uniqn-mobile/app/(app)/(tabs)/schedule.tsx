@@ -20,7 +20,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import type { ScheduleEvent, GroupedScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
-import { isGroupedScheduleEvent } from '@/types';
+import { isGroupedScheduleEvent } from '@/types/schedule';
 
 // ============================================================================
 // Constants

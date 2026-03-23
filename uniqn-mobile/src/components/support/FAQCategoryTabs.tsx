@@ -1,14 +1,13 @@
 /**
- * UNIQN Mobile - FAQCategoryTabs 컴포넌트
+ * UNIQN Mobile - FAQCategoryTabs 而댄룷?뚰듃
  *
- * @description FAQ 카테고리 필터 탭
- * @version 1.0.0
+ * @description FAQ 移댄뀒怨좊━ ?꾪꽣 ?? * @version 1.0.0
  */
 
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import type { InquiryCategory } from '@/types';
-import { INQUIRY_CATEGORY_LABELS } from '@/types';
+import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 
 export type FAQCategoryFilter = InquiryCategory | 'all';
 
@@ -19,7 +18,7 @@ export interface FAQCategoryTabsProps {
 }
 
 const CATEGORY_OPTIONS: { key: FAQCategoryFilter; label: string }[] = [
-  { key: 'all', label: '전체' },
+  { key: 'all', label: '?꾩껜' },
   { key: 'general', label: INQUIRY_CATEGORY_LABELS.general },
   { key: 'account', label: INQUIRY_CATEGORY_LABELS.account },
   { key: 'payment', label: INQUIRY_CATEGORY_LABELS.payment },
@@ -50,7 +49,7 @@ export function FAQCategoryTabs({
               }`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={`${option.label} 카테고리`}
+              accessibilityLabel={`${option.label} 移댄뀒怨좊━`}
             >
               <Text
                 className={`text-sm font-medium ${

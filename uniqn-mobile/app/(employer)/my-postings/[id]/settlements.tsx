@@ -43,13 +43,13 @@ import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
 import {
-  type SalaryInfo,
   getRoleSalaryFromRoles,
   calculateSettlementFromWorkLog,
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
   getEffectiveTaxSettings,
-} from '@/utils/settlement';
+} from '@/domains/settlement';
+import { type SalaryInfo } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput } from '@/types';
 
 // ============================================================================

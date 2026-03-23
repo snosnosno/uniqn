@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { CheckCircleIcon } from '@/components/icons';
 
 import type { PostingType } from '@/types';
-import { POSTING_TYPE_INFO } from '@/types';
+import { POSTING_TYPE_INFO } from '@/types/jobPostingForm';
 
 interface PostingTypeSelectorProps {
   value: PostingType;

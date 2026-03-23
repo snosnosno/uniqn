@@ -145,7 +145,6 @@ export {
   type UseAssignmentSelectionOptions,
   type UseAssignmentSelectionReturn,
 } from './useAssignmentSelection';
-export { useRealtimeQuery, useRealtimeCollection, useRealtimeDocument } from './useRealtimeQuery';
 
 export {
   useAdminDashboard,

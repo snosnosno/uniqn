@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment } from '@/types';
-import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types';
+import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types/assignment';
 import type { TimeSlotInfo } from '@/types/unified';
 import { getRoleDisplayName } from '@/types/unified';
 import {

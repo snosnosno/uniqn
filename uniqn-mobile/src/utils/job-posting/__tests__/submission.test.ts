@@ -1,5 +1,5 @@
 import type { JobPosting, JobPostingFormData } from '@/types';
-import { JOB_POSTING_SCHEMA_VERSION } from '@/types';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
@@ -43,7 +43,7 @@ function createFormData(overrides: Partial<JobPostingFormData> = {}): JobPosting
     },
     roles: [
       {
-        name: '딜러',
+        name: '?쒕윭',
         count: 2,
         salary: { type: 'hourly', amount: 12000 },
       },
@@ -112,7 +112,7 @@ function createPosting(): JobPosting {
       items: [
         {
           id: 'q1',
-          question: '경력이 있나요?',
+          question: '寃쎈젰???덈굹??',
           type: 'text',
           required: true,
         },
@@ -133,7 +133,7 @@ describe('job posting submission helpers', () => {
       preQuestions: [
         {
           id: 'q1',
-          question: '경력이 있나요?',
+          question: '寃쎈젰???덈굹??',
           type: 'text',
           required: true,
         },
@@ -176,7 +176,7 @@ describe('job posting submission helpers', () => {
       preQuestions: [
         {
           id: 'q1',
-          question: '차량 이동이 가능한가요?',
+          question: '李⑤웾 ?대룞??媛?ν븳媛??',
           type: 'text',
           required: false,
         },
@@ -221,10 +221,10 @@ describe('job posting submission helpers', () => {
     expect(result.location?.district).toBe('Teheran-ro');
     expect(result.detailedAddress).toBe('Suite 101');
     expect(result.dateSpecificRequirements).toHaveLength(2);
-    expect(result.roles[0]?.name).toBe('딜러');
+    expect(result.roles[0]?.name).toBe('?쒕윭');
     expect(result.defaultSalary?.amount).toBe(12000);
     expect(result.usesPreQuestions).toBe(true);
-    expect(result.preQuestions[0]?.question).toBe('경력이 있나요?');
+    expect(result.preQuestions[0]?.question).toBe('寃쎈젰???덈굹??');
   });
   it('keeps clear intent for optional fields in update payloads and serialization', () => {
     const currentPosting = createPosting();

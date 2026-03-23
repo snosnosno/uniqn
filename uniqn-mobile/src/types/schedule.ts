@@ -1,5 +1,5 @@
 /**
- * UNIQN Mobile - 스케줄 관련 타입 정의
+ * UNIQN Mobile - ?ㅼ?以?愿??????뺤쓽
  *
  * @version 1.0.0
  */
@@ -7,32 +7,27 @@
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 import type { JobRoleStats, PostingCompensation, SalaryInfo, SalaryType } from './jobPosting';
+import type { AttendanceStatus, PayrollStatus, ScheduleType, WorkLogStatus } from '@/shared/status';
 import type { TimeInput } from '@/shared/time/types';
 import { StatusMapper } from '@/shared/status';
 import type { StaffRole } from './role';
 
 // Re-export SalaryType from jobPosting (single source of truth)
 export type { SalaryType };
+export type { AttendanceStatus, WorkLogStatus, ScheduleType, PayrollStatus };
 
 /**
- * 출석 상태 (UI 표시용)
+ * 異쒖꽍 ?곹깭 (UI ?쒖떆??
  */
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
 /**
- * WorkLog 상태 (전체 lifecycle)
+ * WorkLog ?곹깭 (?꾩껜 lifecycle)
  */
-export type WorkLogStatus =
-  | 'scheduled' // 예정됨
-  | 'checked_in' // 출근 완료
-  | 'checked_out' // 퇴근 완료
-  | 'completed' // 정산 완료
-  | 'cancelled'; // 취소됨
 
 /**
- * WorkLogStatus → AttendanceStatus 변환 유틸
+ * WorkLogStatus ??AttendanceStatus 蹂???좏떥
  *
- * @description StatusMapper로 위임 (Phase 1 - 상태 매핑 통합)
+ * @description StatusMapper濡??꾩엫 (Phase 1 - ?곹깭 留ㅽ븨 ?듯빀)
  * @example
  * toAttendanceStatus('scheduled') // 'not_started'
  * toAttendanceStatus('checked_in') // 'checked_in'
@@ -43,39 +38,35 @@ export function toAttendanceStatus(workLogStatus: WorkLogStatus): AttendanceStat
 }
 
 /**
- * 스케줄 타입
- */
-export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
+ * ?ㅼ?以???? */
 
 /**
- * 정산 상태
+ * ?뺤궛 ?곹깭
  */
-export type PayrollStatus = 'pending' | 'processing' | 'completed';
 
 /**
- * 세금 타입
- */
+ * ?멸툑 ??? */
 export type TaxType = 'none' | 'rate' | 'fixed';
 
 /**
- * 정산 세부 내역 (미리 계산하여 캐싱)
+ * ?뺤궛 ?몃? ?댁뿭 (誘몃━ 怨꾩궛?섏뿬 罹먯떛)
  *
- * scheduleService에서 WorkLog → ScheduleEvent 변환 시 한 번만 계산
- * SettlementTab에서는 이 데이터를 그대로 사용하여 중복 계산 방지
+ * scheduleService?먯꽌 WorkLog ??ScheduleEvent 蹂??????踰덈쭔 怨꾩궛
+ * SettlementTab?먯꽌?????곗씠?곕? 洹몃?濡??ъ슜?섏뿬 以묐났 怨꾩궛 諛⑹?
  */
 export interface SettlementBreakdown {
-  /** 근무 시간 (시간 단위) */
+  /** 洹쇰Т ?쒓컙 (?쒓컙 ?⑥쐞) */
   hoursWorked: number;
 
-  /** 적용된 급여 정보 */
+  /** ?곸슜??湲됱뿬 ?뺣낫 */
   salaryInfo: {
     type: SalaryType;
     amount: number;
   };
-  /** 기본급 */
+  /** 湲곕낯湲?*/
   basePay: number;
 
-  /** 적용된 수당 정보 (상세 내역) */
+  /** ?곸슜???섎떦 ?뺣낫 (?곸꽭 ?댁뿭) */
   allowances?: {
     guaranteedHours?: number;
     meal?: number;
@@ -83,25 +74,25 @@ export interface SettlementBreakdown {
     accommodation?: number;
     additional?: number;
   };
-  /** 수당 합계 */
+  /** ?섎떦 ?⑷퀎 */
   allowancePay: number;
 
-  /** 적용된 세금 설정 */
+  /** ?곸슜???멸툑 ?ㅼ젙 */
   taxSettings?: {
     type: TaxType;
     value: number;
   };
-  /** 세금 금액 */
+  /** ?멸툑 湲덉븸 */
   taxAmount: number;
 
-  /** 세전 총액 (basePay + allowancePay) */
+  /** ?몄쟾 珥앹븸 (basePay + allowancePay) */
   totalPay: number;
-  /** 세후 총액 */
+  /** ?명썑 珥앹븸 */
   afterTaxPay: number;
 
-  /** 예상 금액 여부 (actualTime이 없을 때 true) */
+  /** ?덉긽 湲덉븸 ?щ? (actualTime???놁쓣 ??true) */
   isEstimate: boolean;
-  /** 계산 시점 (ISO 날짜 문자열) */
+  /** 怨꾩궛 ?쒖젏 (ISO ?좎쭨 臾몄옄?? */
   calculatedAt: string;
 }
 
@@ -117,46 +108,45 @@ export interface SchedulePostingProjection {
 }
 
 /**
- * 스케줄 이벤트
- */
+ * ?ㅼ?以??대깽?? */
 export interface ScheduleEvent extends FirebaseDocument {
-  // 기본 정보
+  // 湲곕낯 ?뺣낫
   type: ScheduleType;
   date: string; // YYYY-MM-DD
 
-  // 시간 정보
+  // ?쒓컙 ?뺣낫
   startTime: Timestamp | null;
   endTime: Timestamp | null;
-  /** 실제 출근 시간 (QR 스캔 또는 관리자 수정) */
+  /** ?ㅼ젣 異쒓렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
   checkInTime?: TimeInput;
-  /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
+  /** ?ㅼ젣 ?닿렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
   checkOutTime?: TimeInput;
 
-  // 공고 정보
-  /** 공고 ID */
+  // 怨듦퀬 ?뺣낫
+  /** 怨듦퀬 ID */
   jobPostingId: string;
-  /** 공고명 */
+  /** 怨듦퀬紐?*/
   jobPostingName: string;
   location: string;
   detailedAddress?: string;
 
-  // 역할 정보
+  // ??븷 ?뺣낫
   role: string;
-  /** 커스텀 역할명 (role이 'other'일 때) */
+  /** 而ㅼ뒪? ??븷紐?(role??'other'???? */
   customRole?: string;
   status: AttendanceStatus;
 
-  // 정산 정보
+  // ?뺤궛 ?뺣낫
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
   payrollDate?: Timestamp;
-  /** 미리 계산된 정산 세부 내역 */
+  /** 誘몃━ 怨꾩궛???뺤궛 ?몃? ?댁뿭 */
   settlementBreakdown?: SettlementBreakdown;
 
-  // 구인자 정보
-  /** 구인자 연락처 */
+  // 援ъ씤???뺣낫
+  /** 援ъ씤???곕씫泥?*/
   ownerPhone?: string;
-  /** 구인자 ID */
+  /** 援ъ씤??ID */
   ownerId?: string;
 
   // 메타데이터
@@ -166,13 +156,13 @@ export interface ScheduleEvent extends FirebaseDocument {
   workLogId?: string;
   applicationId?: string;
 
-  // 개별 오버라이드 (구인자가 스태프별로 수정한 정산 정보)
-  /** 개별 급여 정보 (오버라이드) */
+  // 媛쒕퀎 ?ㅻ쾭?쇱씠??(援ъ씤?먭? ?ㅽ깭?꾨퀎濡??섏젙???뺤궛 ?뺣낫)
+  /** 媛쒕퀎 湲됱뿬 ?뺣낫 (?ㅻ쾭?쇱씠?? */
   customSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
   };
-  /** 개별 수당 정보 (오버라이드) */
+  /** 媛쒕퀎 ?섎떦 ?뺣낫 (?ㅻ쾭?쇱씠?? */
   customAllowances?: {
     guaranteedHours?: number;
     meal?: number;
@@ -180,22 +170,22 @@ export interface ScheduleEvent extends FirebaseDocument {
     accommodation?: number;
     additional?: number;
   };
-  /** 개별 세금 설정 (오버라이드) */
+  /** 媛쒕퀎 ?멸툑 ?ㅼ젙 (?ㅻ쾭?쇱씠?? */
   customTaxSettings?: {
     type: 'none' | 'rate' | 'fixed';
     value: number;
   };
 
-  // JobCard 렌더링용 데이터 (스케줄 탭에서 사용)
+  // JobCard ?뚮뜑留곸슜 ?곗씠??(?ㅼ?以???뿉???ъ슜)
   postingProjection?: SchedulePostingProjection;
 
-  /** 시간대 문자열 (예: "18:00~02:00") - 시간 표시 폴백용 */
+  /** ?쒓컙? 臾몄옄??(?? "18:00~02:00") - ?쒓컙 ?쒖떆 ?대갚??*/
   timeSlot?: string;
   isFixedPosting?: boolean;
 }
 
 /**
- * 스케줄 필터
+ * ?ㅼ?以??꾪꽣
  */
 export interface ScheduleFilters {
   dateRange: {
@@ -208,14 +198,14 @@ export interface ScheduleFilters {
 }
 
 /**
- * 스케줄 통계
+ * ?ㅼ?以??듦퀎
  */
 export interface ScheduleStats {
   totalSchedules: number;
   completedSchedules: number;
-  /** 확정된 스케줄 (미래, type === 'confirmed') */
+  /** ?뺤젙???ㅼ?以?(誘몃옒, type === 'confirmed') */
   confirmedSchedules: number;
-  /** 지원 중인 스케줄 (미래, type === 'applied') */
+  /** 吏??以묒씤 ?ㅼ?以?(誘몃옒, type === 'applied') */
   upcomingSchedules: number;
   totalEarnings: number;
   thisMonthEarnings: number;
@@ -223,12 +213,11 @@ export interface ScheduleStats {
 }
 
 /**
- * 캘린더 뷰 타입
- */
+ * 罹섎┛??酉???? */
 export type CalendarView = 'month' | 'week' | 'day';
 
 /**
- * 스케줄 그룹 (날짜별)
+ * ?ㅼ?以?洹몃９ (?좎쭨蹂?
  */
 export interface ScheduleGroup {
   date: string;
@@ -239,111 +228,109 @@ export interface ScheduleGroup {
 }
 
 // ============================================================================
-// Grouped Schedule Types (연속/다중 날짜 통합 표시용)
+// Grouped Schedule Types (?곗냽/?ㅼ쨷 ?좎쭨 ?듯빀 ?쒖떆??
 // ============================================================================
 
 /**
- * 날짜별 상태 정보 (통합 카드 펼침 시 표시)
+ * ?좎쭨蹂??곹깭 ?뺣낫 (?듯빀 移대뱶 ?쇱묠 ???쒖떆)
  */
 export interface DateStatus {
-  /** 날짜 (YYYY-MM-DD) */
+  /** ?좎쭨 (YYYY-MM-DD) */
   date: string;
-  /** 포맷된 날짜 (예: "1/15(수)") */
+  /** ?щ㎎???좎쭨 (?? "1/15(??") */
   formattedDate: string;
-  /** 출석 상태 */
+  /** 異쒖꽍 ?곹깭 */
   status: AttendanceStatus;
-  /** 해당 날짜의 원본 ScheduleEvent ID */
+  /** ?대떦 ?좎쭨???먮낯 ScheduleEvent ID */
   scheduleEventId: string;
 }
 
 /**
- * 통합 스케줄 이벤트
- *
- * 같은 지원(applicationId)의 연속/비연속 다중 날짜를 하나의 카드로 통합 표시
+ * ?듯빀 ?ㅼ?以??대깽?? *
+ * 媛숈? 吏??applicationId)???곗냽/鍮꾩뿰???ㅼ쨷 ?좎쭨瑜??섎굹??移대뱶濡??듯빀 ?쒖떆
  *
  * @example
- * 3일 연속 딜러 지원:
- * - 기존: 3개의 개별 ScheduleCard
- * - 개선: 1개의 GroupedScheduleCard ("1월 15일 ~ 17일 (3일)")
+ * 3???곗냽 ?쒕윭 吏??
+ * - 湲곗〈: 3媛쒖쓽 媛쒕퀎 ScheduleCard
+ * - 媛쒖꽑: 1媛쒖쓽 GroupedScheduleCard ("1??15??~ 17??(3??")
  *
- * 비연속 날짜 지원:
- * - 기존: 2개의 개별 ScheduleCard (1/15, 1/17)
- * - 개선: 1개의 GroupedScheduleCard ("1/15, 1/17 (2일)")
+ * 鍮꾩뿰???좎쭨 吏??
+ * - 湲곗〈: 2媛쒖쓽 媛쒕퀎 ScheduleCard (1/15, 1/17)
+ * - 媛쒖꽑: 1媛쒖쓽 GroupedScheduleCard ("1/15, 1/17 (2??")
  */
 export interface GroupedScheduleEvent {
-  /** 고유 ID: "grouped_{applicationId}" */
+  /** 怨좎쑀 ID: "grouped_{applicationId}" */
   id: string;
 
-  /** 스케줄 타입 (applied, confirmed, completed, cancelled) */
+  /** ?ㅼ?以????(applied, confirmed, completed, cancelled) */
   type: ScheduleType;
 
-  /** 공고 ID */
+  /** 怨듦퀬 ID */
   jobPostingId: string;
 
-  /** 공고명 */
+  /** 怨듦퀬紐?*/
   jobPostingName: string;
 
-  /** 장소 */
+  /** ?μ냼 */
   location: string;
 
-  /** 상세 주소 */
+  /** ?곸꽭 二쇱냼 */
   detailedAddress?: string;
 
   /**
-   * 날짜 범위 정보
+   * ?좎쭨 踰붿쐞 ?뺣낫
    */
   dateRange: {
-    /** 시작 날짜 (YYYY-MM-DD) */
+    /** ?쒖옉 ?좎쭨 (YYYY-MM-DD) */
     start: string;
-    /** 종료 날짜 (YYYY-MM-DD) */
+    /** 醫낅즺 ?좎쭨 (YYYY-MM-DD) */
     end: string;
-    /** 전체 날짜 배열 (정렬됨) */
+    /** ?꾩껜 ?좎쭨 諛곗뿴 (?뺣젹?? */
     dates: string[];
-    /** 총 일수 */
+    /** 珥??쇱닔 */
     totalDays: number;
-    /** 연속 날짜 여부 */
+    /** ?곗냽 ?좎쭨 ?щ? */
     isConsecutive: boolean;
   };
 
   /**
-   * 역할 목록 (다중 역할 통합 지원)
-   * 예: ["딜러"], ["딜러", "플로어맨"]
+   * ??븷 紐⑸줉 (?ㅼ쨷 ??븷 ?듯빀 吏??
+   * ?? ["?쒕윭"], ["?쒕윭", "?뚮줈?대㎤"]
    */
   roles: string[];
 
   /**
-   * 커스텀 역할명 목록 (roles와 동일 인덱스로 매핑)
-   * undefined는 해당 role에 customRole이 없음을 의미
+   * 而ㅼ뒪? ??븷紐?紐⑸줉 (roles? ?숈씪 ?몃뜳?ㅻ줈 留ㅽ븨)
+   * undefined???대떦 role??customRole???놁쓬???섎?
    */
   customRoles?: (string | undefined)[];
 
-  /** 시간대 문자열 (예: "19:00 ~ 02:00") */
+  /** ?쒓컙? 臾몄옄??(?? "19:00 ~ 02:00") */
   timeSlot: string;
 
   /**
-   * 날짜별 상태 (펼침 시 표시)
+   * ?좎쭨蹂??곹깭 (?쇱묠 ???쒖떆)
    */
   dateStatuses: DateStatus[];
 
-  /** 원본 ScheduleEvent 배열 */
+  /** ?먮낯 ScheduleEvent 諛곗뿴 */
   originalEvents: ScheduleEvent[];
 
-  /** 지원서 ID (applicationId) */
+  /** 吏?먯꽌 ID (applicationId) */
   applicationId?: string;
 
-  /** JobPostingCard 정보 (UI 렌더링용) */
+  /** JobPostingCard ?뺣낫 (UI ?뚮뜑留곸슜) */
   postingProjection?: SchedulePostingProjection;
 
-  /** 구인자 ID */
+  /** 援ъ씤??ID */
   ownerId?: string;
 
-  /** 구인자 연락처 */
+  /** 援ъ씤???곕씫泥?*/
   ownerPhone?: string;
 }
 
 /**
- * GroupedScheduleEvent인지 확인하는 타입 가드
- */
+ * GroupedScheduleEvent?몄? ?뺤씤?섎뒗 ???媛?? */
 export function isGroupedScheduleEvent(
   event: ScheduleEvent | GroupedScheduleEvent
 ): event is GroupedScheduleEvent {
@@ -351,7 +338,7 @@ export function isGroupedScheduleEvent(
 }
 
 /**
- * 출퇴근 요청
+ * 異쒗눜洹??붿껌
  */
 export interface AttendanceRequest {
   scheduleId: string;
@@ -361,7 +348,7 @@ export interface AttendanceRequest {
 }
 
 /**
- * 근무 시간 수정 이력
+ * 洹쇰Т ?쒓컙 ?섏젙 ?대젰
  */
 export interface WorkTimeModification {
   modifiedAt: TimeInput;
@@ -369,14 +356,14 @@ export interface WorkTimeModification {
   reason: string;
   previousStartTime?: TimeInput;
   previousEndTime?: TimeInput;
-  /** 새 출근 시간 (null = 미정) */
+  /** ??異쒓렐 ?쒓컙 (null = 誘몄젙) */
   newStartTime?: TimeInput;
-  /** 새 퇴근 시간 (null = 미정) */
+  /** ???닿렐 ?쒓컙 (null = 誘몄젙) */
   newEndTime?: TimeInput;
 }
 
 /**
- * 역할 변경 이력
+ * ??븷 蹂寃??대젰
  */
 export interface RoleChangeHistory {
   changedAt: string | Timestamp;
@@ -387,32 +374,32 @@ export interface RoleChangeHistory {
 }
 
 /**
- * 정산 금액 수정 이력
+ * ?뺤궛 湲덉븸 ?섏젙 ?대젰
  */
 export interface SettlementModification {
   modifiedAt: string | Timestamp;
   modifiedBy: string;
   reason?: string;
-  /** 이전 급여 정보 */
+  /** ?댁쟾 湲됱뿬 ?뺣낫 */
   previousSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
   };
-  /** 새 급여 정보 */
+  /** ??湲됱뿬 ?뺣낫 */
   newSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
   };
-  /** 이전 수당 정보 */
+  /** ?댁쟾 ?섎떦 ?뺣낫 */
   previousAllowances?: Record<string, number>;
-  /** 새 수당 정보 */
+  /** ???섎떦 ?뺣낫 */
   newAllowances?: Record<string, number>;
-  /** 이전 세금 설정 */
+  /** ?댁쟾 ?멸툑 ?ㅼ젙 */
   previousTaxSettings?: {
     type: 'none' | 'rate' | 'fixed';
     value: number;
   };
-  /** 새 세금 설정 */
+  /** ???멸툑 ?ㅼ젙 */
   newTaxSettings?: {
     type: 'none' | 'rate' | 'fixed';
     value: number;
@@ -420,43 +407,43 @@ export interface SettlementModification {
 }
 
 /**
- * 근무 기록 (WorkLog)
+ * 洹쇰Т 湲곕줉 (WorkLog)
  */
 export interface WorkLog extends FirebaseDocument {
   staffId: string;
-  /** 공고 ID */
+  /** 怨듦퀬 ID */
   jobPostingId: string;
   assignmentGroupId?: string | null;
   hasTimeModificationLogs?: boolean;
   date: string;
   isFixedPosting?: boolean;
 
-  // 스태프 프로필 정보 (비정규화 - 조회 편의)
-  /** 스태프 이름 */
+  // ?ㅽ깭???꾨줈???뺣낫 (鍮꾩젙洹쒗솕 - 議고쉶 ?몄쓽)
+  /** ?ㅽ깭???대쫫 */
   staffName?: string;
-  /** 스태프 닉네임 */
+  /** ?ㅽ깭???됰꽕??*/
   staffNickname?: string;
-  /** 스태프 프로필 사진 URL */
+  /** ?ㅽ깭???꾨줈???ъ쭊 URL */
   staffPhotoURL?: string;
 
-  // 예정 시간
-  /** @deprecated checkInTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
-  /** @deprecated checkOutTime의 중복값. timeSlot에서 예정 시간을 파싱하세요 */
+  // ?덉젙 ?쒓컙
+  /** @deprecated checkInTime??以묐났媛? timeSlot?먯꽌 ?덉젙 ?쒓컙???뚯떛?섏꽭??*/
+  /** @deprecated checkOutTime??以묐났媛? timeSlot?먯꽌 ?덉젙 ?쒓컙???뚯떛?섏꽭??*/
 
-  // 실제 시간 (QR 스캔 또는 관리자 수정)
-  /** 실제 출근 시간 */
+  // ?ㅼ젣 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙)
+  /** ?ㅼ젣 異쒓렐 ?쒓컙 */
   checkInTime?: TimeInput;
-  /** 실제 퇴근 시간 */
+  /** ?ㅼ젣 ?닿렐 ?쒓컙 */
   checkOutTime?: TimeInput;
 
-  // 상태
+  // ?곹깭
   status: WorkLogStatus;
-  /** 스태프 직무 역할 */
+  /** ?ㅽ깭??吏곷Т ??븷 */
   role: StaffRole;
-  /** 커스텀 역할명 (role이 'other'일 때) */
+  /** 而ㅼ뒪? ??븷紐?(role??'other'???? */
   customRole?: string;
 
-  // 정산
+  // ?뺤궛
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
   payrollDate?: Timestamp;
@@ -464,16 +451,16 @@ export interface WorkLog extends FirebaseDocument {
   noShowAt?: TimeInput;
   noShowReason?: string;
 
-  // 수정 이력 (구인자에 의한 시간 수정)
+  // ?섏젙 ?대젰 (援ъ씤?먯뿉 ?섑븳 ?쒓컙 ?섏젙)
   modificationHistory?: WorkTimeModification[];
 
-  // 역할 변경 이력
+  // ??븷 蹂寃??대젰
   roleChangeHistory?: RoleChangeHistory[];
 
-  // 정산 금액 수정 이력
+  // ?뺤궛 湲덉븸 ?섏젙 ?대젰
   settlementModificationHistory?: SettlementModification[];
 
-  // 개별 오버라이드 설정 (구인자가 수정한 경우)
+  // 媛쒕퀎 ?ㅻ쾭?쇱씠???ㅼ젙 (援ъ씤?먭? ?섏젙??寃쎌슦)
   customSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
@@ -486,16 +473,16 @@ export interface WorkLog extends FirebaseDocument {
 
   notes?: string;
 
-  /** 시간대 문자열 (예: "18:00~02:00") - Firestore 데이터 */
+  /** ?쒓컙? 臾몄옄??(?? "18:00~02:00") - Firestore ?곗씠??*/
   timeSlot?: string;
 
-  // 구인자 정보 (비정규화 - 신고 기능 등에서 사용)
-  /** 구인자 ID */
+  // 援ъ씤???뺣낫 (鍮꾩젙洹쒗솕 - ?좉퀬 湲곕뒫 ?깆뿉???ъ슜)
+  /** 援ъ씤??ID */
   ownerId?: string;
 }
 
 /**
- * 스케줄 타입별 색상
+ * ?ㅼ?以???낅퀎 ?됱긽
  */
 export const SCHEDULE_COLORS: Record<
   ScheduleType,
@@ -528,7 +515,7 @@ export const SCHEDULE_COLORS: Record<
 };
 
 /**
- * 출석 상태별 색상
+ * 異쒖꽍 ?곹깭蹂??됱긽
  */
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
   not_started: 'bg-gray-100 dark:bg-surface text-gray-600 dark:text-gray-300',
@@ -541,22 +528,21 @@ export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
 // ============================================================================
 
 /**
- * QR 코드 액션 타입
- */
+ * QR 肄붾뱶 ?≪뀡 ??? */
 export type QRCodeAction = 'checkIn' | 'checkOut';
 
 /**
- * QR 코드 스캔 결과 (QRCodeScanner 컴포넌트에서 사용)
+ * QR 肄붾뱶 ?ㅼ틪 寃곌낵 (QRCodeScanner 而댄룷?뚰듃?먯꽌 ?ъ슜)
  */
 export interface QRCodeScanResult {
   success: boolean;
-  /** 원본 QR 문자열 (processEventQRCheckIn용 - 필수) */
+  /** ?먮낯 QR 臾몄옄??(processEventQRCheckIn??- ?꾩닔) */
   qrString?: string;
   error?: string;
 }
 
 /**
- * QR 스캔 에러 정보 (useQRCodeScanner → QRCodeScanner 전달용)
+ * QR ?ㅼ틪 ?먮윭 ?뺣낫 (useQRCodeScanner ??QRCodeScanner ?꾨떖??
  */
 export interface QRScanError {
   code: string;
@@ -565,59 +551,59 @@ export interface QRScanError {
 }
 
 // ============================================================================
-// Event QR Types (eventQRCodes 컬렉션)
+// Event QR Types (eventQRCodes 而щ젆??
 // ============================================================================
 
 /**
- * 이벤트 QR 코드 데이터 (Firestore eventQRCodes 문서)
+ * ?대깽??QR 肄붾뱶 ?곗씠??(Firestore eventQRCodes 臾몄꽌)
  *
- * 구인자가 현장에서 생성하는 출퇴근용 QR 코드
+ * 援ъ씤?먭? ?꾩옣?먯꽌 ?앹꽦?섎뒗 異쒗눜洹쇱슜 QR 肄붾뱶
  */
 export interface EventQRCode {
   id: string;
-  /** 공고 ID */
+  /** 怨듦퀬 ID */
   jobPostingId: string;
-  /** 근무 날짜 (YYYY-MM-DD) */
+  /** 洹쇰Т ?좎쭨 (YYYY-MM-DD) */
   date: string;
-  /** 출근/퇴근 */
+  /** 異쒓렐/?닿렐 */
   assignmentGroupId?: string | null;
   timeSlot?: string | null;
   action: QRCodeAction;
-  /** 보안 코드 (UUID) */
+  /** 蹂댁븞 肄붾뱶 (UUID) */
   securityCode: string;
-  /** 생성자 ID (구인자) */
+  /** ?앹꽦??ID (援ъ씤?? */
   createdBy: string;
-  /** 생성 시간 */
+  /** ?앹꽦 ?쒓컙 */
   createdAt: Timestamp;
-  /** 만료 시간 */
+  /** 留뚮즺 ?쒓컙 */
   expiresAt: Timestamp;
-  /** 활성화 여부 (만료 시간으로 관리, isUsed 대신 사용) */
+  /** ?쒖꽦???щ? (留뚮즺 ?쒓컙?쇰줈 愿由? isUsed ????ъ슜) */
   isActive: boolean;
 }
 
 /**
- * QR 코드 표시용 데이터 (JSON stringify하여 QR 코드로 인코딩)
+ * QR 肄붾뱶 ?쒖떆???곗씠??(JSON stringify?섏뿬 QR 肄붾뱶濡??몄퐫??
  */
 export interface EventQRDisplayData {
   type: 'event';
-  /** 공고 ID */
+  /** 怨듦퀬 ID */
   jobPostingId: string;
   date: string;
   assignmentGroupId?: string | null;
   timeSlot?: string | null;
   action: QRCodeAction;
   securityCode: string;
-  /** 생성 시간 (ms) */
+  /** ?앹꽦 ?쒓컙 (ms) */
   createdAt: number;
-  /** 만료 시간 (ms) */
+  /** 留뚮즺 ?쒓컙 (ms) */
   expiresAt: number;
 }
 
 /**
- * QR 생성 입력
+ * QR ?앹꽦 ?낅젰
  */
 export interface GenerateEventQRInput {
-  /** 공고 ID (정규화된 필드명) */
+  /** 怨듦퀬 ID (?뺢퇋?붾맂 ?꾨뱶紐? */
   jobPostingId: string;
   date: string;
   assignmentGroupId?: string | null;
@@ -627,7 +613,7 @@ export interface GenerateEventQRInput {
 }
 
 /**
- * QR 스캔 결과 (출퇴근 처리 후)
+ * QR ?ㅼ틪 寃곌낵 (異쒗눜洹?泥섎━ ??
  */
 export interface EventQRScanResult {
   success: boolean;
@@ -640,11 +626,11 @@ export interface EventQRScanResult {
 }
 
 /**
- * QR 검증 결과
+ * QR 寃利?寃곌낵
  */
 export interface EventQRValidationResult {
   isValid: boolean;
-  /** 공고 ID (정규화된 필드명) */
+  /** 怨듦퀬 ID (?뺢퇋?붾맂 ?꾨뱶紐? */
   jobPostingId?: string;
   date?: string;
   assignmentGroupId?: string | null;
