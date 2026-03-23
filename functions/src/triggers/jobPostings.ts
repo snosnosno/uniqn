@@ -8,6 +8,7 @@ import {
 } from "../utils/jobPosting";
 
 export { onJobPostingOGSync } from "./onJobPostingOGSync";
+export { onFixedPostingExpired } from "./onFixedPostingExpired";
 export { onTournamentApprovalChange } from "./onTournamentApprovalChange";
 export { onWorkDateExpired } from "./onWorkDateExpired";
 
