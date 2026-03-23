@@ -256,13 +256,6 @@ describe("Firestore occupancy rules", () => {
 
         transaction.update(jobRef, {
           filledPositions: 1,
-          stats: {
-            totalApplicants: 1,
-            activeApplicants: 1,
-            confirmedApplicants: 1,
-            cancellationPendingApplicants: 0,
-            filledPositions: 1,
-          },
           schedule: {
             kind: "dated",
             primaryDate: "2026-04-01",
@@ -406,13 +399,6 @@ describe("Firestore occupancy rules", () => {
 
         transaction.update(jobRef, {
           filledPositions: 0,
-          stats: {
-            totalApplicants: 1,
-            activeApplicants: 0,
-            confirmedApplicants: 0,
-            cancellationPendingApplicants: 0,
-            filledPositions: 0,
-          },
           schedule: {
             kind: "dated",
             primaryDate: "2026-04-01",

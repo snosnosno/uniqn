@@ -28,14 +28,9 @@ import {
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
-import { applicationValidator } from '@/domains/application';
-import {
-  normalizePostingAggregateStats,
-  selectPostingWorkflow,
-  transitionPostingAggregateStats,
-} from '@/domains/job-posting';
-import { normalizeAssignmentRole } from '@/types/assignment';
-import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { applicationValidator, validateRequiredAnswers } from '@/domains/application';
+import { selectPostingWorkflow } from '@/domains/job-posting';
+import { normalizeAssignmentRole, isValidAssignment } from '@/types/assignment';
 import type { ApplyContext } from '../../interfaces';
 import type {
   Application,
@@ -182,20 +177,7 @@ function updateJobPostingStatsInTransaction(params: {
   toStatus?: ApplicationStatus | null;
   totalApplicantsDelta?: number;
 }) {
-  const currentStats = normalizePostingAggregateStats(
-    params.jobData.stats,
-    params.jobData.schedule
-  );
-  const nextStats = transitionPostingAggregateStats(currentStats, {
-    fromStatus: params.fromStatus,
-    toStatus: params.toStatus,
-    totalApplicantsDelta: params.totalApplicantsDelta,
-  });
-
-  params.transaction.update(params.jobRef, {
-    stats: nextStats,
-    updatedAt: serverTimestamp(),
-  });
+  void params;
 }
 
 export async function applyWithTransaction(

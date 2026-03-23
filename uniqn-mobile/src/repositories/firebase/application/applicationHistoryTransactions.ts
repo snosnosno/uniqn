@@ -30,14 +30,9 @@ import { normalizeAssignmentRole } from '@/types/assignment';
 import {
   createHistoryEntry,
   findActiveConfirmation,
-  type Assignment,
-  type JobPosting,
-} from '@/types';
-import { validateAssignmentSlotCapacity } from '@/domains/application';
-import {
-  normalizePostingAggregateStats,
-  transitionPostingAggregateStats,
-} from '@/domains/job-posting';
+  validateAssignmentSlotCapacity,
+} from '@/domains/application';
+import { type Assignment, type JobPosting } from '@/types';
 import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
 import { COLLECTIONS, STATUS } from '@/constants';
@@ -252,24 +247,12 @@ export async function confirmWithHistoryTransaction(
       });
 
       const nextFilledPositions = Math.max(0, jobData.filledPositions + assignmentCount);
-      const postingStats = transitionPostingAggregateStats(
-        normalizePostingAggregateStats(jobData.stats, jobData.schedule),
-        {
-          fromStatus: applicationData.status,
-          toStatus: STATUS.APPLICATION.CONFIRMED,
-          filledPositionsDelta: assignmentCount,
-        }
-      );
-
       const shouldClose =
         jobData.totalPositions > 0 && nextFilledPositions >= jobData.totalPositions;
 
       const jobUpdateData: Record<string, unknown> = {
         filledPositions: nextFilledPositions,
         schedule: updatedSchedule,
-        stats: {
-          ...postingStats,
-        },
         updatedAt: serverTimestamp(),
       };
 

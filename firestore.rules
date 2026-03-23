@@ -671,7 +671,6 @@ service cloud.firestore {
                'roleCatalog',
                'compensation',
                'questions',
-               'fixedConfig',
                'tournamentConfig',
                'urgentConfig'
              ]);
@@ -970,9 +969,7 @@ service cloud.firestore {
              nextData.filledPositions >= 0 &&
              nextData.filledPositions <= nextData.totalPositions &&
              nextData.status in ['active', 'closed', 'cancelled'] &&
-             (!('stats' in nextData) ||
-               (validateCanonicalPostingStats(nextData.stats) &&
-                nextData.stats.filledPositions == nextData.filledPositions)) &&
+             hasSameCanonicalPostingStats(nextData, currentData) &&
              (!('searchIndex' in nextData) ||
                nextData.searchIndex == currentData.searchIndex);
     }
@@ -1275,8 +1272,10 @@ service cloud.firestore {
 
     // --- Job Postings Collection ---
     match /jobPostings/{postId} {
-      // Everyone can read job postings
-      allow read: if isSignedIn();
+      // Public listings can read active canonical job postings.
+      allow read: if isSignedIn() ||
+        (resource.data.status == 'active' &&
+         validateCanonicalJobPosting(resource.data));
 
       // Admin can create/update any job posting
       // Manager and Staff can create job postings and update their own

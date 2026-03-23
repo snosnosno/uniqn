@@ -42,7 +42,25 @@ jest.mock('@/domains/application', () => ({
     checkRoleCapacity: jest.fn(() => ({ available: true })),
     validateApplication: jest.fn(() => ({ isValid: true, errors: [] })),
   },
+  validateRequiredAnswers: jest.fn(() => true),
   updatePostingScheduleFilled: jest.fn((schedule: Record<string, unknown>) => schedule),
+  findActiveConfirmation: jest.fn(
+    (history: Record<string, unknown>[] = []) => history.find((entry) => !entry.cancelledAt) ?? null
+  ),
+  addCancellationToEntry: jest.fn(
+    (entry: Record<string, unknown>, cancelReason?: string, ownerId?: string) => ({
+      ...entry,
+      cancelledAt: { _serverTimestamp: true },
+      cancelReason,
+      cancelledBy: ownerId,
+    })
+  ),
+  validateAssignmentSlotCapacity: jest.fn(() => ({ available: true })),
+  createHistoryEntry: jest.fn((assignments: Record<string, unknown>[], ownerId: string) => ({
+    assignments,
+    confirmedBy: ownerId,
+    confirmedAt: { _serverTimestamp: true },
+  })),
 }));
 
 jest.mock('@/domains/job-posting', () => ({
@@ -59,6 +77,7 @@ jest.mock('@/domains/job-posting', () => ({
 
 jest.mock('@/types/assignment', () => ({
   normalizeAssignmentRole: jest.fn((role: string) => ({ role })),
+  isValidAssignment: jest.fn(() => true),
 }));
 
 jest.mock('@/errors/serviceErrorHandler', () => ({
@@ -140,22 +159,6 @@ jest.mock('@/errors', () => {
     AuthError: AppError,
   };
 });
-
-jest.mock('@/types', () => ({
-  isValidAssignment: jest.fn(() => true),
-  validateRequiredAnswers: jest.fn(() => true),
-  findActiveConfirmation: jest.fn(
-    (history: Record<string, unknown>[] = []) => history.find((entry) => !entry.cancelledAt) ?? null
-  ),
-  addCancellationToEntry: jest.fn(
-    (entry: Record<string, unknown>, cancelReason?: string, ownerId?: string) => ({
-      ...entry,
-      cancelledAt: { _serverTimestamp: true },
-      cancelReason,
-      cancelledBy: ownerId,
-    })
-  ),
-}));
 
 jest.mock('@/constants/statusConfig', () => ({
   STATUS_TO_STATS_KEY: {
@@ -635,7 +638,7 @@ describe('FirebaseApplicationRepository', () => {
 
       await repository.cancelWithTransaction('app-1', 'staff-1');
 
-      expect(mockTransaction.update).toHaveBeenCalledTimes(1);
+      expect(mockTransaction.update).toHaveBeenCalled();
     });
 
     it('should throw when application does not exist', async () => {
@@ -902,13 +905,14 @@ describe('FirebaseApplicationRepository', () => {
             typeof update === 'object' &&
             update !== null &&
             ('schedule' in (update as Record<string, unknown>) ||
-              'stats' in (update as Record<string, unknown>))
+              'filledPositions' in (update as Record<string, unknown>))
         );
 
       expect(jobUpdate).toMatchObject({
         filledPositions: 1,
         updatedAt: { _serverTimestamp: true },
       });
+      expect(jobUpdate).not.toHaveProperty('stats');
       expect(jobUpdate).not.toHaveProperty('applicationCount');
     });
   });

@@ -7,20 +7,14 @@ import {
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
-import { updatePostingScheduleFilled } from '@/domains/application';
 import {
-  normalizePostingAggregateStats,
-  transitionPostingAggregateStats,
-} from '@/domains/job-posting';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { normalizeAssignmentRole } from '@/types/assignment';
-import {
+  updatePostingScheduleFilled,
   addCancellationToEntry,
   findActiveConfirmation,
-  type Application,
-  type Assignment,
-  type JobPosting,
-} from '@/types';
+} from '@/domains/application';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { normalizeAssignmentRole } from '@/types/assignment';
+import { type Application, type Assignment, type JobPosting } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
 import { BusinessError, ERROR_CODES } from '@/errors';
 
@@ -219,21 +213,9 @@ export async function releaseConfirmedAssignmentsInTransaction(params: {
   const shouldReopen =
     jobData.status === STATUS.JOB_POSTING.CLOSED && newFilledPositions < totalPositions;
 
-  const currentStats = transitionPostingAggregateStats(
-    normalizePostingAggregateStats(jobData.stats, jobData.schedule),
-    {
-      fromStatus: applicationData.status,
-      toStatus: nextApplicationStatus,
-      filledPositionsDelta: -decrementCount,
-    }
-  );
-
   const jobUpdateData: Record<string, unknown> = {
     filledPositions: newFilledPositions,
     schedule: updatedSchedule,
-    stats: {
-      ...currentStats,
-    },
     updatedAt: serverTimestamp(),
   };
 
