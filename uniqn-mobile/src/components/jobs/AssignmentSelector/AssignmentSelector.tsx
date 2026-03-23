@@ -3,7 +3,8 @@ import { Text, View } from 'react-native';
 import { buildPostingFacts, createPostingLegacyDateRequirements } from '@/domains/job-posting';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment } from '@/types';
-import { createSimpleAssignment } from '@/types';
+import { TBA_TIME_MARKER, createSimpleAssignment } from '@/types';
+import type { TimeSlotInfo } from '@/types/unified';
 import { getRoleDisplayName } from '@/types/unified';
 import {
   groupDatedSchedules,
@@ -14,8 +15,29 @@ import {
 import { DateGroupSelection } from './DateGroupSelection';
 import { DateSelection } from './DateSelection';
 import type { AssignmentSelectorProps, TimeOptions } from './types';
+import { getEffectiveRoleId } from './utils';
 
 export type { AssignmentSelectorProps } from './types';
+
+function getSlotSelectionTime(slot: TimeSlotInfo): string {
+  return slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
+}
+
+function matchesGroupedSelection(slot: TimeSlotInfo, slotTime: string, role: string): boolean {
+  if (getSlotSelectionTime(slot) !== slotTime) {
+    return false;
+  }
+
+  return slot.roles.some((slotRole) => getEffectiveRoleId(slotRole) === role);
+}
+
+function resolveGroupedAssignmentGroupId(
+  schedule: ScheduleGroup['dates'][number],
+  slotTime: string,
+  role: string
+): string | undefined {
+  return schedule.timeSlots.find((slot) => matchesGroupedSelection(slot, slotTime, role))?.id;
+}
 
 export const AssignmentSelector = memo(function AssignmentSelector({
   jobPosting,
@@ -64,6 +86,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         nextAssignments = [
           ...selectedAssignments,
           createSimpleAssignment(role, slotTime, date, {
+            groupId: timeOptions?.assignmentGroupId,
             isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
             tentativeDescription: timeOptions?.tentativeDescription,
           }),
@@ -102,6 +125,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
           ...selectedAssignments,
           ...group.dates.map((schedule) =>
             createSimpleAssignment(role, slotTime, schedule.date, {
+              groupId: resolveGroupedAssignmentGroupId(schedule, slotTime, role),
               isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
               tentativeDescription: timeOptions?.tentativeDescription,
             })

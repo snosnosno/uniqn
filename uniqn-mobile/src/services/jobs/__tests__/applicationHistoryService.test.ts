@@ -625,8 +625,15 @@ describe('ApplicationHistoryService', () => {
       const selectedAssignments = [
         {
           roleIds: ['floor'],
-          dates: ['2025-01-20', '2025-01-21'],
+          dates: ['2025-01-20'],
           timeSlot: '18:00~02:00',
+          groupId: 'slot-day-1',
+        },
+        {
+          roleIds: ['floor'],
+          dates: ['2025-01-21'],
+          timeSlot: '18:00~02:00',
+          groupId: 'slot-day-2',
         },
       ];
 
@@ -642,6 +649,20 @@ describe('ApplicationHistoryService', () => {
       );
 
       expect(result.workLogIds).toHaveLength(2); // 2 dates
+      expect(mockTransaction.set).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          date: '2025-01-20',
+          assignmentGroupId: 'slot-day-1',
+        })
+      );
+      expect(mockTransaction.set).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          date: '2025-01-21',
+          assignmentGroupId: 'slot-day-2',
+        })
+      );
     });
 
     it('should preserve originalApplication on first confirmation', async () => {

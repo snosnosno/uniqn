@@ -85,6 +85,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
                       isSelected={isSelected}
                       onToggle={() =>
                         onGroupRoleToggle(group, slotTime, effectiveRoleId, {
+                          assignmentGroupId: slot.id,
                           isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
                           tentativeDescription: slot.tentativeDescription,
                         })

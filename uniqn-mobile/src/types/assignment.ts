@@ -242,6 +242,7 @@ export function isValidAssignment(obj: unknown): obj is Assignment {
  * 간단한 Assignment 생성 옵션
  */
 export interface CreateSimpleAssignmentOptions {
+  groupId?: string;
   /** 시간 미정 여부 */
   isTimeToBeAnnounced?: boolean;
   /** 미정 사유 */
@@ -269,6 +270,7 @@ export function createSimpleAssignment(
     dates: [date],
     isGrouped: false,
     checkMethod: 'individual',
+    ...(options?.groupId ? { groupId: options.groupId } : {}),
     ...(options?.isTimeToBeAnnounced && { isTimeToBeAnnounced: true }),
     ...(options?.tentativeDescription && { tentativeDescription: options.tentativeDescription }),
   };

@@ -7,6 +7,14 @@ describe('assignment utilities', () => {
     expect(assignment.roleIds).toEqual(['사회자']);
   });
 
+  it('preserves group ids in simple assignments', () => {
+    const assignment = createSimpleAssignment('dealer', '18:00~22:00', '2025-01-10', {
+      groupId: 'slot-1',
+    });
+
+    expect(assignment.groupId).toBe('slot-1');
+  });
+
   it('normalizes custom role strings into other + customRole', () => {
     expect(normalizeAssignmentRole('사회자')).toEqual({
       role: 'other',

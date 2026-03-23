@@ -46,6 +46,7 @@ export interface RoleCheckboxProps {
 export interface TimeOptions {
   isTimeToBeAnnounced?: boolean;
   tentativeDescription?: string;
+  assignmentGroupId?: string;
 }
 
 /**
