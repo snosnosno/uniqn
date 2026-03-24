@@ -41,11 +41,20 @@ interface BulkStatusParams {
   status: JobPostingStatus;
 }
 
+function getMyJobPostingsQueryKey(userId?: string) {
+  return [...queryKeys.jobManagement.myPostings(), userId ?? 'anonymous'] as const;
+}
+
+function getMyJobPostingStatsQueryKey(userId?: string) {
+  return [...queryKeys.jobManagement.stats(), userId ?? 'anonymous'] as const;
+}
+
 export function useMyJobPostings() {
   const { user } = useAuthStore();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
 
   return useQuery({
-    queryKey: queryKeys.jobManagement.myPostings(),
+    queryKey: myPostingsQueryKey,
     queryFn: () => getMyJobPostings(user!.uid),
     enabled: !!user,
     staleTime: cachingPolicies.frequent,
@@ -54,9 +63,10 @@ export function useMyJobPostings() {
 
 export function useJobPostingStats() {
   const { user } = useAuthStore();
+  const statsQueryKey = getMyJobPostingStatsQueryKey(user?.uid);
 
   return useQuery({
-    queryKey: queryKeys.jobManagement.stats(),
+    queryKey: statsQueryKey,
     queryFn: () => getMyJobPostingStats(user!.uid),
     enabled: !!user,
     staleTime: cachingPolicies.frequent,
@@ -121,6 +131,7 @@ export function useDeleteJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -133,12 +144,12 @@ export function useDeleteJobPosting() {
         return { previous: undefined };
       }
 
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
-      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+      await queryClient.cancelQueries({ queryKey: myPostingsQueryKey });
+      const previous = queryClient.getQueryData(myPostingsQueryKey);
 
       if (Array.isArray(previous)) {
         queryClient.setQueryData(
-          queryKeys.jobManagement.myPostings(),
+          myPostingsQueryKey,
           previous.filter((p: Record<string, unknown>) => p.id !== jobPostingId)
         );
       }
@@ -160,7 +171,7 @@ export function useDeleteJobPosting() {
       onRollback: (ctx) => {
         const { previous } = ctx as { previous: unknown };
         if (previous) {
-          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+          queryClient.setQueryData(myPostingsQueryKey, previous);
         }
       },
     }),
@@ -171,6 +182,7 @@ export function useCloseJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -179,12 +191,12 @@ export function useCloseJobPosting() {
       return closeJobPosting(jobPostingId, user.uid);
     },
     onMutate: async (jobPostingId) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
-      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+      await queryClient.cancelQueries({ queryKey: myPostingsQueryKey });
+      const previous = queryClient.getQueryData(myPostingsQueryKey);
 
       if (Array.isArray(previous)) {
         queryClient.setQueryData(
-          queryKeys.jobManagement.myPostings(),
+          myPostingsQueryKey,
           previous.map((p: Record<string, unknown>) =>
             p.id === jobPostingId ? { ...p, status: 'closed' } : p
           )
@@ -211,7 +223,7 @@ export function useCloseJobPosting() {
       onRollback: (ctx) => {
         const { previous } = ctx as { previous: unknown };
         if (previous) {
-          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+          queryClient.setQueryData(myPostingsQueryKey, previous);
         }
       },
     }),
@@ -222,6 +234,7 @@ export function useReopenJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -230,12 +243,12 @@ export function useReopenJobPosting() {
       return reopenJobPosting(jobPostingId, user.uid);
     },
     onMutate: async (jobPostingId) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
-      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+      await queryClient.cancelQueries({ queryKey: myPostingsQueryKey });
+      const previous = queryClient.getQueryData(myPostingsQueryKey);
 
       if (Array.isArray(previous)) {
         queryClient.setQueryData(
-          queryKeys.jobManagement.myPostings(),
+          myPostingsQueryKey,
           previous.map((p: Record<string, unknown>) =>
             p.id === jobPostingId ? { ...p, status: 'active' } : p
           )
@@ -262,7 +275,7 @@ export function useReopenJobPosting() {
       onRollback: (ctx) => {
         const { previous } = ctx as { previous: unknown };
         if (previous) {
-          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+          queryClient.setQueryData(myPostingsQueryKey, previous);
         }
       },
     }),
@@ -273,6 +286,7 @@ export function useBulkUpdateStatus() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
 
   return useMutation({
     mutationFn: (params: BulkStatusParams) => {
@@ -281,12 +295,12 @@ export function useBulkUpdateStatus() {
       return bulkUpdateJobPostingStatus(params.jobPostingIds, params.status, user.uid);
     },
     onMutate: async (params) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
-      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+      await queryClient.cancelQueries({ queryKey: myPostingsQueryKey });
+      const previous = queryClient.getQueryData(myPostingsQueryKey);
 
       if (Array.isArray(previous)) {
         queryClient.setQueryData(
-          queryKeys.jobManagement.myPostings(),
+          myPostingsQueryKey,
           previous.map((p: Record<string, unknown>) =>
             params.jobPostingIds.includes(p.id as string) ? { ...p, status: params.status } : p
           )
@@ -313,7 +327,7 @@ export function useBulkUpdateStatus() {
       onRollback: (ctx) => {
         const { previous } = ctx as { previous: unknown };
         if (previous) {
-          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+          queryClient.setQueryData(myPostingsQueryKey, previous);
         }
       },
     }),

@@ -99,7 +99,9 @@ export async function initialize(): Promise<boolean> {
     });
     return true;
   } catch (error) {
-    console.error('[SentryService] 초기화 실패', error);
+    logger.error('Sentry initialization failed', error as Error, {
+      component: 'sentryService',
+    });
     return false;
   }
 }
@@ -183,9 +185,9 @@ async function captureWithLevel(
     };
 
     if (Platform.OS === 'web') {
-      console.error('[SentryService] event', {
+      logger.error('Sentry web fallback event', error, {
+        component: 'sentryService',
         level,
-        error: error.message,
         ...fullContext,
       });
       return;

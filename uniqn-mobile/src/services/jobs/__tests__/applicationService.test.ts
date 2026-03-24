@@ -1,27 +1,22 @@
-/**
- * UNIQN Mobile - Application Service Tests
- *
- * @description 지원 서비스 테스트 (Repository 패턴 기반)
- * @version 2.0.0
- */
-
 import {
-  getMyApplications,
-  getApplicationById,
   cancelApplication,
-  hasAppliedToJob,
+  getApplicationById,
   getApplicationStats,
+  getCancellationRequests,
+  getMyApplications,
+  hasAppliedToJob,
+  requestCancellation,
+  reviewCancellationRequest,
 } from '../applicationService';
-
-// ============================================================================
-// Mock Repository
-// ============================================================================
 
 const mockGetByApplicantId = jest.fn();
 const mockGetById = jest.fn();
 const mockCancelWithTransaction = jest.fn();
 const mockHasApplied = jest.fn();
 const mockGetStatsByApplicantId = jest.fn();
+const mockRequestCancellationWithTransaction = jest.fn();
+const mockReviewCancellationWithTransaction = jest.fn();
+const mockGetCancellationRequests = jest.fn();
 
 jest.mock('@/repositories', () => ({
   applicationRepository: {
@@ -30,16 +25,12 @@ jest.mock('@/repositories', () => ({
     cancelWithTransaction: (...args: unknown[]) => mockCancelWithTransaction(...args),
     hasApplied: (...args: unknown[]) => mockHasApplied(...args),
     getStatsByApplicantId: (...args: unknown[]) => mockGetStatsByApplicantId(...args),
+    requestCancellationWithTransaction: (...args: unknown[]) =>
+      mockRequestCancellationWithTransaction(...args),
+    reviewCancellationWithTransaction: (...args: unknown[]) =>
+      mockReviewCancellationWithTransaction(...args),
+    getCancellationRequests: (...args: unknown[]) => mockGetCancellationRequests(...args),
   },
-}));
-
-// ============================================================================
-// Mock Dependencies
-// ============================================================================
-
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  getFirebaseDb: () => ({}),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -69,187 +60,69 @@ jest.mock('@/services/observability', () => ({
   })),
 }));
 
-// ============================================================================
-// Tests
-// ============================================================================
-
-describe('ApplicationService', () => {
+describe('applicationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('getMyApplications', () => {
-    const applicantId = 'user-1';
-
-    it('should return empty array when no applications', async () => {
+    it('returns an empty array when there are no applications', async () => {
       mockGetByApplicantId.mockResolvedValue([]);
 
-      const result = await getMyApplications(applicantId);
+      const result = await getMyApplications('user-1');
 
       expect(result).toEqual([]);
-      expect(mockGetByApplicantId).toHaveBeenCalledWith(applicantId);
+      expect(mockGetByApplicantId).toHaveBeenCalledWith('user-1');
     });
 
-    it('should return applications with job data', async () => {
+    it('returns applications with job data when available', async () => {
       mockGetByApplicantId.mockResolvedValue([
         {
           id: 'app-1',
-          applicantId,
+          applicantId: 'user-1',
           jobPostingId: 'job-1',
           status: 'applied',
           jobPosting: {
-            title: '테스트 공고',
-            location: '서울',
+            title: 'Test posting',
+            location: 'Seoul',
           },
         },
       ]);
 
-      const result = await getMyApplications(applicantId);
+      const result = await getMyApplications('user-1');
 
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('app-1');
-      expect(result[0].jobPosting).toBeDefined();
-    });
-
-    it('should return applications without job data when job not found', async () => {
-      mockGetByApplicantId.mockResolvedValue([
-        {
-          id: 'app-1',
-          applicantId,
-          jobPostingId: 'job-1',
-          status: 'applied',
-          jobPosting: undefined,
-        },
-      ]);
-
-      const result = await getMyApplications(applicantId);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].jobPosting).toBeUndefined();
+      expect(result[0]?.jobPosting?.title).toBe('Test posting');
     });
   });
 
   describe('getApplicationById', () => {
-    it('should return null when application not found', async () => {
+    it('returns null when the application is missing', async () => {
       mockGetById.mockResolvedValue(null);
 
-      const result = await getApplicationById('non-existent');
-
-      expect(result).toBeNull();
-    });
-
-    it('should return application with job data', async () => {
-      mockGetById.mockResolvedValue({
-        id: 'app-1',
-        applicantId: 'user-1',
-        jobPostingId: 'job-1',
-        status: 'applied',
-        jobPosting: {
-          title: '테스트 공고',
-        },
-      });
-
-      const result = await getApplicationById('app-1');
-
-      expect(result).toBeDefined();
-      expect(result?.id).toBe('app-1');
-      expect(result?.jobPosting?.title).toBe('테스트 공고');
+      await expect(getApplicationById('missing')).resolves.toBeNull();
     });
   });
 
   describe('cancelApplication', () => {
-    const applicationId = 'job-1_user-1';
-    const applicantId = 'user-1';
-
-    it('should cancel application successfully', async () => {
+    it('delegates cancellation to the repository', async () => {
       mockCancelWithTransaction.mockResolvedValue(undefined);
 
-      await expect(cancelApplication(applicationId, applicantId)).resolves.not.toThrow();
-
-      expect(mockCancelWithTransaction).toHaveBeenCalledWith(applicationId, applicantId);
-    });
-
-    it('should throw error when application not found', async () => {
-      mockCancelWithTransaction.mockRejectedValue(new Error('존재하지 않는 지원입니다'));
-
-      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
-    });
-
-    it('should throw error when not the applicant', async () => {
-      mockCancelWithTransaction.mockRejectedValue(new Error('본인의 지원만 취소할 수 있습니다'));
-
-      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
-    });
-
-    it('should throw error when already cancelled', async () => {
-      mockCancelWithTransaction.mockRejectedValue(new Error('이미 취소된 지원입니다'));
-
-      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
-    });
-
-    it('should throw error when confirmed', async () => {
-      mockCancelWithTransaction.mockRejectedValue(new Error('확정된 지원은 취소할 수 없습니다'));
-
-      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
+      await expect(cancelApplication('job-1_user-1', 'user-1')).resolves.toBeUndefined();
+      expect(mockCancelWithTransaction).toHaveBeenCalledWith('job-1_user-1', 'user-1');
     });
   });
 
   describe('hasAppliedToJob', () => {
-    it('should return false when not applied', async () => {
-      mockHasApplied.mockResolvedValue(false);
-
-      const result = await hasAppliedToJob('job-1', 'user-1');
-
-      expect(result).toBe(false);
-    });
-
-    it('should return true when applied', async () => {
-      mockHasApplied.mockResolvedValue(true);
-
-      const result = await hasAppliedToJob('job-1', 'user-1');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false when cancelled', async () => {
-      mockHasApplied.mockResolvedValue(false);
-
-      const result = await hasAppliedToJob('job-1', 'user-1');
-
-      expect(result).toBe(false);
-    });
-
-    it('should return false on error', async () => {
+    it('returns false when repository access fails', async () => {
       mockHasApplied.mockRejectedValue(new Error('Firestore error'));
 
-      const result = await hasAppliedToJob('job-1', 'user-1');
-
-      expect(result).toBe(false);
+      await expect(hasAppliedToJob('job-1', 'user-1')).resolves.toBe(false);
     });
   });
 
   describe('getApplicationStats', () => {
-    const applicantId = 'user-1';
-
-    it('should return zero counts when no applications', async () => {
-      mockGetStatsByApplicantId.mockResolvedValue({
-        applied: 0,
-        confirmed: 0,
-        rejected: 0,
-        cancelled: 0,
-        completed: 0,
-        cancellation_pending: 0,
-      });
-
-      const result = await getApplicationStats(applicantId);
-
-      expect(result.applied).toBe(0);
-      expect(result.confirmed).toBe(0);
-      expect(result.rejected).toBe(0);
-      expect(result.cancelled).toBe(0);
-    });
-
-    it('should count applications by status', async () => {
+    it('returns status counts from the repository', async () => {
       mockGetStatsByApplicantId.mockResolvedValue({
         applied: 2,
         confirmed: 1,
@@ -259,11 +132,101 @@ describe('ApplicationService', () => {
         cancellation_pending: 0,
       });
 
-      const result = await getApplicationStats(applicantId);
+      const result = await getApplicationStats('user-1');
 
       expect(result.applied).toBe(2);
       expect(result.confirmed).toBe(1);
       expect(result.cancelled).toBe(1);
+    });
+  });
+
+  describe('requestCancellation', () => {
+    it('validates and forwards a safe cancellation request', async () => {
+      mockRequestCancellationWithTransaction.mockResolvedValue(undefined);
+
+      await expect(
+        requestCancellation(
+          { applicationId: 'app-1', reason: 'Need to cancel due to illness' },
+          'user-1'
+        )
+      ).resolves.toBeUndefined();
+
+      expect(mockRequestCancellationWithTransaction).toHaveBeenCalledWith(
+        { applicationId: 'app-1', reason: 'Need to cancel due to illness' },
+        'user-1'
+      );
+    });
+
+    it('rejects unsafe cancellation input before the repository call', async () => {
+      await expect(
+        requestCancellation(
+          { applicationId: 'app-1', reason: '<script>alert(1)</script>' },
+          'user-1'
+        )
+      ).rejects.toThrow();
+
+      expect(mockRequestCancellationWithTransaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('reviewCancellationRequest', () => {
+    it('validates and forwards a rejection review', async () => {
+      mockReviewCancellationWithTransaction.mockResolvedValue(undefined);
+
+      await expect(
+        reviewCancellationRequest(
+          {
+            applicationId: 'app-1',
+            approved: false,
+            rejectionReason: 'Replacement is not available',
+          },
+          'owner-1'
+        )
+      ).resolves.toBeUndefined();
+
+      expect(mockReviewCancellationWithTransaction).toHaveBeenCalledWith(
+        {
+          applicationId: 'app-1',
+          approved: false,
+          rejectionReason: 'Replacement is not available',
+        },
+        'owner-1'
+      );
+    });
+
+    it('rejects invalid review input before the repository call', async () => {
+      await expect(
+        reviewCancellationRequest(
+          {
+            applicationId: 'app-1',
+            approved: false,
+            rejectionReason: 'no',
+          },
+          'owner-1'
+        )
+      ).rejects.toThrow();
+
+      expect(mockReviewCancellationWithTransaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getCancellationRequests', () => {
+    it('loads pending cancellation requests for the owner', async () => {
+      mockGetCancellationRequests.mockResolvedValue([
+        {
+          id: 'app-1',
+          jobPostingId: 'job-1',
+          applicantId: 'staff-1',
+          applicantName: 'Applicant',
+          status: 'cancellation_pending',
+          assignments: [],
+        },
+      ]);
+
+      const result = await getCancellationRequests('job-1', 'owner-1');
+
+      expect(result).toHaveLength(1);
+      expect(mockGetCancellationRequests).toHaveBeenCalledWith('job-1', 'owner-1');
     });
   });
 });

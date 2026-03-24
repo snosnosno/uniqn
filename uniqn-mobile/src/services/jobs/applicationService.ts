@@ -1,21 +1,18 @@
 /**
- * UNIQN Mobile - 지원 서비스
+ * UNIQN Mobile - Application service
  *
- * @description Repository 패턴 기반 지원 서비스
- * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
- *
- * 아키텍처:
- * Service Layer → Repository Layer → Firebase
- *
- * 책임 분리:
- * - Service: 비즈니스 로직 조합, Analytics, 에러 변환
- * - Repository: 데이터 접근, 트랜잭션 캡슐화
+ * Service layer responsibilities:
+ * - orchestrate repository calls
+ * - validate user input before writes
+ * - keep observability hooks close to user actions
  */
 
 import { logger } from '@/utils/logger';
-import { handleServiceError, handleErrorWithDefault } from '@/errors/serviceErrorHandler';
+import { ERROR_CODES, ValidationError } from '@/errors';
+import { handleErrorWithDefault, handleServiceError } from '@/errors/serviceErrorHandler';
 import { applicationRepository, type ApplicationWithJob, type ApplyContext } from '@/repositories';
-import { trackJobApply, trackEvent, startApiTrace } from '@/services/observability';
+import { trackEvent, trackJobApply, startApiTrace } from '@/services/observability';
+import { cancellationRequestSchema, reviewCancellationSchema } from '@/schemas/application.schema';
 import type {
   Application,
   ApplicationStatus,
@@ -24,28 +21,30 @@ import type {
   ReviewCancellationInput,
 } from '@/types';
 
-// ============================================================================
-// Re-export Types
-// ============================================================================
-
 export type { ApplicationWithJob } from '@/repositories';
 
-// ============================================================================
-// Application Service
-// ============================================================================
+function toValidationError(message: string, fieldErrors?: Record<string, string[] | undefined>) {
+  const normalizedFieldErrors = fieldErrors
+    ? Object.fromEntries(
+        Object.entries(fieldErrors).filter((entry): entry is [string, string[]] =>
+          Array.isArray(entry[1])
+        )
+      )
+    : undefined;
 
-/**
- * 내 지원 내역 조회
- *
- * @description Repository를 통해 지원 내역 + 공고 정보 조회
- */
+  return new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+    userMessage: message,
+    errors: normalizedFieldErrors,
+  });
+}
+
 export async function getMyApplications(applicantId: string): Promise<ApplicationWithJob[]> {
   try {
-    logger.info('내 지원 내역 조회', { applicantId });
+    logger.info('My applications requested', { applicantId });
 
     const applications = await applicationRepository.getByApplicantId(applicantId);
 
-    logger.info('내 지원 내역 조회 완료', {
+    logger.info('My applications loaded', {
       applicantId,
       totalApplications: applications.length,
     });
@@ -53,74 +52,57 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
     return applications;
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '내 지원 내역 조회',
+      operation: 'Get my applications',
       component: 'applicationService',
       context: { applicantId },
     });
   }
 }
 
-/**
- * 지원 상세 조회
- */
 export async function getApplicationById(
   applicationId: string
 ): Promise<ApplicationWithJob | null> {
   try {
-    logger.info('지원 상세 조회', { applicationId });
-
-    const application = await applicationRepository.getById(applicationId);
-
-    return application;
+    logger.info('Application detail requested', { applicationId });
+    return await applicationRepository.getById(applicationId);
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '지원 상세 조회',
+      operation: 'Get application by id',
       component: 'applicationService',
       context: { applicationId },
     });
   }
 }
 
-/**
- * 지원 취소 (트랜잭션)
- */
 export async function cancelApplication(applicationId: string, applicantId: string): Promise<void> {
   try {
-    logger.info('지원 취소 시작', { applicationId, applicantId });
+    logger.info('Application cancellation started', { applicationId, applicantId });
 
     await applicationRepository.cancelWithTransaction(applicationId, applicantId);
 
-    logger.info('지원 취소 성공', { applicationId });
-
-    // Analytics 이벤트
+    logger.info('Application cancellation completed', { applicationId });
     trackEvent('application_cancel', { application_id: applicationId });
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '지원 취소',
+      operation: 'Cancel application',
       component: 'applicationService',
       context: { applicationId, applicantId },
     });
   }
 }
 
-/**
- * 특정 공고의 지원 여부 확인
- */
 export async function hasAppliedToJob(jobPostingId: string, applicantId: string): Promise<boolean> {
   try {
     return await applicationRepository.hasApplied(jobPostingId, applicantId);
   } catch (error) {
     return handleErrorWithDefault(error, false, {
-      operation: '지원 여부 확인',
+      operation: 'Check application existence',
       component: 'applicationService',
       context: { jobPostingId, applicantId },
     });
   }
 }
 
-/**
- * 지원 상태별 개수 조회
- */
 export async function getApplicationStats(
   applicantId: string
 ): Promise<Record<ApplicationStatus, number>> {
@@ -128,29 +110,13 @@ export async function getApplicationStats(
     return await applicationRepository.getStatsByApplicantId(applicantId);
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '지원 통계 조회',
+      operation: 'Get application stats',
       component: 'applicationService',
       context: { applicantId },
     });
   }
 }
 
-// ============================================================================
-// Application Service v2.0 (Assignment + PreQuestion 지원)
-// ============================================================================
-
-/**
- * 공고에 지원하기 v2.0 (트랜잭션)
- *
- * @description Repository를 통해 트랜잭션 처리
- *
- * 비즈니스 로직 (Repository에서 처리):
- * 1. Assignment 유효성 검증
- * 2. 사전질문 필수 답변 검증
- * 3. 중복 지원 검사
- * 4. 공고 상태/정원 확인
- * 5. 지원서 생성 (v2.0 형식)
- */
 export async function applyToJobV2(
   input: CreateApplicationInput,
   applicantId: string,
@@ -165,13 +131,12 @@ export async function applyToJobV2(
   trace.putAttribute('assignmentCount', String(input.assignments.length));
 
   try {
-    logger.info('지원하기 v2.0 시작', {
+    logger.info('Application submit started', {
       jobPostingId: input.jobPostingId,
       applicantId,
       assignmentCount: input.assignments.length,
     });
 
-    // ApplyContext 생성
     const context: ApplyContext = {
       applicantId,
       applicantName,
@@ -181,47 +146,33 @@ export async function applyToJobV2(
       applicantPhotoURL,
     };
 
-    // Repository를 통해 트랜잭션 실행
     const result = await applicationRepository.applyWithTransaction(input, context);
 
-    logger.info('지원하기 v2.0 성공', {
+    logger.info('Application submit completed', {
       applicationId: result.id,
       jobPostingId: input.jobPostingId,
       assignmentCount: input.assignments.length,
     });
 
-    // 성능 추적: 지원 성공
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    // Analytics 이벤트 (assignments에서 대표 역할 추출)
     const appliedPrimaryRole = result.assignments?.[0]?.roleIds?.[0] || 'other';
     trackJobApply(input.jobPostingId, result.jobPostingTitle, appliedPrimaryRole);
 
     return result;
   } catch (error) {
-    // 성능 추적: 지원 실패
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    // handleServiceError가 AppError 서브클래스(AlreadyAppliedError 등)를 자동 보존
     throw handleServiceError(error, {
-      operation: '지원하기 v2.0',
+      operation: 'Apply to job v2',
       component: 'applicationService',
       context: { jobPostingId: input.jobPostingId, applicantId },
     });
   }
 }
 
-// ============================================================================
-// 취소 요청 시스템 (v2.1)
-// ============================================================================
-
-/**
- * 취소 요청 제출 (스태프용)
- *
- * @description Repository를 통해 트랜잭션 처리
- */
 export async function requestCancellation(
   input: RequestCancellationInput,
   applicantId: string
@@ -230,37 +181,43 @@ export async function requestCancellation(
   trace.putAttribute('applicationId', input.applicationId);
 
   try {
-    logger.info('취소 요청 제출 시작', {
+    const validationResult = cancellationRequestSchema.safeParse(input);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      throw toValidationError(
+        firstError?.message || 'Please check the cancellation request input.',
+        validationResult.error.flatten().fieldErrors
+      );
+    }
+
+    logger.info('Cancellation request started', {
       applicationId: input.applicationId,
       applicantId,
     });
 
-    await applicationRepository.requestCancellationWithTransaction(input, applicantId);
+    await applicationRepository.requestCancellationWithTransaction(
+      validationResult.data,
+      applicantId
+    );
 
-    logger.info('취소 요청 제출 성공', { applicationId: input.applicationId });
+    logger.info('Cancellation request completed', { applicationId: input.applicationId });
 
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    // Analytics 이벤트
     trackEvent('cancellation_request', { application_id: input.applicationId });
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
 
     throw handleServiceError(error, {
-      operation: '취소 요청 제출',
+      operation: 'Request cancellation',
       component: 'applicationService',
       context: { applicationId: input.applicationId, applicantId },
     });
   }
 }
 
-/**
- * 취소 요청 검토 (구인자용)
- *
- * @description Repository를 통해 트랜잭션 처리
- */
 export async function reviewCancellationRequest(
   input: ReviewCancellationInput,
   reviewerId: string
@@ -270,15 +227,27 @@ export async function reviewCancellationRequest(
   trace.putAttribute('approved', String(input.approved));
 
   try {
-    logger.info('취소 요청 검토 시작', {
+    const validationResult = reviewCancellationSchema.safeParse(input);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      throw toValidationError(
+        firstError?.message || 'Please check the cancellation review input.',
+        validationResult.error.flatten().fieldErrors
+      );
+    }
+
+    logger.info('Cancellation review started', {
       applicationId: input.applicationId,
       approved: input.approved,
       reviewerId,
     });
 
-    await applicationRepository.reviewCancellationWithTransaction(input, reviewerId);
+    await applicationRepository.reviewCancellationWithTransaction(
+      validationResult.data,
+      reviewerId
+    );
 
-    logger.info('취소 요청 검토 성공', {
+    logger.info('Cancellation review completed', {
       applicationId: input.applicationId,
       approved: input.approved,
     });
@@ -286,7 +255,6 @@ export async function reviewCancellationRequest(
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    // Analytics 이벤트
     trackEvent('cancellation_reviewed', {
       application_id: input.applicationId,
       approved: input.approved,
@@ -296,28 +264,23 @@ export async function reviewCancellationRequest(
     trace.stop();
 
     throw handleServiceError(error, {
-      operation: '취소 요청 검토',
+      operation: 'Review cancellation request',
       component: 'applicationService',
       context: { applicationId: input.applicationId, reviewerId },
     });
   }
 }
 
-/**
- * 취소 요청 목록 조회 (구인자용)
- *
- * @description Repository를 통해 조회
- */
 export async function getCancellationRequests(
   jobPostingId: string,
   ownerId: string
 ): Promise<ApplicationWithJob[]> {
   try {
-    logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
+    logger.info('Cancellation requests requested', { jobPostingId, ownerId });
 
     const applications = await applicationRepository.getCancellationRequests(jobPostingId, ownerId);
 
-    logger.info('취소 요청 목록 조회 완료', {
+    logger.info('Cancellation requests loaded', {
       jobPostingId,
       count: applications.length,
     });
@@ -325,7 +288,7 @@ export async function getCancellationRequests(
     return applications;
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '취소 요청 목록 조회',
+      operation: 'Get cancellation requests',
       component: 'applicationService',
       context: { jobPostingId, ownerId },
     });

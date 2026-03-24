@@ -242,7 +242,7 @@ export const queryKeys = {
     current: () => [...queryKeys.user.all, 'current'] as const,
     profile: (uid: string) => [...queryKeys.user.all, 'profile', uid] as const,
     profileBatch: (userIds: string[]) =>
-      [...queryKeys.user.all, 'profileBatch', userIds.sort().join(',')] as const,
+      [...queryKeys.user.all, 'profileBatch', [...userIds].sort().join(',')] as const,
   },
 
   // 구인공고
@@ -323,19 +323,39 @@ export const queryKeys = {
   // 공고 템플릿 (구인자)
   templates: {
     all: ['templates'] as const,
-    list: () => [...queryKeys.templates.all, 'list'] as const,
+    list: (userId?: string) =>
+      userId === undefined
+        ? ([...queryKeys.templates.all, 'list'] as const)
+        : ([...queryKeys.templates.all, 'list', userId] as const),
     detail: (id: string) => [...queryKeys.templates.all, 'detail', id] as const,
   },
 
   // 지원자 관리 (구인자)
   applicantManagement: {
     all: ['applicantManagement'] as const,
-    byJobPosting: (jobPostingId: string) =>
-      [...queryKeys.applicantManagement.all, 'byJobPosting', jobPostingId] as const,
-    stats: (jobPostingId: string) =>
-      [...queryKeys.applicantManagement.all, 'stats', jobPostingId] as const,
-    cancellationRequests: (jobPostingId: string) =>
-      [...queryKeys.applicantManagement.all, 'cancellationRequests', jobPostingId] as const,
+    byJobPosting: (jobPostingId: string, ownerId?: string, statusFilterKey?: string) =>
+      ownerId === undefined && statusFilterKey === undefined
+        ? ([...queryKeys.applicantManagement.all, 'byJobPosting', jobPostingId] as const)
+        : ([
+            ...queryKeys.applicantManagement.all,
+            'byJobPosting',
+            jobPostingId,
+            ownerId ?? 'anonymous',
+            statusFilterKey ?? 'all',
+          ] as const),
+    stats: (jobPostingId: string, ownerId?: string) =>
+      ownerId === undefined
+        ? ([...queryKeys.applicantManagement.all, 'stats', jobPostingId] as const)
+        : ([...queryKeys.applicantManagement.all, 'stats', jobPostingId, ownerId] as const),
+    cancellationRequests: (jobPostingId: string, ownerId?: string) =>
+      ownerId === undefined
+        ? ([...queryKeys.applicantManagement.all, 'cancellationRequests', jobPostingId] as const)
+        : ([
+            ...queryKeys.applicantManagement.all,
+            'cancellationRequests',
+            jobPostingId,
+            ownerId,
+          ] as const),
     /** 스태프 변환 가능 여부 (Phase 8 추가) */
   },
 
@@ -402,7 +422,10 @@ export const queryKeys = {
     approved: () => [...queryKeys.tournaments.all, 'approved'] as const,
     rejected: () => [...queryKeys.tournaments.all, 'rejected'] as const,
     detail: (id: string) => [...queryKeys.tournaments.all, 'detail', id] as const,
-    myPending: () => [...queryKeys.tournaments.all, 'myPending'] as const,
+    myPending: (userId?: string) =>
+      userId === undefined
+        ? ([...queryKeys.tournaments.all, 'myPending'] as const)
+        : ([...queryKeys.tournaments.all, 'myPending', userId] as const),
   },
 
   // 공지사항

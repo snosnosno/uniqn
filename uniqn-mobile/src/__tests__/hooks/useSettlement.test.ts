@@ -299,6 +299,7 @@ describe('useSettlement Hooks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
+    mockAuthState.user = mockUser;
     mockIsLoading = false;
     mockIsPending = false;
     mockData = undefined;
@@ -329,6 +330,33 @@ describe('useSettlement Hooks', () => {
 
       expect(result.current.data).toEqual(mockWorkLogs);
     });
+
+    it('should scope work log queries by user and filters', () => {
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as { useQuery: jest.Mock };
+
+      renderHook(() =>
+        useWorkLogsByJobPosting('job-1', {
+          payrollStatus: 'pending',
+          dateRange: { start: '2024-01-01', end: '2024-01-31' },
+        })
+      );
+
+      const queryKey = useQuery.mock.calls.at(-1)?.[0]?.queryKey;
+
+      expect(queryKey).toEqual([
+        'settlement',
+        'byJobPosting',
+        'job-1',
+        'employer-1',
+        {
+          dateRange: {
+            end: '2024-01-31',
+            start: '2024-01-01',
+          },
+          payrollStatus: 'pending',
+        },
+      ]);
+    });
   });
 
   // ==========================================================================
@@ -353,6 +381,16 @@ describe('useSettlement Hooks', () => {
       const { result } = renderHook(() => useSettlementSummary('job-1'));
 
       expect(result.current.data).toEqual(mockSummary);
+    });
+
+    it('should scope settlement summary queries by user', () => {
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as { useQuery: jest.Mock };
+
+      renderHook(() => useSettlementSummary('job-1'));
+
+      const queryKey = useQuery.mock.calls.at(-1)?.[0]?.queryKey;
+
+      expect(queryKey).toEqual(['settlement', 'summary', 'job-1', 'employer-1']);
     });
   });
 
@@ -722,6 +760,29 @@ describe('useSettlement Hooks', () => {
       const { result } = renderHook(() => useMySettlementSummary(dateRange));
 
       expect(result.current.data).toEqual(mockSummary);
+    });
+
+    it('should scope my settlement summary query by user and date range', () => {
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as { useQuery: jest.Mock };
+
+      renderHook(() =>
+        useMySettlementSummary({
+          start: '2024-01-01',
+          end: '2024-01-31',
+        })
+      );
+
+      const queryKey = useQuery.mock.calls.at(-1)?.[0]?.queryKey;
+
+      expect(queryKey).toEqual([
+        'settlement',
+        'mySummary',
+        'employer-1',
+        {
+          end: '2024-01-31',
+          start: '2024-01-01',
+        },
+      ]);
     });
 
     it('should not query when user is not authenticated', () => {

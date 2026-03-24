@@ -30,7 +30,7 @@ export function useWorkLogReviews(workLogId: string | undefined, myReviewerType:
 
 export function useReceivedReviews(revieweeId: string | undefined, pageSize = 20) {
   return useInfiniteQuery({
-    queryKey: queryKeys.reviews.myReceived(),
+    queryKey: [...queryKeys.reviews.myReceived(), revieweeId ?? 'anonymous', pageSize],
     queryFn: async ({ pageParam }) =>
       reviewService.getReceivedReviews(
         revieweeId!,
@@ -47,7 +47,7 @@ export function useReceivedReviews(revieweeId: string | undefined, pageSize = 20
 
 export function useGivenReviews(reviewerId: string | undefined, pageSize = 20) {
   return useInfiniteQuery({
-    queryKey: queryKeys.reviews.myGiven(),
+    queryKey: [...queryKeys.reviews.myGiven(), reviewerId ?? 'anonymous', pageSize],
     queryFn: async ({ pageParam }) =>
       reviewService.getGivenReviews(
         reviewerId!,
@@ -195,7 +195,7 @@ export function usePendingReviews() {
   const isEmployerReviewer = reviewerType === 'employer';
 
   const { data: staffWorkLogs = [], isLoading: staffLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.pending(), 'staff-worklogs'],
+    queryKey: [...queryKeys.reviews.pending(), userId ?? 'anonymous', 'staff-worklogs'],
     queryFn: () => workLogRepository.getByStaffId(userId!),
     enabled: !!userId,
     staleTime: queryCachingOptions.reviews.staleTime,
@@ -203,7 +203,7 @@ export function usePendingReviews() {
   });
 
   const { data: employerWorkLogs = [], isLoading: employerLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.pending(), 'employer'],
+    queryKey: [...queryKeys.reviews.pending(), userId ?? 'anonymous', 'employer'],
     queryFn: () => workLogRepository.getCompletedByOwnerId(userId!),
     enabled: !!userId && isEmployerReviewer,
     staleTime: queryCachingOptions.reviews.staleTime,
@@ -217,11 +217,16 @@ export function usePendingReviews() {
           .map((workLog) => workLog.jobPostingId)
           .filter((jobPostingId) => !!jobPostingId)
       ),
-    ];
+    ].sort();
   }, [employerWorkLogs, staffWorkLogs]);
 
   const { data: jobPostingMap = new Map(), isLoading: jobPostingsLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.pending(), 'jobpostings', ...uniqueJobPostingIds],
+    queryKey: [
+      ...queryKeys.reviews.pending(),
+      userId ?? 'anonymous',
+      'jobpostings',
+      ...uniqueJobPostingIds,
+    ],
     queryFn: async () => {
       const postings = await jobPostingRepository.getByIdBatch(uniqueJobPostingIds);
       return new Map(postings.map((posting) => [posting.id, posting]));
@@ -232,7 +237,7 @@ export function usePendingReviews() {
   });
 
   const { data: givenPage, isLoading: reviewsLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.myGiven(), 'pending-dedup'],
+    queryKey: [...queryKeys.reviews.myGiven(), userId ?? 'anonymous', 'pending-dedup'],
     queryFn: () => reviewService.getGivenReviews(userId!),
     enabled: !!userId,
     staleTime: queryCachingOptions.reviews.staleTime,

@@ -400,6 +400,20 @@ describe('applicantManagementService', () => {
   // ==========================================================================
 
   describe('rejectApplication', () => {
+    it('rejects unsafe rejection reasons before the repository call', async () => {
+      await expect(
+        rejectApplication(
+          {
+            applicationId: 'app-1',
+            reason: '<script>alert(1)</script>',
+          },
+          'employer-1'
+        )
+      ).rejects.toThrow();
+
+      expect(mockRejectWithTransaction).not.toHaveBeenCalled();
+    });
+
     it('지원을 거절해야 함', async () => {
       const input: RejectApplicationInput = {
         applicationId: 'app-1',

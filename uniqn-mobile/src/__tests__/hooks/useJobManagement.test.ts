@@ -190,6 +190,16 @@ describe('useJobManagement hooks', () => {
     const { result } = renderHook(() => useMyJobPostings());
 
     expect(result.current.data).toEqual([{ id: 'job-1' }, { id: 'job-2' }]);
+
+    const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+      useQuery: jest.Mock;
+    };
+
+    expect(useQuery.mock.calls[0][0].queryKey).toEqual([
+      'jobManagement',
+      'myPostings',
+      'employer-1',
+    ]);
   });
 
   it('submits canonical create payloads and invalidates posting queries', async () => {

@@ -105,7 +105,7 @@ export function useTournamentApproval(
 
   // 내 대회공고 - pending/rejected (구인자용)
   const myPendingQuery = useQuery({
-    queryKey: queryKeys.tournaments.myPending(),
+    queryKey: queryKeys.tournaments.myPending(user?.uid),
     queryFn: () =>
       user?.uid ? tournamentApprovalService.getMyPending(user.uid) : Promise.resolve([]),
     staleTime: cachingPolicies.frequent,

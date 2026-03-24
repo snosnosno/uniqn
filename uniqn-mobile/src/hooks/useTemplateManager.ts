@@ -46,7 +46,7 @@ export function useTemplates() {
   const { user } = useAuthStore();
 
   return useQuery({
-    queryKey: queryKeys.templates.list(),
+    queryKey: queryKeys.templates.list(user?.uid),
     queryFn: () => getTemplates(user!.uid),
     enabled: !!user,
     staleTime: cachingPolicies.stable,

@@ -7,8 +7,9 @@
 
 import { type Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
+import { BusinessError, PermissionError, ValidationError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { rejectApplicationSchema } from '@/schemas';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import { applicationRepository, jobPostingRepository } from '@/repositories';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
@@ -165,10 +166,19 @@ export async function rejectApplication(
   input: RejectApplicationInput,
   ownerId: string
 ): Promise<void> {
+  const validationResult = rejectApplicationSchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '?낅젰媛믪쓣 ?뺤씤?댁＜?몄슂',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
+
   try {
     logger.info('지원 거절 시작', { applicationId: input.applicationId, ownerId });
 
-    await applicationRepository.rejectWithTransaction(input, ownerId);
+    await applicationRepository.rejectWithTransaction(validationResult.data, ownerId);
 
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {

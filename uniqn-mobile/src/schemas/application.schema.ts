@@ -69,7 +69,12 @@ export type ApplicationFilterData = z.infer<typeof applicationFilterSchema>;
  */
 export const confirmApplicationSchema = z.object({
   applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
-  notes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' }).optional(),
+  notes: z
+    .string()
+    .trim()
+    .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type ConfirmApplicationData = z.infer<typeof confirmApplicationSchema>;
@@ -253,6 +258,11 @@ export const applicationDocumentSchema = z
     // 거절 정보
     rejectedAt: optionalTimestampSchema,
     rejectionReason: z.string().optional(),
+    notes: z
+      .string()
+      .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+      .nullable()
+      .optional(),
 
     // 취소 정보
     cancelledAt: optionalTimestampSchema,
@@ -288,7 +298,10 @@ export function parseApplicationDocument(data: unknown): Application | null {
     });
     return null;
   }
-  return result.data as Application;
+  return {
+    ...result.data,
+    notes: result.data.notes ?? undefined,
+  } as Application;
 }
 
 /**

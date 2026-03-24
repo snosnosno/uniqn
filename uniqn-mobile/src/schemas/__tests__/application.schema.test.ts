@@ -1,4 +1,8 @@
-import { applicationDocumentSchema, parseApplicationDocument } from '../application.schema';
+import {
+  applicationDocumentSchema,
+  confirmApplicationSchema,
+  parseApplicationDocument,
+} from '../application.schema';
 
 const createMockTimestamp = (seconds = 1735689600, nanoseconds = 0) => ({
   seconds,
@@ -18,7 +22,7 @@ const baseDocument = {
   id: 'application-1',
   jobPostingId: 'posting-1',
   applicantId: 'applicant-1',
-  applicantName: '홍길동',
+  applicantName: 'Applicant',
   status: 'applied' as const,
   assignments: [baseAssignment],
   createdAt: createMockTimestamp(),
@@ -83,8 +87,8 @@ describe('applicationDocumentSchema', () => {
         requestedAt: '2025-01-02T10:00:00.000Z',
         reviewedAt: createMockTimestamp(1735862400),
         reviewedBy: 'owner-1',
-        reason: '일정 변경',
-        rejectionReason: '대체 인력 없음',
+        reason: 'Schedule changed',
+        rejectionReason: 'Replacement unavailable',
       },
     });
 
@@ -106,17 +110,47 @@ describe('applicationDocumentSchema', () => {
     const result = parseApplicationDocument({
       ...baseDocument,
       applicantRole: 'other',
-      customRole: '사회자',
+      customRole: 'MC',
       assignments: [
         {
           ...baseAssignment,
-          roleIds: ['사회자'],
+          roleIds: ['MC'],
         },
       ],
     });
 
     expect(result).not.toBeNull();
-    expect(result?.assignments[0]?.roleIds).toEqual(['사회자']);
-    expect(result?.customRole).toBe('사회자');
+    expect(result?.assignments[0]?.roleIds).toEqual(['MC']);
+    expect(result?.customRole).toBe('MC');
+  });
+
+  it('normalizes legacy null notes into undefined', () => {
+    const result = parseApplicationDocument({
+      ...baseDocument,
+      notes: null,
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.notes).toBeUndefined();
+  });
+});
+
+describe('confirmApplicationSchema', () => {
+  it('trims valid notes', () => {
+    const parsed = confirmApplicationSchema.parse({
+      applicationId: 'application-1',
+      notes: '  confirmed memo  ',
+    });
+
+    expect(parsed.notes).toBe('confirmed memo');
+  });
+
+  it('rejects unsafe notes', () => {
+    const result = confirmApplicationSchema.safeParse({
+      applicationId: 'application-1',
+      notes: '<script>alert(1)</script>',
+    });
+
+    expect(result.success).toBe(false);
   });
 });

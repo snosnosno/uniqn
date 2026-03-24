@@ -35,7 +35,7 @@ export function useCancellationRequests(jobPostingId: string) {
   const { user } = useAuthStore();
 
   return useQuery({
-    queryKey: queryKeys.applicantManagement.cancellationRequests(jobPostingId),
+    queryKey: queryKeys.applicantManagement.cancellationRequests(jobPostingId, user?.uid),
     queryFn: () => getCancellationRequests(jobPostingId, user!.uid),
     enabled: !!user && !!jobPostingId,
     staleTime: cachingPolicies.frequent,

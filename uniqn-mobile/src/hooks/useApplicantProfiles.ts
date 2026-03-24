@@ -8,7 +8,7 @@
  * Hook 레이어로 캡슐화하여 아키텍처 규칙(Component → Hook → Repository)을 준수합니다.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userRepository } from '@/repositories';
 import { queryKeys } from '@/lib/queryClient';
@@ -34,11 +34,20 @@ export function useApplicantProfiles({
   enabled = true,
 }: UseApplicantProfilesOptions) {
   const queryClient = useQueryClient();
+  const normalizedApplicantIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          applicantIds.filter((applicantId): applicantId is string => applicantId.length > 0)
+        ),
+      ].sort(),
+    [applicantIds]
+  );
 
   const { data: profileMap, isLoading } = useQuery({
-    queryKey: queryKeys.user.profileBatch(applicantIds),
-    queryFn: () => userRepository.getByIdBatch(applicantIds),
-    enabled: enabled && applicantIds.length > 0,
+    queryKey: queryKeys.user.profileBatch(normalizedApplicantIds),
+    queryFn: () => userRepository.getByIdBatch(normalizedApplicantIds),
+    enabled: enabled && normalizedApplicantIds.length > 0,
     staleTime: 5 * 60 * 1000, // 5분
   });
 

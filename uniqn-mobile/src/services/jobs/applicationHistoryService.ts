@@ -5,8 +5,9 @@
 
 import type { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import { isAppError } from '@/errors';
+import { ERROR_CODES, ValidationError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { confirmApplicationSchema } from '@/schemas';
 import type { Application, Assignment } from '@/types';
 import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
@@ -39,6 +40,15 @@ export async function confirmApplicationWithHistory(
   ownerId: string,
   notes?: string
 ): Promise<ConfirmWithHistoryResult> {
+  const validationResult = confirmApplicationSchema.safeParse({ applicationId, notes });
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '?낅젰媛믪쓣 ?뺤씤?댁＜?몄슂',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
+
   try {
     logger.info('吏???뺤젙 (v2.0) ?쒖옉', { applicationId, ownerId });
 
@@ -47,7 +57,7 @@ export async function confirmApplicationWithHistory(
       applicationId,
       selectedAssignments,
       ownerId,
-      notes
+      validationResult.data.notes
     );
 
     logger.info('吏???뺤젙 (v2.0) ?꾨즺', {

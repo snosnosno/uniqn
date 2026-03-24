@@ -289,9 +289,7 @@ service cloud.firestore {
       let changedFields = getApplicationChangedFields();
       let requestData = request.resource.data.cancellationRequest;
 
-      return isSignedIn() &&
-        request.auth.uid == resource.data.applicantId &&
-        request.resource.data.applicantId == resource.data.applicantId &&
+      return request.resource.data.applicantId == resource.data.applicantId &&
         request.resource.data.jobPostingId == resource.data.jobPostingId &&
         request.resource.data.createdAt == resource.data.createdAt &&
         (
@@ -486,57 +484,98 @@ service cloud.firestore {
     function canOwnerUpdateApplicationLifecycle() {
       let changedFields = getApplicationChangedFields();
       let requestData = request.resource.data.cancellationRequest;
-      let ownerMatch = hasValidRole() && applicationPostingOwnerMatches(resource.data.jobPostingId);
       let sameIdentity =
         request.resource.data.applicantId == resource.data.applicantId &&
         request.resource.data.jobPostingId == resource.data.jobPostingId &&
         request.resource.data.createdAt == resource.data.createdAt;
 
-      return ownerMatch &&
-        sameIdentity &&
+      return sameIdentity &&
         (
           (
             resource.data.status == 'applied' &&
             request.resource.data.status == 'confirmed' &&
+            changedFields.hasOnly([
+              'status',
+              'assignments',
+              'originalApplication',
+              'confirmationHistory',
+              'confirmedAt',
+              'processedBy',
+              'processedAt',
+              'notes',
+              'updatedAt'
+            ]) &&
+            changedFields.hasAll([
+              'originalApplication',
+              'confirmationHistory',
+              'confirmedAt',
+              'processedBy',
+              'processedAt',
+              'updatedAt'
+            ]) &&
             request.resource.data.assignments is list &&
             request.resource.data.confirmationHistory is list &&
             'originalApplication' in request.resource.data &&
-            'confirmedAt' in request.resource.data &&
-            request.resource.data.processedBy == request.auth.uid &&
-            'processedAt' in request.resource.data
+            request.resource.data.processedBy == request.auth.uid
           ) ||
           (
             resource.data.status == 'applied' &&
             request.resource.data.status == 'rejected' &&
+            changedFields.hasOnly([
+              'status',
+              'rejectionReason',
+              'processedBy',
+              'processedAt',
+              'updatedAt'
+            ]) &&
+            changedFields.hasAll(['processedBy', 'processedAt', 'updatedAt']) &&
             request.resource.data.processedBy == request.auth.uid &&
-            'processedAt' in request.resource.data &&
             (!('rejectionReason' in request.resource.data) ||
               request.resource.data.rejectionReason is string)
           ) ||
           (
             resource.data.status == 'confirmed' &&
             request.resource.data.status == 'applied' &&
+            changedFields.hasOnly([
+              'status',
+              'assignments',
+              'confirmationHistory',
+              'cancelledAt',
+              'updatedAt'
+            ]) &&
+            changedFields.hasAll(['cancelledAt', 'updatedAt']) &&
             request.resource.data.assignments is list &&
-            request.resource.data.confirmationHistory is list &&
-            'cancelledAt' in request.resource.data
+            request.resource.data.confirmationHistory is list
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
-            'cancellationRequest' in resource.data &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'cancelled' &&
+            changedFields.hasOnly([
+              'status',
+              'assignments',
+              'confirmationHistory',
+              'cancelledAt',
+              'cancellationRequest',
+              'updatedAt'
+            ]) &&
+            changedFields.hasAll([
+              'cancelledAt',
+              'cancellationRequest',
+              'updatedAt'
+            ]) &&
             request.resource.data.assignments is list &&
             request.resource.data.confirmationHistory is list &&
-            'cancelledAt' in request.resource.data &&
             requestData is map &&
             requestData.status == 'approved' &&
             requestData.reviewedBy == request.auth.uid
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
-            'cancellationRequest' in resource.data &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'confirmed' &&
+            changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
+            changedFields.hasAll(['cancellationRequest', 'updatedAt']) &&
             requestData is map &&
             requestData.status == 'rejected' &&
             requestData.reviewedBy == request.auth.uid &&
@@ -544,6 +583,7 @@ service cloud.firestore {
           ) ||
           (
             changedFields.hasOnly(['isRead', 'updatedAt']) &&
+            changedFields.hasAll(['isRead', 'updatedAt']) &&
             request.resource.data.isRead == true
           )
         );
@@ -1036,6 +1076,39 @@ service cloud.firestore {
              (!('payrollStatus' in data) || data.payrollStatus == 'pending');
     }
 
+    function isStaffWorkLogCheckInOutUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return request.auth.uid == resource.data.staffId &&
+        request.resource.data.staffId == resource.data.staffId &&
+        request.resource.data.jobPostingId == resource.data.jobPostingId &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.date == resource.data.date &&
+        request.resource.data.timeSlot == resource.data.timeSlot &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.customRole == resource.data.customRole &&
+        request.resource.data.updatedAt == request.time &&
+        changedFields.hasOnly(['status', 'checkInTime', 'checkOutTime', 'workDuration', 'updatedAt']) &&
+        changedFields.hasAll(['status', 'updatedAt']) &&
+        (
+          (
+            resource.data.status == 'scheduled' &&
+            request.resource.data.status == 'checked_in' &&
+            request.resource.data.checkInTime is timestamp &&
+            request.resource.data.checkOutTime == resource.data.checkOutTime &&
+            request.resource.data.workDuration == resource.data.workDuration
+          ) ||
+          (
+            resource.data.status == 'checked_in' &&
+            request.resource.data.status == 'checked_out' &&
+            request.resource.data.checkInTime == resource.data.checkInTime &&
+            request.resource.data.checkOutTime is timestamp &&
+            request.resource.data.workDuration is number &&
+            request.resource.data.workDuration >= 0
+          )
+        );
+    }
+
     // ================= Collection Rules =================
 
     // --- Users Collection ---
@@ -1411,8 +1484,16 @@ service cloud.firestore {
       // 관리자 및 구인공고 작성자가 지원서 수정 가능
       // status enum 검증: 허용값 출처 application.schema.ts
       allow update: if (
-        canApplicantUpdateOwnApplication() ||
-        canOwnerUpdateApplicationLifecycle()
+        (
+          isSignedIn() &&
+          request.auth.uid == resource.data.applicantId &&
+          canApplicantUpdateOwnApplication()
+        ) ||
+        (
+          hasValidRole() &&
+          applicationPostingOwnerMatches(resource.data.jobPostingId) &&
+          canOwnerUpdateApplicationLifecycle()
+        )
       ) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in
@@ -1472,17 +1553,29 @@ service cloud.firestore {
 
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
       // Phase 2: jobPostingId 사용 (eventId 대신)
-      allow create: if isSignedIn() && hasValidRole() &&
-        isDatedWorkLogCreate(request.resource.data);
+      allow create: if isSignedIn() &&
+        isDatedWorkLogCreate(request.resource.data) &&
+        request.resource.data.jobPostingId is string &&
+        request.resource.data.ownerId is string &&
+        exists(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)) &&
+        request.resource.data.ownerId ==
+          get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)).data.ownerId &&
+        (
+          isAdmin() ||
+          (hasValidRole() &&
+           request.resource.data.ownerId == request.auth.uid)
+        );
 
       // 소유자/공고작성자/admin만 수정 가능 + status/payrollStatus enum 검증
       // 허용값 출처: workLog.schema.ts, statusValues.ts
       allow update: if isSignedIn() && (
         isAdmin() ||
-        request.auth.uid == resource.data.staffId ||
-        (hasValidRole() &&
-         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
+        (hasValidRole() && (
+          request.auth.uid == resource.data.ownerId ||
+          (exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
+        )) ||
+        isStaffWorkLogCheckInOutUpdate()
       ) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']) &&

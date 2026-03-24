@@ -13,6 +13,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { QRCodeIcon } from '@/components/icons';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { HeaderBackButton } from '@/components/navigation';
+import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor } from '@/constants/colors';
@@ -67,6 +68,7 @@ function HeaderTitle({
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const currentUserId = useAuthStore((state) => state.user?.uid);
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
   const { job, isLoading } = useJobDetail(id || '');
@@ -89,7 +91,20 @@ export default function JobPostingDetailLayout() {
   }, [isLoading, job?.title]);
 
   useEffect(() => {
-    if (!job || isCanonicalDatedPosting(job)) {
+    if (!job) {
+      return;
+    }
+
+    if (currentUserId && job.ownerId !== currentUserId) {
+      addToast({
+        type: 'warning',
+        message: '내가 작성한 공고만 관리할 수 있습니다.',
+      });
+      router.replace('/(app)/(tabs)/employer');
+      return;
+    }
+
+    if (isCanonicalDatedPosting(job)) {
       return;
     }
 
@@ -98,9 +113,9 @@ export default function JobPostingDetailLayout() {
       message: '고정공고는 이번 V3 canonical 범위에서 제외되어 접근할 수 없습니다.',
     });
     router.replace('/(app)/(tabs)/employer');
-  }, [addToast, job, router]);
+  }, [addToast, currentUserId, job, router]);
 
-  if (job && !isCanonicalDatedPosting(job)) {
+  if (job && ((currentUserId && job.ownerId !== currentUserId) || !isCanonicalDatedPosting(job))) {
     return null;
   }
 

@@ -14,7 +14,9 @@ import { onCall } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { resetUnreadCounter as resetCounter } from '../utils/notificationUtils';
-import { requireAuth, handleFunctionError } from '../errors';
+import { requireAuth, handleFunctionError, requireString } from '../errors';
+import { ValidationError, ERROR_CODES } from '../errors';
+import { validateRateLimit, RATE_LIMIT_CONFIGS } from '../middleware/rateLimiter';
 
 const db = admin.firestore();
 
@@ -25,6 +27,54 @@ interface ResetUnreadCounterData {
 
 interface ResetUnreadCounterResult {
   success: boolean;
+}
+
+const MAX_CLEANUP_NOTIFICATION_IDS = 500;
+const MAX_NOTIFICATION_ID_LENGTH = 128;
+
+export function parseCleanupNotificationIds(notificationIds: unknown): string[] {
+  if (notificationIds == null) {
+    return [];
+  }
+
+  if (!Array.isArray(notificationIds)) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: 'notificationIds는 알림 ID 배열이어야 합니다.',
+      field: 'notificationIds',
+    });
+  }
+
+  if (notificationIds.length > MAX_CLEANUP_NOTIFICATION_IDS) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_MAX_LENGTH, {
+      userMessage: `notificationIds는 최대 ${MAX_CLEANUP_NOTIFICATION_IDS}개까지 허용됩니다.`,
+      field: 'notificationIds',
+      metadata: {
+        maxLength: MAX_CLEANUP_NOTIFICATION_IDS,
+        actualLength: notificationIds.length,
+      },
+    });
+  }
+
+  const normalizedIds = new Set<string>();
+
+  notificationIds.forEach((notificationId, index) => {
+    const normalizedId = requireString(notificationId, `notificationIds[${index}]`);
+
+    if (normalizedId.length > MAX_NOTIFICATION_ID_LENGTH) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_MAX_LENGTH, {
+        userMessage: '알림 ID 길이가 너무 깁니다.',
+        field: `notificationIds[${index}]`,
+        metadata: {
+          maxLength: MAX_NOTIFICATION_ID_LENGTH,
+          actualLength: normalizedId.length,
+        },
+      });
+    }
+
+    normalizedIds.add(normalizedId);
+  });
+
+  return [...normalizedIds];
 }
 
 /**
@@ -44,15 +94,16 @@ export const resetUnreadCounter = onCall<ResetUnreadCounterData>(
     try {
       // 인증 확인
       const userId = requireAuth(request);
+      await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
-      const notificationIds = request.data?.notificationIds ?? [];
+      const notificationIds = parseCleanupNotificationIds(request.data?.notificationIds);
 
       // 1. 카운터 리셋
       await resetCounter(userId);
 
       // 2. _batchUpdate 플래그 정리 (비동기, 실패해도 성공 반환)
       if (notificationIds.length > 0) {
-        cleanupBatchUpdateFlags(notificationIds).catch((error) => {
+        cleanupBatchUpdateFlags(userId, notificationIds).catch((error) => {
           logger.warn('_batchUpdate 플래그 정리 실패 (무시)', {
             userId,
             notificationCount: notificationIds.length,
@@ -81,24 +132,41 @@ export const resetUnreadCounter = onCall<ResetUnreadCounterData>(
  * @description 배치 업데이트 시 설정된 임시 플래그 제거
  * @param notificationIds 알림 ID 목록
  */
-async function cleanupBatchUpdateFlags(notificationIds: string[]): Promise<void> {
+async function cleanupBatchUpdateFlags(userId: string, notificationIds: string[]): Promise<void> {
   const BATCH_SIZE = 500; // Firestore 배치 제한
+  let cleanedCount = 0;
 
   for (let i = 0; i < notificationIds.length; i += BATCH_SIZE) {
     const chunk = notificationIds.slice(i, i + BATCH_SIZE);
+    const refs = chunk.map((id) => db.collection('notifications').doc(id));
+    const snapshots = await db.getAll(...refs);
     const batch = db.batch();
+    let chunkCleanedCount = 0;
 
-    chunk.forEach((id) => {
-      const docRef = db.collection('notifications').doc(id);
-      batch.update(docRef, {
+    snapshots.forEach((snapshot) => {
+      if (!snapshot.exists) {
+        return;
+      }
+
+      const data = snapshot.data();
+      if (data?.recipientId !== userId) {
+        return;
+      }
+
+      batch.update(snapshot.ref, {
         _batchUpdate: admin.firestore.FieldValue.delete(),
       });
+      chunkCleanedCount += 1;
     });
 
-    await batch.commit();
+    if (chunkCleanedCount > 0) {
+      await batch.commit();
+      cleanedCount += chunkCleanedCount;
+    }
   }
 
   logger.info('_batchUpdate 플래그 정리 완료', {
-    count: notificationIds.length,
+    requestedCount: notificationIds.length,
+    cleanedCount,
   });
 }

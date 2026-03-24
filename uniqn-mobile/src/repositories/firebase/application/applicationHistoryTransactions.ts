@@ -210,7 +210,7 @@ export async function confirmWithHistoryTransaction(
         confirmedAt: serverTimestamp(),
         processedBy: ownerId,
         processedAt: serverTimestamp(),
-        notes: notes ?? null,
+        ...(notes ? { notes } : {}),
         updatedAt: serverTimestamp(),
       });
 

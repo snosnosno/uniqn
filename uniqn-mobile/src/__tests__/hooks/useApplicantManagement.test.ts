@@ -19,6 +19,7 @@ import { createMockApplication, resetCounters } from '../mocks/factories';
 import {
   useApplicantsByJobPosting,
   useApplicantStats,
+  useCancellationRequests,
   useConfirmApplication,
   useRejectApplication,
   useBulkConfirmApplications,
@@ -38,6 +39,8 @@ jest.mock('@/lib/firebase', () => ({
 // ============================================================================
 
 const mockGetApplicantsByJobPosting = jest.fn();
+const mockGetCancellationRequests = jest.fn();
+const mockReviewCancellationRequest = jest.fn();
 const mockConfirmApplication = jest.fn();
 const mockRejectApplication = jest.fn();
 const mockBulkConfirmApplications = jest.fn();
@@ -47,6 +50,8 @@ const mockGetApplicantStatsByRole = jest.fn();
 // Mock the services index (the hook imports from @/services, not @/services/applicantManagementService)
 jest.mock('@/services', () => ({
   getApplicantsByJobPosting: (...args: unknown[]) => mockGetApplicantsByJobPosting(...args),
+  getCancellationRequests: (...args: unknown[]) => mockGetCancellationRequests(...args),
+  reviewCancellationRequest: (...args: unknown[]) => mockReviewCancellationRequest(...args),
   confirmApplication: (...args: unknown[]) => mockConfirmApplication(...args),
   rejectApplication: (...args: unknown[]) => mockRejectApplication(...args),
   bulkConfirmApplications: (...args: unknown[]) => mockBulkConfirmApplications(...args),
@@ -71,6 +76,19 @@ jest.mock('@/stores/authStore', () => ({
 jest.mock('@/stores/toastStore', () => ({
   useToastStore: (selector?: (state: typeof mockToastState) => unknown) =>
     selector ? selector(mockToastState) : mockToastState,
+}));
+
+jest.mock('@/hooks/useNetworkStatus', () => ({
+  useNetworkStatus: () => ({
+    isOnline: true,
+    isOffline: false,
+    isChecking: false,
+    connectionType: 'wifi',
+    isInternetReachable: true,
+    lastChecked: null,
+    details: null,
+    checkConnection: jest.fn(),
+  }),
 }));
 
 // ============================================================================
@@ -182,9 +200,18 @@ jest.mock('@/lib/queryClient', () => ({
   queryKeys: {
     applicantManagement: {
       all: ['applicantManagement'],
-      byJobPosting: (id: string) => ['applicantManagement', 'byJobPosting', id],
-      stats: (id: string) => ['applicantManagement', 'stats', id],
-      cancellationRequests: (id: string) => ['applicantManagement', 'cancellationRequests', id],
+      byJobPosting: (id: string, ownerId?: string, statusFilterKey = 'all') =>
+        ownerId === undefined
+          ? ['applicantManagement', 'byJobPosting', id]
+          : ['applicantManagement', 'byJobPosting', id, ownerId, statusFilterKey],
+      stats: (id: string, ownerId?: string) =>
+        ownerId === undefined
+          ? ['applicantManagement', 'stats', id]
+          : ['applicantManagement', 'stats', id, ownerId],
+      cancellationRequests: (id: string, ownerId?: string) =>
+        ownerId === undefined
+          ? ['applicantManagement', 'cancellationRequests', id]
+          : ['applicantManagement', 'cancellationRequests', id, ownerId],
       canConvertToStaff: (id: string) => ['applicantManagement', 'canConvertToStaff', id],
     },
     applications: {
@@ -254,6 +281,7 @@ describe('useApplicantManagement Hooks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
+    mockAuthState.user = mockUser;
     mockIsLoading = false;
     mockIsPending = false;
     mockData = undefined;
@@ -284,6 +312,33 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.data).toEqual(mockApplicants);
       expect(result.current.data?.applicants).toHaveLength(2);
     });
+
+    it('should include a stable status filter in the query key and fetch args', async () => {
+      renderHook(() => useApplicantsByJobPosting('job-1', ['confirmed', 'applied', 'confirmed']));
+
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+      const queryOptions = useQuery.mock.calls[0][0] as {
+        queryKey: string[];
+        queryFn: () => Promise<unknown>;
+      };
+
+      expect(queryOptions.queryKey).toEqual([
+        'applicantManagement',
+        'byJobPosting',
+        'job-1',
+        'employer-1',
+        'applied,confirmed',
+      ]);
+
+      await queryOptions.queryFn();
+
+      expect(mockGetApplicantsByJobPosting).toHaveBeenCalledWith('job-1', 'employer-1', [
+        'applied',
+        'confirmed',
+      ]);
+    });
   });
 
   // ==========================================================================
@@ -301,6 +356,59 @@ describe('useApplicantManagement Hooks', () => {
       const { result } = renderHook(() => useApplicantStats('job-1'));
 
       expect(result.current.data).toEqual(mockStats);
+    });
+
+    it('should scope stats queries by user', () => {
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+
+      renderHook(() => useApplicantStats('job-1'));
+
+      const queryOptions = useQuery.mock.calls.at(-1)?.[0] as { queryKey: string[] };
+
+      expect(queryOptions.queryKey).toEqual([
+        'applicantManagement',
+        'stats',
+        'job-1',
+        'employer-1',
+      ]);
+    });
+  });
+
+  // ==========================================================================
+  // useCancellationRequests
+  // ==========================================================================
+
+  describe('useCancellationRequests', () => {
+    it('should scope cancellation request queries by user', async () => {
+      const mockRequests = [
+        createMockApplicantWithDetails({ id: 'app-1', status: 'cancellation_pending' }),
+      ];
+      mockData = mockRequests;
+
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+
+      const { result } = renderHook(() => useCancellationRequests('job-1'));
+
+      const queryOptions = useQuery.mock.calls.at(-1)?.[0] as {
+        queryKey: string[];
+        queryFn: () => Promise<unknown>;
+      };
+
+      expect(result.current.data).toEqual(mockRequests);
+      expect(queryOptions.queryKey).toEqual([
+        'applicantManagement',
+        'cancellationRequests',
+        'job-1',
+        'employer-1',
+      ]);
+
+      await queryOptions.queryFn();
+
+      expect(mockGetCancellationRequests).toHaveBeenCalledWith('job-1', 'employer-1');
     });
   });
 

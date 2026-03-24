@@ -27,6 +27,7 @@ import { queryKeys, queryCachingOptions, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { stableFilters } from '@/utils/queryUtils';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
 import { STATUS } from '@/constants';
@@ -44,9 +45,15 @@ export function useWorkLogsByJobPosting(
   filters?: Omit<SettlementFilters, 'jobPostingId'>
 ) {
   const { user } = useAuthStore();
+  const normalizedFilters = stableFilters(filters);
+  const workLogsQueryKey = [
+    ...queryKeys.settlement.byJobPosting(jobPostingId),
+    user?.uid ?? 'anonymous',
+    normalizedFilters,
+  ] as const;
 
   return useQuery({
-    queryKey: queryKeys.settlement.byJobPosting(jobPostingId),
+    queryKey: workLogsQueryKey,
     queryFn: () => getWorkLogsByJobPosting(jobPostingId, user!.uid, filters),
     enabled: !!user && !!jobPostingId,
     staleTime: queryCachingOptions.settlement.staleTime,
@@ -59,9 +66,13 @@ export function useWorkLogsByJobPosting(
  */
 export function useSettlementSummary(jobPostingId: string) {
   const { user } = useAuthStore();
+  const summaryQueryKey = [
+    ...queryKeys.settlement.summary(jobPostingId),
+    user?.uid ?? 'anonymous',
+  ] as const;
 
   return useQuery({
-    queryKey: queryKeys.settlement.summary(jobPostingId),
+    queryKey: summaryQueryKey,
     queryFn: () => getJobPostingSettlementSummary(jobPostingId, user!.uid),
     enabled: !!user && !!jobPostingId,
     staleTime: queryCachingOptions.settlement.staleTime,
@@ -74,9 +85,15 @@ export function useSettlementSummary(jobPostingId: string) {
  */
 export function useMySettlementSummary(dateRange?: { start: string; end: string }) {
   const { user } = useAuthStore();
+  const normalizedDateRange = stableFilters(dateRange);
+  const mySummaryQueryKey = [
+    ...queryKeys.settlement.mySummary(),
+    user?.uid ?? 'anonymous',
+    normalizedDateRange,
+  ] as const;
 
   return useQuery({
-    queryKey: queryKeys.settlement.mySummary(),
+    queryKey: mySummaryQueryKey,
     queryFn: () => getMySettlementSummary(user!.uid, dateRange),
     enabled: !!user,
     staleTime: queryCachingOptions.settlement.staleTime,
