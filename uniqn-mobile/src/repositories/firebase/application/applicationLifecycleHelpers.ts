@@ -58,7 +58,7 @@ function buildExpectedWorkLogs(assignments: Assignment[]): ExpectedWorkLog[] {
   });
 }
 
-function matchesExpectedWorkLog(snapshot: WorkLogSnapshot, expected: ExpectedWorkLog): boolean {
+function hasMatchingScheduleKey(snapshot: WorkLogSnapshot, expected: ExpectedWorkLog): boolean {
   if (!snapshot.exists || !snapshot.data) {
     return false;
   }
@@ -66,10 +66,25 @@ function matchesExpectedWorkLog(snapshot: WorkLogSnapshot, expected: ExpectedWor
   return (
     snapshot.data.date === expected.date &&
     snapshot.data.timeSlot === expected.timeSlot &&
-    snapshot.data.role === expected.role &&
-    (snapshot.data.customRole ?? null) === expected.customRole &&
     (snapshot.data.assignmentGroupId ?? null) === expected.assignmentGroupId
   );
+}
+
+function matchesExpectedWorkLogExactly(
+  snapshot: WorkLogSnapshot,
+  expected: ExpectedWorkLog
+): boolean {
+  if (!hasMatchingScheduleKey(snapshot, expected)) {
+    return false;
+  }
+
+  const data = snapshot.data;
+
+  if (!data) {
+    return false;
+  }
+
+  return data.role === expected.role && (data.customRole ?? null) === expected.customRole;
 }
 
 async function loadRelatedWorkLogs(
@@ -91,10 +106,10 @@ async function loadRelatedWorkLogs(
   return snapshots;
 }
 
-function selectActiveConfirmationWorkLogs(
+function trySelectActiveConfirmationWorkLogs(
   workLogSnapshots: WorkLogSnapshot[],
   assignments: Assignment[]
-): WorkLogSnapshot[] {
+): WorkLogSnapshot[] | null {
   const expectedWorkLogs = buildExpectedWorkLogs(assignments);
   const selected: WorkLogSnapshot[] = [];
   const consumedIds = new Set<string>();
@@ -113,22 +128,49 @@ function selectActiveConfirmationWorkLogs(
     });
 
   for (const expected of expectedWorkLogs) {
-    const match = sortedSnapshots.find((snapshot) => {
+    const exactMatch = sortedSnapshots.find((snapshot) => {
       if (consumedIds.has(snapshot.ref.id)) {
         return false;
       }
 
-      return matchesExpectedWorkLog(snapshot, expected);
+      return matchesExpectedWorkLogExactly(snapshot, expected);
     });
 
-    if (!match) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '활성 확정에 연결된 근무 기록을 찾을 수 없습니다.',
-      });
+    if (exactMatch) {
+      consumedIds.add(exactMatch.ref.id);
+      selected.push(exactMatch);
+      continue;
     }
 
-    consumedIds.add(match.ref.id);
-    selected.push(match);
+    const scheduleMatches = sortedSnapshots.filter((snapshot) => {
+      if (consumedIds.has(snapshot.ref.id)) {
+        return false;
+      }
+
+      return hasMatchingScheduleKey(snapshot, expected);
+    });
+
+    if (scheduleMatches.length !== 1) {
+      return null;
+    }
+
+    consumedIds.add(scheduleMatches[0].ref.id);
+    selected.push(scheduleMatches[0]);
+  }
+
+  return selected;
+}
+
+function selectActiveConfirmationWorkLogs(
+  workLogSnapshots: WorkLogSnapshot[],
+  assignments: Assignment[]
+): WorkLogSnapshot[] {
+  const selected = trySelectActiveConfirmationWorkLogs(workLogSnapshots, assignments);
+
+  if (!selected) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '?쒖꽦 ?뺤젙???곌껐??洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎.',
+    });
   }
 
   return selected;
@@ -141,9 +183,43 @@ function assertCancellableConfirmationWorkLogs(workLogs: WorkLogSnapshot[]): voi
 
   if (nonCancellableWorkLog) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '이미 진행되었거나 종료된 확정은 전체 취소할 수 없습니다.',
+      userMessage: '?대? 吏꾪뻾?섏뿀嫄곕굹 醫낅즺???뺤젙? ?꾩껜 痍⑥냼?????놁뒿?덈떎.',
     });
   }
+}
+
+function isCompletedWorkLogSnapshot(snapshot: WorkLogSnapshot): boolean {
+  const status = snapshot.data?.status;
+
+  return (
+    status === STATUS.WORK_LOG.CHECKED_OUT ||
+    status === STATUS.WORK_LOG.COMPLETED ||
+    status === STATUS.WORK_LOG.NO_SHOW ||
+    (status === STATUS.WORK_LOG.CANCELLED && Boolean(snapshot.data?.noShowAt))
+  );
+}
+
+export async function resolveConfirmedApplicationStatusInTransaction(params: {
+  transaction: Transaction;
+  assignments: Assignment[];
+  relatedWorkLogIds: string[];
+}): Promise<Application['status']> {
+  const { transaction, assignments, relatedWorkLogIds } = params;
+
+  if (relatedWorkLogIds.length === 0) {
+    return STATUS.APPLICATION.CONFIRMED;
+  }
+
+  const workLogSnapshots = await loadRelatedWorkLogs(transaction, relatedWorkLogIds);
+  const matchedWorkLogs = trySelectActiveConfirmationWorkLogs(workLogSnapshots, assignments);
+
+  if (!matchedWorkLogs || matchedWorkLogs.length === 0) {
+    return STATUS.APPLICATION.CONFIRMED;
+  }
+
+  return matchedWorkLogs.every(isCompletedWorkLogSnapshot)
+    ? STATUS.APPLICATION.COMPLETED
+    : STATUS.APPLICATION.CONFIRMED;
 }
 
 export async function releaseConfirmedAssignmentsInTransaction(params: {
@@ -179,17 +255,21 @@ export async function releaseConfirmedAssignmentsInTransaction(params: {
 
   if (!activeConfirmation) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '취소할 확정 이력이 없습니다.',
+      userMessage: '痍⑥냼???뺤젙 ?대젰???놁뒿?덈떎.',
     });
   }
 
-  const workLogSnapshots = await loadRelatedWorkLogs(transaction, relatedWorkLogIds);
-  const activeConfirmationWorkLogs = selectActiveConfirmationWorkLogs(
-    workLogSnapshots,
-    activeConfirmation.assignments
-  );
+  const activeConfirmationWorkLogs =
+    relatedWorkLogIds.length > 0
+      ? selectActiveConfirmationWorkLogs(
+          await loadRelatedWorkLogs(transaction, relatedWorkLogIds),
+          activeConfirmation.assignments
+        )
+      : [];
 
-  assertCancellableConfirmationWorkLogs(activeConfirmationWorkLogs);
+  if (activeConfirmationWorkLogs.length > 0) {
+    assertCancellableConfirmationWorkLogs(activeConfirmationWorkLogs);
+  }
 
   const activeIndex = confirmationHistory.findIndex((entry) => !entry.cancelledAt);
   const updatedHistory = confirmationHistory.map((entry, index) => {

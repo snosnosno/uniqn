@@ -16,6 +16,7 @@ import { useThemeStore } from '@/stores/themeStore';
 const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
 const SPLASH_REDIRECT_DELAY_MS = 500;
+const PUBLIC_ENTRY_ROUTE = '/(public)/jobs';
 
 const SPINNER_COLOR = {
   light: '#A855F7',
@@ -40,7 +41,7 @@ export default function SplashScreen() {
     if (user && !profile) return;
 
     const timer = setTimeout(() => {
-      router.replace(user ? authenticatedEntryRoute : '/(auth)/login');
+      router.replace(user ? authenticatedEntryRoute : PUBLIC_ENTRY_ROUTE);
     }, SPLASH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);

@@ -351,134 +351,42 @@ service cloud.firestore {
       return hasValidRole() && applicationPostingOwnerMatches(resource.data.jobPostingId);
     }
 
-    function isOwnerConfirmApplicationUpdate() {
-      let changedFields = getApplicationChangedFields();
-
-      return isApplicationPostingOwner() &&
-        resource.data.status == 'applied' &&
-        request.resource.data.status == 'confirmed' &&
-        changedFields.hasOnly([
-          'status',
-          'assignments',
-          'originalApplication',
-          'confirmationHistory',
-          'confirmedAt',
-          'processedBy',
-          'processedAt',
-          'notes',
-          'updatedAt'
+    function isApprovedCancellationRequestPayload(requestData) {
+      return requestData is map &&
+        requestData.keys().hasOnly([
+          'requestedAt',
+          'reason',
+          'reviewedAt',
+          'reviewedBy',
+          'status'
         ]) &&
-        changedFields.hasAll([
-          'status',
-          'assignments',
-          'confirmationHistory',
-          'confirmedAt',
-          'processedBy',
-          'processedAt',
-          'updatedAt'
-        ]) &&
-        request.resource.data.assignments is list &&
-        request.resource.data.confirmationHistory is list &&
-        'originalApplication' in request.resource.data &&
-        request.resource.data.processedBy == request.auth.uid;
-    }
-
-    function isOwnerRejectApplicationUpdate() {
-      let changedFields = getApplicationChangedFields();
-
-      return isApplicationPostingOwner() &&
-        resource.data.status == 'applied' &&
-        request.resource.data.status == 'rejected' &&
-        changedFields.hasOnly([
-          'status',
-          'rejectionReason',
-          'processedBy',
-          'processedAt',
-          'updatedAt'
-        ]) &&
-        changedFields.hasAll(['status', 'processedBy', 'processedAt', 'updatedAt']) &&
-        request.resource.data.processedBy == request.auth.uid &&
-        (!('rejectionReason' in request.resource.data) || request.resource.data.rejectionReason is string);
-    }
-
-    function isOwnerCancelConfirmationUpdate() {
-      let changedFields = getApplicationChangedFields();
-
-      return isApplicationPostingOwner() &&
-        resource.data.status == 'confirmed' &&
-        request.resource.data.status == 'applied' &&
-        changedFields.hasOnly([
-          'status',
-          'assignments',
-          'confirmationHistory',
-          'cancelledAt',
-          'updatedAt'
-        ]) &&
-        changedFields.hasAll([
-          'status',
-          'assignments',
-          'confirmationHistory',
-          'cancelledAt',
-          'updatedAt'
-        ]) &&
-        request.resource.data.assignments is list &&
-        request.resource.data.confirmationHistory is list;
-    }
-
-    function isOwnerApproveCancellationUpdate() {
-      let changedFields = getApplicationChangedFields();
-      let requestData = request.resource.data.cancellationRequest;
-
-      return isApplicationPostingOwner() &&
-        resource.data.status == 'cancellation_pending' &&
-        resource.data.cancellationRequest.status == 'pending' &&
-        request.resource.data.status == 'cancelled' &&
-        changedFields.hasOnly([
-          'status',
-          'assignments',
-          'confirmationHistory',
-          'cancelledAt',
-          'cancellationRequest',
-          'updatedAt'
-        ]) &&
-        changedFields.hasAll([
-          'status',
-          'assignments',
-          'confirmationHistory',
-          'cancelledAt',
-          'cancellationRequest',
-          'updatedAt'
-        ]) &&
-        request.resource.data.assignments is list &&
-        request.resource.data.confirmationHistory is list &&
-        requestData is map &&
-        requestData.status == 'approved' &&
-        requestData.reviewedBy == request.auth.uid;
-    }
-
-    function isOwnerRejectCancellationUpdate() {
-      let changedFields = getApplicationChangedFields();
-      let requestData = request.resource.data.cancellationRequest;
-
-      return isApplicationPostingOwner() &&
-        resource.data.status == 'cancellation_pending' &&
-        resource.data.cancellationRequest.status == 'pending' &&
-        request.resource.data.status == 'confirmed' &&
-        changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
-        changedFields.hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
-        requestData is map &&
-        requestData.status == 'rejected' &&
+        resource.data.cancellationRequest is map &&
+        requestData.requestedAt == resource.data.cancellationRequest.requestedAt &&
+        requestData.reason == resource.data.cancellationRequest.reason &&
+        requestData.reviewedAt == request.time &&
         requestData.reviewedBy == request.auth.uid &&
-        requestData.rejectionReason is string;
+        requestData.status == 'approved';
     }
 
-    function isOwnerMarkAsReadUpdate() {
-      let changedFields = getApplicationChangedFields();
-
-      return isApplicationPostingOwner() &&
-        changedFields.hasOnly(['isRead', 'updatedAt']) &&
-        changedFields.hasAll(['isRead', 'updatedAt']) &&
-        request.resource.data.isRead == true;
+    function isRejectedCancellationRequestPayload(requestData) {
+      return requestData is map &&
+        requestData.keys().hasOnly([
+          'requestedAt',
+          'reason',
+          'reviewedAt',
+          'reviewedBy',
+          'status',
+          'rejectionReason'
+        ]) &&
+        resource.data.cancellationRequest is map &&
+        requestData.requestedAt == resource.data.cancellationRequest.requestedAt &&
+        requestData.reason == resource.data.cancellationRequest.reason &&
+        requestData.reviewedAt == request.time &&
+        requestData.reviewedBy == request.auth.uid &&
+        requestData.status == 'rejected' &&
+        requestData.rejectionReason is string &&
+        requestData.rejectionReason.size() >= 3 &&
+        requestData.rejectionReason.size() <= 500;
     }
 
     function canOwnerUpdateApplicationLifecycle() {
@@ -490,6 +398,7 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
 
       return sameIdentity &&
+        isApplicationPostingOwner() &&
         (
           (
             resource.data.status == 'applied' &&
@@ -549,6 +458,7 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
+            resource.data.cancellationRequest is map &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'cancelled' &&
             changedFields.hasOnly([
@@ -559,27 +469,19 @@ service cloud.firestore {
               'cancellationRequest',
               'updatedAt'
             ]) &&
-            changedFields.hasAll([
-              'cancelledAt',
-              'cancellationRequest',
-              'updatedAt'
-            ]) &&
+            request.resource.data.updatedAt == request.time &&
             request.resource.data.assignments is list &&
             request.resource.data.confirmationHistory is list &&
-            requestData is map &&
-            requestData.status == 'approved' &&
-            requestData.reviewedBy == request.auth.uid
+            isApprovedCancellationRequestPayload(requestData)
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
+            resource.data.cancellationRequest is map &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'confirmed' &&
             changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
-            changedFields.hasAll(['cancellationRequest', 'updatedAt']) &&
-            requestData is map &&
-            requestData.status == 'rejected' &&
-            requestData.reviewedBy == request.auth.uid &&
-            requestData.rejectionReason is string
+            request.resource.data.updatedAt == request.time &&
+            isRejectedCancellationRequestPayload(requestData)
           ) ||
           (
             changedFields.hasOnly(['isRead', 'updatedAt']) &&
@@ -1714,8 +1616,6 @@ service cloud.firestore {
           canApplicantUpdateOwnApplication()
         ) ||
         (
-          hasValidRole() &&
-          applicationPostingOwnerMatches(resource.data.jobPostingId) &&
           canOwnerUpdateApplicationLifecycle()
         )
       ) &&

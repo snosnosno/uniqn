@@ -1,6 +1,7 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import type { TaxSettings } from '@/utils/settlement';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
   CreateJobPostingInput,
@@ -146,7 +147,7 @@ export async function updateJobPostingSettlementSettings(
   data: {
     roles: Record<string, unknown>[];
     allowances: Record<string, unknown>;
-    taxSettings: { type: string; value: number; taxableItems?: string[] };
+    taxSettings: TaxSettings;
   },
   ownerId: string
 ): Promise<void> {

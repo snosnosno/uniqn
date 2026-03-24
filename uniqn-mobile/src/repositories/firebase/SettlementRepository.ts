@@ -40,6 +40,7 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
+import type { TaxSettings } from '@/utils/settlement';
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
 import type { WorkLog, JobPosting, PayrollStatus } from '@/types';
@@ -573,7 +574,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
     data: {
       customSalaryInfo: { type: string; amount: number };
       customAllowances?: Record<string, unknown>;
-      customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+      customTaxSettings: TaxSettings;
       modificationEntry: Record<string, unknown>;
     },
     ownerId: string

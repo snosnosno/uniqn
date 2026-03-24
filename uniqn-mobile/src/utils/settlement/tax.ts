@@ -51,3 +51,11 @@ export function calculateAfterTaxAmount(taxSettings: TaxSettings, totalAmount: n
   const taxAmount = calculateTaxAmount(taxSettings, totalAmount);
   return totalAmount - taxAmount;
 }
+
+export function serializeTaxSettings(taxSettings: TaxSettings): TaxSettings {
+  return {
+    type: taxSettings.type,
+    value: taxSettings.value,
+    ...(taxSettings.taxableItems ? { taxableItems: { ...taxSettings.taxableItems } } : {}),
+  };
+}

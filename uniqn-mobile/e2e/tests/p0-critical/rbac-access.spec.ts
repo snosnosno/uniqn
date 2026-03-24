@@ -52,10 +52,9 @@ test.describe('RBAC 접근 제어', () => {
 
     // 앱 초기화 후 RBAC 리다이렉트 발생 대기
     // useAuthGuard에서 권한 부족 시 /(app)/(tabs)로 리다이렉트
-    await page.waitForURL(
-      (url) => !url.pathname.includes('/my-postings'),
-      { timeout: 30_000 }
-    ).catch(() => {});
+    await page
+      .waitForURL((url) => !url.pathname.includes('/my-postings'), { timeout: 30_000 })
+      .catch(() => {});
 
     // staff는 employer 라우트에 접근 불가 → 리다이렉트
     const url = page.url();
@@ -88,12 +87,17 @@ test.describe('RBAC 접근 제어', () => {
     await waitForAppInit(page);
 
     // employer는 일반 탭 또는 내 공고 탭이 보여야 함
-    const employerContent = page.getByText('구인구직').first()
+    const employerContent = page
+      .getByText('구인구직')
+      .first()
       .or(page.getByText('내 공고').first());
     await expect(employerContent.first()).toBeVisible({ timeout: 10_000 });
 
     // employer는 admin 대시보드를 볼 수 없어야 함
-    const adminDashboard = await page.getByText('관리자 대시보드').isVisible().catch(() => false);
+    const adminDashboard = await page
+      .getByText('관리자 대시보드')
+      .isVisible()
+      .catch(() => false);
     expect(adminDashboard).toBeFalsy();
 
     await context.close();
@@ -109,7 +113,8 @@ test.describe('RBAC 접근 제어', () => {
     // employer는 employer 라우트에 접근 가능
     // 페이지가 정상 로드되어야 함 (리다이렉트 없음)
     // '내 공고 관리' 헤더 또는 빈 상태 메시지가 보여야 함
-    const pageContent = page.getByText('내 공고 관리')
+    const pageContent = page
+      .getByText('내 공고 관리')
       .or(page.getByText(/등록된 공고가 없습니다|공고가 없습니다/))
       .or(page.getByText(/개의 공고/));
     await expect(pageContent.first()).toBeVisible({ timeout: 15_000 });
@@ -126,8 +131,7 @@ test.describe('RBAC 접근 제어', () => {
     await waitForAppInit(page);
 
     // admin은 대시보드 또는 일반 페이지가 보여야 함
-    const adminContent = page.getByText('구인구직').first()
-      .or(page.getByText('대시보드').first());
+    const adminContent = page.getByText('구인구직').first().or(page.getByText('대시보드').first());
     await expect(adminContent.first()).toBeVisible({ timeout: 10_000 });
 
     // employer 라우트 접근 (admin은 employer 이상 권한)
@@ -135,7 +139,8 @@ test.describe('RBAC 접근 제어', () => {
     await waitForAppInit(page);
 
     // admin도 employer 라우트에 접근 가능해야 함
-    const adminEmployerContent = page.getByText('내 공고 관리')
+    const adminEmployerContent = page
+      .getByText('내 공고 관리')
       .or(page.getByText(/공고가 없습니다/));
     await expect(adminEmployerContent.first()).toBeVisible({ timeout: 10_000 });
 
@@ -153,9 +158,9 @@ test.describe('RBAC 접근 제어', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForURL(/login|auth/, { timeout: 30_000 }).catch(() => {});
 
-    // 루트(/) 또는 인증 페이지로 리다이렉트
+    // 현재 비인증 루트 진입점은 공개 공고 목록(/jobs)이다.
     const pathname = new URL(page.url()).pathname;
-    expect(pathname).toMatch(/^\/$|login|auth/);
+    expect(pathname).toMatch(/^\/$|\/jobs$|login|auth/);
 
     await context.close();
   });

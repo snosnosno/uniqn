@@ -6,6 +6,7 @@
  */
 
 import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import type { TaxSettings } from '@/utils/settlement';
 import type {
   JobPosting,
   JobPostingFilters,
@@ -238,7 +239,7 @@ export interface IJobPostingRepository {
     data: {
       roles: Record<string, unknown>[];
       allowances: Record<string, unknown>;
-      taxSettings: { type: string; value: number; taxableItems?: string[] };
+      taxSettings: TaxSettings;
     },
     ownerId: string
   ): Promise<void>;

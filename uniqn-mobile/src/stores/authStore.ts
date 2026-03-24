@@ -2,6 +2,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { syncSignOut } from '@/lib/authBridge';
+import { clearCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { authStateStorage } from '@/lib/mmkvStorage';
 import { settingsStorage } from '@/lib/secureStorage';
@@ -183,6 +184,7 @@ export const useAuthStore = create<AuthState>()(
 
         if (!firebaseUser) {
           clearScopedOfflineState(previousUserId);
+          clearCurrentAutoLoginSession();
           set({
             user: null,
             status: 'unauthenticated',
@@ -367,6 +369,7 @@ export const useAuthStore = create<AuthState>()(
         if (
           hasExplicitAuthSnapshot &&
           !autoLoginEnabled &&
+          state.suppressedSessionUserId === currentUser.uid &&
           !state.user &&
           !state.profile &&
           state.status === 'unauthenticated'
@@ -464,6 +467,7 @@ export const useAuthStore = create<AuthState>()(
         const scopedUserId = preserveUserId ?? resolveScopedUserId(state);
 
         clearScopedRuntimeState();
+        clearCurrentAutoLoginSession();
 
         set({
           ...initialState,
@@ -483,6 +487,7 @@ export const useAuthStore = create<AuthState>()(
       clearAuthState: () => {
         const state = get();
         clearScopedOfflineState(resolveScopedUserId(state));
+        clearCurrentAutoLoginSession();
 
         set({
           ...initialState,

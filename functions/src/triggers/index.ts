@@ -2,4 +2,4 @@ export * from "./jobPostings";
 export * from "./metrics";
 export * from "./notifications";
 export * from "./users";
-export * from "./workLogs";
+export { syncApplicationCompletionFromWorkLogs } from "./workLogs";

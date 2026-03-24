@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 import { LoginForm } from '../LoginForm';
 
 // Mock expo-router
@@ -147,6 +148,28 @@ describe('LoginForm', () => {
     fireEvent.press(getByTestId('auto-login-checkbox'));
 
     expect(mockOnAutoLoginChange).toHaveBeenCalledWith(true);
+  });
+
+  it('keeps checkbox accessibility state in sync for web consumers', () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+    Object.defineProperty(Platform, 'OS', {
+      configurable: true,
+      get: () => 'web',
+    });
+
+    try {
+      const { getByTestId, rerender } = render(<LoginForm {...createDefaultProps(mockOnSubmit)} />);
+
+      expect(getByTestId('auto-login-checkbox').props.accessibilityState.checked).toBe(true);
+
+      rerender(<LoginForm {...createDefaultProps(mockOnSubmit)} autoLoginEnabled={false} />);
+
+      expect(getByTestId('auto-login-checkbox').props.accessibilityState.checked).toBe(false);
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(Platform, 'OS', originalDescriptor);
+      }
+    }
   });
 });
 

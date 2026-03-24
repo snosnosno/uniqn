@@ -133,6 +133,10 @@ function shouldUseEmulator(): boolean {
   return process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
 }
 
+function shouldUseLocalWebAuthPersistence(): boolean {
+  return Platform.OS === 'web' && shouldUseEmulator();
+}
+
 /**
  * Firebase 앱 초기화 (내부용)
  * 환경변수 검증 후 초기화 수행
@@ -195,6 +199,8 @@ export function getFirebaseApp(): FirebaseApp {
  *
  * 플랫폼별 persistence:
  * - Web: browserSessionPersistence (browser session scope)
+ * - E2E web emulator mode: browserLocalPersistence so Playwright storageState
+ *   can preload authenticated sessions from localStorage
  * - Native: getReactNativePersistence(AsyncStorage)
  *
  * getReactNativePersistence는 React Native 전용이므로
@@ -207,7 +213,9 @@ export function getFirebaseAuth(): Auth {
     try {
       const persistence =
         Platform.OS === 'web'
-          ? firebaseAuthModule.browserSessionPersistence
+          ? shouldUseLocalWebAuthPersistence()
+            ? firebaseAuthModule.browserLocalPersistence
+            : firebaseAuthModule.browserSessionPersistence
           : getReactNativePersistence(AsyncStorage);
       firebaseAuth = firebaseAuthModule.initializeAuth(app, { persistence });
     } catch {
@@ -216,7 +224,9 @@ export function getFirebaseAuth(): Auth {
       if (Platform.OS === 'web') {
         void firebaseAuthModule.setPersistence(
           firebaseAuth,
-          firebaseAuthModule.browserSessionPersistence
+          shouldUseLocalWebAuthPersistence()
+            ? firebaseAuthModule.browserLocalPersistence
+            : firebaseAuthModule.browserSessionPersistence
         );
       }
     }

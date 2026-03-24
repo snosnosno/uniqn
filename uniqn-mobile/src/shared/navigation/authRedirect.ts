@@ -6,6 +6,8 @@ export const AUTH_ENTRY_ROUTES = {
   profileSetup: '/(app)/profile-setup',
 } as const;
 
+const ALLOWED_POST_AUTH_REDIRECT_PREFIXES = ['/(app)', '/(employer)', '/(admin)'] as const;
+
 type AuthEntryRoute = (typeof AUTH_ENTRY_ROUTES)[keyof typeof AUTH_ENTRY_ROUTES];
 
 interface AuthenticatedEntryRouteParams {
@@ -24,7 +26,21 @@ export function normalizePostAuthRedirect(redirect?: string | null): string | nu
   }
 
   const trimmed = redirect.trim();
-  return trimmed.startsWith('/') ? trimmed : null;
+  if (
+    trimmed.length === 0 ||
+    !trimmed.startsWith('/') ||
+    trimmed.startsWith('//') ||
+    trimmed.includes('\\')
+  ) {
+    return null;
+  }
+
+  const [pathname] = trimmed.split(/[?#]/, 1);
+  const isAllowedInternalRoute = ALLOWED_POST_AUTH_REDIRECT_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+
+  return isAllowedInternalRoute ? trimmed : null;
 }
 
 export function appendRedirectToRoute(route: string, redirect?: string | null): string {

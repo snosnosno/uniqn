@@ -43,11 +43,13 @@ test.describe('구인자 지원자 관리', () => {
     await detailPage.goto(testJob.id, { waitUntil: 'domcontentloaded' });
 
     // 공고 상세 로드 대기 (관리 섹션 또는 에러 상태)
-    const managementOrError = detailPage.getManagementSection()
-      .or(detailPage.getErrorState());
+    const managementOrError = detailPage.getManagementSection().or(detailPage.getErrorState());
     await expect(managementOrError.first()).toBeVisible({ timeout: 30_000 });
 
-    const hasError = await detailPage.getErrorState().isVisible().catch(() => false);
+    const hasError = await detailPage
+      .getErrorState()
+      .isVisible()
+      .catch(() => false);
     if (hasError) {
       // 에러 상태면 테스트 스킵 (데이터 로드 실패)
       test.skip();
@@ -72,11 +74,7 @@ test.describe('구인자 지원자 관리', () => {
       applicantName: '목록테스트_지원자',
       status: 'applied',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -92,10 +90,7 @@ test.describe('구인자 지원자 관리', () => {
         .or(page.getByText(/지원자가 없습니다|데이터가 없습니다|지원자 목록을 불러오는 중/));
       await expect(applicantOrEmpty.first()).toBeVisible({ timeout: 15_000 });
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -105,11 +100,7 @@ test.describe('구인자 지원자 관리', () => {
       applicantName: '확정버튼_테스트',
       status: 'applied',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -139,10 +130,7 @@ test.describe('구인자 지원자 관리', () => {
         await expect(confirmOrReject.first()).toBeVisible({ timeout: 5_000 });
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -156,11 +144,7 @@ test.describe('구인자 지원자 관리', () => {
       applicantName: '확정모달_테스트',
       status: 'applied',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -185,10 +169,7 @@ test.describe('구인자 지원자 관리', () => {
         }
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -198,11 +179,7 @@ test.describe('구인자 지원자 관리', () => {
       applicantName: '거절모달_테스트',
       status: 'applied',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -227,10 +204,7 @@ test.describe('구인자 지원자 관리', () => {
         }
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -243,11 +217,7 @@ test.describe('구인자 지원자 관리', () => {
       jobPostingId: testJob.id,
       applicantName: '확정취소_테스트',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -278,10 +248,7 @@ test.describe('구인자 지원자 관리', () => {
         }
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -290,11 +257,7 @@ test.describe('구인자 지원자 관리', () => {
       jobPostingId: testJob.id,
       applicantName: '거절사유_테스트',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -317,10 +280,7 @@ test.describe('구인자 지원자 관리', () => {
         }
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 
@@ -330,11 +290,7 @@ test.describe('구인자 지원자 관리', () => {
       applicantName: '프로필_테스트',
       status: 'applied',
     });
-    await seedDocument(
-      `jobPostings/${testJob.id}/applications`,
-      application.id,
-      application
-    );
+    await seedDocument('applications', application.id, application);
 
     try {
       await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
@@ -362,10 +318,7 @@ test.describe('구인자 지원자 관리', () => {
         }
       }
     } finally {
-      await deleteDocument(
-        `jobPostings/${testJob.id}/applications`,
-        application.id
-      );
+      await deleteDocument('applications', application.id);
     }
   });
 });

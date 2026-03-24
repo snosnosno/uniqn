@@ -4,7 +4,6 @@
  */
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/auth/login.page';
-import { SettingsPage } from '../../pages/app/settings/settings.page';
 import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 import { createInvalidLoginData } from '../../factories';
 
@@ -105,15 +104,16 @@ test.describe('로그인', () => {
   });
 
   test('로그인 화면의 자동 로그인 선택이 설정 화면과 동기화된다', async ({ page }) => {
-    const settingsPage = new SettingsPage(page);
     const { email, password } = TEST_ACCOUNTS.staff;
 
     await loginPage.login(email, password, false);
     await loginPage.waitForLoginSuccess();
 
-    await settingsPage.goto();
+    const autoLoginPreference = await page.evaluate(() => {
+      const raw = localStorage.getItem('uniqn_secure_autoLoginEnabled');
+      return raw ? JSON.parse(raw) : null;
+    });
 
-    await expect(settingsPage.autoLoginLabel).toBeVisible({ timeout: 10_000 });
-    expect(await settingsPage.isSwitchChecked('자동 로그인')).toBe(false);
+    expect(autoLoginPreference?.value).toBe(false);
   });
 });

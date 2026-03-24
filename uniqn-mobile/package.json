@@ -24,9 +24,9 @@
     "audit": "npm audit",
     "audit:fix": "npm audit fix",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.js",
-    "e2e": "npx playwright test --config=e2e/playwright.config.ts",
-    "e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
-    "e2e:headed": "npx playwright test --config=e2e/playwright.config.ts --headed",
+    "e2e": "node scripts/run-e2e.js",
+    "e2e:ui": "node scripts/run-e2e.js --ui",
+    "e2e:headed": "node scripts/run-e2e.js --headed",
     "e2e:report": "npx playwright show-report",
     "e2e:setup": "npx playwright install --with-deps chromium"
   },

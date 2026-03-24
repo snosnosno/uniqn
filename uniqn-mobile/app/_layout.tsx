@@ -153,6 +153,7 @@ function MainNavigator() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(public)" />
         <Stack.Screen name="(app)" />
         <Stack.Screen name="(admin)" />
         <Stack.Screen name="(employer)" />

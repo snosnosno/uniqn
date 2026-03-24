@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,7 +7,8 @@ import { BiometricButton, LoginForm, SocialLoginButtons } from '@/components/aut
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
-import { login, signInWithApple, signOut, type AuthResult } from '@/services';
+import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
+import { login, signInWithApple, type AuthResult } from '@/services';
 import { extractErrorMessage } from '@/shared/errors';
 import {
   getResolvedAuthenticatedRoute,
@@ -22,13 +23,11 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<'apple' | null>(null);
   const [loginAutoLoginEnabled, setLoginAutoLoginEnabled] = useState(true);
+  const [hasLoadedAutoLoginPreference, setHasLoadedAutoLoginPreference] = useState(false);
+  const autoLoginPreferenceRef = useRef(true);
   const { addToast } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
-  const {
-    autoLoginEnabled: storedAutoLoginEnabled,
-    setAutoLoginEnabled,
-    isLoading: isAutoLoginLoading,
-  } = useAutoLogin();
+  const { autoLoginEnabled: storedAutoLoginEnabled, setAutoLoginEnabled } = useAutoLogin();
   const {
     isEnabled: isBiometricEnabled,
     isAvailable: isBiometricAvailable,
@@ -41,14 +40,34 @@ export default function LoginScreen() {
 
   useEffect(() => {
     setLoginAutoLoginEnabled(storedAutoLoginEnabled);
+    autoLoginPreferenceRef.current = storedAutoLoginEnabled;
+    setHasLoadedAutoLoginPreference(true);
   }, [storedAutoLoginEnabled]);
 
-  const persistAutoLoginPreference = useCallback(async () => {
-    await setAutoLoginEnabled(loginAutoLoginEnabled);
-  }, [loginAutoLoginEnabled, setAutoLoginEnabled]);
+  const handleAutoLoginChange = useCallback(
+    async (enabled: boolean) => {
+      const previousEnabled = autoLoginPreferenceRef.current;
+
+      autoLoginPreferenceRef.current = enabled;
+      setLoginAutoLoginEnabled(enabled);
+
+      try {
+        await setAutoLoginEnabled(enabled);
+      } catch (error) {
+        autoLoginPreferenceRef.current = previousEnabled;
+        setLoginAutoLoginEnabled(previousEnabled);
+        addToast({
+          type: 'error',
+          message: extractErrorMessage(error, '자동 로그인 설정 저장에 실패했습니다.'),
+        });
+      }
+    },
+    [addToast, setAutoLoginEnabled]
+  );
 
   const handleLoginSuccess = useCallback(
     async (result: AuthResult, providerLabel: string) => {
+      markCurrentAutoLoginSession(result.user.uid);
       setUser(result.user);
       setProfile(toStoreProfile(result.profile));
 
@@ -75,7 +94,15 @@ export default function LoginScreen() {
   const handleBiometricLogin = useCallback(async () => {
     const success = await loginWithBiometric();
     if (success) {
-      router.replace(postAuthRedirect ?? '/(app)/(tabs)');
+      const profile = useAuthStore.getState().profile;
+      router.replace(
+        getResolvedAuthenticatedRoute({
+          socialProvider: profile?.socialProvider,
+          phoneVerified: profile?.phoneVerified,
+          profileCompleted: profile?.profileCompleted,
+          redirect: postAuthRedirect,
+        })
+      );
     }
   }, [loginWithBiometric, postAuthRedirect]);
 
@@ -85,13 +112,6 @@ export default function LoginScreen() {
       try {
         const result = await login(data);
         if (result.user) {
-          try {
-            await persistAutoLoginPreference();
-          } catch (preferenceError) {
-            await signOut();
-            throw preferenceError;
-          }
-
           await handleLoginSuccess(result, '이메일');
         }
       } catch (error) {
@@ -104,7 +124,7 @@ export default function LoginScreen() {
         setIsLoading(false);
       }
     },
-    [addToast, handleLoginSuccess, persistAutoLoginPreference]
+    [addToast, handleLoginSuccess]
   );
 
   const handleAppleLogin = useCallback(async () => {
@@ -115,14 +135,8 @@ export default function LoginScreen() {
         return;
       }
 
-      try {
-        await persistAutoLoginPreference();
-      } catch (preferenceError) {
-        await signOut();
-        throw preferenceError;
-      }
-
       if (result.profile.socialProvider && !result.profile.phoneVerified) {
+        markCurrentAutoLoginSession(result.user.uid);
         setUser(result.user);
         setProfile(toStoreProfile(result.profile));
         router.replace(
@@ -146,16 +160,9 @@ export default function LoginScreen() {
     } finally {
       setLoadingProvider(null);
     }
-  }, [
-    addToast,
-    handleLoginSuccess,
-    persistAutoLoginPreference,
-    postAuthRedirect,
-    setProfile,
-    setUser,
-  ]);
+  }, [addToast, handleLoginSuccess, postAuthRedirect, setProfile, setUser]);
 
-  const authActionDisabled = isAutoLoginLoading;
+  const authActionDisabled = !hasLoadedAutoLoginPreference;
   const isSocialLoading = loadingProvider !== null;
   const shouldShowBiometric = loginAutoLoginEnabled && isBiometricEnabled && isBiometricAvailable;
 
@@ -196,7 +203,7 @@ export default function LoginScreen() {
           <LoginForm
             onSubmit={handleLogin}
             autoLoginEnabled={loginAutoLoginEnabled}
-            onAutoLoginChange={setLoginAutoLoginEnabled}
+            onAutoLoginChange={handleAutoLoginChange}
             autoLoginDisabled={authActionDisabled}
             autoLoginHelperText={AUTO_LOGIN_HELPER_TEXT}
             isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}

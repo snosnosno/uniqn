@@ -67,6 +67,12 @@ jest.mock('@/lib/authBridge', () => ({
   ensureDualSdkSync: jest.fn(),
 }));
 
+const mockIsCurrentAutoLoginSession = jest.fn((_: string) => false);
+
+jest.mock('@/lib/autoLoginSession', () => ({
+  isCurrentAutoLoginSession: (uid: string) => mockIsCurrentAutoLoginSession(uid),
+}));
+
 jest.mock('@/lib/mmkvStorage', () => ({
   migrateFromAsyncStorage: jest.fn(),
 }));
@@ -142,6 +148,7 @@ jest.mock('@/hooks/useNetworkStatus', () => ({
 describe('resolveSession', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockIsCurrentAutoLoginSession.mockReturnValue(false);
     mockAuthStoreState.user = null;
     mockAuthStoreState.profile = null;
     mockAuthStoreState.status = 'unauthenticated';
@@ -167,6 +174,69 @@ describe('resolveSession', () => {
     expect(result).toEqual({
       deferredInitContext: null,
       offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    });
+  });
+
+  it('preserves the current tab session when auto login is disabled but the session is already active', async () => {
+    mockIsCurrentAutoLoginSession.mockReturnValue(true);
+
+    const authUser = {
+      uid: 'user-1',
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+    };
+
+    const profile = {
+      uid: 'user-1',
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    const { retryWithBackoff } = jest.requireMock('@/utils/retry') as {
+      retryWithBackoff: jest.Mock;
+    };
+    const { getUserProfile } = jest.requireMock('@/services/auth') as {
+      getUserProfile: jest.Mock;
+    };
+
+    retryWithBackoff.mockResolvedValueOnce({ data: profile });
+    getUserProfile.mockResolvedValue(profile);
+
+    const result = await resolveSession({
+      authUser: authUser as never,
+      authResolutionSource: 'current',
+      autoLoginEnabled: false,
+    });
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockClearAuthState).not.toHaveBeenCalled();
+    expect(mockSetBootstrapSource).toHaveBeenCalledWith('server');
+    expect(result.offlineBootstrap).toEqual({
+      source: 'server',
+      needsServerReconcile: false,
+    });
+  });
+
+  it('preserves cached session while Firebase auth restoration is still settling for the current tab', async () => {
+    mockIsCurrentAutoLoginSession.mockReturnValue(true);
+    mockAuthStoreState.user = { uid: 'cached-user' };
+    mockAuthStoreState.profile = { uid: 'cached-user' };
+    mockAuthStoreState.status = 'authenticated';
+
+    const result = await resolveSession({
+      authUser: null,
+      authResolutionSource: 'timeout',
+      autoLoginEnabled: false,
+    });
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockClearAuthState).not.toHaveBeenCalled();
+    expect(mockSetBootstrapSource).toHaveBeenCalledWith('cache');
+    expect(result).toEqual({
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'cache', needsServerReconcile: true },
     });
   });
 

@@ -214,6 +214,10 @@ jest.mock('@/constants', () => ({
     WORK_LOG: {
       SCHEDULED: 'scheduled',
       CHECKED_IN: 'checked_in',
+      CHECKED_OUT: 'checked_out',
+      COMPLETED: 'completed',
+      NO_SHOW: 'no_show',
+      CANCELLED: 'cancelled',
     },
     PAYROLL: {
       PENDING: 'pending',
@@ -914,6 +918,268 @@ describe('FirebaseApplicationRepository', () => {
       });
       expect(jobUpdate).not.toHaveProperty('stats');
       expect(jobUpdate).not.toHaveProperty('applicationCount');
+    });
+
+    it('should still approve a cancellation request when workLog prefetch fails', async () => {
+      const requestedAt = {
+        seconds: 1735689600,
+        nanoseconds: 0,
+        toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+      };
+
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              jobPostingId: 'job-1',
+              status: 'cancellation_pending',
+              confirmationHistory: [
+                {
+                  confirmedAt: requestedAt,
+                  assignments: [
+                    {
+                      roleIds: ['dealer'],
+                      timeSlot: '09:00',
+                      dates: ['2025-01-01'],
+                      isGrouped: false,
+                    },
+                  ],
+                },
+              ],
+              cancellationRequest: {
+                status: 'pending',
+                requestedAt,
+                reason: '媛쒖씤 ?쇱젙',
+              },
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              ...createMockDatedJobPosting(),
+            })
+          ),
+        update: jest.fn(),
+      };
+
+      (getDoc as jest.Mock).mockResolvedValue(
+        createMockDocSnap('app-1', {
+          id: 'app-1',
+          applicantId: 'staff-1',
+          jobPostingId: 'job-1',
+        })
+      );
+      (getDocs as jest.Mock).mockRejectedValue(new Error('worklog query unavailable'));
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await expect(
+        repository.reviewCancellationWithTransaction(
+          {
+            applicationId: 'app-1',
+            approved: true,
+          },
+          'employer-1'
+        )
+      ).resolves.toBeUndefined();
+
+      expect(mockTransaction.get).toHaveBeenCalledTimes(2);
+      expect(mockTransaction.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          status: 'cancelled',
+          cancellationRequest: expect.objectContaining({
+            status: 'approved',
+          }),
+        })
+      );
+    });
+
+    it('should match a role-changed workLog when approving a cancellation request', async () => {
+      const requestedAt = {
+        seconds: 1735689600,
+        nanoseconds: 0,
+        toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+      };
+
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              jobPostingId: 'job-1',
+              status: 'cancellation_pending',
+              confirmationHistory: [
+                {
+                  confirmedAt: requestedAt,
+                  assignments: [
+                    {
+                      roleIds: ['dealer'],
+                      timeSlot: '09:00',
+                      dates: ['2025-01-01'],
+                      isGrouped: false,
+                    },
+                  ],
+                },
+              ],
+              cancellationRequest: {
+                status: 'pending',
+                requestedAt,
+                reason: '媛쒖씤 ?쇱젙',
+              },
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              ...createMockDatedJobPosting(),
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('wl-1', {
+              id: 'wl-1',
+              jobPostingId: 'job-1',
+              staffId: 'staff-1',
+              status: 'scheduled',
+              date: '2025-01-01',
+              timeSlot: '09:00',
+              role: 'floor',
+              assignmentGroupId: null,
+              customRole: null,
+            })
+          ),
+        update: jest.fn(),
+      };
+
+      (getDoc as jest.Mock).mockResolvedValue(
+        createMockDocSnap('app-1', {
+          id: 'app-1',
+          applicantId: 'staff-1',
+          jobPostingId: 'job-1',
+        })
+      );
+      (getDocs as jest.Mock).mockResolvedValue({
+        docs: [{ id: 'wl-1' }],
+      });
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await expect(
+        repository.reviewCancellationWithTransaction(
+          {
+            applicationId: 'app-1',
+            approved: true,
+          },
+          'employer-1'
+        )
+      ).resolves.toBeUndefined();
+
+      expect(mockTransaction.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'wl-1' }),
+        expect.objectContaining({
+          status: 'cancelled',
+          updatedAt: { _serverTimestamp: true },
+        })
+      );
+    });
+
+    it('should restore completed status when rejecting after all matched workLogs are done', async () => {
+      const requestedAt = {
+        seconds: 1735689600,
+        nanoseconds: 0,
+        toDate: () => new Date('2025-01-01T00:00:00.000Z'),
+      };
+
+      const mockTransaction = {
+        get: jest
+          .fn()
+          .mockResolvedValueOnce(
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              jobPostingId: 'job-1',
+              status: 'cancellation_pending',
+              confirmationHistory: [
+                {
+                  confirmedAt: requestedAt,
+                  assignments: [
+                    {
+                      roleIds: ['dealer'],
+                      timeSlot: '09:00',
+                      dates: ['2025-01-01'],
+                      isGrouped: false,
+                    },
+                  ],
+                },
+              ],
+              cancellationRequest: {
+                status: 'pending',
+                requestedAt,
+                reason: '媛쒖씤 ?쇱젙',
+              },
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('job-1', {
+              ...createMockDatedJobPosting(),
+            })
+          )
+          .mockResolvedValueOnce(
+            createMockDocSnap('wl-1', {
+              id: 'wl-1',
+              jobPostingId: 'job-1',
+              staffId: 'staff-1',
+              status: 'completed',
+              date: '2025-01-01',
+              timeSlot: '09:00',
+              role: 'dealer',
+              assignmentGroupId: null,
+              customRole: null,
+            })
+          ),
+        update: jest.fn(),
+      };
+
+      (getDoc as jest.Mock).mockResolvedValue(
+        createMockDocSnap('app-1', {
+          id: 'app-1',
+          applicantId: 'staff-1',
+          jobPostingId: 'job-1',
+        })
+      );
+      (getDocs as jest.Mock).mockResolvedValue({
+        docs: [{ id: 'wl-1' }],
+      });
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await repository.reviewCancellationWithTransaction(
+        {
+          applicationId: 'app-1',
+          approved: false,
+          rejectionReason: '?댁쁺??痍⑥냼媛 ?대졄?듬땲??',
+        },
+        'employer-1'
+      );
+
+      expect(mockTransaction.update).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          status: 'completed',
+          cancellationRequest: expect.objectContaining({
+            status: 'rejected',
+          }),
+        })
+      );
     });
   });
 

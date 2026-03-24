@@ -12,6 +12,7 @@
  */
 
 import type { PayrollStatus } from '@/types';
+import type { TaxSettings } from '@/utils/settlement';
 
 // ============================================================================
 // Input Types (Service → Repository)
@@ -177,7 +178,7 @@ export interface ISettlementRepository {
     data: {
       customSalaryInfo: { type: string; amount: number };
       customAllowances?: Record<string, unknown>;
-      customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+      customTaxSettings: TaxSettings;
       modificationEntry: Record<string, unknown>;
     },
     ownerId: string

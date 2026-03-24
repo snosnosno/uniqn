@@ -246,6 +246,18 @@ export function getSessionMMKVInstance(): MMKVInstance {
   return sessionMMKVInstance;
 }
 
+function shouldUseLocalWebAuthStateStorage(): boolean {
+  return Platform.OS === 'web' && process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
+}
+
+function getAuthStateMMKVInstance(): MMKVInstance {
+  if (Platform.OS !== 'web') {
+    return getMMKVInstance();
+  }
+
+  return shouldUseLocalWebAuthStateStorage() ? getMMKVInstance() : getSessionMMKVInstance();
+}
+
 /**
  * 암호화된 MMKV 인스턴스 가져오기 (싱글톤, 비동기)
  *
@@ -309,21 +321,24 @@ export const mmkvStorage: StateStorage = {
  * Auth shell persistence is session-scoped on web so browser restarts do not
  * silently revive stale authenticated state. Native keeps the existing MMKV
  * behavior because session tokens live outside this adapter.
+ *
+ * E2E web runs force localStorage so Playwright storageState can preload the
+ * authenticated shell alongside Firebase Auth persistence.
  */
 export const authStateStorage: StateStorage = {
   getItem: (name: string): string | null => {
-    const storage = getSessionMMKVInstance();
+    const storage = getAuthStateMMKVInstance();
     const value = storage.getString(name);
     return value ?? null;
   },
 
   setItem: (name: string, value: string): void => {
-    const storage = getSessionMMKVInstance();
+    const storage = getAuthStateMMKVInstance();
     storage.set(name, value);
   },
 
   removeItem: (name: string): void => {
-    const storage = getSessionMMKVInstance();
+    const storage = getAuthStateMMKVInstance();
     storage.delete(name);
   },
 };

@@ -1,12 +1,13 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import {
-  type IconComponent,
   ChatbubbleEllipsesOutlineIcon,
   DocumentTextOutlineIcon,
   FlagOutlineIcon,
   PeopleOutlineIcon,
+  RefreshIcon,
   TrophyOutlineIcon,
+  type IconComponent,
 } from '@/components/icons';
 
 interface DashboardCardProps {
@@ -28,11 +29,11 @@ function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Link href={href as never} asChild>
-      <Pressable className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80">
-        <View className={`w-12 h-12 rounded-lg items-center justify-center mb-3 ${bgColor}`}>
+      <Pressable className="rounded-xl border border-gray-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
+        <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
           <Icon size={24} color={iconColor} />
         </View>
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{title}</Text>
+        <Text className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
         <Text className="text-sm text-gray-500 dark:text-gray-400">{description}</Text>
       </Pressable>
     </Link>
@@ -74,6 +75,14 @@ export default function AdminDashboard() {
       bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
     },
     {
+      title: '통계',
+      description: '서비스 상태와 최근 7일 추이 확인',
+      icon: RefreshIcon,
+      iconColor: '#2563eb',
+      href: '/(admin)/stats',
+      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    },
+    {
       title: '공지사항 관리',
       description: '공지사항 작성 및 관리',
       icon: DocumentTextOutlineIcon,
@@ -87,7 +96,7 @@ export default function AdminDashboard() {
     <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <View className="p-4">
         <View className="mb-6">
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+          <Text className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">
             관리자 대시보드
           </Text>
           <Text className="text-gray-500 dark:text-gray-400">

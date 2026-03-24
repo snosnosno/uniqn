@@ -158,7 +158,7 @@ function buildExpectedWorkLogs(assignments: AssignmentData[] | undefined): Expec
   return expected;
 }
 
-function matchesExpectedWorkLog(
+function hasMatchingScheduleKey(
   workLog: admin.firestore.QueryDocumentSnapshot,
   expected: ExpectedWorkLog,
 ): boolean {
@@ -167,10 +167,21 @@ function matchesExpectedWorkLog(
   return (
     data.date === expected.date &&
     data.timeSlot === expected.timeSlot &&
-    data.role === expected.role &&
-    (data.customRole ?? null) === expected.customRole &&
     (data.assignmentGroupId ?? null) === expected.assignmentGroupId
   );
+}
+
+function matchesExpectedWorkLogExactly(
+  workLog: admin.firestore.QueryDocumentSnapshot,
+  expected: ExpectedWorkLog,
+): boolean {
+  if (!hasMatchingScheduleKey(workLog, expected)) {
+    return false;
+  }
+
+  const data = workLog.data() as WorkLogData;
+
+  return data.role === expected.role && (data.customRole ?? null) === expected.customRole;
 }
 
 function selectConfirmationWorkLogs(
@@ -194,20 +205,34 @@ function selectConfirmationWorkLogs(
   });
 
   for (const expected of expectedWorkLogs) {
-    const match = sortedWorkLogs.find((workLog) => {
+    const exactMatch = sortedWorkLogs.find((workLog) => {
       if (consumedIds.has(workLog.id)) {
         return false;
       }
 
-      return matchesExpectedWorkLog(workLog, expected);
+      return matchesExpectedWorkLogExactly(workLog, expected);
     });
 
-    if (!match) {
+    if (exactMatch) {
+      consumedIds.add(exactMatch.id);
+      selected.push(exactMatch);
+      continue;
+    }
+
+    const scheduleMatches = sortedWorkLogs.filter((workLog) => {
+      if (consumedIds.has(workLog.id)) {
+        return false;
+      }
+
+      return hasMatchingScheduleKey(workLog, expected);
+    });
+
+    if (scheduleMatches.length !== 1) {
       return [];
     }
 
-    consumedIds.add(match.id);
-    selected.push(match);
+    consumedIds.add(scheduleMatches[0].id);
+    selected.push(scheduleMatches[0]);
   }
 
   return selected;
@@ -220,6 +245,14 @@ function isCompletedFromWorkLog(data: WorkLogData): boolean {
     data.status === "no_show" ||
     (data.status === "cancelled" && Boolean(data.noShowAt))
   );
+}
+
+function resolveApplicationStatusFromWorkLogs(
+  workLogs: admin.firestore.QueryDocumentSnapshot[],
+): "completed" | "confirmed" {
+  return workLogs.every((workLog) => isCompletedFromWorkLog(workLog.data() as WorkLogData))
+    ? "completed"
+    : "confirmed";
 }
 
 async function reconcileApplicationCompletion(
@@ -279,11 +312,7 @@ async function reconcileApplicationCompletion(
     return;
   }
 
-  const nextStatus = relatedWorkLogs.every((workLog) =>
-    isCompletedFromWorkLog(workLog.data() as WorkLogData),
-  )
-    ? "completed"
-    : "confirmed";
+  const nextStatus = resolveApplicationStatusFromWorkLogs(relatedWorkLogs);
 
   if (applicationData.status === nextStatus) {
     return;
@@ -334,3 +363,9 @@ export const syncApplicationCompletionFromWorkLogs = onDocumentWritten(
     }
   },
 );
+
+export const __testables = {
+  buildExpectedWorkLogs,
+  selectConfirmationWorkLogs,
+  resolveApplicationStatusFromWorkLogs,
+};

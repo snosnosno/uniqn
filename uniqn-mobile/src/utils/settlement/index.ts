@@ -17,6 +17,7 @@ export {
   calculateTaxAmount,
   calculateTaxAmountByItems,
   calculateAfterTaxAmount,
+  serializeTaxSettings,
 } from './tax';
 
 export type { SalaryType, SalaryInfo } from '@/types/jobPosting';

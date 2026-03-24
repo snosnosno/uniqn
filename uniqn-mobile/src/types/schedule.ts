@@ -5,6 +5,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import type { TaxSettings as UtilityTaxSettings } from '@/utils/settlement';
 import { FirebaseDocument } from './common';
 import type { JobRoleStats, PostingCompensation, SalaryInfo, SalaryType } from './jobPosting';
 import type { AttendanceStatus, PayrollStatus, ScheduleType, WorkLogStatus } from '@/shared/status';
@@ -171,10 +172,7 @@ export interface ScheduleEvent extends FirebaseDocument {
     additional?: number;
   };
   /** 媛쒕퀎 ?멸툑 ?ㅼ젙 (?ㅻ쾭?쇱씠?? */
-  customTaxSettings?: {
-    type: 'none' | 'rate' | 'fixed';
-    value: number;
-  };
+  customTaxSettings?: UtilityTaxSettings;
 
   // JobCard ?뚮뜑留곸슜 ?곗씠??(?ㅼ?以???뿉???ъ슜)
   postingProjection?: SchedulePostingProjection;
@@ -466,10 +464,7 @@ export interface WorkLog extends FirebaseDocument {
     amount: number;
   };
   customAllowances?: Record<string, number>;
-  customTaxSettings?: {
-    type: 'none' | 'rate' | 'fixed';
-    value: number;
-  };
+  customTaxSettings?: UtilityTaxSettings;
 
   notes?: string;
 

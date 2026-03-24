@@ -13,6 +13,7 @@ import { View, Text, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
+import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { signUp, completeSocialProfile, getCurrentUser } from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
@@ -42,6 +43,7 @@ export default function SignUpScreen() {
         const result = await signUp(data);
 
         if (result.user) {
+          markCurrentAutoLoginSession(result.user.uid);
           setUser(result.user);
           setProfile(toStoreProfile(result.profile));
 
@@ -98,6 +100,7 @@ export default function SignUpScreen() {
         });
 
         if (result.user) {
+          markCurrentAutoLoginSession(result.user.uid);
           setUser(result.user);
           setProfile(toStoreProfile(result.profile));
 

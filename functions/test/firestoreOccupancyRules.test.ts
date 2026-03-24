@@ -454,6 +454,131 @@ describe("Firestore occupancy rules", () => {
     );
   });
 
+  it("rejects owner approval updates that tamper with the original cancellation reason", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+
+      await setDoc(
+        doc(db, "applications", "job-1_staff-1"),
+        createCancellationPendingApplication(),
+      );
+      await setDoc(doc(db, "workLogs", "wl-dated-1"), createWorkLog());
+    });
+
+    const employerDb = testEnv.authenticatedContext("employer-1").firestore();
+
+    await assertFails(
+      runTransaction(employerDb, async (transaction) => {
+        const jobRef = doc(employerDb, "jobPostings", "job-1");
+        const applicationRef = doc(employerDb, "applications", "job-1_staff-1");
+        const workLogRef = doc(employerDb, "workLogs", "wl-dated-1");
+
+        await transaction.get(jobRef);
+        await transaction.get(applicationRef);
+        await transaction.get(workLogRef);
+
+        transaction.update(applicationRef, {
+          status: "cancelled",
+          assignments: [
+            {
+              roleIds: ["dealer"],
+              dates: ["2026-04-01"],
+              timeSlot: "18:00",
+              isGrouped: false,
+              checkMethod: "individual",
+            },
+          ],
+          confirmationHistory: [
+            {
+              confirmedAt: Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z")),
+              confirmedBy: "employer-1",
+              assignments: [
+                {
+                  roleIds: ["dealer"],
+                  dates: ["2026-04-01"],
+                  timeSlot: "18:00",
+                  isGrouped: false,
+                  checkMethod: "individual",
+                },
+              ],
+              cancelledAt: Timestamp.fromDate(new Date("2026-04-01T12:00:00.000Z")),
+              cancelledBy: "employer-1",
+              cancelReason: "Need to cancel due to schedule conflict",
+            },
+          ],
+          cancellationRequest: {
+            requestedAt: Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z")),
+            reason: "Tampered by custom client",
+            status: "approved",
+            reviewedAt: serverTimestamp(),
+            reviewedBy: "employer-1",
+          },
+          cancelledAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        transaction.update(workLogRef, {
+          status: "cancelled",
+          updatedAt: serverTimestamp(),
+        });
+
+        transaction.update(jobRef, {
+          filledPositions: 0,
+          schedule: {
+            kind: "dated",
+            primaryDate: "2026-04-01",
+            allDates: ["2026-04-01"],
+            requirements: [
+              {
+                date: "2026-04-01",
+                timeSlots: [
+                  {
+                    startTime: "18:00",
+                    roles: [{ role: "dealer", count: 1, filled: 0 }],
+                  },
+                ],
+              },
+            ],
+          },
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    );
+  });
+
+  it("rejects owner rejection updates that spoof reviewedAt", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+
+      await setDoc(
+        doc(db, "applications", "job-1_staff-1"),
+        createCancellationPendingApplication(),
+      );
+    });
+
+    const employerDb = testEnv.authenticatedContext("employer-1").firestore();
+
+    await assertFails(
+      runTransaction(employerDb, async (transaction) => {
+        const applicationRef = doc(employerDb, "applications", "job-1_staff-1");
+        await transaction.get(applicationRef);
+
+        transaction.update(applicationRef, {
+          status: "confirmed",
+          cancellationRequest: {
+            requestedAt: Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z")),
+            reason: "Need to cancel due to schedule conflict",
+            status: "rejected",
+            reviewedAt: Timestamp.fromDate(new Date("2026-04-01T12:30:00.000Z")),
+            reviewedBy: "employer-1",
+            rejectionReason: "Owner rejected after review",
+          },
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    );
+  });
+
   it("allows a staff member to check in on their own scheduled workLog", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();

@@ -95,6 +95,14 @@ export class LoginPage extends BasePage {
     const checked = await this.isAutoLoginChecked();
     if (checked !== enabled) {
       await this.autoLoginCheckbox.click();
+      await this.page.waitForFunction(
+        ({ selector, expected }) => {
+          const element = document.querySelector(selector);
+          return element?.getAttribute('aria-checked') === String(expected);
+        },
+        { selector: '[data-testid="auto-login-checkbox"]', expected: enabled },
+        { timeout: 5_000 }
+      );
     }
   }
 

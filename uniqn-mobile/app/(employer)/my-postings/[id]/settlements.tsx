@@ -49,7 +49,7 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/domains/settlement';
-import { type SalaryInfo } from '@/utils/settlement';
+import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput } from '@/types';
 
 // ============================================================================
@@ -134,6 +134,9 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           borderBottomWidth: activeTab === 'staff' ? 2 : 0,
           borderBottomColor: '#4F46E5',
         }}
+        accessibilityRole="tab"
+        accessibilityLabel="스태프 관리"
+        accessibilityState={{ selected: activeTab === 'staff' }}
       >
         <UsersIcon size={20} color={activeTab === 'staff' ? '#9333EA' : inactiveColor} />
         <Text
@@ -170,6 +173,9 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           borderBottomWidth: activeTab === 'settlement' ? 2 : 0,
           borderBottomColor: '#4F46E5',
         }}
+        accessibilityRole="tab"
+        accessibilityLabel="정산"
+        accessibilityState={{ selected: activeTab === 'settlement' }}
       >
         <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#9333EA' : inactiveColor} />
         <Text
@@ -499,13 +505,7 @@ export default function StaffSettlementsScreen() {
           {
             customSalaryInfo: { type: salaryInfo.type, amount: salaryInfo.amount },
             customAllowances: customAllowances as Record<string, unknown> | undefined,
-            customTaxSettings: {
-              type: taxSettings.type,
-              value: taxSettings.value,
-              ...(Array.isArray(taxSettings.taxableItems) && {
-                taxableItems: taxSettings.taxableItems,
-              }),
-            },
+            customTaxSettings: serializeTaxSettings(taxSettings),
             modificationEntry,
           },
           posting.ownerId
@@ -572,13 +572,7 @@ export default function StaffSettlementsScreen() {
           {
             roles: mergedRoles as Record<string, unknown>[],
             allowances: updatedAllowances as Record<string, unknown>,
-            taxSettings: {
-              type: taxSettings.type,
-              value: taxSettings.value,
-              ...(Array.isArray(taxSettings.taxableItems) && {
-                taxableItems: taxSettings.taxableItems,
-              }),
-            },
+            taxSettings: serializeTaxSettings(taxSettings),
           },
           posting.ownerId
         );

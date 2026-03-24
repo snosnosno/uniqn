@@ -21,6 +21,8 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { APP_VERSION, compareVersions, type UpdateType } from '@/constants/version';
 
+const VERSION_CHECK_TIMEOUT_MS = Platform.OS === 'web' ? 3000 : 5000;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -121,7 +123,17 @@ export async function checkForceUpdate(): Promise<VersionCheckResult> {
   };
 
   try {
-    const remoteConfig = await getRemoteVersionConfig();
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const remoteConfig = await Promise.race([
+      getRemoteVersionConfig(),
+      new Promise<null>((resolve) => {
+        timeoutId = setTimeout(() => resolve(null), VERSION_CHECK_TIMEOUT_MS);
+      }),
+    ]);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
     // 원격 설정이 없으면 업데이트 불필요로 처리
     if (!remoteConfig) {

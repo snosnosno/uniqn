@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { Pressable, View, Text } from 'react-native';
+import { Platform, Pressable, View, Text } from 'react-native';
 import { CheckmarkIcon } from '@/components/icons';
 
 // ============================================================================
@@ -78,6 +78,14 @@ export const Checkbox = memo(function Checkbox({
   testID,
 }: CheckboxProps) {
   const config = sizeConfig[size];
+  const webAccessibilityProps =
+    Platform.OS === 'web'
+      ? ({
+          role: 'checkbox',
+          'aria-checked': checked,
+          'aria-disabled': disabled,
+        } as const)
+      : {};
 
   const handlePress = useCallback(() => {
     if (!disabled) {
@@ -111,6 +119,7 @@ export const Checkbox = memo(function Checkbox({
       accessibilityHint={checked ? '선택됨. 두 번 탭하여 선택 해제' : '두 번 탭하여 선택'}
       testID={testID}
       hitSlop={8}
+      {...webAccessibilityProps}
       className={`flex-row items-start ${disabled ? 'opacity-60' : ''} ${className}`}
     >
       {/* Checkbox Box */}

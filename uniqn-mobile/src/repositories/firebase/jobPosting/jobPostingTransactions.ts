@@ -25,6 +25,7 @@ import {
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
+import type { TaxSettings } from '@/utils/settlement';
 import type { StaffRole } from '@/types/role';
 import type {
   CreateJobPostingContext,
@@ -457,7 +458,7 @@ export async function updateSettlementSettings(
   data: {
     roles: Record<string, unknown>[];
     allowances: Record<string, unknown>;
-    taxSettings: { type: string; value: number; taxableItems?: string[] };
+    taxSettings: TaxSettings;
   },
   ownerId: string
 ): Promise<void> {

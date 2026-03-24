@@ -266,6 +266,7 @@ export default function SettingsScreen() {
                     value={autoLoginEnabled}
                     onValueChange={handleAutoLoginToggle}
                     disabled={isAutoLoginLoading}
+                    testID="settings-auto-login-switch"
                     trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
                     thumbColor={autoLoginEnabled ? '#A855F7' : '#f4f3f4'}
                   />

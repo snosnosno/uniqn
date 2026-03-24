@@ -13,6 +13,7 @@
 import { logger } from '@/utils/logger';
 import { settlementRepository } from '@/repositories';
 import { TimeNormalizer } from '@/shared/time';
+import type { TaxSettings } from '@/utils/settlement';
 import type { PayrollStatus } from '@/types';
 import type {
   UpdateWorkTimeInput,
@@ -140,7 +141,7 @@ export async function updateWorkLogCustomSettlement(
   data: {
     customSalaryInfo: { type: string; amount: number };
     customAllowances?: Record<string, unknown>;
-    customTaxSettings: { type: string; value: number; taxableItems?: string[] };
+    customTaxSettings: TaxSettings;
     modificationEntry: Record<string, unknown>;
   },
   ownerId: string

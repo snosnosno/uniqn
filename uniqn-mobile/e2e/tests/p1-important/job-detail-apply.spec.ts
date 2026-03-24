@@ -1,20 +1,19 @@
 /**
- * P1 공고 상세 & 지원 테스트 (10 tests)
- * 공고 상세 보기, 지원 플로우, 지원 상태 관련 테스트
+ * P1 job detail and apply flows.
  */
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import path from 'path';
-import { seedDocument, deleteDocument } from '../../helpers/firebase-admin';
-import { createTestJob, createClosedJob, createTestApplication } from '../../factories';
+import { createClosedJob, createTestApplication, createTestJob } from '../../factories';
+import { deleteDocument, seedDocument } from '../../helpers/firebase-admin';
+import { JobDetailPage } from '../../pages/app/job-detail.page';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
 
-test.describe('공고 상세 & 지원', () => {
+test.describe('공고 상세와 지원 흐름', () => {
   let testJobId: string;
 
   test.beforeAll(async () => {
-    // 테스트용 공고 시딩
     const testJob = createTestJob({ title: '상세테스트공고' });
     testJobId = testJob.id;
     await seedDocument('jobPostings', testJob.id, testJob);
@@ -24,63 +23,55 @@ test.describe('공고 상세 & 지원', () => {
     await deleteDocument('jobPostings', testJobId);
   });
 
-  test('인증된 사용자 → 공고 상세 → "공고 상세" 헤더 표시', async ({ browser }) => {
+  test('인증된 사용자는 공고 상세 헤더를 본다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
+    const jobDetailPage = new JobDetailPage(page);
 
-    await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
+    await jobDetailPage.gotoAuthenticated(testJobId);
 
-    const headerOrError = page.getByText('공고 상세').or(
-      page.getByText('오류가 발생했습니다')
-    );
-    await expect(headerOrError).toBeVisible({ timeout: 10_000 });
+    await expect(jobDetailPage.headerTitle.or(jobDetailPage.errorMessage).first()).toBeVisible({
+      timeout: 10_000,
+    });
 
     await context.close();
   });
 
-  test('인증된 사용자 → 활성 공고 → "지원하기" 버튼 표시', async ({ browser }) => {
+  test('활성 공고에는 지원하기 버튼이 보인다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
+    const jobDetailPage = new JobDetailPage(page);
 
-    await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
+    await jobDetailPage.gotoAuthenticated(testJobId);
 
-    // 공고 내용 또는 에러 상태가 나타날 때까지 대기
-    const applyButton = page.getByRole('button', { name: /지원하기/ });
-    const errorState = page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first();
-    const contentOrError = applyButton.or(errorState);
+    const contentOrError = jobDetailPage.applyButton.or(jobDetailPage.errorMessage);
     await expect(contentOrError.first()).toBeVisible({ timeout: 15_000 });
 
-    // 에러가 아닌 경우에만 버튼 검증
-    const isError = await errorState.isVisible().catch(() => false);
-    if (!isError) {
-      await expect(applyButton).toBeVisible();
-      await expect(applyButton).toBeEnabled();
+    if (!(await jobDetailPage.isErrorVisible().catch(() => false))) {
+      await expect(jobDetailPage.applyButton).toBeVisible();
+      await expect(jobDetailPage.applyButton).toBeEnabled();
     }
 
     await context.close();
   });
 
-  test('마감된 공고 → "마감된 공고입니다" 버튼 비활성', async ({ browser }) => {
-    const closedJob = createClosedJob({ title: '마감된테스트공고' });
+  test('마감 공고에는 비활성 상태 버튼이 보인다', async ({ browser }) => {
+    const closedJob = createClosedJob({ title: '마감상세테스트공고' });
     await seedDocument('jobPostings', closedJob.id, closedJob);
 
     try {
       const context = await browser.newContext({ storageState: staffState });
       const page = await context.newPage();
+      const jobDetailPage = new JobDetailPage(page);
 
-      await page.goto(`/jobs/${closedJob.id}`, { waitUntil: 'domcontentloaded' });
+      await jobDetailPage.gotoAuthenticated(closedJob.id);
 
-      // 마감 버튼 또는 에러 상태가 나타날 때까지 대기
-      const closedButton = page.getByRole('button', { name: /마감된 공고/ });
-      const errorState = page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first();
-      const contentOrError = closedButton.or(errorState);
+      const contentOrError = jobDetailPage.closedButton.or(jobDetailPage.errorMessage);
       await expect(contentOrError.first()).toBeVisible({ timeout: 15_000 });
 
-      const isError = await errorState.isVisible().catch(() => false);
-      if (!isError) {
-        await expect(closedButton).toBeVisible();
-        await expect(closedButton).toBeDisabled();
+      if (!(await jobDetailPage.isErrorVisible().catch(() => false))) {
+        await expect(jobDetailPage.closedButton).toBeVisible();
+        await expect(jobDetailPage.closedButton).toBeDisabled();
       }
 
       await context.close();
@@ -89,131 +80,115 @@ test.describe('공고 상세 & 지원', () => {
     }
   });
 
-  test('존재하지 않는 공고 → 에러 화면', async ({ browser }) => {
+  test('존재하지 않는 공고는 에러 화면을 보여준다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
     await page.goto('/jobs/nonexistent-job-99999', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
-
-    // 에러 메시지가 표시되어야 함
-    const errorText = page.getByText(/오류가 발생|공고를 찾을 수 없습니다/);
-    await expect(errorText).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/).first()
+    ).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });
 
-  test('에러 화면 → 다시 시도 버튼 존재', async ({ browser }) => {
+  test('에러 화면에는 다시 시도 버튼이 있다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
     await page.goto('/jobs/nonexistent-retry-test', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
 
-    const errorText = page.getByText(/오류가 발생|공고를 찾을 수 없습니다/);
-    if (await errorText.isVisible()) {
-      const retryButton = page.getByRole('button', { name: '다시 시도' });
-      await expect(retryButton).toBeVisible({ timeout: 5_000 });
+    const errorText = page
+      .getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/)
+      .first();
+    if (await errorText.isVisible().catch(() => false)) {
+      await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible({
+        timeout: 5_000,
+      });
     }
 
     await context.close();
   });
 
-  test('지원 페이지 → 공고 정보 로드', async ({ browser }) => {
+  test('지원 페이지는 공고 정보를 로드한다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
     await page.goto(`/jobs/${testJobId}/apply`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
-
-    // 지원하기 헤더 또는 로딩/에러 상태 (use .first() in case of multiple matches)
-    const anyContent = page.getByText(/지원하기|공고 정보를 불러오는 중|오류가 발생/).first();
-    await expect(anyContent).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.getByText(/지원하기|공고 정보를 불러오는 중|오류가 발생/).first()
+    ).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });
 
-  test('이미 지원한 공고 → "이미 지원한 공고" 메시지', async ({ browser }) => {
-    // 이미 지원한 상태를 시딩
-    const testApp = createTestApplication({
+  test('이미 지원한 공고는 중복 지원 안내가 보인다', async ({ browser }) => {
+    const testApplication = createTestApplication({
       jobPostingId: testJobId,
       applicantId: 'test-staff-uid-001',
       status: 'applied',
     });
-    await seedDocument('applications', testApp.id, testApp);
+    await seedDocument('applications', testApplication.id, testApplication);
 
     try {
       const context = await browser.newContext({ storageState: staffState });
       const page = await context.newPage();
 
       await page.goto(`/jobs/${testJobId}/apply`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(5_000);
-
-      // 이미 지원 메시지 또는 다른 상태
-      const alreadyApplied = page.getByText(/이미 지원한 공고|지원하기|오류/).first();
-      await expect(alreadyApplied).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(/이미 지원한 공고|지원하기.*오류/).first()).toBeVisible({
+        timeout: 10_000,
+      });
 
       await context.close();
     } finally {
-      await deleteDocument('applications', testApp.id);
+      await deleteDocument('applications', testApplication.id);
     }
   });
 
-  test('홈에서 공고 클릭 → 상세 페이지 이동', async ({ browser }) => {
+  test('홈에서 공고를 누르면 상세 페이지로 이동한다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
 
-    // 공고 카드가 있으면 첫 번째 클릭
     const cards = page.locator('[accessibilityRole="button"]');
     const count = await cards.count();
-
-    if (count > 0) {
-      await cards.first().click();
-      await page.waitForTimeout(3_000);
-
-      // 상세 페이지 또는 다른 화면으로 이동
-      const url = page.url();
-      const body = await page.locator('body').textContent();
-      expect(body).toBeTruthy();
+    if (count === 0) {
+      test.skip();
     }
+
+    await cards.first().click();
+    await expect(page).toHaveURL(/jobs|detail/, { timeout: 10_000 });
 
     await context.close();
   });
 
-  test('공고 상세 → 공유 버튼 존재 (인증된 상세)', async ({ browser }) => {
+  test('상세 화면에 공유 버튼이 있으면 활성 상태다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
+    const jobDetailPage = new JobDetailPage(page);
 
-    await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
+    await jobDetailPage.gotoAuthenticated(testJobId);
 
-    const isError = await page.getByText(/오류가 발생|문제가 발생|공고를 찾을 수 없습니다/).first().isVisible().catch(() => false);
-    if (!isError) {
-      // 공유 버튼이 존재하는지 확인
-      const shareButton = page.locator('[aria-label="공고 공유하기"]');
-      if (await shareButton.isVisible()) {
-        expect(await shareButton.isEnabled()).toBeTruthy();
+    if (!(await jobDetailPage.isErrorVisible().catch(() => false))) {
+      if (await jobDetailPage.shareButton.isVisible().catch(() => false)) {
+        await expect(jobDetailPage.shareButton).toBeEnabled();
       }
     }
 
     await context.close();
   });
 
-  test('구인자(employer)도 공고 상세 조회 가능', async ({ browser }) => {
+  test('구인자도 공고 상세를 조회할 수 있다', async ({ browser }) => {
     const context = await browser.newContext({ storageState: employerState });
     const page = await context.newPage();
+    const jobDetailPage = new JobDetailPage(page);
 
-    await page.goto(`/jobs/${testJobId}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(5_000);
+    await jobDetailPage.gotoAuthenticated(testJobId);
 
-    // 구인자도 상세 페이지를 볼 수 있어야 함
-    const headerOrError = page.getByText('공고 상세').or(
-      page.getByText('오류가 발생했습니다')
-    );
-    await expect(headerOrError).toBeVisible({ timeout: 10_000 });
+    await expect(jobDetailPage.headerTitle.or(jobDetailPage.errorMessage).first()).toBeVisible({
+      timeout: 10_000,
+    });
 
     await context.close();
   });

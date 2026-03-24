@@ -8,6 +8,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { ensureDualSdkSync } from '@/lib/authBridge';
+import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { getUnreadCounterFromCache } from '@/services/notifications/notificationService';
 import { logger } from '@/utils/logger';
@@ -66,7 +67,7 @@ interface ResolveSessionResult {
   offlineBootstrap: OfflineBootstrapState;
 }
 
-const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 1500 : 5000;
+const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 5000;
 const INITIAL_AUTH_READY_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 10000;
 const FOREGROUND_AUTH_SETTLE_TIMEOUT_MS = 2000;
 
@@ -418,8 +419,11 @@ export async function resolveSession({
   const persistedUser = authStore.user;
   const persistedProfile = authStore.profile;
   const preservedUserId = authUser?.uid ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
+  const currentSessionUserId = authUser?.uid ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
+  const allowCurrentSessionContinuation =
+    !!currentSessionUserId && isCurrentAutoLoginSession(currentSessionUserId);
 
-  if (!autoLoginEnabled) {
+  if (!autoLoginEnabled && !allowCurrentSessionContinuation) {
     if (
       authUser ||
       authResolutionSource === 'timeout' ||
@@ -437,6 +441,20 @@ export async function resolveSession({
     return {
       deferredInitContext: null,
       offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    };
+  }
+
+  if (
+    !autoLoginEnabled &&
+    allowCurrentSessionContinuation &&
+    !authUser &&
+    persistedUser?.uid &&
+    persistedProfile?.uid === persistedUser.uid
+  ) {
+    commitBootstrapSource('cache', true);
+    return {
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'cache', needsServerReconcile: true },
     };
   }
 

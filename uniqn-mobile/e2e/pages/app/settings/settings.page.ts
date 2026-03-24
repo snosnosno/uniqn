@@ -81,7 +81,11 @@ export class SettingsPage extends BasePage {
   }
 
   async isSwitchChecked(label: string): Promise<boolean> {
-    const switchElement = this.getSwitch(label);
+    const autoLoginSwitch = this.page.getByTestId('settings-auto-login-switch');
+    const switchElement =
+      (await autoLoginSwitch.count()) > 0 && (await autoLoginSwitch.isVisible().catch(() => false))
+        ? autoLoginSwitch
+        : this.getSwitch(label);
     const ariaChecked = await switchElement.getAttribute('aria-checked');
 
     if (ariaChecked !== null) {

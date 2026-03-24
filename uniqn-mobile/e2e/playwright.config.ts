@@ -19,9 +19,7 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 4 : 1,
-  reporter: isCI
-    ? [['html', { open: 'never' }], ['github']]
-    : [['html', { open: 'on-failure' }]],
+  reporter: isCI ? [['html', { open: 'never' }], ['github']] : [['html', { open: 'on-failure' }]],
 
   globalSetup: require.resolve('./global-setup'),
   globalTeardown: require.resolve('./global-teardown'),
@@ -92,12 +90,10 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: isCI
-      ? 'npx serve dist -l 3000 -s'
-      : 'npx serve dist -l 8081 -s',
+    command: isCI ? 'npx serve dist -l 3000 -s' : 'npx serve dist -l 8081 -s',
     port: isCI ? 3000 : 8081,
     cwd: projectRoot,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 30_000,
   },
 });

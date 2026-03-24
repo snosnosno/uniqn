@@ -413,6 +413,7 @@ describe('AuthStore', () => {
           user: null,
           profile: null,
           bootstrapSource: 'none',
+          suppressedSessionUserId: 'suppressed-user',
         });
       });
 
@@ -428,6 +429,47 @@ describe('AuthStore', () => {
       expect(mockSetUserId).toHaveBeenCalledWith(null);
       expect(mockGetUserProfile).not.toHaveBeenCalled();
       expect(mockClearCriticalOfflineCacheForUser).not.toHaveBeenCalled();
+    });
+
+    it('should allow explicit login snapshots when auto login is disabled but no restored session is suppressed', async () => {
+      const firebaseUser = {
+        uid: 'manual-login-user',
+        email: 'manual@example.com',
+        displayName: 'Manual Login User',
+        photoURL: null,
+        emailVerified: true,
+        phoneNumber: null,
+      };
+
+      const profile = {
+        uid: firebaseUser.uid,
+        role: 'staff',
+      };
+
+      mockIsAutoLoginEnabled.mockResolvedValue(false);
+      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUserProfile.mockResolvedValue(profile);
+
+      act(() => {
+        useAuthStore.setState({
+          status: 'unauthenticated',
+          isInitialized: true,
+          user: null,
+          profile: null,
+          bootstrapSource: 'none',
+          suppressedSessionUserId: null,
+        });
+      });
+
+      await act(async () => {
+        await useAuthStore.getState().checkAuthState(firebaseUser as any);
+      });
+
+      expect(useAuthStore.getState().user?.uid).toBe(firebaseUser.uid);
+      expect(useAuthStore.getState().profile?.uid).toBe(firebaseUser.uid);
+      expect(useAuthStore.getState().status).toBe('authenticated');
+      expect(mockSyncSignOut).not.toHaveBeenCalled();
+      expect(mockGetUserProfile).toHaveBeenCalledWith(firebaseUser.uid);
     });
 
     it('should hydrate user and profile from Firebase session', async () => {

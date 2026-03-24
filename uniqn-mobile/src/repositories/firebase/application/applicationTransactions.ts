@@ -43,7 +43,10 @@ import type {
   JobPosting,
 } from '@/types';
 import { COLLECTIONS, STATUS } from '@/constants';
-import { releaseConfirmedAssignmentsInTransaction } from './applicationLifecycleHelpers';
+import {
+  releaseConfirmedAssignmentsInTransaction,
+  resolveConfirmedApplicationStatusInTransaction,
+} from './applicationLifecycleHelpers';
 
 async function loadApplicationForTransaction(transaction: Transaction, applicationId: string) {
   const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
@@ -546,6 +549,8 @@ export async function reviewCancellationWithTransaction(
         });
       });
     } else {
+      const relatedWorkLogIds = await prefetchRelatedWorkLogIds(input.applicationId);
+
       await runTransaction(getFirebaseDb(), async (transaction) => {
         const { applicationRef, applicationData } = await loadApplicationForTransaction(
           transaction,
@@ -582,8 +587,18 @@ export async function reviewCancellationWithTransaction(
           rejectionReason: input.rejectionReason?.trim() || '거절됨',
         };
 
+        const activeConfirmation =
+          applicationData.confirmationHistory?.find((entry) => !entry.cancelledAt) ?? null;
+        const restoredStatus = activeConfirmation
+          ? await resolveConfirmedApplicationStatusInTransaction({
+              transaction,
+              assignments: activeConfirmation.assignments,
+              relatedWorkLogIds,
+            })
+          : STATUS.APPLICATION.CONFIRMED;
+
         transaction.update(applicationRef, {
-          status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
+          status: restoredStatus as ApplicationStatus,
           cancellationRequest: updatedCancellationRequest,
           updatedAt: serverTimestamp(),
         });
@@ -592,7 +607,7 @@ export async function reviewCancellationWithTransaction(
           jobRef,
           jobData,
           fromStatus: applicationData.status,
-          toStatus: STATUS.APPLICATION.CONFIRMED,
+          toStatus: restoredStatus,
         });
       });
     }
