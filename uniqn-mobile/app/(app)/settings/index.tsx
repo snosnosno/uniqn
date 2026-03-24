@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
 import { updateMarketingConsent } from '@/services/auth';
+import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
 
 // 태양 아이콘 (다크모드용)
@@ -340,7 +341,11 @@ export default function SettingsScreen() {
         {/* 앱 정보 */}
         <Card className="mb-4">
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">정보</Text>
-          <SettingItem icon={<View className="h-[22px] w-[22px]" />} label="버전" value="1.0.0" />
+          <SettingItem
+            icon={<View className="h-[22px] w-[22px]" />}
+            label="버전"
+            value={versionInfo.displayVersion}
+          />
           <Divider spacing="sm" />
           <SettingItem
             icon={<View className="h-[22px] w-[22px]" />}

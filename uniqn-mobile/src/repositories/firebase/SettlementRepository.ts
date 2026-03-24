@@ -78,6 +78,10 @@ type WorkLogWithOverrides = WorkLog & {
   customTaxSettings?: unknown;
 };
 
+interface SettlementAmountContext {
+  amount: number;
+}
+
 // ============================================================================
 // Repository Implementation
 // ============================================================================
@@ -219,10 +223,11 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
   ): Promise<SettlementResultDTO> {
     try {
       logger.info('개별 정산 처리 시작', { workLogId: context.workLogId, ownerId });
+      let settledAmount = 0;
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         // 1-2. 근무 기록 및 공고 조회 + 소유권 확인
-        const { workLog, workLogRef } = await this.validateWorkLogOwnership(
+        const { workLog, jobPosting, workLogRef } = await this.validateWorkLogOwnership(
           transaction,
           context.workLogId,
           ownerId,
@@ -244,10 +249,27 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
           throw new AlreadySettledError();
         }
 
+        const canonicalSettlement = this.calculateSettlementAmount(
+          workLog as WorkLogWithOverrides,
+          jobPosting
+        );
+        const canonicalAmount = canonicalSettlement.amount;
+
+        if (context.amount !== canonicalAmount) {
+          logger.warn('Individual settlement amount mismatch detected, using canonical amount', {
+            component: 'SettlementRepository',
+            workLogId: context.workLogId,
+            ownerId,
+            requestedAmount: context.amount,
+            canonicalAmount,
+          });
+        }
+
         // 5. 정산 처리
+        settledAmount = canonicalAmount;
         const updateData: Record<string, unknown> = {
           payrollStatus: STATUS.PAYROLL.COMPLETED,
-          payrollAmount: context.amount,
+          payrollAmount: canonicalAmount,
           payrollDate: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
@@ -261,13 +283,13 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
 
       logger.info('개별 정산 처리 완료', {
         workLogId: context.workLogId,
-        amount: context.amount,
+        amount: settledAmount,
       });
 
       return {
         success: true,
         workLogId: context.workLogId,
-        amount: context.amount,
+        amount: settledAmount,
         message: '정산이 완료되었습니다',
       };
     } catch (error) {
@@ -423,23 +445,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
               }
 
               // 정산 금액 계산 (SettlementCalculator 사용)
-              const postingSettlement = getPostingSettlementContext(jobPosting);
-              const salaryInfo = getEffectiveSalaryInfoFromRoles(
-                workLog,
-                postingSettlement.roles,
-                postingSettlement.defaultSalary
-              );
-              const allowances = getEffectiveAllowances(workLog, postingSettlement.allowances);
-              const taxSettings = getEffectiveTaxSettings(workLog, postingSettlement.taxSettings);
-
-              const settlementResult = SettlementCalculator.calculate({
-                startTime: workLog.checkInTime,
-                endTime: workLog.checkOutTime,
-                salaryInfo,
-                allowances,
-                taxSettings,
-              });
-              const amount = settlementResult.afterTaxPay;
+              const amount = this.calculateSettlementAmount(workLog, jobPosting).amount;
 
               // 정산 처리
               const updateData: Record<string, unknown> = {
@@ -684,5 +690,29 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
     }
 
     return { workLog, jobPosting, workLogRef };
+  }
+
+  private calculateSettlementAmount(
+    workLog: WorkLogWithOverrides,
+    jobPosting: JobPosting
+  ): SettlementAmountContext {
+    const postingSettlement = getPostingSettlementContext(jobPosting);
+    const salaryInfo = getEffectiveSalaryInfoFromRoles(
+      workLog,
+      postingSettlement.roles,
+      postingSettlement.defaultSalary
+    );
+    const allowances = getEffectiveAllowances(workLog, postingSettlement.allowances);
+    const taxSettings = getEffectiveTaxSettings(workLog, postingSettlement.taxSettings);
+
+    const settlementResult = SettlementCalculator.calculate({
+      startTime: workLog.checkInTime,
+      endTime: workLog.checkOutTime,
+      salaryInfo,
+      allowances,
+      taxSettings,
+    });
+
+    return { amount: settlementResult.afterTaxPay };
   }
 }

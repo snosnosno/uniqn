@@ -36,6 +36,7 @@ export interface UpdateWorkTimeContext {
  */
 export interface SettleWorkLogContext {
   workLogId: string;
+  /** UI 확인용 금액. 저장 직전 canonical 규칙으로 다시 계산된다. */
   amount: number;
   notes?: string;
 }

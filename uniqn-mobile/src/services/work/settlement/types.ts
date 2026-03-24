@@ -120,6 +120,7 @@ export interface UpdateWorkTimeInput {
  */
 export interface SettleWorkLogInput {
   workLogId: string;
+  /** 확인 모달 표시용 예상 금액. 저장 시점에는 canonical 값으로 재계산된다. */
   amount: number;
   notes?: string;
 }

@@ -52,6 +52,10 @@ export default function AdminLayout() {
       <Stack.Screen name="reports/[id]" options={{ title: '신고 상세' }} />
       <Stack.Screen name="inquiries/index" options={{ title: '문의 관리' }} />
       <Stack.Screen name="inquiries/[id]" options={{ title: '문의 상세' }} />
+      <Stack.Screen name="announcements/index" options={{ title: '공지사항 관리' }} />
+      <Stack.Screen name="announcements/create" options={{ title: '공지사항 작성' }} />
+      <Stack.Screen name="announcements/[id]/index" options={{ title: '공지사항 상세' }} />
+      <Stack.Screen name="announcements/[id]/edit" options={{ title: '공지사항 수정' }} />
       <Stack.Screen name="tournaments/index" options={{ title: '대회공고 승인' }} />
     </Stack>
   );
