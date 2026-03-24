@@ -318,7 +318,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 1. WorkLog ?곹깭瑜?cancelled濡?蹂寃?
         transaction.update(workLogRef, {
-          status: STATUS.WORK_LOG.NO_SHOW,
+          status: STATUS.WORK_LOG.CANCELLED,
           cancelledReason: context.reason,
           cancelledAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -392,7 +392,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 3. WorkLog ?낅뜲?댄듃
         transaction.update(workLogRef, {
-          status: STATUS.WORK_LOG.CANCELLED,
+          status: STATUS.WORK_LOG.NO_SHOW,
           noShowReason: context.reason,
           noShowAt: serverTimestamp(),
           updatedAt: serverTimestamp(),

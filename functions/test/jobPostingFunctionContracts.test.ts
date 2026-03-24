@@ -11,7 +11,7 @@ const { approveJobPosting, rejectJobPosting } =
 const { updateJobPostingApplicantCount, validateJobPostingData } =
   require("../src/triggers/jobPostings") as typeof import("../src/triggers/jobPostings");
 
-const DISALLOWED_TOP_LEVEL_FIELDS = [
+const DISALLOWED_NON_CANONICAL_TOP_LEVEL_FIELDS = [
   "detailedAddress",
   "preQuestions",
   "updatedBy",
@@ -83,8 +83,8 @@ function createCanonicalTournamentPosting(
   };
 }
 
-function expectNoLegacyJobPostingFields(posting: Record<string, unknown>): void {
-  DISALLOWED_TOP_LEVEL_FIELDS.forEach((field) => {
+function expectNoNonCanonicalTopLevelFields(posting: Record<string, unknown>): void {
+  DISALLOWED_NON_CANONICAL_TOP_LEVEL_FIELDS.forEach((field) => {
     expect(field in posting, `${field} should stay absent`).to.equal(false);
   });
 }
@@ -122,7 +122,7 @@ describe("job posting function canonical contracts", () => {
     const posting = snapshot.data() as Record<string, unknown>;
     const tournamentConfig = posting.tournamentConfig as Record<string, unknown>;
 
-    expectNoLegacyJobPostingFields(posting);
+    expectNoNonCanonicalTopLevelFields(posting);
     expect(Object.keys(tournamentConfig).sort()).to.deep.equal([
       "approvalStatus",
       "approvedAt",
@@ -155,7 +155,7 @@ describe("job posting function canonical contracts", () => {
     const posting = snapshot.data() as Record<string, unknown>;
     const tournamentConfig = posting.tournamentConfig as Record<string, unknown>;
 
-    expectNoLegacyJobPostingFields(posting);
+    expectNoNonCanonicalTopLevelFields(posting);
     expect(Object.keys(tournamentConfig).sort()).to.deep.equal([
       "approvalStatus",
       "rejectedAt",
@@ -191,7 +191,7 @@ describe("job posting function canonical contracts", () => {
     const updatedSnapshot = await db.collection("jobPostings").doc("job-search").get();
     const posting = updatedSnapshot.data() as Record<string, unknown>;
 
-    expectNoLegacyJobPostingFields(posting);
+    expectNoNonCanonicalTopLevelFields(posting);
     expect(posting.searchIndex).to.deep.equal(
       buildJobPostingSearchIndex({
         title: posting.title as string,
@@ -229,7 +229,7 @@ describe("job posting function canonical contracts", () => {
     const postingSnapshot = await db.collection("jobPostings").doc("job-count").get();
     const posting = postingSnapshot.data() as Record<string, unknown>;
 
-    expectNoLegacyJobPostingFields(posting);
+    expectNoNonCanonicalTopLevelFields(posting);
     expect(posting.stats).to.deep.equal({
       totalApplicants: 1,
       activeApplicants: 1,

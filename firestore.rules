@@ -660,13 +660,6 @@ service cloud.firestore {
     }
 
     // Tournament 승인 필드만 변경되었는지 확인 (admin 전용)
-    function hasNoLegacyJobPostingFields(data) {
-      return !('detailedAddress' in data) &&
-             !('preQuestions' in data) &&
-             !('usesPreQuestions' in data) &&
-             !('updatedBy' in data);
-    }
-
     function hasCanonicalJobPostingKeys(data) {
       return data.keys().hasAll([
                'schemaVersion',
@@ -869,7 +862,6 @@ service cloud.firestore {
 
     function validateCanonicalJobPosting(data) {
       return hasCanonicalJobPostingKeys(data) &&
-             hasNoLegacyJobPostingFields(data) &&
              data.schemaVersion == 3 &&
              isSafeText(data.title, 200) &&
              (!('description' in data) || data.description is string) &&
@@ -996,7 +988,6 @@ service cloud.firestore {
 
     function validateCanonicalJobPostingUpdate(nextData, currentData) {
       return hasCanonicalJobPostingKeys(nextData) &&
-             hasNoLegacyJobPostingFields(nextData) &&
              nextData.schemaVersion == currentData.schemaVersion &&
              nextData.ownerId == currentData.ownerId &&
              nextData.createdAt == currentData.createdAt &&
@@ -1076,6 +1067,213 @@ service cloud.firestore {
              (!('payrollStatus' in data) || data.payrollStatus == 'pending');
     }
 
+    function doesWorkLogMatchJobPosting(postId, data) {
+      return data.jobPostingId is string &&
+        data.jobPostingId == postId &&
+        data.ownerId is string &&
+        exists(/databases/$(database)/documents/jobPostings/$(postId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == data.ownerId;
+    }
+
+    function canManageWorkLogAuthoritatively() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (isPrivileged() && (
+          request.auth.uid == resource.data.ownerId ||
+          (exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
+        ))
+      );
+    }
+
+    function isValidWorkLogStatus(status) {
+      return status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled', 'no_show'];
+    }
+
+    function isValidPayrollStatus(status) {
+      return status in ['pending', 'processing', 'completed'];
+    }
+
+    function isValidWorkLogRole(role) {
+      return role in ['dealer', 'floor', 'serving', 'manager', 'staff', 'other'];
+    }
+
+    function isAuthoritativeWorkLogTimeUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly([
+          'status',
+          'checkInTime',
+          'checkOutTime',
+          'workDuration',
+          'notes',
+          'settlementBreakdown',
+          'hasTimeModificationLogs',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAny([
+          'status',
+          'checkInTime',
+          'checkOutTime',
+          'workDuration',
+          'notes',
+          'settlementBreakdown',
+          'hasTimeModificationLogs'
+        ]) &&
+        changedFields.hasAll(['updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        (!changedFields.hasAny(['status']) || isValidWorkLogStatus(request.resource.data.status)) &&
+        (!changedFields.hasAny(['checkInTime']) ||
+         request.resource.data.checkInTime == null ||
+         request.resource.data.checkInTime is timestamp) &&
+        (!changedFields.hasAny(['checkOutTime']) ||
+         request.resource.data.checkOutTime == null ||
+         request.resource.data.checkOutTime is timestamp) &&
+        (!changedFields.hasAny(['workDuration']) ||
+         request.resource.data.workDuration == null ||
+         (request.resource.data.workDuration is number &&
+          request.resource.data.workDuration >= 0)) &&
+        (!changedFields.hasAny(['notes']) ||
+         request.resource.data.notes == null ||
+         (request.resource.data.notes is string &&
+          request.resource.data.notes.size() <= 500)) &&
+        (!changedFields.hasAny(['settlementBreakdown']) ||
+         request.resource.data.settlementBreakdown == null) &&
+        (!changedFields.hasAny(['hasTimeModificationLogs']) ||
+         request.resource.data.hasTimeModificationLogs is bool);
+    }
+
+    function isAuthoritativeWorkLogSettlementUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly([
+          'payrollStatus',
+          'payrollAmount',
+          'payrollDate',
+          'payrollNotes',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAny(['payrollStatus', 'payrollAmount', 'payrollDate', 'payrollNotes']) &&
+        changedFields.hasAll(['updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        (!changedFields.hasAny(['payrollStatus']) ||
+         isValidPayrollStatus(request.resource.data.payrollStatus)) &&
+        (!changedFields.hasAny(['payrollAmount']) ||
+         request.resource.data.payrollAmount == null ||
+         (request.resource.data.payrollAmount is number &&
+          request.resource.data.payrollAmount >= 0)) &&
+        (!changedFields.hasAny(['payrollDate']) ||
+         request.resource.data.payrollDate == null ||
+         request.resource.data.payrollDate is timestamp) &&
+        (!changedFields.hasAny(['payrollNotes']) ||
+         request.resource.data.payrollNotes == null ||
+         (request.resource.data.payrollNotes is string &&
+          request.resource.data.payrollNotes.size() <= 500));
+    }
+
+    function isAuthoritativeWorkLogCustomSettlementUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly([
+          'customSalaryInfo',
+          'customAllowances',
+          'customTaxSettings',
+          'settlementModificationHistory',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAny([
+          'customSalaryInfo',
+          'customAllowances',
+          'customTaxSettings',
+          'settlementModificationHistory'
+        ]) &&
+        changedFields.hasAll(['updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        (!changedFields.hasAny(['customSalaryInfo']) ||
+         (request.resource.data.customSalaryInfo is map &&
+          request.resource.data.customSalaryInfo.keys().hasAll(['type', 'amount']) &&
+          request.resource.data.customSalaryInfo.keys().hasOnly(['type', 'amount']) &&
+          request.resource.data.customSalaryInfo.type in ['hourly', 'daily', 'monthly', 'other'] &&
+          request.resource.data.customSalaryInfo.amount is number &&
+          request.resource.data.customSalaryInfo.amount >= 0)) &&
+        (!changedFields.hasAny(['customAllowances']) ||
+         request.resource.data.customAllowances == null ||
+         request.resource.data.customAllowances is map) &&
+        (!changedFields.hasAny(['customTaxSettings']) ||
+         (request.resource.data.customTaxSettings is map &&
+          request.resource.data.customTaxSettings.keys().hasAll(['type', 'value']) &&
+          request.resource.data.customTaxSettings.keys().hasOnly(['type', 'value', 'taxableItems']) &&
+          request.resource.data.customTaxSettings.type in ['none', 'rate', 'fixed'] &&
+          request.resource.data.customTaxSettings.value is number &&
+          (!('taxableItems' in request.resource.data.customTaxSettings) ||
+           request.resource.data.customTaxSettings.taxableItems is map))) &&
+        (!changedFields.hasAny(['settlementModificationHistory']) ||
+         request.resource.data.settlementModificationHistory is list);
+    }
+
+    function isAuthoritativeWorkLogRoleUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly(['role', 'customRole', 'roleChangeHistory', 'updatedAt']) &&
+        changedFields.hasAll(['role', 'updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        isValidWorkLogRole(request.resource.data.role) &&
+        (!changedFields.hasAny(['customRole']) ||
+         request.resource.data.customRole == null ||
+         (request.resource.data.customRole is string &&
+          request.resource.data.customRole.size() <= 50)) &&
+        (!changedFields.hasAny(['roleChangeHistory']) ||
+         request.resource.data.roleChangeHistory is list);
+    }
+
+    function isAuthoritativeWorkLogLifecycleUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly([
+          'status',
+          'noShowReason',
+          'noShowAt',
+          'cancelledReason',
+          'cancelledAt',
+          'updatedAt'
+        ]) &&
+        changedFields.hasAll(['status', 'updatedAt']) &&
+        request.resource.data.updatedAt == request.time &&
+        isValidWorkLogStatus(request.resource.data.status) &&
+        (!changedFields.hasAny(['noShowReason']) ||
+         request.resource.data.noShowReason == null ||
+         (request.resource.data.noShowReason is string &&
+          request.resource.data.noShowReason.size() <= 500)) &&
+        (!changedFields.hasAny(['noShowAt']) ||
+         request.resource.data.noShowAt == null ||
+         request.resource.data.noShowAt is timestamp) &&
+        (!changedFields.hasAny(['cancelledReason']) ||
+         request.resource.data.cancelledReason == null ||
+         (request.resource.data.cancelledReason is string &&
+          request.resource.data.cancelledReason.size() <= 500)) &&
+        (!changedFields.hasAny(['cancelledAt']) ||
+         request.resource.data.cancelledAt == null ||
+         request.resource.data.cancelledAt is timestamp);
+    }
+
+    function isAuthoritativeNegativeSettlementFlagUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return changedFields.hasOnly([
+          '_negativeSettlementDetected',
+          '_negativeSettlementAmount',
+          '_negativeSettlementDetectedAt'
+        ]) &&
+        changedFields.hasAll([
+          '_negativeSettlementDetected',
+          '_negativeSettlementAmount',
+          '_negativeSettlementDetectedAt'
+        ]) &&
+        request.resource.data._negativeSettlementDetected == true &&
+        request.resource.data._negativeSettlementAmount is number &&
+        request.resource.data._negativeSettlementDetectedAt == request.time;
+    }
+
     function isStaffWorkLogCheckInOutUpdate() {
       let changedFields = request.resource.data.diff(resource.data).affectedKeys();
 
@@ -1088,23 +1286,22 @@ service cloud.firestore {
         request.resource.data.role == resource.data.role &&
         request.resource.data.customRole == resource.data.customRole &&
         request.resource.data.updatedAt == request.time &&
-        changedFields.hasOnly(['status', 'checkInTime', 'checkOutTime', 'workDuration', 'updatedAt']) &&
-        changedFields.hasAll(['status', 'updatedAt']) &&
         (
           (
             resource.data.status == 'scheduled' &&
             request.resource.data.status == 'checked_in' &&
-            request.resource.data.checkInTime is timestamp &&
+            changedFields.hasOnly(['status', 'checkInTime', 'updatedAt']) &&
+            request.resource.data.checkInTime == request.time &&
             request.resource.data.checkOutTime == resource.data.checkOutTime &&
             request.resource.data.workDuration == resource.data.workDuration
           ) ||
           (
             resource.data.status == 'checked_in' &&
             request.resource.data.status == 'checked_out' &&
+            changedFields.hasOnly(['status', 'checkOutTime', 'updatedAt']) &&
             request.resource.data.checkInTime == resource.data.checkInTime &&
-            request.resource.data.checkOutTime is timestamp &&
-            request.resource.data.workDuration is number &&
-            request.resource.data.workDuration >= 0
+            request.resource.data.checkOutTime == request.time &&
+            request.resource.data.workDuration == resource.data.workDuration
           )
         );
     }
@@ -1408,9 +1605,36 @@ service cloud.firestore {
 
       // WorkLogs subcollection
       match /workLogs/{workLogId} {
-        allow read: if isSignedIn();
-        allow write: if isPrivileged() ||
-          (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid);
+        allow read: if isSignedIn() &&
+          doesWorkLogMatchJobPosting(postId, resource.data) &&
+          canReadWorkLog(resource.data);
+
+        allow create: if isSignedIn() &&
+          isDatedWorkLogCreate(request.resource.data) &&
+          doesWorkLogMatchJobPosting(postId, request.resource.data) &&
+          (
+            isAdmin() ||
+            (isPrivileged() && request.resource.data.ownerId == request.auth.uid)
+          );
+
+        allow update: if doesWorkLogMatchJobPosting(postId, resource.data) &&
+          doesWorkLogMatchJobPosting(postId, request.resource.data) &&
+          (
+            isStaffWorkLogCheckInOutUpdate() ||
+            (
+              canManageWorkLogAuthoritatively() && (
+                isAuthoritativeWorkLogTimeUpdate() ||
+                isAuthoritativeWorkLogSettlementUpdate() ||
+                isAuthoritativeWorkLogCustomSettlementUpdate() ||
+                isAuthoritativeWorkLogRoleUpdate() ||
+                isAuthoritativeWorkLogLifecycleUpdate() ||
+                isAuthoritativeNegativeSettlementFlagUpdate()
+              )
+            )
+          );
+
+        allow delete: if doesWorkLogMatchJobPosting(postId, resource.data) &&
+          canManageWorkLogAuthoritatively();
       }
 
       // Hybrid Architecture: Applications subcollection (공고별 지원서)
@@ -1568,27 +1792,19 @@ service cloud.firestore {
 
       // 소유자/공고작성자/admin만 수정 가능 + status/payrollStatus enum 검증
       // 허용값 출처: workLog.schema.ts, statusValues.ts
-      allow update: if isSignedIn() && (
-        isAdmin() ||
-        (hasValidRole() && (
-          request.auth.uid == resource.data.ownerId ||
-          (exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
-        )) ||
-        isStaffWorkLogCheckInOutUpdate()
-      ) &&
-        (!('status' in request.resource.data) ||
-         request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']) &&
-        (!('payrollStatus' in request.resource.data) ||
-         request.resource.data.payrollStatus in ['pending', 'processing', 'completed']);
+      allow update: if isStaffWorkLogCheckInOutUpdate() || (
+        canManageWorkLogAuthoritatively() && (
+          isAuthoritativeWorkLogTimeUpdate() ||
+          isAuthoritativeWorkLogSettlementUpdate() ||
+          isAuthoritativeWorkLogCustomSettlementUpdate() ||
+          isAuthoritativeWorkLogRoleUpdate() ||
+          isAuthoritativeWorkLogLifecycleUpdate() ||
+          isAuthoritativeNegativeSettlementFlagUpdate()
+        )
+      );
 
       // 삭제 권한: Admin/Manager 또는 해당 공고 작성자 (Staff 포함)
-      allow delete: if isSignedIn() && (
-        isPrivileged() ||
-        (hasValidRole() &&
-         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
-      );
+      allow delete: if canManageWorkLogAuthoritatively();
 
       match /timeModificationLogs/{logId} {
         allow read: if canReadTimeModificationLog(resource.data);

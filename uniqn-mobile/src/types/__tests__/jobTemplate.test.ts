@@ -1,7 +1,10 @@
 import type { JobPostingFormData, JobPostingTemplate } from '@/types';
-import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
-import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
+import { STAFF_ROLES } from '@/constants';
 import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
+import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
+import { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
+
+const DEALER_ROLE_NAME = STAFF_ROLES.find((role) => role.key === 'dealer')?.name ?? 'dealer';
 
 function createTemplate(formData: JobPostingFormData): JobPostingTemplate {
   return {
@@ -21,7 +24,7 @@ describe('jobTemplate dated template helpers', () => {
       title: 'Tournament Template',
       roles: [
         {
-          name: '?쒕윭',
+          name: DEALER_ROLE_NAME,
           count: 6,
           salary: { type: 'hourly', amount: 13000 },
         },
@@ -83,28 +86,19 @@ describe('jobTemplate dated template helpers', () => {
 
     expect(template.templateData.schedule).toMatchObject({
       kind: 'dated',
-      templateTimeSlots: [
-        {
-          startTime: '18:00',
-        },
-      ],
+      templateTimeSlots: [{ startTime: '18:00' }],
     });
     expect(
       template.templateData.schedule &&
         template.templateData.schedule.kind === 'dated' &&
         template.templateData.schedule.templateTimeSlots[0]?.roles
-    ).toMatchObject([
-      {
-        role: 'dealer',
-        count: 2,
-      },
-    ]);
+    ).toMatchObject([{ role: 'dealer', count: 2 }]);
 
     const loaded = templateToFormData(template);
 
     expect(loaded.roles).toMatchObject([
       {
-        name: '?쒕윭',
+        name: DEALER_ROLE_NAME,
         count: 2,
         salary: { type: 'hourly', amount: 13000 },
       },
@@ -116,22 +110,17 @@ describe('jobTemplate dated template helpers', () => {
       datedTemplateTimeSlots: loaded.datedTemplateTimeSlots,
     });
 
-    expect(seededSlots[0]?.roles).toMatchObject([
-      {
-        role: 'dealer',
-        headcount: 2,
-      },
-    ]);
+    expect(seededSlots[0]?.roles).toMatchObject([{ role: 'dealer', headcount: 2 }]);
   });
 
-  it('rebuilds the seed schedule from edited roles while keeping template timing when only salary changes', () => {
+  it('preserves template timing for salary-only edits and regenerates slots when counts change', () => {
     const template = createTemplate({
       ...INITIAL_JOB_POSTING_FORM_DATA,
       postingType: 'regular',
       title: 'Reusable Template',
       roles: [
         {
-          name: '?쒕윭',
+          name: DEALER_ROLE_NAME,
           count: 2,
           salary: { type: 'hourly', amount: 13000 },
         },
@@ -156,51 +145,38 @@ describe('jobTemplate dated template helpers', () => {
         },
       ],
     });
+
     const loaded = {
       ...INITIAL_JOB_POSTING_FORM_DATA,
       ...templateToFormData(template),
     } as JobPostingFormData;
 
-    const salaryEditedData: JobPostingFormData = {
+    const salaryEditedTemplate = extractTemplateData({
       ...loaded,
       roles: [
         {
-          name: '?쒕윭',
+          name: DEALER_ROLE_NAME,
           count: 2,
           salary: { type: 'hourly', amount: 15000 },
         },
       ],
-    };
-
-    const salaryEditedTemplate = extractTemplateData(salaryEditedData);
+    });
 
     expect(salaryEditedTemplate.schedule).toMatchObject({
       kind: 'dated',
       templateTimeSlots: [{ startTime: '18:00' }],
     });
-    expect(
-      salaryEditedTemplate.schedule &&
-        salaryEditedTemplate.schedule.kind === 'dated' &&
-        salaryEditedTemplate.schedule.templateTimeSlots[0]?.roles
-    ).toMatchObject([
-      {
-        role: 'dealer',
-        count: 2,
-      },
-    ]);
 
-    const countEditedData: JobPostingFormData = {
+    const countEditedTemplate = extractTemplateData({
       ...loaded,
       roles: [
         {
-          name: '?쒕윭',
+          name: DEALER_ROLE_NAME,
           count: 3,
           salary: { type: 'hourly', amount: 15000 },
         },
       ],
-    };
-
-    const countEditedTemplate = extractTemplateData(countEditedData);
+    });
 
     expect(countEditedTemplate.schedule).toMatchObject({
       kind: 'dated',
@@ -210,11 +186,6 @@ describe('jobTemplate dated template helpers', () => {
       countEditedTemplate.schedule &&
         countEditedTemplate.schedule.kind === 'dated' &&
         countEditedTemplate.schedule.templateTimeSlots[0]?.roles
-    ).toMatchObject([
-      {
-        role: 'dealer',
-        count: 3,
-      },
-    ]);
+    ).toMatchObject([{ role: 'dealer', count: 3 }]);
   });
 });

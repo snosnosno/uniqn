@@ -150,7 +150,57 @@ describe('processQRCheckInOutTransaction fixed worklogs', () => {
       expect.objectContaining({ path: 'workLogs/wl-fixed' }),
       expect.objectContaining({
         status: 'checked_in',
+        checkInTime: { _serverTimestamp: true },
+        updatedAt: { _serverTimestamp: true },
       })
+    );
+  });
+
+  it('uses server timestamps for checkout writes while keeping local workDuration only in the return value', async () => {
+    const transaction = {
+      get: jest.fn((ref: { path: string }) => {
+        if (ref.path === 'workLogs/wl-checkout') {
+          return Promise.resolve(
+            createDocSnap('wl-checkout', {
+              id: 'wl-checkout',
+              staffId: 'staff-1',
+              jobPostingId: 'job-1',
+              date: '2025-01-15',
+              status: 'checked_in',
+              checkInTime: { toDate: () => new Date('2025-01-15T09:00:00.000Z') },
+            })
+          );
+        }
+
+        return Promise.resolve(createDocSnap('job-1', { status: 'active' }));
+      }),
+      update: jest.fn(),
+    };
+
+    mockRunTransaction.mockImplementation(async (_db, callback) => callback(transaction));
+
+    const result = await processQRCheckInOutTransaction(
+      'wl-checkout',
+      'staff-1',
+      'job-1',
+      'checkOut',
+      new Date('2025-01-15T12:00:00.000Z'),
+      '2025-01-15'
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        action: 'checkOut',
+        workDuration: 3,
+      })
+    );
+    expect(transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'workLogs/wl-checkout' }),
+      {
+        status: 'checked_out',
+        checkOutTime: { _serverTimestamp: true },
+        updatedAt: { _serverTimestamp: true },
+      }
     );
   });
 });

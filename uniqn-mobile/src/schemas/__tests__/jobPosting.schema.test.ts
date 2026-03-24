@@ -283,11 +283,11 @@ describe('jobPosting schemas', () => {
       ).toBe(false);
     });
 
-    it('rejects legacy operational fields that are no longer part of V3 canonical', () => {
+    it('rejects non-canonical top-level fields that are outside the V3 contract', () => {
       expect(
         jobPostingDocumentSchema.safeParse({
           ...createValidDocument(),
-          applicantCount: 3,
+          unexpectedField: 3,
         }).success
       ).toBe(false);
     });
@@ -397,10 +397,10 @@ describe('jobPosting schemas', () => {
       expect(isJobPostingDocument({ bad: true })).toBe(false);
     });
 
-    it('rejects legacy applicantCount on read', () => {
+    it('rejects non-canonical top-level fields on read', () => {
       const parsed = parseJobPostingDocument({
         ...createValidDocument(),
-        applicantCount: 2,
+        unexpectedField: 2,
       });
 
       expect(parsed).toBeNull();

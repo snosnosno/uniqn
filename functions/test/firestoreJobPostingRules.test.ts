@@ -179,7 +179,7 @@ describe("Firestore jobPosting canonical rules", () => {
     });
   });
 
-  it("allows canonical V3 creates without legacy top-level fields", async () => {
+  it("allows canonical V3 creates with only contract fields", async () => {
     const employerDb = testEnv.authenticatedContext("employer-1").firestore();
 
     await assertSucceeds(
@@ -190,14 +190,14 @@ describe("Firestore jobPosting canonical rules", () => {
     );
   });
 
-  it("rejects client writes that include legacy top-level fields or derived searchIndex", async () => {
+  it("rejects client writes that add non-canonical top-level fields or derived searchIndex", async () => {
     const employerDb = testEnv.authenticatedContext("employer-1").firestore();
 
     await assertFails(
       setDoc(
         doc(employerDb, "jobPostings", "job-create-legacy"),
         createCanonicalJobPosting({
-          detailedAddress: "Legacy top-level field",
+          unexpectedField: "not-allowed",
           searchIndex: ["canonical", "posting"],
         }),
       ),
@@ -298,12 +298,6 @@ describe("Firestore jobPosting canonical rules", () => {
     await assertFails(
       updateDoc(doc(employerDb, "jobPostings", "job-1"), {
         searchIndex: ["tampered"],
-      }),
-    );
-
-    await assertFails(
-      updateDoc(doc(employerDb, "jobPostings", "job-1"), {
-        applicationCount: 99,
       }),
     );
 

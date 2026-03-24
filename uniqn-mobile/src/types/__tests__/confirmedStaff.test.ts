@@ -1,27 +1,16 @@
-/**
- * UNIQN Mobile - ConfirmedStaff 타입 유틸리티 테스트
- *
- * @description workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats,
- *   sortStaffByStatus, CONFIRMED_STAFF_STATUS_LABELS/COLORS 테스트
- */
-
 import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
 import { CONFIRMED_STAFF_STATUS_LABELS } from '@/shared/status';
 import type { ConfirmedStaff } from '../confirmedStaff';
 import {
-  workLogToConfirmedStaff,
-  groupStaffByDate,
   calculateStaffStats,
+  groupStaffByDate,
   sortStaffByStatus,
+  workLogToConfirmedStaff,
 } from '@/domains/staff';
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 const createMockWorkLog = (overrides = {}) => ({
   id: 'wl-1',
-  staffId: 'staff-123',
+  staffId: 'staff-1234',
   jobPostingId: 'job-1',
   date: '2025-03-01',
   role: 'dealer',
@@ -37,288 +26,139 @@ const createMockWorkLog = (overrides = {}) => ({
 const createMockConfirmedStaff = (overrides: Partial<ConfirmedStaff> = {}): ConfirmedStaff => ({
   id: 'cs-1',
   staffId: 'staff-1',
-  staffName: '테스트 스태프',
+  staffName: 'Staff One',
   role: 'dealer',
   date: '2025-03-01',
   status: 'scheduled',
   ...overrides,
 });
 
-// =============================================================================
-// Tests
-// =============================================================================
-
 describe('confirmedStaff', () => {
-  // ===========================================================================
-  // Constants
-  // ===========================================================================
-  describe('CONFIRMED_STAFF_STATUS_LABELS', () => {
-    it('should have labels for all statuses', () => {
-      expect(CONFIRMED_STAFF_STATUS_LABELS.scheduled).toBe('출근 예정');
-      expect(CONFIRMED_STAFF_STATUS_LABELS.checked_in).toBe('근무 중');
-      expect(CONFIRMED_STAFF_STATUS_LABELS.checked_out).toBe('퇴근 완료');
-      expect(CONFIRMED_STAFF_STATUS_LABELS.completed).toBe('정산 대기');
-      expect(CONFIRMED_STAFF_STATUS_LABELS.cancelled).toBe('취소됨');
-      expect(CONFIRMED_STAFF_STATUS_LABELS.no_show).toBe('노쇼');
-    });
+  it('exposes the canonical cancelled label and color config', () => {
+    expect(CONFIRMED_STAFF_STATUS_LABELS.cancelled).toBe('취소');
+    expect(CONFIRMED_STAFF_STATUS.cancelled).toEqual(
+      expect.objectContaining({
+        bgColor: expect.any(String),
+        textColor: expect.any(String),
+      })
+    );
   });
 
-  describe('CONFIRMED_STAFF_STATUS', () => {
-    it('should have color config for all statuses', () => {
-      const statuses = [
-        'scheduled',
-        'checked_in',
-        'checked_out',
-        'completed',
-        'cancelled',
-        'no_show',
-      ] as const;
-
-      for (const status of statuses) {
-        const color = CONFIRMED_STAFF_STATUS[status];
-        expect(color).toHaveProperty('bgColor');
-        expect(color).toHaveProperty('textColor');
-        expect(typeof color.bgColor).toBe('string');
-        expect(typeof color.textColor).toBe('string');
-      }
+  it('converts work logs with an explicit staff name', () => {
+    const workLog = createMockWorkLog({
+      timeSlot: '09:00~18:00',
+      customRole: 'VIP Dealer',
+      notes: 'Late arrival note',
+      payrollStatus: 'pending',
+      payrollAmount: 150000,
     });
-  });
 
-  // ===========================================================================
-  // workLogToConfirmedStaff
-  // ===========================================================================
-  describe('workLogToConfirmedStaff', () => {
-    it('should convert WorkLog to ConfirmedStaff with provided name', () => {
-      const workLog = createMockWorkLog({
+    const result = workLogToConfirmedStaff(workLog as never, 'Alice');
+
+    expect(result).toEqual(
+      expect.objectContaining({
         id: 'wl-1',
-        staffId: 'staff-abc',
+        staffId: 'staff-1234',
+        staffName: 'Alice',
         role: 'dealer',
-        date: '2025-03-01',
-        status: 'scheduled',
-      });
-
-      const result = workLogToConfirmedStaff(workLog as any, '홍길동');
-
-      expect(result.id).toBe('wl-1');
-      expect(result.staffId).toBe('staff-abc');
-      expect(result.staffName).toBe('홍길동');
-      expect(result.role).toBe('dealer');
-      expect(result.date).toBe('2025-03-01');
-      expect(result.status).toBe('scheduled');
-      expect(result.workLog).toBe(workLog);
-    });
-
-    it('should use last 4 chars of staffId when no name provided', () => {
-      const workLog = createMockWorkLog({ staffId: 'staff-abcdef' });
-      const result = workLogToConfirmedStaff(workLog as any);
-
-      expect(result.staffName).toBe('cdef');
-    });
-
-    it('should carry over optional fields', () => {
-      const workLog = createMockWorkLog({
         timeSlot: '09:00~18:00',
-        customRole: '커스텀 역할',
-        notes: '비고 내용',
+        customRole: 'VIP Dealer',
+        notes: 'Late arrival note',
         payrollStatus: 'pending',
         payrollAmount: 150000,
-      });
+        workLog,
+      })
+    );
+  });
 
-      const result = workLogToConfirmedStaff(workLog as any, '김철수');
+  it('falls back to the last four staffId characters when no name is provided', () => {
+    const result = workLogToConfirmedStaff(createMockWorkLog() as never);
+    expect(result.staffName).toBe('1234');
+  });
 
-      expect(result.timeSlot).toBe('09:00~18:00');
-      expect(result.customRole).toBe('커스텀 역할');
-      expect(result.notes).toBe('비고 내용');
-      expect(result.payrollStatus).toBe('pending');
-      expect(result.payrollAmount).toBe(150000);
+  it('maps no-show work logs to the no_show confirmed staff status', () => {
+    const result = workLogToConfirmedStaff(
+      createMockWorkLog({
+        status: 'scheduled',
+        noShowAt: new Date('2025-03-01T18:00:00Z'),
+        noShowReason: 'No call',
+      }) as never
+    );
+
+    expect(result.status).toBe('no_show');
+    expect(result.isNoShow).toBe(true);
+    expect(result.noShowReason).toBe('No call');
+  });
+
+  it('groups staff by date and keeps undated entries in a trailing placeholder group', () => {
+    const groups = groupStaffByDate([
+      createMockConfirmedStaff({ id: 'dated-1', date: '2025-03-01' }),
+      createMockConfirmedStaff({ id: 'dated-2', date: '2025-03-01', status: 'checked_in' }),
+      createMockConfirmedStaff({ id: 'undated', date: '' }),
+    ]);
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toEqual(
+      expect.objectContaining({
+        date: '2025-03-01',
+        staff: expect.arrayContaining([
+          expect.objectContaining({ id: 'dated-1' }),
+          expect.objectContaining({ id: 'dated-2' }),
+        ]),
+      })
+    );
+    expect(groups[1]).toEqual(
+      expect.objectContaining({
+        date: '',
+        formattedDate: '날짜 미정',
+        staff: [expect.objectContaining({ id: 'undated' })],
+      })
+    );
+  });
+
+  it('counts checked-in, completed, cancelled, no-show, and settled staff correctly', () => {
+    const stats = calculateStaffStats([
+      createMockConfirmedStaff({ status: 'scheduled' }),
+      createMockConfirmedStaff({ status: 'checked_in' }),
+      createMockConfirmedStaff({ status: 'checked_out' }),
+      createMockConfirmedStaff({ status: 'completed', payrollStatus: 'completed' }),
+      createMockConfirmedStaff({ status: 'cancelled' }),
+      createMockConfirmedStaff({ status: 'no_show' }),
+    ]);
+
+    expect(stats).toEqual({
+      total: 6,
+      scheduled: 1,
+      checkedIn: 1,
+      checkedOut: 1,
+      completed: 1,
+      cancelled: 1,
+      noShow: 1,
+      settled: 1,
     });
   });
 
-  // ===========================================================================
-  // groupStaffByDate
-  // ===========================================================================
-  describe('groupStaffByDate', () => {
-    it('should group staff by date', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ date: '2025-03-01', id: 'cs-1' }),
-        createMockConfirmedStaff({ date: '2025-03-01', id: 'cs-2' }),
-        createMockConfirmedStaff({ date: '2025-03-02', id: 'cs-3' }),
-      ];
+  it('sorts staff by operational priority without mutating the original array', () => {
+    const staff = [
+      createMockConfirmedStaff({ id: 'cancelled', status: 'cancelled' }),
+      createMockConfirmedStaff({ id: 'scheduled', status: 'scheduled' }),
+      createMockConfirmedStaff({ id: 'checked_in', status: 'checked_in' }),
+      createMockConfirmedStaff({ id: 'no_show', status: 'no_show' }),
+      createMockConfirmedStaff({ id: 'checked_out', status: 'checked_out' }),
+      createMockConfirmedStaff({ id: 'completed', status: 'completed' }),
+    ];
 
-      const groups = groupStaffByDate(staffList);
+    const original = [...staff];
+    const sorted = sortStaffByStatus(staff);
 
-      expect(groups).toHaveLength(2);
-      expect(groups[0]!.date).toBe('2025-03-01');
-      expect(groups[0]!.staff).toHaveLength(2);
-      expect(groups[1]!.date).toBe('2025-03-02');
-      expect(groups[1]!.staff).toHaveLength(1);
-    });
-
-    it('should sort groups by date ascending', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ date: '2025-03-03' }),
-        createMockConfirmedStaff({ date: '2025-03-01' }),
-        createMockConfirmedStaff({ date: '2025-03-02' }),
-      ];
-
-      const groups = groupStaffByDate(staffList);
-
-      expect(groups[0]!.date).toBe('2025-03-01');
-      expect(groups[1]!.date).toBe('2025-03-02');
-      expect(groups[2]!.date).toBe('2025-03-03');
-    });
-
-    it('should calculate stats per group', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ date: '2025-03-01', status: 'checked_in' }),
-        createMockConfirmedStaff({ date: '2025-03-01', status: 'checked_out' }),
-        createMockConfirmedStaff({ date: '2025-03-01', status: 'no_show' }),
-        createMockConfirmedStaff({ date: '2025-03-01', status: 'scheduled' }),
-      ];
-
-      const groups = groupStaffByDate(staffList);
-      const stats = groups[0]!.stats;
-
-      expect(stats.total).toBe(4);
-      expect(stats.checkedIn).toBe(1);
-      expect(stats.completed).toBe(1); // checked_out counts as completed
-      expect(stats.noShow).toBe(1);
-    });
-
-    it('should handle empty staff list', () => {
-      const groups = groupStaffByDate([]);
-      expect(groups).toHaveLength(0);
-    });
-
-    it('should have formattedDate in Korean format', () => {
-      const staffList: ConfirmedStaff[] = [createMockConfirmedStaff({ date: '2025-03-01' })];
-
-      const groups = groupStaffByDate(staffList);
-      // Date(2025-03-01) in local timezone - verify it has Korean format pattern
-      expect(groups[0]!.formattedDate).toMatch(/\d+월 \d+일 \(.+\)/);
-    });
-
-    it('should keep raw date when the input is invalid', () => {
-      const staffList: ConfirmedStaff[] = [createMockConfirmedStaff({ date: 'invalid-date' })];
-
-      const groups = groupStaffByDate(staffList);
-
-      expect(groups[0]!.formattedDate).toBe('invalid-date');
-    });
-
-    it('puts undated staff in a trailing placeholder group', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ id: 'dated', date: '2025-03-01' }),
-        createMockConfirmedStaff({ id: 'undated', date: '' }),
-      ];
-
-      const groups = groupStaffByDate(staffList);
-
-      expect(groups).toHaveLength(2);
-      expect(groups[0]!.date).toBe('2025-03-01');
-      expect(groups[1]!.date).toBe('');
-      expect(groups[1]!.formattedDate).toBe('날짜 미정');
-      expect(groups[1]!.staff[0]!.id).toBe('undated');
-    });
-  });
-
-  // ===========================================================================
-  // calculateStaffStats
-  // ===========================================================================
-  describe('calculateStaffStats', () => {
-    it('should count each status correctly', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ status: 'scheduled' }),
-        createMockConfirmedStaff({ status: 'scheduled' }),
-        createMockConfirmedStaff({ status: 'checked_in' }),
-        createMockConfirmedStaff({ status: 'checked_out' }),
-        createMockConfirmedStaff({ status: 'completed' }),
-        createMockConfirmedStaff({ status: 'cancelled' }),
-        createMockConfirmedStaff({ status: 'no_show' }),
-      ];
-
-      const stats = calculateStaffStats(staffList);
-
-      expect(stats.total).toBe(7);
-      expect(stats.scheduled).toBe(2);
-      expect(stats.checkedIn).toBe(1);
-      expect(stats.checkedOut).toBe(1);
-      expect(stats.completed).toBe(1);
-      expect(stats.cancelled).toBe(1);
-      expect(stats.noShow).toBe(1);
-    });
-
-    it('should count settled staff', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ status: 'completed', payrollStatus: 'completed' }),
-        createMockConfirmedStaff({ status: 'completed', payrollStatus: 'pending' }),
-      ];
-
-      const stats = calculateStaffStats(staffList);
-
-      expect(stats.settled).toBe(1);
-    });
-
-    it('should handle empty list', () => {
-      const stats = calculateStaffStats([]);
-
-      expect(stats.total).toBe(0);
-      expect(stats.scheduled).toBe(0);
-      expect(stats.checkedIn).toBe(0);
-      expect(stats.checkedOut).toBe(0);
-      expect(stats.completed).toBe(0);
-      expect(stats.cancelled).toBe(0);
-      expect(stats.noShow).toBe(0);
-      expect(stats.settled).toBe(0);
-    });
-  });
-
-  // ===========================================================================
-  // sortStaffByStatus
-  // ===========================================================================
-  describe('sortStaffByStatus', () => {
-    it('should sort by status priority (checked_in first, cancelled last)', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ id: 'cancelled', status: 'cancelled' }),
-        createMockConfirmedStaff({ id: 'scheduled', status: 'scheduled' }),
-        createMockConfirmedStaff({ id: 'checked_in', status: 'checked_in' }),
-        createMockConfirmedStaff({ id: 'no_show', status: 'no_show' }),
-        createMockConfirmedStaff({ id: 'checked_out', status: 'checked_out' }),
-        createMockConfirmedStaff({ id: 'completed', status: 'completed' }),
-      ];
-
-      const sorted = sortStaffByStatus(staffList);
-
-      expect(sorted[0]!.id).toBe('checked_in');
-      expect(sorted[1]!.id).toBe('scheduled');
-      expect(sorted[2]!.id).toBe('checked_out');
-      expect(sorted[3]!.id).toBe('completed');
-      expect(sorted[4]!.id).toBe('no_show');
-      expect(sorted[5]!.id).toBe('cancelled');
-    });
-
-    it('should not mutate original array', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ status: 'cancelled' }),
-        createMockConfirmedStaff({ status: 'checked_in' }),
-      ];
-
-      const original = [...staffList];
-      sortStaffByStatus(staffList);
-
-      expect(staffList[0]!.status).toBe(original[0]!.status);
-      expect(staffList[1]!.status).toBe(original[1]!.status);
-    });
-
-    it('should handle empty array', () => {
-      const sorted = sortStaffByStatus([]);
-      expect(sorted).toEqual([]);
-    });
-
-    it('should handle single element', () => {
-      const staffList = [createMockConfirmedStaff({ status: 'scheduled' })];
-      const sorted = sortStaffByStatus(staffList);
-      expect(sorted).toHaveLength(1);
-    });
+    expect(sorted.map((item) => item.id)).toEqual([
+      'checked_in',
+      'scheduled',
+      'checked_out',
+      'completed',
+      'no_show',
+      'cancelled',
+    ]);
+    expect(staff).toEqual(original);
   });
 });

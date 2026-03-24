@@ -48,11 +48,17 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('@/shared/status', () => ({
-  StatusMapper: {
-    toConfirmedStaff: jest.fn((status: string) => status),
-  },
-}));
+jest.mock('@/shared/status', () => {
+  const actual = jest.requireActual('@/shared/status');
+
+  return {
+    ...actual,
+    StatusMapper: {
+      ...actual.StatusMapper,
+      toConfirmedStaff: jest.fn((status: string) => status),
+    },
+  };
+});
 
 jest.mock('@/shared/time', () => ({
   TimeNormalizer: {

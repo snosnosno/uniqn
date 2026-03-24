@@ -217,6 +217,7 @@ function isCompletedFromWorkLog(data: WorkLogData): boolean {
   return (
     data.status === "checked_out" ||
     data.status === "completed" ||
+    data.status === "no_show" ||
     (data.status === "cancelled" && Boolean(data.noShowAt))
   );
 }

@@ -13,7 +13,6 @@ import {
   AlreadyCheckedInError,
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
-import { parseTimeSlotToDate } from '@/utils/date';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument } from '@/schemas';
 import type { PayrollStatus, QRCodeAction } from '@/types';
@@ -324,16 +323,14 @@ export async function processQRCheckInOutTransaction(
 
         const updateData: Record<string, unknown> = {
           status: STATUS.WORK_LOG.CHECKED_IN,
-          checkInTime: Timestamp.fromDate(checkTime),
+          // Attendance timestamps are server-owned so staff cannot spoof device time.
+          checkInTime: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
 
         // checkInTime이 없으면 timeSlot에서 파싱해서 저장
         if (!workLog.checkInTime && workLog.timeSlot && date) {
-          const { startTime } = parseTimeSlotToDate(workLog.timeSlot, date);
-          if (startTime) {
-            updateData.checkInTime = Timestamp.fromDate(checkTime);
-          }
+          // Server timestamps are authoritative for QR attendance writes.
         }
 
         transaction.update(workLogRef, updateData);
@@ -367,8 +364,7 @@ export async function processQRCheckInOutTransaction(
 
         transaction.update(workLogRef, {
           status: STATUS.WORK_LOG.CHECKED_OUT,
-          checkOutTime: Timestamp.fromDate(checkTime),
-          workDuration,
+          checkOutTime: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
 

@@ -37,8 +37,11 @@ jest.mock('@/constants', () => ({
   },
 }));
 
-jest.mock('@/types', () => ({
+jest.mock('@/types/assignment', () => ({
   isValidAssignment: jest.fn(),
+}));
+
+jest.mock('@/domains/application', () => ({
   validateRequiredAnswers: jest.fn(),
 }));
 

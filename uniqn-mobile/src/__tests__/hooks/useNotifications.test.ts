@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { resetCounters, createMockNotification } from '../mocks/factories';
 
 // ============================================================================
@@ -756,7 +756,7 @@ describe('useNotifications Hooks', () => {
   // ==========================================================================
 
   describe('useNotificationPermission', () => {
-    it('should return correct initial structure', () => {
+    it('should return correct initial structure', async () => {
       mockCheckNotificationPermission.mockResolvedValue({
         granted: false,
         canAskAgain: true,
@@ -764,6 +764,10 @@ describe('useNotifications Hooks', () => {
       });
 
       const { result } = renderHook(() => useNotificationPermission());
+
+      await waitFor(() => {
+        expect(mockCheckNotificationPermission).toHaveBeenCalledTimes(1);
+      });
 
       expect(result.current).toHaveProperty('granted');
       expect(result.current).toHaveProperty('canAskAgain');
@@ -772,7 +776,7 @@ describe('useNotifications Hooks', () => {
       expect(result.current).toHaveProperty('requestPermission');
     });
 
-    it('should have initial undetermined state', () => {
+    it('should have initial undetermined state', async () => {
       mockCheckNotificationPermission.mockResolvedValue({
         granted: false,
         canAskAgain: true,
@@ -780,6 +784,10 @@ describe('useNotifications Hooks', () => {
       });
 
       const { result } = renderHook(() => useNotificationPermission());
+
+      await waitFor(() => {
+        expect(mockCheckNotificationPermission).toHaveBeenCalledTimes(1);
+      });
 
       expect(result.current.granted).toBe(false);
       expect(result.current.canAskAgain).toBe(true);
@@ -787,7 +795,7 @@ describe('useNotifications Hooks', () => {
       expect(result.current.isRequesting).toBe(false);
     });
 
-    it('should have requestPermission as a function', () => {
+    it('should have requestPermission as a function', async () => {
       mockCheckNotificationPermission.mockResolvedValue({
         granted: false,
         canAskAgain: true,
@@ -796,19 +804,55 @@ describe('useNotifications Hooks', () => {
 
       const { result } = renderHook(() => useNotificationPermission());
 
+      await waitFor(() => {
+        expect(mockCheckNotificationPermission).toHaveBeenCalledTimes(1);
+      });
+
       expect(typeof result.current.requestPermission).toBe('function');
     });
 
-    it('should call checkNotificationPermission on mount', () => {
+    it('should call checkNotificationPermission on mount', async () => {
       mockCheckNotificationPermission.mockResolvedValue({
         granted: true,
         canAskAgain: false,
         status: 'granted',
       });
 
-      renderHook(() => useNotificationPermission());
+      const { result } = renderHook(() => useNotificationPermission());
 
-      expect(mockCheckNotificationPermission).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(mockCheckNotificationPermission).toHaveBeenCalledTimes(1);
+        expect(result.current.status).toBe('granted');
+      });
+    });
+
+    it('should update permission state after requestPermission resolves', async () => {
+      mockCheckNotificationPermission.mockResolvedValue({
+        granted: false,
+        canAskAgain: true,
+        status: 'undetermined',
+      });
+      mockRequestNotificationPermission.mockResolvedValue({
+        granted: true,
+        canAskAgain: false,
+        status: 'granted',
+      });
+
+      const { result } = renderHook(() => useNotificationPermission());
+
+      await waitFor(() => {
+        expect(mockCheckNotificationPermission).toHaveBeenCalledTimes(1);
+      });
+
+      await act(async () => {
+        await result.current.requestPermission();
+      });
+
+      expect(mockRequestNotificationPermission).toHaveBeenCalledTimes(1);
+      expect(result.current.granted).toBe(true);
+      expect(result.current.canAskAgain).toBe(false);
+      expect(result.current.status).toBe('granted');
+      expect(result.current.isRequesting).toBe(false);
     });
   });
 });

@@ -466,36 +466,72 @@ export function useSaveNotificationSettings() {
 /**
  * 푸시 알림 권한 훅
  */
+type NotificationPermissionState = {
+  granted: boolean;
+  canAskAgain: boolean;
+  status: 'granted' | 'denied' | 'undetermined';
+};
+
+function isSameNotificationPermissionState(
+  current: NotificationPermissionState,
+  next: NotificationPermissionState
+) {
+  return (
+    current.granted === next.granted &&
+    current.canAskAgain === next.canAskAgain &&
+    current.status === next.status
+  );
+}
+
 export function useNotificationPermission() {
-  const [permission, setPermission] = useState<{
-    granted: boolean;
-    canAskAgain: boolean;
-    status: 'granted' | 'denied' | 'undetermined';
-  }>({
+  const [permission, setPermission] = useState<NotificationPermissionState>({
     granted: false,
     canAskAgain: true,
     status: 'undetermined',
   });
   const [isRequesting, setIsRequesting] = useState(false);
+  const isMountedRef = useRef(true);
 
   // 권한 확인
   useEffect(() => {
+    isMountedRef.current = true;
+
     const check = async () => {
       const result = await checkNotificationPermission();
-      setPermission(result);
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setPermission((current) =>
+        isSameNotificationPermissionState(current, result) ? current : result
+      );
     };
-    check();
+
+    void check();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   // 권한 요청
   const requestPermission = useCallback(async () => {
-    setIsRequesting(true);
+    if (isMountedRef.current) {
+      setIsRequesting(true);
+    }
+
     try {
       const result = await requestNotificationPermission();
-      setPermission(result);
+      if (isMountedRef.current) {
+        setPermission((current) =>
+          isSameNotificationPermissionState(current, result) ? current : result
+        );
+      }
       return result;
     } finally {
-      setIsRequesting(false);
+      if (isMountedRef.current) {
+        setIsRequesting(false);
+      }
     }
   }, []);
 

@@ -169,6 +169,11 @@ async function prefetchRelatedWorkLogIds(applicationId: string): Promise<string[
   }
 }
 
+/**
+ * Posting applicant counters are reconciled by the canonical Functions trigger.
+ * Client transactions intentionally leave `jobPostings.stats` untouched so the
+ * rules contract and trigger-owned source of truth stay aligned.
+ */
 function updateJobPostingStatsInTransaction(params: {
   transaction: Transaction;
   jobRef: ReturnType<typeof doc>;

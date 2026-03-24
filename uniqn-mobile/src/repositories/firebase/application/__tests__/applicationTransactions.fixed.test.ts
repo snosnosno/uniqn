@@ -73,7 +73,7 @@ jest.mock('@/types/assignment', () => ({
   })),
 }));
 
-jest.mock('@/types', () => ({
+jest.mock('@/domains/application', () => ({
   createHistoryEntry: jest.fn((assignments: unknown[]) => ({
     assignments,
     confirmedAt: '2026-03-21T00:00:00.000Z',
@@ -87,9 +87,6 @@ jest.mock('@/types', () => ({
   findActiveConfirmation: jest.fn((history: Record<string, unknown>[]) =>
     history.find((entry) => !entry.cancelledAt)
   ),
-}));
-
-jest.mock('@/domains/application', () => ({
   updatePostingScheduleFilled: jest.fn((schedule: unknown) => schedule),
 }));
 

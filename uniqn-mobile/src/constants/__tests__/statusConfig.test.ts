@@ -1,18 +1,19 @@
 import {
-  APPLICATION_STATUS,
-  SCHEDULE_STATUS,
-  ATTENDANCE_STATUS,
-  PAYROLL_STATUS,
-  JOB_POSTING_STATUS,
-  INQUIRY_STATUS,
   ANNOUNCEMENT_PRIORITY,
+  APPLICATION_STATUS,
+  ATTENDANCE_STATUS,
   getStatusConfig,
-  getStatusLabel,
   getStatusHexColor,
+  getStatusLabel,
   getStatusVariant,
+  INQUIRY_STATUS,
+  JOB_POSTING_STATUS,
+  PAYROLL_STATUS,
+  SCHEDULE_STATUS,
   type ApplicationStatusType,
   type ScheduleStatusType,
 } from '../statusConfig';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 describe('StatusConfig', () => {
   describe('APPLICATION_STATUS', () => {
@@ -34,8 +35,8 @@ describe('StatusConfig', () => {
       });
     });
 
-    it('should have correct label for applied status', () => {
-      expect(APPLICATION_STATUS.applied.label).toBe('지원완료');
+    it('uses the canonical shared label for applied status', () => {
+      expect(APPLICATION_STATUS.applied.label).toBe(APPLICATION_STATUS_LABELS.applied);
     });
 
     it('should have correct variant for confirmed status', () => {
@@ -122,9 +123,11 @@ describe('StatusConfig', () => {
   });
 
   describe('getStatusLabel', () => {
-    it('should return label for valid status', () => {
-      expect(getStatusLabel(APPLICATION_STATUS, 'applied')).toBe('지원완료');
-      expect(getStatusLabel(APPLICATION_STATUS, 'confirmed')).toBe('확정');
+    it('should return labels from the canonical config map', () => {
+      expect(getStatusLabel(APPLICATION_STATUS, 'applied')).toBe(APPLICATION_STATUS_LABELS.applied);
+      expect(getStatusLabel(APPLICATION_STATUS, 'confirmed')).toBe(
+        APPLICATION_STATUS_LABELS.confirmed
+      );
     });
 
     it('should return fallback for invalid status', () => {

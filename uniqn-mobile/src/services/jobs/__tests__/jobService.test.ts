@@ -30,6 +30,7 @@ import { jobPostingRepository } from '@/repositories';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability/performanceService';
 import { toJobPostingCard } from '@/domains/job-posting';
+import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
@@ -72,7 +73,7 @@ jest.mock('@/services/observability/performanceService', () => ({
   startApiTrace: jest.fn(() => mockTrace),
 }));
 
-jest.mock('@/types', () => ({
+jest.mock('@/domains/job-posting', () => ({
   toJobPostingCard: jest.fn((posting: unknown) => ({
     ...(posting as Record<string, unknown>),
     _isCard: true,
@@ -93,6 +94,7 @@ const mockToJobPostingCard = toJobPostingCard as jest.Mock;
 function createMockJobPosting(overrides: Record<string, unknown> = {}) {
   return {
     id: 'job-1',
+    schemaVersion: JOB_POSTING_SCHEMA_VERSION,
     title: '테스트 공고',
     description: '테스트 설명',
     location: { name: '서울 강남구', address: '서울시 강남구 테헤란로 123' },
@@ -108,6 +110,12 @@ function createMockJobPosting(overrides: Record<string, unknown> = {}) {
     },
     isUrgent: false,
     roles: [{ role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } }],
+    roleCatalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
+    compensation: {
+      mode: 'shared',
+      defaultSalary: { type: 'daily', amount: 150000 },
+      allowances: {},
+    },
     stats: {
       totalApplicants: 0,
       activeApplicants: 0,
