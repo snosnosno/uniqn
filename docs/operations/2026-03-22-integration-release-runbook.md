@@ -78,21 +78,21 @@ Gate condition:
 
 - Do not start the app rollout until both function revisions and Firestore rules are live.
 
-## Legacy Writer Audit
+## Historical Cutover Writer Audit
 
-Complete this before the app rollout:
+This checklist was part of the V3 cutover validation on `2026-03-22`. Keep it as historical reference if a future canonical writer regression is suspected.
 
 1. List deployed functions:
    - `npx firebase-tools functions:list`
 2. Review recent logs for the canonical job posting trigger pair:
    - `npx firebase-tools functions:log --only validateJobPostingData,updateJobPostingApplicantCount --lines 100`
 3. Inspect recent `jobPostings` documents in the production Firebase project.
-4. Stop the rollout if any newly written document still contains legacy fields such as `applicantCount` or `lastUpdated`.
+4. Investigate any newly written document that includes non-canonical fields such as `applicantCount` or `lastUpdated`.
 
-Decision rule:
+Historical decision rule:
 
-- If a legacy writer is still active, redeploy or disable that writer before the app rollout.
-- If only old persisted documents remain, keep the read-compat hotfix and move data cleanup to a follow-up task.
+- If a non-canonical writer was still active during cutover, redeploy or disable that writer before the app rollout.
+- If only old persisted documents remained during cutover, treat data cleanup as a follow-up task rather than a current runtime contract issue.
 
 ## Observability And Follow-up
 

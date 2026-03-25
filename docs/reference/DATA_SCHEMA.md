@@ -229,7 +229,7 @@ confirmed → cancellation_pending → cancelled (승인) 또는 confirmed (거�
 >
 > Runtime and Firestore writes now use `schemaVersion: 3` documents. Legacy `timeSlot`, `isUrgent`,
 > `usesPreQuestions`, top-level `detailedAddress`, and slot-level salary are no longer canonical
-> storage fields. Job posting runtime reads are now strict V3 parse-based; legacy persisted documents
+> storage fields. Job posting runtime reads are now strict V3 parse-based; persisted non-canonical documents
 > fail parsing and are filtered out of app surfaces.
 >
 > Top-level query helper fields:
@@ -1482,9 +1482,9 @@ const badQuery = async () => {
 
 job posting 런타임 읽기 경로는 strict V3 parse 기반이며, Firestore write 계약도 strict V3 canonical입니다.
 - ✅ 브리지 계층 유지: canonical 문서 <-> 레거시 form facade/state 변환
-- ❌ 레거시 persisted jobPosting 읽기: strict parser 실패 시 앱 surface에서 제외
+- ❌ non-canonical persisted jobPosting 읽기: strict parser 실패 시 앱 surface에서 제외
 - ✅ 새 데이터 쓰기: 표준 필드만 허용 (`schemaVersion: 3`, canonical nested sections)
-- ❌ 레거시 top-level write: `detailedAddress`, `preQuestions`, `usesPreQuestions`, slot-level salary, `draft` status
+- ❌ non-canonical top-level write: `detailedAddress`, `preQuestions`, `usesPreQuestions`, slot-level salary, `draft` status
 
 ```typescript
 // 읽기 시 정규화 (IdNormalizer 패턴)

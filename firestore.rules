@@ -1108,7 +1108,7 @@ service cloud.firestore {
           request.resource.data.customTaxSettings.type in ['none', 'rate', 'fixed'] &&
           request.resource.data.customTaxSettings.value is number &&
           (!('taxableItems' in request.resource.data.customTaxSettings) ||
-           request.resource.data.customTaxSettings.taxableItems is map))) &&
+           validateTaxableItemsMap(request.resource.data.customTaxSettings.taxableItems)))) &&
         (!changedFields.hasAny(['settlementModificationHistory']) ||
          request.resource.data.settlementModificationHistory is list);
     }

@@ -5,8 +5,14 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { usePathname, useRouter, useSegments } from 'expo-router';
-import { getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
+import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
+import {
+  buildPostAuthRedirectFromSegments,
+  getAuthenticatedEntryRoute,
+  getLoginRoute,
+  getResolvedAuthenticatedRoute,
+  normalizePostAuthRedirect,
+} from '@/shared/navigation/authRedirect';
 import { RoleResolver } from '@/shared/role';
 import { useAuthStore, selectIsLoading, selectProfile } from '@/stores/authStore';
 import type { UserRole } from '@/types';
@@ -54,6 +60,7 @@ export function useAuthGuard(): void {
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
+  const searchParams = useGlobalSearchParams<{ redirect?: string | string[] }>();
 
   const isLoading = useAuthStore(selectIsLoading);
   const profile = useAuthStore(selectProfile);
@@ -78,17 +85,29 @@ export function useAuthGuard(): void {
     if (isLoading || (isAuthenticated && !profile)) return;
 
     const routeGroup = extractRouteGroup(segments);
+    const redirectParam = Array.isArray(searchParams.redirect)
+      ? searchParams.redirect[0]
+      : searchParams.redirect;
+    const requestedRedirect = normalizePostAuthRedirect(redirectParam);
+    const currentProtectedRoute = buildPostAuthRedirectFromSegments(segments);
+    const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
     const isOnSignup = segments.includes('signup' as never);
     const isOnProfileSetup = pathname === '/profile-setup' || pathname === '/(app)/profile-setup';
+    const resolvedAuthenticatedRoute = getResolvedAuthenticatedRoute({
+      socialProvider,
+      phoneVerified,
+      profileCompleted,
+      redirect: postAuthRedirect,
+    });
 
     if (!routeGroup) {
       if ((pathname === '/' || pathname === '/index') && isAuthenticated) {
         logger.debug('Authenticated user entered root route', {
           component: 'useAuthGuard',
           pathname,
-          authenticatedEntryRoute,
+          authenticatedEntryRoute: resolvedAuthenticatedRoute,
         });
-        routerRef.current.replace(authenticatedEntryRoute);
+        routerRef.current.replace(resolvedAuthenticatedRoute);
       }
       return;
     }
@@ -103,9 +122,9 @@ export function useAuthGuard(): void {
       logger.debug('Authenticated user entered auth group', {
         component: 'useAuthGuard',
         pathname,
-        authenticatedEntryRoute,
+        authenticatedEntryRoute: resolvedAuthenticatedRoute,
       });
-      routerRef.current.replace(authenticatedEntryRoute);
+      routerRef.current.replace(resolvedAuthenticatedRoute);
       return;
     }
 
@@ -115,7 +134,7 @@ export function useAuthGuard(): void {
         pathname,
         socialProvider,
       });
-      routerRef.current.replace(authenticatedEntryRoute);
+      routerRef.current.replace(resolvedAuthenticatedRoute);
       return;
     }
 
@@ -128,7 +147,7 @@ export function useAuthGuard(): void {
         component: 'useAuthGuard',
         pathname,
       });
-      routerRef.current.replace(authenticatedEntryRoute);
+      routerRef.current.replace(resolvedAuthenticatedRoute);
       return;
     }
 
@@ -137,8 +156,9 @@ export function useAuthGuard(): void {
         component: 'useAuthGuard',
         pathname,
         routeGroup,
+        redirect: currentProtectedRoute,
       });
-      routerRef.current.replace('/(auth)/login');
+      routerRef.current.replace(getLoginRoute(currentProtectedRoute));
       return;
     }
 
@@ -161,7 +181,10 @@ export function useAuthGuard(): void {
     isAuthenticated,
     isLoading,
     pathname,
+    phoneVerified,
     profile,
+    profileCompleted,
+    searchParams.redirect,
     segments,
     socialProvider,
     userRole,

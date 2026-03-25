@@ -149,6 +149,8 @@ Executed on `2026-03-21` after merging `codex/ui-shared-surfaces` and `codex/per
 
 ## Post-Integration Compatibility Remediation Snapshot
 
+This section is a historical incident record from the cutover window. The current codebase assumes no persisted non-canonical `jobPostings` remain.
+
 Executed on `2026-03-22` after reproducing the employer-side “job posting not found” regression during create -> apply verification.
 
 - Root cause:
@@ -175,8 +177,8 @@ Executed on `2026-03-22` after reproducing the employer-side “job posting not 
   - Result: all passed, with the pre-existing lint warning only
 - Operational interpretation:
   - current integration source does not write legacy applicant counters or `lastUpdated`
-  - if those fields continue to appear in the production Firebase project, an older deployed writer or legacy client likely still exists
-  - Firebase `functions` deployment may still be required outside the integration codebase to stop future legacy writes
+  - at the time of the incident, any continued appearance of those fields would have indicated an older deployed writer or legacy client
+  - keep this snapshot as cutover history, not as evidence of an active runtime writer in the current contract
 
 ## Real-Login Smoke Follow-Up
 

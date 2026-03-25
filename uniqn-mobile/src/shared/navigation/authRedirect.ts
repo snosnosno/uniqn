@@ -6,6 +6,8 @@ export const AUTH_ENTRY_ROUTES = {
   profileSetup: '/(app)/profile-setup',
 } as const;
 
+export const AUTH_LOGIN_ROUTE = '/(auth)/login';
+
 const ALLOWED_POST_AUTH_REDIRECT_PREFIXES = ['/(app)', '/(employer)', '/(admin)'] as const;
 
 type AuthEntryRoute = (typeof AUTH_ENTRY_ROUTES)[keyof typeof AUTH_ENTRY_ROUTES];
@@ -43,6 +45,22 @@ export function normalizePostAuthRedirect(redirect?: string | null): string | nu
   return isAllowedInternalRoute ? trimmed : null;
 }
 
+export function buildPostAuthRedirectFromSegments(segments: string[]): string | null {
+  if (!Array.isArray(segments) || segments.length === 0) {
+    return null;
+  }
+
+  const normalizedSegments = segments.filter(
+    (segment): segment is string => typeof segment === 'string' && segment.length > 0
+  );
+
+  if (normalizedSegments.length === 0) {
+    return null;
+  }
+
+  return normalizePostAuthRedirect(`/${normalizedSegments.join('/')}`);
+}
+
 export function appendRedirectToRoute(route: string, redirect?: string | null): string {
   const normalizedRedirect = normalizePostAuthRedirect(redirect);
 
@@ -56,6 +74,10 @@ export function appendRedirectToRoute(route: string, redirect?: string | null): 
 
   const separator = route.includes('?') ? '&' : '?';
   return `${route}${separator}redirect=${encodeURIComponent(normalizedRedirect)}`;
+}
+
+export function getLoginRoute(redirect?: string | null): string {
+  return appendRedirectToRoute(AUTH_LOGIN_ROUTE, redirect);
 }
 
 export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams): AuthEntryRoute {
