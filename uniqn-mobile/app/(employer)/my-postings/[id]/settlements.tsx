@@ -219,7 +219,7 @@ export default function StaffSettlementsScreen() {
   // 튜토리얼
 
   // 탭 상태
-  const [activeTab, setActiveTab] = useState<TabType>('staff');
+  const [activeTab, setActiveTab] = useState<TabType>('settlement');
 
   // 공고 정보 (시급 포함)
   const { job: posting, refresh: refreshJobDetail } = useJobDetail(jobPostingId || '');

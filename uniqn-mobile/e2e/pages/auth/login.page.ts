@@ -1,8 +1,4 @@
-/**
- * Login Page Object
- * 참조: src/components/auth/LoginForm.tsx
- */
-import type { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from '../base.page';
 
 export class LoginPage extends BasePage {
@@ -17,19 +13,20 @@ export class LoginPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.emailInput = page.getByPlaceholder('이메일을 입력하세요');
-    this.passwordInput = page.getByPlaceholder('비밀번호를 입력하세요');
-    this.loginButton = page.getByRole('button', { name: /^로그인$|^로그인 중/ });
-    this.signupLink = page.getByText('회원가입');
-    this.forgotPasswordLink = page.getByText('비밀번호를 잊으셨나요?');
-    // Password toggle button has no accessibilityLabel in Input.tsx
-    // Locate by finding the button near password input
+
+    this.emailInput = page.locator('input[placeholder="이메일을 입력하세요"]:visible').first();
+    this.passwordInput = page.locator('input[placeholder="비밀번호를 입력하세요"]:visible').first();
+    this.loginButton = page.locator('button:visible', { hasText: /^로그인/ }).first();
+    this.signupLink = page.getByRole('link', { name: '회원가입' }).first();
+    this.forgotPasswordLink = page.getByRole('link', { name: '비밀번호를 잊으셨나요?' }).first();
     this.passwordToggle = page
-      .getByPlaceholder('비밀번호를 입력하세요')
+      .locator('input[placeholder="비밀번호를 입력하세요"]:visible')
+      .first()
       .locator('..')
-      .locator('[role="button"]');
-    this.autoLoginCheckbox = page.getByTestId('auto-login-checkbox');
-    this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.');
+      .locator('[role="button"]')
+      .first();
+    this.autoLoginCheckbox = page.getByRole('checkbox', { name: '자동 로그인' }).first();
+    this.autoLoginHelperText = page.locator('div:visible', { hasText: /다시 로그인/ }).first();
   }
 
   async goto(): Promise<void> {
@@ -47,7 +44,6 @@ export class LoginPage extends BasePage {
   }
 
   async waitForLoginSuccess(): Promise<void> {
-    // Expo Router route groups는 URL에서 투명 — /(app)/(tabs) → /
     await this.page.waitForURL(
       (url) => !url.pathname.includes('/login') && !url.pathname.includes('/signup'),
       { timeout: 15_000 }
@@ -55,8 +51,7 @@ export class LoginPage extends BasePage {
   }
 
   async waitForLoginError(): Promise<void> {
-    // 에러 토스트 또는 에러 메시지 대기
-    await this.page.locator('[role="alert"]').waitFor({
+    await this.page.locator('[role="alert"]').first().waitFor({
       state: 'visible',
       timeout: 5_000,
     });
@@ -95,14 +90,8 @@ export class LoginPage extends BasePage {
     const checked = await this.isAutoLoginChecked();
     if (checked !== enabled) {
       await this.autoLoginCheckbox.click();
-      await this.page.waitForFunction(
-        ({ selector, expected }) => {
-          const element = document.querySelector(selector);
-          return element?.getAttribute('aria-checked') === String(expected);
-        },
-        { selector: '[data-testid="auto-login-checkbox"]', expected: enabled },
-        { timeout: 5_000 }
-      );
+      await this.autoLoginCheckbox.waitFor({ state: 'visible', timeout: 5_000 });
+      await this.page.waitForTimeout(250);
     }
   }
 

@@ -2,7 +2,7 @@
  * UNIQN Mobile - Session Management Service
  */
 
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { router } from 'expo-router';
 import { syncSignOut } from '@/lib/authBridge';
@@ -160,7 +160,11 @@ async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
       return;
     }
     if (currentUser && currentUser.uid === activeUser.uid) {
-      await currentUser.getIdToken(true);
+      if (Platform.OS === 'web') {
+        await currentUser.getIdTokenResult();
+      } else {
+        await currentUser.getIdToken(true);
+      }
       logger.debug('토큰 강제 갱신 완료 (Custom Claims 로드)');
     }
   } catch (error) {

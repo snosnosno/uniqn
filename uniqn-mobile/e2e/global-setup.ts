@@ -31,6 +31,7 @@ import { E2E_CONFIG } from './config';
 const EMULATOR_PROJECT_ID = E2E_CONFIG.projectId;
 const AUTH_EMULATOR_HOST = E2E_CONFIG.emulator.authHost;
 const FIRESTORE_EMULATOR_HOST = E2E_CONFIG.emulator.firestoreHost;
+const STORAGE_EMULATOR_HOST = E2E_CONFIG.emulator.storageHost;
 
 // ============================================================================
 // 고정 ID (테스트 간 참조용)
@@ -565,8 +566,7 @@ interface SignInResponse {
  * 앱 초기화(useAppInitialize)에 의존하지 않는다.
  */
 async function generateStorageStates(apiKey: string): Promise<void> {
-  const isCI = !!process.env.CI;
-  const baseURL = isCI ? 'http://localhost:3000' : 'http://localhost:8081';
+  const baseURL = E2E_CONFIG.runtime.baseUrl;
   const storageStatesDir = path.join(__dirname, 'fixtures', 'storage-states');
 
   fs.mkdirSync(storageStatesDir, { recursive: true });
@@ -655,6 +655,7 @@ async function generateStorageStates(apiKey: string): Promise<void> {
           localStorage: [
             { name: firebaseAuthKey, value: JSON.stringify(firebaseAuthValue) },
             { name: 'auth-storage', value: JSON.stringify(authStorageValue) },
+            { name: 'uniqn_use_emulator', value: 'true' },
             { name: onboardingKey, value: 'true' },
             { name: onboardingVersionKey, value: '1' },
             ...tutorialEntries,
@@ -667,6 +668,21 @@ async function generateStorageStates(apiKey: string): Promise<void> {
     const filePath = path.join(storageStatesDir, `${roleName}.json`);
     fs.writeFileSync(filePath, JSON.stringify(storageState, null, 2));
   }
+
+  const unauthenticatedStorageState = {
+    cookies: [],
+    origins: [
+      {
+        origin: baseURL,
+        localStorage: [{ name: 'uniqn_use_emulator', value: 'true' }],
+      },
+    ],
+  };
+
+  fs.writeFileSync(
+    path.join(storageStatesDir, 'unauthenticated.json'),
+    JSON.stringify(unauthenticatedStorageState, null, 2)
+  );
 }
 
 function buildFirebaseAuthEntry(signInData: SignInResponse, account: TestAccount, apiKey: string) {
@@ -710,6 +726,7 @@ async function globalSetup() {
   // 1. Firebase Admin SDK 초기화 (에뮬레이터 연결)
   process.env.FIREBASE_AUTH_EMULATOR_HOST = AUTH_EMULATOR_HOST;
   process.env.FIRESTORE_EMULATOR_HOST = FIRESTORE_EMULATOR_HOST;
+  process.env.FIREBASE_STORAGE_EMULATOR_HOST = STORAGE_EMULATOR_HOST;
 
   const app = initializeApp({
     projectId: EMULATOR_PROJECT_ID,

@@ -1,4 +1,4 @@
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import {
   checkLoginAttempts,
   getRemainingLoginAttempts,
@@ -234,6 +234,28 @@ describe('sessionService', () => {
 
     expect(mockAuth.currentUser?.getIdTokenResult).toHaveBeenCalled();
     expect(sessionService.getSessionState().isActive).toBe(true);
+  });
+
+  it('does not force-refresh the token on web auth changes', async () => {
+    const originalPlatform = Platform.OS;
+    let authCallback: ((user: typeof mockAuth.currentUser | null) => void) | undefined;
+
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+    mockAuth.onAuthStateChanged.mockImplementation((callback) => {
+      authCallback = callback;
+      return jest.fn();
+    });
+
+    try {
+      sessionService.initialize();
+      authCallback?.(mockAuth.currentUser);
+      await jest.runOnlyPendingTimersAsync();
+
+      expect(mockAuth.currentUser?.getIdToken).not.toHaveBeenCalled();
+      expect(mockAuth.currentUser?.getIdTokenResult).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
   });
 
   it('expires managed sessions after inactivity', async () => {

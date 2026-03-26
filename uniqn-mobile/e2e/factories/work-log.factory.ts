@@ -8,6 +8,7 @@ interface WorkLogFactoryOptions {
   staffName?: string;
   role?: string;
   customRole?: string;
+  status?: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'no_show';
   payrollStatus?: 'pending' | 'completed';
   checkInTime?: string;
   checkOutTime?: string;
@@ -23,6 +24,9 @@ export function createTestWorkLog(options: WorkLogFactoryOptions = {}) {
   workLogCounter++;
   const id = `test-worklog-${Date.now()}-${workLogCounter}`;
   const workDate = options.workDate ?? '2026-04-01';
+  const payrollStatus = options.payrollStatus ?? 'pending';
+  const status = options.status ?? (payrollStatus === 'completed' ? 'completed' : 'checked_out');
+  const createdAt = new Date();
 
   return {
     id,
@@ -32,16 +36,20 @@ export function createTestWorkLog(options: WorkLogFactoryOptions = {}) {
     staffPhone: '+82101234567',
     role: options.role ?? 'dealer',
     ...(options.customRole !== undefined && { customRole: options.customRole }),
+    date: workDate,
     workDate,
     checkInTime: options.checkInTime ?? `${workDate}T18:00:00+09:00`,
-    checkOutTime: options.checkOutTime ?? `${workDate}T02:00:00+09:00`,
-    payrollStatus: options.payrollStatus ?? 'pending',
+    checkOutTime: options.checkOutTime ?? `${workDate}T23:00:00+09:00`,
+    status,
+    payrollStatus,
+    payrollAmount: payrollStatus === 'completed' ? 150000 : null,
+    payrollDate: payrollStatus === 'completed' ? createdAt : null,
     customSalaryInfo: null,
     customAllowances: null,
     customTaxSettings: null,
     settlementModificationHistory: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt,
+    updatedAt: createdAt,
   };
 }
 
@@ -51,6 +59,7 @@ export function createTestWorkLog(options: WorkLogFactoryOptions = {}) {
 export function createCompletedWorkLog(options: WorkLogFactoryOptions = {}) {
   return createTestWorkLog({
     ...options,
+    status: options.status ?? 'completed',
     payrollStatus: 'completed',
   });
 }

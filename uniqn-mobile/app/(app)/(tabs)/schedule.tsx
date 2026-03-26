@@ -164,7 +164,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
       {/* 1행: 지원/확정/완료 */}
       <View className="flex-row justify-around">
         {/* 지원 (applied) */}
-        <View className="items-center">
+        <View className="items-center" accessible accessibilityLabel="지원 통계">
           <Text className="text-xs text-gray-500 dark:text-gray-400">지원</Text>
           <Text className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats.upcomingSchedules}
@@ -172,7 +172,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         </View>
         <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
         {/* 확정 (confirmed) */}
-        <View className="items-center">
+        <View className="items-center" accessible accessibilityLabel="확정 통계">
           <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
           <Text className="text-2xl font-bold text-green-600 dark:text-green-400">
             {stats.confirmedSchedules}
@@ -180,7 +180,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         </View>
         <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
         {/* 완료 (completed) */}
-        <View className="items-center">
+        <View className="items-center" accessible accessibilityLabel="완료 통계">
           <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
           <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {stats.completedSchedules}
@@ -190,7 +190,11 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
       {/* 구분선 */}
       <View className="h-px bg-gray-200 dark:bg-surface my-3" />
       {/* 2행: 수익 */}
-      <View className="flex-row justify-between items-center px-2">
+      <View
+        className="flex-row justify-between items-center px-2"
+        accessible
+        accessibilityLabel="수익 통계"
+      >
         <Text className="text-sm text-gray-500 dark:text-gray-400">수익</Text>
         <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
           {formatCurrency(stats.thisMonthEarnings)}

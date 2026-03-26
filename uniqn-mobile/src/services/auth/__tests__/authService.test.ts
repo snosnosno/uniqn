@@ -1,4 +1,5 @@
 import { getUserProfile, login, signOut, signUp } from '../authCoreService';
+import { Platform } from 'react-native';
 
 import { userRepository } from '@/repositories';
 
@@ -7,7 +8,9 @@ const mockWebAuth = {
     uid: string;
     email?: string | null;
     getIdToken: jest.Mock<Promise<string>, [boolean?]>;
+    getIdTokenResult: jest.Mock<Promise<{ claims: Record<string, unknown> }>, []>;
   },
+  authStateReady: jest.fn().mockResolvedValue(undefined),
   onAuthStateChanged: jest.fn(),
 };
 
@@ -144,6 +147,8 @@ describe('authCoreService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockWebAuth.currentUser = null;
+    mockWebAuth.authStateReady.mockResolvedValue(undefined);
+    mockWebAuth.onAuthStateChanged.mockImplementation(() => () => undefined);
     mockNativeAuth.currentUser = null;
     mockSyncToWebAuth.mockResolvedValue(undefined);
     mockSyncSignOut.mockResolvedValue(undefined);
@@ -156,6 +161,7 @@ describe('authCoreService', () => {
       uid: 'user-1',
       email: 'test@example.com',
       getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
     };
     const profile = {
       uid: 'user-1',
@@ -183,12 +189,100 @@ describe('authCoreService', () => {
     expect(mockTrackLogin).toHaveBeenCalledWith('email');
   });
 
+  it('keeps the web login session when the immediate forced token refresh fails', async () => {
+    const originalPlatform = Platform.OS;
+    const webUser = {
+      uid: 'user-web',
+      email: 'web@example.com',
+      getIdToken: jest.fn().mockRejectedValue(new Error('auth/network-request-failed')),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: {} }),
+    };
+    const profile = {
+      uid: 'user-web',
+      email: 'web@example.com',
+      name: 'Web User',
+      role: 'staff',
+      phoneVerified: true,
+      createdAt: new Date() as never,
+      updatedAt: new Date() as never,
+    };
+
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+
+    try {
+      mockWebAuth.currentUser = webUser;
+      mockSignInWithEmailAndPassword.mockResolvedValue({ user: webUser });
+      mockUserRepository.getById.mockResolvedValue(profile as never);
+
+      await expect(login({ email: 'web@example.com', password: 'Password123!' })).resolves.toEqual({
+        user: webUser,
+        profile,
+      });
+
+      expect(webUser.getIdTokenResult).toHaveBeenCalledTimes(1);
+      expect(webUser.getIdToken).toHaveBeenCalledWith(true);
+      expect(mockSyncSignOut).not.toHaveBeenCalled();
+      expect(mockTrackLogin).toHaveBeenCalledWith('email');
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
+  });
+
+  it('waits for the web auth session before loading the profile after login', async () => {
+    const originalPlatform = Platform.OS;
+    const webUser = {
+      uid: 'user-wait',
+      email: 'wait@example.com',
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+    };
+    const profile = {
+      uid: 'user-wait',
+      email: 'wait@example.com',
+      name: 'Wait User',
+      role: 'staff',
+      phoneVerified: true,
+      createdAt: new Date() as never,
+      updatedAt: new Date() as never,
+    };
+
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+
+    try {
+      mockWebAuth.currentUser = null;
+      mockSignInWithEmailAndPassword.mockResolvedValue({ user: webUser });
+      mockWebAuth.authStateReady.mockImplementation(async () => {
+        mockWebAuth.currentUser = webUser;
+      });
+      mockWebAuth.onAuthStateChanged.mockImplementation(
+        (callback: (user: typeof webUser) => void) => {
+          callback(webUser);
+          return () => undefined;
+        }
+      );
+      mockUserRepository.getById.mockResolvedValue(profile as never);
+
+      await expect(login({ email: 'wait@example.com', password: 'Password123!' })).resolves.toEqual(
+        {
+          user: webUser,
+          profile,
+        }
+      );
+
+      expect(mockWebAuth.authStateReady).toHaveBeenCalledTimes(1);
+      expect(mockUserRepository.getById).toHaveBeenCalledWith('user-wait');
+    } finally {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
+  });
+
   it('signs up a phone-verified native user through verifyAndSaveProfile', async () => {
     const nativeUser = { uid: 'user-1', providerData: [] };
     const webUser = {
       uid: 'user-1',
       email: 'new@example.com',
       getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
     };
     const callable = jest.fn().mockResolvedValue({ data: { success: true, uid: 'user-1' } });
     const profile = {

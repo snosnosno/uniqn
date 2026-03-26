@@ -99,6 +99,59 @@ function requireNativeEmailProvider() {
   return NativeEmailAuthProvider;
 }
 
+async function waitForWebAuthSession(expectedUid: string, timeoutMs = 5_000): Promise<void> {
+  if (Platform.OS !== 'web') {
+    return;
+  }
+
+  const auth = getFirebaseAuth() as ReturnType<typeof getFirebaseAuth> & {
+    authStateReady?: () => Promise<void>;
+  };
+
+  const waitForExpectedUser = async (): Promise<void> => {
+    if (auth.currentUser?.uid === expectedUid) {
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      let unsubscribe: (() => void) | undefined;
+
+      const timeoutId = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        unsubscribe?.();
+        reject(new Error(`Timed out waiting for Firebase auth session: ${expectedUid}`));
+      }, timeoutMs);
+
+      unsubscribe = auth.onAuthStateChanged((user) => {
+        if (settled || user?.uid !== expectedUid) {
+          return;
+        }
+
+        settled = true;
+        clearTimeout(timeoutId);
+        unsubscribe?.();
+        resolve();
+      });
+    });
+  };
+
+  if (typeof auth.authStateReady === 'function') {
+    await Promise.race([
+      auth.authStateReady(),
+      new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error('Timed out waiting for authStateReady')), timeoutMs);
+      }),
+    ]);
+  }
+
+  await waitForExpectedUser();
+}
+
 /**
  * Dual SDK UID 불일치 검증 (네이티브 전용)
  *
@@ -337,12 +390,34 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       userCredential = webCredential;
     }
 
-    // Custom Claims 갱신을 위해 토큰 강제 새로고침
-    // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
-    await userCredential.user.getIdToken(true);
+    // Web login 직후에는 강제 토큰 새로고침이 간헐적으로 abort될 수 있다.
+    // 현재 인증 세션은 유지하고, 필요하면 부트스트랩 재조정 경로에서 claims를 다시 맞춘다.
+    if (Platform.OS === 'web') {
+      try {
+        const tokenResult = await userCredential.user.getIdTokenResult();
+        const roleClaim = tokenResult.claims?.role;
+
+        if (typeof roleClaim !== 'string' || roleClaim.length === 0) {
+          await userCredential.user.getIdToken(true);
+        }
+      } catch (tokenRefreshError) {
+        logger.warn('Web login token refresh failed, continuing with current auth session', {
+          component: 'authService',
+          uid: userCredential.user.uid,
+          error:
+            tokenRefreshError instanceof Error
+              ? tokenRefreshError.message
+              : String(tokenRefreshError),
+        });
+      }
+    } else {
+      // 네이티브는 freshly-assigned custom claims를 바로 반영해야 한다.
+      await userCredential.user.getIdToken(true);
+    }
 
     // Dual SDK UID 불일치 검증 (네이티브) — Firestore 쿼리 전에 SDK 정합성 확인
     await verifyDualSDKConsistency('login');
+    await waitForWebAuthSession(userCredential.user.uid);
 
     // 사용자 프로필 가져오기
     const profile = await getUserProfile(userCredential.user.uid);
