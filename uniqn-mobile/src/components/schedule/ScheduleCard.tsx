@@ -34,6 +34,7 @@ import {
   attendanceConfig,
 } from './helpers';
 import { STATUS } from '@/constants';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 
@@ -46,6 +47,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
   const ownerName = schedule.postingProjection?.ownerName;
+  const hasPendingCancellation = Boolean(schedule.isCancellationPending);
 
   const projectedSalary = useMemo(
     () =>
@@ -135,6 +137,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
                 <Text className={`text-xs font-medium ${attendance.textColor}`}>
                   {attendance.label}
                 </Text>
+              </View>
+            )}
+
+            {hasPendingCancellation && (
+              <View className="ml-2">
+                <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
               </View>
             )}
           </View>
@@ -230,6 +238,14 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
               </Text>
             </View>
+          </View>
+        )}
+
+        {hasPendingCancellation && (
+          <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+            <Text className="text-center text-xs text-warning-700 dark:text-warning-400">
+              취소 요청 검토 중입니다.
+            </Text>
           </View>
         )}
 

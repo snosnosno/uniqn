@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { ScheduleConverter, createSchedulePostingContext } from '../ScheduleConverter';
-import type { JobPosting, WorkLog } from '@/types';
+import type { Application, JobPosting, WorkLog } from '@/types';
 
 function createPosting(): JobPosting {
   return {
@@ -68,6 +68,29 @@ function createWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
     status: 'scheduled',
     role: 'floor',
     timeSlot: '09:00~18:00',
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    ...overrides,
+  };
+}
+
+function createApplication(overrides: Partial<Application> = {}): Application {
+  return {
+    id: 'app-1',
+    applicantId: 'staff-1',
+    applicantName: 'Tester',
+    jobPostingId: 'job-1',
+    jobPostingTitle: 'Poker Event',
+    status: 'confirmed',
+    assignments: [
+      {
+        roleIds: ['dealer'],
+        timeSlot: '09:00~18:00',
+        dates: ['2025-01-15'],
+        isGrouped: false,
+        groupId: 'slot-1',
+      },
+    ],
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
     ...overrides,
@@ -147,5 +170,43 @@ describe('ScheduleConverter.workLogToScheduleEvent', () => {
     expect(event.isFixedPosting).toBe(true);
     expect(event.startTime).toBeNull();
     expect(event.endTime).toBeNull();
+  });
+
+  it('preserves assignmentGroupId from the canonical workLog contract', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const event = ScheduleConverter.workLogToScheduleEvent(
+      createWorkLog({
+        assignmentGroupId: 'slot-1',
+      }),
+      postingContext
+    );
+
+    expect(event.assignmentGroupId).toBe('slot-1');
+  });
+});
+
+describe('ScheduleConverter.applicationToScheduleEvents', () => {
+  it('preserves assignment group identifiers for confirmed schedule entries', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const events = ScheduleConverter.applicationToScheduleEvents(
+      createApplication(),
+      postingContext
+    );
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.assignmentGroupId).toBe('slot-1');
+  });
+
+  it('marks cancellation-pending applications on schedule events', () => {
+    const postingContext = createSchedulePostingContext(createPosting());
+    const events = ScheduleConverter.applicationToScheduleEvents(
+      createApplication({
+        status: 'cancellation_pending',
+      }),
+      postingContext
+    );
+
+    expect(events).toHaveLength(1);
+    expect(events[0]?.isCancellationPending).toBe(true);
   });
 });

@@ -30,6 +30,7 @@ import { logger } from '@/utils/logger';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import type { ScheduleEvent, GroupedScheduleEvent, CreateReportInput } from '@/types';
 
 // ============================================================================
@@ -262,6 +263,7 @@ export function ScheduleDetailModal({
   if (!schedule) return null;
 
   const status = SCHEDULE_STATUS[schedule.type];
+  const hasPendingCancellation = Boolean(schedule.isCancellationPending);
 
   return (
     <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
@@ -331,6 +333,9 @@ export function ScheduleDetailModal({
             <Badge variant={status.variant} dot>
               {status.label}
             </Badge>
+            {hasPendingCancellation && (
+              <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
+            )}
             {/* 그룹 모드 표시 (연속/비연속 구분) */}
             {isGroupMode && (
               <View className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-full">
@@ -417,7 +422,8 @@ export function ScheduleDetailModal({
           {/* 지원 취소 버튼 (지원중 상태) */}
           {schedule.type === STATUS.SCHEDULE.APPLIED &&
             onCancelApplication &&
-            schedule.applicationId && (
+            schedule.applicationId &&
+            !hasPendingCancellation && (
               <View className="flex-1">
                 <Button
                   variant="outline"
@@ -433,7 +439,8 @@ export function ScheduleDetailModal({
           {/* 취소 요청 버튼 (확정 상태) */}
           {schedule.type === STATUS.SCHEDULE.CONFIRMED &&
             onRequestCancellation &&
-            schedule.applicationId && (
+            schedule.applicationId &&
+            !hasPendingCancellation && (
               <View className="flex-1">
                 <Button
                   variant="outline"

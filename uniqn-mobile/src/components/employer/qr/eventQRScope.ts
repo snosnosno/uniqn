@@ -1,4 +1,4 @@
-import type { JobPosting } from '@/types';
+import type { ConfirmedStaff, JobPosting } from '@/types';
 import { TBA_TIME_MARKER } from '@/domains/application';
 import type { PostingSlotRoleRequirement, PostingTimeSlot } from '@/types/jobPosting';
 
@@ -16,6 +16,8 @@ export interface PreferredEventQRScopeInput {
   assignmentGroupId?: string | null;
   timeSlot?: string | null;
 }
+
+const ACTIVE_QR_STAFF_STATUSES = new Set<ConfirmedStaff['status']>(['scheduled', 'checked_in']);
 
 function sortScopeSlots(left: PostingTimeSlot, right: PostingTimeSlot): number {
   if (left.isTimeToBeAnnounced && !right.isTimeToBeAnnounced) {
@@ -60,12 +62,36 @@ function getScopeTimeLabel(slot: PostingTimeSlot): string {
   return slot.startTime?.trim() || 'TBD';
 }
 
-export function buildEventQRScopes(jobPosting: JobPosting | null | undefined): EventQRScope[] {
+function scopeHasConfirmedStaff(scope: EventQRScope, confirmedStaff: ConfirmedStaff[]): boolean {
+  return confirmedStaff.some((staff) => {
+    if (!ACTIVE_QR_STAFF_STATUSES.has(staff.status)) {
+      return false;
+    }
+
+    if (staff.date !== scope.date) {
+      return false;
+    }
+
+    const staffAssignmentGroupId = staff.workLog?.assignmentGroupId ?? null;
+    const staffTimeSlot = staff.workLog?.timeSlot ?? staff.timeSlot ?? null;
+
+    if (scope.assignmentGroupId && staffAssignmentGroupId) {
+      return scope.assignmentGroupId === staffAssignmentGroupId;
+    }
+
+    return (scope.timeSlot ?? null) === staffTimeSlot;
+  });
+}
+
+export function buildEventQRScopes(
+  jobPosting: JobPosting | null | undefined,
+  confirmedStaff: ConfirmedStaff[] = []
+): EventQRScope[] {
   if (!jobPosting || jobPosting.schedule.kind !== 'dated') {
     return [];
   }
 
-  return [...jobPosting.schedule.requirements]
+  const scopes = [...jobPosting.schedule.requirements]
     .sort((left, right) => left.date.localeCompare(right.date))
     .flatMap((requirement) =>
       [...requirement.timeSlots].sort(sortScopeSlots).map((slot, index) => {
@@ -81,6 +107,12 @@ export function buildEventQRScopes(jobPosting: JobPosting | null | undefined): E
         };
       })
     );
+
+  if (confirmedStaff.length === 0) {
+    return scopes;
+  }
+
+  return scopes.filter((scope) => scopeHasConfirmedStaff(scope, confirmedStaff));
 }
 
 export function findPreferredEventQRScope(

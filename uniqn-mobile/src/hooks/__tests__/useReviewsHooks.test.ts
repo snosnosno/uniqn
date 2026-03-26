@@ -4,6 +4,10 @@ import { useGivenReviews, usePendingReviews, useReceivedReviews } from '../useRe
 const mockUseQuery = jest.fn();
 const mockUseInfiniteQuery = jest.fn();
 const mockProfile = { uid: 'user-1', role: 'staff' };
+const mockGetByDateRange = jest.fn();
+const mockGetUndatedByStaffId = jest.fn();
+const mockGetCompletedByOwnerId = jest.fn();
+const mockGetUndatedCompletedByOwnerId = jest.fn();
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: (...args: unknown[]) => mockUseQuery(...args),
@@ -47,8 +51,10 @@ jest.mock('@/repositories', () => ({
     getByIdBatch: jest.fn(),
   },
   workLogRepository: {
-    getByStaffId: jest.fn(),
-    getCompletedByOwnerId: jest.fn(),
+    getByDateRange: (...args: unknown[]) => mockGetByDateRange(...args),
+    getUndatedByStaffId: (...args: unknown[]) => mockGetUndatedByStaffId(...args),
+    getCompletedByOwnerId: (...args: unknown[]) => mockGetCompletedByOwnerId(...args),
+    getUndatedCompletedByOwnerId: (...args: unknown[]) => mockGetUndatedCompletedByOwnerId(...args),
   },
 }));
 
@@ -80,8 +86,14 @@ jest.mock('@/stores/toastStore', () => ({
 describe('useReviews query keys', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-04-08T12:00:00.000Z'));
     mockProfile.uid = 'user-1';
     mockProfile.role = 'staff';
+    mockGetByDateRange.mockResolvedValue([]);
+    mockGetUndatedByStaffId.mockResolvedValue([]);
+    mockGetCompletedByOwnerId.mockResolvedValue([]);
+    mockGetUndatedCompletedByOwnerId.mockResolvedValue([]);
 
     mockUseInfiniteQuery.mockImplementation((options: object) => ({
       data: undefined,
@@ -146,6 +158,10 @@ describe('useReviews query keys', () => {
     });
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('scopes received and given review queries by user and page size', () => {
     renderHook(() => useReceivedReviews('staff-1', 10));
     renderHook(() => useGivenReviews('owner-1', 5));
@@ -169,7 +185,14 @@ describe('useReviews query keys', () => {
 
     const queryKeys = mockUseQuery.mock.calls.map(([options]) => options.queryKey);
 
-    expect(queryKeys).toContainEqual(['reviews', 'pending', 'user-1', 'staff-worklogs']);
+    expect(queryKeys).toContainEqual([
+      'reviews',
+      'pending',
+      'user-1',
+      'staff-worklogs',
+      '2026-04-01',
+      '2026-04-08',
+    ]);
     expect(queryKeys).toContainEqual([
       'reviews',
       'pending',
@@ -179,5 +202,78 @@ describe('useReviews query keys', () => {
       'job-2',
     ]);
     expect(queryKeys).toContainEqual(['reviews', 'myGiven', 'user-1', 'pending-dedup']);
+  });
+
+  it('loads staff pending reviews from the review deadline date range and merges undated fixed work logs', async () => {
+    mockGetByDateRange.mockResolvedValue([
+      { id: 'dated-review', ownerId: 'owner-1', jobPostingId: 'job-1' },
+    ]);
+    mockGetUndatedByStaffId.mockResolvedValue([
+      { id: 'undated-review', ownerId: 'owner-2', jobPostingId: 'job-2', date: '' },
+    ]);
+
+    renderHook(() => usePendingReviews());
+
+    const staffQueryOptions = mockUseQuery.mock.calls
+      .map(([options]) => options)
+      .find((options) => options.queryKey.includes('staff-worklogs'));
+
+    const result = await staffQueryOptions.queryFn();
+
+    expect(mockGetByDateRange).toHaveBeenCalledWith('user-1', '2026-04-01', '2026-04-08');
+    expect(mockGetUndatedByStaffId).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual([
+      { id: 'dated-review', ownerId: 'owner-1', jobPostingId: 'job-1' },
+      { id: 'undated-review', ownerId: 'owner-2', jobPostingId: 'job-2', date: '' },
+    ]);
+  });
+
+  it('loads employer pending reviews from the review deadline date range and merges undated fixed work logs', async () => {
+    mockProfile.role = 'employer';
+    mockGetCompletedByOwnerId.mockResolvedValue([
+      { id: 'dated-owner-review', ownerId: 'user-1', staffId: 'staff-2', jobPostingId: 'job-1' },
+    ]);
+    mockGetUndatedCompletedByOwnerId.mockResolvedValue([
+      {
+        id: 'undated-owner-review',
+        ownerId: 'user-1',
+        staffId: 'staff-3',
+        jobPostingId: 'job-2',
+        date: '',
+      },
+    ]);
+
+    renderHook(() => usePendingReviews());
+
+    const employerQueryOptions = mockUseQuery.mock.calls
+      .map(([options]) => options)
+      .find((options) => options.queryKey.includes('employer'));
+
+    expect(employerQueryOptions.queryKey).toEqual([
+      'reviews',
+      'pending',
+      'user-1',
+      'employer',
+      '2026-04-01',
+      '2026-04-08',
+    ]);
+
+    const result = await employerQueryOptions.queryFn();
+
+    expect(mockGetCompletedByOwnerId).toHaveBeenCalledWith('user-1', {
+      start: '2026-04-01',
+      end: '2026-04-08',
+    });
+    expect(mockGetUndatedCompletedByOwnerId).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual([
+      { id: 'dated-owner-review', ownerId: 'user-1', staffId: 'staff-2', jobPostingId: 'job-1' },
+      {
+        id: 'undated-owner-review',
+        ownerId: 'user-1',
+        staffId: 'staff-3',
+        jobPostingId: 'job-2',
+        date: '',
+      },
+    ]);
   });
 });

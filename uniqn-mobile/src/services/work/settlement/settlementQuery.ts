@@ -29,6 +29,10 @@ import {
   type JobPostingSettlementSummary,
 } from './types';
 
+function isSettlementVisibleWorkLog(workLog: WorkLog): boolean {
+  return workLog.status !== STATUS.WORK_LOG.CANCELLED;
+}
+
 // ============================================================================
 // Query Functions
 // ============================================================================
@@ -62,7 +66,9 @@ export async function getWorkLogsByJobPosting(
     }
 
     // 2. 근무 기록 조회 (Repository 사용)
-    const parsedWorkLogs = await workLogRepository.getByJobPostingId(jobPostingId);
+    const parsedWorkLogs = (await workLogRepository.getByJobPostingId(jobPostingId)).filter(
+      isSettlementVisibleWorkLog
+    );
     const postingSettlement = getPostingSettlementContext(jobPosting);
 
     let workLogs: SettlementWorkLog[] = parsedWorkLogs.map((wl) => ({
@@ -162,7 +168,9 @@ export async function getJobPostingSettlementSummary(
     }
 
     // 2. 근무 기록 조회 (Repository 사용)
-    const workLogs = await workLogRepository.getByJobPostingId(jobPostingId);
+    const workLogs = (await workLogRepository.getByJobPostingId(jobPostingId)).filter(
+      isSettlementVisibleWorkLog
+    );
     const postingSettlement = getPostingSettlementContext(jobPosting);
 
     // 3. 통계 계산

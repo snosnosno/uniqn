@@ -597,6 +597,8 @@ export const invalidateQueries = {
     });
     queryClient.invalidateQueries({ queryKey: queryKeys.settlement.byJobPosting(jobPostingId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.reviews.pending() });
   },
   /** 대회공고 승인 관련 모든 쿼리 무효화 */
   tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),

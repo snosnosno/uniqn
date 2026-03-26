@@ -4,15 +4,16 @@ import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { invalidateRelated } from '@/lib/invalidationStrategy';
 import { queryCachingOptions, queryKeys } from '@/lib/queryClient';
 import { isWithinReviewDeadline, resolveReviewerTypeFromRole } from '@/domains/review';
+import { getReviewBaseTime } from '@/domains/review/reviewDeadline';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
 import type { CreateReviewContext, ReviewPaginationCursor } from '@/repositories';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type { WorkLog } from '@/types';
-import { REVIEWABLE_STATUSES } from '@/types/review';
+import { REVIEWABLE_STATUSES, REVIEW_DEADLINE_DAYS } from '@/types/review';
 import type { CreateReviewInput, Review, ReviewerType } from '@/types/review';
-import type { DateInput } from '@/utils/date';
+import { toDateString, type DateInput } from '@/utils/date';
 import * as reviewService from '@/services/reviewService';
 
 export function useWorkLogReviews(workLogId: string | undefined, myReviewerType: ReviewerType) {
@@ -126,6 +127,46 @@ interface BuildPendingReviewItemsInput {
   givenReviews: Review[];
   isEmployerReviewer: boolean;
   jobPostingMap: Map<string, PendingReviewPostingInfo>;
+  currentUserId?: string;
+}
+
+function mergeWorkLogsById(...groups: WorkLog[][]): WorkLog[] {
+  const workLogMap = new Map<string, WorkLog>();
+
+  for (const group of groups) {
+    for (const workLog of group) {
+      if (!workLog.id || workLogMap.has(workLog.id)) continue;
+      workLogMap.set(workLog.id, workLog);
+    }
+  }
+
+  return Array.from(workLogMap.values());
+}
+
+function comparePendingReviewItems(a: PendingReviewItem, b: PendingReviewItem): number {
+  const baseTimeA = getReviewBaseTime(a.checkOutTime, a.workDate);
+  const baseTimeB = getReviewBaseTime(b.checkOutTime, b.workDate);
+
+  if (baseTimeA === null && baseTimeB === null) {
+    return `${a.workLogId}_${a.reviewerType}`.localeCompare(`${b.workLogId}_${b.reviewerType}`);
+  }
+
+  if (baseTimeA === null) return 1;
+  if (baseTimeB === null) return -1;
+  if (baseTimeA !== baseTimeB) return baseTimeA - baseTimeB;
+
+  return `${a.workLogId}_${a.reviewerType}`.localeCompare(`${b.workLogId}_${b.reviewerType}`);
+}
+
+function getPendingReviewDateRange(now = new Date()): { startDate: string; endDate: string } {
+  const endDate = toDateString(now);
+  const startDateValue = new Date(now);
+  startDateValue.setDate(startDateValue.getDate() - REVIEW_DEADLINE_DAYS);
+
+  return {
+    startDate: toDateString(startDateValue),
+    endDate,
+  };
 }
 
 export function buildPendingReviewItems({
@@ -134,6 +175,7 @@ export function buildPendingReviewItems({
   givenReviews,
   isEmployerReviewer,
   jobPostingMap,
+  currentUserId,
 }: BuildPendingReviewItemsInput): PendingReviewItem[] {
   const givenSet = new Set(
     givenReviews.map((review) => `${review.workLogId}_${review.reviewerType}`)
@@ -145,6 +187,7 @@ export function buildPendingReviewItems({
     if (!REVIEWABLE_STATUSES.has(workLog.status)) continue;
     if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) continue;
     if (givenSet.has(`${workLog.id}_staff`)) continue;
+    if (currentUserId && workLog.ownerId === currentUserId) continue;
 
     const posting = jobPostingMap.get(workLog.jobPostingId);
     const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
@@ -164,9 +207,11 @@ export function buildPendingReviewItems({
 
   if (isEmployerReviewer) {
     for (const workLog of employerWorkLogs) {
-      if (!workLog.id || !workLog.ownerId) continue;
+      if (!workLog.id || !workLog.ownerId || !workLog.staffId) continue;
+      if (!REVIEWABLE_STATUSES.has(workLog.status)) continue;
       if (!isWithinReviewDeadline(workLog.checkOutTime, workLog.date)) continue;
       if (givenSet.has(`${workLog.id}_employer`)) continue;
+      if (currentUserId && workLog.staffId === currentUserId) continue;
 
       const posting = jobPostingMap.get(workLog.jobPostingId);
       const jobPostingName = (workLog as WorkLog & { jobPostingName?: string }).jobPostingName;
@@ -185,7 +230,7 @@ export function buildPendingReviewItems({
     }
   }
 
-  return items;
+  return items.sort(comparePendingReviewItems);
 }
 
 export function usePendingReviews() {
@@ -193,18 +238,52 @@ export function usePendingReviews() {
   const userId = profile?.uid;
   const reviewerType = resolveReviewerTypeFromRole(profile?.role);
   const isEmployerReviewer = reviewerType === 'employer';
+  const pendingReviewDateRange = getPendingReviewDateRange();
 
   const { data: staffWorkLogs = [], isLoading: staffLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.pending(), userId ?? 'anonymous', 'staff-worklogs'],
-    queryFn: () => workLogRepository.getByStaffId(userId!),
+    queryKey: [
+      ...queryKeys.reviews.pending(),
+      userId ?? 'anonymous',
+      'staff-worklogs',
+      pendingReviewDateRange.startDate,
+      pendingReviewDateRange.endDate,
+    ],
+    queryFn: async () => {
+      const [datedWorkLogs, undatedWorkLogs] = await Promise.all([
+        workLogRepository.getByDateRange(
+          userId!,
+          pendingReviewDateRange.startDate,
+          pendingReviewDateRange.endDate
+        ),
+        workLogRepository.getUndatedByStaffId(userId!),
+      ]);
+
+      return mergeWorkLogsById(datedWorkLogs, undatedWorkLogs);
+    },
     enabled: !!userId,
     staleTime: queryCachingOptions.reviews.staleTime,
     gcTime: queryCachingOptions.reviews.gcTime,
   });
 
   const { data: employerWorkLogs = [], isLoading: employerLoading } = useQuery({
-    queryKey: [...queryKeys.reviews.pending(), userId ?? 'anonymous', 'employer'],
-    queryFn: () => workLogRepository.getCompletedByOwnerId(userId!),
+    queryKey: [
+      ...queryKeys.reviews.pending(),
+      userId ?? 'anonymous',
+      'employer',
+      pendingReviewDateRange.startDate,
+      pendingReviewDateRange.endDate,
+    ],
+    queryFn: async () => {
+      const [datedWorkLogs, undatedWorkLogs] = await Promise.all([
+        workLogRepository.getCompletedByOwnerId(userId!, {
+          start: pendingReviewDateRange.startDate,
+          end: pendingReviewDateRange.endDate,
+        }),
+        workLogRepository.getUndatedCompletedByOwnerId(userId!),
+      ]);
+
+      return mergeWorkLogsById(datedWorkLogs, undatedWorkLogs);
+    },
     enabled: !!userId && isEmployerReviewer,
     staleTime: queryCachingOptions.reviews.staleTime,
     gcTime: queryCachingOptions.reviews.gcTime,
@@ -252,8 +331,9 @@ export function usePendingReviews() {
         givenReviews: givenPage?.items ?? [],
         isEmployerReviewer,
         jobPostingMap,
+        currentUserId: userId,
       }),
-    [staffWorkLogs, employerWorkLogs, givenPage, isEmployerReviewer, jobPostingMap]
+    [staffWorkLogs, employerWorkLogs, givenPage, isEmployerReviewer, jobPostingMap, userId]
   );
 
   return {

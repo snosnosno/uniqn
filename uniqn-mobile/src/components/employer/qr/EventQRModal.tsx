@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '@/hooks/useAuth';
+import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useEventQR } from '@/hooks/useEventQR';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { formatDate } from '@/utils/date';
@@ -261,8 +262,17 @@ export function EventQRModal({
   } = useJobDetail(jobPostingId, {
     enabled: visible && !!jobPostingId,
   });
+  const { staff: confirmedStaff, isLoading: isConfirmedStaffLoading } = useConfirmedStaff(
+    visible ? jobPostingId : '',
+    {
+      realtime: visible,
+    }
+  );
 
-  const scopeOptions = useMemo(() => buildEventQRScopes(job), [job]);
+  const scopeOptions = useMemo(
+    () => buildEventQRScopes(job, confirmedStaff),
+    [confirmedStaff, job]
+  );
   const preferredScope = useMemo(
     () =>
       findPreferredEventQRScope(scopeOptions, {
@@ -354,7 +364,8 @@ export function EventQRModal({
   }, [createdBy, generate, mode, selectedScope, visible]);
 
   const hasDatedSchedule = job?.schedule.kind === 'dated';
-  const isScopeLoading = visible && isJobLoading && !job;
+  const isScopeLoading =
+    visible && ((isJobLoading && !job) || (isConfirmedStaffLoading && confirmedStaff.length === 0));
   const formattedDate = selectedScope ? formatDate(selectedScope.date) : null;
   const scopeSubtitle = selectedScope
     ? `${selectedScope.timeLabel}${selectedScope.roleSummary ? ` · ${selectedScope.roleSummary}` : ''}`

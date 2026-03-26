@@ -103,6 +103,7 @@ export class ScheduleConverter {
     return {
       id: workLog.id,
       type,
+      assignmentGroupId: workLog.assignmentGroupId ?? null,
       date: workLog.date,
       startTime: startTimeFromTimeSlot,
       endTime: endTimeFromTimeSlot,
@@ -160,6 +161,7 @@ export class ScheduleConverter {
           {
             id: `${application.id}_${assignmentIdx}_${dateIdx}`,
             type: scheduleType,
+            assignmentGroupId: assignment.groupId ?? null,
             date,
             startTime: this.parseTimeSlotToTimestamp(assignment.timeSlot, date, 'start'),
             endTime: this.parseTimeSlotToTimestamp(assignment.timeSlot, date, 'end'),
@@ -180,6 +182,7 @@ export class ScheduleConverter {
             sourceCollection: 'applications',
             sourceId: application.id,
             applicationId: application.id,
+            isCancellationPending: application.status === STATUS.APPLICATION.CANCELLATION_PENDING,
             postingProjection,
             timeSlot: assignment.timeSlot,
             createdAt: application.createdAt,

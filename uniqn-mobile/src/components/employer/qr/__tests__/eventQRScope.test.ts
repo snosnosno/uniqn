@@ -1,4 +1,4 @@
-import type { JobPosting } from '@/types';
+import type { ConfirmedStaff, JobPosting } from '@/types';
 import { TBA_TIME_MARKER } from '@/domains/application';
 import { buildEventQRScopes, findPreferredEventQRScope } from '../eventQRScope';
 
@@ -63,6 +63,19 @@ function createDatedPosting(overrides: Partial<JobPosting> = {}): JobPosting {
   } as JobPosting;
 }
 
+function createConfirmedStaff(overrides: Partial<ConfirmedStaff> = {}): ConfirmedStaff {
+  return {
+    id: 'worklog-1',
+    staffId: 'staff-1',
+    staffName: 'Tester',
+    role: 'dealer',
+    date: '2026-04-01',
+    status: 'scheduled',
+    timeSlot: '09:00',
+    ...overrides,
+  };
+}
+
 describe('eventQRScope helpers', () => {
   it('builds dated QR scopes in date/time order and preserves slot metadata', () => {
     const scopes = buildEventQRScopes(createDatedPosting());
@@ -106,6 +119,46 @@ describe('eventQRScope helpers', () => {
     });
 
     expect(buildEventQRScopes(posting)).toEqual([]);
+  });
+
+  it('filters out slots without active confirmed staff after cancellation review', () => {
+    const scopes = buildEventQRScopes(createDatedPosting(), [
+      createConfirmedStaff({
+        date: '2026-04-01',
+        status: 'scheduled',
+        workLog: {
+          assignmentGroupId: 'slot-a',
+          timeSlot: '09:00',
+        } as ConfirmedStaff['workLog'],
+      }),
+      createConfirmedStaff({
+        id: 'worklog-2',
+        date: '2026-04-02',
+        status: 'checked_in',
+        timeSlot: '18:00',
+        workLog: {
+          assignmentGroupId: 'slot-b',
+          timeSlot: '18:00',
+        } as ConfirmedStaff['workLog'],
+      }),
+      createConfirmedStaff({
+        id: 'worklog-3',
+        date: '2026-04-01',
+        status: 'cancelled',
+        timeSlot: TBA_TIME_MARKER,
+      }),
+    ]);
+
+    expect(scopes).toEqual([
+      expect.objectContaining({
+        assignmentGroupId: 'slot-a',
+        date: '2026-04-01',
+      }),
+      expect.objectContaining({
+        assignmentGroupId: 'slot-b',
+        date: '2026-04-02',
+      }),
+    ]);
   });
 
   it('resolves only uniquely matching preferred scopes', () => {

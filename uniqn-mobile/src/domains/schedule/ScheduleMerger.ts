@@ -1,68 +1,41 @@
 /**
- * ScheduleMerger - 스케줄 병합 로직 통합 클래스
+ * ScheduleMerger
  *
- * @description Phase 5 - 스케줄 병합 로직 분리
- * WorkLogs + Applications 병합, 중복 제거, 그룹핑 기능 통합
- *
- * 주요 기능:
- * 1. WorkLogs와 Applications 병합 (WorkLog 우선)
- * 2. 날짜별/applicationId별 그룹핑
- * 3. 중복 제거 및 정렬
+ * Centralizes schedule merging and grouping logic for staff-facing schedule
+ * surfaces.
  */
 
-import type { ScheduleEvent } from '@/types';
 import { STATUS } from '@/constants';
+import type { ScheduleEvent } from '@/types';
 import { parseDateString } from '@/utils/date';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/** 병합 옵션 */
 export interface MergeOptions {
-  /** 날짜 범위 필터 */
   dateRange?: { start: string; end: string };
-  /** 정렬 순서 (기본: desc - 최신순) */
   sortOrder?: 'asc' | 'desc';
 }
 
-/** 날짜별 그룹 */
 export interface DateGroup {
-  /** 날짜 (YYYY-MM-DD) */
   date: string;
-  /** 표시용 라벨 (예: "1월 20일 (월)") */
   label: string;
-  /** 해당 날짜의 스케줄 목록 */
   schedules: ScheduleEvent[];
 }
 
-/** applicationId별 그룹 */
 export interface ApplicationGroup {
-  /** 지원 ID */
   applicationId: string;
-  /** 해당 지원의 스케줄 목록 */
   events: ScheduleEvent[];
-  /** 날짜 목록 (정렬됨) */
   dates: string[];
-  /** 연속 날짜 여부 */
   isConsecutive: boolean;
 }
 
-/** 그룹핑 결과 */
 export interface GroupByApplicationResult {
-  /** 그룹화된 스케줄 */
   grouped: ApplicationGroup[];
-  /** 그룹화 불가능한 스케줄 (applicationId 없음) */
   ungrouped: ScheduleEvent[];
 }
 
-/** 그룹핑 옵션 */
 export interface GroupByApplicationOptions {
-  /** 최소 그룹 크기 (기본: 1) */
   minGroupSize?: number;
 }
 
-/** 병합 통계 (ScheduleMerger 내부용) */
 export interface MergerScheduleStats {
   total: number;
   applied: number;
@@ -71,39 +44,20 @@ export interface MergerScheduleStats {
   cancelled: number;
 }
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-/**
- * 날짜 라벨 생성
- */
 function formatDateLabel(dateStr: string): string {
   const date = parseDateString(dateStr);
   if (!date) return dateStr;
+
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const dayOfWeek = WEEKDAYS[date.getDay()];
+
   return `${month}월 ${day}일 (${dayOfWeek})`;
 }
 
-// ============================================================================
-// ScheduleMerger Class
-// ============================================================================
-
 export class ScheduleMerger {
-  /**
-   * WorkLogs와 Applications 병합
-   *
-   * @description 같은 jobPostingId + date면 WorkLog 우선
-   *
-   * @param workLogSchedules - WorkLog 기반 스케줄
-   * @param applicationSchedules - Application 기반 스케줄
-   * @param options - 병합 옵션
-   * @returns 병합된 스케줄 배열
-   */
   static merge(
     workLogSchedules: ScheduleEvent[],
     applicationSchedules: ScheduleEvent[],
@@ -111,23 +65,25 @@ export class ScheduleMerger {
   ): ScheduleEvent[] {
     const { dateRange, sortOrder = 'desc' } = options;
 
-    // 1. WorkLogs로 중복 체크 맵 생성
-    const existingKeys = new Set<string>();
-    for (const schedule of workLogSchedules) {
-      const key = this.generateScheduleKey(schedule);
-      existingKeys.add(key);
+    const mergedWorkLogs = [...workLogSchedules];
+    const existingKeyMap = new Map<string, number>();
+
+    for (const [index, schedule] of mergedWorkLogs.entries()) {
+      existingKeyMap.set(this.generateScheduleKey(schedule), index);
     }
 
-    // 2. Applications에서 중복 제거 + 날짜 범위 필터
     const filteredApplicationSchedules = applicationSchedules.filter((schedule) => {
       const key = this.generateScheduleKey(schedule);
+      const existingIndex = existingKeyMap.get(key);
 
-      // 이미 WorkLog로 존재하면 제외
-      if (existingKeys.has(key)) {
+      if (existingIndex !== undefined) {
+        mergedWorkLogs[existingIndex] = this.mergeApplicationMetadata(
+          mergedWorkLogs[existingIndex]!,
+          schedule
+        );
         return false;
       }
 
-      // 날짜 범위 필터
       if (dateRange) {
         if (schedule.date < dateRange.start || schedule.date > dateRange.end) {
           return false;
@@ -137,12 +93,12 @@ export class ScheduleMerger {
       return true;
     });
 
-    // 3. WorkLogs에도 날짜 범위 필터 적용
     const filteredWorkLogs = dateRange
-      ? workLogSchedules.filter((s) => s.date >= dateRange.start && s.date <= dateRange.end)
-      : workLogSchedules;
+      ? mergedWorkLogs.filter((schedule) => {
+          return schedule.date >= dateRange.start && schedule.date <= dateRange.end;
+        })
+      : mergedWorkLogs;
 
-    // 4. 병합 후 정렬
     const merged = [...filteredWorkLogs, ...filteredApplicationSchedules];
     merged.sort((a, b) => {
       const compare = a.date.localeCompare(b.date);
@@ -152,27 +108,21 @@ export class ScheduleMerger {
     return merged;
   }
 
-  /**
-   * 날짜별로 스케줄 그룹화
-   *
-   * @param schedules - 스케줄 배열
-   * @returns 날짜별 그룹 배열
-   */
   static groupByDate(schedules: ScheduleEvent[]): DateGroup[] {
-    if (schedules.length === 0) return [];
+    if (schedules.length === 0) {
+      return [];
+    }
 
     const groupMap = new Map<string, ScheduleEvent[]>();
 
-    // 날짜별로 그룹화
     for (const schedule of schedules) {
-      const date = schedule.date;
-      if (!groupMap.has(date)) {
-        groupMap.set(date, []);
+      if (!groupMap.has(schedule.date)) {
+        groupMap.set(schedule.date, []);
       }
-      groupMap.get(date)!.push(schedule);
+
+      groupMap.get(schedule.date)!.push(schedule);
     }
 
-    // DateGroup 배열 생성 (날짜 내림차순)
     const result: DateGroup[] = [];
     for (const [date, items] of groupMap.entries()) {
       result.push({
@@ -186,15 +136,6 @@ export class ScheduleMerger {
     return result;
   }
 
-  /**
-   * applicationId별로 스케줄 그룹화
-   *
-   * @description 같은 applicationId의 다중 날짜 스케줄을 하나의 그룹으로 통합
-   *
-   * @param schedules - 스케줄 배열
-   * @param options - 그룹핑 옵션
-   * @returns 그룹핑 결과
-   */
   static groupByApplication(
     schedules: ScheduleEvent[],
     options: GroupByApplicationOptions = {}
@@ -204,60 +145,56 @@ export class ScheduleMerger {
     const groupMap = new Map<string, ScheduleEvent[]>();
     const ungrouped: ScheduleEvent[] = [];
 
-    // applicationId별로 그룹화
     for (const schedule of schedules) {
-      const appId = schedule.applicationId;
+      const applicationId = schedule.applicationId;
 
-      if (appId) {
-        if (!groupMap.has(appId)) {
-          groupMap.set(appId, []);
-        }
-        groupMap.get(appId)!.push(schedule);
-      } else {
+      if (!applicationId) {
         ungrouped.push(schedule);
+        continue;
       }
+
+      if (!groupMap.has(applicationId)) {
+        groupMap.set(applicationId, []);
+      }
+
+      groupMap.get(applicationId)!.push(schedule);
     }
 
-    // ApplicationGroup 배열 생성
     const grouped: ApplicationGroup[] = [];
     for (const [applicationId, events] of groupMap.entries()) {
-      if (events.length >= minGroupSize) {
-        const dates = [...new Set(events.map((e) => e.date))].sort();
-        grouped.push({
-          applicationId,
-          events,
-          dates,
-          isConsecutive: this.isConsecutiveDates(dates),
-        });
-      } else {
-        // minGroupSize 미달: ungrouped로 이동
+      if (events.length < minGroupSize) {
         ungrouped.push(...events);
+        continue;
       }
+
+      const dates = [...new Set(events.map((event) => event.date))].sort();
+      grouped.push({
+        applicationId,
+        events,
+        dates,
+        isConsecutive: this.isConsecutiveDates(dates),
+      });
     }
 
     return { grouped, ungrouped };
   }
 
-  /**
-   * 날짜 배열이 연속인지 확인
-   *
-   * @param dates - 날짜 배열 (YYYY-MM-DD)
-   * @returns 연속 여부
-   */
   static isConsecutiveDates(dates: string[]): boolean {
-    if (dates.length <= 1) return true;
+    if (dates.length <= 1) {
+      return true;
+    }
 
     const sorted = [...dates].sort();
 
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = parseDateString(sorted[i - 1]!);
-      const curr = parseDateString(sorted[i]!);
+    for (let index = 1; index < sorted.length; index += 1) {
+      const previous = parseDateString(sorted[index - 1]!);
+      const current = parseDateString(sorted[index]!);
 
-      if (!prev || !curr) {
+      if (!previous || !current) {
         return false;
       }
 
-      const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round((current.getTime() - previous.getTime()) / (1000 * 60 * 60 * 24));
 
       if (diffDays !== 1) {
         return false;
@@ -267,22 +204,19 @@ export class ScheduleMerger {
     return true;
   }
 
-  /**
-   * 스케줄 중복 체크용 키 생성
-   *
-   * @param schedule - 스케줄 이벤트
-   * @returns jobPostingId_date 형식의 키
-   */
   static generateScheduleKey(schedule: ScheduleEvent): string {
-    return `${schedule.jobPostingId}_${schedule.date}`;
+    const identityKey = schedule.assignmentGroupId
+      ? this.normalizeKeyPart(schedule.assignmentGroupId)
+      : `role:${this.createRoleKey(schedule)}`;
+
+    return [
+      this.normalizeKeyPart(schedule.jobPostingId),
+      this.normalizeKeyPart(schedule.date),
+      identityKey,
+      this.normalizeKeyPart(schedule.timeSlot),
+    ].join('_');
   }
 
-  /**
-   * 스케줄 통계 계산
-   *
-   * @param schedules - 스케줄 배열
-   * @returns 통계 객체
-   */
   static calculateStats(schedules: ScheduleEvent[]): MergerScheduleStats {
     const stats: MergerScheduleStats = {
       total: schedules.length,
@@ -295,20 +229,43 @@ export class ScheduleMerger {
     for (const schedule of schedules) {
       switch (schedule.type) {
         case STATUS.SCHEDULE.APPLIED:
-          stats.applied++;
+          stats.applied += 1;
           break;
         case STATUS.SCHEDULE.CONFIRMED:
-          stats.confirmed++;
+          stats.confirmed += 1;
           break;
         case STATUS.SCHEDULE.COMPLETED:
-          stats.completed++;
+          stats.completed += 1;
           break;
         case STATUS.SCHEDULE.CANCELLED:
-          stats.cancelled++;
+          stats.cancelled += 1;
           break;
       }
     }
 
     return stats;
+  }
+
+  private static normalizeKeyPart(value?: string | null): string {
+    return value?.trim() || '-';
+  }
+
+  private static createRoleKey(schedule: ScheduleEvent): string {
+    return `${schedule.role}:${schedule.customRole?.trim() || '-'}`;
+  }
+
+  private static mergeApplicationMetadata(
+    schedule: ScheduleEvent,
+    applicationSchedule: ScheduleEvent
+  ): ScheduleEvent {
+    if (!applicationSchedule.isCancellationPending) {
+      return schedule;
+    }
+
+    return {
+      ...schedule,
+      applicationId: applicationSchedule.applicationId ?? schedule.applicationId,
+      isCancellationPending: true,
+    };
   }
 }

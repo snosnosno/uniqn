@@ -388,6 +388,7 @@ export interface MockScheduleEvent {
   sourceId: string;
   workLogId?: string;
   applicationId?: string;
+  isCancellationPending?: boolean;
 }
 
 export function createMockScheduleEvent(

@@ -105,6 +105,7 @@ type InvalidationTarget =
   | 'settlement.byJobPosting'
   | 'applicantManagement.all'
   | 'applicantManagement.byJobPosting'
+  | 'applicantManagement.cancellationRequests'
   | 'notifications.all'
   | 'notifications.unreadCount'
   | 'user.profile'
@@ -213,9 +214,11 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    */
   'applicant.reviewCancellation': [
     'applicantManagement.byJobPosting',
+    'applicantManagement.cancellationRequests',
     'confirmedStaff.byJobPosting',
     'workLogs.all',
     'settlement.byJobPosting',
+    'reviews.pending',
     'jobPostings.detail',
   ],
 
@@ -477,6 +480,10 @@ function getQueryKeyForTarget(
     case 'applicantManagement.byJobPosting':
       return context?.jobPostingId
         ? queryKeys.applicantManagement.byJobPosting(context.jobPostingId)
+        : queryKeys.applicantManagement.all;
+    case 'applicantManagement.cancellationRequests':
+      return context?.jobPostingId
+        ? queryKeys.applicantManagement.cancellationRequests(context.jobPostingId, context.userId)
         : queryKeys.applicantManagement.all;
 
     // 알림

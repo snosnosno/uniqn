@@ -15,10 +15,12 @@ import type { IWorkLogRepository } from '../../interfaces';
 import {
   getById,
   getByStaffId,
+  getUndatedByStaffId,
   getByStaffIdWithFilters,
   getByDate,
   getByJobPostingId,
   getCompletedByOwnerId,
+  getUndatedCompletedByOwnerId,
   getTodayCheckedIn,
   getStats,
   getMonthlyPayroll,
@@ -56,10 +58,12 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   // Read
   getById = getById;
   getByStaffId = getByStaffId;
+  getUndatedByStaffId = getUndatedByStaffId;
   getByStaffIdWithFilters = getByStaffIdWithFilters;
   getByDate = getByDate;
   getByJobPostingId = getByJobPostingId;
   getCompletedByOwnerId = getCompletedByOwnerId;
+  getUndatedCompletedByOwnerId = getUndatedCompletedByOwnerId;
   getTodayCheckedIn = getTodayCheckedIn;
   getStats = getStats;
   getMonthlyPayroll = getMonthlyPayroll;

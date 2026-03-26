@@ -181,6 +181,7 @@ jest.mock('@/constants', () => ({
       CHECKED_IN: 'checked_in',
       CHECKED_OUT: 'checked_out',
       COMPLETED: 'completed',
+      CANCELLED: 'cancelled',
       NO_SHOW: 'no_show',
     },
     PAYROLL: {
@@ -457,6 +458,23 @@ describe('settlementService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('worklog-1');
     });
+
+    it('should exclude cancelled work logs from settlement results', async () => {
+      const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
+      const cancelledWorkLog = createMockWorkLogWithTimes({
+        id: 'worklog-cancelled',
+        status: 'cancelled',
+      });
+      const activeWorkLog = createMockWorkLogWithTimes({ id: 'worklog-active' });
+
+      mockJobPostingGetById.mockResolvedValue(jobPosting);
+      mockWorkLogGetByJobPostingId.mockResolvedValue([cancelledWorkLog, activeWorkLog]);
+
+      const result = await getWorkLogsByJobPosting('job-1', 'employer-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('worklog-active');
+    });
   });
 
   // ==========================================================================
@@ -719,6 +737,31 @@ describe('settlementService', () => {
       expect(result.totalCompletedAmount).toBe(120000);
       expect(result.workLogsByRole).toBeDefined();
       expect(result.workLogsByRole.dealer).toBeDefined();
+    });
+
+    it('should exclude cancelled work logs from settlement summary totals', async () => {
+      const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
+      const cancelledWorkLog = createMockWorkLogWithTimes({
+        id: 'worklog-cancelled',
+        status: 'cancelled',
+        role: 'dealer',
+      });
+      const activeWorkLog = createMockWorkLogWithTimes({
+        id: 'worklog-active',
+        status: 'checked_out',
+        payrollStatus: 'pending',
+        role: 'dealer',
+      });
+
+      mockJobPostingGetById.mockResolvedValue(jobPosting);
+      mockWorkLogGetByJobPostingId.mockResolvedValue([cancelledWorkLog, activeWorkLog]);
+
+      const result = await getJobPostingSettlementSummary('job-1', 'employer-1');
+
+      expect(result.totalWorkLogs).toBe(1);
+      expect(result.completedWorkLogs).toBe(1);
+      expect(result.pendingSettlement).toBe(1);
+      expect(result.workLogsByRole.dealer?.count).toBe(1);
     });
 
     it('should throw error for non-existent job posting', async () => {

@@ -13,6 +13,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
@@ -70,6 +71,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   const { isWorking } = useCurrentWorkStatus();
   const { isDarkMode } = useThemeStore();
   const attendance = ATTENDANCE_STATUS[schedule.status];
+  const hasPendingCancellation = Boolean(schedule.isCancellationPending);
 
   const handleQRScan = useCallback(() => {
     onQRScan?.();
@@ -112,6 +114,16 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
 
   return (
     <View className="py-2">
+      {hasPendingCancellation && (
+        <View className="mb-5 rounded-xl bg-warning-50 p-4 dark:bg-warning-900/20">
+          <View className="mb-2">
+            <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
+          </View>
+          <Text className="text-sm text-warning-700 dark:text-warning-400">
+            검토 결과가 나오기 전까지 현재 일정 상태가 유지됩니다.
+          </Text>
+        </View>
+      )}
       {/* 역할 */}
       <View className="mb-5">
         <View className="flex-row items-center mb-2">

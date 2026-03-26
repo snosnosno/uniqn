@@ -80,6 +80,16 @@ export interface IWorkLogRepository {
   getByStaffId(staffId: string, pageSize?: number): Promise<WorkLog[]>;
 
   /**
+   * 날짜가 비어 있는 스태프 근무 기록 조회
+   *
+   * @description fixed posting처럼 `date` 없이 저장되는 근무 기록의 후속 흐름 복원용
+   *
+   * @param staffId - 스태프 ID
+   * @returns `date === ''` 인 근무 기록 목록
+   */
+  getUndatedByStaffId(staffId: string): Promise<WorkLog[]>;
+
+  /**
    * 스태프의 근무 기록을 필터와 함께 조회
    *
    * @description scheduleService에서 사용하는 필터링된 조회
@@ -112,9 +122,22 @@ export interface IWorkLogRepository {
    *
    * @description 미작성 평가 목록에서 employer-side pending reviews 조회용
    * @param ownerId - 구인자 ID
-   * @returns 완료된(checked_out) 근무 기록 목록
+   * @returns 리뷰 대상이 될 수 있는 완료 근무 기록 목록 (checked_out, completed)
    */
-  getCompletedByOwnerId(ownerId: string): Promise<WorkLog[]>;
+  getCompletedByOwnerId(
+    ownerId: string,
+    dateRange?: { start: string; end: string }
+  ): Promise<WorkLog[]>;
+
+  /**
+   * 날짜가 비어 있는 구인자 기준 완료 근무 기록 조회
+   *
+   * @description fixed posting처럼 `date` 없이 저장되는 employer-side pending review 보강용
+   *
+   * @param ownerId - 구인자 ID
+   * @returns `date === ''` 이면서 리뷰 대상이 될 수 있는 완료 근무 기록 목록
+   */
+  getUndatedCompletedByOwnerId(ownerId: string): Promise<WorkLog[]>;
 
   /**
    * 오늘 출근한 근무 기록 조회

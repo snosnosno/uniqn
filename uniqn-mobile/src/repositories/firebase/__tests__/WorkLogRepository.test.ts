@@ -11,6 +11,10 @@ import {
   hydrateWorkLogsModificationHistory,
 } from '../workLog/timeModificationLogs';
 
+const mockQueryBuilderLimit = jest.fn();
+const mockQueryBuilderWhere = jest.fn();
+const mockQueryBuilderWhereIn = jest.fn();
+
 // ============================================================================
 // Mocks
 // ============================================================================
@@ -74,7 +78,12 @@ jest.mock('@/utils/firestore/queryBuilder', () => {
     whereIf() {
       return this;
     }
-    where() {
+    where(...args: unknown[]) {
+      mockQueryBuilderWhere(...args);
+      return this;
+    }
+    whereIn(...args: unknown[]) {
+      mockQueryBuilderWhereIn(...args);
       return this;
     }
     orderBy() {
@@ -87,6 +96,7 @@ jest.mock('@/utils/firestore/queryBuilder', () => {
       return this;
     }
     limit() {
+      mockQueryBuilderLimit();
       return this;
     }
     build() {
@@ -105,6 +115,7 @@ jest.mock('@/constants', () => ({
     WORK_LOG: {
       staffId: 'staffId',
       jobPostingId: 'jobPostingId',
+      ownerId: 'ownerId',
       date: 'date',
       checkInTime: 'checkInTime',
       status: 'status',
@@ -268,6 +279,25 @@ describe('FirebaseWorkLogRepository', () => {
     });
   });
 
+  describe('getUndatedByStaffId', () => {
+    it('should return undated work logs for the given staff without page-size truncation', async () => {
+      const workLogs = [
+        {
+          id: 'wl-undated-1',
+          data: { id: 'wl-undated-1', staffId: 'staff-1', date: '', status: 'checked_out' },
+        },
+      ];
+
+      (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
+
+      const result = await repository.getUndatedByStaffId('staff-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.date).toBe('');
+      expect(mockQueryBuilderLimit).not.toHaveBeenCalled();
+    });
+  });
+
   // ==========================================================================
   // getByDate
   // ==========================================================================
@@ -340,6 +370,83 @@ describe('FirebaseWorkLogRepository', () => {
       const result = await repository.getByJobPostingId('job-999');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  // ==========================================================================
+  // getCompletedByOwnerId
+  // ==========================================================================
+  describe('getCompletedByOwnerId', () => {
+    it('should return completed work logs for the given owner without page-size truncation', async () => {
+      const workLogs = [
+        {
+          id: 'wl-1',
+          data: {
+            id: 'wl-1',
+            ownerId: 'owner-1',
+            staffId: 'staff-1',
+            date: '2025-01-20',
+            status: 'checked_out',
+          },
+        },
+        {
+          id: 'wl-2',
+          data: {
+            id: 'wl-2',
+            ownerId: 'owner-1',
+            staffId: 'staff-2',
+            date: '2025-01-19',
+            status: 'completed',
+          },
+        },
+      ];
+
+      (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
+
+      const result = await repository.getCompletedByOwnerId('owner-1');
+
+      expect(result).toHaveLength(2);
+      expect(mockQueryBuilderLimit).not.toHaveBeenCalled();
+    });
+
+    it('should scope completed owner work logs to a review date range when provided', async () => {
+      (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap([]));
+
+      await repository.getCompletedByOwnerId('owner-1', {
+        start: '2026-03-19',
+        end: '2026-03-26',
+      });
+
+      expect(mockQueryBuilderWhereIn).toHaveBeenCalledWith('status', ['checked_out', 'completed']);
+      expect(mockQueryBuilderWhere).toHaveBeenCalledWith('date', '>=', '2026-03-19');
+      expect(mockQueryBuilderWhere).toHaveBeenCalledWith('date', '<=', '2026-03-26');
+      expect(mockQueryBuilderLimit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getUndatedCompletedByOwnerId', () => {
+    it('should return undated completed work logs for the given owner', async () => {
+      const workLogs = [
+        {
+          id: 'wl-undated-owner-1',
+          data: {
+            id: 'wl-undated-owner-1',
+            ownerId: 'owner-1',
+            staffId: 'staff-1',
+            date: '',
+            status: 'checked_out',
+          },
+        },
+      ];
+
+      (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
+
+      const result = await repository.getUndatedCompletedByOwnerId('owner-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.date).toBe('');
+      expect(mockQueryBuilderWhereIn).toHaveBeenCalledWith('status', ['checked_out', 'completed']);
+      expect(mockQueryBuilderLimit).not.toHaveBeenCalled();
     });
   });
 

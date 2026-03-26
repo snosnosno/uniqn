@@ -301,6 +301,88 @@ describe('useSchedules hooks', () => {
       expect(unsubscribe).toHaveBeenCalled();
     });
 
+    it('replaces a pending-cancellation schedule with a cancelled realtime update after approval', async () => {
+      const unsubscribe = jest.fn();
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
+
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return unsubscribe;
+        }
+      );
+
+      const { result } = renderHook(() => useSchedules({ realtime: true }));
+
+      await waitFor(() => {
+        expect(mockSubscribeToSchedules).toHaveBeenCalled();
+      });
+
+      act(() => {
+        onData?.([createMockSchedule({ id: 'schedule-1', isCancellationPending: true })]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules[0]).toMatchObject({
+          id: 'schedule-1',
+          type: 'confirmed',
+          isCancellationPending: true,
+        });
+      });
+
+      act(() => {
+        onData?.([createMockSchedule({ id: 'schedule-1', type: 'cancelled' })]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules[0]).toMatchObject({
+          id: 'schedule-1',
+          type: 'cancelled',
+        });
+      });
+
+      expect(result.current.schedules[0]?.isCancellationPending).toBeUndefined();
+    });
+
+    it('restores a confirmed schedule after rejection clears the pending flag', async () => {
+      const unsubscribe = jest.fn();
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
+
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return unsubscribe;
+        }
+      );
+
+      const { result } = renderHook(() => useSchedules({ realtime: true }));
+
+      await waitFor(() => {
+        expect(mockSubscribeToSchedules).toHaveBeenCalled();
+      });
+
+      act(() => {
+        onData?.([createMockSchedule({ id: 'schedule-1', isCancellationPending: true })]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules[0]?.isCancellationPending).toBe(true);
+      });
+
+      act(() => {
+        onData?.([createMockSchedule({ id: 'schedule-1', type: 'confirmed' })]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.schedules[0]).toMatchObject({
+          id: 'schedule-1',
+          type: 'confirmed',
+        });
+      });
+
+      expect(result.current.schedules[0]?.isCancellationPending).toBeUndefined();
+    });
+
     it('writes the canonical schedule cache payload with derived calendar data', async () => {
       const schedules = [createMockSchedule()];
       const stats = createMockStats();

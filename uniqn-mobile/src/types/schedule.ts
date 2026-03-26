@@ -113,6 +113,7 @@ export interface SchedulePostingProjection {
 export interface ScheduleEvent extends FirebaseDocument {
   // 湲곕낯 ?뺣낫
   type: ScheduleType;
+  assignmentGroupId?: string | null;
   date: string; // YYYY-MM-DD
 
   // ?쒓컙 ?뺣낫
@@ -156,6 +157,7 @@ export interface ScheduleEvent extends FirebaseDocument {
   sourceId: string;
   workLogId?: string;
   applicationId?: string;
+  isCancellationPending?: boolean;
 
   // 媛쒕퀎 ?ㅻ쾭?쇱씠??(援ъ씤?먭? ?ㅽ깭?꾨퀎濡??섏젙???뺤궛 ?뺣낫)
   /** 媛쒕퀎 湲됱뿬 ?뺣낫 (?ㅻ쾭?쇱씠?? */

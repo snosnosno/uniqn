@@ -18,6 +18,7 @@ import {
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
 import { formatSalaryDisplay } from './helpers';
 import { STATUS } from '@/constants';
+import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import type { GroupedScheduleEvent } from '@/types';
 
@@ -37,6 +38,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const status = SCHEDULE_STATUS[group.type];
   const isCancelled = group.type === STATUS.SCHEDULE.CANCELLED;
+  const hasPendingCancellation = group.originalEvents.some((event) => event.isCancellationPending);
 
   const rolesDisplay = useMemo(
     () => formatRolesDisplay(group.roles, group.customRoles),
@@ -112,6 +114,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                 >
                   {attendanceSummary.label}
                 </Text>
+              </View>
+            )}
+
+            {hasPendingCancellation && (
+              <View className="ml-2">
+                <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
               </View>
             )}
           </View>
@@ -218,6 +226,14 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                 </Pressable>
               );
             })}
+          </View>
+        )}
+
+        {hasPendingCancellation && (
+          <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+            <Text className="text-center text-xs text-warning-700 dark:text-warning-400">
+              취소 요청 검토 중입니다.
+            </Text>
           </View>
         )}
 
