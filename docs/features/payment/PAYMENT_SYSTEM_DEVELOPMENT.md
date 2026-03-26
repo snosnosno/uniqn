@@ -1,11 +1,13 @@
 # 💳 UNIQN 결제 시스템 개발 문서
 
-**최종 업데이트**: 2026년 2월 1일
+**최종 업데이트**: 2026년 3월 26일
 **버전**: v1.0.0 (Heart/Diamond Point System)
 **상태**: 📋 **설계 / 구현 준비**
 **프로젝트**: UNIQN 하트/다이아 포인트 시스템
 
 > ⚠️ 이 문서는 현재 런타임 구현 문서가 아니라 설계 문서입니다.
+> 2026년 3월 26일 기준 문서에 포함된 `cleanupExpiredHearts`, `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday` 예시는 현재 `tholdem-ebc18` 배포 함수 목록에 없습니다.
+> Cloud Scheduler 관련 실제 영향 판단과 후속 일정은 `docs/operations/2026-03-26-cloud-scheduler-audit-log-response.md`를 기준으로 확인하세요.
 >
 > **관련 문서**:
 > - 📊 **포인트 정의 & 가격표**: [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) (마스터 문서)
@@ -966,6 +968,9 @@ firebase functions:config:get
 
 ### 3. Cloud Scheduler 배포
 
+> 참고: 아래 Pub/Sub 기반 Cloud Scheduler job 예시는 결제 시스템 설계 초안에 남아 있는 레거시 배포 예시입니다.
+> 현재 `tholdem-ebc18`의 실제 배포 상태를 설명하지 않습니다.
+
 ```bash
 # 하트 만료 정리 (매일 00:00)
 gcloud scheduler jobs create pubsub cleanupExpiredHearts \
@@ -1067,6 +1072,9 @@ firebase functions:log --only revenueCatWebhook
 ```
 
 ### 2. 하트 만료 처리 안 됨
+
+> 참고: 이 섹션은 `cleanupExpiredHearts` 기반 결제 시스템 설계 초안 메모입니다.
+> 현재 `tholdem-ebc18` 배포 함수 기준 실제 장애 대응 절차로 사용하지 않습니다.
 
 **증상**: 만료된 하트가 여전히 표시됨
 
@@ -1192,5 +1200,5 @@ if (!API_KEY) {
 
 ---
 
-**마지막 업데이트**: 2026-02-01
+**마지막 업데이트**: 2026-03-26
 **버전**: v1.0.0 (💎 하트/다이아 포인트 시스템 + RevenueCat)

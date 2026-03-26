@@ -1,12 +1,16 @@
 # 💼 포인트 시스템 운영 가이드
 
-**최종 업데이트**: 2026년 2월 13일
+**최종 업데이트**: 2026년 3월 26일
 **버전**: v2.0.0 (하트/다이아 포인트 시스템)
 **상태**: 📋 **운영 초안 / 미구현**
 **프로젝트**: UNIQN 포인트 시스템
 
 > ⚠️ 현재 저장소의 런타임 코드에는 이 문서가 전제하는 결제/포인트 흐름이 완전히 구현되어 있지 않습니다.
 > 이 문서는 운영 초안입니다.
+>
+> ⚠️ 2026년 3월 26일 기준 `cleanupExpiredHearts`, `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday`, `dailyAttendanceReset`, `archiveOldData`는 현재 `tholdem-ebc18` 배포 함수 목록에 없습니다.
+> 아래 Cloud Scheduler 예시는 운영 중인 실제 배포 상태가 아니라 결제 시스템 초안에 남아 있는 레거시 설계 예시로 취급하세요.
+> 현재 감사 로그 영향 판단과 후속 계획은 [2026-03-26-cloud-scheduler-audit-log-response.md](./2026-03-26-cloud-scheduler-audit-log-response.md)를 기준으로 확인합니다.
 >
 > **📋 관련 문서**:
 > - 📊 **포인트 정의 & 가격표 (마스터)**: [MODEL_B_CHIP_SYSTEM_FINAL.md](../features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md)
@@ -392,6 +396,9 @@ gcloud functions logs read deductPoints --limit 50
 
 ### 3. Scheduled Functions 모니터링
 
+> 참고: 아래 작업명은 현재 `tholdem-ebc18` 배포 기준 활성 scheduled function 목록이 아닙니다.
+> 현재 활성 scheduled function은 Cloud Scheduler 감사 로그 대응 기록 문서를 기준으로 확인합니다.
+
 ```yaml
 일일 실행:
   - cleanupExpiredHearts (00:00 KST): 만료 하트 정리
@@ -428,6 +435,9 @@ Admin 페이지 → 사용자 관리 → 다이아 수동 지급
 ```
 
 ### 2. 하트 만료 처리 장애
+
+> 참고: 아래 `cleanupExpiredHearts` 대응 절차는 결제 시스템 초안 기준 레거시 예시입니다.
+> 현재 배포 함수 기준 장애 대응 문서로 사용하지 않습니다.
 
 **증상**:
 - 만료된 하트가 사용 가능 상태
@@ -555,6 +565,9 @@ gcloud functions logs read cleanupExpiredHearts --limit 50
 ```
 
 ### 데이터 정리
+
+> 참고: `archiveOldData`는 현재 저장소/배포 기준 활성 함수가 아닙니다.
+> 아래 절차는 운영 중인 실제 함수 목록이 아니라 결제 시스템 초안 메모입니다.
 
 ```yaml
 정리 대상:
@@ -692,5 +705,5 @@ Google Play → 계정 → 결제 및 구독 → 예산 및 내역 → 환불 �
 ---
 
 **문서 버전**: v2.0.0
-**최종 업데이트**: 2026-02-01
+**최종 업데이트**: 2026-03-26
 **작성자**: UNIQN 개발팀

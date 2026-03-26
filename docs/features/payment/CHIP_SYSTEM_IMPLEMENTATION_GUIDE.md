@@ -1,12 +1,13 @@
 # 💎 하트/다이아 포인트 시스템 구현 가이드
 
-**최종 업데이트**: 2026년 2월 1일
+**최종 업데이트**: 2026년 3월 26일
 **버전**: v1.0.0 (Heart/Diamond Point System)
 **상태**: 📋 **설계 / 구현 준비**
 
 > ⚠️ 이 문서는 현재 런타임 구현 완료 상태를 설명하지 않습니다.
 > 포인트 정의, 가격표, 시각 디자인은 [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md)를 참조하세요.
 > 이 문서는 **구현 단계 및 기술 가이드**에 집중합니다.
+> 문서에 포함된 `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday`, `cleanupExpiredHearts` 작업은 현재 `tholdem-ebc18` 배포 함수 목록 기준 활성 대상이 아닙니다.
 
 ---
 
@@ -1662,6 +1663,9 @@ export const checkDailyAttendance = functions
 
 ### Day 1-2: 하트 만료 알림 Cron
 
+> 참고: 아래 Cron 예시는 결제 시스템 설계 초안에 남아 있는 레거시 구현 예시입니다.
+> 현재 `tholdem-ebc18` 배포 함수 목록 기준 활성 구현이 아닙니다.
+
 **파일**: `functions/src/notifications/heartExpiryNotifications.ts`
 
 ```typescript
@@ -2001,6 +2005,8 @@ Phase 2: 하트 획득
 ```
 
 ### 🔔 Week 5: 알림 & 테스트
+
+> 참고: 아래 `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday`, `cleanupExpiredHearts` 체크리스트는 현재 배포 기준 활성 작업이 아니라 설계 단계 메모입니다.
 
 ```yaml
 Phase 3: 알림 시스템
