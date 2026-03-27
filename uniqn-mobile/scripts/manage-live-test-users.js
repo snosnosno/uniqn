@@ -1,15 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { ensureFreshFirebaseAccessToken } = require('./firebase-tools-auth');
 
 const projectRoot = path.resolve(__dirname, '..');
 const workspaceRoot = path.resolve(projectRoot, '..');
 const envFilePath = path.join(projectRoot, '.env.local');
-const firebaseToolsPath = path.join(
-  process.env.USERPROFILE || process.env.HOME || '',
-  '.config',
-  'configstore',
-  'firebase-tools.json'
-);
 const outputPath = path.join(projectRoot, 'output', 'playwright', 'live-test-users.json');
 
 function readEnvFile(filePath) {
@@ -28,10 +23,6 @@ function readEnvFile(filePath) {
     entries[key] = value;
   }
   return entries;
-}
-
-function readFirebaseToolsConfig() {
-  return JSON.parse(fs.readFileSync(firebaseToolsPath, 'utf8'));
 }
 
 async function requestJson(url, options = {}) {
@@ -242,8 +233,7 @@ function createAccountDefinitions(seed) {
 
 async function createAccounts() {
   const env = readEnvFile(envFilePath);
-  const firebaseTools = readFirebaseToolsConfig();
-  const accessToken = firebaseTools.tokens.access_token;
+  const accessToken = ensureFreshFirebaseAccessToken({ cwd: workspaceRoot });
   const projectId = env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
   const apiKey = env.EXPO_PUBLIC_FIREBASE_API_KEY;
   const seed = Date.now();
@@ -297,8 +287,7 @@ async function cleanupAccounts() {
   }
 
   const env = readEnvFile(envFilePath);
-  const firebaseTools = readFirebaseToolsConfig();
-  const accessToken = firebaseTools.tokens.access_token;
+  const accessToken = ensureFreshFirebaseAccessToken({ cwd: workspaceRoot });
   const projectId = env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
   const payload = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
 

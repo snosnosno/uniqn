@@ -65,6 +65,10 @@ service cloud.firestore {
       return getUserRole() in ['admin', 'employer', 'manager', 'staff'];
     }
 
+    function canManageJobPostings() {
+      return getUserRole() in ['admin', 'employer', 'manager'];
+    }
+
     // 관리자 여부 확인
     function isAdmin() {
       return getUserRole() == 'admin';
@@ -532,7 +536,47 @@ service cloud.firestore {
           newData.employerAgreements.termsVersion &&
         getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.liabilityWaiver.agreed == true &&
         getAfter(/databases/$(database)/documents/users/$(request.auth.uid)/consents/employer_registration).data.liabilityWaiver.version ==
-          newData.employerAgreements.liabilityWaiverVersion;
+          newData.employerAgreements.liabilityWaiverVersion &&
+        newData.updatedAt == request.time &&
+        newData.employerRegisteredAt == request.time &&
+        newData.employerAgreements.termsAgreedAt == request.time &&
+        newData.employerAgreements.liabilityWaiverAgreedAt == request.time;
+    }
+
+    function isValidSelfUserUpdate() {
+      let currentData = resource.data;
+      let newData = request.resource.data;
+      let changedFields = newData.diff(currentData).affectedKeys();
+      let allowedFields = [
+        'nickname',
+        'photoURL',
+        'region',
+        'experienceYears',
+        'career',
+        'note',
+        'marketingAgreed',
+        'profileCompleted',
+        'updatedAt'
+      ];
+
+      return changedFields.hasOnly(allowedFields) &&
+        changedFields.hasAny(['updatedAt']) &&
+        newData.updatedAt == request.time &&
+        (!('nickname' in newData) || (newData.nickname is string &&
+          newData.nickname.size() >= 2 &&
+          newData.nickname.size() <= 15)) &&
+        (!('photoURL' in newData) || newData.photoURL == null || newData.photoURL is string) &&
+        (!('region' in newData) || isSafeText(newData.region, 50)) &&
+        (!('experienceYears' in newData) || (newData.experienceYears is number &&
+          newData.experienceYears >= 0 &&
+          newData.experienceYears <= 50)) &&
+        (!('career' in newData) || (newData.career is string &&
+          newData.career.size() <= 500)) &&
+        (!('note' in newData) || (newData.note is string &&
+          newData.note.size() <= 300)) &&
+        (!('marketingAgreed' in newData) || newData.marketingAgreed is bool) &&
+        (!changedFields.hasAny(['profileCompleted']) ||
+          newData.profileCompleted == true);
     }
 
     // ================= Job Posting Type Validation Functions =================
@@ -710,6 +754,10 @@ service cloud.firestore {
              stats.filledPositions is number;
     }
 
+    function isValidCanonicalPostingRole(role) {
+      return role in ['dealer', 'floor', 'serving', 'manager', 'staff', 'other'];
+    }
+
     function validateCanonicalSchedule(schedule) {
       return schedule is map &&
         schedule.kind == 'dated' &&
@@ -717,7 +765,34 @@ service cloud.firestore {
         schedule.keys().hasOnly(['kind', 'primaryDate', 'allDates', 'requirements']) &&
         schedule.primaryDate is string &&
         schedule.allDates is list &&
-        schedule.requirements is list;
+        schedule.allDates.size() > 0 &&
+        schedule.allDates.size() <= 30 &&
+        schedule.allDates[0] is string &&
+        schedule.requirements is list &&
+        schedule.requirements.size() > 0 &&
+        schedule.requirements.size() <= 30 &&
+        schedule.allDates.size() == schedule.requirements.size() &&
+        schedule.requirements[0] is map &&
+        schedule.requirements[0].keys().hasAll(['date', 'timeSlots']) &&
+        schedule.requirements[0].date is string &&
+        schedule.requirements[0].date == schedule.allDates[0] &&
+        schedule.requirements[0].timeSlots is list &&
+        schedule.requirements[0].timeSlots.size() > 0 &&
+        schedule.requirements[0].timeSlots[0] is map &&
+        schedule.requirements[0].timeSlots[0].keys().hasAll(['roles']) &&
+        schedule.requirements[0].timeSlots[0].roles is list &&
+        schedule.requirements[0].timeSlots[0].roles.size() > 0 &&
+        schedule.requirements[0].timeSlots[0].roles[0] is map &&
+        schedule.requirements[0].timeSlots[0].roles[0].keys().hasAll(['count']) &&
+        schedule.requirements[0].timeSlots[0].roles[0].count is number &&
+        schedule.requirements[0].timeSlots[0].roles[0].count > 0 &&
+        (!('role' in schedule.requirements[0].timeSlots[0].roles[0]) ||
+          isValidCanonicalPostingRole(schedule.requirements[0].timeSlots[0].roles[0].role)) &&
+        (!('filled' in schedule.requirements[0].timeSlots[0].roles[0]) ||
+          (schedule.requirements[0].timeSlots[0].roles[0].filled is number &&
+            schedule.requirements[0].timeSlots[0].roles[0].filled >= 0 &&
+            schedule.requirements[0].timeSlots[0].roles[0].filled <=
+              schedule.requirements[0].timeSlots[0].roles[0].count));
     }
 
     function getCanonicalPostingType(data) {
@@ -765,7 +840,7 @@ service cloud.firestore {
     function validateCanonicalJobPosting(data) {
       return hasCanonicalJobPostingKeys(data) &&
              data.schemaVersion == 3 &&
-             isSafeText(data.title, 200) &&
+             isValidString(data.title, 200) &&
              (!('description' in data) || data.description is string) &&
              data.ownerId is string &&
              (!('ownerName' in data) || data.ownerName is string) &&
@@ -782,7 +857,7 @@ service cloud.firestore {
              (!('searchIndex' in data) || data.searchIndex is list) &&
              (!('closedReason' in data) || data.closedReason in ['manual', 'expired', 'expired_by_work_date']) &&
              (!('tags' in data) || data.tags is list) &&
-             (!('contactPhone' in data) || isSafeText(data.contactPhone, 25)) &&
+             (!('contactPhone' in data) || isValidString(data.contactPhone, 25)) &&
              validateCanonicalSchedule(data.schedule) &&
              data.roleCatalog is list &&
              data.roleCatalog.size() > 0 &&
@@ -794,8 +869,26 @@ service cloud.firestore {
     }
 
     function validateCanonicalJobPostingCreate(data) {
-      return validateCanonicalJobPosting(data) &&
+      return hasCanonicalJobPostingKeys(data) &&
+             data.schemaVersion == 3 &&
+             isValidString(data.title, 200) &&
+             (!('description' in data) || data.description is string) &&
+             data.ownerId is string &&
+             (!('ownerName' in data) || data.ownerName is string) &&
+             validateCanonicalLocation(data.location) &&
+             data.workDate is string &&
+             (!('workDates' in data) || data.workDates is list) &&
+             validateCanonicalPostingTypeSchedule(data) &&
+             validateCanonicalDerivedScheduleFields(data) &&
+             validateCanonicalSchedule(data.schedule) &&
+             data.roleCatalog is list &&
+             data.roleCatalog.size() > 0 &&
+             data.compensation is map &&
+             data.questions is map &&
              data.status == 'active' &&
+             (!('postingType' in data) || data.postingType in ['regular', 'tournament', 'urgent']) &&
+             validateCanonicalPostingTypeConfigs(data) &&
+             data.totalPositions is number &&
              !('searchIndex' in data) &&
              !('closedAt' in data) &&
              !('closedReason' in data) &&
@@ -1226,7 +1319,7 @@ service cloud.firestore {
       // bubbleScore: 트랜잭션 내에서만 업데이트 (클라이언트 직접 수정 차단)
       allow update: if isSignedIn() && isOwner(userId) && (
         // 일반 프로필 업데이트 (role, bubbleScore 변경 불가)
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'bubbleScore'])) ||
+        isValidSelfUserUpdate() ||
         // 구인자 등록 (staff → employer)
         isValidEmployerRegistration()
       );
@@ -1444,25 +1537,24 @@ service cloud.firestore {
 
     // --- Job Postings Collection ---
     match /jobPostings/{postId} {
-      // Public list queries must stay query-safe, while detail reads stay strict.
+      // Public detail and list reads share the same active-only visibility.
       allow get: if isSignedIn() ||
-        (resource.data.status == 'active' &&
-         validateCanonicalJobPosting(resource.data));
+        resource.data.status == 'active';
       allow list: if isSignedIn() ||
         resource.data.status == 'active';
 
       // Admin can create/update any job posting
-      // Manager and Staff can create job postings and update their own
+      // Employer and manager can create job postings and update their own
       // v2.0: 앱 타입 정의에 맞춘 status 허용 값 + location 객체 지원
-      allow create: if hasValidRole() &&
+      allow create: if canManageJobPostings() &&
         validateCanonicalJobPostingCreate(request.resource.data) &&
         request.resource.data.ownerId == request.auth.uid;
         // 추가 필드 검증
         // 타입별 config 검증 (timestamp 타입 체크 제거됨)
 
-      // Admin can update any job posting, Manager/Staff can update their own
+      // Admin can update any job posting, employer/manager can update their own
       // Tournament 승인은 admin만 가능
-      allow update: if hasValidRole() &&
+      allow update: if canManageJobPostings() &&
         (isAdmin() || request.auth.uid == resource.data.ownerId) &&
         request.resource.data.ownerId == resource.data.ownerId &&
         request.resource.data.postingType == resource.data.postingType &&
@@ -1743,12 +1835,9 @@ service cloud.firestore {
     // --- Job Posting Drafts Collection (임시저장) ---
     match /jobPostingDrafts/{draftId} {
       // Helper: 공고 관리 권한 확인 (hasValidRole에 employer 포함됨)
-      function canManageJobPostings() {
-        return hasValidRole();
-      }
-
       // 개별 문서 읽기: 본인의 임시저장만 가능
-      allow get: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+      allow get: if isSignedIn() && canManageJobPostings() &&
+        request.auth.uid == resource.data.ownerId;
 
       // 쿼리(list): 공고 관리 권한이 있는 사용자만 가능 (실제 결과는 where ownerId 조건으로 필터링)
       allow list: if isSignedIn() && canManageJobPostings();
@@ -1756,13 +1845,25 @@ service cloud.firestore {
       // 생성: 본인 이름으로만 생성 가능 (공고 관리 권한 필요)
       allow create: if isSignedIn() && canManageJobPostings() &&
         request.auth.uid == request.resource.data.ownerId &&
-        request.resource.data.keys().hasAll(['ownerId', 'step', 'lastSavedAt']);
+        request.resource.data.keys().hasAll(['ownerId', 'step', 'lastSavedAt', 'draft']) &&
+        request.resource.data.keys().hasOnly(['ownerId', 'step', 'lastSavedAt', 'draft']) &&
+        request.resource.data.step is number &&
+        request.resource.data.lastSavedAt == request.time &&
+        request.resource.data.draft is map;
 
       // 수정: 본인의 임시저장만 수정 가능
-      allow update: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+      allow update: if isSignedIn() && canManageJobPostings() &&
+        request.auth.uid == resource.data.ownerId &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.keys().hasOnly(['ownerId', 'step', 'lastSavedAt', 'draft']) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['step', 'lastSavedAt', 'draft']) &&
+        request.resource.data.step is number &&
+        request.resource.data.lastSavedAt == request.time &&
+        request.resource.data.draft is map;
 
       // 삭제: 본인의 임시저장만 삭제 가능
-      allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+      allow delete: if isSignedIn() && canManageJobPostings() &&
+        request.auth.uid == resource.data.ownerId;
     }
 
     // --- Job Posting Templates Collection ---

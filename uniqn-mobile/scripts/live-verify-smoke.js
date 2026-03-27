@@ -52,6 +52,20 @@ async function fillVisibleInput(page, placeholder, value) {
   await locator.fill(value);
 }
 
+async function waitForPathname(page, matcher, timeout = 20000) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    const pathname = new URL(page.url()).pathname;
+    if (matcher(pathname)) {
+      return pathname;
+    }
+    await page.waitForTimeout(250);
+  }
+
+  throw new Error(`Timed out waiting for pathname transition: ${page.url()}`);
+}
+
 async function expectAnyText(page, patterns, timeout = 15000) {
   await page.locator('body').waitFor({ state: 'attached', timeout });
   const start = Date.now();
@@ -75,7 +89,7 @@ async function login(page, account) {
   await fillVisibleInput(page, '이메일을 입력하세요', account.email);
   await fillVisibleInput(page, '비밀번호를 입력하세요', account.password);
   await page.getByRole('button', { name: /^로그인(?: 중\.\.\.)?$/ }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20000 });
+  await waitForPathname(page, (pathname) => !pathname.includes('/login'));
   await waitForAppReady(page);
   await page.waitForTimeout(1500);
 }
@@ -93,7 +107,10 @@ async function logout(page) {
       await confirmButton.click();
     }
 
-    await page.waitForURL(/login|^\//, { timeout: 20000 }).catch(() => {});
+    await waitForPathname(
+      page,
+      (pathname) => pathname === '/' || pathname.includes('/login')
+    ).catch(() => {});
   } else {
     await page.context().clearCookies();
     await page.evaluate(() => {

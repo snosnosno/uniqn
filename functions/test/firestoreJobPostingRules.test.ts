@@ -8,6 +8,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   doc,
+  getDoc,
   setDoc,
   setLogLevel,
   Timestamp,
@@ -176,7 +177,27 @@ describe("Firestore jobPosting canonical rules", () => {
           searchIndex: ["canonical", "posting"],
         }),
       );
+
+      await setDoc(
+        doc(db, "jobPostings", "job-closed"),
+        createCanonicalJobPosting({
+          status: "closed",
+          searchIndex: ["canonical", "closed"],
+        }),
+      );
     });
+  });
+
+  it("allows unauthenticated users to read active public job details", async () => {
+    const publicDb = testEnv.unauthenticatedContext().firestore();
+
+    await assertSucceeds(getDoc(doc(publicDb, "jobPostings", "job-1")));
+  });
+
+  it("rejects unauthenticated users reading inactive public job details", async () => {
+    const publicDb = testEnv.unauthenticatedContext().firestore();
+
+    await assertFails(getDoc(doc(publicDb, "jobPostings", "job-closed")));
   });
 
   it("allows canonical V3 creates with only contract fields", async () => {
@@ -186,6 +207,19 @@ describe("Firestore jobPosting canonical rules", () => {
       setDoc(
         doc(employerDb, "jobPostings", "job-create-success"),
         createCanonicalJobPosting(),
+      ),
+    );
+  });
+
+  it("rejects canonical creates from staff accounts", async () => {
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertFails(
+      setDoc(
+        doc(staffDb, "jobPostings", "job-create-staff"),
+        createCanonicalJobPosting({
+          ownerId: "staff-1",
+        }),
       ),
     );
   });
@@ -223,7 +257,37 @@ describe("Firestore jobPosting canonical rules", () => {
           schedule: {
             kind: "dated",
             primaryDate: "2026-04-01",
-            requirements: [],
+            allDates: ["2026-04-01"],
+            requirements: [
+              {
+                date: "2026-04-01",
+                timeSlots: [],
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    await assertFails(
+      setDoc(
+        doc(employerDb, "jobPostings", "job-create-bad-role-shape"),
+        createCanonicalJobPosting({
+          schedule: {
+            kind: "dated",
+            primaryDate: "2026-04-01",
+            allDates: ["2026-04-01"],
+            requirements: [
+              {
+                date: "2026-04-01",
+                timeSlots: [
+                  {
+                    startTime: "18:00",
+                    roles: [{ role: "dealer", filled: 1 }],
+                  },
+                ],
+              },
+            ],
           },
         }),
       ),
