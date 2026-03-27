@@ -17,6 +17,7 @@ import {
   selectIsStaff,
   selectHasHydrated,
   waitForHydration,
+  applyPersistedAuthRehydration,
   type AuthUser,
   type UserProfile,
 } from '../authStore';
@@ -673,6 +674,51 @@ describe('AuthStore', () => {
 
       await expect(hydrationPromise).resolves.toBe(false);
       expect(selectHasHydrated(useAuthStore.getState())).toBe(false);
+    });
+  });
+
+  describe('persist rehydration', () => {
+    it('should restore role flags and hydration state from persisted auth data', () => {
+      act(() => {
+        applyPersistedAuthRehydration({
+          user: {
+            uid: 'persisted-user',
+            email: 'persisted@example.com',
+            displayName: null,
+            photoURL: null,
+            emailVerified: true,
+            phoneNumber: null,
+          } satisfies AuthUser,
+          profile: {
+            uid: 'persisted-user',
+            email: 'persisted@example.com',
+            name: 'Persisted User',
+            role: 'admin',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as UserProfile,
+        });
+      });
+
+      const state = useAuthStore.getState();
+      expect(state._hasHydrated).toBe(true);
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.isAdmin).toBe(true);
+      expect(state.isEmployer).toBe(true);
+      expect(state.isStaff).toBe(true);
+    });
+
+    it('should finish hydration even when persist rehydration falls back after an error', () => {
+      act(() => {
+        applyPersistedAuthRehydration(undefined, new Error('storage unavailable'));
+      });
+
+      const state = useAuthStore.getState();
+      expect(state._hasHydrated).toBe(true);
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isAdmin).toBe(false);
+      expect(state.isEmployer).toBe(false);
+      expect(state.isStaff).toBe(false);
     });
   });
 

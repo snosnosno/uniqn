@@ -46,6 +46,8 @@ const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   },
 };
 
+const PUBLIC_ENTRY_PATHS = new Set(['/jobs', '/(public)/jobs']);
+
 function extractRouteGroup(segments: string[]): RouteGroup | null {
   const firstSegment = segments[0] as RouteGroup | undefined;
 
@@ -54,6 +56,19 @@ function extractRouteGroup(segments: string[]): RouteGroup | null {
   }
 
   return null;
+}
+
+function isPublicEntryRoute(pathname: string, segments: string[]): boolean {
+  return PUBLIC_ENTRY_PATHS.has(pathname) || (segments[0] === '(public)' && segments[1] === 'jobs');
+}
+
+function isPublicJobDetailRoute(pathname: string, segments: string[]): boolean {
+  const normalizedSegments = pathname.split('/').filter(Boolean);
+
+  return (
+    (normalizedSegments.length === 2 && normalizedSegments[0] === 'jobs') ||
+    (segments[0] === '(public)' && segments[1] === 'jobs' && segments.length >= 3)
+  );
 }
 
 export function useAuthGuard(): void {
@@ -128,6 +143,16 @@ export function useAuthGuard(): void {
       return;
     }
 
+    if (routeGroup === '(public)' && isAuthenticated && isPublicEntryRoute(pathname, segments)) {
+      logger.debug('Authenticated user entered public entry route', {
+        component: 'useAuthGuard',
+        pathname,
+        authenticatedEntryRoute: resolvedAuthenticatedRoute,
+      });
+      routerRef.current.replace(resolvedAuthenticatedRoute);
+      return;
+    }
+
     if (isAuthenticated && authenticatedEntryRoute.includes('/signup') && !isOnSignup) {
       logger.debug('Incomplete social signup detected', {
         component: 'useAuthGuard',
@@ -152,6 +177,10 @@ export function useAuthGuard(): void {
     }
 
     if (config.requiredAuth && !isAuthenticated) {
+      if (isPublicEntryRoute(pathname, segments) || isPublicJobDetailRoute(pathname, segments)) {
+        return;
+      }
+
       logger.debug('Unauthenticated access to protected route', {
         component: 'useAuthGuard',
         pathname,

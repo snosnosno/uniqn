@@ -21,18 +21,18 @@ export class SettingsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.changePasswordItem = page.getByText('비밀번호 변경');
-    this.darkModeLabel = page.getByText('다크 모드');
-    this.cacheClearItem = page.getByText('캐시 삭제');
-    this.termsItem = page.getByText('이용약관');
-    this.privacyItem = page.getByText('개인정보처리방침');
-    this.businessInfoItem = page.getByText('사업자정보');
-    this.deleteAccountButton = page.getByText('계정 삭제');
-    this.versionItem = page.getByText('버전');
-    this.pushNotificationLabel = page.getByText('푸시 알림');
-    this.autoLoginLabel = page.getByText('자동 로그인');
-    this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.');
-    this.marketingLabel = page.getByText('마케팅 정보 수신');
+    this.changePasswordItem = page.getByRole('button', { name: /^비밀번호 변경$/ }).first();
+    this.darkModeLabel = page.getByText('다크 모드').last();
+    this.cacheClearItem = page.getByRole('button', { name: /^캐시 삭제$/ }).first();
+    this.termsItem = page.getByRole('button', { name: /^이용약관$/ }).first();
+    this.privacyItem = page.getByRole('button', { name: /^개인정보처리방침$/ }).first();
+    this.businessInfoItem = page.getByRole('button', { name: /^사업자정보$/ }).first();
+    this.deleteAccountButton = page.getByRole('button', { name: /^계정 삭제$/ }).first();
+    this.versionItem = page.getByText('버전').last();
+    this.pushNotificationLabel = page.getByText('푸시 알림').last();
+    this.autoLoginLabel = page.getByText('자동 로그인').last();
+    this.autoLoginHelperText = page.getByText('끄면 다음 실행부터 다시 로그인해야 합니다.').last();
+    this.marketingLabel = page.getByText('마케팅 정보 수신').last();
   }
 
   async goto(): Promise<void> {
@@ -72,7 +72,7 @@ export class SettingsPage extends BasePage {
 
   /** 섹션 제목 가져오기 */
   getSectionTitle(title: '알림' | '계정' | '앱 설정' | '정보'): Locator {
-    return this.page.getByText(title, { exact: true });
+    return this.page.getByText(title, { exact: true }).last();
   }
 
   /** Switch 토글 (label 기반) */
@@ -97,7 +97,7 @@ export class SettingsPage extends BasePage {
 
   /** 버전 정보 값 확인 */
   getVersionValue(): Locator {
-    return this.page.getByText('1.0.0');
+    return this.page.getByText(/\d+\.\d+\.\d+ \(\d+\)/).last();
   }
 
   /** 알림 권한 거부 경고 확인 */

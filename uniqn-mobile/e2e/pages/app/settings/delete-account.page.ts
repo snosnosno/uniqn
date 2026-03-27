@@ -13,15 +13,17 @@ export class DeleteAccountPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.warningTitle = page.getByText('회원탈퇴 안내');
+    this.warningTitle = page.getByText('회원탈퇴 안내').last();
     this.passwordInput = page.getByPlaceholder('현재 비밀번호를 입력해주세요');
     this.requestButton = page.getByRole('button', { name: '회원탈퇴 요청' });
     this.dataLink = page.getByText('탈퇴 전 내 데이터 확인하기');
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/settings/delete-account', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    await this.page.getByRole('button', { name: /^계정 삭제$/ }).click();
+    await this.page.waitForURL(/settings\/delete-account/, { timeout: 10_000 });
   }
 
   /** 탈퇴 사유 선택 */
@@ -34,7 +36,7 @@ export class DeleteAccountPage extends BasePage {
       | '사용하기 어려워요'
       | '기타'
   ): Promise<void> {
-    await this.page.getByText(reason).click();
+    await this.getReasonOption(reason).last().click();
   }
 
   /** 탈퇴 사유 라디오 가져오기 */

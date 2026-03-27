@@ -11,6 +11,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
 import {
@@ -503,7 +504,7 @@ export async function createAndSendNotification(
       relatedId: relatedId ?? null,
       senderId: senderId ?? null,
       isRead: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       // 푸시 전송 생략 사유 기록
       pushSkipped: true,
       pushSkipReason: permissionCheck.reason,
@@ -543,7 +544,7 @@ export async function createAndSendNotification(
     relatedId: relatedId ?? null,
     senderId: senderId ?? null,
     isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   };
 
   await notificationRef.set(notificationDoc);
@@ -594,7 +595,7 @@ export async function createAndSendNotification(
   // 4. 전송 결과 업데이트
   if (fcmResult.success > 0) {
     await notificationRef.update({
-      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      sentAt: FieldValue.serverTimestamp(),
       fcmSuccess: fcmResult.success,
       fcmFailure: fcmResult.failure,
     });
@@ -880,8 +881,8 @@ export async function updateUnreadCounter(
   try {
     await counterRef.set(
       {
-        unreadCount: admin.firestore.FieldValue.increment(delta),
-        lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        unreadCount: FieldValue.increment(delta),
+        lastUpdatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
     );
@@ -908,7 +909,7 @@ export async function updateUnreadCounter(
         delta,
         notificationId: notificationId ?? null,
         error: errorMessage,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         retryCount: 0,
         status: "pending", // pending | processing | completed | failed
       });
@@ -967,7 +968,7 @@ export async function decrementUnreadCounter(
           counterRef,
           {
             unreadCount: newCount,
-            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true },
         );
@@ -1013,7 +1014,7 @@ export async function decrementUnreadCounter(
       delta,
       notificationId: notificationId ?? null,
       error: lastError?.message ?? "Max retries exceeded",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       retryCount: 0,
       status: "pending",
     });
@@ -1021,7 +1022,7 @@ export async function decrementUnreadCounter(
     // 사용자 문서에 동기화 필요 플래그 설정
     await db.collection("users").doc(userId).update({
       _counterSyncRequired: true,
-      _counterSyncRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
+      _counterSyncRequestedAt: FieldValue.serverTimestamp(),
     });
   } catch (recordError) {
     logger.error("실패 기록 저장 실패", {
@@ -1054,7 +1055,7 @@ export async function resetUnreadCounter(userId: string): Promise<void> {
   await counterRef.set(
     {
       unreadCount: 0,
-      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
@@ -1112,7 +1113,7 @@ export async function retryFailedCounterOps(
       // 재처리 중 표시
       await doc.ref.update({
         status: "processing",
-        lastRetryAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastRetryAt: FieldValue.serverTimestamp(),
       });
 
       // 카운터 연산 재시도
@@ -1125,8 +1126,8 @@ export async function retryFailedCounterOps(
       if (operation === "increment") {
         await counterRef.set(
           {
-            unreadCount: admin.firestore.FieldValue.increment(delta),
-            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            unreadCount: FieldValue.increment(delta),
+            lastUpdatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true },
         );
@@ -1143,7 +1144,7 @@ export async function retryFailedCounterOps(
             counterRef,
             {
               unreadCount: newCount,
-              lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              lastUpdatedAt: FieldValue.serverTimestamp(),
             },
             { merge: true },
           );
@@ -1175,7 +1176,7 @@ export async function retryFailedCounterOps(
             status: "failed",
             retryCount: newRetryCount,
             lastError: errorMessage,
-            failedAt: admin.firestore.FieldValue.serverTimestamp(),
+            failedAt: FieldValue.serverTimestamp(),
           });
         }
         failed++;

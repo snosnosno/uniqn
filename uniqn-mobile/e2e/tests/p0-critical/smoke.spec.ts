@@ -2,6 +2,7 @@
  * Smoke Test — 앱이 정상적으로 로드되는지 확인
  */
 import { test, expect } from '@playwright/test';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 
 test.describe('Smoke Test', () => {
   test('앱이 정상적으로 로드된다', async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe('Smoke Test', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // 앱 초기화 완료 대기
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     const url = page.url();
     const pathname = new URL(url).pathname;

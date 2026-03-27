@@ -23,6 +23,9 @@ export type DeepLinkRoute =
   | { name: 'home' }
   | { name: 'jobs' }
   | { name: 'job'; params: { id: string } }
+  | { name: 'login' }
+  | { name: 'signup' }
+  | { name: 'forgot-password' }
 
   // === 인증 필요 라우트 ===
   | { name: 'notifications' }
@@ -34,6 +37,7 @@ export type DeepLinkRoute =
 
   // === 구인자 라우트 ===
   | { name: 'employer/my-postings' }
+  | { name: 'employer/posting-create' }
   | { name: 'employer/posting'; params: { id: string } }
   | { name: 'employer/applicants'; params: { jobId: string } }
   | { name: 'employer/settlement'; params: { jobId: string } }

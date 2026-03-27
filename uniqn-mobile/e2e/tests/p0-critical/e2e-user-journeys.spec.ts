@@ -8,6 +8,7 @@ import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 import { LoginPage } from '../../pages/auth/login.page';
 import { seedDocument, deleteDocument } from '../../helpers/firebase-admin';
 import { createTestJob } from '../../factories';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
@@ -20,7 +21,7 @@ test.describe('E2E 유저 저니', () => {
 
     // 1. 메인 탭 접근
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 구인구직 헤더가 보여야 함 (use .first() since text appears in header + tab)
     await expect(page.getByText('구인구직').first()).toBeVisible({ timeout: 10_000 });
@@ -42,7 +43,7 @@ test.describe('E2E 유저 저니', () => {
 
     // 1. 메인 탭 접근
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 2. '내 공고' 탭 클릭
     const employerTab = page.getByText('내 공고');
@@ -51,9 +52,9 @@ test.describe('E2E 유저 저니', () => {
       await page.waitForLoadState('domcontentloaded');
 
       // 내 공고 관련 콘텐츠가 보여야 함
-      await expect(
-        page.getByText('내 공고 관리').or(page.getByText(/공고가 없습니다/))
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole('button', { name: /공고 작성/ })).toBeVisible({
+        timeout: 10_000,
+      });
     }
 
     await context.close();
@@ -65,12 +66,12 @@ test.describe('E2E 유저 저니', () => {
 
     // 1. admin 라우트 접근
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 2. admin은 정상 콘텐츠가 보여야 함
-    await expect(
-      page.getByText('구인구직').first().or(page.getByText('대시보드'))
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('구인구직').first().or(page.getByText('대시보드'))).toBeVisible({
+      timeout: 10_000,
+    });
 
     // 3. 로그인 페이지로 리다이렉트되지 않아야 함
     expect(page.url()).not.toContain('/login');
@@ -92,7 +93,10 @@ test.describe('E2E 유저 저니', () => {
       await page.waitForLoadState('domcontentloaded');
 
       // 에러 확인
-      const isError = await page.getByText('오류가 발생했습니다').isVisible({ timeout: 5_000 }).catch(() => false);
+      const isError = await page
+        .getByText('오류가 발생했습니다')
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false);
 
       if (!isError) {
         // 공고 상세 헤더 또는 지원하기 버튼 중 하나가 보여야 함
@@ -117,7 +121,7 @@ test.describe('E2E 유저 저니', () => {
 
     // 1. 메인 탭 접근
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 2. 프로필 탭 클릭
     const profileTab = page.getByText('프로필');
@@ -126,18 +130,16 @@ test.describe('E2E 유저 저니', () => {
       await page.waitForLoadState('domcontentloaded');
 
       // 프로필 관련 콘텐츠가 보여야 함
-      await expect(
-        page.getByText('프로필').first().or(page.getByText(TEST_ACCOUNTS.staff.displayName))
-      ).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByRole('button', { name: /프로필 수정/ })).toBeVisible({
+        timeout: 10_000,
+      });
     }
 
     // 3. 설정 접근
     await page.goto('/settings', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
-    await expect(
-      page.getByRole('heading', { name: '설정' })
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: '설정' })).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });
@@ -163,8 +165,9 @@ test.describe('E2E 유저 저니', () => {
 
     if (!hasLoginForm) {
       // 앱이 비인증 상태에서도 메인 페이지를 보여줌 → 앱이 정상 로드되면 테스트 통과
-      const hasContent = await page.getByText('구인구직').first().isVisible().catch(() => false);
-      expect(hasContent).toBeTruthy();
+      await expect(page.getByRole('textbox', { name: '공고 검색' })).toBeVisible({
+        timeout: 10_000,
+      });
       await context.close();
       return;
     }

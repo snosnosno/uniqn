@@ -4,6 +4,7 @@ import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { Badge } from '@/components/ui/Badge';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
+import { useAuthStore } from '@/stores';
 import type { JobPosting, PostingDetailViewModel, PostingType } from '@/types';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import {
@@ -42,6 +43,7 @@ function InfoRow({
 }
 
 export function JobDetail({ job }: JobDetailProps) {
+  const user = useAuthStore((state) => state.user);
   const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
   const detail = useMemo(
     () =>
@@ -54,7 +56,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
   const { userProfile: ownerProfile } = useUserProfile({
     userId: detail.ownerId || '',
-    enabled: Boolean(detail.ownerId),
+    enabled: Boolean(user && detail.ownerId),
   });
 
   const handleCall = () => {

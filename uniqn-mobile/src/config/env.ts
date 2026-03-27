@@ -74,15 +74,15 @@ const currentEnvironment = detectEnvironment();
 const apiConfigs: Record<Environment, ApiConfig> = {
   development: {
     // NOTE: 실제 디바이스에서는 로컬 IP 주소 사용 필요 (예: http://192.168.x.x:5001/...)
-    baseUrl: 'http://localhost:5001/tholdem-ebc18/us-central1',
+    baseUrl: 'http://localhost:5001/tholdem-ebc18/asia-northeast3',
     timeout: 30000,
   },
   staging: {
-    baseUrl: 'https://us-central1-tholdem-ebc18-staging.cloudfunctions.net',
+    baseUrl: 'https://asia-northeast3-tholdem-ebc18.cloudfunctions.net',
     timeout: 15000,
   },
   production: {
-    baseUrl: 'https://us-central1-tholdem-ebc18.cloudfunctions.net',
+    baseUrl: 'https://asia-northeast3-tholdem-ebc18.cloudfunctions.net',
     timeout: 10000,
   },
 };

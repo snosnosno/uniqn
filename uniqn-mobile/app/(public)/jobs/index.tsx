@@ -1,43 +1,58 @@
 /**
  * UNIQN Mobile - Job List Screen
- * 구인공고 목록 화면 (공개)
- *
- * @version 1.1.0 - PostingTypeChips 통일 적용
+ * Public jobs entry point with install prompts for protected actions.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { router, Stack } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JobList, PostingTypeChips } from '@/components/jobs';
-import { useJobPostings } from '@/hooks';
+import { PublicBottomTabBar } from '@/components/navigation';
+import { LAYOUT, STATUS } from '@/constants';
+import { useInstallPrompt, useJobPostings } from '@/hooks';
 import { useThemeStore } from '@/stores';
-import { STATUS } from '@/constants';
-import type { PostingType, JobPostingFilters } from '@/types';
-
-// ============================================================================
-// Screen Component
-// ============================================================================
+import type { JobPostingFilters, PostingType } from '@/types';
 
 export default function JobListScreen() {
   const [selectedType, setSelectedType] = useState<PostingType | null>('urgent');
   const { isDarkMode } = useThemeStore();
+  const insets = useSafeAreaInsets();
+  const { openInstallPrompt } = useInstallPrompt();
 
-  // 필터 변환 (App 라우트와 동일한 패턴)
   const filters = useMemo<JobPostingFilters>(() => {
     const result: JobPostingFilters = { status: STATUS.JOB_POSTING.ACTIVE };
+
     if (selectedType) {
       result.postingType = selectedType;
     }
+
     return result;
   }, [selectedType]);
 
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({ filters });
 
-  const handleJobPress = useCallback((jobId: string) => {
-    router.push(`/(public)/jobs/${jobId}`);
-  }, []);
+  const handleJobPress = useCallback(() => {
+    openInstallPrompt('job-card');
+  }, [openInstallPrompt]);
+
+  const handleProtectedTabPress = useCallback(
+    (tab: 'schedule' | 'employer' | 'profile') => {
+      if (tab === 'schedule') {
+        openInstallPrompt('schedule-tab');
+        return;
+      }
+
+      if (tab === 'employer') {
+        openInstallPrompt('employer-tab');
+        return;
+      }
+
+      openInstallPrompt('profile-tab');
+    },
+    [openInstallPrompt]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
@@ -55,11 +70,12 @@ export default function JobListScreen() {
         }}
       />
 
-      {/* 공고 타입 칩 필터 */}
       <PostingTypeChips selected={selectedType} onChange={setSelectedType} />
 
-      {/* 공고 목록 */}
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View
+        className="flex-1 bg-gray-50 dark:bg-surface-dark"
+        style={{ paddingBottom: LAYOUT.TAB_BAR_HEIGHT + insets.bottom }}
+      >
         <JobList
           jobs={jobs}
           isLoading={isLoading}
@@ -72,6 +88,8 @@ export default function JobListScreen() {
           onJobPress={handleJobPress}
         />
       </View>
+
+      <PublicBottomTabBar activeTab="jobs" onProtectedTabPress={handleProtectedTabPress} />
     </SafeAreaView>
   );
 }

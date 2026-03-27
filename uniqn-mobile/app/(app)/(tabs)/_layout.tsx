@@ -8,6 +8,7 @@ import { Tabs, useNavigation } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
+import { LAYOUT } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 
@@ -43,7 +44,7 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: getLayoutColor(isDark, 'tabBarBg'),
           borderTopColor: getLayoutColor(isDark, 'tabBarBorder'),
-          height: 56 + insets.bottom,
+          height: LAYOUT.TAB_BAR_HEIGHT + insets.bottom,
           paddingBottom: insets.bottom,
         },
         tabBarLabelStyle: {

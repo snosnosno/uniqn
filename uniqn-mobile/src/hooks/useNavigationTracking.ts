@@ -59,6 +59,7 @@ const ROUTE_NAMES: Record<string, string> = {
   // 공개 페이지
   '/(public)/jobs': '공고 목록',
   '/(public)/jobs/[id]': '공고 상세',
+  '/jobs/[id]': '공고 상세',
 
   // 메인 앱 - 탭
   '/(app)/(tabs)': '홈',

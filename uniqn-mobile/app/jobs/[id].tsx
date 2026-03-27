@@ -1,24 +1,25 @@
 import { useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
 import { JobDetail, JobDetailHeader, PostingSurfaceState } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
-import { useApplications, useJobDetail } from '@/hooks';
+import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
 import { trackJobView } from '@/services/observability';
 import { useAuthStore, useThemeStore } from '@/stores';
-import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
-import { logger } from '@/utils/logger';
 
-export default function JobDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function PublicJobDetailAliasRoute() {
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const user = useAuthStore((state) => state.user);
   const isDark = useThemeStore((state) => state.isDarkMode);
-  const { user } = useAuthStore();
-  const { hasApplied, getApplicationStatus } = useApplications();
-  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
+  const { openInstallPrompt } = useInstallPrompt();
+  const { shareJob, isSharing } = useShare();
+
+  const resolvedId = Array.isArray(id) ? id[0] : id;
+  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
 
   useEffect(() => {
     if (job) {
@@ -27,17 +28,32 @@ export default function JobDetailScreen() {
   }, [job]);
 
   const handleApply = useCallback(() => {
-    if (!user) {
-      logger.info('비로그인 상태에서 지원 시도', { jobId: id });
-      router.push({
-        pathname: '/(auth)/login',
-        params: { redirect: `/(app)/jobs/${id}/apply` },
-      });
+    openInstallPrompt('job-detail-cta');
+  }, [openInstallPrompt]);
+
+  const handleShare = useCallback(() => {
+    if (!job) {
       return;
     }
 
-    router.push(`/(app)/jobs/${id}/apply`);
-  }, [id, user]);
+    const locationStr =
+      typeof job.location === 'string' ? job.location : (job.location?.name ?? '');
+
+    void shareJob({
+      id: job.id,
+      title: job.title,
+      location: locationStr,
+      workDate: job.workDate,
+    });
+  }, [job, shareJob]);
+
+  if (!resolvedId) {
+    return <Redirect href="/jobs" />;
+  }
+
+  if (user) {
+    return <Redirect href={`/(app)/jobs/${resolvedId}`} />;
+  }
 
   if (isLoading) {
     return (
@@ -69,24 +85,21 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader title={job.title} />
+        <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          message="고정 공고는 V3 canonical 전환 동안 공개 상세 화면에서 제공되지 않습니다."
+          message="고정 공고는 공개 상세 화면에서 아직 지원하지 않습니다."
           onRetry={refresh}
         />
       </SafeAreaView>
     );
   }
 
-  const alreadyApplied = hasApplied(job.id);
-  const applicationStatus = getApplicationStatus(job.id);
-
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <JobDetailHeader title={job.title} />
+      <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
 
       <ScrollView
         className="flex-1"
@@ -103,29 +116,30 @@ export default function JobDetailScreen() {
         <JobDetail job={job} />
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+      <View
+        className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface"
+        style={{ zIndex: 10 }}
+      >
         <SafeAreaView edges={['bottom']}>
-          {alreadyApplied ? (
-            <View className="items-center">
-              <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                {getApplicationStatusMessage(applicationStatus?.status)}
-              </Text>
-              <Button
-                onPress={() => router.push('/(app)/(tabs)/schedule')}
-                variant="outline"
-                fullWidth
-              >
-                내 지원 현황 보기
-              </Button>
-            </View>
-          ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
+          {job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
-              마감된 공고입니다
+              마감된 공고입니다.
             </Button>
           ) : (
-            <Button onPress={handleApply} fullWidth>
-              {user ? '지원하기' : '로그인 후 지원하기'}
-            </Button>
+            <View>
+              <Text className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
+                지원은 앱에서 가능해요
+              </Text>
+              <Button
+                onPress={(event) => {
+                  event.stopPropagation();
+                  handleApply();
+                }}
+                fullWidth
+              >
+                지원하기
+              </Button>
+            </View>
           )}
         </SafeAreaView>
       </View>

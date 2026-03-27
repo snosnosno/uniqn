@@ -11,6 +11,7 @@
  */
 
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
 
 const db = admin.firestore();
@@ -91,8 +92,8 @@ export async function checkRateLimit(
             timestamp: now,
           }],
           resetAt: resetTime,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
 
         return {
@@ -141,7 +142,7 @@ export async function checkRateLimit(
       transaction.update(rateLimitRef, {
         requests: validRequests,
         resetAt: resetTime,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       return {

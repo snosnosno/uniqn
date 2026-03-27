@@ -1,8 +1,4 @@
-/**
- * Signup Page Object (3단계)
- * 참조: app/(auth)/signup.tsx, SignupStepTerms, SignupStepAccount, SignupStepIdentity
- */
-import type { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from '../base.page';
 
 export class SignupPage extends BasePage {
@@ -15,35 +11,28 @@ export class SignupPage extends BasePage {
     await this.waitForReady();
   }
 
-  // ============================================================
-  // Step 1: 약관 동의
-  // ============================================================
-
   get selectAllCheckbox(): Locator {
-    return this.page.getByText('전체 동의하기');
+    return this.page.getByRole('checkbox', { name: /전체 동의하기/ }).first();
   }
 
   get termsCheckbox(): Locator {
-    // [필수] is a separate Text component, not part of the label
-    return this.page.getByText('이용약관 동의');
+    return this.page.getByRole('checkbox', { name: /이용약관 동의/ }).first();
   }
 
   get privacyCheckbox(): Locator {
-    // [필수] is a separate Text component, not part of the label
-    return this.page.getByText('개인정보처리방침 동의');
+    return this.page.getByRole('checkbox', { name: /개인정보처리방침 동의/ }).first();
   }
 
   get marketingCheckbox(): Locator {
-    // [선택] is a separate Text component, not part of the label
-    return this.page.getByText('마케팅 정보 수신 동의');
+    return this.page.getByRole('checkbox', { name: /마케팅 정보 수신 동의/ }).first();
   }
 
   get nextButton(): Locator {
-    return this.page.getByRole('button', { name: /다음|가입완료/ });
+    return this.page.getByRole('button', { name: /다음|가입완료/ }).first();
   }
 
   get backButton(): Locator {
-    return this.page.getByRole('button', { name: /이전/ });
+    return this.page.getByRole('button', { name: /이전/ }).first();
   }
 
   async acceptAllTerms(): Promise<void> {
@@ -63,70 +52,60 @@ export class SignupPage extends BasePage {
     await this.backButton.click();
   }
 
-  // ============================================================
-  // Step 2: 계정 정보
-  // ============================================================
-
   get emailInput(): Locator {
-    return this.page.getByPlaceholder('이메일을 입력하세요');
+    return this.page.locator('input[placeholder="이메일을 입력하세요"]:visible').first();
   }
 
   get passwordInput(): Locator {
-    return this.page.getByPlaceholder('비밀번호를 입력하세요');
+    return this.page.locator('input[placeholder="비밀번호를 입력하세요"]:visible').first();
   }
 
   get passwordConfirmInput(): Locator {
-    return this.page.getByPlaceholder('비밀번호를 다시 입력하세요');
+    return this.page.locator('input[placeholder="비밀번호를 다시 입력하세요"]:visible').first();
   }
 
-  async fillAccountInfo(
-    email: string,
-    password: string,
-    confirmPassword?: string
-  ): Promise<void> {
+  async fillAccountInfo(email: string, password: string, confirmPassword?: string): Promise<void> {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.passwordConfirmInput.fill(confirmPassword ?? password);
   }
 
-  // ============================================================
-  // Step 3: 본인인증
-  // ============================================================
-
   get nameInput(): Locator {
-    return this.page.getByPlaceholder('실명을 입력해주세요');
+    return this.page.locator('input[placeholder="실명을 입력해주세요"]:visible').first();
   }
 
   get birthDateSelector(): Locator {
-    return this.page.getByText('생년월일');
+    return this.page.getByText('생년월일').first();
   }
 
   get genderSelector(): Locator {
-    return this.page.getByText('성별');
+    return this.page.getByText('성별').first();
   }
 
   get submitButton(): Locator {
-    return this.page.getByRole('button', { name: /가입완료|다음/ });
+    return this.page.getByRole('button', { name: /가입완료|다음/ }).first();
   }
 
   async fillIdentityInfo(name: string): Promise<void> {
     await this.nameInput.fill(name);
   }
 
-  // ============================================================
-  // 유틸리티
-  // ============================================================
-
   async getCurrentStep(): Promise<number> {
-    // 단계 인디케이터에서 현재 단계 추출
-    const terms = await this.page.getByText('약관동의').isVisible();
-    const account = await this.page.getByText('계정정보').isVisible();
-    const identity = await this.page.getByText('본인인증').isVisible();
-
-    if (terms) return 1;
-    if (account) return 2;
-    if (identity) return 3;
-    return 0;
+    const accountVisible = await this.page
+      .getByText('계정정보')
+      .isVisible()
+      .catch(() => false);
+    const identityVisible = await this.page
+      .getByText('본인인증')
+      .isVisible()
+      .catch(() => false);
+    if (identityVisible) {
+      return 3;
+    }
+    if (accountVisible) {
+      return 2;
+    }
+    return 1;
   }
 
   async waitForStep(step: number, timeout = 5_000): Promise<void> {
@@ -137,7 +116,7 @@ export class SignupPage extends BasePage {
     };
     const text = stepTexts[step];
     if (text) {
-      await this.page.getByText(text).waitFor({ state: 'visible', timeout });
+      await this.page.getByText(text).first().waitFor({ state: 'visible', timeout });
     }
   }
 

@@ -40,6 +40,235 @@ import type {
   UpdateJobPostingInput,
 } from '@/types';
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(record: Record<string, unknown>, allowedKeys: string[]): boolean {
+  return Object.keys(record).every((key) => allowedKeys.includes(key));
+}
+
+function hasRequiredKeys(record: Record<string, unknown>, requiredKeys: string[]): boolean {
+  return requiredKeys.every((key) => key in record);
+}
+
+function isSalaryInfoShape(value: unknown): boolean {
+  return (
+    isPlainObject(value) &&
+    hasRequiredKeys(value, ['type', 'amount']) &&
+    hasOnlyKeys(value, ['type', 'amount']) &&
+    ['hourly', 'daily', 'monthly', 'other'].includes(String(value.type)) &&
+    typeof value.amount === 'number'
+  );
+}
+
+function isAllowancesShape(value: unknown): boolean {
+  return (
+    isPlainObject(value) &&
+    hasOnlyKeys(value, ['guaranteedHours', 'meal', 'transportation', 'accommodation']) &&
+    (value.guaranteedHours === undefined || typeof value.guaranteedHours === 'number') &&
+    (value.meal === undefined || typeof value.meal === 'number') &&
+    (value.transportation === undefined || typeof value.transportation === 'number') &&
+    (value.accommodation === undefined || typeof value.accommodation === 'number')
+  );
+}
+
+function isTaxableItemsShape(value: unknown): boolean {
+  return (
+    isPlainObject(value) &&
+    hasOnlyKeys(value, ['basePay', 'meal', 'transportation', 'accommodation', 'additional']) &&
+    (value.basePay === undefined || typeof value.basePay === 'boolean') &&
+    (value.meal === undefined || typeof value.meal === 'boolean') &&
+    (value.transportation === undefined || typeof value.transportation === 'boolean') &&
+    (value.accommodation === undefined || typeof value.accommodation === 'boolean') &&
+    (value.additional === undefined || typeof value.additional === 'boolean')
+  );
+}
+
+function isTaxSettingsShape(value: unknown): boolean {
+  return (
+    isPlainObject(value) &&
+    hasRequiredKeys(value, ['type', 'value']) &&
+    hasOnlyKeys(value, ['type', 'value', 'taxableItems']) &&
+    ['none', 'rate', 'fixed'].includes(String(value.type)) &&
+    typeof value.value === 'number' &&
+    (value.taxableItems === undefined || isTaxableItemsShape(value.taxableItems))
+  );
+}
+
+function getCreateRuleShapeSummary(document: Record<string, unknown>) {
+  const location = isPlainObject(document.location) ? document.location : null;
+  const compensation = isPlainObject(document.compensation) ? document.compensation : null;
+  const questions = isPlainObject(document.questions) ? document.questions : null;
+  const stats = isPlainObject(document.stats) ? document.stats : null;
+  const schedule = isPlainObject(document.schedule) ? document.schedule : null;
+  const postingType = typeof document.postingType === 'string' ? document.postingType : 'regular';
+  const scheduleAllDates = Array.isArray(schedule?.allDates) ? schedule.allDates : null;
+  const workDates = Array.isArray(document.workDates) ? document.workDates : null;
+
+  const locationValid =
+    location !== null &&
+    hasRequiredKeys(location, ['name']) &&
+    hasOnlyKeys(location, ['name', 'district', 'detailedAddress']) &&
+    typeof location.name === 'string' &&
+    (location.district === undefined || typeof location.district === 'string') &&
+    (location.detailedAddress === undefined || typeof location.detailedAddress === 'string');
+
+  const compensationValid =
+    compensation !== null &&
+    hasRequiredKeys(compensation, ['mode']) &&
+    hasOnlyKeys(compensation, ['mode', 'defaultSalary', 'allowances', 'taxSettings']) &&
+    ['shared', 'by_role'].includes(String(compensation.mode)) &&
+    (compensation.defaultSalary === undefined || isSalaryInfoShape(compensation.defaultSalary)) &&
+    (compensation.allowances === undefined || isAllowancesShape(compensation.allowances)) &&
+    (compensation.taxSettings === undefined || isTaxSettingsShape(compensation.taxSettings));
+
+  const questionsValid =
+    questions !== null &&
+    hasRequiredKeys(questions, ['items']) &&
+    hasOnlyKeys(questions, ['items']) &&
+    Array.isArray(questions.items);
+
+  const statsValid =
+    stats === null ||
+    (hasRequiredKeys(stats, [
+      'totalApplicants',
+      'activeApplicants',
+      'confirmedApplicants',
+      'cancellationPendingApplicants',
+      'filledPositions',
+    ]) &&
+      hasOnlyKeys(stats, [
+        'totalApplicants',
+        'activeApplicants',
+        'confirmedApplicants',
+        'cancellationPendingApplicants',
+        'filledPositions',
+      ]) &&
+      typeof stats.totalApplicants === 'number' &&
+      typeof stats.activeApplicants === 'number' &&
+      typeof stats.confirmedApplicants === 'number' &&
+      typeof stats.cancellationPendingApplicants === 'number' &&
+      typeof stats.filledPositions === 'number');
+
+  const scheduleValid =
+    schedule !== null &&
+    schedule.kind === 'dated' &&
+    hasRequiredKeys(schedule, ['kind', 'primaryDate', 'allDates', 'requirements']) &&
+    hasOnlyKeys(schedule, ['kind', 'primaryDate', 'allDates', 'requirements']) &&
+    typeof schedule.primaryDate === 'string' &&
+    Array.isArray(schedule.allDates) &&
+    Array.isArray(schedule.requirements);
+
+  const derivedScheduleValid =
+    scheduleValid &&
+    document.workDate === schedule.primaryDate &&
+    ((scheduleAllDates?.length ?? 0) === 0
+      ? !('workDates' in document)
+      : Array.isArray(workDates) && JSON.stringify(workDates) === JSON.stringify(scheduleAllDates));
+
+  const postingTypeConfigValid =
+    (postingType === 'regular' &&
+      !('tournamentConfig' in document) &&
+      !('urgentConfig' in document) &&
+      !('fixedConfig' in document)) ||
+    (postingType === 'tournament' &&
+      'tournamentConfig' in document &&
+      !('urgentConfig' in document) &&
+      !('fixedConfig' in document)) ||
+    (postingType === 'urgent' &&
+      'urgentConfig' in document &&
+      !('tournamentConfig' in document) &&
+      !('fixedConfig' in document));
+
+  const canonicalTopLevelValid =
+    hasRequiredKeys(document, [
+      'schemaVersion',
+      'title',
+      'status',
+      'ownerId',
+      'location',
+      'workDate',
+      'totalPositions',
+      'filledPositions',
+      'createdAt',
+      'updatedAt',
+      'schedule',
+      'roleCatalog',
+      'compensation',
+      'questions',
+    ]) &&
+    hasOnlyKeys(document, [
+      'schemaVersion',
+      'title',
+      'description',
+      'status',
+      'ownerId',
+      'ownerName',
+      'postingType',
+      'workDate',
+      'workDates',
+      'roleKeys',
+      'totalPositions',
+      'filledPositions',
+      'viewCount',
+      'stats',
+      'createdAt',
+      'updatedAt',
+      'searchIndex',
+      'closedAt',
+      'closedReason',
+      'tags',
+      'contactPhone',
+      'location',
+      'schedule',
+      'roleCatalog',
+      'compensation',
+      'questions',
+      'tournamentConfig',
+      'urgentConfig',
+    ]) &&
+    document.schemaVersion === 3 &&
+    typeof document.title === 'string' &&
+    typeof document.ownerId === 'string' &&
+    typeof document.workDate === 'string' &&
+    typeof document.totalPositions === 'number' &&
+    typeof document.filledPositions === 'number' &&
+    Array.isArray(document.roleCatalog) &&
+    document.roleCatalog.length > 0 &&
+    ['active', 'closed', 'cancelled'].includes(String(document.status));
+
+  return {
+    canonicalTopLevelValid,
+    locationValid,
+    compensationValid,
+    questionsValid,
+    statsValid,
+    scheduleValid,
+    derivedScheduleValid,
+    postingTypeConfigValid,
+    createSpecificValid:
+      document.status === 'active' &&
+      !('searchIndex' in document) &&
+      !('closedAt' in document) &&
+      !('closedReason' in document) &&
+      document.filledPositions === 0 &&
+      (document.viewCount === undefined || document.viewCount === 0) &&
+      (stats === null ||
+        (stats.totalApplicants === 0 &&
+          stats.activeApplicants === 0 &&
+          stats.confirmedApplicants === 0 &&
+          stats.cancellationPendingApplicants === 0 &&
+          stats.filledPositions === 0)),
+    topLevelKeys: Object.keys(document),
+    locationKeys: location ? Object.keys(location) : null,
+    compensationKeys: compensation ? Object.keys(compensation) : null,
+    questionsKeys: questions ? Object.keys(questions) : null,
+    scheduleKeys: schedule ? Object.keys(schedule) : null,
+    statsKeys: stats ? Object.keys(stats) : null,
+  };
+}
+
 function assertFixedPostingDisabled(input: {
   postingType?: CreateJobPostingInput['postingType'];
   schedule?: CreateJobPostingInput['schedule'];
@@ -205,6 +434,8 @@ export async function createWithTransaction(
   input: CreateJobPostingInput,
   context: CreateJobPostingContext
 ): Promise<CreateJobPostingResult> {
+  let createRuleShapeSummary: ReturnType<typeof getCreateRuleShapeSummary> | undefined;
+
   try {
     assertFixedPostingDisabled(input);
 
@@ -245,6 +476,7 @@ export async function createWithTransaction(
     const { id: _id, ...jobPostingData } = removeUndefined(
       serialized as unknown as Record<string, unknown>
     );
+    createRuleShapeSummary = getCreateRuleShapeSummary(jobPostingData);
 
     await setDoc(newDocRef, jobPostingData);
 
@@ -252,6 +484,7 @@ export async function createWithTransaction(
   } catch (error) {
     logger.error('Job posting create failed', toError(error), {
       ownerId: context.ownerId,
+      createRuleShapeSummary,
     });
     throw handleServiceError(error, {
       operation: 'Job posting create',

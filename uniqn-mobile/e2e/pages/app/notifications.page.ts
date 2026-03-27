@@ -11,8 +11,8 @@ export class NotificationsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.header = page.getByText('알림').first();
-    this.markAllReadButton = page.getByText('모두 읽음');
+    this.header = page.getByText(/^알림/).last();
+    this.markAllReadButton = page.getByRole('button', { name: /모두 읽음/ }).first();
   }
 
   async goto(): Promise<void> {
@@ -24,12 +24,14 @@ export class NotificationsPage extends BasePage {
   async selectCategory(
     category: '전체' | '지원/확정' | '출퇴근' | '정산' | '공고' | '시스템'
   ): Promise<void> {
-    await this.page.getByText(category, { exact: true }).click();
+    await this.getCategoryTab(category).click();
   }
 
   /** 카테고리 탭 가져오기 */
   getCategoryTab(category: string): Locator {
-    return this.page.getByText(category, { exact: true });
+    return this.page.getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(category)}(?:\\s|$|,)`),
+    });
   }
 
   /** 읽지 않은 수 뱃지 확인 */
@@ -68,4 +70,8 @@ export class NotificationsPage extends BasePage {
   async isMarkAllReadVisible(): Promise<boolean> {
     return this.markAllReadButton.isVisible();
   }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

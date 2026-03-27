@@ -1,0 +1,259 @@
+- generic [ref=e554]:
+  - generic:
+    - generic:
+      - generic:
+        - button "뒤로 가기" [ref=e556] [cursor=pointer]:
+          - img [ref=e557]
+        - heading "공고 작성" [level=1] [ref=e559]
+  - generic [ref=e564]:
+    - generic [ref=e566]:
+      - generic [ref=e568]:
+        - generic [ref=e571]:
+          - generic [ref=e572]: 기본 정보
+          - generic [ref=e573]: "*"
+        - generic [ref=e575]:
+          - generic [ref=e576]:
+            - generic [ref=e577]: 공고 타입*
+            - generic [ref=e579]:
+              - radio "지원 공고 타입" [ref=e580] [cursor=pointer]:
+                - generic [ref=e581]:
+                  - generic [ref=e582]: 📋
+                  - generic [ref=e583]:
+                    - generic [ref=e584]: 지원
+                    - generic [ref=e585]: 일반 공고
+                  - img [ref=e586]
+              - radio "대회 공고 타입" [ref=e589] [cursor=pointer]:
+                - generic [ref=e590]:
+                  - generic [ref=e591]: 🏆
+                  - generic [ref=e592]:
+                    - generic [ref=e593]: 대회
+                    - generic [ref=e594]: 승인 필요
+              - radio "긴급 공고 타입" [ref=e595] [cursor=pointer]:
+                - generic [ref=e596]:
+                  - generic [ref=e597]: 🚨
+                  - generic [ref=e598]:
+                    - generic [ref=e599]: 긴급
+                    - generic [ref=e600]: 급한 구인
+            - generic [ref=e602]: 고정공고는 이번 V3 통합 범위에서 제외되어 생성할 수 없습니다.
+          - generic [ref=e603]:
+            - generic [ref=e604]:
+              - generic [ref=e605]: 공고 제목
+              - generic [ref=e606]: "*"
+            - 'textbox "예: 강남 홀덤펍 딜러 구합니다" [ref=e609]': 테스트 긴급 채용
+            - generic [ref=e610]: 9/25
+          - generic [ref=e611]:
+            - generic [ref=e612]:
+              - generic [ref=e613]: 근무 장소명
+              - generic [ref=e614]: "*"
+            - generic [ref=e616]:
+              - img [ref=e618]
+              - 'textbox "예: 홀덤펍 강남점" [ref=e621]': UNIQN 강남 테스트 홀덤
+          - generic [ref=e622]:
+            - generic [ref=e623]:
+              - generic [ref=e624]: 근무 장소 주소
+              - generic [ref=e625]: "*"
+            - 'textbox "예: 서울시 강남구 테헤란로 123" [ref=e628]': 서울시 강남구 테헤란로 123
+          - generic [ref=e629]:
+            - generic [ref=e631]: 상세 주소
+            - textbox "건물명, 층수 등 (선택)" [ref=e634]
+          - generic [ref=e635]:
+            - generic [ref=e636]:
+              - generic [ref=e637]: 문의 연락처
+              - generic [ref=e638]: "*"
+            - generic [ref=e640]:
+              - img [ref=e642]
+              - textbox "010-0000-0000" [ref=e644]: 010-1234-5678
+          - generic [ref=e645]:
+            - generic [ref=e647]: 공고 설명
+            - textbox "근무 환경, 우대 조건 등을 입력해주세요 (선택)" [ref=e648]
+            - generic [ref=e649]: 0/500
+      - generic [ref=e651]:
+        - generic [ref=e654]:
+          - generic [ref=e655]: 일정
+          - generic [ref=e656]: "*"
+        - generic [ref=e658]:
+          - generic [ref=e660]: 최대 7개 날짜 추가 가능
+          - generic [ref=e974]:
+            - generic [ref=e975]:
+              - generic [ref=e976]: 3월 26일 (목)
+              - button "날짜 삭제" [ref=e977] [cursor=pointer]:
+                - img [ref=e978]
+            - generic [ref=e982]:
+              - button "접기" [ref=e984] [cursor=pointer]:
+                - img [ref=e985]
+                - generic [ref=e987]: 시간대 1 (09:00)
+                - generic [ref=e989]: 2명
+              - generic [ref=e990]:
+                - generic [ref=e991]:
+                  - generic [ref=e992]: 시간 미정
+                  - switch [ref=e996] [cursor=pointer]
+                - generic [ref=e997]:
+                  - generic [ref=e998]: 시작 시간
+                  - button "시간 선택" [ref=e1000] [cursor=pointer]:
+                    - generic [ref=e1001]: 오전 9:00
+                    - img [ref=e1002]
+                - generic [ref=e1004]:
+                  - generic [ref=e1005]:
+                    - generic [ref=e1006]: 필요 역할 (2/10)
+                    - button "역할 추가" [ref=e1007] [cursor=pointer]:
+                      - img [ref=e1008]
+                      - generic [ref=e1009]: 추가
+                  - generic [ref=e1010]:
+                    - generic [ref=e1011]:
+                      - generic [ref=e1013]: 👤
+                      - generic [ref=e1015]: 직원
+                      - generic [ref=e1016]:
+                        - button "인원 감소" [disabled]:
+                          - img [ref=e1017]
+                        - button "인원 선택" [ref=e1018] [cursor=pointer]:
+                          - generic [ref=e1019]: "1"
+                        - button "인원 증가" [ref=e1020] [cursor=pointer]:
+                          - img [ref=e1021]
+                        - button "역할 삭제" [ref=e1022] [cursor=pointer]:
+                          - img [ref=e1023]
+                    - generic [ref=e1026]:
+                      - generic [ref=e1028]: 👔
+                      - generic [ref=e1030]: 매니저
+                      - generic [ref=e1031]:
+                        - button "인원 감소" [disabled]:
+                          - img [ref=e1032]
+                        - button "인원 선택" [ref=e1033] [cursor=pointer]:
+                          - generic [ref=e1034]: "1"
+                        - button "인원 증가" [ref=e1035] [cursor=pointer]:
+                          - img [ref=e1036]
+                        - button "역할 삭제" [ref=e1037] [cursor=pointer]:
+                          - img [ref=e1038]
+                  - generic [ref=e1042]: 총 2명 필요
+            - button "시간대 추가" [ref=e1043] [cursor=pointer]:
+              - img [ref=e1045]
+              - generic [ref=e1046]: 시간대 추가 (1/10)
+          - button "날짜 추가" [active] [ref=e663] [cursor=pointer]:
+            - img [ref=e665]
+            - generic [ref=e666]: 날짜 추가 (1/7)
+      - generic [ref=e668]:
+        - generic [ref=e671]:
+          - generic [ref=e672]: 급여
+          - generic [ref=e673]: "*"
+        - generic [ref=e675]:
+          - generic [ref=e676]:
+            - generic [ref=e677]:
+              - generic [ref=e678]: 전체 동일 급여
+              - generic [ref=e679]: 모든 역할에 같은 급여를 적용합니다
+            - switch [ref=e683] [cursor=pointer]
+          - generic [ref=e684]:
+            - generic [ref=e685]: 역할별 급여 *
+            - generic [ref=e686]:
+              - generic [ref=e687]:
+                - generic [ref=e688]: 직원
+                - generic [ref=e689]: 1명
+              - generic [ref=e690]:
+                - radio "시급" [ref=e691] [cursor=pointer]:
+                  - generic [ref=e692]: 시급
+                - radio "일급" [ref=e693] [cursor=pointer]:
+                  - generic [ref=e694]: 일급
+                - radio "월급" [ref=e695] [cursor=pointer]:
+                  - generic [ref=e696]: 월급
+                - radio "협의" [ref=e697] [cursor=pointer]:
+                  - generic [ref=e698]: 협의
+              - generic [ref=e699]:
+                - generic [ref=e700]: ₩
+                - textbox "0" [ref=e701]
+                - generic [ref=e702]: 원
+            - generic [ref=e703]:
+              - generic [ref=e704]:
+                - generic [ref=e705]: 매니저
+                - generic [ref=e706]: 1명
+              - generic [ref=e707]:
+                - radio "시급" [ref=e708] [cursor=pointer]:
+                  - generic [ref=e709]: 시급
+                - radio "일급" [ref=e710] [cursor=pointer]:
+                  - generic [ref=e711]: 일급
+                - radio "월급" [ref=e712] [cursor=pointer]:
+                  - generic [ref=e713]: 월급
+                - radio "협의" [ref=e714] [cursor=pointer]:
+                  - generic [ref=e715]: 협의
+              - generic [ref=e716]:
+                - generic [ref=e717]: ₩
+                - textbox "0" [ref=e718]
+                - generic [ref=e719]: 원
+          - generic [ref=e720]:
+            - generic [ref=e721]:
+              - img [ref=e722]
+              - generic [ref=e726]: 추가 수당 (선택)
+            - generic [ref=e727]:
+              - generic [ref=e729]:
+                - generic [ref=e730]:
+                  - generic [ref=e731]: ⏰
+                  - generic [ref=e732]: 보장시간
+                - generic [ref=e733]:
+                  - textbox "0" [ref=e734]
+                  - generic [ref=e735]: 시간
+              - generic [ref=e736]:
+                - generic [ref=e737]:
+                  - generic [ref=e738]:
+                    - generic [ref=e739]: 🍱
+                    - generic [ref=e740]: 식비
+                  - generic [ref=e741]:
+                    - generic [ref=e742]: 제공
+                    - switch [ref=e746] [cursor=pointer]
+                - generic [ref=e747]:
+                  - generic [ref=e748]: ₩
+                  - textbox "0" [ref=e749]
+                  - generic [ref=e750]: 원
+              - generic [ref=e751]:
+                - generic [ref=e752]:
+                  - generic [ref=e753]:
+                    - generic [ref=e754]: 🚗
+                    - generic [ref=e755]: 교통비
+                  - generic [ref=e756]:
+                    - generic [ref=e757]: 제공
+                    - switch [ref=e761] [cursor=pointer]
+                - generic [ref=e762]:
+                  - generic [ref=e763]: ₩
+                  - textbox "0" [ref=e764]
+                  - generic [ref=e765]: 원
+              - generic [ref=e766]:
+                - generic [ref=e767]:
+                  - generic [ref=e768]:
+                    - generic [ref=e769]: 🏨
+                    - generic [ref=e770]: 숙박비
+                  - generic [ref=e771]:
+                    - generic [ref=e772]: 제공
+                    - switch [ref=e776] [cursor=pointer]
+                - generic [ref=e777]:
+                  - generic [ref=e778]: ₩
+                  - textbox "0" [ref=e779]
+                  - generic [ref=e780]: 원
+          - generic [ref=e781]:
+            - generic [ref=e782]: 세금 설정
+            - generic [ref=e783]:
+              - radio "없음" [ref=e784] [cursor=pointer]:
+                - generic [ref=e785]: 없음
+              - radio "세율" [ref=e786] [cursor=pointer]:
+                - generic [ref=e787]: 세율
+              - radio "고정 금액" [ref=e788] [cursor=pointer]:
+                - generic [ref=e789]: 고정 금액
+            - text: "0"
+      - generic [ref=e791]:
+        - generic [ref=e794]:
+          - generic [ref=e795]: 사전질문
+          - generic [ref=e796]: (선택)
+        - generic [ref=e798]:
+          - generic [ref=e799]:
+            - img [ref=e800]
+            - generic [ref=e803]:
+              - generic [ref=e804]: 사전질문 안내
+              - generic [ref=e805]: 지원자에게 추가로 질문하고 싶은 내용을 설정할 수 있습니다.
+          - generic [ref=e806]:
+            - generic [ref=e807]:
+              - generic [ref=e808]: 사전질문 사용
+              - generic [ref=e809]: 지원자에게 추가 질문을 할 수 있습니다
+            - switch [ref=e813] [cursor=pointer]
+      - generic [ref=e815]: 고정공고는 이번 V3 정비 범위에서 제외되었습니다. 날짜/시간/역할을 가진 행사형 공고만 생성할 수 있습니다.
+    - generic [ref=e817]:
+      - button "불러오기" [ref=e818] [cursor=pointer]:
+        - generic [ref=e819]: 불러오기
+      - button "저장" [ref=e820] [cursor=pointer]:
+        - generic [ref=e821]: 저장
+      - button "공고 등록" [ref=e823] [cursor=pointer]:
+        - generic [ref=e824]: 공고 등록

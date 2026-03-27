@@ -21,12 +21,14 @@ export class ProfileEditPage extends BasePage {
     this.careerInput = page.getByPlaceholder('경력 및 이력을 입력해주세요');
     this.noteInput = page.getByPlaceholder('기타 참고사항을 입력해주세요');
     // 저장 버튼은 raw Pressable이므로 role="button"이 없음 — 텍스트 기반으로 찾기
-    this.saveButton = page.getByText('저장', { exact: true });
+    this.saveButton = page.getByText('저장', { exact: true }).last();
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/settings/profile', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/profile', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    await this.page.getByRole('button', { name: '프로필 수정' }).click();
+    await this.page.waitForURL(/settings\/profile/, { timeout: 10_000 });
   }
 
   /** 닉네임 입력 */
@@ -54,12 +56,12 @@ export class ProfileEditPage extends BasePage {
 
   /** 읽기 전용 필드 확인 */
   getReadOnlyField(label: '이름' | '이메일' | '전화번호' | '생년월일' | '성별'): Locator {
-    return this.page.getByText(label);
+    return this.page.getByText(label).last();
   }
 
   /** 섹션 확인 */
   getSection(title: string): Locator {
-    return this.page.getByText(title);
+    return this.page.getByText(new RegExp(title)).last();
   }
 
   /** 닉네임 사용 가능 메시지 확인 */

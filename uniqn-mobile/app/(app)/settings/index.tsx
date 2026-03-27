@@ -68,7 +68,12 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} className="active:opacity-70">
+      <Pressable
+        onPress={onPress}
+        className="active:opacity-70"
+        accessibilityRole="button"
+        accessibilityLabel={label}
+      >
         {content}
       </Pressable>
     );

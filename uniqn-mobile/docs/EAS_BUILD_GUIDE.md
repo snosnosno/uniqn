@@ -1,278 +1,66 @@
-# EAS Build 설정 가이드
+# EAS Build 가이드
 
-> UNIQN Mobile 앱의 EAS Build 설정 및 배포 가이드
+최종 업데이트: 2026-03-26
 
-## 현재 설정 상태
+## 현재 운영 정책
 
-| 항목 | 상태 | 비고 |
-|------|:----:|------|
-| eas.json | ✅ | development/preview/production 프로파일 |
-| app.config.ts | ✅ | 환경별 동적 설정 |
-| Firebase 설정 (Android) | ✅ | google-services.json |
-| Firebase 설정 (iOS) | ✅ | GoogleService-Info.plist |
-| expo-notifications | ✅ | 플러그인 활성화됨 |
-| 모니터링 | ✅ | Sentry + Expo plugin 사용 |
+- `development`: 로컬 개발 + emulator 검증용
+- `preview`: 내부 검수용 앱 껍데기
+- `production`: 실제 사용자 배포용
 
----
+중요:
 
-## 1. 사전 요구사항
+- 현재는 출시 우선 정책으로 단일 Firebase 프로젝트를 안전하게 운영합니다.
+- `preview`는 staging Firebase 앱이 아직 등록되지 않았으면 일반 네이티브 빌드 경로로 사용하지 않습니다.
+- [`app.config.ts`](../../app.config.ts)의 빌드 가드가 repo-tracked Firebase 설정과 맞지 않는 profile/platform 조합을 차단합니다.
 
-### 1.1 EAS CLI 설치
-```bash
-npm install -g eas-cli
+## 필수 env
+
+```env
+EXPO_PUBLIC_RELEASE_CHANNEL=
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+EXPO_PUBLIC_FIREBASE_REGION=asia-northeast3
 ```
 
-### 1.1.1 Node 버전
-```bash
-# 권장: Node.js 22
-node --version
+선택:
+
+```env
+EXPO_PUBLIC_FIREBASE_APP_ID_WEB=
+EXPO_PUBLIC_FIREBASE_APP_ID_IOS=
+EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID=
+EXPO_PUBLIC_SENTRY_DSN=
+EXPO_PUBLIC_RECAPTCHA_SITE_KEY=
+EXPO_PUBLIC_USE_EMULATOR=false
 ```
 
-### 1.2 Expo 계정 로그인
-```bash
-eas login
-```
-
-### 1.3 프로젝트 연결 확인
-```bash
-eas project:info
-```
-
----
-
-## 2. Credentials 설정
-
-### 2.1 iOS Credentials
-
-#### Apple Developer 계정 필요 정보
-- **Apple ID**: Apple Developer 계정 이메일
-- **App Store Connect App ID**: 앱 등록 후 발급
-- **Team ID**: Apple Developer 계정의 Team ID
-
-#### 설정 방법
-```bash
-# iOS credentials 설정 (대화형)
-eas credentials --platform ios
-
-# 또는 환경 변수로 설정
-export APPLE_ID="your-apple-id@email.com"
-export ASC_APP_ID="1234567890"
-export APPLE_TEAM_ID="XXXXXXXXXX"
-```
-
-#### Push Notification 인증서 (APNs)
-1. Apple Developer Console → Certificates, Identifiers & Profiles
-2. Keys → Create a new key
-3. "Apple Push Notifications service (APNs)" 체크
-4. 키 다운로드 (.p8 파일)
-5. EAS에 등록:
-```bash
-eas credentials --platform ios
-# "Push Notifications" 선택 → 키 업로드
-```
-
-### 2.2 Android Credentials
-
-#### Google Play Console 설정
-1. Google Play Console → 설정 → API 액세스
-2. 서비스 계정 생성
-3. JSON 키 다운로드 → `playstore-credentials.json`으로 저장
-
-#### Keystore 설정
-```bash
-# Android credentials 설정 (대화형)
-eas credentials --platform android
-
-# EAS가 자동으로 keystore 생성 및 관리
-# 또는 기존 keystore 업로드 가능
-```
-
----
-
-## 3. 빌드 프로파일
-
-### 3.1 Development (개발용)
-```bash
-# iOS 시뮬레이터용
-eas build --profile development --platform ios
-
-# Android APK
-eas build --profile development --platform android
-```
-
-**특징:**
-- Development Client 포함
-- 디버그 가능
-- 내부 배포용
-
-### 3.2 Preview (테스트용)
-```bash
-# 양 플랫폼 동시 빌드
-eas build --profile preview --platform all
-```
-
-**특징:**
-- 내부 테스터 배포용
-- staging 환경 연결
-- APK 형식 (Android)
-
-### 3.3 Production (출시용)
-```bash
-# 스토어 제출용 빌드
-eas build --profile production --platform all
-```
-
-**특징:**
-- 앱스토어/플레이스토어 제출용
-- 자동 버전 증가
-- App Bundle 형식 (Android)
-
----
-
-## 4. 앱 제출 (Submit)
-
-### 4.1 iOS App Store
-```bash
-# App Store Connect에 제출
-eas submit --platform ios --latest
-```
-
-### 4.2 Google Play Store
-```bash
-# Internal 트랙에 제출
-eas submit --platform android --latest
-```
-
-### 4.3 환경 변수 설정
-```bash
-# .env.local 또는 EAS Secrets에 등록
-EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key_here
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tholdem-ebc18.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=tholdem-ebc18
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tholdem-ebc18.firebasestorage.app
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id_here
-EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id_here
-EXPO_PUBLIC_SENTRY_DSN=your_sentry_dsn
-EXPO_PUBLIC_RECAPTCHA_SITE_KEY=your_recaptcha_site_key
-SENTRY_ORG=your_sentry_org
-SENTRY_PROJECT=uniqn-mobile
-```
-
-EAS Secrets 등록:
-```bash
-eas secret:create --name EXPO_PUBLIC_FIREBASE_API_KEY --value "..."
-eas secret:create --name EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN --value "tholdem-ebc18.firebaseapp.com"
-eas secret:create --name EXPO_PUBLIC_FIREBASE_PROJECT_ID --value "tholdem-ebc18"
-eas secret:create --name EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET --value "tholdem-ebc18.firebasestorage.app"
-eas secret:create --name EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID --value "..."
-eas secret:create --name EXPO_PUBLIC_FIREBASE_APP_ID --value "..."
-```
-
----
-
-## 5. Firebase 설정
-
-### 5.1 현재 설치된 Firebase 패키지
-- `firebase` (12.6.0) - Modular API
-- `@react-native-firebase/app` - 네이티브 코어
-- `@react-native-firebase/auth` - 네이티브 Auth 연동
-- `@sentry/react-native` - 크래시/에러 모니터링
-
-### 5.2 Firebase Console 설정
-1. [Firebase Console](https://console.firebase.google.com) 접속
-2. 프로젝트 선택 (tholdem-ebc18)
-3. iOS/Android 앱 등록 확인
-
-### 5.3 설정 파일 위치
-```
-uniqn-mobile/
-├── google-services.json      # Android
-└── GoogleService-Info.plist  # iOS
-```
-
----
-
-## 6. Push Notification 설정
-
-### 6.1 FCM 서버 키
-1. Firebase Console → 프로젝트 설정 → Cloud Messaging
-2. 서버 키 복사
-3. 백엔드 서버에 설정
-
-### 6.2 APNs 설정 (iOS)
-1. Firebase Console → 프로젝트 설정 → Cloud Messaging
-2. Apple 앱 구성 → APNs 인증 키 업로드
-3. Team ID, Key ID 입력
-
----
-
-## 7. 빌드 명령어 요약
+## 빌드 명령
 
 ```bash
-# 개발 빌드
+cd uniqn-mobile
+
 eas build --profile development --platform ios
 eas build --profile development --platform android
 
-# 테스트 빌드
-eas build --profile preview --platform all
-
-# 프로덕션 빌드
-eas build --profile production --platform all
-
-# 앱 제출
-eas submit --platform ios --latest
-eas submit --platform android --latest
-
-# Credentials 관리
-eas credentials --platform ios
-eas credentials --platform android
-
-# 빌드 상태 확인
-eas build:list
-
-# OTA 업데이트
-eas update --branch production --message "버그 수정"
+eas build --profile production --platform ios
+eas build --profile production --platform android
 ```
 
----
+`preview`는 dedicated staging Firebase app이 준비된 뒤에만 일반 빌드 대상으로 승격합니다.
 
-## 8. 체크리스트
+## dry-run 기준
 
-### 빌드 전 확인사항
-- [ ] `npm run quality` 통과
-- [ ] `npm test` 통과
-- [ ] Firebase 설정 파일 존재 확인
-- [ ] 앱 버전 및 빌드 번호 확인 (app.config.ts)
+CI의 EAS dry-run은 `production` 프로필을 사용합니다. preview에 의존한 dry-run은 staging Firebase 앱 미등록 상태에서 잘못된 안정감을 줄 수 있으므로 사용하지 않습니다.
 
-### 제출 전 확인사항
-- [ ] 앱 아이콘 및 스플래시 스크린
-- [ ] 앱스토어 스크린샷 준비
-- [ ] 개인정보처리방침 URL
-- [ ] 앱 설명 및 키워드
+## 네이티브 Firebase 설정
 
----
+현재 소스 오브 트루스:
 
-## 9. 문제 해결
+- [`uniqn-mobile/google-services.json`](../google-services.json)
+- [`uniqn-mobile/GoogleService-Info.plist`](../GoogleService-Info.plist)
 
-### 빌드 실패 시
-```bash
-# 캐시 클리어
-eas build --clear-cache --profile development --platform ios
-```
-
-### Credentials 문제
-```bash
-# Credentials 리셋
-eas credentials --platform ios
-# "Remove credentials" 선택 후 재설정
-```
-
-### 네이티브 모듈 문제
-```bash
-# Prebuild 재실행
-npx expo prebuild --clean
-```
-
----
-
-*마지막 업데이트: 2026-02-01*
+이 파일에 없는 bundle/package 조합은 빌드 전에 차단되는 것이 정상입니다.

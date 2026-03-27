@@ -122,6 +122,30 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       }
       return { name: 'jobs' };
 
+    case 'my-postings':
+      if (segments[1] === 'create') {
+        return { name: 'employer/posting-create' };
+      }
+      if (segments[1]) {
+        if (segments[2] === 'applicants') {
+          return { name: 'employer/applicants', params: { jobId: segments[1] } };
+        }
+        if (segments[2] === 'settlements') {
+          return { name: 'employer/settlement', params: { jobId: segments[1] } };
+        }
+        return { name: 'employer/posting', params: { id: segments[1] } };
+      }
+      return { name: 'employer/my-postings' };
+
+    case 'login':
+      return { name: 'login' };
+
+    case 'signup':
+      return { name: 'signup' };
+
+    case 'forgot-password':
+      return { name: 'forgot-password' };
+
     case 'notifications':
       // v2.0: 개별 알림 상세 화면 없음, 목록으로 이동
       return { name: 'notifications' };
@@ -164,6 +188,9 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
 
     case 'employer':
       if (segments[1] === 'my-postings' || segments[1] === 'postings') {
+        if (segments[2] === 'create') {
+          return { name: 'employer/posting-create' };
+        }
         if (segments[2]) {
           // employer/postings/:id, employer/my-postings/:id
           return { name: 'employer/posting', params: { id: segments[2] } };
@@ -206,6 +233,33 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
         return { name: 'notifications' };
       }
       return null;
+  }
+}
+
+function getCurrentWebOrigin(): string | null {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.location.origin;
+  } catch {
+    return null;
+  }
+}
+
+function isSupportedWebUrl(url: string): boolean {
+  try {
+    const urlObj = new URL(url);
+
+    if (urlObj.hostname === WEB_DOMAIN || urlObj.hostname.endsWith(`.${WEB_DOMAIN}`)) {
+      return true;
+    }
+
+    const currentOrigin = getCurrentWebOrigin();
+    return currentOrigin !== null && urlObj.origin === currentOrigin;
+  } catch {
+    return false;
   }
 }
 
@@ -318,8 +372,8 @@ export function parseDeepLink(url: string): ParsedDeepLink {
           queryParams[key] = value;
         });
       }
-    } else if (url.startsWith(WEB_PREFIX)) {
-      // Universal Link: https://uniqn.app/path?query
+    } else if (url.startsWith(WEB_PREFIX) || isSupportedWebUrl(url)) {
+      // Universal Link or same-origin web URL: https://uniqn.app/path?query
       const urlObj = new URL(url);
       path = urlObj.pathname;
       urlObj.searchParams.forEach((value, key) => {

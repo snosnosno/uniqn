@@ -67,7 +67,10 @@ jest.mock('../analyticsService', () => ({
 const getMockExpoPath = (route: { name: string; params?: Record<string, string> }) => {
   if (route.name === 'home') return '/(app)/(tabs)';
   if (route.name === 'jobs') return '/(public)/jobs';
-  if (route.name === 'job') return `/(public)/jobs/${route.params?.id}`;
+  if (route.name === 'job') return `/jobs/${route.params?.id}`;
+  if (route.name === 'login') return '/(auth)/login';
+  if (route.name === 'signup') return '/(auth)/signup';
+  if (route.name === 'forgot-password') return '/(auth)/forgot-password';
   if (route.name === 'notifications') return '/(app)/notifications';
   if (route.name === 'schedule') return '/(app)/(tabs)/schedule';
   if (route.name === 'profile') return '/(app)/(tabs)/profile';
@@ -75,6 +78,7 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
   if (route.name === 'support') return '/(app)/support';
   if (route.name === 'notices') return '/(app)/notices';
   if (route.name === 'employer/my-postings') return '/(employer)/my-postings';
+  if (route.name === 'employer/posting-create') return '/(employer)/my-postings/create';
   if (route.name === 'employer/posting') return `/(employer)/my-postings/${route.params?.id}`;
   if (route.name === 'employer/applicants') {
     return `/(employer)/applicants/${route.params?.jobId}`;
@@ -253,6 +257,44 @@ describe('deepLinkService', () => {
       });
     });
 
+    it('parses the web employer posting create path', () => {
+      const result = deepLinkService.parseDeepLink('/my-postings/create');
+
+      expect(result).toEqual({
+        url: '/my-postings/create',
+        path: '/my-postings/create',
+        queryParams: {},
+        route: { name: 'employer/posting-create' },
+        isValid: true,
+      });
+    });
+
+    it('supports same-origin web auth URLs', () => {
+      const originalWindow = globalThis.window;
+      Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
+      Object.defineProperty(globalThis, 'window', {
+        value: { location: { origin: 'http://localhost' } },
+        writable: true,
+        configurable: true,
+      });
+
+      const result = deepLinkService.parseDeepLink('http://localhost/login');
+
+      expect(result).toEqual({
+        url: 'http://localhost/login',
+        path: '/login',
+        queryParams: {},
+        route: { name: 'login' },
+        isValid: true,
+      });
+
+      Object.defineProperty(globalThis, 'window', {
+        value: originalWindow,
+        writable: true,
+        configurable: true,
+      });
+    });
+
     it('레거시 리뷰 링크를 현재 리뷰 상세 라우트로 파싱해야 함', () => {
       const result = deepLinkService.parseDeepLink('/reviews/worklog-123');
 
@@ -320,11 +362,33 @@ describe('deepLinkService', () => {
       const result = await deepLinkService.navigateToDeepLink('uniqn://jobs/123');
 
       expect(result).toBe(true);
-      expect(mockRouterPush).toHaveBeenCalledWith('/(public)/jobs/123');
+      expect(mockRouterPush).toHaveBeenCalledWith('/jobs/123');
       expect(mockTrackEvent).toHaveBeenCalledWith(
         'deep_link_navigation',
         expect.objectContaining({ route_name: 'job' })
       );
+    });
+
+    it('supports same-origin web auth navigation', async () => {
+      const originalWindow = globalThis.window;
+      Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
+      Object.defineProperty(globalThis, 'window', {
+        value: { location: { origin: 'http://localhost' } },
+        writable: true,
+        configurable: true,
+      });
+      mockRouterPush.mockResolvedValue(undefined);
+
+      const result = await deepLinkService.navigateToDeepLink('http://localhost/login');
+
+      expect(result).toBe(true);
+      expect(mockRouterPush).toHaveBeenCalledWith('/(auth)/login');
+
+      Object.defineProperty(globalThis, 'window', {
+        value: originalWindow,
+        writable: true,
+        configurable: true,
+      });
     });
 
     it('유효하지 않은 딥링크는 경고를 로깅하고 false를 반환해야 함', async () => {

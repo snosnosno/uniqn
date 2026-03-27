@@ -125,4 +125,22 @@ describe('useAuthGuard', () => {
       expect(mockReplace).toHaveBeenCalledWith('/(app)/jobs/123/apply');
     });
   });
+
+  it('redirects authenticated users away from the public jobs entry route', async () => {
+    mockPathname = '/jobs';
+    mockSegments = ['(public)', 'jobs'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)');
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { handleTriggerError } from "../errors";
@@ -104,6 +105,19 @@ function arePostingStatsEqual(left: PostingStats, right: PostingStats): boolean 
   );
 }
 
+function isFirestoreNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const firestoreError = error as { code?: number; details?: string; message?: string };
+  return (
+    firestoreError.code === 5 ||
+    firestoreError.details?.includes("no entity to update") === true ||
+    firestoreError.message?.includes("no entity to update") === true
+  );
+}
+
 async function reconcilePostingStats(
   db: admin.firestore.Firestore,
   jobPostingId: string,
@@ -162,7 +176,7 @@ async function reconcilePostingStats(
 
   await postingRef.update({
     stats: nextStats,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 
   logger.info(`Reconciled posting stats for job posting ${jobPostingId}`, {
@@ -220,6 +234,11 @@ export const validateJobPostingData = onDocumentWritten(
         nextSearchIndex,
       });
     } catch (error) {
+      if (isFirestoreNotFoundError(error)) {
+        logger.warn(`Skipping searchIndex sync for deleted post ${postId}`);
+        return;
+      }
+
       logger.error(`Failed to sync searchIndex for post ${postId}`, error);
       throw handleTriggerError(error, {
         operation: "validateJobPostingData",

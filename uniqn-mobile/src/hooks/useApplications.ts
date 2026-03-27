@@ -4,6 +4,7 @@ import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { getFirebaseAuth } from '@/lib/firebase';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -17,6 +18,7 @@ import {
   applyToJobV2,
   cancelApplication as cancelApplicationService,
   requestCancellation as requestCancellationService,
+  hasAppliedToJob,
 } from '@/services';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -290,6 +292,24 @@ export function useApplications() {
     getApplicationStatus,
     refresh: () => (isOnline ? myApplicationsQuery.refetch() : Promise.resolve()),
   };
+}
+
+export function useHasAppliedToJob(jobPostingId?: string) {
+  const { user } = useAuthStore();
+  const { isOnline } = useNetworkStatus();
+  const applicantId = user?.uid ?? getFirebaseAuth().currentUser?.uid ?? null;
+
+  return useQuery({
+    queryKey: [
+      ...queryKeys.applications.detail(`exists:${jobPostingId ?? 'unknown'}`),
+      applicantId ?? 'anonymous',
+    ],
+    queryFn: () => hasAppliedToJob(jobPostingId!, applicantId!),
+    enabled: !!jobPostingId && !!applicantId && (isOnline || typeof window !== 'undefined'),
+    staleTime: cachingPolicies.frequent,
+    refetchOnMount: 'always',
+    networkMode: 'always',
+  });
 }
 
 export default useApplications;

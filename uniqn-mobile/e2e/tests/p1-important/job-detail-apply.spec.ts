@@ -9,12 +9,13 @@ import { JobDetailPage } from '../../pages/app/job-detail.page';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
+const TEST_JOB_TITLE = '상세테스트공고';
 
 test.describe('공고 상세와 지원 흐름', () => {
   let testJobId: string;
 
   test.beforeAll(async () => {
-    const testJob = createTestJob({ title: '상세테스트공고' });
+    const testJob = createTestJob({ title: TEST_JOB_TITLE });
     testJobId = testJob.id;
     await seedDocument('jobPostings', testJob.id, testJob);
   });
@@ -30,8 +31,8 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await jobDetailPage.gotoAuthenticated(testJobId);
 
-    await expect(jobDetailPage.headerTitle.or(jobDetailPage.errorMessage).first()).toBeVisible({
-      timeout: 10_000,
+    await expect(page.getByText(TEST_JOB_TITLE).last().or(jobDetailPage.errorMessage)).toBeVisible({
+      timeout: 15_000,
     });
 
     await context.close();
@@ -86,7 +87,7 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await page.goto('/jobs/nonexistent-job-99999', { waitUntil: 'domcontentloaded' });
     await expect(
-      page.getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/).first()
+      page.getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/).last()
     ).toBeVisible({ timeout: 10_000 });
 
     await context.close();
@@ -116,32 +117,43 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await page.goto(`/jobs/${testJobId}/apply`, { waitUntil: 'domcontentloaded' });
     await expect(
-      page.getByText(/지원하기|공고 정보를 불러오는 중|오류가 발생/).first()
-    ).toBeVisible({ timeout: 10_000 });
+      page
+        .getByText(TEST_JOB_TITLE)
+        .last()
+        .or(page.getByText(/지원하기|공고 정보를 불러오는 중|오류가 발생했습니다/).last())
+    ).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
 
   test('이미 지원한 공고는 중복 지원 안내가 보인다', async ({ browser }) => {
-    const testApplication = createTestApplication({
-      jobPostingId: testJobId,
-      applicantId: 'test-staff-uid-001',
-      status: 'applied',
-    });
-    await seedDocument('applications', testApplication.id, testApplication);
+    const applicationId = `${testJobId}_test-staff-uid-001`;
+    const testApplication = {
+      ...createTestApplication({
+        jobPostingId: testJobId,
+        applicantId: 'test-staff-uid-001',
+        status: 'applied',
+      }),
+      id: applicationId,
+    };
+    await seedDocument('applications', applicationId, testApplication);
 
     try {
       const context = await browser.newContext({ storageState: staffState });
       const page = await context.newPage();
+      const jobDetailPage = new JobDetailPage(page);
 
-      await page.goto(`/jobs/${testJobId}/apply`, { waitUntil: 'domcontentloaded' });
-      await expect(page.getByText(/이미 지원한 공고|지원하기.*오류/).first()).toBeVisible({
-        timeout: 10_000,
-      });
+      await jobDetailPage.gotoAuthenticated(testJobId);
+      await expect(jobDetailPage.viewStatusButton.or(jobDetailPage.statusText).first()).toBeVisible(
+        {
+          timeout: 15_000,
+        }
+      );
+      await expect(jobDetailPage.applyButton).toBeHidden();
 
       await context.close();
     } finally {
-      await deleteDocument('applications', testApplication.id);
+      await deleteDocument('applications', applicationId);
     }
   });
 
@@ -186,8 +198,8 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await jobDetailPage.gotoAuthenticated(testJobId);
 
-    await expect(jobDetailPage.headerTitle.or(jobDetailPage.errorMessage).first()).toBeVisible({
-      timeout: 10_000,
+    await expect(page.getByText(TEST_JOB_TITLE).last().or(jobDetailPage.errorMessage)).toBeVisible({
+      timeout: 15_000,
     });
 
     await context.close();

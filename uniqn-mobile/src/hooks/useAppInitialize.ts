@@ -316,7 +316,8 @@ async function bootstrapCore(): Promise<BootstrapResult> {
 
   const hydrated = await waitForHydration(AUTH_STORE_HYDRATION_TIMEOUT_MS);
   if (!hydrated) {
-    logger.warn('Auth store hydration timed out, continuing with diagnostic-only fallback', {
+    const log = Platform.OS === 'web' ? logger.info : logger.warn;
+    log('Auth store hydration timed out, continuing with diagnostic-only fallback', {
       component: 'useAppInitialize',
       timeoutMs: AUTH_STORE_HYDRATION_TIMEOUT_MS,
       platform: Platform.OS,

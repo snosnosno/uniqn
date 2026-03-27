@@ -1,0 +1,128 @@
+- generic [ref=e6]:
+  - generic [ref=e58]:
+    - generic [ref=e63]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]: 구인구직
+          - generic [ref=e71]:
+            - button "QR 코드" [ref=e72] [cursor=pointer]:
+              - img [ref=e73]
+            - button "알림" [ref=e75] [cursor=pointer]:
+              - img [ref=e76]
+        - search [ref=e79]:
+          - generic [ref=e80]:
+            - img [ref=e81]
+            - textbox "공고 검색" [ref=e84]:
+              - /placeholder: 제목, 장소로 검색
+        - generic [ref=e87]:
+          - button "긴급 공고 필터" [ref=e88] [cursor=pointer]:
+            - generic [ref=e89]: 🚨
+            - generic [ref=e90]: 긴급
+          - button "대회 공고 필터" [ref=e91] [cursor=pointer]:
+            - generic [ref=e92]: 🏆
+            - generic [ref=e93]: 대회
+          - button "지원 공고 필터" [ref=e94] [cursor=pointer]:
+            - generic [ref=e95]: 📝
+            - generic [ref=e96]: 지원
+        - generic [ref=e99]:
+          - button "전체 날짜" [ref=e100] [cursor=pointer]:
+            - generic [ref=e101]: 전체
+          - button "어제 수" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]: 어제
+            - generic [ref=e104]: 수
+          - button "오늘 목" [ref=e105] [cursor=pointer]:
+            - generic [ref=e106]: 오늘
+            - generic [ref=e107]: 목
+          - button "3/27 금" [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]: 3/27
+            - generic [ref=e110]: 금
+          - button "3/28 토" [ref=e111] [cursor=pointer]:
+            - generic [ref=e112]: 3/28
+            - generic [ref=e113]: 토
+          - button "3/29 일" [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]: 3/29
+            - generic [ref=e116]: 일
+          - button "3/30 월" [ref=e117] [cursor=pointer]:
+            - generic [ref=e118]: 3/30
+            - generic [ref=e119]: 월
+          - button "3/31 화" [ref=e120] [cursor=pointer]:
+            - generic [ref=e121]: 3/31
+            - generic [ref=e122]: 화
+          - button "4/1 수" [ref=e123] [cursor=pointer]:
+            - generic [ref=e124]: 4/1
+            - generic [ref=e125]: 수
+          - button "4/2 목" [ref=e126] [cursor=pointer]:
+            - generic [ref=e127]: 4/2
+            - generic [ref=e128]: 목
+          - button "4/3 금" [ref=e129] [cursor=pointer]:
+            - generic [ref=e130]: 4/3
+            - generic [ref=e131]: 금
+          - button "4/4 토" [ref=e132] [cursor=pointer]:
+            - generic [ref=e133]: 4/4
+            - generic [ref=e134]: 토
+          - button "4/5 일" [ref=e135] [cursor=pointer]:
+            - generic [ref=e136]: 4/5
+            - generic [ref=e137]: 일
+          - button "4/6 월" [ref=e138] [cursor=pointer]:
+            - generic [ref=e139]: 4/6
+            - generic [ref=e140]: 월
+          - button "4/7 화" [ref=e141] [cursor=pointer]:
+            - generic [ref=e142]: 4/7
+            - generic [ref=e143]: 화
+          - button "4/8 수" [ref=e144] [cursor=pointer]:
+            - generic [ref=e145]: 4/8
+            - generic [ref=e146]: 수
+          - button "4/9 목" [ref=e147] [cursor=pointer]:
+            - generic [ref=e148]: 4/9
+            - generic [ref=e149]: 목
+        - button "플레이테스트 생성 검증, 테스트 펍 강남점, 4/1(수), 시급 0원" [ref=e158] [cursor=pointer]:
+          - generic [ref=e159]:
+            - generic [ref=e161]: 플레이테스트 생성 검증
+            - generic "북마크 추가" [ref=e162]:
+              - img [ref=e163]
+          - generic [ref=e165]: 📍 테스트 펍 강남점
+          - generic [ref=e166]:
+            - generic [ref=e168]:
+              - generic [ref=e169]: 📅 4/1(수)
+              - generic [ref=e170]:
+                - generic [ref=e171]: 09:00 일반 1명 (0/1)
+                - generic [ref=e172]: 매니저 1명 (0/1)
+            - generic [ref=e174]:
+              - generic [ref=e175]: "💰 일반: 시급 20,000원"
+              - generic [ref=e176]: "💰 매니저: 시급 25,000원"
+          - generic [ref=e178]: 구인처 sno
+      - tablist [ref=e180]:
+        - tab "구인구직" [selected] [ref=e182] [cursor=pointer]:
+          - generic [ref=e183]:
+            - img [ref=e185]
+            - img [ref=e190]
+          - generic [ref=e194]: 구인구직
+        - tab "내 스케줄" [ref=e196] [cursor=pointer]:
+          - generic [ref=e197]:
+            - img [ref=e199]
+            - img [ref=e202]
+          - generic [ref=e204]: 내 스케줄
+        - tab "내 공고" [ref=e206] [cursor=pointer]:
+          - generic [ref=e207]:
+            - img [ref=e209]
+            - img [ref=e213]
+          - generic [ref=e216]: 내 공고
+        - tab "프로필" [ref=e218] [cursor=pointer]:
+          - generic [ref=e219]:
+            - img [ref=e221]
+            - img [ref=e225]
+          - generic [ref=e228]: 프로필
+    - generic [ref=e231]:
+      - generic [ref=e232]:
+        - img [ref=e234]
+        - generic [ref=e237]: 알림을 켜주세요
+        - generic [ref=e238]: 중요한 소식을 놓치지 않도록 알림을 허용해 주세요
+      - generic [ref=e240]:
+        - img [ref=e242]
+        - generic [ref=e245]:
+          - generic [ref=e246]: 새 공고 알림
+          - generic [ref=e247]: 관심 지역의 새 공고가 올라오면 바로 알려드려요
+  - 'alert "success: 로그인되었습니다." [ref=e250] [cursor=pointer]':
+    - img [ref=e252]
+    - generic [ref=e255]: 로그인되었습니다.
+    - img [ref=e257]

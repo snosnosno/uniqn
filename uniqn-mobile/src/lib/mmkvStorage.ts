@@ -18,6 +18,7 @@ import Constants from 'expo-constants';
 import { StateStorage } from 'zustand/middleware';
 import { getRandomValues } from 'expo-crypto';
 import { logger } from '@/utils/logger';
+import { shouldUseLocalWebAuthStateStorage as shouldUseWebAuthStateStorage } from './emulatorMode';
 
 // 경고 중복 방지 플래그
 let mmkvWarningShown = false;
@@ -246,16 +247,12 @@ export function getSessionMMKVInstance(): MMKVInstance {
   return sessionMMKVInstance;
 }
 
-function shouldUseLocalWebAuthStateStorage(): boolean {
-  return Platform.OS === 'web' && process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
-}
-
 function getAuthStateMMKVInstance(): MMKVInstance {
   if (Platform.OS !== 'web') {
     return getMMKVInstance();
   }
 
-  return shouldUseLocalWebAuthStateStorage() ? getMMKVInstance() : getSessionMMKVInstance();
+  return shouldUseWebAuthStateStorage() ? getMMKVInstance() : getSessionMMKVInstance();
 }
 
 /**

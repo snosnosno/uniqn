@@ -22,8 +22,10 @@ export class ChangePasswordPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/settings/change-password', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/settings', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
+    await this.page.getByRole('button', { name: /^비밀번호 변경$/ }).click();
+    await this.page.waitForURL(/settings\/change-password/, { timeout: 10_000 });
   }
 
   /** 비밀번호 변경 폼 채우기 */
@@ -44,17 +46,17 @@ export class ChangePasswordPage extends BasePage {
 
   /** 비밀번호 정책 항목 확인 */
   getPolicyItem(text: string): Locator {
-    return this.page.getByText(text);
+    return this.page.getByText(new RegExp(text)).last();
   }
 
   /** 안내 문구 확인 */
   getGuideText(): Locator {
-    return this.page.getByText('보안을 위해 비밀번호를 주기적으로 변경해주세요');
+    return this.page.getByText(/보안을 위해 비밀번호를 주기적으로 변경해주세요/).last();
   }
 
   /** 비밀번호 정책 섹션 확인 */
   getPolicySection(): Locator {
-    return this.page.getByText('비밀번호 정책');
+    return this.page.getByText('비밀번호 정책').last();
   }
 
   /** 성공 토스트 대기 */

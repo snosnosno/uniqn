@@ -45,7 +45,7 @@ import {
   runTransaction,
   increment,
 } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getStorage, FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
 import {
   getRemoteConfig,
@@ -56,6 +56,7 @@ import {
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEnv } from './env';
+import { getFirebaseEmulatorConfig, shouldUseLocalWebAuthStateStorage } from './emulatorMode';
 
 type Auth = import('firebase/auth').Auth;
 type AuthPersistence = typeof firebaseAuthModule.browserSessionPersistence;
@@ -108,11 +109,6 @@ let initializationError: Error | null = null;
 /**
  * 에뮬레이터 호스트/포트 상수 (개발 환경 전용)
  */
-const EMULATOR_AUTH_URL = 'http://localhost:9099';
-const EMULATOR_FIRESTORE_HOST = 'localhost';
-const EMULATOR_FIRESTORE_PORT = 8080;
-const EMULATOR_FUNCTIONS_HOST = 'localhost';
-const EMULATOR_FUNCTIONS_PORT = 5001;
 
 /**
  * 에뮬레이터 연결 상태 플래그 (중복 연결 방지)
@@ -120,6 +116,7 @@ const EMULATOR_FUNCTIONS_PORT = 5001;
 let emulatorAuthConnected = false;
 let emulatorFirestoreConnected = false;
 let emulatorFunctionsConnected = false;
+let emulatorStorageConnected = false;
 
 /**
  * 에뮬레이터 사용 여부 확인
@@ -129,12 +126,8 @@ let emulatorFunctionsConnected = false;
  * 안전성: EXPO_PUBLIC_USE_EMULATOR는 빌드 시점에 임베딩되므로
  * 일반 프로덕션 빌드에서는 undefined → false 반환
  */
-function shouldUseEmulator(): boolean {
-  return process.env.EXPO_PUBLIC_USE_EMULATOR === 'true';
-}
-
 function shouldUseLocalWebAuthPersistence(): boolean {
-  return Platform.OS === 'web' && shouldUseEmulator();
+  return shouldUseLocalWebAuthStateStorage();
 }
 
 /**
@@ -209,6 +202,7 @@ export function getFirebaseApp(): FirebaseApp {
 export function getFirebaseAuth(): Auth {
   if (!firebaseAuth) {
     const app = initializeFirebaseApp();
+    const emulatorConfig = getFirebaseEmulatorConfig();
     // initializeAuth는 한 번만 호출 가능, 이미 초기화된 경우 getAuth 사용
     try {
       const persistence =
@@ -232,8 +226,8 @@ export function getFirebaseAuth(): Auth {
     }
 
     // E2E 테스트용 에뮬레이터 연결
-    if (shouldUseEmulator() && !emulatorAuthConnected) {
-      firebaseAuthModule.connectAuthEmulator(firebaseAuth, EMULATOR_AUTH_URL, {
+    if (emulatorConfig && !emulatorAuthConnected) {
+      firebaseAuthModule.connectAuthEmulator(firebaseAuth, emulatorConfig.authUrl, {
         disableWarnings: true,
       });
       emulatorAuthConnected = true;
@@ -248,6 +242,7 @@ export function getFirebaseAuth(): Auth {
 export function getFirebaseDb(): Firestore {
   if (!firebaseDb) {
     const app = initializeFirebaseApp();
+    const emulatorConfig = getFirebaseEmulatorConfig();
     if (Platform.OS === 'web') {
       try {
         firebaseDb = initializeFirestore(app, {
@@ -263,8 +258,12 @@ export function getFirebaseDb(): Firestore {
     }
 
     // E2E 테스트용 에뮬레이터 연결
-    if (shouldUseEmulator() && !emulatorFirestoreConnected) {
-      connectFirestoreEmulator(firebaseDb, EMULATOR_FIRESTORE_HOST, EMULATOR_FIRESTORE_PORT);
+    if (emulatorConfig && !emulatorFirestoreConnected) {
+      connectFirestoreEmulator(
+        firebaseDb,
+        emulatorConfig.firestore.host,
+        emulatorConfig.firestore.port
+      );
       emulatorFirestoreConnected = true;
     }
   }
@@ -277,7 +276,17 @@ export function getFirebaseDb(): Firestore {
 export function getFirebaseStorage(): FirebaseStorage {
   if (!firebaseStorage) {
     const app = initializeFirebaseApp();
+    const emulatorConfig = getFirebaseEmulatorConfig();
     firebaseStorage = getStorage(app);
+
+    if (emulatorConfig && !emulatorStorageConnected) {
+      connectStorageEmulator(
+        firebaseStorage,
+        emulatorConfig.storage.host,
+        emulatorConfig.storage.port
+      );
+      emulatorStorageConnected = true;
+    }
   }
   return firebaseStorage;
 }
@@ -289,11 +298,16 @@ export function getFirebaseFunctions(): Functions {
   if (!firebaseFunctions) {
     const app = initializeFirebaseApp();
     const region = getEnv().EXPO_PUBLIC_FIREBASE_REGION;
+    const emulatorConfig = getFirebaseEmulatorConfig();
     firebaseFunctions = getFunctions(app, region);
 
     // E2E 테스트용 에뮬레이터 연결
-    if (shouldUseEmulator() && !emulatorFunctionsConnected) {
-      connectFunctionsEmulator(firebaseFunctions, EMULATOR_FUNCTIONS_HOST, EMULATOR_FUNCTIONS_PORT);
+    if (emulatorConfig && !emulatorFunctionsConnected) {
+      connectFunctionsEmulator(
+        firebaseFunctions,
+        emulatorConfig.functions.host,
+        emulatorConfig.functions.port
+      );
       emulatorFunctionsConnected = true;
     }
   }

@@ -16,14 +16,29 @@ describe('RouteMapper', () => {
         expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.home);
       });
 
-      it('jobs → /(app)/(tabs) (홈=구인구직)', () => {
+      it('jobs → /(public)/jobs', () => {
         const route: DeepLinkRoute = { name: 'jobs' };
-        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.home);
+        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.publicJobs);
       });
 
-      it('job → /(app)/jobs/[id]', () => {
+      it('job → /jobs/[id]', () => {
         const route: DeepLinkRoute = { name: 'job', params: { id: 'job123' } };
-        expect(RouteMapper.toExpoPath(route)).toBe('/(app)/jobs/job123');
+        expect(RouteMapper.toExpoPath(route)).toBe('/jobs/job123');
+      });
+
+      it('login ??/(auth)/login', () => {
+        const route: DeepLinkRoute = { name: 'login' };
+        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.login);
+      });
+
+      it('signup ??/(auth)/signup', () => {
+        const route: DeepLinkRoute = { name: 'signup' };
+        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.signup);
+      });
+
+      it('forgot-password ??/(auth)/forgot-password', () => {
+        const route: DeepLinkRoute = { name: 'forgot-password' };
+        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.forgotPassword);
       });
     });
 
@@ -63,6 +78,11 @@ describe('RouteMapper', () => {
       it('employer/my-postings → /(app)/(tabs)/employer', () => {
         const route: DeepLinkRoute = { name: 'employer/my-postings' };
         expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.employerTab);
+      });
+
+      it('employer/posting-create → /(employer)/my-postings/create', () => {
+        const route: DeepLinkRoute = { name: 'employer/posting-create' };
+        expect(RouteMapper.toExpoPath(route)).toBe(EXPO_ROUTES.postingCreate);
       });
 
       it('employer/posting → /(employer)/my-postings/[id]', () => {
@@ -119,6 +139,9 @@ describe('RouteMapper', () => {
       expect(RouteMapper.requiresAuth('home')).toBe(false);
       expect(RouteMapper.requiresAuth('jobs')).toBe(false);
       expect(RouteMapper.requiresAuth('job')).toBe(false);
+      expect(RouteMapper.requiresAuth('login')).toBe(false);
+      expect(RouteMapper.requiresAuth('signup')).toBe(false);
+      expect(RouteMapper.requiresAuth('forgot-password')).toBe(false);
     });
 
     it('인증 필요 라우트는 true 반환', () => {

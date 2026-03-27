@@ -1,53 +1,70 @@
 # T-HOLDEM 배포 가이드
 
-**최종 업데이트**: 2026년 3월 14일
-**기준 코드**: `uniqn-mobile/`, `functions/`, `firebase.json`, `uniqn-mobile/wrangler.toml`
+최종 업데이트: 2026-03-26
 
-현재 배포 경로는 세 갈래입니다.
+이 저장소는 출시 우선 정책을 사용합니다. 당장은 Firebase를 `dev/staging/prod`로 완전 분리하지 않고, 단일 Firebase 프로젝트를 안전하게 운영하면서 출시 후 분리를 준비합니다.
 
-- 모바일 앱: Expo EAS Build / Submit
-- 웹 앱: Cloudflare Pages
-- 백엔드: Firebase Functions / Firestore Rules / Storage Rules
+## 환경 모델
 
-`app2/` 기준 Firebase Hosting 배포는 현재 기본 배포 경로가 아닙니다.
+- `production`: 실제 사용자용 릴리스. EAS `production`, OTA `production`
+- `preview`: 내부 검수용 앱 껍데기. 전용 Firebase 앱 등록 전까지 네이티브 빌드는 제한 또는 차단
+- `development`: 로컬 개발 + Firebase Emulator 전용
 
-## 사전 요구사항
+중요 정책:
+
+- `preview`와 `development`는 현재 production Firebase 프로젝트를 공유할 수 있으므로 production-safe 하지 않은 흐름은 허용하지 않습니다.
+- repo에 포함된 [`uniqn-mobile/google-services.json`](../../uniqn-mobile/google-services.json)과 [`uniqn-mobile/GoogleService-Info.plist`](../../uniqn-mobile/GoogleService-Info.plist)가 현재 네이티브 Firebase 설정의 단일 소스입니다.
+- 예전 secret 복원 스크립트 기반 경로는 제거했습니다.
+
+## 공통 요구사항
 
 ```bash
-# 공통
 Node.js 22
 npm
 git
-
-# 모바일 빌드
-eas-cli
-
-# 웹 배포
-wrangler
-
-# 백엔드 배포
 firebase-tools
+eas-cli
+wrangler
 ```
 
-권장 설치:
+## 1. 모바일 배포
 
-```bash
-npm install -g eas-cli
-npm install -g firebase-tools
-npm install -g wrangler
-```
+모바일 설정은 [`uniqn-mobile/eas.json`](../../uniqn-mobile/eas.json)과 [`uniqn-mobile/app.config.ts`](../../uniqn-mobile/app.config.ts)에서 관리합니다.
 
-## 1. 모바일 앱 배포
-
-모바일 앱 설정은 [`uniqn-mobile/eas.json`](../../uniqn-mobile/eas.json)과 [`uniqn-mobile/app.config.ts`](../../uniqn-mobile/app.config.ts)에 정의되어 있습니다.
-
-### 로컬 확인
+### 배포 전 확인
 
 ```bash
 cd uniqn-mobile
-npm install
+npm ci
 npm run quality
 npm test
+```
+
+### 필수 공개 환경변수 계약
+
+로컬은 `uniqn-mobile/.env.local`, CI/EAS는 동일한 이름의 env 또는 secret를 사용합니다.
+
+```env
+EXPO_PUBLIC_RELEASE_CHANNEL=production
+EXPO_PUBLIC_FIREBASE_API_KEY=
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+EXPO_PUBLIC_FIREBASE_APP_ID=
+EXPO_PUBLIC_FIREBASE_REGION=asia-northeast3
+```
+
+선택:
+
+```env
+EXPO_PUBLIC_FIREBASE_APP_ID_WEB=
+EXPO_PUBLIC_FIREBASE_APP_ID_IOS=
+EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID=
+EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=
+EXPO_PUBLIC_SENTRY_DSN=
+EXPO_PUBLIC_RECAPTCHA_SITE_KEY=
+EXPO_PUBLIC_USE_EMULATOR=false
 ```
 
 ### EAS 빌드
@@ -55,16 +72,16 @@ npm test
 ```bash
 cd uniqn-mobile
 
-# 개발 빌드
+# development: 로컬 개발/에뮬레이터용
 eas build --profile development --platform ios
 eas build --profile development --platform android
 
-# 스테이징 / 내부 테스트
-eas build --profile preview --platform all
-
-# 출시 빌드
-eas build --profile production --platform all
+# production: 실제 출시용
+eas build --profile production --platform ios
+eas build --profile production --platform android
 ```
+
+`preview` 프로필은 staging Firebase 앱이 등록되기 전까지 smoke/profile 용도로만 다루고, 일반적인 릴리스 검증 경로로 사용하지 않습니다.
 
 ### 제출
 
@@ -74,76 +91,48 @@ eas submit --platform ios --latest
 eas submit --platform android --latest
 ```
 
-### 모바일 환경 변수
-
-로컬은 `uniqn-mobile/.env.local`, CI/EAS는 EAS Secrets를 사용합니다.
-
-필수:
-
-```env
-EXPO_PUBLIC_FIREBASE_API_KEY=
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-EXPO_PUBLIC_FIREBASE_APP_ID=
-```
-
-선택:
-
-```env
-EXPO_PUBLIC_RELEASE_CHANNEL=production
-EXPO_PUBLIC_SENTRY_DSN=
-EXPO_PUBLIC_RECAPTCHA_SITE_KEY=
-EXPO_PUBLIC_FIREBASE_REGION=asia-northeast3
-```
-
-EAS 프로파일별 `APP_ENV`, `EXPO_PUBLIC_RELEASE_CHANNEL`, `SENTRY_ORG`, `SENTRY_PROJECT`는 이미 [`uniqn-mobile/eas.json`](../../uniqn-mobile/eas.json)에 정의되어 있습니다.
-
 ## 2. 웹 배포
 
-웹 빌드는 Expo Web export를 사용하고, 배포는 Cloudflare Pages를 사용합니다.
-배포 스크립트는 [`uniqn-mobile/scripts/deploy-cloudflare.js`](../../uniqn-mobile/scripts/deploy-cloudflare.js), 설정은 [`uniqn-mobile/wrangler.toml`](../../uniqn-mobile/wrangler.toml)에 있습니다.
-
-### 웹 빌드
+웹은 Expo Web export 후 Cloudflare Pages에 배포합니다.
 
 ```bash
 cd uniqn-mobile
 npm run build:web
-```
-
-### Cloudflare 배포
-
-```bash
-cd uniqn-mobile
 npm run deploy:cloudflare
 ```
 
-커밋되지 않은 변경사항이 있어도 강제로 배포하려면:
+이번 단계에서는 Cloudflare의 별도 staging/prod 분리를 도입하지 않습니다.
 
-```bash
-cd uniqn-mobile
-npm run deploy:cloudflare -- --force
-```
+## 3. Firebase 배포
 
-## 3. Firebase 백엔드 배포
-
-Firebase 설정은 루트 [`firebase.json`](../../firebase.json)에 있습니다.
-현재 Firebase는 Hosting이 아니라 Functions / Firestore / Storage / Emulator 중심으로 사용합니다.
+Firebase 설정은 루트 [`firebase.json`](../../firebase.json)에서 관리합니다.
 
 ### Functions 준비
 
 ```bash
 cd functions
-npm install
+npm ci
 cp .env.example .env
 ```
 
-필수 변수:
+필수:
 
 ```env
 RECAPTCHA_SECRET_KEY=
 WEB_API_KEY=
+```
+
+기능별 선택:
+
+```env
+APPLE_PRIVATE_KEY=
+APPLE_KEY_ID=
+APPLE_TEAM_ID=
+APPLE_CLIENT_ID=
+SENTRY_DSN=
+CF_ACCOUNT_ID=
+CF_KV_NAMESPACE_ID=
+CF_API_TOKEN=
 ```
 
 ### Functions 배포
@@ -153,9 +142,7 @@ cd ..
 firebase deploy --only functions
 ```
 
-`firebase.json`의 `predeploy`로 인해 배포 전에 `functions` 빌드가 자동 실행됩니다.
-
-### 규칙 배포
+### 규칙/인덱스/스토리지 배포
 
 ```bash
 firebase deploy --only firestore:rules
@@ -163,36 +150,22 @@ firebase deploy --only firestore:indexes
 firebase deploy --only storage
 ```
 
-### 전체 Firebase 배포가 필요한 경우
+## 4. E2E / Emulator 계약
+
+에뮬레이터 모드에서는 아래 구성이 항상 함께 떠 있어야 합니다.
 
 ```bash
-firebase deploy
+firebase emulators:start --only auth,firestore,functions,storage
 ```
 
-## 4. 배포 전 체크리스트
+앱은 emulator mode에서 Auth, Firestore, Functions, Storage를 한 세트로 취급합니다. Storage만 production bucket을 바라보는 구성은 허용하지 않습니다.
 
-### 모바일
+## 5. 출시 체크리스트
 
 - `cd uniqn-mobile && npm run quality`
 - `cd uniqn-mobile && npm test`
-- `.env.local` 또는 EAS Secrets 확인
-- `google-services.json`, `GoogleService-Info.plist` 존재 확인
-
-### 웹
-
 - `cd uniqn-mobile && npm run build:web`
-- `cd uniqn-mobile && npm run deploy:cloudflare`
-
-### 백엔드
-
 - `cd functions && npm run build`
-- `cd functions && npm test`
-- `functions/.env` 확인
-- `firebase deploy --only functions` 전 로그 확인
-
-## 5. 관련 문서
-
-- [`CLAUDE.md`](../../CLAUDE.md)
-- [`uniqn-mobile/docs/EAS_BUILD_GUIDE.md`](../../uniqn-mobile/docs/EAS_BUILD_GUIDE.md)
-- [`uniqn-mobile/README-E2E.md`](../../uniqn-mobile/README-E2E.md)
-- [`ROLLBACK_PROCEDURES.md`](./ROLLBACK_PROCEDURES.md)
+- mobile/public env 계약이 CI/EAS와 동일한지 확인
+- repo-tracked native Firebase 설정 파일이 현재 프로필과 일치하는지 확인
+- preview 네이티브 빌드가 staging Firebase 앱 없이 열려 있지 않은지 확인

@@ -3,12 +3,13 @@
  */
 import { test, expect } from '@playwright/test';
 import { TEXT } from '../../helpers/assertion-helpers';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 
 test.describe('로그아웃 & 세션', () => {
   test('로그아웃 → 로그인 화면 이동', async ({ page }) => {
     // storageState로 인증된 상태에서 시작
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 프로필 탭으로 이동
     const profileTab = page.getByText(TEXT.TAB_PROFILE);
@@ -19,6 +20,9 @@ test.describe('로그아웃 & 세션', () => {
     // 로그아웃 버튼 찾기
     const logoutButton = page.getByText(TEXT.LOGOUT);
     if (await logoutButton.isVisible()) {
+      page.once('dialog', async (dialog) => {
+        await dialog.accept();
+      });
       await logoutButton.click();
 
       // 확인 모달이 있으면 확인
@@ -36,12 +40,13 @@ test.describe('로그아웃 & 세션', () => {
   test('로그아웃 후 보호 라우트 접근 → 인증 필요 상태', async ({ page }) => {
     // 비인증 상태에서 보호 라우트 접근
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
     // 앱이 로드되어야 함 (리다이렉트 또는 로그인 화면/스플래시 표시)
     // Expo Router SPA에서는 클라이언트 라우팅으로 인해
     // 비인증 시 로그인 폼이 표시되거나 스플래시/홈이 표시됨
-    const loginOrSplash = page.getByPlaceholder('이메일을 입력하세요')
+    const loginOrSplash = page
+      .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
       .or(page.getByText('구인구직').first());
     await expect(loginOrSplash).toBeVisible({ timeout: 15_000 });
@@ -70,14 +75,17 @@ test.describe('로그아웃 & 세션', () => {
 
     // localStorage에 만료된 상태 주입
     await page.addInitScript(() => {
-      localStorage.setItem('auth-storage', JSON.stringify({
-        state: {
-          user: null,
-          profile: null,
-          isInitialized: true,
-        },
-        version: 0,
-      }));
+      localStorage.setItem(
+        'auth-storage',
+        JSON.stringify({
+          state: {
+            user: null,
+            profile: null,
+            isInitialized: true,
+          },
+          version: 0,
+        })
+      );
     });
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -85,7 +93,8 @@ test.describe('로그아웃 & 세션', () => {
     await page.waitForTimeout(5_000);
 
     // 앱이 크래시 없이 정상 동작 (로그인 폼 또는 스플래시 표시)
-    const anyContent = page.getByPlaceholder('이메일을 입력하세요')
+    const anyContent = page
+      .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
       .or(page.getByText('구인구직').first())
       .or(page.getByText('앱 로딩 중...'));

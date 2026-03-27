@@ -71,6 +71,80 @@ const initialState = {
   isStaff: false,
 };
 
+let authStoreSet:
+  | ((
+      partial:
+        | AuthState
+        | Partial<AuthState>
+        | ((state: AuthState) => AuthState | Partial<AuthState>),
+      replace?: false
+    ) => void)
+  | null = null;
+
+function buildPersistedRoleFlags(profile: UserProfile | null) {
+  if (!profile) {
+    return {
+      isAdmin: false,
+      isEmployer: false,
+      isStaff: false,
+    };
+  }
+
+  return RoleResolver.computeRoleFlags(profile.role);
+}
+
+export function applyPersistedAuthRehydration(
+  state?: Pick<AuthState, 'user' | 'profile'> | null,
+  error?: unknown
+) {
+  const roleFlags = buildPersistedRoleFlags(state?.profile ?? null);
+
+  authStoreSet?.({
+    ...roleFlags,
+    isAuthenticated: Boolean(state?.user),
+    _hasHydrated: true,
+  });
+
+  if (error) {
+    logger.warn('AuthStore rehydration completed with fallback state', {
+      component: 'AuthStore',
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return;
+  }
+
+  if (state?.profile) {
+    logger.debug('AuthStore rehydration role flags recalculated', {
+      component: 'AuthStore',
+      role: state.profile.role,
+      ...roleFlags,
+    });
+  } else {
+    logger.debug('AuthStore rehydration completed without persisted profile', {
+      component: 'AuthStore',
+      hasUser: Boolean(state?.user),
+    });
+  }
+}
+
+function createAuthPersistOptions() {
+  return {
+    name: 'auth-storage',
+    storage: createJSONStorage(() => authStateStorage),
+    partialize: (state: AuthState) => ({
+      user: state.user,
+      profile: state.profile,
+      isInitialized: state.isInitialized,
+      needsServerReconcile: state.needsServerReconcile,
+      bootstrapSource: state.bootstrapSource,
+      lastScopedUserId: state.lastScopedUserId,
+      suppressedSessionUserId: state.suppressedSessionUserId,
+    }),
+    onRehydrateStorage: () => (state?: AuthState, error?: unknown) =>
+      applyPersistedAuthRehydration(state, error),
+  };
+}
+
 function clearScopedRuntimeState() {
   RealtimeManager.unsubscribeAll();
   clearCounterSyncCache();
@@ -175,8 +249,10 @@ async function clearAutoLoginBlockedSession(get: () => AuthState, uid: string) {
 }
 
 export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
+  persist((set, get) => {
+    authStoreSet = set;
+
+    return {
       ...initialState,
 
       setUser: (firebaseUser) => {
@@ -500,40 +576,8 @@ export const useAuthStore = create<AuthState>()(
           component: 'authStore',
         });
       },
-    }),
-    {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => authStateStorage),
-      partialize: (state) => ({
-        user: state.user,
-        profile: state.profile,
-        isInitialized: state.isInitialized,
-        needsServerReconcile: state.needsServerReconcile,
-        bootstrapSource: state.bootstrapSource,
-        lastScopedUserId: state.lastScopedUserId,
-        suppressedSessionUserId: state.suppressedSessionUserId,
-      }),
-      onRehydrateStorage: () => (state) => {
-        if (state?.profile) {
-          const roleFlags = RoleResolver.computeRoleFlags(state.profile.role);
-          useAuthStore.setState({
-            ...roleFlags,
-            isAuthenticated: !!state.user,
-            _hasHydrated: true,
-          });
-
-          logger.debug('AuthStore rehydration role flags recalculated', {
-            component: 'AuthStore',
-            role: state.profile.role,
-            ...roleFlags,
-          });
-          return;
-        }
-
-        useAuthStore.setState({ _hasHydrated: true });
-      },
-    }
-  )
+    };
+  }, createAuthPersistOptions())
 );
 
 export const selectUser = (state: AuthState) => state.user;

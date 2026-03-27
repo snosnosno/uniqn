@@ -1,0 +1,44 @@
+- generic [ref=e63]:
+  - generic [ref=e68]:
+    - generic [ref=e69]:
+      - generic [ref=e70]: 내 공고
+      - generic [ref=e71]:
+        - button "QR 코드" [ref=e72] [cursor=pointer]:
+          - img [ref=e73]
+        - button "알림" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+    - button "새 공고 작성" [ref=e80] [cursor=pointer]:
+      - img [ref=e82]
+      - generic [ref=e83]: 새 공고 작성
+    - generic [ref=e84]:
+      - tab "전체 공고 0건" [ref=e85] [cursor=pointer]:
+        - generic [ref=e86]: 전체 (0)
+      - tab "모집중 공고 0건" [ref=e87] [cursor=pointer]:
+        - generic [ref=e88]: 모집중 (0)
+      - tab "마감 공고 0건" [ref=e89] [cursor=pointer]:
+        - generic [ref=e90]: 마감 (0)
+    - generic [ref=e91]:
+      - img [ref=e93]
+      - generic [ref=e96]: 등록된 공고가 없습니다
+      - generic [ref=e97]: 새 공고를 작성해 보세요.
+  - tablist [ref=e99]:
+    - tab "구인구직" [ref=e101] [cursor=pointer]:
+      - generic [ref=e102]:
+        - img [ref=e104]
+        - img [ref=e109]
+      - generic [ref=e113]: 구인구직
+    - tab "내 스케줄" [ref=e115] [cursor=pointer]:
+      - generic [ref=e116]:
+        - img [ref=e118]
+        - img [ref=e121]
+      - generic [ref=e123]: 내 스케줄
+    - tab "내 공고" [selected] [ref=e125] [cursor=pointer]:
+      - generic [ref=e126]:
+        - img [ref=e128]
+        - img [ref=e132]
+      - generic [ref=e135]: 내 공고
+    - tab "프로필" [ref=e137] [cursor=pointer]:
+      - generic [ref=e138]:
+        - img [ref=e140]
+        - img [ref=e144]
+      - generic [ref=e147]: 프로필

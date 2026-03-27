@@ -38,10 +38,19 @@ export class RouteMapper {
         return EXPO_ROUTES.home;
 
       case 'jobs':
-        return EXPO_ROUTES.home; // 홈 = 구인구직
+        return EXPO_ROUTES.publicJobs;
 
       case 'job':
-        return EXPO_ROUTES.jobDetail.replace('[id]', route.params.id);
+        return EXPO_ROUTES.publicJobDetail.replace('[id]', route.params.id);
+
+      case 'login':
+        return EXPO_ROUTES.login;
+
+      case 'signup':
+        return EXPO_ROUTES.signup;
+
+      case 'forgot-password':
+        return EXPO_ROUTES.forgotPassword;
 
       // === 인증 필요 라우트 ===
       case 'notifications':
@@ -65,6 +74,9 @@ export class RouteMapper {
       // === 구인자 라우트 ===
       case 'employer/my-postings':
         return EXPO_ROUTES.employerTab;
+
+      case 'employer/posting-create':
+        return EXPO_ROUTES.postingCreate;
 
       case 'employer/posting':
         return EXPO_ROUTES.postingDetail.replace('[id]', route.params.id);
@@ -114,7 +126,14 @@ export class RouteMapper {
    * @returns 인증 필요 여부
    */
   static requiresAuth(routeName: DeepLinkRoute['name']): boolean {
-    const publicRoutes: DeepLinkRoute['name'][] = ['home', 'jobs', 'job'];
+    const publicRoutes: DeepLinkRoute['name'][] = [
+      'home',
+      'jobs',
+      'job',
+      'login',
+      'signup',
+      'forgot-password',
+    ];
     return !publicRoutes.includes(routeName);
   }
 

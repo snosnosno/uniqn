@@ -17,8 +17,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
-import { useJobDetail, useApplications } from '@/hooks';
+import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
@@ -101,7 +102,8 @@ function UnsupportedPostingState() {
 
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const userId = useAuthStore((state) => state.user?.uid);
+  const storeUserId = useAuthStore((state) => state.user?.uid);
+  const userId = storeUserId ?? getFirebaseAuth().currentUser?.uid ?? null;
   const { isDarkMode } = useThemeStore();
   const { addToast } = useToastStore();
   const queryClient = useQueryClient();
@@ -115,6 +117,17 @@ export default function ApplyScreen() {
   } = useJobDetail(id ?? '');
 
   const { submitApplication, isSubmitting, hasApplied } = useApplications();
+  const {
+    data: hasAppliedDirect = false,
+    isLoading: isCheckingExistingApplication,
+    isFetching: isFetchingExistingApplication,
+  } = useHasAppliedToJob(id);
+  const shouldBlockForExistingApplicationCheck =
+    !!job &&
+    !!userId &&
+    !hasApplied(job.id) &&
+    !hasAppliedDirect &&
+    (isCheckingExistingApplication || isFetchingExistingApplication);
 
   // Note: staleTime: 0이므로 마운트 시 자동 fresh fetch (별도 useEffect 불필요)
 
@@ -137,7 +150,7 @@ export default function ApplyScreen() {
       // 제출 전 최신 공고 상태 확인
       try {
         const latestJob = await queryClient.fetchQuery<JobPosting | null>({
-          ...getJobDetailQueryOptions(job.id, userId),
+          ...getJobDetailQueryOptions(job.id, userId ?? undefined),
           staleTime: 0, // 강제 fresh fetch
         });
 
@@ -214,6 +227,24 @@ export default function ApplyScreen() {
     );
   }
 
+  if (shouldBlockForExistingApplicationCheck) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: '지원하기',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+            },
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+          }}
+        />
+        <LoadingState />
+      </SafeAreaView>
+    );
+  }
+
   if (jobError || !job) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
@@ -251,7 +282,7 @@ export default function ApplyScreen() {
   }
 
   // 이미 지원한 경우
-  if (hasApplied(job.id)) {
+  if (hasApplied(job.id) || hasAppliedDirect) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen

@@ -9,6 +9,7 @@
  * - eas build --profile development|preview|production
  */
 
+import fs from 'fs';
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
 // ============================================================================
@@ -36,6 +37,7 @@ const PERMISSION_MESSAGES = {
 // ============================================================================
 
 type Environment = 'development' | 'staging' | 'production';
+type NativePlatform = 'android' | 'ios';
 
 const getEnvironment = (): Environment => {
   // eas.json의 env.APP_ENV을 우선 참조 (로컬 config 해석 시에도 확실히 전달됨)
@@ -75,6 +77,76 @@ const ENV_CONFIG = {
 } as const;
 
 const envConfig = ENV_CONFIG[environment];
+
+function getConfiguredAndroidPackages(): Set<string> {
+  const configPath = `${__dirname}/google-services.json`;
+  if (!fs.existsSync(configPath)) {
+    return new Set();
+  }
+
+  const rawConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as {
+    client?: {
+      client_info?: {
+        android_client_info?: {
+          package_name?: string;
+        };
+      };
+    }[];
+  };
+
+  return new Set(
+    (rawConfig.client ?? [])
+      .map((client) => client.client_info?.android_client_info?.package_name)
+      .filter((packageName): packageName is string => typeof packageName === 'string')
+  );
+}
+
+function getConfiguredIosBundleIds(): Set<string> {
+  const configPath = `${__dirname}/GoogleService-Info.plist`;
+  if (!fs.existsSync(configPath)) {
+    return new Set();
+  }
+
+  const matches = [
+    ...fs
+      .readFileSync(configPath, 'utf-8')
+      .matchAll(/<key>BUNDLE_ID<\/key>\s*<string>([^<]+)<\/string>/g),
+  ];
+
+  return new Set(matches.map((match) => match[1]).filter(Boolean));
+}
+
+function getEasBuildPlatform(): NativePlatform | null {
+  const platform = process.env.EAS_BUILD_PLATFORM;
+  return platform === 'android' || platform === 'ios' ? platform : null;
+}
+
+function assertSupportedNativeFirebaseBuild(): void {
+  const platform = getEasBuildPlatform();
+  if (!platform) {
+    return;
+  }
+
+  const expectedIdentifier =
+    platform === 'android' ? envConfig.androidPackage : envConfig.bundleIdentifier;
+  const configuredIdentifiers =
+    platform === 'android' ? getConfiguredAndroidPackages() : getConfiguredIosBundleIds();
+
+  if (configuredIdentifiers.has(expectedIdentifier)) {
+    return;
+  }
+
+  const profileLabel = environment === 'staging' ? 'preview/staging' : environment;
+  const fileName = platform === 'android' ? 'google-services.json' : 'GoogleService-Info.plist';
+
+  throw new Error(
+    `Firebase native config mismatch: ${profileLabel} ${platform} build expects ${expectedIdentifier}, ` +
+      `but ${fileName} does not include it. Release-first policy keeps repo-tracked native configs only. ` +
+      `Register a Firebase app for ${expectedIdentifier} before using this build profile.`
+  );
+}
+
+assertSupportedNativeFirebaseBuild();
 
 // ============================================================================
 // Expo 설정
@@ -126,12 +198,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       ],
     },
     // Universal Links (production 빌드에서만 활성화 - AASA에 production bundleID만 등록)
-    ...(environment === 'production' ? {
-      associatedDomains: [
-        `applinks:${DOMAIN}`,
-        `webcredentials:${DOMAIN}`,
-      ],
-    } : {}),
+    ...(environment === 'production'
+      ? {
+          associatedDomains: [`applinks:${DOMAIN}`, `webcredentials:${DOMAIN}`],
+        }
+      : {}),
   },
 
   // Android 설정
@@ -148,22 +219,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'android.permission.POST_NOTIFICATIONS',
     ],
     // App Links (production 빌드에서만 활성화 - assetlinks.json에 production 패키지만 등록)
-    ...(environment === 'production' ? {
-      intentFilters: [
-        {
-          action: 'VIEW',
-          autoVerify: true,
-          data: [
+    ...(environment === 'production'
+      ? {
+          intentFilters: [
             {
-              scheme: 'https',
-              host: DOMAIN,
-              pathPrefix: '/',
+              action: 'VIEW',
+              autoVerify: true,
+              data: [
+                {
+                  scheme: 'https',
+                  host: DOMAIN,
+                  pathPrefix: '/',
+                },
+              ],
+              category: ['BROWSABLE', 'DEFAULT'],
             },
           ],
-          category: ['BROWSABLE', 'DEFAULT'],
-        },
-      ],
-    } : {}),
+        }
+      : {}),
   },
 
   // 웹 설정
@@ -260,6 +333,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // 앱 버전 정보
     version: VERSION,
     environment,
+    useEmulator: process.env.EXPO_PUBLIC_USE_EMULATOR === 'true',
+    firebaseProjectMode:
+      environment === 'production'
+        ? 'production-release-project'
+        : 'shared-release-project-until-post-launch-split',
     // 빌드 시간
     buildDate: new Date().toISOString(),
     // 소셜 로그인 활성화 여부 (SDK 구현 전까지 개발 환경에서만 활성화)

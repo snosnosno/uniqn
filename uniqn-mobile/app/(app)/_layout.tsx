@@ -7,9 +7,11 @@
 
 import { useCallback, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationPermissionScreen } from '@/components/onboarding';
 import { NetworkErrorBoundary, Loading } from '@/components/ui';
+import { LAYOUT } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -21,6 +23,11 @@ import { logger } from '@/utils/logger';
 export default function AppLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { isLoading, profile } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const segments = useSegments();
+
+  const isTabsRoute = segments[0] === '(app)' && segments.includes('(tabs)');
+  const overlayBottomOffset = isTabsRoute ? LAYOUT.TAB_BAR_HEIGHT + insets.bottom : 0;
 
   const shouldInitializeNotifications =
     !!profile &&
@@ -125,13 +132,17 @@ export default function AppLayout() {
         </Stack>
 
         {showLoading && (
-          <View style={styles.overlay}>
+          <View
+            style={[styles.overlay, overlayBottomOffset > 0 && { bottom: overlayBottomOffset }]}
+          >
             <Loading variant="layout" />
           </View>
         )}
 
         {showOnboarding && (
-          <View style={styles.overlay}>
+          <View
+            style={[styles.overlay, overlayBottomOffset > 0 && { bottom: overlayBottomOffset }]}
+          >
             <NotificationPermissionScreen
               onRequestPermission={handleRequestPermission}
               onSkip={handleSkip}

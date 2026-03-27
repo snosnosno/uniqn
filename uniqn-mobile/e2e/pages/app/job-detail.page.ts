@@ -18,13 +18,15 @@ export class JobDetailPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.headerTitle = page.getByText('공고 상세');
+    this.headerTitle = page.getByText(/^공고 상세$/).last();
     this.applyButton = page.getByRole('button', { name: '지원하기' });
     this.loginToApplyButton = page.getByRole('button', { name: '로그인 후 지원하기' });
     this.closedButton = page.getByRole('button', { name: '마감된 공고입니다' });
-    this.statusText = page.getByText(/지원 완료|지원 확정|지원이 거절|검토 중/);
+    this.statusText = page
+      .getByText(/지원 완료|지원 확정|지원이 거절|검토 중|지원 완료 - 검토 중/)
+      .last();
     this.retryButton = page.getByRole('button', { name: '다시 시도' });
-    this.viewStatusButton = page.getByRole('button', { name: /내 지원 현황/ });
+    this.viewStatusButton = page.getByRole('button', { name: /내 지원 확인|내 지원 현황/ });
     this.shareButton = page.locator('[aria-label="공고 공유하기"]');
     this.backButton = page.locator('button').first();
     this.errorMessage = page
@@ -46,10 +48,10 @@ export class JobDetailPage extends BasePage {
 
   async waitForDetailLoaded(): Promise<void> {
     try {
-      await this.page
-        .getByText('공고 정보를 불러오는 중...')
-        .first()
-        .waitFor({ state: 'hidden', timeout: 10_000 });
+      await this.page.getByText('공고 정보를 불러오는 중...').first().waitFor({
+        state: 'hidden',
+        timeout: 10_000,
+      });
     } catch {
       // The route was already settled.
     }
@@ -57,6 +59,9 @@ export class JobDetailPage extends BasePage {
     await this.applyButton
       .or(this.loginToApplyButton)
       .or(this.closedButton)
+      .or(this.viewStatusButton)
+      .or(this.statusText)
+      .or(this.headerTitle)
       .or(this.errorMessage)
       .first()
       .waitFor({ state: 'visible', timeout: 15_000 });
@@ -84,6 +89,6 @@ export class JobDetailPage extends BasePage {
   }
 
   async isAlreadyApplied(): Promise<boolean> {
-    return this.statusText.isVisible();
+    return this.viewStatusButton.isVisible().catch(() => false);
   }
 }

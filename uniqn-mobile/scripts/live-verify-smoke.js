@@ -1,12 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
+const {
+  createDiagnosticsBucket,
+  finalizeDiagnosticsReport,
+  attachDiagnostics,
+  normalizeText,
+} = require('./live-verify-diagnostics');
 
 const projectRoot = path.resolve(__dirname, '..');
 const accountsPath = path.join(projectRoot, 'output', 'playwright', 'live-test-users.json');
 const artifactRoot = path.join(projectRoot, 'output', 'playwright', 'live-smoke');
 const baseUrl = process.env.LIVE_BASE_URL || 'http://localhost:4101';
-const MAX_DIAGNOSTIC_EVENTS = 120;
 const LOADING_TEXTS = [
   '로딩 중...',
   '공고 정보를 불러오는 중...',
@@ -25,33 +30,8 @@ function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function normalizeText(value) {
-  return (value || '').replace(/\s+/g, ' ').trim();
-}
-
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
-}
-
-function pushLimited(collection, item, key, limit = MAX_DIAGNOSTIC_EVENTS) {
-  const existing = collection.find((entry) => entry.key === key);
-  if (existing) {
-    existing.count += 1;
-    existing.lastSeenAt = new Date().toISOString();
-    return;
-  }
-
-  if (collection.length >= limit) {
-    return;
-  }
-
-  collection.push({
-    ...item,
-    key,
-    count: 1,
-    firstSeenAt: new Date().toISOString(),
-    lastSeenAt: new Date().toISOString(),
-  });
 }
 
 async function waitForAppReady(page) {
@@ -64,52 +44,6 @@ async function waitForAppReady(page) {
       .waitFor({ state: 'hidden', timeout: 10000 })
       .catch(() => {});
   }
-}
-
-async function attachDiagnostics(page, bucket) {
-  page.on('dialog', (dialog) => {
-    pushLimited(
-      bucket.console,
-      {
-        type: 'dialog',
-        text: `${dialog.type()}: ${normalizeText(dialog.message())}`,
-      },
-      `dialog:${dialog.type()}:${normalizeText(dialog.message())}`
-    );
-
-    void dialog.accept().catch(() => {});
-  });
-
-  page.on('console', (message) => {
-    const text = normalizeText(message.text());
-    if (!text) {
-      return;
-    }
-
-    pushLimited(
-      bucket.console,
-      {
-        type: message.type(),
-        text,
-      },
-      `${message.type()}:${text}`
-    );
-  });
-
-  page.on('requestfailed', (request) => {
-    const failure = request.failure();
-    const key = `${request.method()}:${request.url()}:${failure?.errorText ?? 'unknown'}`;
-
-    pushLimited(
-      bucket.failedRequests,
-      {
-        url: request.url(),
-        method: request.method(),
-        failure,
-      },
-      key
-    );
-  });
 }
 
 async function fillVisibleInput(page, placeholder, value) {
@@ -304,10 +238,10 @@ async function main() {
     accountPayload.accounts.map((account) => [account.key, account])
   );
   const diagnostics = {
-    public: { console: [], failedRequests: [] },
-    staff: { console: [], failedRequests: [] },
-    employer: { console: [], failedRequests: [] },
-    admin: { console: [], failedRequests: [] },
+    public: createDiagnosticsBucket(),
+    staff: createDiagnosticsBucket(),
+    employer: createDiagnosticsBucket(),
+    admin: createDiagnosticsBucket(),
   };
 
   const browser = await chromium.launch({
@@ -349,7 +283,7 @@ async function main() {
     await browser.close();
   }
 
-  writeJson(path.join(artifactRoot, 'diagnostics.json'), diagnostics);
+  writeJson(path.join(artifactRoot, 'diagnostics.json'), finalizeDiagnosticsReport(diagnostics));
 }
 
 main().catch((error) => {

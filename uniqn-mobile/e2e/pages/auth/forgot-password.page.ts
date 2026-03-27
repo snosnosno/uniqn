@@ -1,8 +1,4 @@
-/**
- * Forgot Password Page Object
- * 참조: app/(auth)/forgot-password.tsx
- */
-import type { Page, Locator } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { BasePage } from '../base.page';
 
 export class ForgotPasswordPage extends BasePage {
@@ -12,9 +8,9 @@ export class ForgotPasswordPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.emailInput = page.getByPlaceholder('이메일을 입력하세요');
+    this.emailInput = page.locator('input[placeholder="이메일을 입력하세요"]:visible').first();
     this.submitButton = page.getByRole('button', { name: /재설정 링크 발송|발송 중/ });
-    this.backToLoginLink = page.getByText('로그인으로 돌아가기');
+    this.backToLoginLink = page.getByText('로그인으로 돌아가기').first();
   }
 
   async goto(): Promise<void> {
@@ -44,6 +40,6 @@ export class ForgotPasswordPage extends BasePage {
   }
 
   async getRetryButton(): Promise<Locator> {
-    return this.page.getByText('다시 시도하기');
+    return this.page.getByText('다시 시도하기').first();
   }
 }

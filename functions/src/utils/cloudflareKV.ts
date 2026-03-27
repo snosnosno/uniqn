@@ -22,12 +22,29 @@ interface KVConfig {
   apiToken: string;
 }
 
-function getConfig(): KVConfig {
+function isEmulatorRuntime(): boolean {
+  return (
+    process.env.FUNCTIONS_EMULATOR === 'true' ||
+    typeof process.env.FIRESTORE_EMULATOR_HOST === 'string' ||
+    typeof process.env.FIREBASE_EMULATOR_HUB === 'string'
+  );
+}
+
+function getConfig(): KVConfig | null {
   const accountId = process.env.CF_ACCOUNT_ID;
   const namespaceId = process.env.CF_KV_NAMESPACE_ID;
   const apiToken = process.env.CF_API_TOKEN;
 
   if (!accountId || !namespaceId || !apiToken) {
+    if (isEmulatorRuntime()) {
+      logger.info('Cloudflare KV 동기화 건너뜀: 에뮬레이터 환경에서 KV 설정이 없습니다.', {
+        hasAccountId: Boolean(accountId),
+        hasNamespaceId: Boolean(namespaceId),
+        hasApiToken: Boolean(apiToken),
+      });
+      return null;
+    }
+
     throw new Error(
       'Cloudflare KV 환경변수 누락: CF_ACCOUNT_ID, CF_KV_NAMESPACE_ID, CF_API_TOKEN 필요'
     );
@@ -45,6 +62,9 @@ function buildKVUrl(config: KVConfig, key: string): string {
  */
 export async function kvPut(key: string, value: object): Promise<void> {
   const config = getConfig();
+  if (!config) {
+    return;
+  }
   const url = `${buildKVUrl(config, key)}?expiration_ttl=${KV_TTL_SECONDS}`;
 
   const controller = new AbortController();
@@ -77,6 +97,9 @@ export async function kvPut(key: string, value: object): Promise<void> {
  */
 export async function kvDelete(key: string): Promise<void> {
   const config = getConfig();
+  if (!config) {
+    return;
+  }
   const url = buildKVUrl(config, key);
 
   const controller = new AbortController();

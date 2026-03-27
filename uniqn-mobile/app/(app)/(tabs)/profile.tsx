@@ -149,6 +149,8 @@ export default function ProfileScreen() {
           <Pressable
             onPress={() => router.push('/(app)/settings/profile')}
             className="flex-row items-center active:opacity-70"
+            accessibilityRole="button"
+            accessibilityLabel="프로필 수정"
           >
             <Avatar
               name={profile?.name ?? user?.displayName ?? '사용자'}

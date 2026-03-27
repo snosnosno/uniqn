@@ -1,0 +1,87 @@
+- generic [ref=e6]:
+  - generic [ref=e58]:
+    - generic [ref=e63]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]: 구인구직
+          - generic [ref=e71]:
+            - button "QR 코드" [ref=e72] [cursor=pointer]:
+              - img [ref=e73]
+            - button "알림" [ref=e75] [cursor=pointer]:
+              - img [ref=e76]
+        - search [ref=e79]:
+          - generic [ref=e80]:
+            - img [ref=e81]
+            - textbox "공고 검색" [ref=e84]:
+              - /placeholder: 제목, 장소로 검색
+        - generic [ref=e87]:
+          - button "긴급 공고 필터" [ref=e88] [cursor=pointer]:
+            - generic [ref=e89]: 🚨
+            - generic [ref=e90]: 긴급
+          - button "대회 공고 필터" [ref=e91] [cursor=pointer]:
+            - generic [ref=e92]: 🏆
+            - generic [ref=e93]: 대회
+          - button "지원 공고 필터" [ref=e94] [cursor=pointer]:
+            - generic [ref=e95]: 📝
+            - generic [ref=e96]: 지원
+        - generic [ref=e97]:
+          - generic [ref=e99]: 📋
+          - generic [ref=e100]: 공고 없음
+          - generic [ref=e101]: 등록된 공고가 없습니다
+      - tablist [ref=e103]:
+        - tab "구인구직" [selected] [ref=e105] [cursor=pointer]:
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - img [ref=e113]
+          - generic [ref=e117]: 구인구직
+        - tab "내 스케줄" [ref=e119] [cursor=pointer]:
+          - generic [ref=e120]:
+            - img [ref=e122]
+            - img [ref=e125]
+          - generic [ref=e127]: 내 스케줄
+        - tab "내 공고" [ref=e129] [cursor=pointer]:
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - img [ref=e136]
+          - generic [ref=e139]: 내 공고
+        - tab "프로필" [ref=e141] [cursor=pointer]:
+          - generic [ref=e142]:
+            - img [ref=e144]
+            - img [ref=e148]
+          - generic [ref=e151]: 프로필
+    - generic [ref=e154]:
+      - generic [ref=e155]:
+        - img [ref=e157]
+        - generic [ref=e160]: 알림을 켜주세요
+        - generic [ref=e161]: 중요한 소식을 놓치지 않도록 알림을 허용해 주세요
+      - generic [ref=e162]:
+        - generic [ref=e163]:
+          - img [ref=e165]
+          - generic [ref=e168]:
+            - generic [ref=e169]: 새 공고 알림
+            - generic [ref=e170]: 관심 지역의 새 공고가 올라오면 바로 알려드려요
+        - generic [ref=e171]:
+          - img [ref=e173]
+          - generic [ref=e176]:
+            - generic [ref=e177]: 지원 결과 알림
+            - generic [ref=e178]: 지원 확정/취소 결과를 실시간으로 받아보세요
+        - generic [ref=e179]:
+          - img [ref=e181]
+          - generic [ref=e184]:
+            - generic [ref=e185]: 출퇴근 리마인더
+            - generic [ref=e186]: 근무 시작 전 알림으로 지각을 방지해요
+        - generic [ref=e187]:
+          - img [ref=e189]
+          - generic [ref=e192]:
+            - generic [ref=e193]: 정산 알림
+            - generic [ref=e194]: 정산이 완료되면 즉시 알려드려요
+      - generic [ref=e195]:
+        - button "알림 허용하기" [ref=e196] [cursor=pointer]:
+          - generic [ref=e197]: 알림 허용하기
+        - button "나중에 하기" [ref=e198] [cursor=pointer]:
+          - generic [ref=e199]: 나중에 하기
+        - generic [ref=e200]: 설정 > 알림에서 언제든 변경할 수 있어요
+  - 'alert "success: 로그인되었습니다." [ref=e203] [cursor=pointer]':
+    - img [ref=e205]
+    - generic [ref=e208]: 로그인되었습니다.
+    - img [ref=e210]

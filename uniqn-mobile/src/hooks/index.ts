@@ -21,7 +21,7 @@ export {
 
 export { useJobPostings } from './useJobPostings';
 export { useJobDetail } from './useJobDetail';
-export { useApplications } from './useApplications';
+export { useApplications, useHasAppliedToJob } from './useApplications';
 export {
   usePostingTypeCounts,
   AUTO_SELECT_PRIORITY,
@@ -72,6 +72,7 @@ export {
 } from './useDeepLink';
 
 export { useShare, type ShareJobParams, type ShareResult, type UseShareReturn } from './useShare';
+export { useInstallPrompt, type InstallPromptSource } from './useInstallPrompt';
 export { useClearCache, type UseClearCacheReturn } from './useClearCache';
 export { useBookmarks, type BookmarkJobParams, type UseBookmarksReturn } from './useBookmarks';
 export {

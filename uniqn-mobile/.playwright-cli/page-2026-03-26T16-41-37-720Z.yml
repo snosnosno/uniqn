@@ -1,0 +1,36 @@
+- generic [ref=e20]:
+  - generic:
+    - generic:
+      - generic:
+        - link "index, back" [ref=e22] [cursor=pointer]:
+          - /url: /?emulator=false
+        - heading "구인공고" [level=1] [ref=e25]
+  - generic [ref=e28]:
+    - generic [ref=e31]:
+      - button "긴급 공고 필터" [ref=e32] [cursor=pointer]:
+        - generic [ref=e33]: 🚨
+        - generic [ref=e34]: 긴급
+      - button "대회 공고 필터" [ref=e35] [cursor=pointer]:
+        - generic [ref=e36]: 🏆
+        - generic [ref=e37]: 대회
+      - button "지원 공고 필터" [ref=e38] [cursor=pointer]:
+        - generic [ref=e39]: 📝
+        - generic [ref=e40]: 지원
+    - generic [ref=e42]:
+      - generic [ref=e44]: 📋
+      - generic [ref=e45]: 공고 없음
+      - generic [ref=e46]: 등록된 공고가 없습니다
+    - generic "하단 탭 메뉴" [ref=e47]:
+      - generic [ref=e48]:
+        - button "구인구직 탭" [disabled]:
+          - img [ref=e49]
+          - generic [ref=e53]: 구인구직
+        - button "내 스케줄 탭" [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+          - generic [ref=e57]: 내 스케줄
+        - button "내 공고 탭" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - generic [ref=e62]: 내 공고
+        - button "프로필 탭" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - generic [ref=e67]: 프로필

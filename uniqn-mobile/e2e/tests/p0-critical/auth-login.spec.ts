@@ -6,6 +6,7 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/auth/login.page';
 import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 import { createInvalidLoginData } from '../../factories';
+import { waitForAppReady } from '../../helpers/wait-helpers';
 
 test.describe('로그인', () => {
   let loginPage: LoginPage;
@@ -81,7 +82,7 @@ test.describe('로그인', () => {
     // 새 페이지에서 메인 접근
     const newPage = await context.newPage();
     await newPage.goto('/', { waitUntil: 'domcontentloaded' });
-    await newPage.waitForLoadState('networkidle');
+    await waitForAppReady(newPage);
 
     // 로그인 상태 유지되어야 함 (로그인 페이지가 아닌 메인 표시)
     const url = newPage.url();

@@ -1444,10 +1444,12 @@ service cloud.firestore {
 
     // --- Job Postings Collection ---
     match /jobPostings/{postId} {
-      // Public listings can read active canonical job postings.
-      allow read: if isSignedIn() ||
+      // Public list queries must stay query-safe, while detail reads stay strict.
+      allow get: if isSignedIn() ||
         (resource.data.status == 'active' &&
          validateCanonicalJobPosting(resource.data));
+      allow list: if isSignedIn() ||
+        resource.data.status == 'active';
 
       // Admin can create/update any job posting
       // Manager and Staff can create job postings and update their own

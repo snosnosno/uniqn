@@ -84,7 +84,7 @@ export const EXPO_ROUTES = {
 
   // === 공개 (public) ===
   publicJobs: '/(public)/jobs',
-  publicJobDetail: '/(public)/jobs/[id]',
+  publicJobDetail: '/jobs/[id]',
 
   // === 인증 (auth) ===
   login: '/(auth)/login',
