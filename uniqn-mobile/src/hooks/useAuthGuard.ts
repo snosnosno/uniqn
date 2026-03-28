@@ -48,6 +48,14 @@ const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
 
 const PUBLIC_ENTRY_PATHS = new Set(['/jobs', '/(public)/jobs']);
 
+function getBrowserPathname(fallbackPathname: string): string {
+  if (typeof window === 'undefined') {
+    return fallbackPathname;
+  }
+
+  return window.location?.pathname || fallbackPathname;
+}
+
 function extractRouteGroup(segments: string[]): RouteGroup | null {
   const firstSegment = segments[0] as RouteGroup | undefined;
 
@@ -69,6 +77,16 @@ function isPublicJobDetailRoute(pathname: string, segments: string[]): boolean {
     (normalizedSegments.length === 2 && normalizedSegments[0] === 'jobs') ||
     (segments[0] === '(public)' && segments[1] === 'jobs' && segments.length >= 3)
   );
+}
+
+function buildPublicJobDetailRedirect(pathname: string): string | null {
+  const normalizedSegments = pathname.split('/').filter(Boolean);
+
+  if (normalizedSegments.length !== 2 || normalizedSegments[0] !== 'jobs') {
+    return null;
+  }
+
+  return `/(app)/jobs/${normalizedSegments[1]}`;
 }
 
 export function useAuthGuard(): void {
@@ -97,9 +115,28 @@ export function useAuthGuard(): void {
   routerRef.current = router;
 
   useEffect(() => {
-    if (isLoading || (isAuthenticated && !profile)) return;
-
     const routeGroup = extractRouteGroup(segments);
+    const browserPathname = getBrowserPathname(pathname);
+    const isPublicJobsEntryRoute =
+      isPublicEntryRoute(browserPathname, segments) || isPublicEntryRoute(pathname, segments);
+    const isPublicJobsDetailRoute =
+      isPublicJobDetailRoute(browserPathname, segments) ||
+      isPublicJobDetailRoute(pathname, segments);
+
+    if (isLoading || (isAuthenticated && !profile)) {
+      if (isAuthenticated && (isPublicJobsEntryRoute || isPublicJobsDetailRoute)) {
+        logger.debug('Authenticated user hit public jobs route before profile hydration', {
+          component: 'useAuthGuard',
+          pathname,
+          browserPathname,
+          routeGroup,
+        });
+        routerRef.current.replace('/');
+      }
+
+      return;
+    }
+
     const redirectParam = Array.isArray(searchParams.redirect)
       ? searchParams.redirect[0]
       : searchParams.redirect;
@@ -116,13 +153,39 @@ export function useAuthGuard(): void {
     });
 
     if (!routeGroup) {
-      if ((pathname === '/' || pathname === '/index') && isAuthenticated) {
+      const isRouterRootPath = pathname === '/' || pathname === '/index';
+      const isBrowserRootPath = browserPathname === '/' || browserPathname === '/index';
+      const publicAliasRedirect = isPublicJobsDetailRoute
+        ? buildPublicJobDetailRedirect(browserPathname)
+        : null;
+
+      if (isRouterRootPath && isBrowserRootPath && isAuthenticated) {
         logger.debug('Authenticated user entered root route', {
           component: 'useAuthGuard',
           pathname,
+          browserPathname,
           authenticatedEntryRoute: resolvedAuthenticatedRoute,
         });
         routerRef.current.replace(resolvedAuthenticatedRoute);
+        return;
+      }
+
+      if (isAuthenticated && (isPublicJobsEntryRoute || isPublicJobsDetailRoute)) {
+        const publicAliasAuthenticatedRoute = getResolvedAuthenticatedRoute({
+          socialProvider,
+          phoneVerified,
+          profileCompleted,
+          redirect: publicAliasRedirect,
+        });
+
+        logger.debug('Authenticated user entered public alias route', {
+          component: 'useAuthGuard',
+          pathname,
+          browserPathname,
+          redirect: publicAliasRedirect,
+          authenticatedEntryRoute: publicAliasAuthenticatedRoute,
+        });
+        routerRef.current.replace(publicAliasAuthenticatedRoute);
       }
       return;
     }
@@ -177,7 +240,7 @@ export function useAuthGuard(): void {
     }
 
     if (config.requiredAuth && !isAuthenticated) {
-      if (isPublicEntryRoute(pathname, segments) || isPublicJobDetailRoute(pathname, segments)) {
+      if (isPublicJobsEntryRoute || isPublicJobsDetailRoute) {
         return;
       }
 

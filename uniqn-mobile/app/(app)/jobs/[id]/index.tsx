@@ -60,7 +60,9 @@ export default function JobDetailScreen() {
 
   const handleApply = useCallback(() => {
     if (!sessionUserId) {
-      openInstallPrompt('job-detail-cta');
+      openInstallPrompt('job-detail-cta', {
+        loginRedirect: `/(app)/jobs/${id}/apply`,
+      });
       return;
     }
 

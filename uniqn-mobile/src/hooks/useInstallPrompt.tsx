@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
+import { router } from 'expo-router';
 import { InstallPromptContent } from '@/components/modals/InstallPromptContent';
 import { getStoreUrl } from '@/constants';
+import { getLoginRoute } from '@/shared/navigation/authRedirect';
 import { useModal } from '@/stores/modalStore';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -12,10 +14,20 @@ export type InstallPromptSource =
   | 'employer-tab'
   | 'profile-tab';
 
+interface OpenInstallPromptOptions {
+  loginRedirect?: string | null;
+}
+
 interface InstallPromptCopy {
   title: string;
   description: string;
 }
+
+const DEFAULT_LOGIN_REDIRECTS: Partial<Record<InstallPromptSource, string>> = {
+  'schedule-tab': '/(app)/(tabs)/schedule',
+  'employer-tab': '/(app)/(tabs)/employer',
+  'profile-tab': '/(app)/(tabs)/profile',
+};
 
 function getInstallPromptCopy(source: InstallPromptSource): InstallPromptCopy {
   switch (source) {
@@ -44,23 +56,49 @@ function getInstallPromptCopy(source: InstallPromptSource): InstallPromptCopy {
   }
 }
 
+function resolveLoginRedirect(
+  source: InstallPromptSource,
+  options?: OpenInstallPromptOptions
+): string | null {
+  return options?.loginRedirect ?? DEFAULT_LOGIN_REDIRECTS[source] ?? null;
+}
+
 export function useInstallPrompt() {
   const modal = useModal();
   const toast = useToast();
 
   const openInstallPrompt = useCallback(
-    (source: InstallPromptSource) => {
+    (source: InstallPromptSource, options?: OpenInstallPromptOptions) => {
       const copy = getInstallPromptCopy(source);
+      const loginRedirect = resolveLoginRedirect(source, options);
 
       logger.info('Opened install prompt for public surface', {
         component: 'useInstallPrompt',
         source,
+        loginRedirect,
       });
 
       modal.open({
         type: 'custom',
         title: copy.title,
-        content: <InstallPromptContent description={copy.description} />,
+        content: (
+          <InstallPromptContent
+            description={copy.description}
+            onLogin={() => {
+              const loginRoute = getLoginRoute(loginRedirect);
+
+              logger.info('Install prompt login CTA clicked', {
+                component: 'useInstallPrompt',
+                source,
+                loginRedirect,
+                loginRoute,
+              });
+
+              modal.close();
+              router.push(loginRoute);
+            }}
+          />
+        ),
         confirmButton: {
           label: '앱 설치',
           variant: 'primary',

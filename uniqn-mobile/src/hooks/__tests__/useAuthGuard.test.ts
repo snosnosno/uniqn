@@ -143,4 +143,106 @@ describe('useAuthGuard', () => {
       expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)');
     });
   });
+
+  it('redirects authenticated users away from the public jobs alias route', async () => {
+    mockPathname = '/jobs';
+    mockSegments = ['jobs'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/(tabs)');
+    });
+  });
+
+  it('moves authenticated users away from the public jobs entry while the profile is still hydrating', async () => {
+    mockPathname = '/jobs';
+    mockSegments = ['(public)', 'jobs'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = null;
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('redirects authenticated users away from the public job detail alias route', async () => {
+    mockPathname = '/jobs/123';
+    mockSegments = ['jobs', '123'];
+    mockAuthState.user = { uid: 'employer-1' };
+    mockAuthState.profile = {
+      role: 'employer',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: true,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)/jobs/123');
+    });
+  });
+
+  it('moves authenticated users away from the public job detail alias while the profile is still hydrating', async () => {
+    mockPathname = '/jobs/123';
+    mockSegments = ['jobs', '123'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = null;
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('keeps the target detail route when onboarding is still required from a public alias', async () => {
+    mockPathname = '/jobs/123';
+    mockSegments = ['jobs', '123'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: 'apple',
+      phoneVerified: false,
+      profileCompleted: false,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith(
+        '/(auth)/signup?mode=social&redirect=%2F(app)%2Fjobs%2F123'
+      );
+    });
+  });
+
+  it('keeps the target detail route when profile setup is still required from a public alias', async () => {
+    mockPathname = '/jobs/123';
+    mockSegments = ['jobs', '123'];
+    mockAuthState.user = { uid: 'staff-1' };
+    mockAuthState.profile = {
+      role: 'staff',
+      socialProvider: null,
+      phoneVerified: true,
+      profileCompleted: false,
+    };
+
+    renderHook(() => useAuthGuard());
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith(
+        '/(app)/profile-setup?redirect=%2F(app)%2Fjobs%2F123'
+      );
+    });
+  });
 });

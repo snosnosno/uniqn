@@ -33,9 +33,14 @@ export default function JobListScreen() {
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({ filters });
 
-  const handleJobPress = useCallback(() => {
-    openInstallPrompt('job-card');
-  }, [openInstallPrompt]);
+  const handleJobPress = useCallback(
+    (jobId: string) => {
+      openInstallPrompt('job-card', {
+        loginRedirect: `/(app)/jobs/${jobId}`,
+      });
+    },
+    [openInstallPrompt]
+  );
 
   const handleProtectedTabPress = useCallback(
     (tab: 'schedule' | 'employer' | 'profile') => {

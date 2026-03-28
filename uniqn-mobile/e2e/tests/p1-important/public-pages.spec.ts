@@ -2,10 +2,12 @@
  * P1 public pages tests
  * Unauthenticated users can browse the public jobs surface and protected actions stay on the web install flow.
  */
+import path from 'path';
 import { test, expect } from '@playwright/test';
 
 const PUBLIC_SEED_JOB_ID = 'seed-job-urgent-001';
 const PUBLIC_SEED_JOB_TITLE = '긴급 딜러 모집';
+const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 
 test.describe('퍼블릭 페이지', () => {
   test('공개 공고 목록 페이지 접근 가능', async ({ page }) => {
@@ -35,8 +37,22 @@ test.describe('퍼블릭 페이지', () => {
     await expect(page.getByText('UNIQN 앱에서 계속 이용할 수 있어요')).toBeVisible({
       timeout: 10_000,
     });
+    await expect(page.getByRole('button', { name: '로그인' })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: '앱 설치' })).toBeVisible({ timeout: 10_000 });
     expect(page.url()).toContain(`/jobs/${PUBLIC_SEED_JOB_ID}`);
+  });
+
+  test('로그인한 사용자는 /jobs 진입 시 실제 구인 페이지를 본다', async ({ browser }) => {
+    const context = await browser.newContext({ storageState: staffState });
+    const page = await context.newPage();
+
+    await page.goto('/jobs', { waitUntil: 'domcontentloaded' });
+
+    await expect(page).not.toHaveURL(/\/jobs(?:\/)?$/);
+    await expect(page).toHaveURL(/\/(?:[?#].*)?$/);
+    await expect(page.locator('input').first()).toBeVisible({ timeout: 10_000 });
+
+    await context.close();
   });
 
   test('존재하지 않는 공고 경로도 앱이 깨지지 않고 렌더된다', async ({ page }) => {

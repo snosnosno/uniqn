@@ -1,12 +1,16 @@
-import { act, renderHook } from '@testing-library/react-native';
+import { act, fireEvent, render, renderHook } from '@testing-library/react-native';
 import { useInstallPrompt } from '../useInstallPrompt';
 
 const mockOpen = jest.fn();
+const mockClose = jest.fn();
 const mockInfo = jest.fn();
+const mockPush = jest.fn();
+const expoRouter = jest.requireMock('expo-router') as { router?: { push?: jest.Mock } };
 
 jest.mock('@/stores/modalStore', () => ({
   useModal: () => ({
     open: mockOpen,
+    close: mockClose,
   }),
 }));
 
@@ -32,24 +36,39 @@ jest.mock('@/utils/logger', () => ({
 describe('useInstallPrompt', () => {
   beforeEach(() => {
     mockOpen.mockReset();
+    mockClose.mockReset();
     mockInfo.mockReset();
+    mockPush.mockReset();
+    expoRouter.router = {
+      ...(expoRouter.router ?? {}),
+      push: mockPush,
+    };
   });
 
-  it('opens a custom install modal for public job actions', async () => {
+  it('renders a login CTA and uses an explicit redirect for public job actions', async () => {
     const { result } = renderHook(() => useInstallPrompt());
 
     act(() => {
-      result.current.openInstallPrompt('job-card');
+      result.current.openInstallPrompt('job-card', {
+        loginRedirect: '/(app)/jobs/job-123',
+      });
     });
 
     expect(mockOpen).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'custom',
-        title: '앱에서 지원할 수 있어요',
       })
     );
 
     const modalConfig = mockOpen.mock.calls[0][0];
+    const { getByText } = render(modalConfig.content);
+
+    expect(getByText('로그인')).toBeTruthy();
+
+    fireEvent.press(getByText('로그인'));
+
+    expect(mockClose).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/login?redirect=%2F(app)%2Fjobs%2Fjob-123');
 
     await act(async () => {
       await modalConfig.confirmButton.onPress();
@@ -58,17 +77,19 @@ describe('useInstallPrompt', () => {
     expect(mockInfo).toHaveBeenCalledWith('앱 설치 링크는 준비 중입니다.');
   });
 
-  it('uses contextual copy for protected tabs', () => {
+  it('uses the default protected redirect for public tabs', () => {
     const { result } = renderHook(() => useInstallPrompt());
 
     act(() => {
       result.current.openInstallPrompt('schedule-tab');
     });
 
-    expect(mockOpen).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: '앱에서 스케줄을 확인할 수 있어요',
-      })
-    );
+    const modalConfig = mockOpen.mock.calls[0][0];
+
+    act(() => {
+      modalConfig.content.props.onLogin();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/login?redirect=%2F(app)%2F(tabs)%2Fschedule');
   });
 });

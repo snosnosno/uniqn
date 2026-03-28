@@ -10,6 +10,7 @@ import { JobDetailPage } from '../../pages/app/job-detail.page';
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
 const TEST_JOB_TITLE = '상세테스트공고';
+const ERROR_TEXT = /오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/;
 
 test.describe('공고 상세와 지원 흐름', () => {
   let testJobId: string;
@@ -31,9 +32,7 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await jobDetailPage.gotoAuthenticated(testJobId);
 
-    await expect(page.getByText(TEST_JOB_TITLE).last().or(jobDetailPage.errorMessage)).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.locator('body')).toContainText(TEST_JOB_TITLE, { timeout: 15_000 });
 
     await context.close();
   });
@@ -52,6 +51,21 @@ test.describe('공고 상세와 지원 흐름', () => {
       await expect(jobDetailPage.applyButton).toBeVisible();
       await expect(jobDetailPage.applyButton).toBeEnabled();
     }
+
+    await context.close();
+  });
+
+  test('로그인 사용자는 /jobs 상세에서 실제 지원 화면으로 이어진다', async ({ browser }) => {
+    const context = await browser.newContext({ storageState: staffState });
+    const page = await context.newPage();
+    const jobDetailPage = new JobDetailPage(page);
+
+    await jobDetailPage.gotoAuthenticated(testJobId);
+
+    await expect(jobDetailPage.applyButton).toBeVisible({ timeout: 15_000 });
+    await jobDetailPage.clickApply();
+    await expect(page).toHaveURL(new RegExp(`/jobs/${testJobId}/apply`), { timeout: 10_000 });
+    await expect(page.locator('body')).toContainText(TEST_JOB_TITLE, { timeout: 15_000 });
 
     await context.close();
   });
@@ -86,9 +100,7 @@ test.describe('공고 상세와 지원 흐름', () => {
     const page = await context.newPage();
 
     await page.goto('/jobs/nonexistent-job-99999', { waitUntil: 'domcontentloaded' });
-    await expect(
-      page.getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/).last()
-    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(ERROR_TEXT).last()).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });
@@ -99,9 +111,7 @@ test.describe('공고 상세와 지원 흐름', () => {
 
     await page.goto('/jobs/nonexistent-retry-test', { waitUntil: 'domcontentloaded' });
 
-    const errorText = page
-      .getByText(/오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/)
-      .first();
+    const errorText = page.getByText(ERROR_TEXT).first();
     if (await errorText.isVisible().catch(() => false)) {
       await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible({
         timeout: 5_000,
@@ -116,12 +126,7 @@ test.describe('공고 상세와 지원 흐름', () => {
     const page = await context.newPage();
 
     await page.goto(`/jobs/${testJobId}/apply`, { waitUntil: 'domcontentloaded' });
-    await expect(
-      page
-        .getByText(TEST_JOB_TITLE)
-        .last()
-        .or(page.getByText(/지원하기|공고 정보를 불러오는 중|오류가 발생했습니다/).last())
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('body')).toContainText(TEST_JOB_TITLE, { timeout: 15_000 });
 
     await context.close();
   });
@@ -197,10 +202,7 @@ test.describe('공고 상세와 지원 흐름', () => {
     const jobDetailPage = new JobDetailPage(page);
 
     await jobDetailPage.gotoAuthenticated(testJobId);
-
-    await expect(page.getByText(TEST_JOB_TITLE).last().or(jobDetailPage.errorMessage)).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.locator('body')).toContainText(TEST_JOB_TITLE, { timeout: 15_000 });
 
     await context.close();
   });

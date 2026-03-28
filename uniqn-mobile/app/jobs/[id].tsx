@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
@@ -8,12 +8,11 @@ import { JobDetail, JobDetailHeader, PostingSurfaceState } from '@/components/jo
 import { Button } from '@/components/ui/Button';
 import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
 import { trackJobView } from '@/services/observability';
-import { useAuthStore, useThemeStore } from '@/stores';
+import { useThemeStore } from '@/stores';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
-  const role = useAuthStore((state) => state.profile?.role ?? null);
   const isDark = useThemeStore((state) => state.isDarkMode);
   const { openInstallPrompt } = useInstallPrompt();
   const { shareJob, isSharing } = useShare();
@@ -22,25 +21,20 @@ export default function PublicJobDetailAliasRoute() {
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
 
   useEffect(() => {
-    if (!resolvedId || role !== 'staff') {
-      return;
-    }
-
-    router.replace({
-      pathname: '/(app)/jobs/[id]',
-      params: { id: resolvedId },
-    });
-  }, [resolvedId, role]);
-
-  useEffect(() => {
     if (job) {
       trackJobView(job.id, job.title);
     }
   }, [job]);
 
   const handleApply = useCallback(() => {
-    openInstallPrompt('job-detail-cta');
-  }, [openInstallPrompt]);
+    if (!resolvedId) {
+      return;
+    }
+
+    openInstallPrompt('job-detail-cta', {
+      loginRedirect: `/(app)/jobs/${resolvedId}/apply`,
+    });
+  }, [openInstallPrompt, resolvedId]);
 
   const handleShare = useCallback(() => {
     if (!job) {
@@ -60,16 +54,6 @@ export default function PublicJobDetailAliasRoute() {
 
   if (!resolvedId) {
     return <Redirect href="/jobs" />;
-  }
-
-  if (role === 'staff') {
-    return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
-        <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
-      </SafeAreaView>
-    );
   }
 
   if (isLoading) {
@@ -106,7 +90,7 @@ export default function PublicJobDetailAliasRoute() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          message="고정 공고는 공개 상세 화면에서 아직 지원하지 않습니다."
+          message="고정 공고는 공개 상세 화면에서 아직 지원할 수 없습니다."
           onRetry={refresh}
         />
       </SafeAreaView>
@@ -140,12 +124,12 @@ export default function PublicJobDetailAliasRoute() {
         <SafeAreaView edges={['bottom']}>
           {job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
-              마감된 공고입니다.
+              마감된 공고입니다
             </Button>
           ) : (
             <View>
               <Text className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                지원은 앱에서 가능해요
+                앱에서 지원할 수 있어요
               </Text>
               <Button
                 onPress={(event) => {
