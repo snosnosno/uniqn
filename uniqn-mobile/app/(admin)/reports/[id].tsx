@@ -24,7 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { formatDistanceToNow, format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { STATUS, getIconColor } from '@/constants';
 import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
 import { EmptyState, Loading, Button } from '@/components/ui';

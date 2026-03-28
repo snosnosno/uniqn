@@ -16,7 +16,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { format, addDays } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { useToastStore } from '@/stores/toastStore';
@@ -223,6 +223,7 @@ export function DatePickerModal({
           className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
           accessibilityRole="button"
           accessibilityLabel="취소"
+          testID="job-posting-date-cancel-button"
         >
           <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">취소</Text>
         </Pressable>
@@ -236,6 +237,7 @@ export function DatePickerModal({
           }`}
           accessibilityRole="button"
           accessibilityLabel="확인"
+          testID="job-posting-date-confirm-button"
         >
           <Text className="text-white text-center font-semibold">
             {selectedDates.length > 0 ? `${selectedDates.length}개 추가` : '확인'}

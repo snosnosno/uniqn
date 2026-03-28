@@ -1,4 +1,8 @@
-import { resolveSession, waitForInitialAuthUser } from '@/hooks/useAppInitialize';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
+import useAppInitializeHook, {
+  resolveSession,
+  waitForInitialAuthUser,
+} from '@/hooks/useAppInitialize';
 
 const mockClearAuthState = jest.fn();
 const mockClearAuthUiState = jest.fn();
@@ -7,6 +11,12 @@ const mockSetNeedsServerReconcile = jest.fn();
 const mockSignOut = jest.fn().mockResolvedValue(undefined);
 const mockTrackLogout = jest.fn();
 const mockSetUserId = jest.fn().mockResolvedValue(undefined);
+const mockInitializeAuthStore = jest.fn().mockResolvedValue(undefined);
+const mockCheckAuthState = jest.fn().mockResolvedValue(undefined);
+let mockStartupPhase = 'idle';
+const mockSetStartupPhase = jest.fn((phase: string) => {
+  mockStartupPhase = phase;
+});
 const mockFirebaseAuth = {
   currentUser: null as unknown,
   authStateReady: jest.fn(),
@@ -17,6 +27,9 @@ const mockAuthStoreState = {
   user: null as { uid: string } | null,
   profile: null as { uid: string } | null,
   status: 'unauthenticated',
+  needsServerReconcile: false,
+  initialize: mockInitializeAuthStore,
+  checkAuthState: mockCheckAuthState,
   clearAuthState: mockClearAuthState,
   clearAuthUiState: mockClearAuthUiState,
   setBootstrapSource: mockSetBootstrapSource,
@@ -37,15 +50,35 @@ jest.mock('expo-splash-screen', () => ({
   hideAsync: jest.fn(),
 }));
 
-jest.mock('@/stores/authStore', () => ({
-  useAuthStore: {
-    getState: jest.fn(() => mockAuthStoreState),
-  },
-  waitForHydration: jest.fn().mockResolvedValue(true),
-}));
+jest.mock('@/stores/authStore', () => {
+  const useAuthStore = Object.assign(
+    jest.fn((selector?: (state: typeof mockAuthStoreState) => unknown) =>
+      typeof selector === 'function' ? selector(mockAuthStoreState) : mockAuthStoreState
+    ),
+    {
+      getState: jest.fn(() => mockAuthStoreState),
+    }
+  );
+
+  return {
+    useAuthStore,
+    waitForHydration: jest.fn().mockResolvedValue(true),
+  };
+});
 
 jest.mock('@/stores/appStartupStore', () => ({
-  useAppStartupStore: jest.fn(),
+  useAppStartupStore: jest.fn(
+    (
+      selector: (state: {
+        startupPhase: string;
+        setStartupPhase: (phase: string) => void;
+      }) => unknown
+    ) =>
+      selector({
+        startupPhase: mockStartupPhase,
+        setStartupPhase: mockSetStartupPhase,
+      })
+  ),
 }));
 
 jest.mock('@/stores/notificationStore', () => ({
@@ -323,6 +356,101 @@ describe('resolveSession', () => {
       deferredInitContext: null,
       offlineBootstrap: { source: 'none', needsServerReconcile: false },
     });
+  });
+});
+
+describe('useAppInitialize', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockStartupPhase = 'idle';
+    mockAuthStoreState.user = null;
+    mockAuthStoreState.profile = null;
+    mockAuthStoreState.status = 'unauthenticated';
+    mockAuthStoreState.needsServerReconcile = false;
+    mockFirebaseAuth.currentUser = null;
+    mockFirebaseAuth.authStateReady.mockResolvedValue(undefined);
+    mockFirebaseAuth.onAuthStateChanged.mockReset();
+
+    const { validateEnv } = jest.requireMock('@/lib/env') as {
+      validateEnv: jest.Mock;
+    };
+    const { tryInitializeFirebase } = jest.requireMock('@/lib/firebase') as {
+      tryInitializeFirebase: jest.Mock;
+    };
+    const { checkForceUpdate } = jest.requireMock('@/services/versionService') as {
+      checkForceUpdate: jest.Mock;
+    };
+    const { checkAutoLoginEnabled } = jest.requireMock('@/hooks/useAutoLogin') as {
+      checkAutoLoginEnabled: jest.Mock;
+    };
+    const splashScreen = jest.requireMock('expo-splash-screen') as {
+      preventAutoHideAsync: jest.Mock;
+      hideAsync: jest.Mock;
+    };
+
+    validateEnv.mockReturnValue({ success: true });
+    tryInitializeFirebase.mockReturnValue({ success: true });
+    checkForceUpdate.mockResolvedValue({
+      isMaintenanceMode: false,
+      mustUpdate: false,
+      shouldUpdate: false,
+      latestVersion: '1.0.0',
+      releaseNotes: '',
+    });
+    checkAutoLoginEnabled.mockResolvedValue(true);
+    splashScreen.preventAutoHideAsync.mockResolvedValue(undefined);
+    splashScreen.hideAsync.mockResolvedValue(undefined);
+    mockInitializeAuthStore.mockResolvedValue(undefined);
+    mockCheckAuthState.mockResolvedValue(undefined);
+  });
+
+  it('surfaces observability chunk load failures and allows retry to continue', async () => {
+    const originalGlobalJest = (globalThis as typeof globalThis & { jest?: typeof jest }).jest;
+    (globalThis as typeof globalThis & { jest?: typeof jest }).jest = {
+      ...jest,
+      requireMock: (moduleName: string) => {
+        if (moduleName === '@/services/observability') {
+          throw new Error('chunk load failed');
+        }
+
+        return jest.requireMock(moduleName);
+      },
+      requireActual: (moduleName: string) => {
+        if (moduleName === '@/services/observability') {
+          throw new Error('chunk load failed');
+        }
+
+        return jest.requireActual(moduleName);
+      },
+    } as typeof jest;
+    const splashScreen = jest.requireMock('expo-splash-screen') as {
+      hideAsync: jest.Mock;
+    };
+
+    try {
+      const { result } = renderHook(() => useAppInitializeHook());
+
+      await waitFor(() => {
+        expect(result.current.error?.message).toBe('chunk load failed');
+      });
+
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.isInitialized).toBe(false);
+      expect(mockSetStartupPhase).toHaveBeenCalledWith('error');
+      expect(splashScreen.hideAsync).toHaveBeenCalledTimes(1);
+
+      (globalThis as typeof globalThis & { jest?: typeof jest }).jest = jest as typeof jest;
+
+      await act(async () => {
+        await result.current.retry();
+      });
+
+      await waitFor(() => {
+        expect(result.current.isInitialized).toBe(true);
+      });
+    } finally {
+      (globalThis as typeof globalThis & { jest?: typeof jest }).jest = originalGlobalJest;
+    }
   });
 });
 

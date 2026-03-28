@@ -1,37 +1,16 @@
-/**
- * UNIQN Mobile - 역할 선택 모달
- *
- * @description 역할 선택을 위한 공통 모달 컴포넌트
- * @version 1.0.0
- */
-
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
 import { Modal } from '@/components/ui/Modal';
 import { CheckIcon } from '@/components/icons';
 import { STAFF_ROLES, type StaffRoleOption } from '@/constants';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export interface RoleSelectModalProps {
-  /** 모달 표시 여부 */
   visible: boolean;
-  /** 모달 닫기 콜백 */
   onClose: () => void;
-  /** 역할 선택 콜백 (roleKey, customName?) */
   onSelect: (roleKey: string, customName?: string) => void;
-  /** 이미 추가된 역할명 목록 (중복 방지) */
   existingRoleNames: string[];
-  /** 모달 제목 */
   title?: string;
 }
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export const RoleSelectModal = memo(function RoleSelectModal({
   visible,
@@ -43,7 +22,15 @@ export const RoleSelectModal = memo(function RoleSelectModal({
   const [customRoleName, setCustomRoleName] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
 
-  // 역할 선택 핸들러
+  const existingRoleNameSet = useMemo(() => new Set(existingRoleNames), [existingRoleNames]);
+
+  useEffect(() => {
+    if (!visible) {
+      setCustomRoleName('');
+      setShowCustomInput(false);
+    }
+  }, [visible]);
+
   const handleSelectRole = useCallback(
     (role: StaffRoleOption) => {
       if (role.key === 'other') {
@@ -51,24 +38,19 @@ export const RoleSelectModal = memo(function RoleSelectModal({
         return;
       }
 
-      // 이미 추가된 역할인지 확인
-      if (existingRoleNames.includes(role.name)) {
+      if (existingRoleNameSet.has(role.name)) {
         return;
       }
 
       onSelect(role.key);
       onClose();
     },
-    [existingRoleNames, onSelect, onClose]
+    [existingRoleNameSet, onClose, onSelect]
   );
 
-  // 커스텀 역할 추가 핸들러
   const handleAddCustomRole = useCallback(() => {
     const trimmedName = customRoleName.trim();
-    if (!trimmedName) return;
-
-    // 중복 확인
-    if (existingRoleNames.includes(trimmedName)) {
+    if (!trimmedName || existingRoleNameSet.has(trimmedName)) {
       return;
     }
 
@@ -76,23 +58,22 @@ export const RoleSelectModal = memo(function RoleSelectModal({
     setCustomRoleName('');
     setShowCustomInput(false);
     onClose();
-  }, [customRoleName, existingRoleNames, onSelect, onClose]);
+  }, [customRoleName, existingRoleNameSet, onClose, onSelect]);
 
-  // 모달 닫힐 때 상태 초기화
   const handleClose = useCallback(() => {
     setCustomRoleName('');
     setShowCustomInput(false);
     onClose();
   }, [onClose]);
 
-  // 역할 항목 렌더링
   const renderRoleItem = useCallback(
-    ({ item }: { item: StaffRoleOption }) => {
-      const isExisting = existingRoleNames.includes(item.name);
+    (item: StaffRoleOption) => {
+      const isExisting = existingRoleNameSet.has(item.name);
       const isOther = item.key === 'other';
 
       return (
         <Pressable
+          key={item.key}
           onPress={() => handleSelectRole(item)}
           disabled={isExisting && !isOther}
           className={`flex-row items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-surface-overlay ${
@@ -112,29 +93,28 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               }`}
             >
               {item.name}
-              {isOther && ' (직접 입력)'}
+              {isOther ? ' (직접 입력)' : ''}
             </Text>
           </View>
-          {isExisting && !isOther && <CheckIcon size={20} color="#4F46E5" />}
+          {isExisting && !isOther ? <CheckIcon size={20} color="#4F46E5" /> : null}
         </Pressable>
       );
     },
-    [existingRoleNames, handleSelectRole]
+    [existingRoleNameSet, handleSelectRole]
   );
 
   return (
     <Modal visible={visible} onClose={handleClose} title={title} position="bottom" showCloseButton>
       <View className="-mx-5 -mb-5">
         {showCustomInput ? (
-          // 커스텀 역할 입력
           <View className="p-4">
             <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              역할 이름을 입력하세요
+              역할 이름을 입력해 주세요.
             </Text>
             <TextInput
               value={customRoleName}
               onChangeText={setCustomRoleName}
-              placeholder="예: 바텐더, 캐셔"
+              placeholder="예: 플로어 매니저"
               placeholderTextColor="#9CA3AF"
               autoFocus
               className="border-2 border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white bg-white dark:bg-surface"
@@ -169,18 +149,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
             </View>
           </View>
         ) : (
-          // 역할 목록
-          <View style={{ height: 350 }}>
-            <FlashList
-              data={STAFF_ROLES}
-              renderItem={renderRoleItem}
-              keyExtractor={(item) => item.key}
-              contentContainerStyle={{ paddingBottom: 34 }}
-              showsVerticalScrollIndicator={false}
-              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
-              estimatedItemSize={56}
-            />
-          </View>
+          <View className="pb-8">{STAFF_ROLES.map(renderRoleItem)}</View>
         )}
       </View>
     </Modal>

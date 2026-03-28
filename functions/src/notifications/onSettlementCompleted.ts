@@ -42,13 +42,13 @@ export const onSettlementCompleted = onDocumentUpdated(
       const payrollAmount = after.payrollAmount ?? 0;
       const amountLabel = payrollAmount.toLocaleString('ko-KR');
       const body = jobPostingTitle
-        ? `Settlement for '${jobPostingTitle}' is complete. (${amountLabel} KRW)`
-        : `Settlement is complete. (${amountLabel} KRW)`;
+        ? `'${jobPostingTitle}' 정산이 완료되었습니다. 지급액: ${amountLabel}원`
+        : `정산이 완료되었습니다. 지급액: ${amountLabel}원`;
 
       const result = await createAndSendNotification(
         recipientId,
         'settlement_completed',
-        'Settlement completed',
+        '정산 완료',
         body,
         {
           link: '/schedule',

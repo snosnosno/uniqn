@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { ERROR_CODES, isAppError, isPermissionError } from '@/errors/AppError';
@@ -9,11 +9,12 @@ import {
   removeCriticalOfflineCache,
   setCriticalOfflineCache,
 } from '@/services/offline/criticalOfflineCache';
-import { getJobPostingById } from '@/services';
+import { getJobPostingById, subscribeToJobPosting } from '@/services';
 import type { JobPosting } from '@/types';
 
 interface UseJobDetailOptions {
   enabled?: boolean;
+  realtime?: boolean;
 }
 
 const JOB_DETAIL_CACHE_SCHEMA_VERSION = 2;
@@ -64,10 +65,11 @@ function shouldDiscardCachedJobDetail(error: unknown): boolean {
 }
 
 export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
-  const { enabled = true } = options;
+  const { enabled = true, realtime = false } = options;
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.uid);
   const { isOnline } = useNetworkStatus();
+  const [realtimeError, setRealtimeError] = useState<Error | null>(null);
   const cacheKey = useMemo(() => buildJobDetailCacheKey(jobId, userId), [jobId, userId]);
   const detailQueryOptions = useMemo(
     () => getJobDetailQueryOptions(jobId, userId),
@@ -79,6 +81,35 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     ...detailQueryOptions,
     enabled: enabled && !!jobId && isOnline,
   });
+
+  useEffect(() => {
+    if (!realtime || !enabled || !jobId || !isOnline) {
+      setRealtimeError(null);
+      return;
+    }
+
+    setRealtimeError(null);
+
+    const unsubscribe = subscribeToJobPosting(jobId, {
+      onUpdate: (jobPosting) => {
+        queryClient.setQueryData(detailQueryKey, jobPosting);
+
+        if (jobPosting) {
+          setCriticalOfflineCache<JobPosting>(cacheKey, jobPosting, {
+            schemaVersion: JOB_DETAIL_CACHE_SCHEMA_VERSION,
+            userId,
+          });
+        } else {
+          removeCriticalOfflineCache(cacheKey);
+        }
+      },
+      onError: (error) => {
+        setRealtimeError(error);
+      },
+    });
+
+    return () => unsubscribe();
+  }, [cacheKey, detailQueryKey, enabled, isOnline, jobId, queryClient, realtime, userId]);
 
   useEffect(() => {
     if (!jobId || !query.isFetched) {
@@ -129,7 +160,7 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     job,
     isLoading: !job ? query.isLoading : false,
     isRefreshing: isOnline ? query.isRefetching : false,
-    error: isOnline ? query.error : null,
+    error: isOnline ? (realtimeError ?? query.error) : null,
     refresh,
   };
 }

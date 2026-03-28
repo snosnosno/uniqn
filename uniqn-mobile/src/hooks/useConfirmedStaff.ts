@@ -110,7 +110,7 @@ export function useConfirmedStaff(
         });
         addToast({
           type: 'error',
-          message: '?ㅽ깭???곗씠???숆린??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.',
+          message: '실시간 스태프 정보를 불러오지 못했습니다.',
         });
       },
     });
@@ -125,11 +125,11 @@ export function useConfirmedStaff(
     mutationFn: updateStaffRole,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      addToast({ type: 'success', message: '??븷??蹂寃쎈릺?덉뒿?덈떎.' });
+      addToast({ type: 'success', message: '역할이 변경되었습니다.' });
     },
     onError: (mutationError: Error) => {
       logger.error('Failed to change confirmed staff role', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '??븷 蹂寃쎌뿉 ?ㅽ뙣?덉뒿?덈떎.' });
+      addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
     },
   });
 
@@ -137,11 +137,11 @@ export function useConfirmedStaff(
     mutationFn: updateConfirmedStaffWorkTime,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      addToast({ type: 'success', message: '洹쇰Т ?쒓컙???섏젙?섏뿀?듬땲??' });
+      addToast({ type: 'success', message: '근무 시간이 수정되었습니다.' });
     },
     onError: (mutationError: Error) => {
       logger.error('Failed to update confirmed staff time', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '洹쇰Т ?쒓컙 ?섏젙???ㅽ뙣?덉뒿?덈떎.' });
+      addToast({ type: 'error', message: '근무 시간 수정에 실패했습니다.' });
     },
   });
 
@@ -149,13 +149,13 @@ export function useConfirmedStaff(
     mutationFn: cancelConfirmedStaffConfirmation,
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      addToast({ type: 'success', message: '?ㅽ깭?꾧? ??젣?섏뿀?듬땲??' });
+      addToast({ type: 'success', message: '확정 스태프가 해제되었습니다.' });
     },
     onError: (mutationError: Error) => {
       logger.error('Failed to cancel confirmed staff confirmation', mutationError, {
         jobPostingId,
       });
-      addToast({ type: 'error', message: '?ㅽ깭????젣???ㅽ뙣?덉뒿?덈떎.' });
+      addToast({ type: 'error', message: '확정 스태프 해제에 실패했습니다.' });
     },
   });
 
@@ -181,7 +181,7 @@ export function useConfirmedStaff(
     },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      addToast({ type: 'success', message: '?몄눥 泥섎━?섏뿀?듬땲??' });
+      addToast({ type: 'success', message: '노쇼 처리되었습니다.' });
     },
     onError: (mutationError: Error, _, context) => {
       if (context?.previous) {
@@ -189,7 +189,7 @@ export function useConfirmedStaff(
       }
 
       logger.error('Failed to mark no-show', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: '?몄눥 泥섎━???ㅽ뙣?덉뒿?덈떎.' });
+      addToast({ type: 'error', message: '노쇼 처리에 실패했습니다.' });
     },
   });
 
@@ -213,7 +213,7 @@ export function useConfirmedStaff(
     },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
-      addToast({ type: 'success', message: 'Status updated.' });
+      addToast({ type: 'success', message: '상태가 변경되었습니다.' });
     },
     onError: (mutationError: Error, _, context) => {
       if (context?.previous) {
@@ -221,7 +221,7 @@ export function useConfirmedStaff(
       }
 
       logger.error('Failed to change confirmed staff status', mutationError, { jobPostingId });
-      addToast({ type: 'error', message: 'Failed to update status.' });
+      addToast({ type: 'error', message: '상태 변경에 실패했습니다.' });
     },
   });
 

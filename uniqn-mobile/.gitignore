@@ -53,6 +53,7 @@ yarn-error.*
 coverage/
 
 # Playwright E2E
+.playwright-cli/
 e2e/test-results/
 e2e/fixtures/storage-states/
 playwright-report/

@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { ChevronRightIcon } from '../icons';
 import { toDate } from '@/utils/date';
 import {

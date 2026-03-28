@@ -126,6 +126,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           placeholder="예: 강남 홀덤펍 딜러 구합니다"
           value={data.title}
           onChangeText={(title) => onUpdate({ title })}
+          accessibilityLabel="공고 제목"
+          testID="job-posting-title-input"
           maxLength={25}
         />
         <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
@@ -139,6 +141,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           placeholder="예: 홀덤펍 강남점"
           value={locationName}
           onChangeText={handleLocationNameChange}
+          accessibilityLabel="근무 장소명"
+          testID="job-posting-location-name-input"
           maxLength={50}
           leftIcon={<MapPinIcon size={20} color="#6B7280" />}
         />
@@ -150,6 +154,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           placeholder="예: 서울시 강남구 테헤란로 123"
           value={locationAddress}
           onChangeText={handleLocationAddressChange}
+          accessibilityLabel="근무 장소 주소"
+          testID="job-posting-location-address-input"
           maxLength={200}
         />
       </FormField>
@@ -162,6 +168,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           onChangeText={(detailedAddress) =>
             handleUpdateLocation(locationName, locationAddress, detailedAddress)
           }
+          accessibilityLabel="상세 주소"
+          testID="job-posting-detailed-address-input"
           maxLength={200}
         />
       </FormField>
@@ -172,6 +180,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           placeholder="010-0000-0000"
           value={data.contactPhone}
           onChangeText={handlePhoneChange}
+          accessibilityLabel="문의 연락처"
+          testID="job-posting-contact-phone-input"
           keyboardType="phone-pad"
           maxLength={25}
           leftIcon={<PhoneIcon size={20} color="#6B7280" />}
@@ -184,6 +194,8 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           placeholder="근무 환경, 우대 조건 등을 입력해주세요 (선택)"
           value={data.description}
           onChangeText={(description) => onUpdate({ description })}
+          accessibilityLabel="공고 설명"
+          testID="job-posting-description-input"
           multiline
           numberOfLines={4}
           maxLength={500}

@@ -1,10 +1,3 @@
-/**
- * UNIQN Mobile - 회원가입 Step 1: 약관 동의
- *
- * @description 이용약관, 개인정보처리방침, 마케팅 동의 (개인정보 수집 전 동의)
- * @version 1.1.0
- */
-
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -12,11 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { signUpTermsSchema, type SignUpTermsData } from '@/schemas';
-import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from './termsContent';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { logger } from '@/utils/logger';
 
 interface SignupStepTermsProps {
   onNext: (data: SignUpTermsData) => void;
@@ -28,37 +17,8 @@ interface TermItem {
   key: 'termsAgreed' | 'privacyAgreed' | 'marketingAgreed';
   label: string;
   required: boolean;
-  content: string;
+  contentKey: 'terms' | 'privacy' | 'marketing';
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const TERMS: TermItem[] = [
-  {
-    key: 'termsAgreed',
-    label: '이용약관 동의',
-    required: true,
-    content: TERMS_OF_SERVICE,
-  },
-  {
-    key: 'privacyAgreed',
-    label: '개인정보처리방침 동의',
-    required: true,
-    content: PRIVACY_POLICY,
-  },
-  {
-    key: 'marketingAgreed',
-    label: '마케팅 정보 수신 동의',
-    required: false,
-    content: MARKETING_CONSENT,
-  },
-];
-
-// ============================================================================
-// Sub Components
-// ============================================================================
 
 interface CheckboxProps {
   checked: boolean;
@@ -67,54 +27,104 @@ interface CheckboxProps {
   required?: boolean;
   disabled?: boolean;
   onViewContent?: () => void;
+  viewContentTestID?: string;
 }
 
-function Checkbox({ checked, onChange, label, required, disabled, onViewContent }: CheckboxProps) {
+const TERMS: TermItem[] = [
+  {
+    key: 'termsAgreed',
+    label: '이용약관 동의',
+    required: true,
+    contentKey: 'terms',
+  },
+  {
+    key: 'privacyAgreed',
+    label: '개인정보처리방침 동의',
+    required: true,
+    contentKey: 'privacy',
+  },
+  {
+    key: 'marketingAgreed',
+    label: '마케팅 정보 수신 동의',
+    required: false,
+    contentKey: 'marketing',
+  },
+];
+
+const TERM_CONTENT_LOAD_ERROR_MESSAGE = '약관 내용을 불러오지 못했습니다. 다시 시도해주세요.';
+const TERM_CONTENT_LOADING_MESSAGE = '약관 내용을 불러오는 중입니다...';
+
+async function loadTermContent(term: TermItem): Promise<string> {
+  const { MARKETING_CONSENT, PRIVACY_POLICY, TERMS_OF_SERVICE } = await import('./termsContent');
+
+  switch (term.contentKey) {
+    case 'terms':
+      return TERMS_OF_SERVICE;
+    case 'privacy':
+      return PRIVACY_POLICY;
+    case 'marketing':
+      return MARKETING_CONSENT;
+    default:
+      return '';
+  }
+}
+
+function Checkbox({
+  checked,
+  onChange,
+  label,
+  required,
+  disabled,
+  onViewContent,
+  viewContentTestID,
+}: CheckboxProps) {
   return (
     <View className="flex-row items-center justify-between py-3">
       <Pressable
         onPress={() => !disabled && onChange(!checked)}
         disabled={disabled}
-        className="flex-row items-center flex-1"
+        className="flex-row flex-1 items-center"
         accessibilityRole="checkbox"
         accessibilityState={{ checked, disabled: !!disabled }}
         accessibilityLabel={`${required ? '필수' : '선택'} ${label}`}
       >
         <View
           className={`
-            w-6 h-6 rounded border-2 items-center justify-center mr-3
+            mr-3 h-6 w-6 items-center justify-center rounded border-2
             ${
               checked
-                ? 'bg-primary-500 border-primary-500'
-                : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                ? 'border-primary-500 bg-primary-500'
+                : 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface'
             }
             ${disabled ? 'opacity-50' : ''}
           `}
         >
-          {checked && <Text className="text-white text-sm font-bold">✓</Text>}
+          {checked && <Text className="text-sm font-bold text-white">✓</Text>}
         </View>
         <View className="flex-row items-center">
-          {required && <Text className="text-error-500 mr-1">[필수]</Text>}
-          {!required && <Text className="text-gray-400 mr-1">[선택]</Text>}
+          {required ? (
+            <Text className="mr-1 text-error-500">[필수]</Text>
+          ) : (
+            <Text className="mr-1 text-gray-400">[선택]</Text>
+          )}
           <Text className="text-gray-900 dark:text-white">{label}</Text>
         </View>
       </Pressable>
 
-      {onViewContent && (
-        <Pressable onPress={onViewContent} className="px-2">
-          <Text className="text-gray-500 dark:text-gray-400 text-sm">보기</Text>
+      {onViewContent ? (
+        <Pressable onPress={onViewContent} className="px-2" testID={viewContentTestID}>
+          <Text className="text-sm text-gray-500 dark:text-gray-400">보기</Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export function SignupStepTerms({ onNext, initialData, isLoading = false }: SignupStepTermsProps) {
   const [modalContent, setModalContent] = useState<TermItem | null>(null);
+  const [modalText, setModalText] = useState('');
+  const [isContentLoading, setIsContentLoading] = useState(false);
+  const [contentLoadError, setContentLoadError] = useState<string | null>(null);
 
   const {
     control,
@@ -145,9 +155,35 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
     setValue('marketingAgreed', newValue);
   };
 
+  const handleOpenContent = async (term: TermItem) => {
+    setModalContent(term);
+    setModalText('');
+    setContentLoadError(null);
+    setIsContentLoading(true);
+
+    try {
+      setModalText(await loadTermContent(term));
+    } catch (error) {
+      logger.warn('Failed to load signup term content', {
+        component: 'SignupStepTerms',
+        contentKey: term.contentKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      setContentLoadError(TERM_CONTENT_LOAD_ERROR_MESSAGE);
+    } finally {
+      setIsContentLoading(false);
+    }
+  };
+
+  const handleCloseContent = () => {
+    setModalContent(null);
+    setModalText('');
+    setIsContentLoading(false);
+    setContentLoadError(null);
+  };
+
   return (
     <View className="w-full flex-col gap-4">
-      {/* 전체 동의 */}
       <Pressable
         onPress={handleAllAgree}
         disabled={isLoading}
@@ -155,30 +191,27 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         accessibilityState={{ checked: allChecked, disabled: isLoading }}
         accessibilityLabel="전체 동의하기"
         className={`
-          flex-row items-center p-4 rounded-lg
-          bg-gray-50 dark:bg-surface
+          flex-row items-center rounded-lg bg-gray-50 p-4 dark:bg-surface
           ${isLoading ? 'opacity-50' : ''}
         `}
       >
         <View
           className={`
-            w-6 h-6 rounded border-2 items-center justify-center mr-3
+            mr-3 h-6 w-6 items-center justify-center rounded border-2
             ${
               allChecked
-                ? 'bg-primary-500 border-primary-500'
-                : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                ? 'border-primary-500 bg-primary-500'
+                : 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface'
             }
           `}
         >
-          {allChecked && <Text className="text-white text-sm font-bold">✓</Text>}
+          {allChecked && <Text className="text-sm font-bold text-white">✓</Text>}
         </View>
-        <Text className="text-gray-900 dark:text-white font-semibold">전체 동의하기</Text>
+        <Text className="font-semibold text-gray-900 dark:text-white">전체 동의하기</Text>
       </Pressable>
 
-      {/* 구분선 */}
       <View className="h-px bg-gray-200 dark:bg-surface" />
 
-      {/* 개별 약관 */}
       <View className="px-2">
         {TERMS.map((term) => (
           <Controller
@@ -192,23 +225,24 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
                 label={term.label}
                 required={term.required}
                 disabled={isLoading}
-                onViewContent={() => setModalContent(term)}
+                viewContentTestID={`view-term-content-${term.contentKey}`}
+                onViewContent={() => {
+                  void handleOpenContent(term);
+                }}
               />
             )}
           />
         ))}
       </View>
 
-      {/* 에러 메시지 */}
       {(errors.termsAgreed || errors.privacyAgreed) && (
-        <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-3">
-          <Text className="text-error-600 dark:text-error-400 text-sm text-center">
+        <View className="rounded-lg bg-error-50 p-3 dark:bg-error-900/30">
+          <Text className="text-center text-sm text-error-600 dark:text-error-400">
             필수 약관에 동의해주세요.
           </Text>
         </View>
       )}
 
-      {/* 버튼 영역 */}
       <View className="mt-6">
         <Button
           onPress={handleSubmit(onNext)}
@@ -220,21 +254,42 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         </Button>
       </View>
 
-      {/* 약관 상세 모달 */}
       <SheetModal
         visible={!!modalContent}
-        onClose={() => setModalContent(null)}
+        onClose={handleCloseContent}
         title={modalContent?.label || '약관'}
         footer={
-          <Button onPress={() => setModalContent(null)} fullWidth>
+          <Button onPress={handleCloseContent} fullWidth>
             확인
           </Button>
         }
       >
         <View className="px-4">
-          <Text className="text-gray-700 dark:text-gray-300 leading-6">
-            {modalContent?.content}
-          </Text>
+          {isContentLoading ? (
+            <Text className="leading-6 text-gray-700 dark:text-gray-300">
+              {TERM_CONTENT_LOADING_MESSAGE}
+            </Text>
+          ) : contentLoadError ? (
+            <View className="gap-3">
+              <Text className="leading-6 text-error-600 dark:text-error-400">
+                {contentLoadError}
+              </Text>
+              <Button
+                variant="outline"
+                fullWidth
+                testID="retry-term-content"
+                onPress={() => {
+                  if (modalContent) {
+                    void handleOpenContent(modalContent);
+                  }
+                }}
+              >
+                다시 시도
+              </Button>
+            </View>
+          ) : (
+            <Text className="leading-6 text-gray-700 dark:text-gray-300">{modalText}</Text>
+          )}
         </View>
       </SheetModal>
     </View>

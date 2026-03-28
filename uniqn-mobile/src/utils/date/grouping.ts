@@ -6,7 +6,7 @@
  */
 
 import { differenceInDays, addDays, format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { parseDateString, toDateString, generateId } from './core';
 import type {
   DateSpecificRequirement,

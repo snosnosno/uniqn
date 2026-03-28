@@ -313,7 +313,7 @@ describe('ScheduleMerger', () => {
       });
 
       const key = ScheduleMerger.generateScheduleKey(schedule);
-      expect(key).toBe('job1_2025-01-20');
+      expect(key).toBe('job1_2025-01-20_role:dealer:-_-');
     });
   });
 

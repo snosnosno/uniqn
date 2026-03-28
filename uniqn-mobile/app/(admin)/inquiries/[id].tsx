@@ -14,7 +14,7 @@ import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 import type { RespondInquiryInput } from '@/types';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 
 export default function AdminInquiryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

@@ -8,7 +8,7 @@
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { XMarkIcon, ChevronDownIcon } from '@/components/icons';
 import { CalendarPicker } from './CalendarPicker';
 

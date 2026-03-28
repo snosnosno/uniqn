@@ -137,7 +137,7 @@ function mergeAndDeduplicateSchedules(
  * - thisMonthEarnings: 조회된 데이터(선택된 월)의 completed 수익 합계
  * - 지원/확정 카운트: 미래 날짜 기준으로 계산
  */
-function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
+export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStats {
   const today = toDateString(new Date());
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
 
@@ -396,7 +396,7 @@ export async function getMySchedules(
     // ========================================
     // 8. 통계 계산
     // ========================================
-    const stats = calculateStats(filteredSchedules);
+    const stats = calculateScheduleStats(filteredSchedules);
 
     const duration = Date.now() - startTime;
     logger.info('스케줄 목록 조회 완료', {

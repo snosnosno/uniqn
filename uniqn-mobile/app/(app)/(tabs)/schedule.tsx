@@ -253,7 +253,7 @@ export default function ScheduleScreen() {
     goToMonth,
     goToToday,
     refresh,
-  } = useCalendarView({ enableGrouping: true });
+  } = useCalendarView({ enableGrouping: true, realtime: true });
 
   // 총 일수 계산 (그룹화된 스케줄의 실제 일수 합계)
   const totalDays = useMemo(() => {

@@ -9,6 +9,7 @@ import {
 } from '@/services/offline/criticalOfflineCache';
 import { logger } from '@/utils/logger';
 import {
+  calculateScheduleStats,
   getMySchedules,
   getSchedulesByMonth,
   getSchedulesByDate,
@@ -43,6 +44,7 @@ interface UseSchedulesByMonthOptions {
   year: number;
   month: number;
   enabled?: boolean;
+  realtime?: boolean;
 }
 
 interface ScheduleQueryPayload {
@@ -198,21 +200,24 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
 }
 
 export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
-  const { year, month, enabled = true } = options;
+  const { year, month, enabled = true, realtime = false } = options;
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
   const { isOnline } = useNetworkStatus();
   const cacheKey = buildScheduleCacheKey(staffId, 'month', `${year}-${month}`);
-  const monthQueryKey = [
-    ...queryKeys.schedules.byMonth(year, month),
-    staffId ?? 'anonymous',
-  ] as const;
+  const monthQueryKey = useMemo(
+    () => [...queryKeys.schedules.byMonth(year, month), staffId ?? 'anonymous'] as const,
+    [month, staffId, year]
+  );
   const cachedPayload = useCachedSchedulePayload(
     cacheKey,
     queryCachingOptions.schedules.staleTime,
     staffId
   );
+  const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
+  const [isRealtimeLoading, setIsRealtimeLoading] = useState(false);
+  const [realtimeError, setRealtimeError] = useState<Error | null>(null);
 
   const query = useQuery({
     queryKey: monthQueryKey,
@@ -220,7 +225,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByMonth(staffId, year, month);
     },
-    enabled: enabled && !!staffId && isOnline,
+    enabled: enabled && !!staffId && isOnline && !realtime,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
@@ -228,6 +233,16 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     () => (query.data ? normalizeScheduleQueryPayload(query.data) : null),
     [query.data]
   );
+  const realtimePayload = useMemo(() => {
+    if (!realtime) {
+      return EMPTY_SCHEDULE_QUERY_PAYLOAD;
+    }
+
+    return normalizeScheduleQueryPayload({
+      schedules: realtimeSchedules,
+      stats: calculateScheduleStats(realtimeSchedules),
+    });
+  }, [realtime, realtimeSchedules]);
 
   useEffect(() => {
     if (!staffId || !normalizedQueryPayload) {
@@ -240,15 +255,58 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     });
   }, [cacheKey, normalizedQueryPayload, staffId]);
 
-  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
+  useEffect(() => {
+    if (!realtime || !enabled || !staffId || !isOnline) {
+      setIsRealtimeLoading(false);
+      setRealtimeError(null);
+      return;
+    }
+
+    const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+    setRealtimeSchedules([]);
+    setIsRealtimeLoading(true);
+    setRealtimeError(null);
+
+    const unsubscribe = subscribeToSchedules(
+      staffId,
+      (schedules) => {
+        const filteredSchedules = schedules.filter((schedule) =>
+          schedule.date.startsWith(monthPrefix)
+        );
+        setRealtimeSchedules(filteredSchedules);
+        setIsRealtimeLoading(false);
+        queryClient.setQueryData(monthQueryKey, {
+          schedules: filteredSchedules,
+          stats: calculateScheduleStats(filteredSchedules),
+          groupedSchedules: groupSchedulesByDate(filteredSchedules),
+          markedDates: getCalendarMarkedDates(filteredSchedules),
+        });
+      },
+      (error) => {
+        setIsRealtimeLoading(false);
+        setRealtimeError(error);
+        logger.error('Schedule month realtime subscription failed', error, {
+          staffId,
+          year,
+          month,
+        });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [enabled, isOnline, month, monthQueryKey, queryClient, realtime, staffId, year]);
+
+  const shouldUseCachedPayload =
+    enabled && !!staffId && !realtime && !isOnline && query.data === undefined;
   const queryPayload =
     normalizedQueryPayload ??
     (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
-  const schedules = queryPayload.schedules;
-  const stats = queryPayload.stats;
-  const groupedSchedules = queryPayload.groupedSchedules;
-  const markedDates = queryPayload.markedDates;
-  const warning = queryPayload.warning;
+  const effectivePayload = realtime ? realtimePayload : queryPayload;
+  const schedules = effectivePayload.schedules;
+  const stats = effectivePayload.stats;
+  const groupedSchedules = effectivePayload.groupedSchedules;
+  const markedDates = effectivePayload.markedDates;
+  const warning = realtime ? undefined : effectivePayload.warning;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -266,9 +324,9 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     markedDates,
     stats,
     warning,
-    isLoading: schedules.length === 0 ? query.isLoading : false,
-    isRefreshing: isOnline ? query.isRefetching : false,
-    error: isOnline ? query.error : null,
+    isLoading: realtime ? isRealtimeLoading : schedules.length === 0 ? query.isLoading : false,
+    isRefreshing: realtime ? isRealtimeLoading : isOnline ? query.isRefetching : false,
+    error: isOnline ? (realtime ? realtimeError : query.error) : null,
     refresh,
   };
 }
@@ -473,13 +531,14 @@ export function useScheduleStats(enabled = true) {
 interface UseCalendarViewOptions {
   initialView?: CalendarViewType;
   enableGrouping?: boolean;
+  realtime?: boolean;
 }
 
 export function useCalendarView(options: UseCalendarViewOptions | CalendarView = 'month') {
   const normalizedOptions: UseCalendarViewOptions =
     typeof options === 'string' ? { initialView: options } : options;
 
-  const { initialView = 'month', enableGrouping = true } = normalizedOptions;
+  const { initialView = 'month', enableGrouping = true, realtime = false } = normalizedOptions;
 
   const [view, setView] = useState<CalendarViewType>(initialView);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -531,6 +590,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   } = useSchedulesByMonth({
     year: currentMonth.year,
     month: currentMonth.month,
+    realtime,
   });
 
   const groupedByApplication = useMemo(

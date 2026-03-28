@@ -4,16 +4,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useAppStartupStore, type StartupPhase } from '@/stores/appStartupStore';
-import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { ensureDualSdkSync } from '@/lib/authBridge';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
-import { getUnreadCounterFromCache } from '@/services/notifications/notificationService';
-import { logger } from '@/utils/logger';
-import { startTrace, sessionService } from '@/services/observability';
 import { getUserProfile, signOut as authSignOut } from '@/services/auth';
+import { logger } from '@/utils/logger';
+import { trackLogout, setUserId } from '@/services/observability/analyticsService';
 import { toStoreProfile } from '@/utils/profileConverter';
 import {
   checkForceUpdate,
@@ -27,7 +25,6 @@ import { checkAutoLoginEnabled } from './useAutoLogin';
 import { retryWithBackoff } from '@/utils/retry';
 import { isNetworkError, toError } from '@/errors';
 import { useNetworkStatus } from './useNetworkStatus';
-import { setUserId, trackLogout } from '@/services/observability/analyticsService';
 
 interface AppInitState {
   isInitialized: boolean;
@@ -45,9 +42,7 @@ interface UseAppInitializeReturn extends AppInitState {
 
 interface DeferredInitContext {
   authUser: FirebaseUser;
-  profile:
-    | NonNullable<Awaited<ReturnType<typeof getUserProfile>>>
-    | ReturnType<typeof toStoreProfile>;
+  profile: Awaited<ReturnType<typeof loadLatestProfile>>;
 }
 
 interface BootstrapResult {
@@ -67,6 +62,11 @@ interface ResolveSessionResult {
   offlineBootstrap: OfflineBootstrapState;
 }
 
+interface InitializationTrace {
+  putAttribute: (key: string, value: string) => void;
+  stop: () => void;
+}
+
 const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 5000;
 const INITIAL_AUTH_READY_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 10000;
 const FOREGROUND_AUTH_SETTLE_TIMEOUT_MS = 2000;
@@ -78,6 +78,61 @@ type AuthUserResolution =
 type InitialAuthResolution =
   | { user: FirebaseUser; source: 'current' | 'ready' }
   | { user: null; source: 'ready' | 'timeout' };
+
+const noopPutAttribute = (_key: string, _value: string): void => undefined;
+const noopStopTrace = (): void => undefined;
+
+const NOOP_INITIALIZATION_TRACE: InitializationTrace = {
+  putAttribute: noopPutAttribute,
+  stop: noopStopTrace,
+};
+
+function isDynamicImportUnsupported(error: unknown): boolean {
+  return (
+    error instanceof TypeError &&
+    error.message.includes('dynamic import callback was invoked without --experimental-vm-modules')
+  );
+}
+
+async function importWithFallback<T>(loader: () => Promise<T>, moduleId: string): Promise<T> {
+  const isJestRuntime =
+    (typeof process !== 'undefined' &&
+      typeof process.env === 'object' &&
+      (process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID))) ||
+    typeof (globalThis as { jest?: unknown }).jest !== 'undefined';
+
+  if (isJestRuntime) {
+    const jestGlobal = (
+      globalThis as {
+        jest?: {
+          requireActual?: (id: string) => T;
+          requireMock?: (id: string) => T;
+        };
+      }
+    ).jest;
+
+    if (jestGlobal?.requireMock) {
+      try {
+        return jestGlobal.requireMock(moduleId);
+      } catch {
+        if (jestGlobal.requireActual) {
+          return jestGlobal.requireActual(moduleId);
+        }
+      }
+    }
+  }
+
+  try {
+    return await loader();
+  } catch (error) {
+    if (!isDynamicImportUnsupported(error)) {
+      throw error;
+    }
+
+    const nodeRequire = Function('return require')() as (id: string) => T;
+    return nodeRequire(moduleId);
+  }
+}
 
 async function waitForAuthUser(timeoutMs = 3000): Promise<AuthUserResolution> {
   const auth = getFirebaseAuth();
@@ -248,6 +303,10 @@ async function loadLatestProfile(uid: string) {
 }
 
 async function initializeUnreadCount(uid: string): Promise<number> {
+  const { getUnreadCounterFromCache } = await importWithFallback(
+    () => import('@/services/notifications/notificationService'),
+    '@/services/notifications/notificationService'
+  );
   const cachedCount = await getUnreadCounterFromCache(uid);
 
   if (cachedCount !== null) {
@@ -260,7 +319,10 @@ async function initializeUnreadCount(uid: string): Promise<number> {
     return cachedCount;
   }
 
-  const { getMMKVInstance } = await import('@/lib/mmkvStorage');
+  const { getMMKVInstance } = await importWithFallback(
+    () => import('@/lib/mmkvStorage'),
+    '@/lib/mmkvStorage'
+  );
   const storage = getMMKVInstance();
   const debounceKey = `counter_init_${uid}`;
   const lastInitTime = parseInt(storage.getString(debounceKey) ?? '0', 10) || 0;
@@ -276,8 +338,10 @@ async function initializeUnreadCount(uid: string): Promise<number> {
     return 0;
   }
 
-  const { httpsCallable } = await import('firebase/functions');
-  const { getFirebaseFunctions } = await import('@/lib/firebase');
+  const [{ httpsCallable }, { getFirebaseFunctions }] = await Promise.all([
+    importWithFallback(() => import('firebase/functions'), 'firebase/functions'),
+    importWithFallback(() => import('@/lib/firebase'), '@/lib/firebase'),
+  ]);
   const functions = getFirebaseFunctions();
   const initializeCounter = httpsCallable<void, { unreadCount: number }>(
     functions,
@@ -641,7 +705,10 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsR
 
     if (needsProfileReconciliation) {
       try {
-        const { updateProfile } = await import('firebase/auth');
+        const { updateProfile } = await importWithFallback(
+          () => import('firebase/auth'),
+          'firebase/auth'
+        );
         await updateProfile(activeUser, {
           displayName: profileNickname || activeUser.displayName,
           photoURL: profilePhotoURL ?? undefined,
@@ -662,6 +729,10 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsR
 
     if ((context.profile as { phoneVerified?: boolean }).phoneVerified) {
       const unreadCount = await initializeUnreadCount(activeUser.uid);
+      const { useNotificationStore } = await importWithFallback(
+        () => import('@/stores/notificationStore'),
+        '@/stores/notificationStore'
+      );
       useNotificationStore.getState().setUnreadCount(unreadCount);
     }
   } catch (error) {
@@ -810,16 +881,25 @@ export function useAppInitialize(): UseAppInitializeReturn {
     didRunDeferredInit.current = false;
     deferredInitContext.current = null;
 
-    const trace = startTrace('app_initialization');
-    trace.putAttribute('platform', 'react-native');
-
     setState((previous) => ({
       ...previous,
       isLoading: true,
       error: null,
     }));
 
+    let trace: InitializationTrace = NOOP_INITIALIZATION_TRACE;
+    let sessionService: { initialize: () => void } | null = null;
+
     try {
+      const observability = await importWithFallback(
+        () => import('@/services/observability'),
+        '@/services/observability'
+      );
+
+      trace = observability.startTrace('app_initialization');
+      trace.putAttribute('platform', 'react-native');
+      sessionService = observability.sessionService;
+
       await SplashScreen.preventAutoHideAsync();
       setStartupPhase('bootstrapping');
 
@@ -891,7 +971,14 @@ export function useAppInitialize(): UseAppInitializeReturn {
         });
       }
     } finally {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        logger.warn('Failed to hide splash screen after initialization', {
+          component: 'useAppInitialize',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
       isInitializing.current = false;
     }
   }, [setStartupPhase]);
@@ -930,7 +1017,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
   useEffect(() => {
     return () => {
-      sessionService.cleanup();
+      void importWithFallback(() => import('@/services/observability'), '@/services/observability')
+        .then(({ sessionService }) => {
+          sessionService.cleanup();
+        })
+        .catch(() => {
+          // Best-effort cleanup only.
+        });
     };
   }, []);
 

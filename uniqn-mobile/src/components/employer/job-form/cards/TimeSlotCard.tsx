@@ -160,15 +160,17 @@ const RoleCard = React.memo(function RoleCard({
       </View>
 
       {/* 숫자 휠 피커 모달 */}
-      <NumberPickerModal
-        visible={showNumberPicker}
-        value={headcount}
-        min={1}
-        max={200}
-        title={`${roleName} 인원`}
-        onConfirm={handlePickerConfirm}
-        onClose={() => setShowNumberPicker(false)}
-      />
+      {showNumberPicker ? (
+        <NumberPickerModal
+          visible={showNumberPicker}
+          value={headcount}
+          min={1}
+          max={200}
+          title={`${roleName} 인원`}
+          onConfirm={handlePickerConfirm}
+          onClose={() => setShowNumberPicker(false)}
+        />
+      ) : null}
     </View>
   );
 });
@@ -438,13 +440,15 @@ export function TimeSlotCard({
       )}
 
       {/* 역할 선택 모달 */}
-      <RoleSelectModal
-        visible={showRoleModal}
-        onClose={() => setShowRoleModal(false)}
-        onSelect={handleAddRole}
-        existingRoleNames={existingRoleNames}
-        title="역할 추가"
-      />
+      {showRoleModal ? (
+        <RoleSelectModal
+          visible={showRoleModal}
+          onClose={() => setShowRoleModal(false)}
+          onSelect={handleAddRole}
+          existingRoleNames={existingRoleNames}
+          title="역할 추가"
+        />
+      ) : null}
     </View>
   );
 }

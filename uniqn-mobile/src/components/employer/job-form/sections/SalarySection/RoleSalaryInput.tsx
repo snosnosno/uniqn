@@ -98,8 +98,10 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
               roleSalary?.amount && roleSalary.amount > 0 ? formatNumber(roleSalary.amount) : ''
             }
             onChangeText={(v) => onSalaryAmountChange(index, v)}
+            accessibilityLabel={`${displayName} 급여`}
             keyboardType="numeric"
             editable={!isReadOnly}
+            testID={`job-posting-salary-input-${index}`}
             className={`w-32 py-2 px-2 text-right text-sm rounded-md ${
               isReadOnly
                 ? 'bg-gray-100 dark:bg-surface/50 text-gray-400'

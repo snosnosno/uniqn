@@ -33,7 +33,7 @@ import type { AnnouncementImage } from '@/types/announcement';
 import { getAnnouncementImages } from '@/types/announcement';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 

@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
-import jsQR from 'jsqr';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
@@ -28,6 +27,8 @@ interface QRCodeScannerProps {
 }
 
 type PermissionState = 'pending' | 'granted' | 'denied';
+type JsQRModule = typeof import('jsqr');
+type JsQRScanner = JsQRModule['default'];
 
 // ============================================================================
 // Constants
@@ -38,6 +39,15 @@ const SCAN_AREA_SIZE = Math.min(SCREEN_WIDTH * 0.7, 280);
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
 const SCAN_INTERVAL = 200; // 200ms마다 스캔
+let jsQRLoader: Promise<JsQRScanner> | null = null;
+
+async function loadJsQR(): Promise<JsQRScanner> {
+  if (!jsQRLoader) {
+    jsQRLoader = import('jsqr').then((module) => module.default);
+  }
+
+  return jsQRLoader;
+}
 
 // ============================================================================
 // Component
@@ -59,6 +69,7 @@ export function QRCodeScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const animationRef = useRef<number | null>(null);
   const lastScanRef = useRef<number>(0);
+  const jsQRRef = useRef<JsQRScanner | null>(null);
 
   // 카메라 시작
   const startCamera = useCallback(async () => {
@@ -76,6 +87,7 @@ export function QRCodeScanner({
           height: { ideal: VIDEO_HEIGHT },
         },
       });
+      jsQRRef.current = await loadJsQR();
 
       streamRef.current = stream;
       setPermission('granted');
@@ -149,7 +161,14 @@ export function QRCodeScanner({
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+    const scan = jsQRRef.current;
+
+    if (!scan) {
+      animationRef.current = requestAnimationFrame(scanQRCode);
+      return;
+    }
+
+    const code = scan(imageData.data, imageData.width, imageData.height, {
       inversionAttempts: 'attemptBoth', // 반전된 QR 코드도 인식
     });
 

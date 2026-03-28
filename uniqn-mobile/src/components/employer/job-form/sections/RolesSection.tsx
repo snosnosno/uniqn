@@ -233,12 +233,14 @@ export const RolesSection = memo(function RolesSection({
       )}
 
       {/* 역할 선택 모달 */}
-      <RoleSelectModal
-        visible={showModal}
-        onClose={() => setShowModal(false)}
-        onSelect={handleSelectRole}
-        existingRoleNames={existingRoleNames}
-      />
+      {showModal ? (
+        <RoleSelectModal
+          visible={showModal}
+          onClose={() => setShowModal(false)}
+          onSelect={handleSelectRole}
+          existingRoleNames={existingRoleNames}
+        />
+      ) : null}
     </View>
   );
 });

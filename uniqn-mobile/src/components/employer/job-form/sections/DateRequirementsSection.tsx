@@ -256,6 +256,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
+        testID="job-posting-add-date-button"
         accessibilityHint={canAddDate ? '새 날짜를 추가합니다' : '더 이상 추가할 수 없습니다'}
       >
         <View className="mr-2">
@@ -278,20 +279,24 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         </Text>
       )}
 
-      <DatePickerModal
-        visible={showDatePicker}
-        onClose={() => setShowDatePicker(false)}
-        onSelectDates={handleSelectDates}
-        postingType={postingType ?? 'regular'}
-        existingDates={existingDates}
-      />
+      {showDatePicker ? (
+        <DatePickerModal
+          visible={showDatePicker}
+          onClose={() => setShowDatePicker(false)}
+          onSelectDates={handleSelectDates}
+          postingType={postingType ?? 'regular'}
+          existingDates={existingDates}
+        />
+      ) : null}
 
-      <GroupingConfirmModal
-        visible={showGroupingModal}
-        dates={pendingDates}
-        onConfirm={handleGroupingConfirm}
-        onClose={handleGroupingClose}
-      />
+      {showGroupingModal ? (
+        <GroupingConfirmModal
+          visible={showGroupingModal}
+          dates={pendingDates}
+          onConfirm={handleGroupingConfirm}
+          onClose={handleGroupingClose}
+        />
+      ) : null}
     </View>
   );
 }

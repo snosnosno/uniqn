@@ -102,6 +102,9 @@ describe('buildPendingReviewItems', () => {
   });
 
   it('sorts pending reviews by earliest review deadline regardless of source order', () => {
+    const nowSpy = jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(new Date('2026-03-26T00:00:00Z').getTime());
     const newerStaffWorkLog = createWorkLog({
       id: 'wl-2',
       date: '2026-03-25',
@@ -115,18 +118,22 @@ describe('buildPendingReviewItems', () => {
       checkOutTime: new Date('2026-03-20T18:00:00Z') as never,
     });
 
-    const items = buildPendingReviewItems({
-      staffWorkLogs: [newerStaffWorkLog],
-      employerWorkLogs: [olderEmployerWorkLog],
-      givenReviews: [],
-      isEmployerReviewer: true,
-      jobPostingMap: new Map([
-        ['job-1', { title: 'Fixed Job', ownerName: 'Host', location: { name: 'Seoul' } }],
-      ]),
-    });
+    try {
+      const items = buildPendingReviewItems({
+        staffWorkLogs: [newerStaffWorkLog],
+        employerWorkLogs: [olderEmployerWorkLog],
+        givenReviews: [],
+        isEmployerReviewer: true,
+        jobPostingMap: new Map([
+          ['job-1', { title: 'Fixed Job', ownerName: 'Host', location: { name: 'Seoul' } }],
+        ]),
+      });
 
-    expect(items.map((item) => item.workLogId)).toEqual(['wl-1', 'wl-2']);
-    expect(items.map((item) => item.reviewerType)).toEqual(['employer', 'staff']);
+      expect(items.map((item) => item.workLogId)).toEqual(['wl-1', 'wl-2']);
+      expect(items.map((item) => item.reviewerType)).toEqual(['employer', 'staff']);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('excludes self-review items so the list matches review eligibility rules', () => {

@@ -96,27 +96,31 @@ export default function CreateJobPostingScreen() {
         />
       </KeyboardAvoidingView>
 
-      <TemplateModal
-        visible={templateManager.isTemplateModalOpen}
-        onClose={templateManager.closeTemplateModal}
-        templateName={templateManager.templateName}
-        templateDescription={templateManager.templateDescription}
-        onTemplateNameChange={templateManager.setTemplateName}
-        onTemplateDescriptionChange={templateManager.setTemplateDescription}
-        onSave={handleSaveTemplate}
-        isSaving={templateManager.isSavingTemplate}
-      />
+      {templateManager.isTemplateModalOpen ? (
+        <TemplateModal
+          visible={templateManager.isTemplateModalOpen}
+          onClose={templateManager.closeTemplateModal}
+          templateName={templateManager.templateName}
+          templateDescription={templateManager.templateDescription}
+          onTemplateNameChange={templateManager.setTemplateName}
+          onTemplateDescriptionChange={templateManager.setTemplateDescription}
+          onSave={handleSaveTemplate}
+          isSaving={templateManager.isSavingTemplate}
+        />
+      ) : null}
 
-      <LoadTemplateModal
-        visible={templateManager.isLoadTemplateModalOpen}
-        onClose={templateManager.closeLoadTemplateModal}
-        templates={templateManager.templates}
-        templatesLoading={templateManager.templatesLoading}
-        onLoadTemplate={handleLoadTemplateFromModal}
-        onDeleteTemplate={templateManager.handleDeleteTemplate}
-        isLoadingTemplate={templateManager.isLoadingTemplate}
-        isDeletingTemplate={templateManager.isDeletingTemplate}
-      />
+      {templateManager.isLoadTemplateModalOpen ? (
+        <LoadTemplateModal
+          visible={templateManager.isLoadTemplateModalOpen}
+          onClose={templateManager.closeLoadTemplateModal}
+          templates={templateManager.templates}
+          templatesLoading={templateManager.templatesLoading}
+          onLoadTemplate={handleLoadTemplateFromModal}
+          onDeleteTemplate={templateManager.handleDeleteTemplate}
+          isLoadingTemplate={templateManager.isLoadingTemplate}
+          isDeletingTemplate={templateManager.isDeletingTemplate}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

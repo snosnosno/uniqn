@@ -1,0 +1,160 @@
+import React, { useCallback, forwardRef, useImperativeHandle } from 'react';
+import { View, Text, Pressable, ScrollView } from 'react-native';
+import { Modal } from './Modal';
+
+export interface BottomSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  title?: string;
+  showCloseButton?: boolean;
+  showHandle?: boolean;
+  snapPoints?: (string | number)[];
+  initialSnapIndex?: number;
+  enableDragClose?: boolean;
+  closeOnBackdrop?: boolean;
+  scrollable?: boolean;
+  children: React.ReactNode;
+}
+
+export interface BottomSheetRef {
+  snapToIndex: (index: number) => void;
+  close: () => void;
+  expand: () => void;
+  collapse: () => void;
+  present: () => void;
+}
+
+export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
+  (
+    {
+      visible,
+      onClose,
+      title,
+      showCloseButton = true,
+      showHandle = true,
+      closeOnBackdrop = true,
+      scrollable = false,
+      children,
+    },
+    ref
+  ) => {
+    useImperativeHandle(ref, () => ({
+      snapToIndex: () => {
+        // Web modal does not support snap points.
+      },
+      close: onClose,
+      expand: () => {
+        // Web modal does not support expand.
+      },
+      collapse: () => {
+        // Web modal does not support collapse.
+      },
+      present: () => {
+        // Visibility is controlled by props.
+      },
+    }));
+
+    return (
+      <Modal
+        visible={visible}
+        onClose={onClose}
+        position="bottom"
+        showCloseButton={showCloseButton}
+        closeOnBackdrop={closeOnBackdrop}
+      >
+        {showHandle ? (
+          <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
+            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
+          </View>
+        ) : null}
+
+        {title ? (
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-surface-overlay">
+            <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+              {title}
+            </Text>
+          </View>
+        ) : null}
+
+        {scrollable ? (
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+            <View className="py-4">{children}</View>
+          </ScrollView>
+        ) : (
+          <View className="py-4">{children}</View>
+        )}
+      </Modal>
+    );
+  }
+);
+
+BottomSheet.displayName = 'BottomSheet';
+
+export interface SelectBottomSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  title?: string;
+  options: {
+    label: string;
+    value: string;
+    icon?: React.ReactNode;
+    destructive?: boolean;
+    disabled?: boolean;
+  }[];
+  onSelect: (value: string) => void;
+}
+
+export function SelectBottomSheet({
+  visible,
+  onClose,
+  title,
+  options,
+  onSelect,
+}: SelectBottomSheetProps) {
+  const handleSelect = useCallback(
+    (value: string) => {
+      onSelect(value);
+      onClose();
+    },
+    [onClose, onSelect]
+  );
+
+  return (
+    <BottomSheet visible={visible} onClose={onClose} title={title} showCloseButton={false}>
+      <View className="gap-1">
+        {options.map((option) => (
+          <Pressable
+            key={option.value}
+            onPress={() => {
+              if (!option.disabled) {
+                handleSelect(option.value);
+              }
+            }}
+            disabled={option.disabled}
+            className={`
+              flex-row items-center py-4 px-2 rounded-xl
+              ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
+            `}
+            accessibilityRole="button"
+          >
+            {option.icon ? <View className="mr-3">{option.icon}</View> : null}
+            <Text
+              className={`
+                text-base font-medium flex-1
+                ${
+                  option.destructive
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-gray-900 dark:text-white'
+                }
+              `}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </BottomSheet>
+  );
+}
+
+export default BottomSheet;

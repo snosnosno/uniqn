@@ -1,5 +1,5 @@
 import { differenceInDays, format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { DATE } from '@/constants';
 import { isValidDate, toDate, type DateInput } from './core';
 

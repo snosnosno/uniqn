@@ -84,6 +84,20 @@ function syncManagedSessionState(): void {
   startTokenRefreshInterval();
 }
 
+function shouldSkipAuthStoreSync(user: FirebaseUser | null): boolean {
+  if (!user) {
+    return false;
+  }
+
+  const authState = useAuthStore.getState();
+  return (
+    authState.isInitialized &&
+    authState.status === 'authenticated' &&
+    authState.user?.uid === user.uid &&
+    authState.profile?.uid === user.uid
+  );
+}
+
 export function initialize(): void {
   if (isInitialized) {
     return;
@@ -138,7 +152,9 @@ function handleAppStateChange(state: AppStateStatus): void {
 
 async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
   try {
-    await useAuthStore.getState().checkAuthState(user);
+    if (!shouldSkipAuthStoreSync(user)) {
+      await useAuthStore.getState().checkAuthState(user);
+    }
   } catch (error) {
     logger.warn('인증 상태 변경 중 스토어 동기화에 실패했습니다', {
       component: 'sessionService',

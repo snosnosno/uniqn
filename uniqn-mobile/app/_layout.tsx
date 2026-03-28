@@ -1,146 +1,103 @@
-/**
- * UNIQN Mobile - Root Layout
- * 앱 전체 레이아웃
- */
-
 import '../global.css';
-import { useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, LogBox } from 'react-native';
+import { LogBox, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
-import * as Sentry from '@sentry/react-native';
-import { queryClient } from '@/lib/queryClient';
-import { isWeb } from '@/utils/platform';
 import {
-  ToastManager,
-  ModalManager,
   ErrorState,
-  ScreenErrorBoundary,
-  OfflineBanner,
   Loading,
+  ModalManager,
+  OfflineBanner,
+  ScreenErrorBoundary,
+  ToastManager,
 } from '@/components/ui';
+import { getLayoutColor } from '@/constants/colors';
+import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
-import { useNavigationTracking } from '@/hooks/useNavigationTracking';
-import { useDeepLinkSetup } from '@/hooks/useDeepLink';
-import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { queryClient } from '@/lib/queryClient';
+import { initializeRootSentry } from '@/services/observability/rootSentry';
+import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { getLayoutColor } from '@/constants/colors';
-import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
-import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
-import { recordActivity } from '@/services/observability';
 import { initializeNetworkState } from '@/services/offline/networkState';
-import { refreshQueriesAfterReconnect } from '@/services/offline/reconnectSyncService';
 import { logger } from '@/utils/logger';
-
-// ============================================================================
-// Sentry 초기화 (네이티브 SDK 설정 - 앱 최상단에서 실행)
-// ============================================================================
 
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
 const SENTRY_ENABLED = !__DEV__ && !!SENTRY_DSN;
+const SUPPRESSED_WARNINGS = [
+  'props.pointerEvents is deprecated',
+  'Image: style.tintColor is deprecated',
+  'SafeAreaView has been deprecated',
+];
+const TOUCH_THROTTLE_MS = 5_000;
+const AuthenticatedRuntime = lazy(() => import('@/components/app/AuthenticatedRuntime'));
 
 try {
-  Sentry.init({
+  initializeRootSentry({
     dsn: SENTRY_DSN,
     enabled: SENTRY_ENABLED,
     environment: process.env.EXPO_PUBLIC_RELEASE_CHANNEL || 'development',
-    tracesSampleRate: 0.2,
-    enableNativeCrashHandling: SENTRY_ENABLED,
-    enableNative: SENTRY_ENABLED,
   });
-} catch (e) {
-  // Sentry 초기화 실패해도 앱은 정상 실행되어야 함
+} catch (error) {
   if (__DEV__) {
-    logger.warn('[Sentry] initialization failed', { error: e });
+    logger.warn('[Sentry] initialization failed', { error });
   }
 }
 
-// LogBox 경고 억제 (써드파티 라이브러리 이슈)
-const SUPPRESSED_WARNINGS = [
-  'props.pointerEvents is deprecated', // expo-router 내부 이슈
-  'Image: style.tintColor is deprecated', // react-navigation 내부 이슈
-  'SafeAreaView has been deprecated', // react-native-calendars 등 써드파티 이슈 (RN 0.81.5+)
-];
-
 if (__DEV__) {
   LogBox.ignoreLogs(SUPPRESSED_WARNINGS);
-
-  // 웹 콘솔에서도 써드파티 경고 억제
 }
-
-/**
- * 메인 네비게이션 컴포넌트
- * 초기화 완료 후 렌더링되므로 useAuthGuard 안전하게 호출 가능
- */
-/** 터치 활동 쓰로틀 간격 (5초) */
-const TOUCH_THROTTLE_MS = 5_000;
 
 function MainNavigator() {
   const { mode, isDarkMode } = useThemeStore();
+  const user = useAuthStore((state) => state.user);
   const isDark = isDarkMode;
-
-  // 세션 활동 기록: 터치 이벤트 기반 (5초 쓰로틀)
+  const isAuthenticated = !!user;
   const lastTouchRef = useRef(0);
-  const handleTouchActivity = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTouchRef.current > TOUCH_THROTTLE_MS) {
-      lastTouchRef.current = now;
-      recordActivity();
-    }
-  }, []);
 
-  // 마운트 시 NativeWind colorScheme 확실히 적용
-  // (themeStore hydration 타이밍 이슈 해결)
+  const handleTouchActivity = useCallback(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastTouchRef.current <= TOUCH_THROTTLE_MS) {
+      return;
+    }
+
+    lastTouchRef.current = now;
+
+    void import('@/services/observability')
+      .then(({ recordActivity }) => {
+        recordActivity();
+      })
+      .catch((error) => {
+        logger.debug('Failed to load authenticated activity runtime', {
+          component: 'RootLayout',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+  }, [isAuthenticated]);
+
   useEffect(() => {
     const effectiveMode = mode === 'system' ? (isDark ? 'dark' : 'light') : mode;
     nativeWindColorScheme.set(effectiveMode);
-  }, [mode, isDark]);
+  }, [isDark, mode]);
 
-  // 앱 전역 인증 가드 - 초기화 완료 후에만 실행됨
   useAuthGuard();
-
-  // 화면 전환 추적 (Analytics + Crashlytics)
-  useNavigationTracking();
-
-  // 딥링크 리스너 설정 (인증 체크 포함)
-  useDeepLinkSetup();
-
-  // 푸시 알림 핸들러는 (app)/_layout.tsx에서 초기화
-  // (온보딩 플로우와 통합되어 권한 요청 중복 방지)
-
-  // 전역 네트워크 상태 연동
-  const { isOnline } = useNetworkStatus();
-  const prevOnlineRef = useRef<boolean | null>(null);
-
-  useEffect(() => {
-    const wasOnline = prevOnlineRef.current;
-    prevOnlineRef.current = isOnline;
-
-    // 초기 상태 설정 시에는 전환 처리하지 않음 (오탐 방지)
-    if (wasOnline === null) return;
-
-    if (!wasOnline && isOnline) {
-      // 오프라인 → 온라인: 재연결 처리
-      logger.info('네트워크 복귀 - 전역 재연결 처리');
-      RealtimeManager.onNetworkReconnect();
-      tokenRefreshService.onNetworkReconnect();
-      void refreshQueriesAfterReconnect(queryClient);
-    } else if (wasOnline && !isOnline) {
-      // 온라인 → 오프라인: 연결 끊김 처리
-      logger.info('네트워크 끊김 - 전역 연결 해제 처리');
-      RealtimeManager.onNetworkDisconnect();
-    }
-  }, [isOnline]);
 
   return (
     <View style={{ flex: 1 }} onTouchStart={handleTouchActivity}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      {isAuthenticated ? (
+        <Suspense fallback={null}>
+          <AuthenticatedRuntime />
+        </Suspense>
+      ) : null}
       <OfflineBanner variant="banner" />
       <Stack
         screenOptions={{
@@ -165,19 +122,13 @@ function MainNavigator() {
   );
 }
 
-/**
- * 앱 콘텐츠 컴포넌트
- * 초기화 상태에 따라 로딩/에러/메인 화면 표시
- */
 function AppContent() {
   const { isInitialized, isLoading, error, retry } = useAppInitialize();
 
-  // 초기화 중 로딩 표시
   if (isLoading || (!isInitialized && !error)) {
-    return <Loading variant="layout" message="앱 로딩 중..." />;
+    return <Loading variant="layout" message="앱을 불러오는 중..." />;
   }
 
-  // 초기화 실패 시 에러 표시
   if (error) {
     return (
       <View className="flex-1 bg-white dark:bg-surface-dark">
@@ -186,23 +137,12 @@ function AppContent() {
     );
   }
 
-  // 초기화 완료 후 메인 네비게이터 렌더링 (전역 에러 바운더리 적용)
   return (
     <ScreenErrorBoundary name="RootLayout">
       <MainNavigator />
     </ScreenErrorBoundary>
   );
 }
-
-/**
- * 웹용 빈 Provider (BottomSheetModalProvider 대체)
- */
-function WebSheetProvider({ children }: { children: ReactNode }) {
-  return <>{children}</>;
-}
-
-// 플랫폼별 Provider 선택
-const SheetProvider = isWeb ? WebSheetProvider : BottomSheetModalProvider;
 
 export default function RootLayout() {
   useEffect(() => {

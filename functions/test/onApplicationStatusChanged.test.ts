@@ -77,10 +77,14 @@ describe("onApplicationStatusChanged", () => {
     expect(sendStub.calledOnce).to.equal(true);
     const recipientId = sendStub.firstCall.args[0];
     const type = sendStub.firstCall.args[1];
+    const title = sendStub.firstCall.args[2];
+    const body = sendStub.firstCall.args[3];
     const options = sendStub.firstCall.args[4]!;
 
     expect(recipientId).to.equal("staff-1");
     expect(type).to.equal("cancellation_approved");
+    expect(title).to.equal("취소 요청 승인");
+    expect(body).to.equal("'Spring Poker Event' 취소 요청이 승인되었습니다.");
     expect(options.link).to.equal("/schedule");
     expect(options.relatedId).to.equal("app-1");
     expect(options.data?.applicationId).to.equal("app-1");
@@ -120,10 +124,16 @@ describe("onApplicationStatusChanged", () => {
     expect(sendStub.calledOnce).to.equal(true);
     const recipientId = sendStub.firstCall.args[0];
     const type = sendStub.firstCall.args[1];
+    const title = sendStub.firstCall.args[2];
+    const body = sendStub.firstCall.args[3];
     const options = sendStub.firstCall.args[4]!;
 
     expect(recipientId).to.equal("staff-2");
     expect(type).to.equal("cancellation_rejected");
+    expect(title).to.equal("취소 요청 거절");
+    expect(body).to.equal(
+      "'Spring Poker Event' 취소 요청이 거절되었습니다. 사유: Replacement unavailable",
+    );
     expect(options.link).to.equal("/schedule");
     expect(options.priority).to.equal("high");
     expect(options.data?.rejectionReason).to.equal("Replacement unavailable");

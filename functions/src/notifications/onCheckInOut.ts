@@ -58,7 +58,8 @@ export const onCheckInOut = onDocumentUpdated(
       const staffUserId = extractUserId(after.staffId);
       const staffDoc = await db.collection('users').doc(staffUserId).get();
       const staffData = (staffDoc.data() as UserData | undefined) ?? {};
-      const staffName = staffData.nickname ?? staffData.name ?? 'Staff';
+      const staffName = staffData.nickname ?? staffData.name ?? '스태프';
+      const jobLabel = jobPosting.title ? `'${jobPosting.title}'` : '해당 근무';
       const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
 
       if (didCheckIn) {
@@ -67,8 +68,8 @@ export const onCheckInOut = onDocumentUpdated(
         await createAndSendNotification(
           staffUserId,
           'check_in_confirmed',
-          'Check-in confirmed',
-          `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} check-in was recorded at ${checkInTime}.`,
+          '출근 확인',
+          `${jobLabel} 출근이 ${checkInTime}에 기록되었습니다.`,
           {
             link: '/schedule',
             relatedId: workLogId,
@@ -86,8 +87,8 @@ export const onCheckInOut = onDocumentUpdated(
           await createAndSendNotification(
             employerId,
             'staff_checked_in',
-            'Staff checked in',
-            `${staffName} checked in at ${checkInTime}.`,
+            '출근 알림',
+            `${staffName}님이 ${checkInTime}에 출근했습니다.`,
             {
               link: `/employer/applicants/${after.jobPostingId}`,
               relatedId: workLogId,
@@ -112,8 +113,8 @@ export const onCheckInOut = onDocumentUpdated(
         await createAndSendNotification(
           staffUserId,
           'check_out_confirmed',
-          'Check-out confirmed',
-          `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} check-out was recorded at ${checkOutTime}.`,
+          '퇴근 확인',
+          `${jobLabel} 퇴근이 ${checkOutTime}에 기록되었습니다.`,
           {
             link: '/schedule',
             relatedId: workLogId,
@@ -131,8 +132,8 @@ export const onCheckInOut = onDocumentUpdated(
           await createAndSendNotification(
             employerId,
             'staff_checked_out',
-            'Staff checked out',
-            `${staffName} checked out at ${checkOutTime}.`,
+            '퇴근 알림',
+            `${staffName}님이 ${checkOutTime}에 퇴근했습니다.`,
             {
               link: `/employer/applicants/${after.jobPostingId}`,
               relatedId: workLogId,
@@ -153,8 +154,8 @@ export const onCheckInOut = onDocumentUpdated(
         await createAndSendNotification(
           staffUserId,
           'review_request',
-          'Leave a review',
-          `Your shift ${jobPosting.title ? `for '${jobPosting.title}'` : ''} is complete. Please leave a review.`,
+          '평가 요청',
+          `${jobLabel} 근무가 완료되었습니다. 평가를 남겨주세요.`,
           {
             link: `/reviews/${workLogId}`,
             relatedId: workLogId,
@@ -170,8 +171,8 @@ export const onCheckInOut = onDocumentUpdated(
           await createAndSendNotification(
             employerId,
             'review_request',
-            'Leave a review',
-            `The shift is complete. Please review ${staffName}.`,
+            '평가 요청',
+            `${jobLabel} 근무가 완료되었습니다. ${staffName}님에 대한 평가를 남겨주세요.`,
             {
               link: `/reviews/${workLogId}`,
               relatedId: workLogId,

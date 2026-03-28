@@ -12,7 +12,7 @@ import { useInquiryDetail } from '@/hooks/useInquiry';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 
 export default function InquiryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

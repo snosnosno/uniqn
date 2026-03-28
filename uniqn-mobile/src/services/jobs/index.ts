@@ -9,6 +9,7 @@
 export {
   getJobPostings,
   getJobPostingById,
+  subscribeToJobPosting,
   incrementViewCount,
   searchJobPostings,
   getUrgentJobPostings,

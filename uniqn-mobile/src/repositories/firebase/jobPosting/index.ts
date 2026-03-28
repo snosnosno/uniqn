@@ -12,7 +12,14 @@
 
 import type { IJobPostingRepository } from '../../interfaces';
 
-import { getById, getByIdBatch, getList, getByOwnerId, getTypeCounts } from './jobPostingQueries';
+import {
+  getById,
+  getByIdBatch,
+  getList,
+  getByOwnerId,
+  getTypeCounts,
+  subscribeById,
+} from './jobPostingQueries';
 
 import {
   incrementViewCount,
@@ -50,6 +57,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
   getList = getList;
   getByOwnerId = getByOwnerId;
   getTypeCounts = getTypeCounts;
+  subscribeById = subscribeById;
 
   // Write (simple)
   incrementViewCount = incrementViewCount;

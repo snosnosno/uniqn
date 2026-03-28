@@ -75,6 +75,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                   accessibilityLabel={`${posting.title} 공고 마감하기`}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: isClosing }}
+                  testID={`employer-close-posting-${posting.id}`}
                 >
                   <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     {isClosing ? '처리중...' : '마감하기'}
@@ -90,6 +91,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                   accessibilityLabel={`${posting.title} 공고 재오픈하기`}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: isReopening }}
+                  testID={`employer-reopen-posting-${posting.id}`}
                 >
                   <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
                     {isReopening ? '처리중...' : '재오픈'}

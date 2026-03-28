@@ -28,7 +28,7 @@ interface WorkLogData {
 }
 
 function getJobLabel(title?: string): string {
-  return title ? `'${title}'` : 'This shift';
+  return title ? `'${title}'` : '해당';
 }
 
 export const onScheduleCreated = onDocumentCreated(
@@ -53,8 +53,9 @@ export const onScheduleCreated = onDocumentCreated(
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
       const recipientId = extractUserId(workLog.staffId);
-      const title = 'New schedule confirmed';
-      const body = `${getJobLabel(jobPosting.title)} is scheduled for ${workLog.date ?? 'an upcoming date'}${workLog.timeSlot ? ` (${workLog.timeSlot})` : ''}.`;
+      const title = '새 근무 배정';
+      const when = `${workLog.date ?? '예정된 일정'}${workLog.timeSlot ? ` (${workLog.timeSlot})` : ''}`;
+      const body = `${getJobLabel(jobPosting.title)} 근무가 ${when}에 배정되었습니다.`;
 
       const result = await createAndSendNotification(
         recipientId,
@@ -119,8 +120,11 @@ export const onScheduleCancelled = onDocumentUpdated(
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
       const recipientId = extractUserId(after.staffId);
-      const title = 'Schedule cancelled';
-      const body = `${getJobLabel(jobPosting.title)} on ${after.date ?? 'the scheduled date'} has been cancelled.`;
+      const title = '근무 취소';
+      const when = `${after.date ?? ''}${after.timeSlot ? ` (${after.timeSlot})` : ''}`.trim();
+      const body = when
+        ? `${getJobLabel(jobPosting.title)} ${when} 근무가 취소되었습니다.`
+        : `${getJobLabel(jobPosting.title)} 근무가 취소되었습니다.`;
 
       const result = await createAndSendNotification(
         recipientId,

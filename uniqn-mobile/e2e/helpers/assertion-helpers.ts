@@ -41,7 +41,7 @@ export const TEXT = {
 
   // 상태
   LOADING: '로딩 중...',
-  APP_LOADING: '앱 로딩 중...',
+  APP_LOADING: '앱을 불러오는 중...',
   NO_DATA: '데이터가 없습니다',
   NO_SCHEDULE: '스케줄이 없습니다',
 

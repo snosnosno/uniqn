@@ -130,13 +130,6 @@ export function JobPostingScrollForm({
           </SectionCard>
         </View>
 
-        <View className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-          <Text className="text-sm text-blue-700 dark:text-blue-300">
-            고정공고는 이번 V3 정비 범위에서 제외되었습니다. 날짜/시간/역할을 가진 행사형 공고만
-            생성할 수 있습니다.
-          </Text>
-        </View>
-
         {isTournament && (
           <View className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
             <Text className="mb-1 text-sm font-medium text-amber-800 dark:text-amber-200">
@@ -174,6 +167,8 @@ export function JobPostingScrollForm({
               onPress={handleSubmit}
               disabled={isSubmitting}
               fullWidth
+              accessibilityLabel={isTournament ? '승인 요청' : '공고 등록'}
+              testID="job-posting-create-submit"
             >
               <Text className="text-sm font-semibold text-white">
                 {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}

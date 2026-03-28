@@ -24,6 +24,7 @@ export type {
   CreateJobPostingContext,
   CreateJobPostingResult,
   JobPostingStats,
+  JobPostingSubscriptionCallbacks,
 } from './IJobPostingRepository';
 
 // WorkLog Repository

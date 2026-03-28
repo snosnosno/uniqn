@@ -113,6 +113,7 @@ playwright-report/
 */playwright-report/
 test-report/
 .playwright-mcp/
+.playwright-cli/
 
 # ========================================
 # PYTHON ENVIRONMENT

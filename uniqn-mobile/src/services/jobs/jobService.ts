@@ -12,12 +12,17 @@
  * - Repository: 데이터 접근 + 쿼리 빌딩 캡슐화
  */
 
-import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
+import {
+  type QueryDocumentSnapshot,
+  type DocumentData,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
+import { RealtimeManager } from '@/shared/realtime';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
@@ -114,6 +119,30 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
       context: { jobPostingId: id },
     });
   }
+}
+
+export function subscribeToJobPosting(
+  jobPostingId: string,
+  callbacks: {
+    onUpdate: (jobPosting: JobPosting | null) => void;
+    onError?: (error: Error) => void;
+  }
+): Unsubscribe {
+  return RealtimeManager.subscribe(RealtimeManager.Keys.jobPosting(jobPostingId), () => {
+    logger.info('공고 상세 실시간 구독 시작', { jobPostingId });
+
+    return jobPostingRepository.subscribeById(jobPostingId, {
+      onUpdate: callbacks.onUpdate,
+      onError: (error) => {
+        const appError = handleServiceError(error, {
+          operation: '공고 상세 구독',
+          component: 'jobService',
+          context: { jobPostingId },
+        });
+        callbacks.onError?.(appError as Error);
+      },
+    });
+  });
 }
 
 /**

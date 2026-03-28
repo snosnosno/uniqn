@@ -71,7 +71,7 @@ export default function JobPostingDetailLayout() {
   const currentUserId = useAuthStore((state) => state.user?.uid);
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
-  const { job, isLoading } = useJobDetail(id || '');
+  const { job, isLoading } = useJobDetail(id || '', { realtime: true });
 
   // QR 모달 상태
   const [showQRModal, setShowQRModal] = useState(false);

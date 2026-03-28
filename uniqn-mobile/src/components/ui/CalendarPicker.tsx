@@ -22,7 +22,7 @@ import {
   isBefore,
   isAfter,
 } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { toDate } from '@/utils/date';
 
@@ -75,6 +75,25 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 function cloneDate(value: Date | null | undefined): Date | null {
   const parsed = toDate(value);
   return parsed ? new Date(parsed.getTime()) : null;
+}
+
+function canNavigateToMonth(
+  currentMonth: Date,
+  offsetMonths: number,
+  minimumDate?: Date,
+  maximumDate?: Date
+): boolean {
+  const targetMonth = addMonths(currentMonth, offsetMonths);
+
+  if (minimumDate && isBefore(endOfMonth(targetMonth), minimumDate)) {
+    return false;
+  }
+
+  if (maximumDate && isAfter(startOfMonth(targetMonth), maximumDate)) {
+    return false;
+  }
+
+  return true;
 }
 
 function getCalendarDays(
@@ -263,21 +282,30 @@ export const CalendarPicker = memo(function CalendarPicker({
   );
 
   // 이전/다음 달 이동 가능 여부
-  const canGoPrev = useMemo(() => {
-    if (!minimumDate) return true;
-    const prevMonth = subMonths(currentMonth, 1);
-    const prevMonthEnd = endOfMonth(prevMonth);
-    return !isBefore(prevMonthEnd, minimumDate);
-  }, [currentMonth, minimumDate]);
-
-  const canGoNext = useMemo(() => {
-    if (!maximumDate) return true;
-    const nextMonth = addMonths(currentMonth, 1);
-    const nextMonthStart = startOfMonth(nextMonth);
-    return !isAfter(nextMonthStart, maximumDate);
-  }, [currentMonth, maximumDate]);
+  const canGoPrevYear = useMemo(
+    () => canNavigateToMonth(currentMonth, -12, minimumDate, maximumDate),
+    [currentMonth, minimumDate, maximumDate]
+  );
+  const canGoPrev = useMemo(
+    () => canNavigateToMonth(currentMonth, -1, minimumDate, maximumDate),
+    [currentMonth, minimumDate, maximumDate]
+  );
+  const canGoNext = useMemo(
+    () => canNavigateToMonth(currentMonth, 1, minimumDate, maximumDate),
+    [currentMonth, minimumDate, maximumDate]
+  );
+  const canGoNextYear = useMemo(
+    () => canNavigateToMonth(currentMonth, 12, minimumDate, maximumDate),
+    [currentMonth, minimumDate, maximumDate]
+  );
 
   // 월 네비게이션
+  const goToPrevYear = useCallback(() => {
+    if (canGoPrevYear) {
+      setCurrentMonth((prev) => subMonths(prev, 12));
+    }
+  }, [canGoPrevYear]);
+
   const goToPrevMonth = useCallback(() => {
     if (canGoPrev) {
       setCurrentMonth((prev) => subMonths(prev, 1));
@@ -289,6 +317,12 @@ export const CalendarPicker = memo(function CalendarPicker({
       setCurrentMonth((prev) => addMonths(prev, 1));
     }
   }, [canGoNext]);
+
+  const goToNextYear = useCallback(() => {
+    if (canGoNextYear) {
+      setCurrentMonth((prev) => addMonths(prev, 12));
+    }
+  }, [canGoNextYear]);
 
   // 날짜 선택
   const handleDaySelect = useCallback(
@@ -328,30 +362,62 @@ export const CalendarPicker = memo(function CalendarPicker({
   return (
     <View testID={testID} className="py-2">
       {/* 헤더: 월 네비게이션 */}
-      <View className="flex-row items-center justify-between px-2 mb-4">
-        <Pressable
-          onPress={goToPrevMonth}
-          disabled={!canGoPrev}
-          accessibilityRole="button"
-          accessibilityLabel="이전 달"
-          className={`p-2 rounded-full ${!canGoPrev ? 'opacity-30' : ''}`}
-        >
-          <ChevronLeftIcon size={24} color={canGoPrev ? '#6B7280' : '#D1D5DB'} />
-        </Pressable>
+      <View className="px-2 mb-4">
+        <View className="flex-row items-center mb-3">
+          <View className="flex-1 flex-row items-center">
+            <Pressable
+              onPress={goToPrevYear}
+              disabled={!canGoPrevYear}
+              accessibilityRole="button"
+              accessibilityLabel="이전 연도"
+              className={`h-9 rounded-full bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center mr-2 ${
+                !canGoPrevYear ? 'opacity-30' : ''
+              }`}
+            >
+              <Text className="text-xs font-semibold text-gray-700 dark:text-gray-100">1년 전</Text>
+            </Pressable>
+            <Pressable
+              onPress={goToPrevMonth}
+              disabled={!canGoPrev}
+              accessibilityRole="button"
+              accessibilityLabel="이전 달"
+              className={`h-9 w-9 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center ${
+                !canGoPrev ? 'opacity-30' : ''
+              }`}
+            >
+              <ChevronLeftIcon size={18} color={canGoPrev ? '#6B7280' : '#D1D5DB'} />
+            </Pressable>
+          </View>
 
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-          {format(currentMonth, 'yyyy년 M월', { locale: ko })}
-        </Text>
+          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+            {format(currentMonth, 'yyyy년 M월', { locale: ko })}
+          </Text>
 
-        <Pressable
-          onPress={goToNextMonth}
-          disabled={!canGoNext}
-          accessibilityRole="button"
-          accessibilityLabel="다음 달"
-          className={`p-2 rounded-full ${!canGoNext ? 'opacity-30' : ''}`}
-        >
-          <ChevronRightIcon size={24} color={canGoNext ? '#6B7280' : '#D1D5DB'} />
-        </Pressable>
+          <View className="flex-1 flex-row items-center justify-end">
+            <Pressable
+              onPress={goToNextMonth}
+              disabled={!canGoNext}
+              accessibilityRole="button"
+              accessibilityLabel="다음 달"
+              className={`h-9 w-9 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center mr-2 ${
+                !canGoNext ? 'opacity-30' : ''
+              }`}
+            >
+              <ChevronRightIcon size={18} color={canGoNext ? '#6B7280' : '#D1D5DB'} />
+            </Pressable>
+            <Pressable
+              onPress={goToNextYear}
+              disabled={!canGoNextYear}
+              accessibilityRole="button"
+              accessibilityLabel="다음 연도"
+              className={`h-9 rounded-full bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center ${
+                !canGoNextYear ? 'opacity-30' : ''
+              }`}
+            >
+              <Text className="text-xs font-semibold text-gray-700 dark:text-gray-100">1년 후</Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
 
       {/* 요일 헤더 */}

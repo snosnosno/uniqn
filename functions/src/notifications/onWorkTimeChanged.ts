@@ -80,21 +80,21 @@ export const onWorkTimeChanged = onDocumentCreated(
 
       if (startChanged) {
         changes.push(
-          `start ${formatTime(modification.previousStartTime)} -> ${formatTime(modification.newStartTime)}`
+          `시작 ${formatTime(modification.previousStartTime)} -> ${formatTime(modification.newStartTime)}`
         );
       }
 
       if (endChanged) {
         changes.push(
-          `end ${formatTime(modification.previousEndTime)} -> ${formatTime(modification.newEndTime)}`
+          `종료 ${formatTime(modification.previousEndTime)} -> ${formatTime(modification.newEndTime)}`
         );
       }
 
       const result = await createAndSendNotification(
         recipientId,
         'schedule_change',
-        'Work time updated',
-        `${jobPosting.title ? `'${jobPosting.title}'` : 'This shift'} was updated: ${changes.join(', ')}`,
+        '근무 시간 변경',
+        `${jobPosting.title ? `'${jobPosting.title}'` : '해당 근무'} 시간이 변경되었습니다: ${changes.join(', ')}`,
         {
           link: '/schedule',
           priority: 'high',

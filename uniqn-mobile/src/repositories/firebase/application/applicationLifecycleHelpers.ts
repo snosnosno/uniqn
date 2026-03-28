@@ -169,7 +169,7 @@ function selectActiveConfirmationWorkLogs(
 
   if (!selected) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '?쒖꽦 ?뺤젙???곌껐??洹쇰Т 湲곕줉??李얠쓣 ???놁뒿?덈떎.',
+      userMessage: '현재 확정 정보와 연결된 근무 기록을 찾을 수 없습니다.',
     });
   }
 
@@ -183,7 +183,7 @@ function assertCancellableConfirmationWorkLogs(workLogs: WorkLogSnapshot[]): voi
 
   if (nonCancellableWorkLog) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '?대? 吏꾪뻾?섏뿀嫄곕굹 醫낅즺???뺤젙? ?꾩껜 痍⑥냼?????놁뒿?덈떎.',
+      userMessage: '이미 진행되었거나 종료된 확정 일정은 전체 취소할 수 없습니다.',
     });
   }
 }
@@ -255,7 +255,7 @@ export async function releaseConfirmedAssignmentsInTransaction(params: {
 
   if (!activeConfirmation) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '痍⑥냼???뺤젙 ?대젰???놁뒿?덈떎.',
+      userMessage: '취소할 확정 이력이 없습니다.',
     });
   }
 

@@ -11,7 +11,7 @@ import { View, Text, Pressable } from 'react-native';
 // 2. 외부 라이브러리
 import { router } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 
 // 3. 내부 모듈
 import { Card, Badge } from '@/components/ui';

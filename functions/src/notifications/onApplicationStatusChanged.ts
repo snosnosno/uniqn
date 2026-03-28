@@ -28,7 +28,7 @@ interface JobPostingData {
 }
 
 function getJobLabel(title?: string): string {
-  return title ? `'${title}'` : 'This job';
+  return title ? `'${title}'` : '해당 공고';
 }
 
 async function sendNotification(
@@ -102,8 +102,8 @@ export const onApplicationStatusChanged = onDocumentUpdated(
         await sendNotification(
           after.applicantId,
           'application_confirmed',
-          'Application confirmed',
-          `${getJobLabel(jobPosting.title)} has been confirmed.`,
+          '지원 확정',
+          `${getJobLabel(jobPosting.title)} 지원이 확정되었습니다.`,
           applicationId,
           after,
           jobPosting
@@ -118,8 +118,8 @@ export const onApplicationStatusChanged = onDocumentUpdated(
         await sendNotification(
           after.applicantId,
           'confirmation_cancelled',
-          'Confirmation cancelled',
-          `${getJobLabel(jobPosting.title)} was cancelled.`,
+          '확정 취소',
+          `${getJobLabel(jobPosting.title)} 확정이 취소되었습니다.`,
           applicationId,
           after,
           jobPosting
@@ -130,8 +130,8 @@ export const onApplicationStatusChanged = onDocumentUpdated(
         await sendNotification(
           after.applicantId,
           'application_rejected',
-          'Application rejected',
-          `${getJobLabel(jobPosting.title)} was rejected.`,
+          '지원 거절',
+          `${getJobLabel(jobPosting.title)} 지원이 거절되었습니다.`,
           applicationId,
           after,
           jobPosting
@@ -142,8 +142,8 @@ export const onApplicationStatusChanged = onDocumentUpdated(
         await sendNotification(
           after.applicantId,
           'cancellation_approved',
-          'Cancellation approved',
-          `${getJobLabel(jobPosting.title)} cancellation was approved.`,
+          '취소 요청 승인',
+          `${getJobLabel(jobPosting.title)} 취소 요청이 승인되었습니다.`,
           applicationId,
           after,
           jobPosting
@@ -154,8 +154,12 @@ export const onApplicationStatusChanged = onDocumentUpdated(
         await sendNotification(
           after.applicantId,
           'cancellation_rejected',
-          'Cancellation rejected',
-          `${getJobLabel(jobPosting.title)} cancellation was rejected.`,
+          '취소 요청 거절',
+          `${getJobLabel(jobPosting.title)} 취소 요청이 거절되었습니다.${
+            after.cancellationRequest?.rejectionReason
+              ? ` 사유: ${after.cancellationRequest.rejectionReason}`
+              : ''
+          }`,
           applicationId,
           after,
           jobPosting,

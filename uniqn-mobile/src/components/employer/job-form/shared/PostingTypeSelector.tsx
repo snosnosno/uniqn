@@ -103,12 +103,6 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
         </View>
       </View>
 
-      <View className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-2.5 dark:border-blue-800 dark:bg-blue-900/20">
-        <Text className="text-sm text-blue-700 dark:text-blue-300">
-          고정공고는 이번 V3 통합 범위에서 제외되어 생성할 수 없습니다.
-        </Text>
-      </View>
-
       {value === 'tournament' && (
         <View className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-800 dark:bg-amber-900/20">
           <Text className="text-sm text-amber-700 dark:text-amber-300">

@@ -43,6 +43,7 @@ interface FilterTabProps {
   isSelected: boolean;
   onPress: () => void;
   isDarkMode: boolean;
+  testID?: string;
 }
 
 interface PostingCardProps {
@@ -77,11 +78,13 @@ const FilterTab = memo(function FilterTab({
   isSelected,
   onPress,
   isDarkMode,
+  testID,
 }: FilterTabProps) {
   return (
     <Pressable
       onPress={onPress}
       className="px-4 py-2 rounded-full mr-2 flex-row items-center"
+      testID={testID}
       style={{
         backgroundColor: isSelected ? '#9333EA' : isDarkMode ? '#3D3350' : '#E5E7EB',
       }}
@@ -296,6 +299,7 @@ export default function MyPostingsPage() {
             onPress={handleCreatePress}
             className="bg-primary-600 dark:bg-primary-500 px-4 py-2 rounded-lg flex-row items-center"
             accessibilityRole="button"
+            testID="my-postings-create-button"
             accessibilityLabel="새 공고 작성"
           >
             <AddIcon size={18} color="white" />
@@ -319,6 +323,7 @@ export default function MyPostingsPage() {
               isSelected={selectedFilter === tab.status}
               onPress={() => handleFilterChange(tab.status)}
               isDarkMode={isDarkMode}
+              testID={`my-postings-filter-${tab.status}`}
             />
           ))}
         </ScrollView>

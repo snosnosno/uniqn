@@ -1,6 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, Text, TouchableOpacity, View } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { ActivityIndicator, FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TrashIcon } from '@/components/icons';
 import { toDate, type DateInput } from '@/utils/date';
@@ -214,7 +213,7 @@ export function LoadTemplateModal({
 
         {!templatesLoading && templates.length > 0 ? (
           <View style={{ height: 400 }}>
-            <FlashList
+            <FlatList
               data={templates}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
@@ -226,8 +225,6 @@ export function LoadTemplateModal({
                   isDeleting={isDeletingTemplate}
                 />
               )}
-              // @ts-expect-error FlashList v2 typing gap
-              estimatedItemSize={140}
               showsVerticalScrollIndicator={false}
               nestedScrollEnabled
             />

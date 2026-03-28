@@ -13,7 +13,7 @@ import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 import { router } from 'expo-router';
 import { RefreshIcon } from '@/components/icons';
 import { useTournamentApproval } from '@/hooks/useTournamentApproval';

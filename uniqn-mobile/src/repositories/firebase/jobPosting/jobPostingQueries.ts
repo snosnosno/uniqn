@@ -10,10 +10,12 @@ import {
   documentId,
   getDoc,
   getDocs,
+  onSnapshot,
   query,
   where,
   QueryDocumentSnapshot,
   DocumentData,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -60,6 +62,55 @@ export async function getById(jobPostingId: string): Promise<JobPosting | null> 
       context: { jobPostingId },
     });
   }
+}
+
+export function subscribeById(
+  jobPostingId: string,
+  callbacks: {
+    onUpdate: (jobPosting: JobPosting | null) => void;
+    onError?: (error: Error) => void;
+  }
+): Unsubscribe {
+  logger.info('공고 상세 실시간 구독 시작', { jobPostingId });
+
+  const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      try {
+        if (!docSnap.exists()) {
+          callbacks.onUpdate(null);
+          return;
+        }
+
+        const jobPosting = parseJobPostingDocument({
+          id: docSnap.id,
+          ...docSnap.data(),
+        });
+
+        if (!jobPosting) {
+          logger.warn('공고 실시간 데이터 파싱 실패', { jobPostingId });
+          callbacks.onUpdate(null);
+          return;
+        }
+
+        callbacks.onUpdate(jobPosting);
+      } catch (error) {
+        logger.error('공고 상세 실시간 구독 처리 실패', toError(error), { jobPostingId });
+        callbacks.onError?.(toError(error));
+      }
+    },
+    (error) => {
+      callbacks.onError?.(
+        handleServiceError(error, {
+          operation: '공고 상세 실시간 구독',
+          component: 'JobPostingRepository',
+          context: { jobPostingId },
+        }) as Error
+      );
+    }
+  );
 }
 
 export async function getByIdBatch(jobPostingIds: string[]): Promise<JobPosting[]> {

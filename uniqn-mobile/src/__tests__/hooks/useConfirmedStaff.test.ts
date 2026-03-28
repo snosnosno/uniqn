@@ -339,6 +339,10 @@ describe('useConfirmedStaff', () => {
 
     await waitFor(() => {
       expect(mockMarkAsNoShow).toHaveBeenCalledWith('worklog-1', 'No arrival');
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'success',
+        message: '노쇼 처리되었습니다.',
+      });
     });
   });
 
@@ -354,6 +358,10 @@ describe('useConfirmedStaff', () => {
     await waitFor(() => {
       expect(mockUpdateStaffStatus).toHaveBeenCalledWith('worklog-1', 'completed');
       expect(mockInvalidateStaffManagement).toHaveBeenCalledWith('job-1');
+      expect(mockAddToast).toHaveBeenCalledWith({
+        type: 'success',
+        message: '상태가 변경되었습니다.',
+      });
     });
   });
 });

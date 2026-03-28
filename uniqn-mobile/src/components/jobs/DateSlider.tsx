@@ -8,7 +8,7 @@
 import React, { memo, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { subDays, addDays, isToday, isYesterday, format, isSameDay } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko } from 'date-fns/locale/ko';
 
 // ============================================================================
 // Types

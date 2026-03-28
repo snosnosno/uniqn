@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, DocumentData, Unsubscribe } from 'firebase/firestore';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
   JobPosting,
@@ -66,6 +66,11 @@ export interface JobPostingStats {
   cancelled: number;
   totalApplications: number;
   totalViews: number;
+}
+
+export interface JobPostingSubscriptionCallbacks {
+  onUpdate: (jobPosting: JobPosting | null) => void;
+  onError?: (error: Error) => void;
 }
 
 // ============================================================================
@@ -275,4 +280,12 @@ export interface IJobPostingRepository {
     postingType: string,
     approvalStatuses: TournamentApprovalStatus[]
   ): Promise<JobPosting[]>;
+
+  /**
+   * 단일 공고 실시간 구독
+   * @param jobPostingId - 공고 ID
+   * @param callbacks - 업데이트/에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeById(jobPostingId: string, callbacks: JobPostingSubscriptionCallbacks): Unsubscribe;
 }

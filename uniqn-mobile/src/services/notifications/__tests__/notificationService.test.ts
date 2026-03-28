@@ -12,6 +12,7 @@ import { Platform } from 'react-native';
 // ============================================================================
 
 import {
+  createNotificationFromFCM,
   fetchNotifications,
   getUnreadCount,
   getNotification,
@@ -160,6 +161,33 @@ describe('NotificationService', () => {
       expect(result.notifications).toEqual([]);
       expect(result.lastDoc).toBeNull();
       expect(result.hasMore).toBe(false);
+    });
+
+    it('should normalize legacy English notification content from repository results', async () => {
+      mockRepo.getByUserId.mockResolvedValue({
+        items: [
+          createMockNotificationData({
+            type: 'schedule_created',
+            title: 'New schedule confirmed',
+            body: "'22222' is scheduled for 2026-03-30 (09:00).",
+            data: {
+              jobPostingTitle: '22222',
+              date: '2026-03-30',
+              timeSlot: '09:00',
+            },
+          }),
+        ] as any,
+        lastDoc: null as any,
+        hasMore: false,
+      });
+
+      const result = await fetchNotifications({ userId: 'user-1' });
+
+      expect(result.notifications[0].title).toBe('새 근무 배정');
+      expect(result.notifications[0].body).toContain("'22222'");
+      expect(result.notifications[0].body).toContain('배정되었습니다');
+      expect(result.notifications[0].body).toContain('2026-03-30');
+      expect(result.notifications[0].body).toContain('09:00');
     });
 
     it('should pass filter and pageSize options to repository', async () => {
@@ -402,7 +430,7 @@ describe('NotificationService', () => {
 
       expect(mockRepo.subscribeToNotifications).toHaveBeenCalledWith(
         'user-1',
-        onNotifications,
+        expect.any(Function),
         onError
       );
       expect(unsubscribe).toBe(mockUnsubscribe);
@@ -416,6 +444,58 @@ describe('NotificationService', () => {
 
       unsubscribe();
       expect(mockUnsubscribe).toHaveBeenCalled();
+    });
+
+    it('should normalize legacy English notification content in realtime updates', () => {
+      mockRepo.subscribeToNotifications.mockImplementation((_, onNotifications) => {
+        onNotifications([
+          createMockNotificationData({
+            type: 'application_confirmed',
+            title: 'Application confirmed',
+            body: "'22222' has been confirmed.",
+            data: {
+              jobPostingTitle: '22222',
+            },
+          }) as any,
+        ]);
+
+        return jest.fn();
+      });
+
+      const onNotifications = jest.fn();
+      subscribeToNotifications('user-1', onNotifications);
+
+      expect(onNotifications).toHaveBeenCalledWith([
+        expect.objectContaining({
+          title: '지원 확정',
+          body: "'22222' 지원이 확정되었습니다.",
+        }),
+      ]);
+    });
+  });
+
+  describe('createNotificationFromFCM', () => {
+    it('should normalize legacy English notification payloads from FCM', () => {
+      const notification = createNotificationFromFCM(
+        {
+          title: 'Settlement completed',
+          body: "Settlement for '22222' is complete. (12000 KRW)",
+          data: {
+            notificationId: 'notification-2',
+            type: 'settlement_completed',
+            jobPostingTitle: '22222',
+            payrollAmount: '12000',
+          },
+        } as any,
+        'user-1'
+      );
+
+      expect(notification).toEqual(
+        expect.objectContaining({
+          title: '정산 완료',
+          body: "'22222' 정산이 완료되었습니다. 지급액: 12,000원",
+        })
+      );
     });
   });
 
