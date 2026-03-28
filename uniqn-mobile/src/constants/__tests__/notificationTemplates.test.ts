@@ -359,6 +359,18 @@ describe('notificationTemplates', () => {
 
       expect(body).toContain('2.0.0');
     });
+
+    it('should fallback ANNOUNCEMENT link to notices list when announcementId is missing', () => {
+      const template = NotificationTemplates[NotificationType.ANNOUNCEMENT];
+
+      expect(template.link({})).toBe('/notices');
+    });
+
+    it('should generate ANNOUNCEMENT detail link when announcementId exists', () => {
+      const template = NotificationTemplates[NotificationType.ANNOUNCEMENT];
+
+      expect(template.link({ announcementId: 'notice-123' })).toBe('/notices/notice-123');
+    });
   });
 
   // ============================================================================
@@ -371,6 +383,18 @@ describe('notificationTemplates', () => {
       const body = typeof template.body === 'function' ? template.body({}) : template.body;
 
       expect(body).toContain('답변');
+    });
+
+    it('should fallback INQUIRY_ANSWERED link to inquiry list when inquiryId is missing', () => {
+      const template = NotificationTemplates[NotificationType.INQUIRY_ANSWERED];
+
+      expect(template.link({})).toBe('/support/my-inquiries');
+    });
+
+    it('should generate INQUIRY_ANSWERED detail link when inquiryId exists', () => {
+      const template = NotificationTemplates[NotificationType.INQUIRY_ANSWERED];
+
+      expect(template.link({ inquiryId: 'inq-123' })).toBe('/support/inquiry/inq-123');
     });
 
     it('should generate NEW_REPORT body', () => {
@@ -450,6 +474,7 @@ describe('notificationTemplates', () => {
 
       expect(result.title).toBe('공지사항');
       expect(result.body).toContain('공지사항');
+      expect(result.link).toBe('/notices');
     });
 
     it('should include icon when available', () => {

@@ -7,16 +7,15 @@ import type { Page } from '@playwright/test';
  * 앱 초기화 완료 대기
  * 스플래시 화면이 사라지고 실제 콘텐츠가 나타날 때까지 대기
  */
-export async function waitForAppReady(
-  page: Page,
-  timeout = 30_000
-): Promise<void> {
+export async function waitForAppReady(page: Page, timeout = 30_000): Promise<void> {
   // 로딩 오버레이가 사라질 때까지 대기
-  const loadingIndicator = page.getByText('앱 로딩 중...');
   try {
-    const isVisible = await loadingIndicator.isVisible().catch(() => false);
-    if (isVisible) {
-      await loadingIndicator.waitFor({ state: 'hidden', timeout });
+    for (const text of ['앱 로딩 중...', '앱을 불러오는 중...']) {
+      const loadingIndicator = page.getByText(text);
+      const isVisible = await loadingIndicator.isVisible().catch(() => false);
+      if (isVisible) {
+        await loadingIndicator.waitFor({ state: 'hidden', timeout });
+      }
     }
   } catch {
     // 로딩 메시지가 없었으면 이미 로드 완료
@@ -29,9 +28,7 @@ export async function waitForAppReady(
 /**
  * 알림 권한 온보딩 모달 자동 스킵
  */
-export async function dismissNotificationOnboarding(
-  page: Page
-): Promise<void> {
+export async function dismissNotificationOnboarding(page: Page): Promise<void> {
   try {
     const skipButton = page.getByText('나중에 하기');
     const isVisible = await skipButton.isVisible().catch(() => false);
@@ -52,19 +49,15 @@ export async function waitForToast(
   message: string | RegExp,
   timeout = 5_000
 ): Promise<void> {
-  const toast = typeof message === 'string'
-    ? page.getByText(message)
-    : page.locator(`text=${message}`);
+  const toast =
+    typeof message === 'string' ? page.getByText(message) : page.locator(`text=${message}`);
   await toast.waitFor({ state: 'visible', timeout });
 }
 
 /**
  * 토스트 메시지가 사라질 때까지 대기
  */
-export async function waitForToastDismiss(
-  page: Page,
-  timeout = 6_000
-): Promise<void> {
+export async function waitForToastDismiss(page: Page, timeout = 6_000): Promise<void> {
   const toast = page.locator('[role="alert"]');
   try {
     await toast.waitFor({ state: 'hidden', timeout });
@@ -76,20 +69,14 @@ export async function waitForToastDismiss(
 /**
  * 모달이 열릴 때까지 대기
  */
-export async function waitForModal(
-  page: Page,
-  timeout = 5_000
-): Promise<void> {
+export async function waitForModal(page: Page, timeout = 5_000): Promise<void> {
   await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout });
 }
 
 /**
  * 모달이 닫힐 때까지 대기
  */
-export async function waitForModalDismiss(
-  page: Page,
-  timeout = 5_000
-): Promise<void> {
+export async function waitForModalDismiss(page: Page, timeout = 5_000): Promise<void> {
   await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout });
 }
 
@@ -107,9 +94,6 @@ export async function waitForNavigation(
 /**
  * 네트워크 요청 완료 대기
  */
-export async function waitForNetworkIdle(
-  page: Page,
-  timeout = 5_000
-): Promise<void> {
+export async function waitForNetworkIdle(page: Page, timeout = 5_000): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout });
 }

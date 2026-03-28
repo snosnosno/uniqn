@@ -20,7 +20,7 @@ export class AdminReportsPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/reports', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin/reports', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
@@ -33,9 +33,7 @@ export class AdminReportsPage extends BasePage {
   }
 
   /** 심각도 필터 클릭 (필터 패널 열린 상태에서) */
-  async clickSeverityFilter(
-    severity: '전체' | '심각' | '높음' | '보통' | '낮음'
-  ): Promise<void> {
+  async clickSeverityFilter(severity: '전체' | '심각' | '높음' | '보통' | '낮음'): Promise<void> {
     // Use .first() to target the filter option (appears before content)
     await this.page.getByText(severity, { exact: true }).first().click();
   }
@@ -56,7 +54,7 @@ export class AdminReportsPage extends BasePage {
 
   /** 신고 상세 페이지로 이동 */
   async gotoReportDetail(reportId: string): Promise<void> {
-    await this.page.goto(`/reports/${reportId}`, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(`/admin/reports/${reportId}`, { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
@@ -76,9 +74,7 @@ export class AdminReportsPage extends BasePage {
   }
 
   /** 처리 결과 선택 */
-  async selectReviewStatus(
-    status: '검토 중' | '처리 완료' | '기각'
-  ): Promise<void> {
+  async selectReviewStatus(status: '검토 중' | '처리 완료' | '기각'): Promise<void> {
     await this.page.getByText(status, { exact: true }).click();
   }
 

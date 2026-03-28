@@ -1,12 +1,3 @@
-/**
- * UNIQN Mobile - 라우트 매퍼
- *
- * @description DeepLinkRoute와 Expo Router 경로 간 변환
- * @version 2.0.0
- *
- * StatusMapper 패턴을 따름 (shared/status/StatusMapper.ts 참조)
- */
-
 import type { UserRole } from '@/types/role';
 import {
   EXPO_ROUTES,
@@ -17,117 +8,113 @@ import {
 } from './RouteRegistry';
 import type { DeepLinkRoute } from './types';
 
-// ============================================================================
-// RouteMapper Class
-// ============================================================================
-
-/**
- * 딥링크 라우트와 Expo Router 경로 간 변환 유틸리티
- */
 export class RouteMapper {
-  /**
-   * DeepLinkRoute를 Expo Router 경로로 변환
-   *
-   * @param route - 딥링크 라우트
-   * @returns Expo Router 경로 문자열
-   */
   static toExpoPath(route: DeepLinkRoute): string {
     switch (route.name) {
-      // === 공개 라우트 ===
       case 'home':
         return EXPO_ROUTES.home;
-
       case 'jobs':
         return EXPO_ROUTES.publicJobs;
-
       case 'job':
         return EXPO_ROUTES.publicJobDetail.replace('[id]', route.params.id);
-
       case 'login':
         return EXPO_ROUTES.login;
-
       case 'signup':
         return EXPO_ROUTES.signup;
-
       case 'forgot-password':
         return EXPO_ROUTES.forgotPassword;
 
-      // === 인증 필요 라우트 ===
       case 'notifications':
         return EXPO_ROUTES.notifications;
-
       case 'schedule':
         return EXPO_ROUTES.schedule;
-
       case 'profile':
         return EXPO_ROUTES.profile;
-
       case 'settings':
         return EXPO_ROUTES.settings;
-
+      case 'settings/profile':
+        return EXPO_ROUTES.settingsProfile;
+      case 'settings/change-password':
+        return EXPO_ROUTES.settingsChangePassword;
+      case 'settings/delete-account':
+        return EXPO_ROUTES.settingsDeleteAccount;
+      case 'settings/privacy':
+        return EXPO_ROUTES.settingsPrivacy;
+      case 'settings/terms':
+        return EXPO_ROUTES.settingsTerms;
+      case 'settings/employer-terms':
+        return EXPO_ROUTES.settingsEmployerTerms;
+      case 'settings/liability-waiver':
+        return EXPO_ROUTES.settingsLiabilityWaiver;
+      case 'settings/my-data':
+        return EXPO_ROUTES.settingsMyData;
+      case 'settings/business-info':
+        return EXPO_ROUTES.settingsBusinessInfo;
       case 'support':
         return EXPO_ROUTES.support;
-
+      case 'support/faq':
+        return EXPO_ROUTES.supportFaq;
+      case 'support/create-inquiry':
+        return EXPO_ROUTES.supportCreateInquiry;
+      case 'support/my-inquiries':
+        return EXPO_ROUTES.supportMyInquiries;
+      case 'support/inquiry':
+        return EXPO_ROUTES.supportInquiryDetail.replace('[id]', route.params.id);
       case 'notices':
         return EXPO_ROUTES.notices;
+      case 'notice':
+        return EXPO_ROUTES.noticeDetail.replace('[id]', route.params.id);
 
-      // === 구인자 라우트 ===
       case 'employer/my-postings':
         return EXPO_ROUTES.employerTab;
-
       case 'employer/posting-create':
         return EXPO_ROUTES.postingCreate;
-
       case 'employer/posting':
         return EXPO_ROUTES.postingDetail.replace('[id]', route.params.id);
-
       case 'employer/posting-edit':
         return EXPO_ROUTES.postingEdit.replace('[id]', route.params.id);
-
       case 'employer/applicants':
         return EXPO_ROUTES.postingApplicants.replace('[id]', route.params.jobId);
-
       case 'employer/settlement':
         return EXPO_ROUTES.postingSettlements.replace('[id]', route.params.jobId);
 
-      // === 리뷰/평가 라우트 ===
-      case 'reviews/detail':
-        return EXPO_ROUTES.reviewDetail.replace('[workLogId]', route.params.workLogId);
-
-      case 'reviews/pending':
-        return EXPO_ROUTES.reviewsPending;
-
-      // === 관리자 라우트 ===
       case 'admin/dashboard':
         return EXPO_ROUTES.adminDashboard;
-
+      case 'admin/users':
+        return EXPO_ROUTES.adminUsers;
+      case 'admin/user':
+        return EXPO_ROUTES.adminUserDetail.replace('[id]', route.params.id);
+      case 'admin/stats':
+        return EXPO_ROUTES.adminStats;
       case 'admin/reports':
         return EXPO_ROUTES.adminReports;
-
       case 'admin/report':
         return EXPO_ROUTES.adminReportDetail.replace('[id]', route.params.id);
-
+      case 'admin/announcements':
+        return EXPO_ROUTES.adminAnnouncements;
+      case 'admin/announcement-create':
+        return EXPO_ROUTES.adminAnnouncementCreate;
+      case 'admin/announcement':
+        return EXPO_ROUTES.adminAnnouncementDetail.replace('[id]', route.params.id);
+      case 'admin/announcement-edit':
+        return EXPO_ROUTES.adminAnnouncementEdit.replace('[id]', route.params.id);
       case 'admin/inquiries':
         return EXPO_ROUTES.adminInquiries;
-
       case 'admin/inquiry':
         return EXPO_ROUTES.adminInquiryDetail.replace('[id]', route.params.id);
-
       case 'admin/tournaments':
         return EXPO_ROUTES.adminTournaments;
 
+      case 'reviews/detail':
+        return EXPO_ROUTES.reviewDetail.replace('[workLogId]', route.params.workLogId);
+      case 'reviews/pending':
+        return EXPO_ROUTES.reviewsPending;
+
       default:
-        // 알 수 없는 라우트는 홈으로 폴백
         return EXPO_ROUTES.home;
     }
   }
 
-  /**
-   * 라우트가 인증을 필요로 하는지 확인
-   *
-   * @param routeName - 딥링크 라우트 이름
-   * @returns 인증 필요 여부
-   */
   static requiresAuth(routeName: DeepLinkRoute['name']): boolean {
     const publicRoutes: DeepLinkRoute['name'][] = [
       'home',
@@ -137,48 +124,24 @@ export class RouteMapper {
       'signup',
       'forgot-password',
     ];
+
     return !publicRoutes.includes(routeName);
   }
 
-  /**
-   * 라우트가 특정 역할을 필요로 하는지 확인
-   *
-   * @param routeName - 딥링크 라우트 이름
-   * @returns 필요한 역할 (null이면 역할 제한 없음)
-   */
   static getRequiredRole(routeName: DeepLinkRoute['name']): UserRole | null {
     if (routeName.startsWith('employer/')) return 'employer';
     if (routeName.startsWith('admin/')) return 'admin';
-    // 리뷰 라우트는 인증만 필요 (특정 역할 불필요)
     return null;
   }
 
-  /**
-   * Expo 라우트가 인증을 필요로 하는지 확인
-   *
-   * @param routeName - Expo 라우트 이름
-   * @returns 인증 필요 여부
-   */
   static expoRouteRequiresAuth(routeName: ExpoRouteName): boolean {
     return AUTH_REQUIRED_ROUTES.includes(routeName);
   }
 
-  /**
-   * Expo 라우트가 구인자 권한을 필요로 하는지 확인
-   *
-   * @param routeName - Expo 라우트 이름
-   * @returns 구인자 권한 필요 여부
-   */
   static expoRouteRequiresEmployer(routeName: ExpoRouteName): boolean {
     return EMPLOYER_REQUIRED_ROUTES.includes(routeName);
   }
 
-  /**
-   * Expo 라우트가 관리자 권한을 필요로 하는지 확인
-   *
-   * @param routeName - Expo 라우트 이름
-   * @returns 관리자 권한 필요 여부
-   */
   static expoRouteRequiresAdmin(routeName: ExpoRouteName): boolean {
     return ADMIN_REQUIRED_ROUTES.includes(routeName);
   }

@@ -191,7 +191,7 @@ export const sendSystemAnnouncement = onCall<SendSystemAnnouncementRequest>(
                 content.length > 200
                   ? content.substring(0, 200) + "..."
                   : content,
-              link: "/notifications",
+              link: "/notices",
               data: {
                 type: "announcement",
                 announcementId,
@@ -248,6 +248,7 @@ export const sendSystemAnnouncement = onCall<SendSystemAnnouncementRequest>(
         data: {
           type: "announcement",
           announcementId,
+          link: "/notices",
           priority,
           target: "/notices",
         },
@@ -305,7 +306,7 @@ export const sendSystemAnnouncement = onCall<SendSystemAnnouncementRequest>(
               content.length > 200
                 ? content.substring(0, 200) + "..."
                 : content,
-            link: "/notifications",
+            link: "/notices",
             data: {
               type: "announcement",
               announcementId,

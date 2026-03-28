@@ -13,29 +13,28 @@ export class AdminAnnouncementsPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.header = page.getByText('공지사항 관리');
+    this.header = page.getByRole('heading', { name: '공지사항 관리' });
     this.createButton = page.locator('[aria-label*="추가"]');
-    this.emptyState = page.getByText('공지사항이 없습니다');
-    this.emptyCreateButton = page.getByText('공지사항 작성');
+    this.emptyState = page.getByText('공지사항이 없습니다', { exact: true });
+    this.emptyCreateButton = page.getByText('공지사항 작성', { exact: true });
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/announcements', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin/announcements', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
   /** 상태 탭 클릭 */
-  async clickStatusTab(
-    status: '전체' | '초안' | '발행됨' | '보관됨'
-  ): Promise<void> {
-    // Use .first() to target the filter tab (appears before content)
-    await this.page.getByText(status, { exact: true }).first().click();
+  async clickStatusTab(status: '전체' | '초안' | '발행됨' | '보관됨'): Promise<void> {
+    const label = this.page.getByText(status, { exact: true }).first();
+    await label.evaluate((element) => {
+      (element as HTMLElement).click();
+    });
   }
 
   /** 상태 탭 카운트 가져오기 */
   getStatusTab(status: string): Locator {
-    // Use .first() since regex can match multiple elements
-    return this.page.getByText(new RegExp(`${status}\\s*\\d*`)).first();
+    return this.page.getByText(status, { exact: true }).first();
   }
 
   /** 공지사항 카드 클릭 (제목으로) */
@@ -45,13 +44,13 @@ export class AdminAnnouncementsPage extends BasePage {
 
   /** 공지사항 작성 페이지로 이동 */
   async gotoCreate(): Promise<void> {
-    await this.page.goto('/announcements/create', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin/announcements/create', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
   /** 작성 페이지 헤더 */
   get createHeader(): Locator {
-    return this.page.getByText('공지사항 작성');
+    return this.page.getByRole('heading', { name: '공지사항 작성' });
   }
 
   /** 저장 버튼 */

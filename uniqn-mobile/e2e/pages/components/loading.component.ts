@@ -18,7 +18,7 @@ export class LoadingComponent {
    * 로딩 완료 대기
    */
   async waitForComplete(timeout = 15_000): Promise<void> {
-    const loading = this.page.getByText(/로딩 중|앱 로딩 중/);
+    const loading = this.page.getByText(/로딩 중|앱 로딩 중|앱을 불러오는 중/);
     try {
       await loading.waitFor({ state: 'hidden', timeout });
     } catch {

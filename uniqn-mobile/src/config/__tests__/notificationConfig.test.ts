@@ -273,24 +273,38 @@ describe('notificationConfig', () => {
     describe('system types', () => {
       it('should generate static link for ANNOUNCEMENT', () => {
         const link = generateDeepLink(NotificationType.ANNOUNCEMENT);
-        expect(link).toBe('/notifications');
+        expect(link).toBe('/notices');
+      });
+
+      it('should generate notice detail link for ANNOUNCEMENT with id', () => {
+        const link = generateDeepLink(NotificationType.ANNOUNCEMENT, {
+          announcementId: 'notice-123',
+        });
+        expect(link).toBe('/notices/notice-123');
       });
 
       it('should generate static link for MAINTENANCE', () => {
         const link = generateDeepLink(NotificationType.MAINTENANCE);
-        expect(link).toBe('/notifications');
+        expect(link).toBe('/notices');
       });
 
       it('should generate static link for APP_UPDATE', () => {
         const link = generateDeepLink(NotificationType.APP_UPDATE);
-        expect(link).toBe('/notifications');
+        expect(link).toBe('/settings');
       });
     });
 
     describe('admin types', () => {
       it('should generate static link for INQUIRY_ANSWERED', () => {
         const link = generateDeepLink(NotificationType.INQUIRY_ANSWERED);
-        expect(link).toBe('/support');
+        expect(link).toBe('/support/my-inquiries');
+      });
+
+      it('should generate inquiry detail link for INQUIRY_ANSWERED with inquiryId', () => {
+        const link = generateDeepLink(NotificationType.INQUIRY_ANSWERED, {
+          inquiryId: 'inq-123',
+        });
+        expect(link).toBe('/support/inquiry/inq-123');
       });
 
       it('should generate static link for REPORT_RESOLVED', () => {

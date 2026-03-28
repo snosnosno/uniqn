@@ -20,14 +20,12 @@ export class AdminUsersPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/users', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin/users', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
   /** 역할 필터 탭 클릭 */
-  async clickRoleFilter(
-    role: '전체' | '관리자' | '구인자' | '스태프'
-  ): Promise<void> {
+  async clickRoleFilter(role: '전체' | '관리자' | '구인자' | '스태프'): Promise<void> {
     // Use .first() to target the filter chip at top (appears before content)
     await this.page.getByText(role, { exact: true }).first().click();
   }
@@ -57,7 +55,7 @@ export class AdminUsersPage extends BasePage {
 
   /** 사용자 상세 페이지로 이동 */
   async gotoUserDetail(userId: string): Promise<void> {
-    await this.page.goto(`/users/${userId}`, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(`/admin/users/${userId}`, { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 

@@ -53,6 +53,7 @@ export interface NotificationLinkData {
   workLogId?: string;
   reportId?: string;
   inquiryId?: string;
+  announcementId?: string;
   date?: string;
 }
 
@@ -110,12 +111,14 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
     data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
 
   // === 시스템 ===
-  [NotificationType.ANNOUNCEMENT]: () => '/notifications',
-  [NotificationType.MAINTENANCE]: () => '/notifications',
-  [NotificationType.APP_UPDATE]: () => '/notifications',
+  [NotificationType.ANNOUNCEMENT]: (data) =>
+    data?.announcementId ? `/notices/${data.announcementId}` : '/notices',
+  [NotificationType.MAINTENANCE]: () => '/notices',
+  [NotificationType.APP_UPDATE]: () => '/settings',
 
   // === 관리자 ===
-  [NotificationType.INQUIRY_ANSWERED]: () => '/support',
+  [NotificationType.INQUIRY_ANSWERED]: (data) =>
+    data?.inquiryId ? `/support/inquiry/${data.inquiryId}` : '/support/my-inquiries',
   [NotificationType.REPORT_RESOLVED]: () => '/notifications',
   [NotificationType.NEW_REPORT]: (data) =>
     data?.reportId ? `/admin/reports/${data.reportId}` : '/admin/reports',

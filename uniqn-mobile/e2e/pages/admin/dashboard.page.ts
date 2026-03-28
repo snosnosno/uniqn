@@ -47,7 +47,7 @@ export class AdminDashboardPage extends BasePage {
 
   /** 통계 페이지로 이동 */
   async gotoStats(): Promise<void> {
-    await this.page.goto('/stats', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin/stats', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 

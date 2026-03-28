@@ -15,12 +15,17 @@ export class BasePage {
     // DOM 로드 대기
     await this.page.waitForLoadState('domcontentloaded');
 
-    const loadingText = this.page.getByText('앱 로딩 중...');
     try {
-      // 로딩 텍스트가 나타날 때까지 짧게 대기 (이미 사라졌으면 스킵)
-      await loadingText.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
-      // 로딩 텍스트가 사라질 때까지 대기
-      await loadingText.waitFor({ state: 'hidden', timeout: 30_000 });
+      const loadingTexts = ['앱 로딩 중...', '앱을 불러오는 중...'];
+
+      for (const text of loadingTexts) {
+        const loadingText = this.page.getByText(text);
+        const isVisible = await loadingText.isVisible().catch(() => false);
+
+        if (isVisible) {
+          await loadingText.waitFor({ state: 'hidden', timeout: 30_000 });
+        }
+      }
     } catch {
       // 이미 사라졌거나 에러 화면으로 전환됨
     }

@@ -39,14 +39,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.NEW_APPLICATION]: {
     title: '새로운 지원자',
     body: (d) => `${d.staffName}님이 "${d.jobTitle}" 공고에 지원했습니다.`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/applicants`,
+    link: (d) => `/employer/applicants/${d.jobPostingId}`,
     icon: '👤',
   },
 
   [NotificationType.APPLICATION_CANCELLED]: {
     title: '지원 취소',
     body: (d) => `${d.staffName}님이 "${d.jobTitle}" 공고 지원을 취소했습니다.`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/applicants`,
+    link: (d) => `/employer/applicants/${d.jobPostingId}`,
     icon: '❌',
   },
 
@@ -93,14 +93,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.STAFF_CHECKED_IN]: {
     title: '출근 알림',
     body: (d) => `${d.staffName}님이 ${d.checkInTime}에 출근했습니다.`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/attendance`,
+    link: (d) => `/employer/applicants/${d.jobPostingId}`,
     icon: '🟢',
   },
 
   [NotificationType.STAFF_CHECKED_OUT]: {
     title: '퇴근 알림',
     body: (d) => `${d.staffName}님이 퇴근했습니다. 근무시간: ${d.workHours}`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/settlement`,
+    link: (d) => `/employer/settlement/${d.jobPostingId}`,
     icon: '🔴',
   },
 
@@ -128,7 +128,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.NO_SHOW_ALERT]: {
     title: '🚨 노쇼 알림',
     body: (d) => `${d.staffName}님이 예정된 시간에 출근하지 않았습니다.`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/attendance`,
+    link: (d) => `/employer/applicants/${d.jobPostingId}`,
     icon: '⚠️',
   },
 
@@ -162,14 +162,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.SETTLEMENT_COMPLETED]: {
     title: '💰 정산 완료',
     body: (d) => `"${d.jobTitle}" 정산이 완료되었습니다. 지급액: ${d.amount}원`,
-    link: (d) => `/schedule/${d.workLogId}`,
+    link: () => '/schedule',
     icon: '💰',
   },
 
   [NotificationType.SETTLEMENT_REQUESTED]: {
     title: '정산 요청',
     body: (d) => `${d.staffName}님이 정산을 요청했습니다.`,
-    link: (d) => `/employer/postings/${d.jobPostingId}/settlement`,
+    link: (d) => `/employer/settlement/${d.jobPostingId}`,
     icon: '📋',
   },
 
@@ -205,21 +205,21 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.ANNOUNCEMENT]: {
     title: (d) => d.announcementTitle || '공지사항',
     body: (d) => d.announcementBody || '새로운 공지사항이 있습니다.',
-    link: (d) => `/announcements/${d.announcementId}`,
+    link: (d) => (d.announcementId ? `/notices/${d.announcementId}` : '/notices'),
     icon: '📢',
   },
 
   [NotificationType.MAINTENANCE]: {
     title: '🔧 시스템 점검',
     body: (d) => d.maintenanceMessage || '시스템 점검이 예정되어 있습니다.',
-    link: () => '/announcements',
+    link: () => '/notices',
     icon: '🔧',
   },
 
   [NotificationType.APP_UPDATE]: {
     title: '📱 앱 업데이트',
     body: (d) => `새로운 버전(${d.version || ''})이 출시되었습니다.`,
-    link: () => '/settings/about',
+    link: () => '/settings',
     icon: '📱',
   },
 
@@ -230,14 +230,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.INQUIRY_ANSWERED]: {
     title: '💬 문의 답변',
     body: () => '문의하신 내용에 답변이 등록되었습니다.',
-    link: (d) => `/support/inquiries/${d.inquiryId}`,
+    link: (d) => (d.inquiryId ? `/support/inquiry/${d.inquiryId}` : '/support/my-inquiries'),
     icon: '💬',
   },
 
   [NotificationType.REPORT_RESOLVED]: {
     title: '신고 처리 완료',
     body: () => '신고가 처리되었습니다.',
-    link: (d) => `/support/reports/${d.reportId}`,
+    link: () => '/notifications',
     icon: '✅',
   },
 
@@ -258,7 +258,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: {
     title: '🏆 대회공고 승인 요청',
     body: (d) => `${d.employerName}님이 "${d.jobTitle}" 대회공고 승인을 요청했습니다.`,
-    link: (d) => `/admin/tournaments/${d.jobPostingId}`,
+    link: () => '/admin/tournaments',
     icon: '🏆',
   },
 

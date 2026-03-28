@@ -22,12 +22,14 @@ test.describe('Admin 대시보드', () => {
 
   test('대시보드 메인 페이지 렌더링 → 제목 및 메뉴 카드 표시', async ({ page }) => {
     // admin 페이지 도달 확인 (대시보드 또는 앱 메인)
-    const anyContent = page.getByText('관리자 대시보드')
-      .or(page.getByText('구인구직').first());
+    const anyContent = page.getByText('관리자 대시보드').or(page.getByText('구인구직').first());
     await expect(anyContent).toBeVisible({ timeout: 30_000 });
 
     // 대시보드가 표시되는 경우에만 메뉴 카드 확인
-    const hasDashboard = await page.getByText('관리자 대시보드').isVisible().catch(() => false);
+    const hasDashboard = await page
+      .getByText('관리자 대시보드')
+      .isVisible()
+      .catch(() => false);
     if (hasDashboard) {
       await expect(dashboard.subtitle).toBeVisible({ timeout: 10_000 });
 
@@ -50,7 +52,10 @@ test.describe('Admin 대시보드', () => {
 
   test('메뉴 카드 클릭 → 해당 관리 페이지로 이동', async ({ page }) => {
     // 대시보드 렌더링 대기
-    const hasDashboard = await page.getByText('관리자 대시보드').isVisible({ timeout: 30_000 }).catch(() => false);
+    const hasDashboard = await page
+      .getByText('관리자 대시보드')
+      .isVisible({ timeout: 30_000 })
+      .catch(() => false);
 
     if (hasDashboard) {
       await dashboard.clickMenuCard('사용자 관리');
@@ -75,13 +80,7 @@ test.describe('Admin 대시보드', () => {
     // 주요 지표 섹션이 보이는 경우에만 각 카드 확인
     const hasStats = await dashboard.statsSection.isVisible().catch(() => false);
     if (hasStats) {
-      const statLabels = [
-        '총 사용자',
-        '오늘 신규',
-        '활성 공고',
-        '오늘 지원',
-        '미처리 신고',
-      ];
+      const statLabels = ['총 사용자', '오늘 신규', '활성 공고', '오늘 지원', '미처리 신고'];
 
       for (const label of statLabels) {
         await expect(dashboard.getStatCard(label)).toBeVisible({ timeout: 5_000 });
@@ -93,7 +92,8 @@ test.describe('Admin 대시보드', () => {
     await dashboard.gotoStats();
 
     // 통계 페이지 로드 확인
-    const pageLoaded = dashboard.page.getByText('서비스 통계', { exact: true })
+    const pageLoaded = dashboard.page
+      .getByText('서비스 통계', { exact: true })
       .or(dashboard.trendSection)
       .or(dashboard.page.getByText(/통계 데이터를 불러오는 중/))
       .or(dashboard.errorMessage);
@@ -102,12 +102,8 @@ test.describe('Admin 대시보드', () => {
     // 7일 트렌드 섹션이 보이는 경우에만 차트 제목 확인
     const hasTrend = await dashboard.trendSection.isVisible().catch(() => false);
     if (hasTrend) {
-      await expect(
-        dashboard.getByText('일별 신규 가입')
-      ).toBeVisible({ timeout: 5_000 });
-      await expect(
-        dashboard.getByText('일별 지원 수')
-      ).toBeVisible({ timeout: 5_000 });
+      await expect(dashboard.getByText('일별 가입자 수')).toBeVisible({ timeout: 5_000 });
+      await expect(dashboard.getByText('일별 지원 수')).toBeVisible({ timeout: 5_000 });
     }
   });
 
@@ -115,7 +111,8 @@ test.describe('Admin 대시보드', () => {
     await dashboard.gotoStats();
 
     // 통계 페이지 로드 확인
-    const pageLoaded = dashboard.page.getByText('서비스 통계', { exact: true })
+    const pageLoaded = dashboard.page
+      .getByText('서비스 통계', { exact: true })
       .or(dashboard.page.getByText(/통계 데이터를 불러오는 중/))
       .or(dashboard.errorMessage);
     await expect(pageLoaded.first()).toBeVisible({ timeout: 30_000 });
