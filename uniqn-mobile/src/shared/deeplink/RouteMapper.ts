@@ -81,6 +81,9 @@ export class RouteMapper {
       case 'employer/posting':
         return EXPO_ROUTES.postingDetail.replace('[id]', route.params.id);
 
+      case 'employer/posting-edit':
+        return EXPO_ROUTES.postingEdit.replace('[id]', route.params.id);
+
       case 'employer/applicants':
         return EXPO_ROUTES.postingApplicants.replace('[id]', route.params.jobId);
 

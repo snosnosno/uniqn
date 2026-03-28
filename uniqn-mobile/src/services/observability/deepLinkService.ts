@@ -127,6 +127,9 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
         return { name: 'employer/posting-create' };
       }
       if (segments[1]) {
+        if (segments[2] === 'edit') {
+          return { name: 'employer/posting-edit', params: { id: segments[1] } };
+        }
         if (segments[2] === 'applicants') {
           return { name: 'employer/applicants', params: { jobId: segments[1] } };
         }
@@ -192,6 +195,9 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
           return { name: 'employer/posting-create' };
         }
         if (segments[2]) {
+          if (segments[3] === 'edit') {
+            return { name: 'employer/posting-edit', params: { id: segments[2] } };
+          }
           // employer/postings/:id, employer/my-postings/:id
           return { name: 'employer/posting', params: { id: segments[2] } };
         }

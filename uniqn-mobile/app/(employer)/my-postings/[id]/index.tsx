@@ -48,14 +48,16 @@ interface ActionCardProps {
   description: string;
   badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
   onPress: () => void;
+  testID?: string;
 }
 
-function ActionCard({ icon, title, description, badge, onPress }: ActionCardProps) {
+function ActionCard({ icon, title, description, badge, onPress, testID }: ActionCardProps) {
   return (
     <Pressable
       onPress={onPress}
       className="active:opacity-70"
       accessibilityRole="button"
+      testID={testID}
       accessibilityLabel={`${title}, ${description}`}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
@@ -382,6 +384,7 @@ export default function JobPostingDetailScreen() {
                   : undefined
               }
               onPress={handleApplicants}
+              testID="job-posting-manage-applicants"
             />
 
             <ActionCard
@@ -394,6 +397,7 @@ export default function JobPostingDetailScreen() {
                   : undefined
               }
               onPress={handleCancellationRequests}
+              testID="job-posting-manage-cancellation-requests"
             />
 
             <ActionCard
@@ -406,6 +410,7 @@ export default function JobPostingDetailScreen() {
                   : undefined
               }
               onPress={handleSettlements}
+              testID="job-posting-manage-settlements"
             />
 
             <ActionCard
@@ -413,6 +418,7 @@ export default function JobPostingDetailScreen() {
               title="공고 수정"
               description="공고 내용과 상태를 수정합니다."
               onPress={handleEdit}
+              testID="job-posting-edit-button"
             />
           </View>
         </View>
@@ -485,6 +491,7 @@ export default function JobPostingDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="공고 삭제"
             accessibilityState={{ disabled: isDeleting }}
+            testID="job-posting-delete-button"
           >
             {isDeleting ? (
               <ActivityIndicator size="small" color="#EF4444" />
@@ -507,6 +514,8 @@ export default function JobPostingDetailScreen() {
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteConfirm}
+        confirmTestID="job-posting-delete-confirm"
+        cancelTestID="job-posting-delete-cancel"
         title="공고 삭제"
         message="정말 이 공고를 삭제하시겠습니까? 삭제한 공고는 복구할 수 없습니다."
         confirmText="삭제"

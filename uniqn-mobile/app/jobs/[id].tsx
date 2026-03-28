@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
@@ -13,13 +13,24 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
-  const user = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.profile?.role ?? null);
   const isDark = useThemeStore((state) => state.isDarkMode);
   const { openInstallPrompt } = useInstallPrompt();
   const { shareJob, isSharing } = useShare();
 
   const resolvedId = Array.isArray(id) ? id[0] : id;
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
+
+  useEffect(() => {
+    if (!resolvedId || role !== 'staff') {
+      return;
+    }
+
+    router.replace({
+      pathname: '/(app)/jobs/[id]',
+      params: { id: resolvedId },
+    });
+  }, [resolvedId, role]);
 
   useEffect(() => {
     if (job) {
@@ -51,8 +62,14 @@ export default function PublicJobDetailAliasRoute() {
     return <Redirect href="/jobs" />;
   }
 
-  if (user) {
-    return <Redirect href={`/(app)/jobs/${resolvedId}`} />;
+  if (role === 'staff') {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <JobDetailHeader />
+        <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
+      </SafeAreaView>
+    );
   }
 
   if (isLoading) {

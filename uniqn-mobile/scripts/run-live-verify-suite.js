@@ -1,12 +1,15 @@
 const { spawn } = require('child_process');
+const net = require('net');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
 const isWindows = process.platform === 'win32';
 const npxCommand = isWindows ? 'npx.cmd' : 'npx';
 const nodeCommand = process.execPath;
-const baseUrl = process.env.LIVE_BASE_URL || 'http://127.0.0.1:4101';
-const serveListenTarget = process.env.LIVE_SERVE_LISTEN || 'tcp://127.0.0.1:4101';
+const configuredBaseUrl = process.env.LIVE_BASE_URL || 'http://127.0.0.1:4101';
+const configuredUrl = new URL(configuredBaseUrl);
+const preferredHost = configuredUrl.hostname || '127.0.0.1';
+const preferredPort = Number(configuredUrl.port || 4101);
 
 function logStep(message) {
   const timestamp = new Date().toISOString();
@@ -15,6 +18,36 @@ function logStep(message) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function createBaseUrl(host, port) {
+  const url = new URL(configuredBaseUrl);
+  url.hostname = host;
+  url.port = String(port);
+  return url.toString();
+}
+
+function waitForPort(host, preferred) {
+  const tryListen = (port) =>
+    new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.unref();
+      server.once('error', reject);
+      server.listen(port, host, () => {
+        const address = server.address();
+        const resolvedPort = typeof address === 'object' && address ? address.port : port;
+        server.close((closeError) => {
+          if (closeError) {
+            reject(closeError);
+            return;
+          }
+
+          resolve(resolvedPort);
+        });
+      });
+    });
+
+  return tryListen(preferred).catch(() => tryListen(0));
 }
 
 function createExitError(command, code, signal) {
@@ -108,6 +141,11 @@ async function terminateProcess(child) {
 }
 
 async function main() {
+  const resolvedPort = await waitForPort(preferredHost, preferredPort);
+  const baseUrl = createBaseUrl(preferredHost, resolvedPort);
+  const serveListenTarget =
+    process.env.LIVE_SERVE_LISTEN || `tcp://${preferredHost}:${resolvedPort}`;
+
   logStep('exporting web build');
   await runCommand(npxCommand, ['expo', 'export', '--platform', 'web']);
 

@@ -286,6 +286,8 @@ function EmployerView() {
         visible={Boolean(closeTargetId)}
         onClose={() => setCloseTargetId(null)}
         onConfirm={handleCloseConfirm}
+        confirmTestID="employer-close-posting-confirm"
+        cancelTestID="employer-close-posting-cancel"
         title="공고 마감"
         message="이 공고를 마감하시겠습니까? 마감된 공고는 구직자에게 더 이상 노출되지 않습니다."
         confirmText="마감하기"

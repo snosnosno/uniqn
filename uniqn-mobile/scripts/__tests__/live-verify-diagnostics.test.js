@@ -18,8 +18,20 @@ describe('live verify diagnostics helpers', () => {
           count: 3,
         },
         {
+          url: 'https://firestore.googleapis.com/google.firestore.v1.Firestore/Write/channel?t=1',
+          method: 'GET',
+          failure: { errorText: 'net::ERR_ABORTED' },
+          count: 1,
+        },
+        {
           url: 'https://www.google-analytics.com/g/collect?v=2',
           method: 'POST',
+          failure: { errorText: 'net::ERR_ABORTED' },
+          count: 1,
+        },
+        {
+          url: 'https://firebase.googleapis.com/v1alpha/projects/-/apps/app-id/webConfig',
+          method: 'GET',
           failure: { errorText: 'net::ERR_ABORTED' },
           count: 1,
         },
@@ -34,13 +46,13 @@ describe('live verify diagnostics helpers', () => {
 
     const finalized = finalizeDiagnosticsBucket(bucket);
 
-    expect(finalized.ignoredAbortedRequests).toHaveLength(2);
+    expect(finalized.ignoredAbortedRequests).toHaveLength(4);
     expect(finalized.actionableFailedRequests).toHaveLength(1);
     expect(finalized.actionableFailedRequests[0].host).toBe('example.com');
     expect(finalized.summary).toMatchObject({
       hydrationTimeoutCount: 2,
       versionWarningCount: 1,
-      ignoredAbortedRequestCount: 2,
+      ignoredAbortedRequestCount: 4,
       actionableFailedRequestCount: 1,
     });
   });
@@ -56,6 +68,20 @@ describe('live verify diagnostics helpers', () => {
       classification: 'ignored',
       reason: 'securetoken-refresh-aborted',
       host: 'securetoken.googleapis.com',
+    });
+  });
+
+  it('classifies firebase web config aborts as ignored', () => {
+    expect(
+      classifyFailedRequestEntry({
+        url: 'https://firebase.googleapis.com/v1alpha/projects/-/apps/app-id/webConfig',
+        method: 'GET',
+        failure: { errorText: 'net::ERR_ABORTED' },
+      })
+    ).toMatchObject({
+      classification: 'ignored',
+      reason: 'firebase-web-config-aborted',
+      host: 'firebase.googleapis.com',
     });
   });
 });

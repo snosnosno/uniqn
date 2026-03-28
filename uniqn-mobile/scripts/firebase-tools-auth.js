@@ -8,7 +8,26 @@ const firebaseToolsPath = path.join(
   'configstore',
   'firebase-tools.json'
 );
-const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+function refreshFirebaseCliSession(cwd) {
+  if (process.platform === 'win32') {
+    execFileSync(
+      process.env.ComSpec || 'cmd.exe',
+      ['/d', '/s', '/c', 'npx firebase-tools projects:list --json'],
+      {
+        cwd,
+        stdio: 'ignore',
+        windowsHide: true,
+      }
+    );
+    return;
+  }
+
+  execFileSync('npx', ['firebase-tools', 'projects:list', '--json'], {
+    cwd,
+    stdio: 'ignore',
+  });
+}
 
 function readFirebaseToolsConfig() {
   return JSON.parse(fs.readFileSync(firebaseToolsPath, 'utf8'));
@@ -24,10 +43,7 @@ function ensureFreshFirebaseAccessToken(options = {}) {
     return accessToken;
   }
 
-  execFileSync(npxCommand, ['firebase-tools', 'projects:list', '--json'], {
-    cwd,
-    stdio: 'ignore',
-  });
+  refreshFirebaseCliSession(cwd);
 
   config = readFirebaseToolsConfig();
   const refreshedToken = config.tokens?.access_token;

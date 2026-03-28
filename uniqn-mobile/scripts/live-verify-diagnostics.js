@@ -75,6 +75,18 @@ function classifyFailedRequestEntry(entry) {
       };
     }
 
+    if (
+      host === 'firestore.googleapis.com' &&
+      pathname.includes('/google.firestore.v1.Firestore/Write/channel')
+    ) {
+      return {
+        classification: 'ignored',
+        reason: 'firestore-write-aborted',
+        host,
+        pathname,
+      };
+    }
+
     if (host === 'www.google-analytics.com' && pathname === '/g/collect') {
       return {
         classification: 'ignored',
@@ -88,6 +100,15 @@ function classifyFailedRequestEntry(entry) {
       return {
         classification: 'ignored',
         reason: 'securetoken-refresh-aborted',
+        host,
+        pathname,
+      };
+    }
+
+    if (host === 'firebase.googleapis.com' && pathname.includes('/webConfig')) {
+      return {
+        classification: 'ignored',
+        reason: 'firebase-web-config-aborted',
         host,
         pathname,
       };

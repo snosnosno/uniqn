@@ -302,6 +302,8 @@ export default function EditJobPostingScreen() {
             onPress={handleSubmit}
             disabled={updateJobPosting.isPending}
             fullWidth
+            accessibilityLabel="공고 수정"
+            testID="job-posting-edit-submit"
           >
             <Text className="font-semibold text-white">
               {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}

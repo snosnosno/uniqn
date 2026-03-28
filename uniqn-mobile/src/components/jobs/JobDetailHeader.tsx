@@ -42,7 +42,11 @@ export function JobDetailHeader({ title, onShare, isSharing }: JobDetailHeaderPr
       {title && (
         <>
           <Text className="mx-2 text-gray-400 dark:text-gray-500">|</Text>
-          <Text className="flex-1 text-base text-gray-600 dark:text-gray-400" numberOfLines={1}>
+          <Text
+            className="flex-1 text-base text-gray-600 dark:text-gray-400"
+            numberOfLines={1}
+            testID="job-detail-title"
+          >
             {title}
           </Text>
         </>

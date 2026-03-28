@@ -80,6 +80,9 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
   if (route.name === 'employer/my-postings') return '/(employer)/my-postings';
   if (route.name === 'employer/posting-create') return '/(employer)/my-postings/create';
   if (route.name === 'employer/posting') return `/(employer)/my-postings/${route.params?.id}`;
+  if (route.name === 'employer/posting-edit') {
+    return `/(employer)/my-postings/${route.params?.id}/edit`;
+  }
   if (route.name === 'employer/applicants') {
     return `/(employer)/applicants/${route.params?.jobId}`;
   }
@@ -265,6 +268,18 @@ describe('deepLinkService', () => {
         path: '/my-postings/create',
         queryParams: {},
         route: { name: 'employer/posting-create' },
+        isValid: true,
+      });
+    });
+
+    it('parses the web employer posting edit path', () => {
+      const result = deepLinkService.parseDeepLink('/my-postings/posting123/edit');
+
+      expect(result).toEqual({
+        url: '/my-postings/posting123/edit',
+        path: '/my-postings/posting123/edit',
+        queryParams: {},
+        route: { name: 'employer/posting-edit', params: { id: 'posting123' } },
         isValid: true,
       });
     });

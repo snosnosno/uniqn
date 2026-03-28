@@ -90,6 +90,14 @@ describe('RouteMapper', () => {
         expect(RouteMapper.toExpoPath(route)).toBe('/(employer)/my-postings/posting123');
       });
 
+      it('employer/posting-edit → /(employer)/my-postings/[id]/edit', () => {
+        const route: DeepLinkRoute = {
+          name: 'employer/posting-edit',
+          params: { id: 'posting123' },
+        };
+        expect(RouteMapper.toExpoPath(route)).toBe('/(employer)/my-postings/posting123/edit');
+      });
+
       it('employer/applicants → /(employer)/my-postings/[id]/applicants', () => {
         const route: DeepLinkRoute = { name: 'employer/applicants', params: { jobId: 'job123' } };
         expect(RouteMapper.toExpoPath(route)).toBe('/(employer)/my-postings/job123/applicants');
@@ -154,6 +162,7 @@ describe('RouteMapper', () => {
     it('구인자 라우트는 인증 필요', () => {
       expect(RouteMapper.requiresAuth('employer/my-postings')).toBe(true);
       expect(RouteMapper.requiresAuth('employer/posting')).toBe(true);
+      expect(RouteMapper.requiresAuth('employer/posting-edit')).toBe(true);
     });
 
     it('관리자 라우트는 인증 필요', () => {
@@ -172,6 +181,7 @@ describe('RouteMapper', () => {
     it('구인자 라우트는 employer 역할 필요', () => {
       expect(RouteMapper.getRequiredRole('employer/my-postings')).toBe('employer');
       expect(RouteMapper.getRequiredRole('employer/posting')).toBe('employer');
+      expect(RouteMapper.getRequiredRole('employer/posting-edit')).toBe('employer');
       expect(RouteMapper.getRequiredRole('employer/applicants')).toBe('employer');
       expect(RouteMapper.getRequiredRole('employer/settlement')).toBe('employer');
     });

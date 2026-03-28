@@ -436,6 +436,8 @@ export interface ConfirmModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  confirmTestID?: string;
+  cancelTestID?: string;
   isDestructive?: boolean;
 }
 
@@ -443,6 +445,8 @@ export function ConfirmModal({
   visible,
   onClose,
   onConfirm,
+  confirmTestID,
+  cancelTestID,
   title = '확인',
   message,
   confirmText = '확인',
@@ -457,6 +461,7 @@ export function ConfirmModal({
           onPress={onClose}
           className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
           accessibilityRole="button"
+          testID={cancelTestID}
         >
           <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">
             {cancelText}
@@ -469,6 +474,7 @@ export function ConfirmModal({
           }}
           className={`flex-1 py-3 rounded-xl ${isDestructive ? 'bg-red-600' : 'bg-primary-600'}`}
           accessibilityRole="button"
+          testID={confirmTestID}
         >
           <Text className="text-white text-center font-semibold">{confirmText}</Text>
         </Pressable>

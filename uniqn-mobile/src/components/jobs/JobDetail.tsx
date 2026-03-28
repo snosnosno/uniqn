@@ -43,7 +43,7 @@ function InfoRow({
 }
 
 export function JobDetail({ job }: JobDetailProps) {
-  const user = useAuthStore((state) => state.user);
+  const canReadOwnerProfile = useAuthStore((state) => state.isAdmin || state.isEmployer);
   const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
   const detail = useMemo(
     () =>
@@ -56,7 +56,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
   const { userProfile: ownerProfile } = useUserProfile({
     userId: detail.ownerId || '',
-    enabled: Boolean(user && detail.ownerId),
+    enabled: canReadOwnerProfile && Boolean(detail.ownerId),
   });
 
   const handleCall = () => {
