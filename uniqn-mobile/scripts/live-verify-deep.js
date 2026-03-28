@@ -886,6 +886,7 @@ async function verifyAdmin(context, adminAccount, diagnostics) {
       path: path.join(artifactRoot, 'admin-dashboard.png'),
       fullPage: true,
     });
+    await page.waitForTimeout(1000);
 
     await page.goto(makeUrl('/admin/users'), { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
@@ -895,6 +896,7 @@ async function verifyAdmin(context, adminAccount, diagnostics) {
       path: path.join(artifactRoot, 'admin-users.png'),
       fullPage: true,
     });
+    await page.waitForTimeout(1500);
 
     await page.goto(makeUrl('/profile'), { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);

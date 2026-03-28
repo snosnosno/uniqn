@@ -30,6 +30,18 @@ describe('live verify diagnostics helpers', () => {
           count: 1,
         },
         {
+          url: 'https://www.googletagmanager.com/gtag/js?id=G-123456',
+          method: 'GET',
+          failure: { errorText: 'net::ERR_ABORTED' },
+          count: 1,
+        },
+        {
+          url: 'https://www.googletagmanager.com/td?id=G-123456',
+          method: 'POST',
+          failure: { errorText: 'net::ERR_ABORTED' },
+          count: 1,
+        },
+        {
           url: 'https://firebase.googleapis.com/v1alpha/projects/-/apps/app-id/webConfig',
           method: 'GET',
           failure: { errorText: 'net::ERR_ABORTED' },
@@ -46,13 +58,13 @@ describe('live verify diagnostics helpers', () => {
 
     const finalized = finalizeDiagnosticsBucket(bucket);
 
-    expect(finalized.ignoredAbortedRequests).toHaveLength(4);
+    expect(finalized.ignoredAbortedRequests).toHaveLength(6);
     expect(finalized.actionableFailedRequests).toHaveLength(1);
     expect(finalized.actionableFailedRequests[0].host).toBe('example.com');
     expect(finalized.summary).toMatchObject({
       hydrationTimeoutCount: 2,
       versionWarningCount: 1,
-      ignoredAbortedRequestCount: 4,
+      ignoredAbortedRequestCount: 6,
       actionableFailedRequestCount: 1,
     });
   });
@@ -82,6 +94,20 @@ describe('live verify diagnostics helpers', () => {
       classification: 'ignored',
       reason: 'firebase-web-config-aborted',
       host: 'firebase.googleapis.com',
+    });
+  });
+
+  it('classifies google tag manager aborts as ignored', () => {
+    expect(
+      classifyFailedRequestEntry({
+        url: 'https://www.googletagmanager.com/gtag/js?id=G-123456',
+        method: 'GET',
+        failure: { errorText: 'net::ERR_ABORTED' },
+      })
+    ).toMatchObject({
+      classification: 'ignored',
+      reason: 'google-tag-manager-aborted',
+      host: 'www.googletagmanager.com',
     });
   });
 });

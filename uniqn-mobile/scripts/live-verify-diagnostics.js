@@ -96,6 +96,15 @@ function classifyFailedRequestEntry(entry) {
       };
     }
 
+    if (host === 'www.googletagmanager.com' && (pathname === '/gtag/js' || pathname === '/td')) {
+      return {
+        classification: 'ignored',
+        reason: 'google-tag-manager-aborted',
+        host,
+        pathname,
+      };
+    }
+
     if (host === 'securetoken.googleapis.com' && pathname === '/v1/token') {
       return {
         classification: 'ignored',
