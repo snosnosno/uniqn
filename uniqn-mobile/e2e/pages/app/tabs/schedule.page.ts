@@ -10,13 +10,17 @@ export class SchedulePage extends BasePage {
   readonly prevMonthButton: Locator;
   readonly nextMonthButton: Locator;
   readonly todayButton: Locator;
+  readonly viewToggleButton: Locator;
+  readonly monthTitle: Locator;
 
   constructor(page: Page) {
     super(page);
     this.header = page.getByText('내 스케줄').first();
-    this.prevMonthButton = page.locator('[aria-label="이전 달"]');
-    this.nextMonthButton = page.locator('[aria-label="다음 달"]');
-    this.todayButton = page.locator('[aria-label="오늘로 이동"]');
+    this.prevMonthButton = page.getByTestId('schedule-prev-month-button');
+    this.nextMonthButton = page.getByTestId('schedule-next-month-button');
+    this.todayButton = page.getByTestId('schedule-today-button');
+    this.viewToggleButton = page.getByTestId('schedule-view-toggle-button');
+    this.monthTitle = page.getByTestId('schedule-month-title');
   }
 
   async goto(): Promise<void> {
@@ -25,7 +29,7 @@ export class SchedulePage extends BasePage {
   }
 
   getMonthTitle(): Locator {
-    return this.page.locator('text=/\\d+년\\s*\\d+월/');
+    return this.monthTitle;
   }
 
   async goToPrevMonth(): Promise<void> {
@@ -41,11 +45,11 @@ export class SchedulePage extends BasePage {
   }
 
   async toggleViewMode(): Promise<void> {
-    await this.getViewToggleLabel().click();
+    await this.viewToggleButton.click();
   }
 
   getViewToggleLabel(): Locator {
-    return this.page.locator('[aria-label="캘린더 보기"], [aria-label="목록 보기"]');
+    return this.viewToggleButton;
   }
 
   getStatLabel(label: '지원' | '확정' | '완료' | '수익'): Locator {

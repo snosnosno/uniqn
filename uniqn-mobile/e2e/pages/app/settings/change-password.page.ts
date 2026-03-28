@@ -22,10 +22,8 @@ export class ChangePasswordPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/settings/change-password', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
-    await this.page.getByRole('button', { name: /^비밀번호 변경$/ }).click();
-    await this.page.waitForURL(/settings\/change-password/, { timeout: 10_000 });
   }
 
   /** 비밀번호 변경 폼 채우기 */

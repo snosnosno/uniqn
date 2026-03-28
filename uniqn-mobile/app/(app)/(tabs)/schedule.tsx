@@ -80,27 +80,36 @@ function MonthNavigator({
         className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700"
         accessibilityLabel="이전 달"
         accessibilityRole="button"
+        testID="schedule-prev-month-button"
       >
         <ChevronLeftIcon size={24} color="#6B7280" />
       </Pressable>
 
-      <Pressable
-        onPress={onToday}
-        className="px-4"
-        accessibilityLabel="오늘로 이동"
-        accessibilityRole="button"
-      >
-        <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <View className="flex-1 px-3">
+        <Text
+          testID="schedule-month-title"
+          className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+        >
           {formatMonthTitle(year, month)}
         </Text>
-      </Pressable>
+      </View>
 
       <View className="flex-row items-center">
+        <Pressable
+          onPress={onToday}
+          className="rounded-full px-3 py-1.5 active:bg-gray-100 dark:active:bg-gray-700 mr-1"
+          accessibilityLabel="오늘로 이동"
+          accessibilityRole="button"
+          testID="schedule-today-button"
+        >
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-200">오늘</Text>
+        </Pressable>
         <Pressable
           onPress={onToggleView}
           className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700 mr-1"
           accessibilityLabel={viewMode === 'list' ? '캘린더 보기' : '목록 보기'}
           accessibilityRole="button"
+          testID="schedule-view-toggle-button"
         >
           {viewMode === 'list' ? (
             <CalendarIcon size={22} color="#6B7280" />
@@ -113,6 +122,7 @@ function MonthNavigator({
           className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700"
           accessibilityLabel="다음 달"
           accessibilityRole="button"
+          testID="schedule-next-month-button"
         >
           <ChevronRightIcon size={24} color="#6B7280" />
         </Pressable>

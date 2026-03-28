@@ -54,6 +54,11 @@ test.describe('설정 메인', () => {
     expect(settingsPage.getCurrentPath()).toContain('change-password');
   });
 
+  test('계정 삭제 클릭 시 해당 페이지로 이동한다', async () => {
+    await settingsPage.goToDeleteAccount();
+    expect(settingsPage.getCurrentPath()).toContain('delete-account');
+  });
+
   test('이용약관 클릭 시 해당 페이지로 이동한다', async () => {
     await settingsPage.goToTerms();
     expect(settingsPage.getCurrentPath()).toContain('terms');

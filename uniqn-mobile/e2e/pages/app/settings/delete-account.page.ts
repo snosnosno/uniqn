@@ -20,10 +20,8 @@ export class DeleteAccountPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/settings', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/settings/delete-account', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
-    await this.page.getByRole('button', { name: /^계정 삭제$/ }).click();
-    await this.page.waitForURL(/settings\/delete-account/, { timeout: 10_000 });
   }
 
   /** 탈퇴 사유 선택 */

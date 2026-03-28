@@ -85,6 +85,11 @@ const FilterTab = memo(function FilterTab({
       onPress={onPress}
       className="px-4 py-2 rounded-full mr-2 flex-row items-center"
       testID={testID}
+      accessible
+      role="tab"
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isSelected }}
+      accessibilityLabel={`${label} 공고 ${count ?? 0}개`}
       style={{
         backgroundColor: isSelected ? '#9333EA' : isDarkMode ? '#3D3350' : '#E5E7EB',
       }}
@@ -313,7 +318,14 @@ export default function MyPostingsPage() {
 
       {/* 필터 탭 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessible
+          role="tablist"
+          accessibilityRole="tablist"
+          testID="my-postings-filter-tablist"
+        >
           {FILTER_TABS.map((tab) => (
             <FilterTab
               key={tab.status}

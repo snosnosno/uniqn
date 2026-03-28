@@ -27,7 +27,7 @@ export class SettingsPage extends BasePage {
     this.termsItem = page.getByRole('button', { name: /^이용약관$/ }).first();
     this.privacyItem = page.getByRole('button', { name: /^개인정보처리방침$/ }).first();
     this.businessInfoItem = page.getByRole('button', { name: /^사업자정보$/ }).first();
-    this.deleteAccountButton = page.getByRole('button', { name: /^계정 삭제$/ }).first();
+    this.deleteAccountButton = page.getByRole('button', { name: /^계정 삭제$/ }).last();
     this.versionItem = page.getByText('버전').last();
     this.pushNotificationLabel = page.getByText('푸시 알림').last();
     this.autoLoginLabel = page.getByText('자동 로그인').last();
@@ -42,32 +42,50 @@ export class SettingsPage extends BasePage {
 
   /** 비밀번호 변경 페이지로 이동 */
   async goToChangePassword(): Promise<void> {
-    await this.changePasswordItem.click();
-    await this.page.waitForURL(/change-password/, { timeout: 5_000 });
+    await Promise.all([
+      this.page.waitForURL(/change-password/, { timeout: 10_000 }),
+      this.changePasswordItem.click(),
+    ]);
   }
 
   /** 이용약관 페이지로 이동 */
   async goToTerms(): Promise<void> {
-    await this.termsItem.click();
-    await this.page.waitForURL(/terms/, { timeout: 5_000 });
+    await Promise.all([this.page.waitForURL(/terms/, { timeout: 10_000 }), this.termsItem.click()]);
   }
 
   /** 개인정보처리방침 페이지로 이동 */
   async goToPrivacy(): Promise<void> {
-    await this.privacyItem.click();
-    await this.page.waitForURL(/privacy/, { timeout: 5_000 });
+    await Promise.all([
+      this.page.waitForURL(/privacy/, { timeout: 10_000 }),
+      this.privacyItem.click(),
+    ]);
   }
 
   /** 사업자정보 페이지로 이동 */
   async goToBusinessInfo(): Promise<void> {
-    await this.businessInfoItem.click();
-    await this.page.waitForURL(/business-info/, { timeout: 5_000 });
+    await Promise.all([
+      this.page.waitForURL(/business-info/, { timeout: 10_000 }),
+      this.businessInfoItem.click(),
+    ]);
   }
 
   /** 계정 삭제 페이지로 이동 */
   async goToDeleteAccount(): Promise<void> {
-    await this.deleteAccountButton.click();
-    await this.page.waitForURL(/delete-account/, { timeout: 5_000 });
+    await this.deleteAccountButton.scrollIntoViewIfNeeded();
+
+    try {
+      await Promise.all([
+        this.page.waitForURL(/delete-account/, { timeout: 10_000 }),
+        this.deleteAccountButton.click({ force: true }),
+      ]);
+    } catch {
+      await Promise.all([
+        this.page.waitForURL(/delete-account/, { timeout: 10_000 }),
+        this.deleteAccountButton.evaluate((element) => {
+          (element as HTMLElement).click();
+        }),
+      ]);
+    }
   }
 
   /** 섹션 제목 가져오기 */

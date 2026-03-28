@@ -33,6 +33,7 @@ test.describe('Employer posting CRUD', () => {
       await expect(
         page.locator('button:has-text("crud-list-closed"):visible').first()
       ).toBeVisible();
+      await expect(page.getByRole('tablist')).toBeVisible();
       const tabCount = await page.getByRole('tab').count();
       expect(tabCount).toBeGreaterThanOrEqual(3);
     } finally {

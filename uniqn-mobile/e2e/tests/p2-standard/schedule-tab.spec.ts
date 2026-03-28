@@ -24,6 +24,7 @@ test.describe('내 스케줄', () => {
 
     // 월 제목이 "YYYY년 MM월" 형식으로 표시
     await expect(schedulePage.getMonthTitle()).toBeVisible({ timeout: 10_000 });
+    await expect(schedulePage.getMonthTitle()).toHaveCount(1);
   });
 
   test('통계 카드에 지원/확정/완료/수익이 표시된다', async () => {
@@ -118,7 +119,10 @@ test.describe('내 스케줄', () => {
     await schedulePage.page.waitForTimeout(1_000);
 
     // 빈 상태 메시지 또는 스케줄 카드가 표시되어야 함
-    const isEmpty = await schedulePage.getEmptyState().isVisible().catch(() => false);
+    const isEmpty = await schedulePage
+      .getEmptyState()
+      .isVisible()
+      .catch(() => false);
     const hasContent = await schedulePage.page.locator('body').textContent();
 
     // 둘 중 하나는 true

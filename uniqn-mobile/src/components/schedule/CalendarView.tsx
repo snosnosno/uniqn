@@ -6,9 +6,8 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import type { ScheduleEvent, ScheduleType } from '@/types';
@@ -187,13 +186,6 @@ interface LegendProps {
   types: ScheduleType[];
 }
 
-interface ScheduleCalendarHeaderProps {
-  addMonth?: (count: number) => void;
-  month?: {
-    toString: (format: string) => string;
-  };
-}
-
 function CalendarLegend({ types }: LegendProps) {
   const labels: Record<ScheduleType, string> = {
     applied: '지원 중',
@@ -217,73 +209,14 @@ function CalendarLegend({ types }: LegendProps) {
   );
 }
 
-function ScheduleCalendarHeader({ addMonth, month }: ScheduleCalendarHeaderProps) {
+function CalendarWeekdayHeader() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
-  const iconColor = isDarkMode ? '#F3F4F6' : '#1F2937';
-  const buttonClassName = isDarkMode
-    ? 'h-9 min-w-9 rounded-full bg-surface-elevated px-3 items-center justify-center'
-    : 'h-9 min-w-9 rounded-full bg-gray-100 px-3 items-center justify-center';
-  const yearButtonTextClassName = isDarkMode
-    ? 'text-xs font-semibold text-gray-100'
-    : 'text-xs font-semibold text-gray-700';
-  const titleClassName = isDarkMode
-    ? 'text-lg font-semibold text-gray-100'
-    : 'text-lg font-semibold text-gray-900';
   const weekdayTextClassName = isDarkMode
     ? 'text-xs font-medium text-gray-400'
     : 'text-xs font-medium text-gray-500';
 
-  const handleMoveMonth = useCallback(
-    (count: number) => {
-      addMonth?.(count);
-    },
-    [addMonth]
-  );
-
   return (
     <View className="px-4 pt-4 pb-2">
-      <View className="flex-row items-center mb-4">
-        <View className="flex-1 flex-row items-center">
-          <Pressable
-            onPress={() => handleMoveMonth(-12)}
-            accessibilityRole="button"
-            accessibilityLabel="이전 연도"
-            className={`${buttonClassName} mr-2`}
-          >
-            <Text className={yearButtonTextClassName}>1년 전</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => handleMoveMonth(-1)}
-            accessibilityRole="button"
-            accessibilityLabel="이전 달"
-            className={buttonClassName}
-          >
-            <ChevronLeftIcon size={18} color={iconColor} />
-          </Pressable>
-        </View>
-
-        <Text className={titleClassName}>{month?.toString('yyyy년 M월')}</Text>
-
-        <View className="flex-1 flex-row items-center justify-end">
-          <Pressable
-            onPress={() => handleMoveMonth(1)}
-            accessibilityRole="button"
-            accessibilityLabel="다음 달"
-            className={`${buttonClassName} mr-2`}
-          >
-            <ChevronRightIcon size={18} color={iconColor} />
-          </Pressable>
-          <Pressable
-            onPress={() => handleMoveMonth(12)}
-            accessibilityRole="button"
-            accessibilityLabel="다음 연도"
-            className={buttonClassName}
-          >
-            <Text className={yearButtonTextClassName}>1년 후</Text>
-          </Pressable>
-        </View>
-      </View>
-
       <View className="flex-row">
         {CALENDAR_WEEKDAYS.map((day) => (
           <View key={day} className="flex-1 items-center">
@@ -347,7 +280,7 @@ export function CalendarView({
       <Calendar
         key={`${currentMonthString}-${mode}`}
         current={currentMonthString}
-        customHeader={ScheduleCalendarHeader}
+        customHeader={CalendarWeekdayHeader}
         onDayPress={handleDayPress}
         onMonthChange={handleMonthChange}
         markedDates={markedDates}

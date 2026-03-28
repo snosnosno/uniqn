@@ -2,263 +2,255 @@
 
 ## 기준
 
-- 기준 코드베이스: `uniqn-mobile`
-- 최종 점검일: 2026-03-27
-- 점검 방식:
-  - Firebase Emulator + Playwright broad sweep
-  - Live backend + 실계정/임시 테스트 계정 + Playwright deep sweep
-- 이 문서는 “기획 의도”가 아니라 **현재 실제 코드와 실행 결과**를 기준으로 정리한다.
+- 기준 저장소: `uniqn-mobile`
+- 최종 재검증 일시: 2026-03-28
+- 검증 기준:
+  - `npm run quality`
+  - `npm test -- --runInBand`
+  - `npm run e2e`
+- 판단 원칙:
+  - 문서보다 현재 코드와 실제 실행 결과를 우선한다.
+  - Emulator/Web 기준 검증과 실기기 출시 게이트는 분리해서 기록한다.
 
 ## 핵심 결론
 
-UNIQN은 일반적인 단기 알바앱보다 **행사/포커/토너먼트 운영형 인력 플랫폼**에 가깝다.
+`uniqn-mobile-ux-ia-report.md`의 큰 IA 서술은 현재 프로젝트와 대체로 일치한다. 공개 진입은 `/jobs`, 인증 후 기본 진입은 역할 공통으로 `/(app)/(tabs)` 계열이며, 관리자도 로그인 직후 곧바로 관리자 대시보드로 강제 이동하지 않는다. 고용주 탭은 항상 노출되고, 비고용주는 안내 화면을 보며, QR은 숨김 탭(`href: null`) 방식으로 운영된다.
 
-- 공개 사용자는 공고를 탐색할 수 있다.
-- 스태프는 공고 지원, 일정 확인, QR 출퇴근, 정산/리뷰 흐름을 탄다.
-- 고용주는 공고 생성, 지원자 관리, 현장 운영, 정산을 처리한다.
-- 관리자는 공지/문의/신고/유저/대회 승인 업무를 담당한다.
+이번 재검증으로 과거 문서의 핵심 오류도 정리했다. `settings/support/admin/employer`의 nested deep link가 SSOT에 없다는 결론은 현재 코드 기준으로 성립하지 않는다. `src/shared/deeplink/types.ts`, `src/shared/deeplink/RouteMapper.ts`, `src/services/observability/deepLinkService.ts`와 관련 테스트가 이미 해당 경로를 광범위하게 커버한다. 또한 `format:check` 실패, Jest 실패도 현재 상태와 맞지 않는다.
 
-다만 실제 라우팅과 동선은 몇 가지 중요한 특성이 있다.
+대신 실제 사용자 관점에서 더 중요했던 문제는 UX/UI와 웹 semantics였다. 스케줄 화면의 월 네비게이터가 중복 노출되던 문제, 알림의 `모두 읽음` 액션이 웹에서 버튼 의미가 약했던 문제, 고용주 공고 리스트 필터가 시각적으로는 정상이어도 `tab` semantics가 불안정했던 문제를 이번에 확인했고 제품과 E2E를 함께 보강했다.
 
-- 비로그인 공개 진입의 실제 중심 경로는 `/jobs`다.
-- 인증 후 기본 진입점은 `getAuthenticatedEntryRoute()` 기준 `/(app)/(tabs)`이며 웹 기준 URL은 `/`다.
-- `admin`도 로그인 직후 자동으로 관리자 대시보드로 떨어지지 않는다.
-- 고용주 탭은 항상 노출되며, 비고용주는 탭 안에서 등록 유도 화면을 본다.
-- QR 화면은 하단 탭에 고정 노출되지 않고 숨김 탭(`href: null`)로 운영된다.
-
-## 실제 진입 구조
+## 실제 IA 스냅샷
 
 ### 공개 / 인증
 
-| 구분            | 실제 웹 경로       | 실제 내부 경로            | 비고                                                    |
-| --------------- | ------------------ | ------------------------- | ------------------------------------------------------- |
-| 스플래시        | `/`                | `app/index.tsx`           | 비로그인 시 `/jobs`로, 로그인 시 `/(app)/(tabs)`로 보냄 |
-| 공개 공고 목록  | `/jobs`            | `/(public)/jobs`          | 비로그인 공개 진입의 실제 기준 경로                     |
-| 공개 공고 상세  | `/jobs/:id`        | `/(public)/jobs/[id]`     | 상세 열람 후 지원 시 로그인 유도                        |
-| 로그인          | `/login`           | `/(auth)/login`           | redirect 파라미터 사용                                  |
-| 회원가입        | `/signup`          | `/(auth)/signup`          | 일반/소셜 미완료 공용                                   |
-| 비밀번호 재설정 | `/forgot-password` | `/(auth)/forgot-password` | 계정 복구                                               |
+| 구분           | 실제 URL           | 비고                                      |
+| -------------- | ------------------ | ----------------------------------------- |
+| 스플래시       | `/`                | 비로그인 사용자는 공개 공고 진입으로 연결 |
+| 공개 공고 목록 | `/jobs`            | 공개 진입의 실제 기준 경로                |
+| 공개 공고 상세 | `/jobs/:id`        | 비로그인 상태에서도 열람 가능             |
+| 로그인         | `/login`           | 인증 실패/리다이렉트 처리 포함            |
+| 회원가입       | `/signup`          | 다단계 가입 플로우                        |
+| 비밀번호 찾기  | `/forgot-password` | 인증 보조 플로우                          |
 
-### 인증 후 기본 흐름
+### 인증 후 공통
+
+| 역할     | 기본 진입       | 설명                                              |
+| -------- | --------------- | ------------------------------------------------- |
+| staff    | `/(app)/(tabs)` | 웹 기준 canonical URL은 `/`                       |
+| employer | `/(app)/(tabs)` | 하단 탭에서 고용주 진입                           |
+| admin    | `/(app)/(tabs)` | 관리자 기능은 메뉴 또는 `/admin...` 별칭으로 진입 |
 
-| 역할     | 기본 진입 | 실제 랜딩                 |
-| -------- | --------- | ------------------------- |
-| staff    | 인증 성공 | `/(app)/(tabs)` -> 웹 `/` |
-| employer | 인증 성공 | `/(app)/(tabs)` -> 웹 `/` |
-| admin    | 인증 성공 | `/(app)/(tabs)` -> 웹 `/` |
+### 주요 영역
 
-중요:
+- Staff:
+  - 구인구직
+  - 스케줄
+  - 알림
+  - QR
+  - 리뷰 대기 / 작성 / 이력
+  - 프로필 / 설정 / 고객센터
+- Employer:
+  - 하단 탭의 employer 진입
+  - `/my-postings`
+  - `/my-postings/create`
+  - `/my-postings/:id`
+  - `/my-postings/:id/applicants`
+  - `/my-postings/:id/settlements`
+- Admin:
+  - `/admin`
+  - `/admin/stats`
+  - `/admin/users`
+  - `/admin/reports`
+  - `/admin/inquiries`
+  - `/admin/announcements`
+  - `/admin/tournaments`
 
-- `admin`의 “관리자 대시보드”는 별도 전용 시작 화면이 아니라 프로필 메뉴 또는 관리자 URL 별칭을 통해 진입한다.
-- 따라서 과거 문서처럼 “admin 기본 랜딩 = 관리자 대시보드”로 쓰면 실제와 다르다.
+## 이번 재검증에서 정정한 문서 항목
 
-## 탭 / 스택 IA
+### 1. Deep link SSOT 부족 결론은 현재 기준으로 틀림
 
-### 메인 탭
+현재 코드는 아래 경로를 타입, mapper, observability parse/create, 테스트까지 일관되게 가지고 있다.
 
-실제 하단 탭 구성은 아래와 같다.
+- `settings/change-password`
+- `settings/delete-account`
+- `support/faq`
+- `support/create-inquiry`
+- `support/my-inquiries`
+- `employer/my-postings`
+- `admin/stats`
+- `admin/announcements`
 
-- 구인구직
-- 내 스케줄
-- 내 공고
-- 프로필
+관련 근거:
 
-QR은 탭 파일이 존재하지만 하단 탭에서는 숨겨져 있다.
+- `src/shared/deeplink/types.ts`
+- `src/shared/deeplink/RouteMapper.ts`
+- `src/services/observability/deepLinkService.ts`
+- `src/shared/deeplink/__tests__/RouteMapper.test.ts`
+- `src/services/observability/__tests__/deepLinkService.test.ts`
 
-- 근거: `app/(app)/(tabs)/_layout.tsx`
-- `name="qr"`에 `href: null`
+### 2. Quality / Jest 실패 서술은 현재 기준으로 틀림
 
-### 스태프
+2026-03-28 기준 재실행 결과:
 
-| 기능        | 실제 경로                | 비고                        |
-| ----------- | ------------------------ | --------------------------- |
-| 구인구직 홈 | `/(app)/(tabs)`          | 웹 `/`                      |
-| 공고 상세   | `/(app)/jobs/[id]`       | 로그인 이후 상세            |
-| 지원        | `/(app)/jobs/[id]/apply` | 실제 지원 제출 가능         |
-| 일정        | `/(app)/(tabs)/schedule` | 지원/확정/완료 일정         |
-| 알림        | `/(app)/notifications`   | 상태 변화 확인              |
-| QR          | `/(app)/(tabs)/qr`       | 숨김 탭, 직접 진입/CTA 진입 |
-| 리뷰 대기   | `/(app)/reviews/pending` | 리뷰 작성 전 대기           |
-| 리뷰 작성   | `/(app)/reviews/write`   | 근무 후 리뷰                |
-| 리뷰 이력   | `/(app)/reviews/history` | 버블스코어 포함             |
-| 프로필      | `/(app)/(tabs)/profile`  | 공지/설정/고객센터 허브     |
+- `npm run quality`: 통과
+- `npm test -- --runInBand`: 통과
+  - 178 suites passed
+  - 3522 tests passed
 
-### 고용주
+즉, 문서에 `format:check` 실패나 Jest 실패를 현재 핵심 결론처럼 남겨두면 실제 상태를 왜곡한다.
 
-| 기능           | 실제 경로                                            | 비고                  |
-| -------------- | ---------------------------------------------------- | --------------------- |
-| 내 공고 탭     | `/(app)/(tabs)/employer`                             | 항상 보임             |
-| 고용주 등록    | `/(app)/employer-register`                           | 비고용주 진입 시 유도 |
-| 공고 생성      | `/(employer)/my-postings/create`                     | 라이브 검증 완료      |
-| 공고 목록/운영 | `/(employer)/my-postings`                            | 실제 파일 존재        |
-| 공고 상세      | `/(employer)/my-postings/[id]`                       | 운영 허브             |
-| 지원자 관리    | `/(employer)/my-postings/[id]/applicants`            | 확정/거절             |
-| 취소 요청      | `/(employer)/my-postings/[id]/cancellation-requests` | 검토/처리             |
-| 정산/현장 운영 | `/(employer)/my-postings/[id]/settlements`           | QR/정산/근무시간      |
+## 이번 재검증에서 발견 후 수정한 UX/UI 및 접근성 항목
 
-### 관리자
+### 1. 스케줄 월 네비게이터 중복
 
-| 기능      | 실제 내부 경로                                  | 실제 웹 별칭                               |
-| --------- | ----------------------------------------------- | ------------------------------------------ |
-| 대시보드  | `/(admin)`                                      | `/admin`, `/admin/dashboard`               |
-| 통계      | `/(admin)/stats`                                | `/admin/stats`                             |
-| 사용자    | `/(admin)/users`, `/(admin)/users/[id]`         | `/admin/users`, `/admin/users/:id`         |
-| 신고      | `/(admin)/reports`, `/(admin)/reports/[id]`     | `/admin/reports`, `/admin/reports/:id`     |
-| 문의      | `/(admin)/inquiries`, `/(admin)/inquiries/[id]` | `/admin/inquiries`, `/admin/inquiries/:id` |
-| 공지      | `/(admin)/announcements...`                     | `/admin/announcements...`                  |
-| 대회 승인 | `/(admin)/tournaments`                          | `/admin/tournaments`                       |
+문제:
 
-중요:
+- 스케줄 탭 상단과 캘린더 내부 헤더가 모두 월 이동 UI를 렌더링해 월 제목 locator가 중복됐다.
+- 실제 사용자 입장에서도 같은 기능이 두 번 보여 시선이 분산되고, Playwright locator도 불안정했다.
 
-- 내부 Expo 경로는 `/(admin)` 그룹이지만, 웹 직접 진입용으로 `app/admin/...` 별칭 라우트를 추가해 `/admin...` 계열을 실제로 받을 수 있게 맞췄다.
-- 웹에서 별칭으로 진입해도 내부 canonical URL은 `/` 또는 그룹이 제거된 실제 라우트로 수렴할 수 있다.
+조치:
 
-## 실제 문서-앱 불일치와 정정
+- 상단 월 네비게이터만 단일 소스로 남겼다.
+- 캘린더 쪽은 요일 헤더만 유지하도록 정리했다.
+- E2E에서 월 제목이 단일 요소인지 직접 검증하도록 보강했다.
 
-이번 점검에서 문서와 실제 앱이 다르거나 모호했던 항목은 아래와 같다.
+관련 파일:
 
-1. 공개 진입점
+- `app/(app)/(tabs)/schedule.tsx`
+- `src/components/schedule/CalendarView.tsx`
+- `e2e/pages/app/tabs/schedule.page.ts`
+- `e2e/tests/p2-standard/schedule-tab.spec.ts`
 
-- 이전 문서 뉘앙스: 앱 첫 진입이 막연한 “공개 홈”
-- 실제: `app/index.tsx`가 스플래시 역할을 하며 비로그인 사용자를 `/jobs`로 보낸다.
+### 2. 알림 `모두 읽음` 버튼 semantics 보강
 
-2. admin 기본 랜딩
+문제:
 
-- 이전 문서 뉘앙스: admin은 기본적으로 관리자 대시보드에 진입
-- 실제: 인증 후 기본 진입은 모든 역할 공통으로 `/(app)/(tabs)`다.
-- 관리자 대시보드는 프로필 메뉴 또는 `/admin` 별칭으로 들어간다.
+- 시각적으로는 액션이 보였지만 웹 role/query 기준으로는 안정적인 버튼 의미가 약했다.
 
-3. 고용주 탭 노출
+조치:
 
-- 이전 문서 뉘앙스: 고용주만 별도 탭을 가진다
-- 실제: 하단 탭의 `employer`는 항상 보인다.
-- 비고용주는 탭 안에서 `NonEmployerView`를 본다.
+- `accessible`
+- `role="button"`
+- `accessibilityRole="button"`
+- `accessibilityLabel="모두 읽음"`
+- `testID="notifications-mark-all-read"`
 
-4. QR 진입 방식
+관련 파일:
 
-- 이전 문서 뉘앙스: QR이 일반 탭처럼 보일 수 있음
-- 실제: `href: null` 숨김 탭이다.
-- 즉 파일은 탭 그룹 안에 있지만 하단 탭바에서는 노출되지 않는다.
+- `app/(app)/notifications.tsx`
 
-5. 관리자/고용주 웹 URL
+### 3. 고용주 공고 필터 tab semantics 보강
 
-- 이전 상태: `/admin`, `/admin/reports`, `/employer/...` 같은 경로는 deep link 해석은 되지만 실제 웹 직접 진입 시 404/경고가 섞일 수 있었다.
-- 현재: 웹 별칭 라우트를 추가해 직접 진입을 정상화했다.
+문제:
 
-6. unread counter 초기화
+- `/my-postings` 필터 칩은 눈으로는 동작했지만 웹 기준 `tablist/tab/selected` semantics가 약했다.
 
-- 이전 상태: live 웹에서 `?emulator=false`로 시작해도 라우팅 후 오래된 localStorage override 때문에 Cloud Functions가 `localhost:5001`로 새는 경우가 있었다.
-- 현재: 쿼리 기반 emulator override를 localStorage에 즉시 반영하도록 수정해 live 모드 유지가 실제로 확인됐다.
+조치:
 
-## 2026-03-27 실제 검증 결과
+- 필터 컨테이너에 `tablist`
+- 각 칩에 `tab`
+- `accessibilityState.selected`
+- 안정적인 label / testID 부여
 
-### 1차: Emulator broad sweep
+관련 파일:
 
-실행 결과:
+- `app/(employer)/my-postings/index.tsx`
+- `e2e/tests/p1-important/employer-posting-crud.spec.ts`
 
-- Playwright 회귀 통과
-- `85 passed, 2 skipped`
+### 4. 설정 화면 직접 URL / 클릭 플로우 회귀 강화
 
-주요 검증 범위:
+조치:
 
-- 비로그인 공개 진입
-- 로그인 / 로그아웃 / 세션
-- staff / employer / admin RBAC
-- 공고 목록 / 상세 / 지원
-- employer 공고 생성 / 수정 / 마감 / 지원자 확인
-- 설정 / 프로필 / 알림 / 스케줄 / QR
+- `/settings/change-password`
+- `/settings/delete-account`
+- `/settings/profile`
 
-증빙 로그:
+직접 URL 기반 page object를 강화하고, 설정 메인에서 각 페이지로 이동하는 회귀를 추가했다.
 
-- `output/playwright/logs/p0-critical-final-emulator.log`
-- `output/playwright/logs/p1-p2-emulator-rerun-final.log`
+관련 파일:
 
-### 2차: Live deep sweep
+- `e2e/pages/app/settings/change-password.page.ts`
+- `e2e/pages/app/settings/delete-account.page.ts`
+- `e2e/pages/app/settings/profile-edit.page.ts`
+- `e2e/pages/app/settings/settings.page.ts`
+- `e2e/tests/p2-standard/settings.spec.ts`
 
-실행 결과:
+## 데이터 / 운영 정합성 watchlist
 
-- 공개 공고 진입: 성공
-- staff 로그인/프로필/알림/스케줄/QR: 성공
-- employer 탭/공고 생성 진입/프로필: 성공
-- admin `/admin` 직접 진입: 성공
-- live unread counter emulator 누수: 재현되지 않음
+아래 항목은 이번 범위에서 제품 blocker로 단정하지 않았지만, 운영 관점에서 추적이 필요한 리스크다.
 
-실제 확인값:
+### 1. Remote version 문서 fallback 의존
 
-- 공개 경로: `/jobs`
-- staff 랜딩 URL: `/`
-- admin 랜딩 URL: `/`
-- `adminText`에 `404` 미포함
-- `localhost:5001 initializeUnreadCounter` 실패 0건
+- `src/services/versionService.ts`
+  - `appVersions/{platform}` 문서를 읽음
+  - 문서가 없으면 `원격 버전 설정 문서 없음`
+  - 이후 `원격 버전 설정 없음 - 업데이트 체크 스킵`
 
-Live 증빙:
+의미:
 
-- `output/playwright/live-smoke/diagnostics.json`
-- `output/playwright/live-smoke/public-home.png`
-- `output/playwright/live-smoke/staff-landing.png`
-- `output/playwright/live-smoke/staff-schedule.png`
-- `output/playwright/live-smoke/staff-notifications.png`
-- `output/playwright/live-smoke/staff-qr.png`
-- `output/playwright/live-smoke/staff-profile.png`
-- `output/playwright/live-smoke/employer-tab.png`
-- `output/playwright/live-smoke/employer-create.png`
-- `output/playwright/live-smoke/employer-profile.png`
-- `output/playwright/live-smoke/admin-dashboard.png`
-- `output/playwright/live-smoke/admin-profile.png`
+- 버전 체크는 graceful fallback 되지만, 강제 업데이트/권장 업데이트 운영의 진실 소스가 비어 있으면 배포 통제가 약해진다.
 
-추가 headed Playwright 확인:
+### 2. iOS 스토어 URL placeholder
 
-- `/admin?emulator=false` 비로그인 직접 진입 시 로그인 화면과 `redirect=%2F%28admin%29` 확인
-- 산출물:
-  - `.playwright-cli/page-2026-03-26T17-12-59-474Z.yml`
-  - `.playwright-cli/console-2026-03-26T17-12-49-218Z.log`
+- `src/constants/version.ts`
+  - `https://apps.apple.com/app/uniqn/idXXXXXXXXXX`
 
-## 남아 있는 운영상 리스크
+의미:
 
-1. 원격 버전 설정 문서 없음 경고
+- iOS 스토어 등록 전까지는 의도된 placeholder지만, 실제 출시 직전에는 반드시 실 앱 ID로 교체해야 한다.
 
-- live 검증 동안 staff/employer/admin 공통으로 `versionService` 경고가 남았다.
-- 기능 장애는 아니지만 운영 문서/Remote Config 데이터 부재 상태다.
+### 3. 푸시 / FCM 실기기 검증 미완료
 
-2. 웹 canonical URL과 내부 Expo 경로의 차이
+- `src/services/notifications/notificationService.ts`
+  - `TODO [출시 전]: EAS Build 후 실제 디바이스에서 FCM 테스트`
+- `src/services/notifications/pushNotificationService.ts`
+  - `TODO [출시 전]: 푸시 알림 활성화 체크리스트`
 
-- `/admin` 같은 별칭은 지원되지만 내부 canonical URL은 `/`로 수렴한다.
-- 외부 공유 링크 정책을 더 엄격히 운영하려면 별도 canonical URL 전략이 필요하다.
+의미:
 
-3. Firestore Listen `net::ERR_ABORTED`
+- Emulator/Web 기준 UI와 로직은 검증했지만, 실제 기기 권한 플로우와 수신 동작은 출시 게이트로 별도 확인이 필요하다.
 
-- live 브라우저 종료/화면 전환 시 Firestore streaming request aborted 로그가 남는다.
-- 이번 회차에서는 사용자 기능 장애로 이어지지 않았다.
+### 4. Functions 로그 watchlist
 
-## 웹에서 완전 검증할 수 없는 항목
+- `functions/src/utils/notificationUtils.ts:568`
+  - `FCM 토큰이 없습니다`
+- `functions/src/triggers/workLogs.ts:266`
+  - `Skipping worklog completion sync for missing application`
 
-아래 항목은 웹 브라우저 기준으로 일부만 확인 가능하거나 완전 검증이 불가능하다.
+의미:
 
-- QR 카메라 스캔
-  - 웹에서는 QR 진입 화면과 카메라 관련 UI 진입만 확인 가능
-  - 실제 네이티브 카메라 스캔 안정성은 디바이스 검증 필요
+- Emulator 문맥에서는 곧바로 결함으로 단정하지 않았지만, 운영에서 반복 빈도가 높으면 데이터 동기화 및 알림 전달률 점검이 필요하다.
 
-- 생체인증
-  - 웹 완전 검증 불가
-  - 실제 사용성은 iOS/Android 네이티브에서 확인 필요
+## 검증 결과
 
-- 푸시 실수신
-  - 웹에서 실제 앱 푸시 수신 검증 불가
-  - 실디바이스/FCM/APNs 경로 필요
+### 정적 / 단위 검증
 
-- Apple 로그인
-  - 웹 기준 완전 검증 불가
-  - iOS 네이티브 검증 필요
+- `npm run quality`: 통과
+- `npm test -- --runInBand`: 통과
+  - 178 passed suites
+  - 3522 passed tests
 
-## 참고 코드
+### E2E 검증
 
-- 진입/리다이렉트: `app/index.tsx`
-- 인증 후 기본 진입: `src/shared/navigation/authRedirect.ts`
-- 권한 가드: `src/hooks/useAuthGuard.ts`
-- 앱 초기화/세션 복구: `src/hooks/useAppInitialize.ts`
-- 탭 노출/QR 숨김: `app/(app)/(tabs)/_layout.tsx`
-- 고용주 탭: `app/(app)/(tabs)/employer.tsx`
-- 관리자 레이아웃: `app/(admin)/_layout.tsx`
-- 웹 관리자 별칭: `app/admin/index.tsx`, `app/admin/[...slug].tsx`
-- 웹 고용주 별칭: `app/employer/index.tsx`, `app/employer/[...slug].tsx`
-- emulator/live 분기: `src/lib/emulatorMode.ts`
+- 문제 재현 및 수정 후 targeted 회귀:
+  - schedule
+  - notifications
+  - settings
+  - employer posting CRUD
+- 최종 전체 회귀:
+  - `npm run e2e`
+  - 결과: 182 passed / 3 skipped
+
+### 해석
+
+현재 repo와 emulator/web 검증 범위 안에서는 문서와 실제 앱의 IA가 대체로 맞고, 이번에 발견한 UX/UI 및 semantics 문제도 재현 후 수정됐다. 따라서 과거 문서가 강조하던 “deep link SSOT 부족”과 “quality/Jest 실패”는 더 이상 핵심 리스크가 아니다.
+
+다만 실기기 iPhone/TestFlight, Apple 로그인, 카메라 QR, 실제 push 수신은 이번 완료 조건에 포함하지 않았다. 이 항목들은 출시 전 별도 게이트로 남겨야 한다.
+
+## 최종 판단
+
+- IA 정합성: 대체로 일치
+- 사용자 경험: 이번 재검증에서 발견한 주요 중복/semantics 문제는 수정 완료
+- 데이터/운영 정합성: 버전 문서, iOS 스토어 URL, push 실기기, Functions 로그는 watchlist 유지
+- 출시 준비도: emulator/web 기준 blocker 없음, 실기기 검증은 별도 필요

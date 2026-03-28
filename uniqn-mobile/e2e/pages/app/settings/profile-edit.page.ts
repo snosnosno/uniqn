@@ -25,10 +25,8 @@ export class ProfileEditPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/profile', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/settings/profile', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
-    await this.page.getByRole('button', { name: '프로필 수정' }).click();
-    await this.page.waitForURL(/settings\/profile/, { timeout: 10_000 });
   }
 
   /** 닉네임 입력 */

@@ -45,6 +45,7 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
         className="flex-row items-center justify-between rounded-lg border border-error-300 bg-white px-4 py-3 active:bg-error-50 dark:border-error-700 dark:bg-surface dark:active:bg-error-900/30"
         accessibilityLabel="계정 삭제"
         accessibilityRole="button"
+        testID="settings-delete-account-button"
       >
         <View className="flex-row items-center">
           <TrashIcon size={20} color="#DC2626" />
