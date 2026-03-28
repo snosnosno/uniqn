@@ -6,7 +6,7 @@ describe('RouteMapper', () => {
   describe('toExpoPath', () => {
     it('maps public routes', () => {
       expect(RouteMapper.toExpoPath({ name: 'home' })).toBe(EXPO_ROUTES.home);
-      expect(RouteMapper.toExpoPath({ name: 'jobs' })).toBe(EXPO_ROUTES.publicJobs);
+      expect(RouteMapper.toExpoPath({ name: 'jobs' })).toBe(EXPO_ROUTES.home);
       expect(RouteMapper.toExpoPath({ name: 'job', params: { id: 'job-123' } })).toBe(
         '/jobs/job-123'
       );
@@ -106,9 +106,9 @@ describe('RouteMapper', () => {
   });
 
   describe('requiresAuth', () => {
-    it('keeps public routes public', () => {
-      expect(RouteMapper.requiresAuth('home')).toBe(false);
-      expect(RouteMapper.requiresAuth('jobs')).toBe(false);
+    it('keeps only share and auth helper routes public', () => {
+      expect(RouteMapper.requiresAuth('home')).toBe(true);
+      expect(RouteMapper.requiresAuth('jobs')).toBe(true);
       expect(RouteMapper.requiresAuth('job')).toBe(false);
       expect(RouteMapper.requiresAuth('login')).toBe(false);
       expect(RouteMapper.requiresAuth('signup')).toBe(false);

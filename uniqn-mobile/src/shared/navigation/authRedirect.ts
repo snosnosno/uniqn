@@ -2,6 +2,7 @@ import type { UserProfile } from '@/types';
 
 export const AUTH_ENTRY_ROUTES = {
   appTabs: '/(app)/(tabs)',
+  signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
   profileSetup: '/(app)/profile-setup',
 } as const;

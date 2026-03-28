@@ -187,14 +187,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.JOB_CANCELLED]: {
     title: '공고 취소',
     body: (d) => `"${d.jobTitle}" 공고가 취소되었습니다.`,
-    link: () => '/jobs',
+    link: () => '/schedule',
     icon: '🚫',
   },
 
   [NotificationType.JOB_CLOSED]: {
     title: '📋 공고 마감 안내',
     body: (d) => `"${d.jobTitle}" 공고가 마감되었습니다.`,
-    link: () => '/my-applications',
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
     icon: '📋',
   },
 

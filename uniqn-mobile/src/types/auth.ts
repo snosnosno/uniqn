@@ -23,6 +23,7 @@ export interface AuthUser {
   photoURL: string | null;
   emailVerified: boolean; // Firebase 기본 필드 (미사용, 휴대폰 본인인증으로 대체)
   phoneNumber: string | null;
+  providerIds?: string[];
 }
 
 /**

@@ -252,6 +252,38 @@ describe('resolveSession', () => {
     });
   });
 
+  it('preserves a phone-only signup session when the profile document is not ready yet', async () => {
+    const authUser = {
+      uid: 'phone-only-user',
+      email: null,
+      phoneNumber: '+821012345678',
+      providerData: [{ providerId: 'phone' }],
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: {} }),
+    };
+
+    const { retryWithBackoff } = jest.requireMock('@/utils/retry') as {
+      retryWithBackoff: jest.Mock;
+    };
+
+    retryWithBackoff.mockRejectedValueOnce(new Error('Profile not found'));
+
+    const result = await resolveSession({
+      authUser: authUser as never,
+      authResolutionSource: 'current',
+      autoLoginEnabled: true,
+    });
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(mockAuthStoreState.setUser).toHaveBeenCalledWith(authUser);
+    expect(mockAuthStoreState.setProfile).toHaveBeenCalledWith(null);
+    expect(mockSetBootstrapSource).toHaveBeenCalledWith('none');
+    expect(result).toEqual({
+      deferredInitContext: null,
+      offlineBootstrap: { source: 'none', needsServerReconcile: false },
+    });
+  });
+
   it('preserves cached session while Firebase auth restoration is still settling for the current tab', async () => {
     mockIsCurrentAutoLoginSession.mockReturnValue(true);
     mockAuthStoreState.user = { uid: 'cached-user' };

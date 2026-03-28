@@ -1,6 +1,6 @@
 /**
  * UNIQN Mobile - Splash Screen
- * Root entry splash that forwards to the authenticated or public flow.
+ * Root entry splash that forwards to the authenticated or login flow.
  */
 
 import { useEffect } from 'react';
@@ -8,15 +8,20 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { APP_VERSION } from '@/constants/version';
-import { getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
-import { useAuthStore } from '@/stores/authStore';
+import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
+import {
+  AUTH_ENTRY_ROUTES,
+  AUTH_LOGIN_ROUTE,
+  getAuthenticatedEntryRoute,
+} from '@/shared/navigation/authRedirect';
+import { selectIsLoading, useAuthStore } from '@/stores/authStore';
 import { selectStartupPhase, useAppStartupStore } from '@/stores/appStartupStore';
 import { useThemeStore } from '@/stores/themeStore';
 
 const LOGO_SOURCE = require('../assets/1024.png');
 const LOGO_SIZE = 160;
 const SPLASH_REDIRECT_DELAY_MS = 500;
-const PUBLIC_ENTRY_ROUTE = '/(public)/jobs';
+const PROFILE_RETRY_DELAY_MS = 500;
 
 const SPINNER_COLOR = {
   light: '#A855F7',
@@ -27,6 +32,8 @@ export default function SplashScreen() {
   const startupPhase = useAppStartupStore(selectStartupPhase);
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
+  const isAuthLoading = useAuthStore(selectIsLoading);
+  const checkAuthState = useAuthStore((state) => state.checkAuthState);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   const authenticatedEntryRoute = getAuthenticatedEntryRoute({
@@ -34,18 +41,47 @@ export default function SplashScreen() {
     phoneVerified: profile?.phoneVerified ?? null,
     profileCompleted: profile?.profileCompleted ?? null,
   });
+  const isPhoneOnlySignupPending = isPhoneOnlySignupAuthUser(user);
 
   useEffect(() => {
-    if (startupPhase !== 'resolved') return;
+    if (startupPhase !== 'resolved') {
+      return;
+    }
 
-    if (user && !profile) return;
+    if (user && !profile) {
+      if (isPhoneOnlySignupPending) {
+        const timer = setTimeout(() => {
+          router.replace(AUTH_ENTRY_ROUTES.signup);
+        }, SPLASH_REDIRECT_DELAY_MS);
+
+        return () => clearTimeout(timer);
+      }
+
+      if (!isAuthLoading) {
+        const retryTimer = setTimeout(() => {
+          void checkAuthState();
+        }, PROFILE_RETRY_DELAY_MS);
+
+        return () => clearTimeout(retryTimer);
+      }
+
+      return;
+    }
 
     const timer = setTimeout(() => {
-      router.replace(user ? authenticatedEntryRoute : PUBLIC_ENTRY_ROUTE);
+      router.replace(user ? authenticatedEntryRoute : AUTH_LOGIN_ROUTE);
     }, SPLASH_REDIRECT_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [authenticatedEntryRoute, profile, startupPhase, user]);
+  }, [
+    authenticatedEntryRoute,
+    checkAuthState,
+    isAuthLoading,
+    isPhoneOnlySignupPending,
+    profile,
+    startupPhase,
+    user,
+  ]);
 
   return (
     <View className="flex-1 items-center justify-center bg-surface-dark">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
@@ -53,7 +53,17 @@ export default function PublicJobDetailAliasRoute() {
   }, [job, shareJob]);
 
   if (!resolvedId) {
-    return <Redirect href="/jobs" />;
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <JobDetailHeader />
+        <PostingSurfaceState
+          mode="error"
+          scope="detail"
+          message="공고 정보를 확인할 수 없습니다."
+        />
+      </SafeAreaView>
+    );
   }
 
   if (isLoading) {
@@ -74,7 +84,7 @@ export default function PublicJobDetailAliasRoute() {
         <PostingSurfaceState
           mode="error"
           scope="detail"
-          message={error?.message ?? '공고를 찾을 수 없습니다'}
+          message={error?.message ?? '공고를 찾을 수 없습니다.'}
           error={error}
           onRetry={refresh}
         />

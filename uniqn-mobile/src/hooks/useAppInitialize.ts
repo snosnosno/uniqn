@@ -10,6 +10,7 @@ import { ensureDualSdkSync } from '@/lib/authBridge';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { getUserProfile, signOut as authSignOut } from '@/services/auth';
+import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { logger } from '@/utils/logger';
 import { trackLogout, setUserId } from '@/services/observability/analyticsService';
 import { toStoreProfile } from '@/utils/profileConverter';
@@ -642,6 +643,22 @@ export async function resolveSession({
 
     if (isNetworkError(resolvedError)) {
       throw resolvedError;
+    }
+
+    if (isPhoneOnlySignupFirebaseUser(authUser)) {
+      logger.info('Preserving phone-only signup session during initialization', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+      });
+
+      authStore.setUser(authUser);
+      authStore.setProfile(null);
+      commitBootstrapSource('none', false);
+
+      return {
+        deferredInitContext: null,
+        offlineBootstrap: { source: 'none', needsServerReconcile: false },
+      };
     }
 
     logger.warn('Profile document missing or invalid during initialization, signing user out', {

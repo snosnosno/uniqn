@@ -6,7 +6,10 @@
 
 import { useEffect, useRef } from 'react';
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
+import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
 import {
+  AUTH_ENTRY_ROUTES,
+  appendRedirectToRoute,
   buildPostAuthRedirectFromSegments,
   getAuthenticatedEntryRoute,
   getLoginRoute,
@@ -24,6 +27,8 @@ interface RouteConfig {
   requiredAuth: boolean;
   requiredRole?: UserRole;
 }
+
+const PROFILE_RETRY_DELAY_MS = 500;
 
 const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   '(public)': {
@@ -93,11 +98,15 @@ export function useAuthGuard(): void {
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
-  const searchParams = useGlobalSearchParams<{ redirect?: string | string[] }>();
+  const searchParams = useGlobalSearchParams<{
+    redirect?: string | string[];
+    mode?: string | string[];
+  }>();
 
   const isLoading = useAuthStore(selectIsLoading);
   const profile = useAuthStore(selectProfile);
   const user = useAuthStore((state) => state.user);
+  const checkAuthState = useAuthStore((state) => state.checkAuthState);
 
   const isAuthenticated = !!user;
   const userRole = profile?.role ?? null;
@@ -123,27 +132,19 @@ export function useAuthGuard(): void {
       isPublicJobDetailRoute(browserPathname, segments) ||
       isPublicJobDetailRoute(pathname, segments);
 
-    if (isLoading || (isAuthenticated && !profile)) {
-      if (isAuthenticated && (isPublicJobsEntryRoute || isPublicJobsDetailRoute)) {
-        logger.debug('Authenticated user hit public jobs route before profile hydration', {
-          component: 'useAuthGuard',
-          pathname,
-          browserPathname,
-          routeGroup,
-        });
-        routerRef.current.replace('/');
-      }
-
-      return;
-    }
-
     const redirectParam = Array.isArray(searchParams.redirect)
       ? searchParams.redirect[0]
       : searchParams.redirect;
     const requestedRedirect = normalizePostAuthRedirect(redirectParam);
     const currentProtectedRoute = buildPostAuthRedirectFromSegments(segments);
+    const publicAliasRedirect =
+      buildPublicJobDetailRedirect(browserPathname) ?? buildPublicJobDetailRedirect(pathname);
     const postAuthRedirect = routeGroup === '(auth)' ? requestedRedirect : currentProtectedRoute;
+    const pendingAuthRedirect = publicAliasRedirect ?? postAuthRedirect;
     const isOnSignup = segments.includes('signup' as never);
+    const signupModeParam = Array.isArray(searchParams.mode)
+      ? searchParams.mode[0]
+      : searchParams.mode;
     const isOnProfileSetup = pathname === '/profile-setup' || pathname === '/(app)/profile-setup';
     const resolvedAuthenticatedRoute = getResolvedAuthenticatedRoute({
       socialProvider,
@@ -151,13 +152,46 @@ export function useAuthGuard(): void {
       profileCompleted,
       redirect: postAuthRedirect,
     });
+    const phoneOnlySignupRoute = appendRedirectToRoute(
+      AUTH_ENTRY_ROUTES.signup,
+      pendingAuthRedirect
+    );
+
+    if (isLoading) {
+      return;
+    }
+
+    if (isAuthenticated && !profile) {
+      if (isPhoneOnlySignupAuthUser(user)) {
+        const isOnPlainSignup =
+          routeGroup === '(auth)' && isOnSignup && signupModeParam !== 'social';
+
+        if (!isOnPlainSignup) {
+          logger.debug('Phone-only signup session redirected to signup', {
+            component: 'useAuthGuard',
+            pathname,
+            redirect: pendingAuthRedirect,
+          });
+          routerRef.current.replace(phoneOnlySignupRoute);
+        }
+
+        return;
+      }
+
+      if (!isLoading) {
+        const retryTimer = setTimeout(() => {
+          void checkAuthState();
+        }, PROFILE_RETRY_DELAY_MS);
+
+        return () => clearTimeout(retryTimer);
+      }
+
+      return;
+    }
 
     if (!routeGroup) {
       const isRouterRootPath = pathname === '/' || pathname === '/index';
       const isBrowserRootPath = browserPathname === '/' || browserPathname === '/index';
-      const publicAliasRedirect = isPublicJobsDetailRoute
-        ? buildPublicJobDetailRedirect(browserPathname)
-        : null;
 
       if (isRouterRootPath && isBrowserRootPath && isAuthenticated) {
         logger.debug('Authenticated user entered root route', {
@@ -167,6 +201,16 @@ export function useAuthGuard(): void {
           authenticatedEntryRoute: resolvedAuthenticatedRoute,
         });
         routerRef.current.replace(resolvedAuthenticatedRoute);
+        return;
+      }
+
+      if (isPublicJobsEntryRoute && !isAuthenticated) {
+        logger.debug('Guest user entered legacy public jobs alias route', {
+          component: 'useAuthGuard',
+          pathname,
+          browserPathname,
+        });
+        routerRef.current.replace('/(auth)/login');
         return;
       }
 
@@ -186,6 +230,7 @@ export function useAuthGuard(): void {
           authenticatedEntryRoute: publicAliasAuthenticatedRoute,
         });
         routerRef.current.replace(publicAliasAuthenticatedRoute);
+        return;
       }
       return;
     }
@@ -206,13 +251,22 @@ export function useAuthGuard(): void {
       return;
     }
 
-    if (routeGroup === '(public)' && isAuthenticated && isPublicEntryRoute(pathname, segments)) {
-      logger.debug('Authenticated user entered public entry route', {
-        component: 'useAuthGuard',
-        pathname,
-        authenticatedEntryRoute: resolvedAuthenticatedRoute,
-      });
-      routerRef.current.replace(resolvedAuthenticatedRoute);
+    if (routeGroup === '(public)' && isPublicEntryRoute(pathname, segments)) {
+      if (isAuthenticated) {
+        logger.debug('Authenticated user entered public entry route', {
+          component: 'useAuthGuard',
+          pathname,
+          authenticatedEntryRoute: resolvedAuthenticatedRoute,
+        });
+        routerRef.current.replace(resolvedAuthenticatedRoute);
+      } else {
+        logger.debug('Guest user entered public entry route', {
+          component: 'useAuthGuard',
+          pathname,
+        });
+        routerRef.current.replace('/(auth)/login');
+      }
+
       return;
     }
 
@@ -240,7 +294,7 @@ export function useAuthGuard(): void {
     }
 
     if (config.requiredAuth && !isAuthenticated) {
-      if (isPublicJobsEntryRoute || isPublicJobsDetailRoute) {
+      if (isPublicJobsDetailRoute) {
         return;
       }
 
@@ -268,8 +322,11 @@ export function useAuthGuard(): void {
 
       routerRef.current.replace(isAuthenticated ? authenticatedEntryRoute : '/(auth)/login');
     }
+
+    return undefined;
   }, [
     authenticatedEntryRoute,
+    checkAuthState,
     isAuthenticated,
     isLoading,
     pathname,
@@ -277,8 +334,10 @@ export function useAuthGuard(): void {
     profile,
     profileCompleted,
     searchParams.redirect,
+    searchParams.mode,
     segments,
     socialProvider,
+    user,
     userRole,
   ]);
 }

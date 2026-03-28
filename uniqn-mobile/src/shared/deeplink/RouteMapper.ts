@@ -14,7 +14,7 @@ export class RouteMapper {
       case 'home':
         return EXPO_ROUTES.home;
       case 'jobs':
-        return EXPO_ROUTES.publicJobs;
+        return EXPO_ROUTES.home;
       case 'job':
         return EXPO_ROUTES.publicJobDetail.replace('[id]', route.params.id);
       case 'login':
@@ -116,14 +116,7 @@ export class RouteMapper {
   }
 
   static requiresAuth(routeName: DeepLinkRoute['name']): boolean {
-    const publicRoutes: DeepLinkRoute['name'][] = [
-      'home',
-      'jobs',
-      'job',
-      'login',
-      'signup',
-      'forgot-password',
-    ];
+    const publicRoutes: DeepLinkRoute['name'][] = ['job', 'login', 'signup', 'forgot-password'];
 
     return !publicRoutes.includes(routeName);
   }

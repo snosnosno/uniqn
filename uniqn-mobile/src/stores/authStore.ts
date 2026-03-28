@@ -7,6 +7,7 @@ import { getFirebaseAuth } from '@/lib/firebase';
 import { authStateStorage } from '@/lib/mmkvStorage';
 import { settingsStorage } from '@/lib/secureStorage';
 import { getUserProfile } from '@/services/auth/userProfileService';
+import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { clearCriticalOfflineCacheForUser } from '@/services/offline/criticalOfflineCache';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RoleResolver } from '@/shared/role';
@@ -170,6 +171,11 @@ function resolveScopedUserId(
 }
 
 function toAuthUser(firebaseUser: FirebaseUser): AuthUser {
+  const providerIds =
+    firebaseUser.providerData
+      ?.map((provider) => provider.providerId)
+      .filter((providerId): providerId is string => Boolean(providerId)) ?? [];
+
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
@@ -177,6 +183,7 @@ function toAuthUser(firebaseUser: FirebaseUser): AuthUser {
     photoURL: firebaseUser.photoURL,
     emailVerified: firebaseUser.emailVerified,
     phoneNumber: firebaseUser.phoneNumber,
+    providerIds,
   };
 }
 
@@ -192,20 +199,6 @@ function isExplicitSnapshotStale(firebaseUser: FirebaseUser | null | undefined):
   }
 
   return !liveUser || liveUser.uid !== firebaseUser.uid;
-}
-
-function isPhoneOnlySignupSession(firebaseUser: FirebaseUser): boolean {
-  const hasPhoneNumber =
-    typeof firebaseUser.phoneNumber === 'string' && firebaseUser.phoneNumber.length > 0;
-  const hasEmail = typeof firebaseUser.email === 'string' && firebaseUser.email.length > 0;
-  const providerIds =
-    firebaseUser.providerData
-      ?.map((provider) => provider.providerId)
-      .filter((providerId): providerId is string => Boolean(providerId)) ?? [];
-  const hasPhoneProvider = providerIds.includes('phone');
-  const hasNonPhoneProvider = providerIds.some((providerId) => providerId !== 'phone');
-
-  return hasPhoneNumber && !hasEmail && (hasPhoneProvider || !hasNonPhoneProvider);
 }
 
 async function clearRejectedServerSession(get: () => AuthState, uid: string) {
@@ -493,7 +486,7 @@ export const useAuthStore = create<AuthState>()(
               bootstrapSource: 'server',
             });
           } else {
-            if (isPhoneOnlySignupSession(currentUser)) {
+            if (isPhoneOnlySignupFirebaseUser(currentUser)) {
               logger.info('Preserving phone-only signup session until profile creation completes', {
                 component: 'authStore',
                 uid: currentUser.uid,
