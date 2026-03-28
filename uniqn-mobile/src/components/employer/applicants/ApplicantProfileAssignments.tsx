@@ -1,44 +1,34 @@
-/**
- * UNIQN Mobile - 지원자 배정 일정 표시
- *
- * @description 지원자의 날짜별 배정 일정 (시간대, 역할)을 그룹화하여 표시
- * @version 1.0.0
- */
-
 import React, { useMemo } from 'react';
-import { View, Text } from 'react-native';
-import { CalendarIcon, ClockIcon, BriefcaseIcon } from '../../icons';
+import { Text, View } from 'react-native';
 import { getAssignmentRoles } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { toDate } from '@/utils/date';
 import type { Assignment } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { BriefcaseIcon, CalendarIcon, ClockIcon } from '../../icons';
 
 export interface ApplicantProfileAssignmentsProps {
   assignments: Assignment[];
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 const formatDate = (dateStr?: string): string => {
-  if (!dateStr) return '';
+  if (!dateStr) {
+    return '';
+  }
+
   const date = toDate(dateStr);
-  if (!date) return dateStr;
+  if (!date) {
+    return dateStr;
+  }
+
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${year}.${month}.${day}(${dayOfWeek})`;
-};
+  const weekday = WEEKDAY_LABELS[date.getDay()];
 
-// ============================================================================
-// Component
-// ============================================================================
+  return `${year}.${month}.${day}(${weekday})`;
+};
 
 export const ApplicantProfileAssignments = React.memo(function ApplicantProfileAssignments({
   assignments,
@@ -47,12 +37,15 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
     const grouped: Record<string, { timeSlot: string; roles: string[] }[]> = {};
 
     for (const assignment of assignments) {
-      const roles = getAssignmentRoles(assignment).map((r) => getRoleDisplayName(r, undefined));
+      const roles = getAssignmentRoles(assignment).map((role) =>
+        getRoleDisplayName(role, undefined)
+      );
 
       for (const date of assignment.dates) {
         if (!grouped[date]) {
           grouped[date] = [];
         }
+
         grouped[date].push({
           timeSlot: assignment.timeSlot,
           roles,
@@ -61,7 +54,7 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
     }
 
     return Object.entries(grouped)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([left], [right]) => left.localeCompare(right))
       .map(([date, slots]) => ({
         date,
         formattedDate: formatDate(date),
@@ -69,22 +62,25 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
       }));
   }, [assignments]);
 
-  if (groupedByDate.length === 0) return null;
+  if (groupedByDate.length === 0) {
+    return null;
+  }
 
   return (
     <View className="px-4 pb-4">
-      <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
-        <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">지원 일정</Text>
-        {groupedByDate.map((item, idx) => (
-          <View key={idx} className="mb-2 last:mb-0">
-            <View className="flex-row items-center mb-1">
+      <View className="rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
+        <Text className="mb-2 text-sm font-medium text-gray-900 dark:text-white">지원 일정</Text>
+        {groupedByDate.map((item, index) => (
+          <View key={index} className="mb-2 last:mb-0">
+            <View className="mb-1 flex-row items-center">
               <CalendarIcon size={14} color="#9333EA" />
               <Text className="ml-2 text-sm font-medium text-primary-700 dark:text-primary-300">
                 {item.formattedDate}
               </Text>
             </View>
-            {item.slots.map((slot, slotIdx) => (
-              <View key={slotIdx} className="ml-6 flex-row items-center mb-1">
+
+            {item.slots.map((slot, slotIndex) => (
+              <View key={slotIndex} className="mb-1 ml-6 flex-row items-center">
                 <ClockIcon size={12} color="#6B7280" />
                 <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
                   {slot.timeSlot}

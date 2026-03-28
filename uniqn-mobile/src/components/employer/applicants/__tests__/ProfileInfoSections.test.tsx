@@ -21,26 +21,26 @@ const baseUserProfile: UserProfile = {
   birthDate: '19900101',
   region: '서울',
   experienceYears: 3,
-  career: '포커딜러 경력 3년',
-  note: '친절하고 성실합니다',
+  career: '카지노 딜러 경력 3년',
+  note: '차분하고 성실합니다.',
   phone: '010-1111-2222',
   createdAt: createMockTimestamp(),
   updatedAt: createMockTimestamp(),
 };
 
 describe('ProfileInfoSections', () => {
-  it('renders user profile fields', () => {
+  it('renders localized user profile fields', () => {
     render(<ProfileInfoSection userProfile={baseUserProfile} />);
 
     expect(screen.getByText('프로필 정보')).toBeTruthy();
     expect(screen.getByText('남성')).toBeTruthy();
     expect(screen.getByText('서울')).toBeTruthy();
     expect(screen.getByText('3년')).toBeTruthy();
-    expect(screen.getByText('포커딜러 경력 3년')).toBeTruthy();
-    expect(screen.getByText('친절하고 성실합니다')).toBeTruthy();
+    expect(screen.getByText('카지노 딜러 경력 3년')).toBeTruthy();
+    expect(screen.getByText('차분하고 성실합니다.')).toBeTruthy();
   });
 
-  it('falls back to provided contact values when userProfile contact fields are missing', () => {
+  it('falls back to provided contact values when user profile contact fields are missing', () => {
     const profileWithoutContacts: UserProfile = {
       ...baseUserProfile,
       email: '',
@@ -55,6 +55,7 @@ describe('ProfileInfoSections', () => {
       />
     );
 
+    expect(screen.getByText('연락처 정보')).toBeTruthy();
     expect(screen.getByText('010-9999-8888')).toBeTruthy();
     expect(screen.getByText('fallback@example.com')).toBeTruthy();
   });

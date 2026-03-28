@@ -1,16 +1,12 @@
-/**
- * UNIQN Mobile - Confirmed Staff Card
- */
-
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
 import { CONFIRMED_STAFF_STATUS } from '@/constants/statusConfig';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { WorkTimeDisplay } from '@/shared/time';
 import { useThemeStore } from '@/stores/themeStore';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
-import { WorkTimeDisplay } from '@/shared/time';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Card } from '../../ui/Card';
@@ -162,7 +158,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               <View className="flex-1">
                 <View className="flex-row items-center">
                   <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {timeInfo.isEffectiveStartActual ? 'Started' : 'Start'}
+                    {timeInfo.isEffectiveStartActual ? '출근' : '시작'}
                   </Text>
                   {isCheckedIn ? (
                     <View className="ml-1">
@@ -177,7 +173,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
               <View className="flex-1">
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
-                  {timeInfo.isEffectiveEndActual ? 'Ended' : 'End'}
+                  {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
                 <Text className="text-sm font-medium text-gray-900 dark:text-white">
                   {timeInfo.effectiveEnd}
@@ -186,7 +182,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
               {workDuration ? (
                 <View className="flex-1">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">Duration</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">근무 시간</Text>
                   <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                     {workDuration}
                   </Text>
@@ -214,7 +210,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             >
               <EditIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
-                Edit time
+                시간 수정
               </Text>
             </Pressable>
           ) : null}
@@ -226,7 +222,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             >
               <BriefcaseIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
-                Change role
+                역할 변경
               </Text>
             </Pressable>
           ) : null}
@@ -237,9 +233,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-row items-center justify-center rounded-lg bg-red-50 px-3 py-2 active:opacity-70 dark:bg-red-900/20"
             >
               <ExclamationTriangleIcon size={14} color="#EF4444" />
-              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">
-                Report
-              </Text>
+              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">신고</Text>
             </Pressable>
           ) : null}
 

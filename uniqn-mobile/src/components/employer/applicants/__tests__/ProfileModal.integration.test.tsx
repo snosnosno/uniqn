@@ -9,7 +9,7 @@ jest.mock('@/hooks/useUserProfile', () => ({
 
 jest.mock('../../../ui/SheetModal', () => {
   const React = jest.requireActual('react') as typeof import('react');
-  const { View, Text } = jest.requireActual('react-native') as typeof import('react-native');
+  const { Text, View } = jest.requireActual('react-native') as typeof import('react-native');
 
   return {
     SheetModal: ({ visible, title, children }: any) =>
@@ -45,7 +45,7 @@ jest.mock('@/utils/date', () => {
 
   return {
     ...actual,
-    formatRelativeTime: jest.fn(() => '1일 전'),
+    formatRelativeTime: jest.fn(() => '1분 전'),
     formatTime: jest.fn((date: Date) => {
       if (!(date instanceof Date)) {
         return '00:00';
@@ -77,25 +77,25 @@ describe('Profile modal integration', () => {
     jest.clearAllMocks();
   });
 
-  it('renders shared profile and fallback contact info inside ApplicantProfileModal', () => {
+  it('renders localized applicant profile content and fallback contact info', () => {
     useUserProfile.mockReturnValue({
       userProfile: {
         uid: 'staff-1',
         email: '',
-        name: '김지원',
+        name: '지원자',
         role: 'staff',
         gender: 'female',
         birthDate: '19920101',
         region: '서울',
         experienceYears: 2,
-        career: '홀 운영 2년',
-        note: '밝게 응대합니다',
+        career: '딜러 경력 2년',
+        note: '밝고 성실합니다.',
         phone: undefined,
         createdAt: createMockTimestamp(),
         updatedAt: createMockTimestamp(),
       },
       isLoading: false,
-      displayName: '김지원',
+      displayName: '지원자',
       profilePhotoURL: undefined,
     });
 
@@ -107,47 +107,58 @@ describe('Profile modal integration', () => {
           {
             id: 'application-1',
             applicantId: 'staff-1',
-            applicantName: '김지원',
+            applicantName: '지원자',
             applicantPhone: '010-1111-2222',
             applicantEmail: 'fallback@example.com',
             status: 'applied',
-            assignments: [],
-            customRole: '딜러',
+            assignments: [
+              {
+                roleIds: ['dealer'],
+                timeSlot: '09:00',
+                dates: ['2025-01-03'],
+                isGrouped: false,
+              },
+            ],
             createdAt: new Date('2025-01-02T10:00:00'),
-            message: '잘 부탁드립니다',
+            message: '잘 부탁드립니다.',
           } as never
         }
       />
     );
 
     expect(screen.getByText('지원자 프로필')).toBeTruthy();
+    expect(screen.getByText(/1분 전/)).toBeTruthy();
     expect(screen.getByText('프로필 정보')).toBeTruthy();
     expect(screen.getByText('서울')).toBeTruthy();
-    expect(screen.getByText('홀 운영 2년')).toBeTruthy();
+    expect(screen.getByText('딜러 경력 2년')).toBeTruthy();
     expect(screen.getByText('연락처 정보')).toBeTruthy();
     expect(screen.getByText('010-1111-2222')).toBeTruthy();
     expect(screen.getByText('fallback@example.com')).toBeTruthy();
+    expect(screen.getByText('지원 메시지')).toBeTruthy();
+    expect(screen.getByText('잘 부탁드립니다.')).toBeTruthy();
+    expect(screen.getByText('지원 일정')).toBeTruthy();
+    expect(screen.getByText('2025.1.3(금)')).toBeTruthy();
   });
 
-  it('renders shared profile section and staff phone fallback inside StaffProfileModal', () => {
+  it('renders localized staff profile details and contact fallback', () => {
     useUserProfile.mockReturnValue({
       userProfile: {
         uid: 'staff-2',
         email: 'staff@example.com',
-        name: '이스태프',
+        name: '스태프',
         role: 'staff',
         gender: 'male',
         birthDate: '19900303',
         region: '부산',
         experienceYears: 4,
-        career: '스태프 운영 4년',
-        note: '체크인 안내에 익숙합니다',
+        career: '스태프 경력 4년',
+        note: '체크인 안내에 익숙합니다.',
         phone: undefined,
         createdAt: createMockTimestamp(),
         updatedAt: createMockTimestamp(),
       },
       isLoading: false,
-      displayName: '이스태프',
+      displayName: '스태프',
       profilePhotoURL: undefined,
     });
 
@@ -159,7 +170,7 @@ describe('Profile modal integration', () => {
           {
             id: 'worklog-1',
             staffId: 'staff-2',
-            staffName: '이스태프',
+            staffName: '스태프',
             phone: '010-7777-8888',
             role: 'dealer',
             date: '2025-01-10',
@@ -173,12 +184,15 @@ describe('Profile modal integration', () => {
     );
 
     expect(screen.getByText('스태프 프로필')).toBeTruthy();
+    expect(screen.getByText('근무 정보')).toBeTruthy();
     expect(screen.getByText('프로필 정보')).toBeTruthy();
     expect(screen.getByText('부산')).toBeTruthy();
-    expect(screen.getByText('스태프 운영 4년')).toBeTruthy();
+    expect(screen.getByText('스태프 경력 4년')).toBeTruthy();
     expect(screen.getByText('연락처 정보')).toBeTruthy();
     expect(screen.getByText('010-7777-8888')).toBeTruthy();
     expect(screen.getByText('staff@example.com')).toBeTruthy();
     expect(screen.getByText('09:00 ~ 18:00')).toBeTruthy();
+    expect(screen.getByText('비고')).toBeTruthy();
+    expect(screen.getByText('지각 주의')).toBeTruthy();
   });
 });

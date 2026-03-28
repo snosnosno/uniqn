@@ -1,25 +1,10 @@
-/**
- * UNIQN Mobile - 역할 체크박스 컴포넌트
- *
- * @description 역할 선택을 위한 체크박스 UI
- */
-
 import React, { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { CheckIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { getRoleDisplayName, isRoleFilled } from '@/types/unified';
 import type { RoleCheckboxProps } from './types';
 
-/**
- * 역할 체크박스 컴포넌트
- *
- * @example
- * <RoleCheckbox
- *   role={{ roleId: 'dealer', filledCount: 2, requiredCount: 5 }}
- *   isSelected={true}
- *   onToggle={() => handleToggle()}
- * />
- */
 export const RoleCheckbox = memo(function RoleCheckbox({
   role,
   isSelected,
@@ -36,32 +21,32 @@ export const RoleCheckbox = memo(function RoleCheckbox({
       disabled={isDisabled}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isSelected, disabled: isDisabled }}
-      className={`flex-row items-center mr-3 mb-1 ${isDisabled ? 'opacity-50' : 'active:opacity-80'}`}
+      className={`mb-1 mr-3 flex-row items-center ${isDisabled ? 'opacity-50' : 'active:opacity-80'}`}
     >
-      {/* 체크박스 */}
       <View
-        className={`w-5 h-5 rounded border-2 mr-2 items-center justify-center ${
+        className={`mr-2 h-5 w-5 items-center justify-center rounded border-2 ${
           isSelected
-            ? 'bg-primary-500 border-primary-500'
+            ? 'border-primary-500 bg-primary-500'
             : isFilled
-              ? 'bg-gray-200 border-gray-300 dark:bg-surface dark:border-surface-overlay'
+              ? 'border-gray-300 bg-gray-200 dark:border-surface-overlay dark:bg-surface'
               : 'border-gray-300 dark:border-surface-overlay'
         }`}
       >
-        {isSelected && <Text className="text-white text-xs font-bold">✓</Text>}
+        {isSelected && <CheckIcon size={12} color="#FFFFFF" />}
       </View>
-      {/* 역할 라벨 + 충원 현황 */}
+
       <Text
         className={`text-sm ${
           isFilled
-            ? 'text-gray-400 dark:text-gray-500 line-through'
+            ? 'text-gray-400 line-through dark:text-gray-500'
             : isSelected
-              ? 'text-primary-700 dark:text-primary-300 font-medium'
+              ? 'font-medium text-primary-700 dark:text-primary-300'
               : 'text-gray-700 dark:text-gray-300'
         }`}
       >
         {roleLabel}({role.filledCount}/{role.requiredCount})
       </Text>
+
       {isFilled && (
         <Badge variant="default" size="sm" className="ml-1">
           마감

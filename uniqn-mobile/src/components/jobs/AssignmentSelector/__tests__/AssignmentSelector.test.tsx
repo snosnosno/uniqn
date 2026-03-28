@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import type { JobPosting } from '@/types';
+import { createSimpleAssignment } from '@/types/assignment';
 import type { UseJobScheduleResult } from '@/hooks/useJobSchedule';
 import type { ScheduleGroup } from '@/utils/assignment';
 import { AssignmentSelector } from '../AssignmentSelector';
@@ -52,6 +53,30 @@ function createBaseScheduleResult(
   };
 }
 
+function createSingleDateSchedule() {
+  return [
+    {
+      type: 'dated' as const,
+      date: '2026-04-01',
+      timeSlots: [
+        {
+          id: 'slot-a',
+          startTime: '09:00',
+          isTimeToBeAnnounced: false,
+          roles: [
+            {
+              roleId: 'staff',
+              displayName: 'Staff',
+              filledCount: 0,
+              requiredCount: 1,
+            },
+          ],
+        },
+      ],
+    },
+  ];
+}
+
 describe('AssignmentSelector', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,6 +88,45 @@ describe('AssignmentSelector', () => {
     });
     createPostingLegacyDateRequirements.mockReturnValue([]);
     groupDatedSchedules.mockReturnValue([]);
+  });
+
+  it('renders readable Korean labels for date, time, and role', () => {
+    useJobSchedule.mockReturnValue(
+      createBaseScheduleResult({
+        datedSchedules: createSingleDateSchedule(),
+      })
+    );
+
+    render(
+      <AssignmentSelector
+        jobPosting={{ id: 'job-1' } as JobPosting}
+        selectedAssignments={[]}
+        onSelectionChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText(/날짜 및 역할 선택/)).toBeTruthy();
+    expect(screen.getByText('4/1(수)')).toBeTruthy();
+    expect(screen.getByText('09:00')).toBeTruthy();
+    expect(screen.getByText('일반(0/1)')).toBeTruthy();
+  });
+
+  it('renders a readable Korean selection summary', () => {
+    useJobSchedule.mockReturnValue(
+      createBaseScheduleResult({
+        datedSchedules: createSingleDateSchedule(),
+      })
+    );
+
+    render(
+      <AssignmentSelector
+        jobPosting={{ id: 'job-1' } as JobPosting}
+        selectedAssignments={[createSimpleAssignment('staff', '09:00', '2026-04-01')]}
+        onSelectionChange={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('선택된 일반 1건')).toBeTruthy();
   });
 
   it('passes the selected slot id into simple assignments', () => {

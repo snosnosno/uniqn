@@ -1,18 +1,18 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import {
-  PhoneIcon,
-  MailIcon,
-  CalendarIcon,
-  BriefcaseIcon,
-  DocumentIcon,
-  UserIcon,
-  MapPinIcon,
-  StarIcon,
-} from '../../icons';
-import type { UserProfile } from '@/services';
-import { toDate } from '@/utils/date';
+import { Text, View } from 'react-native';
 import { formatBirthDate } from '@/utils/formatters';
+import { toDate } from '@/utils/date';
+import type { UserProfile } from '@/services';
+import {
+  BriefcaseIcon,
+  CalendarIcon,
+  DocumentIcon,
+  MailIcon,
+  MapPinIcon,
+  PhoneIcon,
+  StarIcon,
+  UserIcon,
+} from '../../icons';
 
 const GENDER_LABELS: Record<string, string> = {
   male: '남성',
@@ -20,8 +20,12 @@ const GENDER_LABELS: Record<string, string> = {
   other: '기타',
 };
 
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
 export function formatProfileDate(dateStr?: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) {
+    return '';
+  }
 
   const date = toDate(dateStr);
   if (!date) {
@@ -31,9 +35,9 @@ export function formatProfileDate(dateStr?: string): string {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  const weekday = WEEKDAY_LABELS[date.getDay()];
 
-  return `${year}.${month}.${day}(${dayOfWeek})`;
+  return `${year}.${month}.${day}(${weekday})`;
 }
 
 interface InfoRowProps {
@@ -44,10 +48,10 @@ interface InfoRowProps {
 
 export function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
-      <View className="w-6 mt-0.5">{icon}</View>
-      <View className="flex-1 ml-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
+    <View className="flex-row items-start border-b border-gray-100 py-3 dark:border-surface-overlay">
+      <View className="mt-0.5 w-6">{icon}</View>
+      <View className="ml-2 flex-1">
+        <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">{label}</Text>
         <Text className="text-sm text-gray-900 dark:text-white">{value}</Text>
       </View>
     </View>
@@ -62,8 +66,8 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-lg">
-      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mr-2">
+    <View className="flex-row items-center rounded-lg bg-gray-50 p-3 dark:bg-surface">
+      <View className="mr-2 h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface">
         {icon}
       </View>
       <View className="flex-1">
@@ -84,13 +88,13 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
   }
 
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
-      <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+    <View className="border-b border-gray-100 px-4 py-4 dark:border-surface-overlay">
+      <Text className="mb-3 text-base font-semibold text-gray-900 dark:text-white">
         프로필 정보
       </Text>
 
-      <View className="flex-row flex-wrap gap-2 mb-3">
-        {userProfile.gender && (
+      <View className="mb-3 flex-row flex-wrap gap-2">
+        {userProfile.gender ? (
           <View className="w-[48%]">
             <GridInfoItem
               icon={<UserIcon size={16} color="#6B7280" />}
@@ -98,9 +102,9 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
               value={GENDER_LABELS[userProfile.gender] || userProfile.gender}
             />
           </View>
-        )}
+        ) : null}
 
-        {userProfile.birthDate && (
+        {userProfile.birthDate ? (
           <View className="w-[48%]">
             <GridInfoItem
               icon={<CalendarIcon size={16} color="#6B7280" />}
@@ -108,9 +112,9 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
               value={formatBirthDate(userProfile.birthDate)}
             />
           </View>
-        )}
+        ) : null}
 
-        {userProfile.region && (
+        {userProfile.region ? (
           <View className="w-[48%]">
             <GridInfoItem
               icon={<MapPinIcon size={16} color="#6B7280" />}
@@ -118,9 +122,9 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
               value={userProfile.region}
             />
           </View>
-        )}
+        ) : null}
 
-        {userProfile.experienceYears !== undefined && userProfile.experienceYears > 0 && (
+        {userProfile.experienceYears !== undefined && userProfile.experienceYears > 0 ? (
           <View className="w-[48%]">
             <GridInfoItem
               icon={<StarIcon size={16} color="#6B7280" />}
@@ -128,24 +132,24 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
               value={`${userProfile.experienceYears}년`}
             />
           </View>
-        )}
+        ) : null}
       </View>
 
-      {userProfile.career && (
+      {userProfile.career ? (
         <InfoRow
           icon={<BriefcaseIcon size={16} color="#6B7280" />}
           label="경력 상세"
           value={userProfile.career}
         />
-      )}
+      ) : null}
 
-      {userProfile.note && (
+      {userProfile.note ? (
         <InfoRow
           icon={<DocumentIcon size={16} color="#6B7280" />}
           label="자기소개"
           value={userProfile.note}
         />
-      )}
+      ) : null}
     </View>
   );
 }
@@ -166,7 +170,7 @@ export function ContactInfoSection({
 
   return (
     <View className="px-4 py-4">
-      <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+      <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
         연락처 정보
       </Text>
 

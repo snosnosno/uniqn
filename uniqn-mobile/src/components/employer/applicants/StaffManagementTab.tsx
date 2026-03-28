@@ -1,21 +1,17 @@
-/**
- * UNIQN Mobile - Staff Management Tab
- */
-
 import React, { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
-import { logger } from '@/utils/logger';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
 import type { WorkLogStatus } from '@/shared/status';
+import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
+import { logger } from '@/utils/logger';
 import { CalendarIcon, CheckCircleIcon, ClockIcon, QRCodeIcon, RefreshIcon } from '../../icons';
 import { ActionSheet, type ActionSheetOption } from '../../ui/ActionSheet';
 import { ErrorState } from '../../ui/ErrorState';
 import { Loading } from '../../ui/Loading';
 import { ConfirmModal } from '../../ui/Modal';
-import { StaffProfileModal } from './StaffProfileModal';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
+import { StaffProfileModal } from './StaffProfileModal';
 import { WorkTimeEditor } from '../settlement/WorkTimeEditor';
 
 export interface StaffManagementTabProps {
@@ -41,7 +37,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
           className="flex-1 flex-row items-center justify-center rounded-xl bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
         >
           <QRCodeIcon size={24} color="#FFFFFF" />
-          <Text className="ml-2 text-base font-semibold text-white">Open event QR</Text>
+          <Text className="ml-2 text-base font-semibold text-white">이벤트 QR 열기</Text>
         </Pressable>
 
         <Pressable
@@ -143,7 +139,7 @@ export function StaffManagementTab({
         jobPostingId,
         staffId: staff.staffId,
         date: staff.date,
-        reason: 'Removed from confirmed staff management',
+        reason: '확정 스태프 관리에서 제거',
       });
     },
     [jobPostingId, removeStaff]
@@ -191,7 +187,7 @@ export function StaffManagementTab({
 
     if (currentStatus !== STATUS.WORK_LOG.SCHEDULED) {
       options.push({
-        label: 'Set as scheduled',
+        label: '출근 예정으로 변경',
         value: STATUS.WORK_LOG.SCHEDULED,
         icon: <CalendarIcon size={20} color="#6B7280" />,
       });
@@ -199,7 +195,7 @@ export function StaffManagementTab({
 
     if (currentStatus !== STATUS.WORK_LOG.CHECKED_IN) {
       options.push({
-        label: 'Mark checked in',
+        label: '출근 처리',
         value: STATUS.WORK_LOG.CHECKED_IN,
         icon: <CheckCircleIcon size={20} color="#22C55E" />,
       });
@@ -207,7 +203,7 @@ export function StaffManagementTab({
 
     if (currentStatus !== STATUS.WORK_LOG.CHECKED_OUT) {
       options.push({
-        label: 'Mark checked out',
+        label: '퇴근 처리',
         value: STATUS.WORK_LOG.CHECKED_OUT,
         icon: <ClockIcon size={20} color="#4F46E5" />,
       });
@@ -215,7 +211,7 @@ export function StaffManagementTab({
 
     if (currentStatus !== STATUS.WORK_LOG.COMPLETED) {
       options.push({
-        label: 'Mark completed',
+        label: '근무 완료 처리',
         value: STATUS.WORK_LOG.COMPLETED,
         icon: <CheckCircleIcon size={20} color="#059669" />,
       });
@@ -237,7 +233,9 @@ export function StaffManagementTab({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">Loading confirmed staff...</Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+          확정된 스태프를 불러오는 중입니다...
+        </Text>
       </View>
     );
   }
@@ -245,7 +243,7 @@ export function StaffManagementTab({
   if (error) {
     return (
       <ErrorState
-        title="Failed to load confirmed staff"
+        title="확정된 스태프를 불러오지 못했습니다"
         message={error.message}
         onRetry={refresh}
       />
@@ -289,10 +287,12 @@ export function StaffManagementTab({
         visible={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="Remove confirmed staff"
-        message={`Remove ${deleteTarget?.staffName ?? 'this staff member'} from the confirmed staff list? This cancels the confirmation and releases the occupied slot.`}
-        confirmText="Remove"
-        cancelText="Keep"
+        title="확정 스태프 제거"
+        message={`${
+          deleteTarget?.staffName ?? '선택한 스태프'
+        }를 확정 목록에서 제거할까요? 이 작업은 확정을 취소하고 점유된 자리를 다시 비웁니다.`}
+        confirmText="제거"
+        cancelText="유지"
         isDestructive
       />
 
@@ -305,10 +305,10 @@ export function StaffManagementTab({
       <ActionSheet
         visible={Boolean(statusSheetTarget)}
         onClose={() => setStatusSheetTarget(null)}
-        title="Change status"
+        title="상태 변경"
         description={
           statusSheetTarget
-            ? `Choose the work status for ${statusSheetTarget.staffName ?? 'this staff member'}.`
+            ? `${statusSheetTarget.staffName ?? '스태프'}님의 근무 상태를 선택하세요.`
             : undefined
         }
         options={getStatusOptions()}

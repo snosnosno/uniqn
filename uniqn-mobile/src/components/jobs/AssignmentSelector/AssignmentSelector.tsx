@@ -167,10 +167,10 @@ export const AssignmentSelector = memo(function AssignmentSelector({
     return (
       <View className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
         <Text className="text-sm font-medium text-amber-800 dark:text-amber-200">
-          고정공고 지원은 현재 비활성화되어 있습니다.
+          고정 공고 지원은 현재 비활성화되어 있습니다.
         </Text>
         <Text className="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">
-          날짜 기반 requirement 선택 공고만 지원할 수 있습니다.
+          날짜 기반 모집 공고만 지원할 수 있습니다.
         </Text>
         {error && <Text className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</Text>}
       </View>
@@ -215,7 +215,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       {selectionSummary ? (
         <View className="mt-4 border-t border-gray-100 pt-4 dark:border-surface-overlay">
           <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
-            선택됨 {selectionSummary}
+            선택된 {selectionSummary}
           </Text>
         </View>
       ) : null}

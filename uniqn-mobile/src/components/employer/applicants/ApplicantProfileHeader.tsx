@@ -1,22 +1,11 @@
-/**
- * UNIQN Mobile - 吏?먯옄 ?꾨줈???ㅻ뜑
- *
- * @description 吏?먯옄 ?꾨컮?, ?대쫫, ?곹깭 諭껋?, 吏????븷/?쒓컙 ?쒖떆
- * @version 1.0.0
- */
-
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { Avatar } from '../../ui/Avatar';
+import { Badge } from '../../ui/Badge';
 
 export interface ApplicantProfileHeaderProps {
   applicant: ApplicantWithDetails;
@@ -25,10 +14,6 @@ export interface ApplicantProfileHeaderProps {
   isProfileLoading: boolean;
   appliedTimeAgo: string;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
 
 const STATUS_BADGE_VARIANT: Record<
   ApplicationStatus,
@@ -42,10 +27,6 @@ const STATUS_BADGE_VARIANT: Record<
   cancellation_pending: 'warning',
 };
 
-// ============================================================================
-// Component
-// ============================================================================
-
 export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader({
   applicant,
   displayName,
@@ -53,10 +34,16 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   isProfileLoading,
   appliedTimeAgo,
 }: ApplicantProfileHeaderProps) {
+  const roleLabel = getRoleDisplayName(
+    applicant.assignments[0]?.roleIds?.[0] ?? 'other',
+    applicant.customRole
+  );
+  const metaText = [roleLabel, appliedTimeAgo].filter(Boolean).join(' · ');
+
   return (
-    <View className="items-center py-4 bg-gray-50 dark:bg-surface">
+    <View className="items-center bg-gray-50 py-4 dark:bg-surface">
       {isProfileLoading ? (
-        <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
+        <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-gray-200 dark:bg-surface">
           <ActivityIndicator size="small" color="#6B7280" />
         </View>
       ) : (
@@ -67,20 +54,17 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
           className="mb-2"
         />
       )}
-      {/* ?대쫫 + ?곹깭 諭껋? (媛숈? ?? */}
-      <View className="flex-row items-center gap-2 mb-1">
+
+      <View className="mb-1 flex-row items-center gap-2">
         <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
         <Badge variant={STATUS_BADGE_VARIANT[applicant.status]} size="sm" dot>
           {APPLICATION_STATUS_LABELS[applicant.status]}
         </Badge>
       </View>
-      <Text className="text-sm text-gray-500 dark:text-gray-400">
-        {getRoleDisplayName(
-          applicant.assignments[0]?.roleIds?.[0] || 'other',
-          applicant.customRole
-        )}{' '}
-        吏??쨌 {appliedTimeAgo}
-      </Text>
+
+      {metaText ? (
+        <Text className="text-sm text-gray-500 dark:text-gray-400">{metaText}</Text>
+      ) : null}
     </View>
   );
 });

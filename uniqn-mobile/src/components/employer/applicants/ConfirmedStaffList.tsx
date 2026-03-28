@@ -1,7 +1,3 @@
-/**
- * UNIQN Mobile - Confirmed Staff List
- */
-
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -39,13 +35,13 @@ export interface ConfirmedStaffListProps {
 type FilterStatus = 'all' | ConfirmedStaffStatus;
 
 const FILTER_LABELS: Record<FilterStatus, string> = {
-  all: 'All',
-  scheduled: 'Scheduled',
-  checked_in: 'Checked in',
-  checked_out: 'Checked out',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-  no_show: 'No-show',
+  all: '전체',
+  scheduled: '출근 예정',
+  checked_in: '근무 중',
+  checked_out: '퇴근 완료',
+  completed: '근무 완료',
+  cancelled: '취소됨',
+  no_show: '노쇼',
 };
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
@@ -79,7 +75,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
           }`}
         >
           {group.formattedDate}
-          {group.isToday ? ' (Today)' : ''}
+          {group.isToday ? ' (오늘)' : ''}
         </Text>
       </View>
 
@@ -238,7 +234,9 @@ export function ConfirmedStaffList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">Loading confirmed staff...</Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+          확정된 스태프를 불러오는 중입니다...
+        </Text>
       </View>
     );
   }
@@ -246,7 +244,7 @@ export function ConfirmedStaffList({
   if (error) {
     return (
       <ErrorState
-        title="Failed to load confirmed staff"
+        title="확정된 스태프를 불러오지 못했습니다"
         message={error.message}
         onRetry={onRefresh}
       />
@@ -257,8 +255,8 @@ export function ConfirmedStaffList({
     return (
       <EmptyState
         icon={<UsersIcon size={48} color="#9CA3AF" />}
-        title="No confirmed staff yet"
-        description="Confirmed staff will appear here after applicants are approved."
+        title="아직 확정된 스태프가 없습니다"
+        description="지원자를 확정하면 여기에 표시됩니다"
       />
     );
   }
@@ -273,8 +271,8 @@ export function ConfirmedStaffList({
 
       {filteredGrouped.length === 0 ? (
         <EmptyState
-          title={`No ${FILTER_LABELS[selectedFilter]} staff`}
-          description="Try a different filter to see other confirmed staff."
+          title={`${FILTER_LABELS[selectedFilter]} 상태의 스태프가 없습니다`}
+          description="다른 필터를 선택해 보세요"
         />
       ) : (
         <SectionList
