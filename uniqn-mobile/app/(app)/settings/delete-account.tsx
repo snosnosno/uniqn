@@ -95,11 +95,24 @@ export default function DeleteAccountScreen() {
   // Apple 사용자 여부 확인
   const isAppleUser = useIsAppleUser();
 
+  const finalizeDeletion = useCallback(async () => {
+    await signOut();
+    addToast({
+      type: 'success',
+      message: `회원탈퇴가 요청되었습니다. ${DELETION_GRACE_PERIOD_DAYS}일 후 완전히 삭제됩니다.`,
+    });
+    router.replace('/(auth)/login');
+  }, [addToast]);
+
   // Apple 토큰 파기 재시도
   const handleRetryRevocation = useCallback(async () => {
     setIsRetrying(true);
+    let shouldFinalizeDeletion = false;
+
     try {
       const success = await retryAppleTokenRevocation();
+      setShowRevokeRetryModal(false);
+
       if (success) {
         addToast({ type: 'success', message: 'Apple 계정 연결이 해제되었습니다.' });
       } else {
@@ -108,23 +121,27 @@ export default function DeleteAccountScreen() {
           message: 'Apple 토큰 파기에 실패했습니다. Apple ID 설정에서 수동으로 해제해주세요.',
         });
       }
-    } catch {
+      shouldFinalizeDeletion = true;
+    } catch (error) {
+      const userMessage = (error as { userMessage?: string }).userMessage;
+      if (userMessage === '') {
+        return;
+      }
+
+      setShowRevokeRetryModal(false);
       addToast({
         type: 'warning',
-        message: 'Apple 토큰 파기에 실패했습니다. Apple ID 설정에서 수동으로 해제해주세요.',
+        message:
+          userMessage || 'Apple 토큰 파기에 실패했습니다. Apple ID 설정에서 수동으로 해제해주세요.',
       });
+      shouldFinalizeDeletion = true;
     } finally {
       setIsRetrying(false);
-      setShowRevokeRetryModal(false);
-      // 탈퇴 완료 처리
-      await signOut();
-      addToast({
-        type: 'success',
-        message: `회원탈퇴가 요청되었습니다. ${DELETION_GRACE_PERIOD_DAYS}일 후 완전히 삭제됩니다.`,
-      });
-      router.replace('/(auth)/login');
+      if (shouldFinalizeDeletion) {
+        await finalizeDeletion();
+      }
     }
-  }, [addToast]);
+  }, [addToast, finalizeDeletion]);
 
   // 재시도 건너뛰기
   const handleSkipRevocation = useCallback(async () => {
@@ -133,13 +150,8 @@ export default function DeleteAccountScreen() {
       type: 'info',
       message: 'Apple ID > 설정 > 로그인 및 보안에서 앱 연결을 수동으로 해제해주세요.',
     });
-    await signOut();
-    addToast({
-      type: 'success',
-      message: `회원탈퇴가 요청되었습니다. ${DELETION_GRACE_PERIOD_DAYS}일 후 완전히 삭제됩니다.`,
-    });
-    router.replace('/(auth)/login');
-  }, [addToast]);
+    await finalizeDeletion();
+  }, [addToast, finalizeDeletion]);
 
   // 탈퇴 요청 처리
   const handleRequestDeletion = useCallback(async () => {
@@ -184,10 +196,15 @@ export default function DeleteAccountScreen() {
       // 로그인 화면으로 이동
       router.replace('/(auth)/login');
     } catch (error) {
+      const userMessage = (error as { userMessage?: string }).userMessage;
+      if (userMessage === '') {
+        return;
+      }
+
       logger.error('회원탈퇴 실패', error as Error);
       addToast({
         type: 'error',
-        message: extractErrorMessage(error, '탈퇴 처리에 실패했습니다.'),
+        message: userMessage || extractErrorMessage(error, '탈퇴 처리에 실패했습니다.'),
       });
     } finally {
       setIsSubmitting(false);

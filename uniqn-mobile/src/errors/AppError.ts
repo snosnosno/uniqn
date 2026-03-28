@@ -102,6 +102,7 @@ export const ERROR_CODES = {
   AUTH_REQUIRED: 'E2012',
   AUTH_CAPTCHA_FAILED: 'E2013',
   AUTH_CLAIMS_NOT_SET: 'E2014',
+  AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL: 'E2015',
 
   // 검증 에러 (E3xxx)
   VALIDATION_REQUIRED: 'E3001',
@@ -194,6 +195,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.AUTH_REQUIRED]: '로그인이 필요합니다',
   [ERROR_CODES.AUTH_CAPTCHA_FAILED]: '보안 확인에 실패했습니다. 다시 시도해주세요',
   [ERROR_CODES.AUTH_CLAIMS_NOT_SET]: '권한 정보를 가져올 수 없습니다. 다시 로그인해주세요',
+  [ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL]:
+    '이미 다른 로그인 방식으로 가입된 계정입니다. 기존 로그인 방법으로 먼저 로그인해주세요',
 
   // 검증
   [ERROR_CODES.VALIDATION_REQUIRED]: '필수 입력 항목입니다',
@@ -290,9 +293,9 @@ export class AppError extends Error {
     metadata?: Record<string, unknown>;
   }) {
     const userMessage =
-      options.userMessage || ERROR_MESSAGES[options.code] || ERROR_MESSAGES[ERROR_CODES.UNKNOWN];
+      options.userMessage ?? ERROR_MESSAGES[options.code] ?? ERROR_MESSAGES[ERROR_CODES.UNKNOWN];
 
-    super(options.message || userMessage);
+    super(options.message ?? userMessage);
 
     this.name = 'AppError';
     this.code = options.code;

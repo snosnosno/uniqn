@@ -9,16 +9,18 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { AuthError, toError, ERROR_CODES } from '@/errors';
+import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { userRepository } from '@/repositories';
 import type { DeletionReason, DeletionRequest, UserDataExport } from '@/repositories';
 import type { FirestoreUserProfile } from '@/types';
 import { STATUS } from '@/constants';
 import { toDate } from '@/utils/date';
+import { requestAppleAuthorization } from './appleAuthService';
 
 /** 회원탈퇴 유예 기간 (일) */
 export const DELETION_GRACE_PERIOD_DAYS = 30;
@@ -52,8 +54,6 @@ export interface DeletionResult {
  */
 async function tryRevokeAppleToken(authorizationCode: string, userId: string): Promise<boolean> {
   try {
-    const { httpsCallable } = await import('firebase/functions');
-    const { getFirebaseFunctions } = await import('@/lib/firebase');
     const revokeAppleTokenFn = httpsCallable<{ authorizationCode: string }, { success: boolean }>(
       getFirebaseFunctions(),
       'revokeAppleToken'
@@ -81,14 +81,9 @@ export async function retryAppleTokenRevocation(): Promise<boolean> {
   const currentUser = getFirebaseAuth().currentUser;
   if (!currentUser) return false;
 
-  const AppleAuthentication = await import('expo-apple-authentication');
-  const { generateNonce, sha256 } = await import('@/utils/appleAuth');
-  const rawNonce = generateNonce();
-  const hashedNonce = await sha256(rawNonce);
-
-  const appleCredential = await AppleAuthentication.signInAsync({
+  const { credential: appleCredential } = await requestAppleAuthorization({
     requestedScopes: [],
-    nonce: hashedNonce,
+    operation: 'revocation',
   });
 
   if (!appleCredential.authorizationCode) return false;
@@ -126,15 +121,9 @@ export async function requestAccountDeletion(
 
     if (isAppleUser && Platform.OS === 'ios') {
       // Apple 재인증: Apple Sign In 다이얼로그 → OAuthProvider credential
-      const AppleAuthentication = await import('expo-apple-authentication');
-      const { generateNonce, sha256 } = await import('@/utils/appleAuth');
-
-      const rawNonce = generateNonce();
-      const hashedNonce = await sha256(rawNonce);
-
-      const appleCredential = await AppleAuthentication.signInAsync({
+      const { credential: appleCredential, rawNonce } = await requestAppleAuthorization({
         requestedScopes: [],
-        nonce: hashedNonce,
+        operation: 'reauth',
       });
 
       if (!appleCredential.identityToken) {
@@ -214,8 +203,10 @@ export async function requestAccountDeletion(
       appleTokenRevoked: isAppleUser ? appleTokenRevoked : true,
     };
   } catch (error) {
-    // 의도적으로 던진 AuthError는 그대로 전파
-    if (error instanceof AuthError) throw error;
+    if ((error as { userMessage?: string }).userMessage === '') throw error;
+
+    // 의도적으로 던진 AppError는 그대로 전파
+    if (isAppError(error)) throw error;
 
     logger.error('회원탈퇴 요청 실패', toError(error), {
       userId: currentUser.uid,

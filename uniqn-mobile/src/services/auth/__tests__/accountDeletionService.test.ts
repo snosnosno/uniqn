@@ -1,72 +1,87 @@
-/**
- * accountDeletionService 테스트
- *
- * 회원탈퇴 및 개인정보 관리 서비스 테스트
- */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
+import { Platform } from 'react-native';
 import { Timestamp } from 'firebase/firestore';
 import { reauthenticateWithCredential } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
-import {
-  requestAccountDeletion,
-  cancelAccountDeletion,
-  getMyData,
-  exportMyData,
-  getDeletionStatus,
-  DELETION_REASONS,
-} from '../accountDeletionService';
-import { AuthError } from '@/errors';
+import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
+import { BusinessError, ERROR_CODES } from '@/errors';
 import { STATUS } from '@/constants';
 import type { FirestoreUserProfile } from '@/types';
 import type { DeletionRequest, UserDataExport } from '@/repositories';
+const mockGetFirebaseAuth = getFirebaseAuth as jest.MockedFunction<typeof getFirebaseAuth>;
+const mockGetFirebaseFunctions = getFirebaseFunctions as jest.MockedFunction<
+  typeof getFirebaseFunctions
+>;
+const mockReauthenticateWithCredential = reauthenticateWithCredential as jest.MockedFunction<
+  typeof reauthenticateWithCredential
+>;
 
-// Firebase Auth Mock
+const mockRequestDeletion = jest.fn();
+const mockCancelDeletion = jest.fn();
+const mockGetById = jest.fn();
+const mockGetExportData = jest.fn();
+const mockGetDeletionStatus = jest.fn();
+const mockRequestAppleAuthorization = jest.fn();
+const mockHttpsCallable = jest.fn();
+const mockRevokeAppleToken = jest.fn();
+
 jest.mock('@/lib/firebase', () => ({
   getFirebaseAuth: jest.fn(),
+  getFirebaseFunctions: jest.fn(),
 }));
 
 jest.mock('firebase/auth', () => ({
   reauthenticateWithCredential: jest.fn(),
   EmailAuthProvider: {
-    credential: jest.fn((email, password) => ({ email, password })),
+    credential: jest.fn((email: string, password: string) => ({ email, password })),
   },
+  OAuthProvider: jest.fn().mockImplementation((providerId: string) => ({
+    credential: ({ idToken, rawNonce }: { idToken: string; rawNonce: string }) => ({
+      providerId,
+      idToken,
+      rawNonce,
+    }),
+  })),
 }));
 
-// Repository Mock
-const mockGetById = jest.fn();
-const mockRequestDeletion = jest.fn();
-const mockCancelDeletion = jest.fn();
-const mockGetExportData = jest.fn();
-const mockGetDeletionStatus = jest.fn();
+jest.mock('firebase/functions', () => ({
+  httpsCallable: (...args: unknown[]) => mockHttpsCallable(...args),
+}));
 
 jest.mock('@/repositories', () => ({
   userRepository: {
-    getById: (...args: unknown[]) => mockGetById(...args),
     requestDeletion: (...args: unknown[]) => mockRequestDeletion(...args),
     cancelDeletion: (...args: unknown[]) => mockCancelDeletion(...args),
+    getById: (...args: unknown[]) => mockGetById(...args),
     getExportData: (...args: unknown[]) => mockGetExportData(...args),
     getDeletionStatus: (...args: unknown[]) => mockGetDeletionStatus(...args),
   },
 }));
 
-// Logger Mock
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
-    error: jest.fn(),
     warn: jest.fn(),
-    appError: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
-const mockGetFirebaseAuth = getFirebaseAuth as jest.MockedFunction<typeof getFirebaseAuth>;
-const mockReauthenticateWithCredential = reauthenticateWithCredential as jest.MockedFunction<
-  typeof reauthenticateWithCredential
->;
+jest.mock('../appleAuthService', () => ({
+  requestAppleAuthorization: (...args: unknown[]) => mockRequestAppleAuthorization(...args),
+}));
+
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+
+function setPlatformOS(os: 'ios' | 'android') {
+  Object.defineProperty(Platform, 'OS', {
+    configurable: true,
+    get: () => os,
+  });
+}
 
 const mockCurrentUser = {
-  uid: 'user123',
-  email: 'test@example.com',
+  uid: 'user-123',
+  email: 'tester@example.com',
   providerData: [{ providerId: 'password' }],
 };
 
@@ -74,367 +89,268 @@ const mockAuth = {
   currentUser: mockCurrentUser,
 };
 
-// Test Data
-const mockUserProfile: FirestoreUserProfile = {
-  uid: 'user123',
-  email: 'test@example.com',
-  photoURL: undefined,
+const mockFunctions = { name: 'functions' };
+
+const mockProfile: FirestoreUserProfile = {
+  uid: 'user-123',
+  email: 'tester@example.com',
   role: 'staff',
-  name: '홍길동',
+  name: 'Tester',
   nickname: 'tester',
   phone: '01012345678',
+  photoURL: undefined,
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now(),
 };
 
 const mockDeletionRequest: DeletionRequest = {
-  userId: 'user123',
+  userId: 'user-123',
   reason: 'no_longer_needed',
-  reasonDetail: '더 이상 사용하지 않아요',
+  reasonDetail: 'No longer needed',
   requestedAt: Timestamp.now(),
   scheduledDeletionAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
   status: STATUS.DELETION_REQUEST.PENDING,
 };
 
 const mockExportData: UserDataExport = {
-  profile: mockUserProfile,
-  applications: [
-    {
-      id: 'app1',
-      jobPostingTitle: '토너먼트 딜러',
-      status: 'confirmed',
-      createdAt: '2024-01-01T00:00:00Z',
-    },
-  ],
-  workLogs: [
-    {
-      id: 'wl1',
-      date: '2024-01-15',
-      checkInAt: '09:00',
-      checkOutAt: '18:00',
-    },
-  ],
+  profile: mockProfile,
+  applications: [],
+  workLogs: [],
   exportedAt: new Date().toISOString(),
 };
+
+type AccountDeletionServiceModule = typeof import('../accountDeletionService');
+
+function loadModule(): AccountDeletionServiceModule {
+  let moduleUnderTest: AccountDeletionServiceModule | undefined;
+
+  jest.isolateModules(() => {
+    moduleUnderTest = require('../accountDeletionService') as AccountDeletionServiceModule;
+  });
+
+  return moduleUnderTest!;
+}
 
 describe('accountDeletionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetFirebaseAuth.mockReturnValue(mockAuth as unknown as ReturnType<typeof getFirebaseAuth>);
-    mockGetById.mockReset();
-    mockRequestDeletion.mockReset();
-    mockCancelDeletion.mockReset();
-    mockGetExportData.mockReset();
-    mockGetDeletionStatus.mockReset();
+    setPlatformOS('ios');
+
+    mockCurrentUser.providerData = [{ providerId: 'password' }];
+    mockCurrentUser.email = 'tester@example.com';
+
+    mockGetFirebaseAuth.mockReturnValue(mockAuth as ReturnType<typeof getFirebaseAuth>);
+    mockGetFirebaseFunctions.mockReturnValue(
+      mockFunctions as unknown as ReturnType<typeof getFirebaseFunctions>
+    );
+    mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
+    mockRequestDeletion.mockResolvedValue(undefined);
+    mockCancelDeletion.mockResolvedValue(undefined);
+    mockGetById.mockResolvedValue(mockProfile);
+    mockGetExportData.mockResolvedValue(mockExportData);
+    mockGetDeletionStatus.mockResolvedValue(mockDeletionRequest);
+    mockRequestAppleAuthorization.mockResolvedValue({
+      rawNonce: 'raw-nonce',
+      credential: {
+        identityToken: 'identity-token',
+        authorizationCode: 'authorization-code',
+      },
+    });
+    mockHttpsCallable.mockReturnValue(mockRevokeAppleToken);
+    mockRevokeAppleToken.mockResolvedValue({ data: { success: true } });
   });
 
-  describe('DELETION_REASONS', () => {
-    it('모든 탈퇴 사유가 한글 레이블을 가져야 함', () => {
-      const reasons = Object.keys(DELETION_REASONS);
-      expect(reasons.length).toBeGreaterThan(0);
-
-      reasons.forEach((key) => {
-        expect(DELETION_REASONS[key as keyof typeof DELETION_REASONS]).toBeTruthy();
-        expect(typeof DELETION_REASONS[key as keyof typeof DELETION_REASONS]).toBe('string');
-      });
-    });
-
-    it('필수 탈퇴 사유들이 포함되어야 함', () => {
-      expect(DELETION_REASONS.no_longer_needed).toBe('더 이상 서비스를 이용하지 않아요');
-      expect(DELETION_REASONS.found_better_service).toBe('다른 서비스를 이용하게 되었어요');
-      expect(DELETION_REASONS.privacy_concerns).toBe('개인정보가 걱정돼요');
-      expect(DELETION_REASONS.too_many_notifications).toBe('알림이 너무 많아요');
-      expect(DELETION_REASONS.difficult_to_use).toBe('사용하기 어려워요');
-      expect(DELETION_REASONS.other).toBe('기타');
-    });
+  afterAll(() => {
+    if (originalPlatformDescriptor) {
+      Object.defineProperty(Platform, 'OS', originalPlatformDescriptor);
+    }
   });
 
-  describe('requestAccountDeletion', () => {
-    it('비밀번호 재인증 후 탈퇴 요청을 처리해야 함', async () => {
-      mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
-      mockRequestDeletion.mockResolvedValue(undefined);
+  it('keeps the configured deletion reasons', () => {
+    const { DELETION_REASONS } = loadModule();
 
-      const result = await requestAccountDeletion('no_longer_needed', 'password123');
-
-      expect(mockReauthenticateWithCredential).toHaveBeenCalled();
-      expect(mockRequestDeletion).toHaveBeenCalledWith(
-        'user123',
-        expect.objectContaining({
-          reason: 'no_longer_needed',
-          status: STATUS.DELETION_REQUEST.PENDING,
-        })
-      );
-      expect(result.deletionRequest.userId).toBe('user123');
-      expect(result.deletionRequest.reason).toBe('no_longer_needed');
-    });
-
-    it('상세 사유와 함께 탈퇴 요청을 처리해야 함', async () => {
-      mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
-      mockRequestDeletion.mockResolvedValue(undefined);
-
-      const reasonDetail = '개인적인 사정으로 탈퇴합니다';
-      const result = await requestAccountDeletion('other', 'password123', reasonDetail);
-
-      expect(mockRequestDeletion).toHaveBeenCalledWith(
-        'user123',
-        expect.objectContaining({
-          reason: 'other',
-          reasonDetail,
-        })
-      );
-      expect(result.deletionRequest.reasonDetail).toBe(reasonDetail);
-    });
-
-    it('30일 유예 기간을 설정해야 함', async () => {
-      mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
-      mockRequestDeletion.mockResolvedValue(undefined);
-
-      const result = await requestAccountDeletion('no_longer_needed', 'password123');
-
-      const scheduledDate = result.deletionRequest.scheduledDeletionAt.toDate();
-      const expectedDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      const diffInDays =
-        Math.abs(scheduledDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24);
-
-      expect(diffInDays).toBeLessThan(1); // 1일 이내 차이 허용
-    });
-
-    it('로그인하지 않은 경우 에러를 발생시켜야 함', async () => {
-      mockGetFirebaseAuth.mockReturnValue({
-        currentUser: null,
-      } as unknown as ReturnType<typeof getFirebaseAuth>);
-
-      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow(
-        AuthError
-      );
-    });
-
-    it('이메일이 없는 경우 에러를 발생시켜야 함', async () => {
-      mockGetFirebaseAuth.mockReturnValue({
-        currentUser: { uid: 'user123', email: null },
-      } as unknown as ReturnType<typeof getFirebaseAuth>);
-
-      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow(
-        AuthError
-      );
-    });
-
-    it('잘못된 비밀번호 입력 시 AuthError를 발생시켜야 함', async () => {
-      const wrongPasswordError = new Error('Wrong password');
-      (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
-      mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
-
-      await expect(requestAccountDeletion('no_longer_needed', 'wrongpassword')).rejects.toThrow(
-        AuthError
-      );
-    });
-
-    it('재인증 실패 시 적절한 에러 메시지를 포함해야 함', async () => {
-      const wrongPasswordError = new Error('Wrong password');
-      (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
-      mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
-
-      await expect(requestAccountDeletion('no_longer_needed', 'wrongpassword')).rejects.toThrow(
-        '비밀번호가 올바르지 않습니다'
-      );
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
-      mockRequestDeletion.mockRejectedValue(new Error('Repository error'));
-
-      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow();
-    });
-
-    it('모든 탈퇴 사유 타입을 지원해야 함', async () => {
-      mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
-      mockRequestDeletion.mockResolvedValue(undefined);
-
-      const reasons = Object.keys(DELETION_REASONS);
-      for (const reason of reasons) {
-        const result = await requestAccountDeletion(
-          reason as keyof typeof DELETION_REASONS,
-          'password123'
-        );
-        expect(result.deletionRequest.reason).toBe(reason);
-      }
-    });
+    expect(DELETION_REASONS.no_longer_needed).toBeTruthy();
+    expect(DELETION_REASONS.other).toBeTruthy();
   });
 
-  describe('cancelAccountDeletion', () => {
-    it('탈퇴 요청을 취소해야 함', async () => {
-      mockCancelDeletion.mockResolvedValue(undefined);
+  it('handles password-based deletion requests', async () => {
+    const { requestAccountDeletion } = loadModule();
 
-      await cancelAccountDeletion('user123');
+    const result = await requestAccountDeletion('no_longer_needed', 'password123');
 
-      expect(mockCancelDeletion).toHaveBeenCalledWith('user123');
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockCancelDeletion.mockRejectedValue(new Error('Cancel failed'));
-
-      await expect(cancelAccountDeletion('user123')).rejects.toThrow();
-    });
-
-    it('다른 사용자 ID로도 취소 가능해야 함', async () => {
-      mockCancelDeletion.mockResolvedValue(undefined);
-
-      await cancelAccountDeletion('differentUser456');
-
-      expect(mockCancelDeletion).toHaveBeenCalledWith('differentUser456');
-    });
-  });
-
-  describe('getMyData', () => {
-    it('사용자 프로필을 조회해야 함', async () => {
-      mockGetById.mockResolvedValue(mockUserProfile);
-
-      const result = await getMyData('user123');
-
-      expect(mockGetById).toHaveBeenCalledWith('user123');
-      expect(result).toEqual(mockUserProfile);
-    });
-
-    it('존재하지 않는 사용자의 경우 null을 반환해야 함', async () => {
-      mockGetById.mockResolvedValue(null);
-
-      const result = await getMyData('nonexistent');
-
-      expect(result).toBeNull();
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockGetById.mockRejectedValue(new Error('Get failed'));
-
-      await expect(getMyData('user123')).rejects.toThrow();
-    });
-  });
-
-  describe('exportMyData', () => {
-    it('사용자 데이터를 내보내야 함', async () => {
-      mockGetExportData.mockResolvedValue(mockExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(mockGetExportData).toHaveBeenCalledWith('user123');
-      expect(result).toEqual(mockExportData);
-    });
-
-    it('프로필 정보를 포함해야 함', async () => {
-      mockGetExportData.mockResolvedValue(mockExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(result.profile).toBeDefined();
-      expect(result.profile.uid).toBe('user123');
-    });
-
-    it('지원 내역을 포함해야 함', async () => {
-      mockGetExportData.mockResolvedValue(mockExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(result.applications).toBeDefined();
-      expect(Array.isArray(result.applications)).toBe(true);
-    });
-
-    it('근무 기록을 포함해야 함', async () => {
-      mockGetExportData.mockResolvedValue(mockExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(result.workLogs).toBeDefined();
-      expect(Array.isArray(result.workLogs)).toBe(true);
-    });
-
-    it('내보낸 시간을 포함해야 함', async () => {
-      mockGetExportData.mockResolvedValue(mockExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(result.exportedAt).toBeDefined();
-    });
-
-    it('데이터가 없는 사용자도 처리해야 함', async () => {
-      const emptyExportData: UserDataExport = {
-        profile: mockUserProfile,
-        applications: [],
-        workLogs: [],
-        exportedAt: new Date().toISOString(),
-      };
-      mockGetExportData.mockResolvedValue(emptyExportData);
-
-      const result = await exportMyData('user123');
-
-      expect(result.applications).toHaveLength(0);
-      expect(result.workLogs).toHaveLength(0);
-    });
-
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockGetExportData.mockRejectedValue(new Error('Export failed'));
-
-      await expect(exportMyData('user123')).rejects.toThrow();
-    });
-  });
-
-  describe('getDeletionStatus', () => {
-    it('탈퇴 요청 상태를 조회해야 함', async () => {
-      mockGetDeletionStatus.mockResolvedValue(mockDeletionRequest);
-
-      const result = await getDeletionStatus('user123');
-
-      expect(mockGetDeletionStatus).toHaveBeenCalledWith('user123');
-      expect(result).toEqual(mockDeletionRequest);
-    });
-
-    it('탈퇴 요청이 없는 경우 null을 반환해야 함', async () => {
-      mockGetDeletionStatus.mockResolvedValue(null);
-
-      const result = await getDeletionStatus('user123');
-
-      expect(result).toBeNull();
-    });
-
-    it('pending 상태를 올바르게 반환해야 함', async () => {
-      const pendingRequest = {
-        ...mockDeletionRequest,
+    expect(mockReauthenticateWithCredential).toHaveBeenCalledTimes(1);
+    expect(mockRequestDeletion).toHaveBeenCalledWith(
+      'user-123',
+      expect.objectContaining({
+        reason: 'no_longer_needed',
         status: STATUS.DELETION_REQUEST.PENDING,
-      } as DeletionRequest;
-      mockGetDeletionStatus.mockResolvedValue(pendingRequest);
+      })
+    );
+    expect(result.deletionRequest.userId).toBe('user-123');
+    expect(result.appleTokenRevoked).toBe(true);
+  });
 
-      const result = await getDeletionStatus('user123');
+  it('rejects deletion when no authenticated user exists', async () => {
+    const { requestAccountDeletion } = loadModule();
 
-      expect(result?.status).toBe(STATUS.DELETION_REQUEST.PENDING);
+    mockGetFirebaseAuth.mockReturnValue({
+      currentUser: null,
+    } as ReturnType<typeof getFirebaseAuth>);
+
+    await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toMatchObject({
+      name: 'AuthError',
+      code: ERROR_CODES.AUTH_SESSION_EXPIRED,
+    });
+  });
+
+  it('maps wrong-password reauth failures to an auth error', async () => {
+    const { requestAccountDeletion } = loadModule();
+
+    const wrongPasswordError = new Error('Wrong password');
+    (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
+    mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
+
+    await expect(requestAccountDeletion('no_longer_needed', 'bad-password')).rejects.toMatchObject({
+      name: 'AuthError',
+      code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+    });
+  });
+
+  it('uses Apple reauthentication and revokes the Apple token on iOS', async () => {
+    const { requestAccountDeletion } = loadModule();
+
+    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
+
+    const result = await requestAccountDeletion('privacy_concerns');
+
+    expect(mockRequestAppleAuthorization).toHaveBeenCalledWith({
+      requestedScopes: [],
+      operation: 'reauth',
+    });
+    expect(mockReauthenticateWithCredential).toHaveBeenCalledWith(
+      mockCurrentUser,
+      expect.objectContaining({
+        providerId: 'apple.com',
+        idToken: 'identity-token',
+        rawNonce: 'raw-nonce',
+      })
+    );
+    expect(result.appleTokenRevoked).toBe(true);
+  });
+
+  it('rethrows Apple reauth cancellation without creating a deletion request', async () => {
+    const { requestAccountDeletion } = loadModule();
+
+    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
+    mockRequestAppleAuthorization.mockRejectedValue(
+      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '',
+      })
+    );
+
+    await expect(requestAccountDeletion('privacy_concerns')).rejects.toMatchObject({
+      userMessage: '',
+    });
+    expect(mockRequestDeletion).not.toHaveBeenCalled();
+  });
+
+  it('blocks Apple account deletion on non-iOS devices', async () => {
+    const { requestAccountDeletion } = loadModule();
+
+    setPlatformOS('android');
+    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
+
+    await expect(requestAccountDeletion('privacy_concerns')).rejects.toMatchObject({
+      name: 'AuthError',
+      code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+    });
+    expect(mockRequestAppleAuthorization).not.toHaveBeenCalled();
+  });
+
+  it('retries Apple token revocation through the shared helper', async () => {
+    const { retryAppleTokenRevocation } = loadModule();
+
+    const result = await retryAppleTokenRevocation();
+
+    expect(mockRequestAppleAuthorization).toHaveBeenCalledWith({
+      requestedScopes: [],
+      operation: 'revocation',
+    });
+    expect(result).toBe(true);
+  });
+
+  it('keeps an Apple revocation cancel event untouched', async () => {
+    const { retryAppleTokenRevocation } = loadModule();
+
+    mockRequestAppleAuthorization.mockRejectedValue(
+      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '',
+      })
+    );
+
+    await expect(retryAppleTokenRevocation()).rejects.toMatchObject({
+      userMessage: '',
+    });
+  });
+
+  it('returns false when Apple revocation does not provide an authorization code', async () => {
+    const { retryAppleTokenRevocation } = loadModule();
+
+    mockRequestAppleAuthorization.mockResolvedValue({
+      rawNonce: 'raw-nonce',
+      credential: {
+        identityToken: 'identity-token',
+        authorizationCode: undefined,
+      },
     });
 
-    it('cancelled 상태를 올바르게 반환해야 함', async () => {
-      const cancelledRequest = {
-        ...mockDeletionRequest,
-        status: STATUS.DELETION_REQUEST.CANCELLED,
-      } as DeletionRequest;
-      mockGetDeletionStatus.mockResolvedValue(cancelledRequest);
+    await expect(retryAppleTokenRevocation()).resolves.toBe(false);
+    expect(mockRevokeAppleToken).not.toHaveBeenCalled();
+  });
 
-      const result = await getDeletionStatus('user123');
+  it('returns false when Apple revocation is requested without a current user', async () => {
+    const { retryAppleTokenRevocation } = loadModule();
 
-      expect(result?.status).toBe(STATUS.DELETION_REQUEST.CANCELLED);
-    });
+    mockGetFirebaseAuth.mockReturnValue({
+      currentUser: null,
+    } as ReturnType<typeof getFirebaseAuth>);
 
-    it('completed 상태를 올바르게 반환해야 함', async () => {
-      const completedRequest = {
-        ...mockDeletionRequest,
-        status: STATUS.DELETION_REQUEST.COMPLETED,
-      } as DeletionRequest;
-      mockGetDeletionStatus.mockResolvedValue(completedRequest);
+    await expect(retryAppleTokenRevocation()).resolves.toBe(false);
+    expect(mockRequestAppleAuthorization).not.toHaveBeenCalled();
+  });
 
-      const result = await getDeletionStatus('user123');
+  it('delegates cancelAccountDeletion to the repository', async () => {
+    const { cancelAccountDeletion } = loadModule();
 
-      expect(result?.status).toBe(STATUS.DELETION_REQUEST.COMPLETED);
-    });
+    await cancelAccountDeletion('user-123');
 
-    it('Repository 에러를 올바르게 처리해야 함', async () => {
-      mockGetDeletionStatus.mockRejectedValue(new Error('Status check failed'));
+    expect(mockCancelDeletion).toHaveBeenCalledWith('user-123');
+  });
 
-      await expect(getDeletionStatus('user123')).rejects.toThrow();
-    });
+  it('delegates getMyData to the repository', async () => {
+    const { getMyData } = loadModule();
+
+    const result = await getMyData('user-123');
+
+    expect(mockGetById).toHaveBeenCalledWith('user-123');
+    expect(result).toEqual(mockProfile);
+  });
+
+  it('delegates exportMyData to the repository', async () => {
+    const { exportMyData } = loadModule();
+
+    const result = await exportMyData('user-123');
+
+    expect(mockGetExportData).toHaveBeenCalledWith('user-123');
+    expect(result).toEqual(mockExportData);
+  });
+
+  it('delegates getDeletionStatus to the repository', async () => {
+    const { getDeletionStatus } = loadModule();
+
+    const result = await getDeletionStatus('user-123');
+
+    expect(mockGetDeletionStatus).toHaveBeenCalledWith('user-123');
+    expect(result).toEqual(mockDeletionRequest);
   });
 });

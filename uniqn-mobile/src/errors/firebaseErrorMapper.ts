@@ -18,6 +18,10 @@ const FIREBASE_AUTH_ERROR_MAP: Record<string, { code: string; message?: string }
   'auth/user-not-found': { code: ERROR_CODES.AUTH_USER_NOT_FOUND },
   'auth/wrong-password': { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS },
   'auth/invalid-credential': { code: ERROR_CODES.AUTH_INVALID_CREDENTIALS },
+  'auth/account-exists-with-different-credential': {
+    code: ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL,
+    message: '이미 다른 로그인 방식으로 가입된 계정입니다',
+  },
   'auth/email-already-in-use': { code: ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS },
   'auth/weak-password': { code: ERROR_CODES.AUTH_WEAK_PASSWORD },
   'auth/requires-recent-login': { code: ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN },
@@ -33,8 +37,8 @@ const FIREBASE_AUTH_ERROR_MAP: Record<string, { code: string; message?: string }
     message: '인증 정보가 올바르지 않습니다',
   },
   'auth/credential-already-in-use': {
-    code: ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS,
-    message: '이미 사용 중인 인증 정보입니다',
+    code: ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL,
+    message: '이미 다른 로그인 방식으로 가입된 계정입니다',
   },
   'auth/network-request-failed': { code: ERROR_CODES.NETWORK_OFFLINE },
   'auth/timeout': { code: ERROR_CODES.NETWORK_TIMEOUT },

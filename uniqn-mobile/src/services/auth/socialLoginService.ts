@@ -23,14 +23,17 @@ import {
   updateProfile,
   OAuthProvider,
 } from 'firebase/auth';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { serverTimestamp, Timestamp } from 'firebase/firestore';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { syncSignOut } from '@/lib/authBridge';
+import { getMMKVInstance } from '@/lib/mmkvStorage';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
-import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
+import { AuthError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { withTimeout } from '@/utils/timeout';
 import { sanitizeInput } from '@/utils/security';
 import {
   trackLogin,
@@ -44,6 +47,7 @@ import {
   type SocialProfileData,
   callVerifyAndSaveProfile,
 } from './authTypes';
+import { requestAppleAuthorization } from './appleAuthService';
 import { getUserProfile } from './userProfileService';
 
 // ============================================================================
@@ -52,6 +56,124 @@ import { getUserProfile } from './userProfileService';
 
 /** 개발 모드 여부 확인 */
 const IS_DEV_MODE = __DEV__;
+const APPLE_FIREBASE_AUTH_TIMEOUT_MS = 30_000;
+const APPLE_FIREBASE_AUTH_RETRY_DELAY_MS = 1_000;
+const APPLE_PROFILE_LOOKUP_TIMEOUT_MS = 15_000;
+const APPLE_PROFILE_WRITE_TIMEOUT_MS = 15_000;
+const APPLE_ID_TOKEN_REFRESH_TIMEOUT_MS = 15_000;
+
+type AppleLoginStage =
+  | 'native_authorization'
+  | 'identity_token'
+  | 'firebase_sign_in'
+  | 'profile_lookup'
+  | 'profile_create'
+  | 'claims_refresh';
+
+function createAppleLoginFlowId(): string {
+  return `apple-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getAppleErrorContext(error: unknown) {
+  return {
+    errorCode: (error as { code?: string })?.code ?? '',
+    errorName: (error as { name?: string })?.name ?? '',
+    errorMessage: (error as { message?: string })?.message ?? '',
+  };
+}
+
+function toAppleBreadcrumbData(
+  context?: Record<string, unknown>
+): Record<string, string | number | boolean | undefined> {
+  return Object.fromEntries(
+    Object.entries(context ?? {}).map(([key, value]) => [
+      key,
+      value === null ? undefined : String(value),
+    ])
+  );
+}
+
+function leaveAppleLoginBreadcrumb(
+  event: string,
+  data: Record<string, string | number | boolean | undefined>
+): void {
+  void import('@/services/observability/sentryService')
+    .then(({ sentryService }) => sentryService.leaveBreadcrumb(event, data))
+    .catch(() => {
+      // Breadcrumb recording is best-effort only.
+    });
+}
+
+function logAppleStageStart(
+  flowId: string,
+  stage: AppleLoginStage,
+  context?: Record<string, unknown>
+): number {
+  leaveAppleLoginBreadcrumb('apple_login_stage', {
+    flowId,
+    stage,
+    status: 'start',
+    ...toAppleBreadcrumbData(context),
+  });
+  logger.info('Apple 로그인 단계 시작', {
+    component: 'authService',
+    provider: 'apple',
+    flowId,
+    stage,
+    ...context,
+  });
+  return Date.now();
+}
+
+function logAppleStageSuccess(
+  flowId: string,
+  stage: AppleLoginStage,
+  startedAt: number,
+  context?: Record<string, unknown>
+): void {
+  leaveAppleLoginBreadcrumb('apple_login_stage', {
+    flowId,
+    stage,
+    status: 'success',
+    elapsedMs: Date.now() - startedAt,
+    ...toAppleBreadcrumbData(context),
+  });
+  logger.info('Apple 로그인 단계 완료', {
+    component: 'authService',
+    provider: 'apple',
+    flowId,
+    stage,
+    elapsedMs: Date.now() - startedAt,
+    ...context,
+  });
+}
+
+function logAppleStageFailure(
+  flowId: string,
+  stage: AppleLoginStage,
+  startedAt: number,
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
+  leaveAppleLoginBreadcrumb('apple_login_stage', {
+    flowId,
+    stage,
+    status: 'failure',
+    elapsedMs: Date.now() - startedAt,
+    errorCode: (error as { code?: string })?.code ?? '',
+    errorName: (error as { name?: string })?.name ?? '',
+    ...toAppleBreadcrumbData(context),
+  });
+  logger.warn('Apple 로그인 단계 실패', {
+    component: 'authService',
+    provider: 'apple',
+    flowId,
+    stage,
+    elapsedMs: Date.now() - startedAt,
+    ...getAppleErrorContext(error),
+    ...context,
+  });
+}
 
 /**
  * Mock 소셜 로그인 결과 생성
@@ -197,74 +319,87 @@ async function createMockProfile(
  * Apple 소셜 로그인 (iOS 전용)
  *
  * @description
- * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: expo-apple-authentication + Web SDK 인증
- *
  * 핵심: Web SDK로만 인증 (Apple credential 1회용 특성상 Native SDK 동기화 생략)
  * Firestore Security Rules는 Web SDK 토큰으로 동작하므로 문제 없음
  *
  * @returns AuthResult (신규 사용자: phoneVerified=false, 기존 사용자: phoneVerified=true)
  */
 export async function signInWithApple(): Promise<AuthResult> {
-  if (IS_DEV_MODE) {
-    return createMockSocialLoginResult('apple', 'mock-apple@uniqn.dev', 'Apple 테스트 사용자');
-  }
+  const flowId = createAppleLoginFlowId();
 
   try {
-    logger.info('Apple 로그인 시도', { platform: Platform.OS });
+    leaveAppleLoginBreadcrumb('apple_login_flow', {
+      flowId,
+      status: 'start',
+      platform: Platform.OS,
+    });
+    logger.info('Apple 로그인 흐름 시작', {
+      component: 'authService',
+      provider: 'apple',
+      flowId,
+      platform: Platform.OS,
+    });
 
-    // iOS에서만 지원
-    if (Platform.OS !== 'ios') {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: 'Apple 로그인은 iOS에서만 사용할 수 있습니다.',
+    // 2. Apple 네이티브 인증 다이얼로그 (사용자 입력 대기)
+    const requestedScopes = [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ];
+    const nativeAuthorizationStartedAt = logAppleStageStart(flowId, 'native_authorization', {
+      requestedScopeCount: requestedScopes.length,
+    });
+
+    let appleCredential;
+    let rawNonce;
+    try {
+      const authorization = await requestAppleAuthorization({
+        requestedScopes,
+        operation: 'login',
       });
-    }
-
-    // 동적 import (iOS 전용 모듈)
-    const AppleAuthentication = await import('expo-apple-authentication');
-    const { generateNonce, sha256 } = await import('@/utils/appleAuth');
-
-    // Apple Sign In 가용성 확인 (Apple ID 미로그인, 2FA 미설정 등)
-    const isAvailable = await AppleAuthentication.isAvailableAsync();
-    if (!isAvailable) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage:
-          'Apple 로그인을 사용할 수 없습니다. 기기 설정에서 Apple ID에 로그인되어 있는지 확인해주세요.',
+      appleCredential = authorization.credential;
+      rawNonce = authorization.rawNonce;
+      logAppleStageSuccess(flowId, 'native_authorization', nativeAuthorizationStartedAt, {
+        hasIdentityToken: Boolean(appleCredential.identityToken),
+        hasAuthorizationCode: Boolean(appleCredential.authorizationCode),
+        hasEmail: Boolean(appleCredential.email),
+        hasFullName: Boolean(appleCredential.fullName),
+        hasUserIdentifier: Boolean(appleCredential.user),
       });
+    } catch (error) {
+      logAppleStageFailure(flowId, 'native_authorization', nativeAuthorizationStartedAt, error, {
+        operation: 'login',
+      });
+      throw error;
     }
-
-    // 1. Nonce 생성 (replay attack 방지)
-    const rawNonce = generateNonce();
-    const hashedNonce = await sha256(rawNonce);
-
-    // 2. Apple 네이티브 인증 다이얼로그 (30초 타임아웃)
-    const { withTimeout } = await import('@/utils/timeout');
-    const APPLE_SIGN_IN_TIMEOUT_MS = 30_000;
-    const appleCredential = await withTimeout(
-      AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      }),
-      APPLE_SIGN_IN_TIMEOUT_MS,
-      'Apple 로그인 응답 시간이 초과되었습니다. 네트워크를 확인하고 다시 시도해주세요.'
-    );
 
     const { identityToken } = appleCredential;
+    const identityTokenStageStartedAt = logAppleStageStart(flowId, 'identity_token');
     if (!identityToken) {
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      const identityTokenError = new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
         userMessage: 'Apple 인증 정보를 받지 못했습니다. 다시 시도해주세요.',
       });
+      logAppleStageFailure(
+        flowId,
+        'identity_token',
+        identityTokenStageStartedAt,
+        identityTokenError,
+        {
+          hasAuthorizationCode: Boolean(appleCredential.authorizationCode),
+          hasUserIdentifier: Boolean(appleCredential.user),
+        }
+      );
+      throw identityTokenError;
     }
+    logAppleStageSuccess(flowId, 'identity_token', identityTokenStageStartedAt, {
+      hasAuthorizationCode: Boolean(appleCredential.authorizationCode),
+      hasEmail: Boolean(appleCredential.email),
+    });
 
     // Apple이 제공하는 이름 (최초 로그인 시에만 제공)
     // MMKV 실패 시에도 로그인 흐름은 계속 진행 (이름은 빈 문자열 fallback)
     let appleName = '';
     try {
       const appleNameCacheKey = `apple_name_cache_${appleCredential.user}`;
-      const { getMMKVInstance } = await import('@/lib/mmkvStorage');
       const mmkv = getMMKVInstance();
 
       if (appleCredential.fullName) {
@@ -291,12 +426,21 @@ export async function signInWithApple(): Promise<AuthResult> {
     } catch (cacheError) {
       logger.warn('Apple 이름 캐시 처리 실패 (무시)', {
         component: 'authService',
+        flowId,
         error: cacheError instanceof Error ? cacheError.message : String(cacheError),
       });
     }
 
     // XSS 방어: Apple 이름 sanitization (CF 최종 검증 전 임시 보호)
     appleName = sanitizeInput(appleName).slice(0, 20);
+    logger.info('Apple 로그인 이름 처리 완료', {
+      component: 'authService',
+      provider: 'apple',
+      flowId,
+      hasName: appleName.length > 0,
+      nameLength: appleName.length,
+      usedFullNamePayload: Boolean(appleCredential.fullName),
+    });
 
     // 3. Web SDK 인증 (Firestore Security Rules용 — 반드시 먼저 실행)
     // Apple credential은 1회용이므로 Web SDK를 우선 인증
@@ -306,37 +450,108 @@ export async function signInWithApple(): Promise<AuthResult> {
     });
 
     // 일시적 네트워크 오류 대응: 1회 재시도 (Apple credential은 1회용이지만 Firebase 토큰은 재사용 가능)
+    const signInWithAppleCredential = () =>
+      withTimeout(
+        signInWithCredential(getFirebaseAuth(), webOAuthCredential),
+        APPLE_FIREBASE_AUTH_TIMEOUT_MS,
+        'Apple 로그인 서버 인증이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.'
+      );
+
     let webResult;
+    let firebaseAuthAttempts = 1;
+    const firebaseAuthStartedAt = logAppleStageStart(flowId, 'firebase_sign_in');
     try {
-      webResult = await signInWithCredential(getFirebaseAuth(), webOAuthCredential);
+      webResult = await signInWithAppleCredential();
     } catch (credentialError) {
       const credCode = (credentialError as { code?: string })?.code ?? '';
       const isRetryable =
         credCode === 'auth/network-request-failed' ||
         credCode === 'auth/timeout' ||
+        credCode === ERROR_CODES.NETWORK_TIMEOUT ||
         !credCode.startsWith('auth/');
-      if (!isRetryable) throw credentialError;
+      if (!isRetryable) {
+        logAppleStageFailure(flowId, 'firebase_sign_in', firebaseAuthStartedAt, credentialError, {
+          attempts: firebaseAuthAttempts,
+          retryable: false,
+        });
+        throw credentialError;
+      }
 
       logger.warn('Apple 로그인: Firebase 인증 1차 실패, 1초 후 재시도', {
         component: 'authService',
+        provider: 'apple',
+        flowId,
         errorCode: credCode,
+        attempt: firebaseAuthAttempts,
+        retryDelayMs: APPLE_FIREBASE_AUTH_RETRY_DELAY_MS,
         errorMessage:
           credentialError instanceof Error ? credentialError.message : String(credentialError),
       });
-      await new Promise((r) => setTimeout(r, 1000));
-      webResult = await signInWithCredential(getFirebaseAuth(), webOAuthCredential);
+      await new Promise((r) => setTimeout(r, APPLE_FIREBASE_AUTH_RETRY_DELAY_MS));
+      firebaseAuthAttempts += 1;
+      try {
+        webResult = await signInWithAppleCredential();
+      } catch (retryError) {
+        logAppleStageFailure(flowId, 'firebase_sign_in', firebaseAuthStartedAt, retryError, {
+          attempts: firebaseAuthAttempts,
+          retryable: true,
+        });
+        throw retryError;
+      }
     }
-    logger.info('Apple 로그인: Web SDK 인증 성공', { component: 'authService' });
+    logger.info('Apple 로그인 Firebase 인증 성공 사용자 확인', {
+      component: 'authService',
+      provider: 'apple',
+      flowId,
+      hasEmail: Boolean(webResult.user.email),
+      attempts: firebaseAuthAttempts,
+    });
+    logAppleStageSuccess(flowId, 'firebase_sign_in', firebaseAuthStartedAt, {
+      attempts: firebaseAuthAttempts,
+    });
 
     // 4. Firestore 프로필 확인
     // 서버사이드 OTP 검증으로 전환했으므로 Native SDK 동기화 불필요
     const user = webResult.user;
 
-    const existingProfile = await getUserProfile(user.uid);
+    const profileLookupStartedAt = logAppleStageStart(flowId, 'profile_lookup');
+    let existingProfile;
+    try {
+      existingProfile = await withTimeout(
+        getUserProfile(user.uid),
+        APPLE_PROFILE_LOOKUP_TIMEOUT_MS,
+        'Apple 로그인 처리 중 사용자 정보를 확인하는 데 시간이 오래 걸리고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.'
+      );
+      logAppleStageSuccess(flowId, 'profile_lookup', profileLookupStartedAt, {
+        profileFound: Boolean(existingProfile),
+        phoneVerified: existingProfile?.phoneVerified ?? null,
+        isActive: existingProfile?.isActive ?? null,
+      });
+    } catch (error) {
+      logAppleStageFailure(flowId, 'profile_lookup', profileLookupStartedAt, error);
+      throw error;
+    }
 
     if (existingProfile && existingProfile.phoneVerified) {
       // 기존 사용자 (프로필 완성됨)
-      await user.getIdToken(true);
+      const claimsRefreshStartedAt = logAppleStageStart(flowId, 'claims_refresh', {
+        profileState: 'verified',
+      });
+      try {
+        await withTimeout(
+          user.getIdToken(true),
+          APPLE_ID_TOKEN_REFRESH_TIMEOUT_MS,
+          'Apple 로그인 후 권한 정보를 불러오는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+        );
+        logAppleStageSuccess(flowId, 'claims_refresh', claimsRefreshStartedAt, {
+          profileState: 'verified',
+        });
+      } catch (error) {
+        logAppleStageFailure(flowId, 'claims_refresh', claimsRefreshStartedAt, error, {
+          profileState: 'verified',
+        });
+        throw error;
+      }
 
       // 비활성화된 계정 체크 (명시적으로 false인 경우만)
       if (existingProfile.isActive === false) {
@@ -346,6 +561,17 @@ export async function signInWithApple(): Promise<AuthResult> {
       }
 
       logger.info('Apple 로그인 성공 (기존 사용자)', { uid: user.uid });
+      logger.info('Apple 로그인 흐름 완료', {
+        component: 'authService',
+        provider: 'apple',
+        flowId,
+        resultType: 'existing_verified_profile',
+      });
+      leaveAppleLoginBreadcrumb('apple_login_flow', {
+        flowId,
+        status: 'success',
+        resultType: 'existing_verified_profile',
+      });
       trackLogin('apple');
       setUserId(user.uid);
       setUserProperties({
@@ -360,22 +586,37 @@ export async function signInWithApple(): Promise<AuthResult> {
       const now = Timestamp.now();
 
       // Firestore에 저장할 데이터 (serverTimestamp 사용)
+      const profileCreateStartedAt = logAppleStageStart(flowId, 'profile_create');
       try {
-        await userRepository.createOrMerge(user.uid, {
-          uid: user.uid,
-          email: user.email || '',
-          name: appleName,
-          role: 'staff',
-          socialProvider: 'apple',
-          phoneVerified: false,
-          isActive: true,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+        await withTimeout(
+          userRepository.createOrMerge(user.uid, {
+            uid: user.uid,
+            email: user.email || '',
+            name: appleName,
+            role: 'staff',
+            socialProvider: 'apple',
+            phoneVerified: false,
+            isActive: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+          APPLE_PROFILE_WRITE_TIMEOUT_MS,
+          'Apple 로그인 후 프로필 생성이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.'
+        );
+        logAppleStageSuccess(flowId, 'profile_create', profileCreateStartedAt, {
+          profileCreated: true,
+          hasEmail: Boolean(user.email),
+          hasName: appleName.length > 0,
         });
       } catch (createError) {
+        logAppleStageFailure(flowId, 'profile_create', profileCreateStartedAt, createError, {
+          hasEmail: Boolean(user.email),
+          hasName: appleName.length > 0,
+        });
         // 프로필 생성 실패 시 부분 인증 상태 정리 (로그인됐지만 프로필 없는 상태 방지)
         logger.error('Apple 신규 프로필 생성 실패 — 세션 정리', {
           component: 'authService',
+          flowId,
           uid: user.uid,
           error: createError instanceof Error ? createError.message : String(createError),
         });
@@ -388,9 +629,23 @@ export async function signInWithApple(): Promise<AuthResult> {
       }
 
       // 프로필 생성 후 best-effort 토큰 갱신 (onUserRoleChange 트리거가 Claims 설정)
+      const claimsRefreshStartedAt = logAppleStageStart(flowId, 'claims_refresh', {
+        profileState: 'new_profile',
+      });
       try {
-        await user.getIdToken(true);
-      } catch {
+        await withTimeout(
+          user.getIdToken(true),
+          APPLE_ID_TOKEN_REFRESH_TIMEOUT_MS,
+          'Apple 로그인 후 권한 정보를 불러오는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+        );
+        logAppleStageSuccess(flowId, 'claims_refresh', claimsRefreshStartedAt, {
+          profileState: 'new_profile',
+        });
+      } catch (claimsError) {
+        logAppleStageFailure(flowId, 'claims_refresh', claimsRefreshStartedAt, claimsError, {
+          profileState: 'new_profile',
+          tolerated: true,
+        });
         // Claims 미설정이어도 signup 플로우 진행 가능
       }
 
@@ -408,6 +663,17 @@ export async function signInWithApple(): Promise<AuthResult> {
       };
 
       logger.info('Apple 신규 사용자 최소 프로필 생성', { uid: user.uid });
+      logger.info('Apple 로그인 흐름 완료', {
+        component: 'authService',
+        provider: 'apple',
+        flowId,
+        resultType: 'new_minimal_profile',
+      });
+      leaveAppleLoginBreadcrumb('apple_login_flow', {
+        flowId,
+        status: 'success',
+        resultType: 'new_minimal_profile',
+      });
       return { user, profile: minimalProfile };
     }
 
@@ -420,58 +686,57 @@ export async function signInWithApple(): Promise<AuthResult> {
       });
     }
 
-    await user.getIdToken(true);
+    const claimsRefreshStartedAt = logAppleStageStart(flowId, 'claims_refresh', {
+      profileState: 'incomplete_existing_profile',
+    });
+    try {
+      await withTimeout(
+        user.getIdToken(true),
+        APPLE_ID_TOKEN_REFRESH_TIMEOUT_MS,
+        'Apple 로그인 후 권한 정보를 불러오는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+      );
+      logAppleStageSuccess(flowId, 'claims_refresh', claimsRefreshStartedAt, {
+        profileState: 'incomplete_existing_profile',
+      });
+    } catch (error) {
+      logAppleStageFailure(flowId, 'claims_refresh', claimsRefreshStartedAt, error, {
+        profileState: 'incomplete_existing_profile',
+      });
+      throw error;
+    }
     logger.info('Apple 로그인 성공 (미완성 프로필)', { uid: user.uid });
+    logger.info('Apple 로그인 흐름 완료', {
+      component: 'authService',
+      provider: 'apple',
+      flowId,
+      resultType: 'existing_incomplete_profile',
+    });
+    leaveAppleLoginBreadcrumb('apple_login_flow', {
+      flowId,
+      status: 'success',
+      resultType: 'existing_incomplete_profile',
+    });
     return { user, profile: existingProfile };
   } catch (error) {
+    if ((error as { userMessage?: string }).userMessage === '') {
+      leaveAppleLoginBreadcrumb('apple_login_flow', {
+        flowId,
+        status: 'cancelled',
+      });
+      throw error;
+    }
+
+    leaveAppleLoginBreadcrumb('apple_login_flow', {
+      flowId,
+      status: 'failure',
+      errorCode: (error as { code?: string })?.code ?? '',
+      errorName: (error as { name?: string })?.name ?? '',
+    });
+
     // 에러 진단 정보 추출
     const errorCode = (error as { code?: string }).code ?? '';
     const errorMessage = (error as { message?: string }).message ?? '';
     const errorName = (error as { name?: string }).name ?? '';
-
-    // 1. 사용자 취소 처리
-    if (errorCode === 'ERR_REQUEST_CANCELED' || errorCode === 'ERR_CANCELED') {
-      logger.info('Apple 로그인 취소', { component: 'authService' });
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '', // 빈 메시지 → login.tsx에서 toast 미표시
-      });
-    }
-
-    // 2. Apple 인증 거부 (다이얼로그 표시 전)
-    if (errorCode === 'ERR_REQUEST_UNKNOWN') {
-      logger.warn('Apple 인증 거부 (ERR_REQUEST_UNKNOWN)', {
-        component: 'authService',
-        platform: Platform.OS,
-        hint: 'Apple ID 설정 문제 또는 네트워크 오류 가능',
-      });
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-        userMessage:
-          'Apple 로그인에 실패했습니다. 다음을 확인해주세요:\n' +
-          '• 설정 > Apple ID에 로그인되어 있는지\n' +
-          '• 이중 인증(2FA)이 활성화되어 있는지\n' +
-          '• 네트워크 연결이 정상인지\n\n' +
-          '문제가 계속되면 잠시 후 다시 시도해주세요.',
-        metadata: { errorCode, provider: 'apple' },
-      });
-    }
-
-    // 3. expo-apple-authentication 기타 에러 (ERR_* 패턴 — iPadOS 신버전 등)
-    if (errorCode.startsWith('ERR_')) {
-      logger.error(
-        'Apple 인증 SDK 에러',
-        error instanceof Error ? error : new Error(errorMessage),
-        {
-          component: 'authService',
-          errorCode,
-          errorName,
-          platform: Platform.OS,
-        }
-      );
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-        userMessage: 'Apple 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        metadata: { errorCode, errorName, provider: 'apple' },
-      });
-    }
 
     // 4. 상세 진단 로깅 (Sentry — 원인 파악용 전체 에러 정보)
     logger.error(
@@ -479,6 +744,8 @@ export async function signInWithApple(): Promise<AuthResult> {
       error instanceof Error ? error : new Error(String(error)),
       {
         component: 'authService',
+        provider: 'apple',
+        flowId,
         errorCode,
         errorName,
         errorMessage,
@@ -494,8 +761,23 @@ export async function signInWithApple(): Promise<AuthResult> {
       // 정리 실패 무시
     }
 
+    if (isAppError(error)) {
+      throw error;
+    }
+
     // 6. Firebase Auth 에러
     if (errorCode.startsWith('auth/')) {
+      if (
+        errorCode === 'auth/account-exists-with-different-credential' ||
+        errorCode === 'auth/credential-already-in-use'
+      ) {
+        throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL, {
+          userMessage:
+            '이미 다른 로그인 방식으로 가입된 계정입니다. 기존 로그인 방법으로 먼저 로그인해주세요.',
+          metadata: { errorCode, provider: 'apple' },
+        });
+      }
+
       const userMsg =
         errorCode === 'auth/operation-not-allowed'
           ? 'Apple 로그인이 현재 비활성화되어 있습니다. 다른 로그인 방법을 이용해주세요.'

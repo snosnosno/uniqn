@@ -36,6 +36,28 @@ const paddingStyles: Record<CardPadding, string> = {
   lg: 'p-6',
 };
 
+// Card is View-backed, so raw primitive children can crash on react-native-web.
+function sanitizeViewChildren(children: React.ReactNode): React.ReactNode[] {
+  return React.Children.toArray(children).flatMap((child) => {
+    if (typeof child === 'string') {
+      return [];
+    }
+
+    if (typeof child === 'number') {
+      return [];
+    }
+
+    if (
+      React.isValidElement<{ children?: React.ReactNode }>(child) &&
+      child.type === React.Fragment
+    ) {
+      return sanitizeViewChildren(child.props.children);
+    }
+
+    return [child];
+  });
+}
+
 export function Card({
   children,
   variant = 'elevated',
@@ -46,12 +68,14 @@ export function Card({
   accessibilityHint,
   ...props
 }: CardProps) {
+  const safeChildren = sanitizeViewChildren(children);
+
   const cardContent = (
     <View
       className={`rounded-xl ${variantStyles[variant]} ${paddingStyles[padding]} ${className}`}
       {...props}
     >
-      {children}
+      {safeChildren}
     </View>
   );
 

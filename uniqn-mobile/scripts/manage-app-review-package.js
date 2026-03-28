@@ -312,6 +312,14 @@ function toKstDateTime(dateString, time = '18:00') {
   return `${dateString}T${time}:00${KST_OFFSET}`;
 }
 
+function getRoleKey(role) {
+  if (role.role === 'other' && role.customRole) {
+    return `other:${role.customRole}`;
+  }
+
+  return role.role;
+}
+
 function buildJobDocument({
   id,
   title,
@@ -327,6 +335,12 @@ function buildJobDocument({
   const now = new Date();
   const defaultSalary = { type: 'daily', amount: 180000 };
   const totalPositions = roles.reduce((sum, role) => sum + role.count, 0);
+  const roleCatalog = roles.map((role) => ({
+    role: role.role,
+    ...(role.customRole ? { customRole: role.customRole } : {}),
+    salary: defaultSalary,
+  }));
+  const roleKeys = Array.from(new Set(roleCatalog.map((role) => getRoleKey(role)).filter(Boolean)));
   const base = {
     id,
     schemaVersion: 3,
@@ -338,6 +352,7 @@ function buildJobDocument({
     postingType,
     workDate,
     workDates: [workDate],
+    roleKeys,
     totalPositions,
     filledPositions,
     viewCount: 0,
@@ -378,10 +393,7 @@ function buildJobDocument({
         },
       ],
     },
-    roleCatalog: roles.map((role) => ({
-      role: role.role,
-      salary: defaultSalary,
-    })),
+    roleCatalog,
     compensation: {
       mode: 'shared',
       defaultSalary,
@@ -390,10 +402,8 @@ function buildJobDocument({
         transportation: 10000,
       },
       taxSettings: {
-        type: 'business_income',
-        taxRate: 3.3,
-        vatRate: 0,
-        includeVatInAmount: false,
+        type: 'rate',
+        value: 3.3,
       },
     },
     questions: {

@@ -46,6 +46,11 @@ export {
   signInWithKakao,
   completeSocialProfile,
 } from './socialLoginService';
+export {
+  getAppleLoginAvailability,
+  type AppleLoginAvailability,
+  type AppleLoginAvailabilityReason,
+} from './appleAuthService';
 
 // ============================================================================
 // Profile Service (프로필, 비밀번호, 구인자 등록)

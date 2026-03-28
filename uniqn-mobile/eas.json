@@ -41,6 +41,21 @@
         "buildType": "apk"
       }
     },
+    "production-internal": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "production",
+      "env": {
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "extends": "base",
       "distribution": "store",

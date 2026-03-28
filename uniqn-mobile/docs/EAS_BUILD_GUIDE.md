@@ -13,6 +13,7 @@
 - 현재는 출시 우선 정책으로 단일 Firebase 프로젝트를 안전하게 운영합니다.
 - `preview`는 staging Firebase 앱이 아직 등록되지 않았으면 일반 네이티브 빌드 경로로 사용하지 않습니다.
 - [`app.config.ts`](../../app.config.ts)의 빌드 가드가 repo-tracked Firebase 설정과 맞지 않는 profile/platform 조합을 차단합니다.
+- Apple 로그인 검증 기준은 iPhone 실기기입니다. simulator/dev mock은 검증 근거로 사용하지 않습니다.
 
 ## 필수 env
 
@@ -36,6 +37,7 @@ EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID=
 EXPO_PUBLIC_SENTRY_DSN=
 EXPO_PUBLIC_RECAPTCHA_SITE_KEY=
 EXPO_PUBLIC_USE_EMULATOR=false
+EXPO_PUBLIC_ENABLE_APPLE_LOGIN=true
 ```
 
 ## 빌드 명령
@@ -64,3 +66,15 @@ CI의 EAS dry-run은 `production` 프로필을 사용합니다. preview에 의�
 - [`uniqn-mobile/GoogleService-Info.plist`](../GoogleService-Info.plist)
 
 이 파일에 없는 bundle/package 조합은 빌드 전에 차단되는 것이 정상입니다.
+
+## Apple 로그인 검증 메모
+
+- Apple 로그인 UI는 `EXPO_PUBLIC_ENABLE_APPLE_LOGIN=false`면 숨겨집니다.
+- iOS simulator는 Apple 로그인 유효성 검증 대상이 아닙니다.
+- Apple 로그인 수동 검증은 실제 Apple ID + 2FA가 설정된 iPhone에서 진행합니다.
+- 최소 확인 항목:
+  - 첫 로그인
+  - 재로그인
+  - 로그인 취소
+  - 기존 계정과 충돌
+  - 탈퇴 재인증 및 토큰 파기 재시도

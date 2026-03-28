@@ -217,4 +217,28 @@ describe('Card', () => {
       expect(onPress).toHaveBeenCalled();
     });
   });
+
+  describe('Web safety', () => {
+    it('drops raw text children so View containers stay web-safe', () => {
+      render(<Card>{'.'}</Card>);
+
+      expect(screen.queryByText('.')).toBeNull();
+    });
+
+    it('drops raw primitive children inside fragments', () => {
+      render(
+        <Card>
+          <>
+            {'.'}
+            {0}
+            <Text>content</Text>
+          </>
+        </Card>
+      );
+
+      expect(screen.queryByText('.')).toBeNull();
+      expect(screen.queryByText('0')).toBeNull();
+      expect(screen.getByText('content')).toBeTruthy();
+    });
+  });
 });

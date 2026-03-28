@@ -169,6 +169,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: envConfig.bundleIdentifier,
     googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {
+      CFBundleAllowMixedLocalizations: true,
       UIBackgroundModes: ['remote-notification'],
       ITSAppUsesNonExemptEncryption: false,
       NSCameraUsageDescription: PERMISSION_MESSAGES.camera,
@@ -253,6 +254,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     '@react-native-firebase/app',
     '@react-native-firebase/auth',
+    'expo-apple-authentication',
     'expo-router',
     'expo-secure-store',
     [
@@ -340,8 +342,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         : 'shared-release-project-until-post-launch-split',
     // 빌드 시간
     buildDate: new Date().toISOString(),
-    // 소셜 로그인 활성화 여부 (SDK 구현 전까지 개발 환경에서만 활성화)
-    socialLoginEnabled: environment === 'development',
+    // Apple 로그인 kill switch (기본 활성화)
+    appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false',
     // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
     recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
   },

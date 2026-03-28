@@ -8,7 +8,13 @@ import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks'
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
-import { login, signInWithApple, type AuthResult } from '@/services';
+import {
+  getAppleLoginAvailability,
+  login,
+  signInWithApple,
+  type AppleLoginAvailability,
+  type AuthResult,
+} from '@/services';
 import { extractErrorMessage } from '@/shared/errors';
 import {
   getResolvedAuthenticatedRoute,
@@ -22,6 +28,10 @@ export default function LoginScreen() {
   const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<'apple' | null>(null);
+  const [appleLoginAvailability, setAppleLoginAvailability] =
+    useState<AppleLoginAvailability | null>(
+      Platform.OS === 'ios' ? null : { enabled: false, reason: 'not_ios' }
+    );
   const [loginAutoLoginEnabled, setLoginAutoLoginEnabled] = useState(true);
   const [hasLoadedAutoLoginPreference, setHasLoadedAutoLoginPreference] = useState(false);
   const autoLoginPreferenceRef = useRef(true);
@@ -43,6 +53,34 @@ export default function LoginScreen() {
     autoLoginPreferenceRef.current = storedAutoLoginEnabled;
     setHasLoadedAutoLoginPreference(true);
   }, [storedAutoLoginEnabled]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (Platform.OS !== 'ios') {
+      return undefined;
+    }
+
+    const loadAppleAvailability = async () => {
+      try {
+        const availability = await getAppleLoginAvailability();
+        if (isMounted) {
+          setAppleLoginAvailability(availability);
+        }
+      } catch (error) {
+        logger.warn('Apple 로그인 가용성 확인 실패', { error });
+        if (isMounted) {
+          setAppleLoginAvailability({ enabled: false, reason: 'unavailable' });
+        }
+      }
+    };
+
+    void loadAppleAvailability();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleAutoLoginChange = useCallback(
     async (enabled: boolean) => {
@@ -165,6 +203,14 @@ export default function LoginScreen() {
   const authActionDisabled = !hasLoadedAutoLoginPreference;
   const isSocialLoading = loadingProvider !== null;
   const shouldShowBiometric = loginAutoLoginEnabled && isBiometricEnabled && isBiometricAvailable;
+  const shouldRenderAppleSection =
+    Platform.OS === 'ios' &&
+    appleLoginAvailability !== null &&
+    appleLoginAvailability.reason !== 'disabled_by_flag';
+  const appleAvailabilityMessage =
+    appleLoginAvailability?.enabled === false && appleLoginAvailability.reason === 'unavailable'
+      ? 'Apple 로그인을 이 기기에서 사용할 수 없습니다. 설정의 Apple ID와 이중 인증 상태를 확인해주세요.'
+      : undefined;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
@@ -210,13 +256,15 @@ export default function LoginScreen() {
             disabled={authActionDisabled}
           />
 
-          {Platform.OS === 'ios' ? (
+          {shouldRenderAppleSection ? (
             <>
               <Divider label="또는" spacing="lg" />
               <SocialLoginButtons
                 onAppleLogin={handleAppleLogin}
                 isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
                 loadingProvider={loadingProvider}
+                isAppleAvailable={appleLoginAvailability?.enabled ?? false}
+                availabilityMessage={appleAvailabilityMessage}
                 disabled={
                   isLoading || isSocialLoading || isBiometricAuthenticating || authActionDisabled
                 }
