@@ -1,10 +1,15 @@
 /**
- * UNIQN Mobile - ScheduleCard 급여 helper
+ * UNIQN Mobile - ScheduleCard salary helper
  *
- * @description schedule UI는 canonical settlement projection만 읽는다.
+ * @description Reads canonical settlement projection data for schedule UI.
  */
 
-import { getRoleSalaryFromSettlementSource, type SalaryInfo } from '@/utils/settlement';
+import {
+  formatCurrency,
+  getRoleSalaryFromSettlementSource,
+  getSalaryTypeLabel,
+  type SalaryInfo,
+} from '@/utils/settlement';
 import type { SchedulePostingProjection } from '@/types';
 
 export function getRoleSalaryFromProjection(
@@ -23,7 +28,11 @@ export function formatSalaryDisplay(salary: SalaryInfo | undefined): string | nu
   if (!salary) return null;
 
   const { type, amount } = salary;
-  if (type === 'other') return '?묒쓽';
-  const typeLabel = type === 'hourly' ? '?쒓툒' : type === 'daily' ? '?쇨툒' : '?붽툒';
-  return `${typeLabel} ${amount.toLocaleString()}??`;
+  const typeLabel = getSalaryTypeLabel(type);
+
+  if (type === 'other') {
+    return typeLabel;
+  }
+
+  return `${typeLabel} ${formatCurrency(amount)}`;
 }

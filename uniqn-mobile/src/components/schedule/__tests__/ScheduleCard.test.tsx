@@ -5,6 +5,28 @@ import { createMockScheduleEvent } from '@/__tests__/mocks/factories';
 import type { ScheduleEvent } from '@/types';
 
 describe('ScheduleCard', () => {
+  it('renders a readable salary label for applied schedules', () => {
+    const schedule = {
+      ...createMockScheduleEvent({
+        type: 'applied',
+        role: 'staff',
+      }),
+      postingProjection: {
+        ownerName: '테스트 구인자',
+        settlement: {
+          roles: [
+            { role: 'staff', count: 1, filled: 0, salary: { type: 'hourly', amount: 12000 } },
+          ],
+          defaultSalary: { type: 'hourly', amount: 10000 },
+        },
+      },
+    } as unknown as ScheduleEvent;
+
+    const { getByText } = render(<ScheduleCard schedule={schedule} />);
+
+    expect(getByText('시급 12,000원')).toBeTruthy();
+  });
+
   it('shows a pending-cancellation notice for confirmed schedules under review', () => {
     const schedule = createMockScheduleEvent({
       type: 'confirmed',
