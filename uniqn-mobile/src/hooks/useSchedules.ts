@@ -217,6 +217,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   );
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
   const [hasReceivedRealtimeSnapshot, setHasReceivedRealtimeSnapshot] = useState(false);
+  const [lastRealtimeSnapshotAt, setLastRealtimeSnapshotAt] = useState(0);
   const [isRealtimeLoading, setIsRealtimeLoading] = useState(false);
   const [realtimeError, setRealtimeError] = useState<Error | null>(null);
 
@@ -260,6 +261,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     if (!realtime || !enabled || !staffId || !isOnline) {
       setRealtimeSchedules([]);
       setHasReceivedRealtimeSnapshot(false);
+      setLastRealtimeSnapshotAt(0);
       setIsRealtimeLoading(false);
       setRealtimeError(null);
       return;
@@ -268,6 +270,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
     setRealtimeSchedules([]);
     setHasReceivedRealtimeSnapshot(false);
+    setLastRealtimeSnapshotAt(0);
     setIsRealtimeLoading(true);
     setRealtimeError(null);
 
@@ -279,13 +282,8 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
         );
         setRealtimeSchedules(filteredSchedules);
         setHasReceivedRealtimeSnapshot(true);
+        setLastRealtimeSnapshotAt(Date.now());
         setIsRealtimeLoading(false);
-        queryClient.setQueryData(monthQueryKey, {
-          schedules: filteredSchedules,
-          stats: calculateScheduleStats(filteredSchedules),
-          groupedSchedules: groupSchedulesByDate(filteredSchedules),
-          markedDates: getCalendarMarkedDates(filteredSchedules),
-        });
       },
       (error) => {
         setIsRealtimeLoading(false);
@@ -299,18 +297,22 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     );
 
     return () => unsubscribe();
-  }, [enabled, isOnline, month, monthQueryKey, queryClient, realtime, staffId, year]);
+  }, [enabled, isOnline, month, realtime, staffId, year]);
 
   const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
   const queryPayload =
     normalizedQueryPayload ??
     (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
-  const effectivePayload = realtime && hasReceivedRealtimeSnapshot ? realtimePayload : queryPayload;
+  const shouldPreferQueryPayload =
+    !realtime ||
+    !hasReceivedRealtimeSnapshot ||
+    (!!normalizedQueryPayload && query.dataUpdatedAt > lastRealtimeSnapshotAt);
+  const effectivePayload = shouldPreferQueryPayload ? queryPayload : realtimePayload;
   const schedules = effectivePayload.schedules;
   const stats = effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
   const markedDates = effectivePayload.markedDates;
-  const warning = realtime && hasReceivedRealtimeSnapshot ? undefined : effectivePayload.warning;
+  const warning = shouldPreferQueryPayload ? effectivePayload.warning : undefined;
   const hasBootstrapData =
     schedules.length > 0 ||
     stats !== undefined ||

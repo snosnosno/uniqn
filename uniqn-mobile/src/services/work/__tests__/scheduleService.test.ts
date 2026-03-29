@@ -689,6 +689,37 @@ describe('scheduleService - subscribeToSchedules', () => {
     expect(onUpdate).toHaveBeenCalled();
   });
 
+  it('첫 realtime emit은 WorkLog와 Application 초기 스냅샷이 모두 도착한 뒤에만 발생해야 함', async () => {
+    const onUpdate = jest.fn();
+    let workLogCallback: ((workLogs: WorkLog[]) => void) | undefined;
+    let applicationCallback: ((applications: Application[]) => void) | undefined;
+
+    mockWorkLogRepositorySubscribeByStaffId.mockImplementation((_staffId, callback) => {
+      workLogCallback = callback;
+      return jest.fn();
+    });
+    mockApplicationRepositorySubscribeByApplicantIdWithStatuses.mockImplementation(
+      (...args: unknown[]) => {
+        const callback = args[2] as ((applications: Application[]) => void) | undefined;
+        applicationCallback = callback;
+        return jest.fn();
+      }
+    );
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+
+    subscribeToSchedules('staff-123', onUpdate);
+
+    workLogCallback?.([createMockWorkLog()]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onUpdate).not.toHaveBeenCalled();
+
+    applicationCallback?.([createMockApplication()]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onUpdate).toHaveBeenCalledTimes(1);
+  });
+
   it('에러 발생 시 onError 호출해야 함', () => {
     const onUpdate = jest.fn();
     const onError = jest.fn();

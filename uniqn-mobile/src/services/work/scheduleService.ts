@@ -556,19 +556,30 @@ export function subscribeToSchedules(
   return RealtimeManager.subscribe(RealtimeManager.Keys.schedules(staffId), () => {
     logger.info('스케줄 구독 시작', { staffId });
 
-    // 에러 콜백 중복 실행 방지 (Firebase SDK 내부 재시도로 인한 무한 루프 차단)
     let hasErrored = false;
     let currentWorkLogs: WorkLog[] = [];
     let currentApplications: Application[] = [];
+    let hasReceivedInitialWorkLogSnapshot = false;
+    let hasReceivedInitialApplicationSnapshot = false;
+    let latestEmissionId = 0;
 
     const emitSchedules = async () => {
       if (hasErrored) return;
+      if (!hasReceivedInitialWorkLogSnapshot || !hasReceivedInitialApplicationSnapshot) return;
+
+      const emissionId = ++latestEmissionId;
+      const workLogsSnapshot = currentWorkLogs;
+      const applicationsSnapshot = currentApplications;
 
       try {
-        const jobPostingIds = IdNormalizer.extractUnifiedIds(currentWorkLogs, currentApplications);
+        const jobPostingIds = IdNormalizer.extractUnifiedIds(
+          workLogsSnapshot,
+          applicationsSnapshot
+        );
         const postingContextMap = await fetchJobPostingContextBatch(Array.from(jobPostingIds));
+        if (hasErrored || emissionId !== latestEmissionId) return;
 
-        const workLogSchedules = currentWorkLogs.map((workLog) => {
+        const workLogSchedules = workLogsSnapshot.map((workLog) => {
           const normalizedId = IdNormalizer.normalizeJobId(workLog);
           return ScheduleConverter.workLogToScheduleEvent(
             workLog,
@@ -576,7 +587,7 @@ export function subscribeToSchedules(
           );
         });
 
-        const applicationSchedules = currentApplications.flatMap((application) => {
+        const applicationSchedules = applicationsSnapshot.flatMap((application) => {
           const normalizedId = IdNormalizer.normalizeJobId(application);
           return ScheduleConverter.applicationToScheduleEvents(
             application,
@@ -585,8 +596,10 @@ export function subscribeToSchedules(
         });
 
         const schedules = mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules);
+        if (hasErrored || emissionId !== latestEmissionId) return;
         onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
       } catch (error) {
+        if (hasErrored || emissionId !== latestEmissionId) return;
         logger.error('?ㅼ?以?援щ룆 泥섎━ ?ㅽ뙣', toError(error));
         onError?.(toError(error));
       }
@@ -602,47 +615,12 @@ export function subscribeToSchedules(
 
     const workLogUnsubscribe = workLogRepository.subscribeByStaffId(
       staffId,
-      async (workLogs: WorkLog[]) => {
+      (workLogs: WorkLog[]) => {
         currentWorkLogs = workLogs;
-        if (hasErrored) return;
-        try {
-          // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
-          const jobPostingIds = IdNormalizer.extractUnifiedIds(
-            currentWorkLogs,
-            currentApplications
-          );
-          const postingContextMap = await fetchJobPostingContextBatch(Array.from(jobPostingIds));
-
-          const workLogSchedules = workLogs.map((workLog) => {
-            const normalizedId = IdNormalizer.normalizeJobId(workLog);
-            return ScheduleConverter.workLogToScheduleEvent(
-              workLog,
-              postingContextMap.get(normalizedId)
-            );
-          });
-
-          const applicationSchedules = currentApplications.flatMap((application) => {
-            const normalizedId = IdNormalizer.normalizeJobId(application);
-            return ScheduleConverter.applicationToScheduleEvents(
-              application,
-              postingContextMap.get(normalizedId)
-            );
-          });
-
-          const schedules = mergeAndDeduplicateSchedules(workLogSchedules, applicationSchedules);
-          onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
-        } catch (error) {
-          logger.error('스케줄 구독 처리 실패', toError(error));
-          onError?.(toError(error));
-        }
+        hasReceivedInitialWorkLogSnapshot = true;
+        void emitSchedules();
       },
-      (error: Error) => {
-        if (hasErrored) return;
-        hasErrored = true;
-
-        logger.error('스케줄 구독 에러', error);
-        onError?.(error);
-      }
+      handleSubscriptionError
     );
 
     const applicationUnsubscribe = applicationRepository.subscribeByApplicantIdWithStatuses(
@@ -650,6 +628,7 @@ export function subscribeToSchedules(
       ACTIVE_SCHEDULE_APPLICATION_STATUSES,
       (applications: Application[]) => {
         currentApplications = applications;
+        hasReceivedInitialApplicationSnapshot = true;
         void emitSchedules();
       },
       handleSubscriptionError
