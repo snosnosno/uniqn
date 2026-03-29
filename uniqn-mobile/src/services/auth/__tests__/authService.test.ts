@@ -1,5 +1,12 @@
-import { getUserProfile, login, signOut, signUp } from '../authCoreService';
+import {
+  getUserProfile,
+  login,
+  rollbackPhoneOnlyAccount,
+  signOut,
+  signUp,
+} from '../authCoreService';
 import { Platform } from 'react-native';
+import { ERROR_CODES } from '@/errors';
 
 import { userRepository } from '@/repositories';
 
@@ -37,6 +44,8 @@ const mockNativeUnlink = jest.fn();
 
 const mockSyncToWebAuth = jest.fn();
 const mockSyncSignOut = jest.fn();
+const mockProtectAuthFlow = jest.fn();
+const mockClearProtectedAuthFlow = jest.fn();
 
 const mockHttpsCallable = jest.fn();
 const mockTrackLogin = jest.fn();
@@ -81,6 +90,11 @@ jest.mock('@/lib/nativeAuth', () => ({
 jest.mock('@/lib/authBridge', () => ({
   syncToWebAuth: (...args: unknown[]) => mockSyncToWebAuth(...args),
   syncSignOut: (...args: unknown[]) => mockSyncSignOut(...args),
+}));
+
+jest.mock('@/shared/auth/protectedAuthFlow', () => ({
+  protectAuthFlow: (...args: unknown[]) => mockProtectAuthFlow(...args),
+  clearProtectedAuthFlow: (...args: unknown[]) => mockClearProtectedAuthFlow(...args),
 }));
 
 jest.mock('@/repositories', () => ({
@@ -332,12 +346,115 @@ describe('authCoreService', () => {
     expect(mockTrackSignup).toHaveBeenCalledWith('email');
   });
 
+  it('re-syncs the Web SDK session when it disappears after verifyAndSaveProfile', async () => {
+    const nativeUser = { uid: 'user-1', providerData: [] };
+    const webUser = {
+      uid: 'user-1',
+      email: 'new@example.com',
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+    };
+    const callable = jest.fn().mockImplementation(async () => {
+      mockWebAuth.currentUser = null;
+      return { data: { success: true, uid: 'user-1' } };
+    });
+    const profile = {
+      uid: 'user-1',
+      email: 'new@example.com',
+      name: 'User',
+      role: 'staff',
+      phoneVerified: true,
+      createdAt: new Date() as never,
+      updatedAt: new Date() as never,
+    };
+
+    mockNativeAuth.currentUser = nativeUser;
+    mockNativeLinkWithCredential.mockResolvedValue(undefined);
+    mockSyncToWebAuth.mockImplementation(async () => {
+      mockWebAuth.currentUser = webUser;
+    });
+    mockHttpsCallable.mockReturnValue(callable);
+    mockUserRepository.getById.mockResolvedValue(profile as never);
+
+    await expect(
+      signUp({
+        email: 'new@example.com',
+        password: 'Password123!',
+        name: 'User',
+        birthDate: '19900101',
+        gender: 'male',
+        verifiedPhone: '01012345678',
+        termsAgreed: true,
+        privacyAgreed: true,
+        marketingAgreed: false,
+      } as never)
+    ).resolves.toEqual({
+      user: webUser,
+      profile,
+    });
+
+    expect(mockSyncToWebAuth).toHaveBeenCalledTimes(2);
+    expect(webUser.getIdToken).toHaveBeenCalledWith(true);
+  });
+
+  it('does not roll back the account when session restore fails after verifyAndSaveProfile succeeds', async () => {
+    const nativeUser = { uid: 'user-1', providerData: [] };
+    const webUser = {
+      uid: 'user-1',
+      email: 'new@example.com',
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+    };
+    const callable = jest.fn().mockImplementation(async () => {
+      mockWebAuth.currentUser = null;
+      return { data: { success: true, uid: 'user-1' } };
+    });
+
+    mockNativeAuth.currentUser = nativeUser;
+    mockNativeLinkWithCredential.mockResolvedValue(undefined);
+    mockSyncToWebAuth
+      .mockImplementationOnce(async () => {
+        mockWebAuth.currentUser = webUser;
+      })
+      .mockRejectedValueOnce(new Error('web session restore failed'));
+    mockHttpsCallable.mockReturnValue(callable);
+
+    await expect(
+      signUp({
+        email: 'new@example.com',
+        password: 'Password123!',
+        name: 'User',
+        birthDate: '19900101',
+        gender: 'male',
+        verifiedPhone: '01012345678',
+        termsAgreed: true,
+        privacyAgreed: true,
+        marketingAgreed: false,
+      } as never)
+    ).rejects.toMatchObject({
+      code: ERROR_CODES.AUTH_SESSION_EXPIRED,
+    });
+
+    expect(mockNativeDeleteUser).not.toHaveBeenCalled();
+    expect(mockUserRepository.markAsOrphan).not.toHaveBeenCalled();
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+  });
+
   it('rolls back the phone-only account when verifyAndSaveProfile fails', async () => {
     const nativeUser = { uid: 'user-1', providerData: [] };
+    const webUser = {
+      uid: 'user-1',
+      email: 'new@example.com',
+      getIdToken: jest.fn().mockResolvedValue('token'),
+      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+    };
     const callable = jest.fn().mockRejectedValue(new Error('cf failed'));
 
     mockNativeAuth.currentUser = nativeUser;
     mockNativeLinkWithCredential.mockResolvedValue(undefined);
+    mockSyncToWebAuth.mockImplementation(async () => {
+      mockWebAuth.currentUser = webUser;
+    });
     mockHttpsCallable.mockReturnValue(callable);
 
     await expect(
@@ -356,6 +473,55 @@ describe('authCoreService', () => {
 
     expect(mockNativeDeleteUser).toHaveBeenCalledWith(nativeUser);
     expect(mockSyncSignOut).toHaveBeenCalled();
+  });
+
+  it('restores the Web SDK session before marking an orphan account during rollback', async () => {
+    mockNativeAuth.currentUser = {
+      uid: 'user-rollback',
+      providerData: [{ providerId: 'password' }],
+    };
+    mockNativeDeleteUser.mockRejectedValue(new Error('native delete failed'));
+    mockWebAuth.currentUser = null;
+    mockSyncToWebAuth.mockImplementation(async () => {
+      mockWebAuth.currentUser = {
+        uid: 'user-rollback',
+        providerData: [{ providerId: 'password' }],
+      } as never;
+    });
+
+    await expect(
+      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678', {
+        email: 'rollback@example.com',
+        password: 'Password123!',
+      })
+    ).resolves.toBeUndefined();
+
+    expect(mockSyncToWebAuth).toHaveBeenCalledWith('rollback@example.com', 'Password123!');
+    expect(mockUserRepository.markAsOrphan).toHaveBeenCalledWith(
+      'user-rollback',
+      'native_signup_rollback_failed',
+      '01012345678',
+      Platform.OS
+    );
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails rollback when it cannot delete or mark the account', async () => {
+    mockNativeAuth.currentUser = {
+      uid: 'user-rollback',
+      providerData: [{ providerId: 'password' }],
+    };
+    mockNativeDeleteUser.mockRejectedValue(new Error('native delete failed'));
+    mockWebAuth.currentUser = null;
+
+    await expect(
+      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
+    ).rejects.toMatchObject({
+      code: ERROR_CODES.UNKNOWN,
+    });
+
+    expect(mockUserRepository.markAsOrphan).not.toHaveBeenCalled();
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
   it('signs out and clears session side effects', async () => {

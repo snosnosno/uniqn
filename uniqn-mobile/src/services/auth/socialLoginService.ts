@@ -35,6 +35,7 @@ import { AuthError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { withTimeout } from '@/utils/timeout';
 import { sanitizeInput } from '@/utils/security';
+import { clearProtectedAuthFlow, protectAuthFlow } from '@/shared/auth/protectedAuthFlow';
 import {
   trackLogin,
   trackSignup,
@@ -61,6 +62,10 @@ const APPLE_FIREBASE_AUTH_RETRY_DELAY_MS = 1_000;
 const APPLE_PROFILE_LOOKUP_TIMEOUT_MS = 15_000;
 const APPLE_PROFILE_WRITE_TIMEOUT_MS = 15_000;
 const APPLE_ID_TOKEN_REFRESH_TIMEOUT_MS = 15_000;
+const APPLE_PROFILE_WRITE_RETRY_DELAY_MS = 1_000;
+const APPLE_PROFILE_CREATE_VERIFICATION_ATTEMPTS = 2;
+const APPLE_PROFILE_CREATE_VERIFICATION_DELAY_MS = 1_000;
+const SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS = 15 * 60 * 1000;
 
 type AppleLoginStage =
   | 'native_authorization'
@@ -72,6 +77,10 @@ type AppleLoginStage =
 
 function createAppleLoginFlowId(): string {
   return `apple-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getAppleErrorContext(error: unknown) {
@@ -292,10 +301,12 @@ async function createMockProfile(
     name,
     nickname: name,
     role: 'staff',
+    status: 'active',
     phoneVerified: false, // Mock이므로 전화번호 인증 미완료
     termsAgreed: true,
     privacyAgreed: true,
     marketingAgreed: false,
+    profileCompleted: false,
     isActive: true,
     createdAt: serverTimestamp() as Timestamp,
     updatedAt: serverTimestamp() as Timestamp,
@@ -326,6 +337,8 @@ async function createMockProfile(
  */
 export async function signInWithApple(): Promise<AuthResult> {
   const flowId = createAppleLoginFlowId();
+  let protectedAuthFlowUid: string | null = null;
+  let preserveProtectedAuthFlow = false;
 
   try {
     leaveAppleLoginBreadcrumb('apple_login_flow', {
@@ -513,6 +526,8 @@ export async function signInWithApple(): Promise<AuthResult> {
     // 4. Firestore 프로필 확인
     // 서버사이드 OTP 검증으로 전환했으므로 Native SDK 동기화 불필요
     const user = webResult.user;
+    protectAuthFlow(user.uid, 'apple_login');
+    protectedAuthFlowUid = user.uid;
 
     const profileLookupStartedAt = logAppleStageStart(flowId, 'profile_lookup');
     let existingProfile;
@@ -586,46 +601,201 @@ export async function signInWithApple(): Promise<AuthResult> {
       const now = Timestamp.now();
 
       // Firestore에 저장할 데이터 (serverTimestamp 사용)
-      const profileCreateStartedAt = logAppleStageStart(flowId, 'profile_create');
-      try {
-        await withTimeout(
-          userRepository.createOrMerge(user.uid, {
-            uid: user.uid,
-            email: user.email || '',
-            name: appleName,
-            role: 'staff',
-            socialProvider: 'apple',
-            phoneVerified: false,
-            isActive: true,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          }),
-          APPLE_PROFILE_WRITE_TIMEOUT_MS,
-          'Apple 로그인 후 프로필 생성이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.'
-        );
-        logAppleStageSuccess(flowId, 'profile_create', profileCreateStartedAt, {
-          profileCreated: true,
-          hasEmail: Boolean(user.email),
-          hasName: appleName.length > 0,
-        });
-      } catch (createError) {
-        logAppleStageFailure(flowId, 'profile_create', profileCreateStartedAt, createError, {
-          hasEmail: Boolean(user.email),
-          hasName: appleName.length > 0,
-        });
-        // 프로필 생성 실패 시 부분 인증 상태 정리 (로그인됐지만 프로필 없는 상태 방지)
-        logger.error('Apple 신규 프로필 생성 실패 — 세션 정리', {
+      const createProfileDocument = async (attempt: number) => {
+        const profileCreateStartedAt = logAppleStageStart(flowId, 'profile_create', { attempt });
+        try {
+          await withTimeout(
+            userRepository.createOrMerge(user.uid, {
+              uid: user.uid,
+              email: user.email || '',
+              name: appleName,
+              role: 'staff',
+              status: 'active',
+              socialProvider: 'apple',
+              phoneVerified: false,
+              profileCompleted: false,
+              isActive: true,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            }),
+            APPLE_PROFILE_WRITE_TIMEOUT_MS,
+            'Apple 로그인 후 프로필 생성이 지연되고 있습니다. 네트워크 상태를 확인하고 다시 시도해주세요.'
+          );
+          logAppleStageSuccess(flowId, 'profile_create', profileCreateStartedAt, {
+            attempt,
+            profileCreated: true,
+            hasEmail: Boolean(user.email),
+            hasName: appleName.length > 0,
+          });
+        } catch (createError) {
+          logAppleStageFailure(flowId, 'profile_create', profileCreateStartedAt, createError, {
+            attempt,
+            hasEmail: Boolean(user.email),
+            hasName: appleName.length > 0,
+          });
+          throw createError;
+        }
+      };
+
+      const failProfileCreateAndSignOut = async (error: unknown): Promise<never> => {
+        logger.error('Apple 로그인 프로필 생성 실패 - 세션 정리', {
           component: 'authService',
           flowId,
           uid: user.uid,
-          error: createError instanceof Error ? createError.message : String(createError),
+          error: error instanceof Error ? error.message : String(error),
         });
         try {
           await syncSignOut();
         } catch {
-          // 정리 실패 무시
+          // Cleanup failures are ignored because the original error is more important.
         }
-        throw createError;
+        throw error;
+      };
+
+      const verifyProfileCreationSettled = async (sourceAttempt: number): Promise<boolean> => {
+        for (
+          let verificationAttempt = 1;
+          verificationAttempt <= APPLE_PROFILE_CREATE_VERIFICATION_ATTEMPTS;
+          verificationAttempt += 1
+        ) {
+          await sleep(APPLE_PROFILE_CREATE_VERIFICATION_DELAY_MS);
+          leaveAppleLoginBreadcrumb('apple_login_profile_create_verification', {
+            flowId,
+            sourceAttempt,
+            verificationAttempt,
+            status: 'start',
+          });
+
+          try {
+            const verifiedProfile = await withTimeout(
+              getUserProfile(user.uid),
+              APPLE_PROFILE_LOOKUP_TIMEOUT_MS,
+              'Apple 로그인 후 프로필 생성 상태를 확인하는 데 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.'
+            );
+            const profileFound = Boolean(verifiedProfile);
+
+            logger.info('Apple 로그인 프로필 생성 후속 확인 완료', {
+              component: 'authService',
+              provider: 'apple',
+              flowId,
+              sourceAttempt,
+              verificationAttempt,
+              profileFound,
+            });
+            leaveAppleLoginBreadcrumb('apple_login_profile_create_verification', {
+              flowId,
+              sourceAttempt,
+              verificationAttempt,
+              status: 'completed',
+              profileFound,
+            });
+
+            if (profileFound) {
+              return true;
+            }
+          } catch (verificationError) {
+            const verificationErrorCode =
+              (verificationError as { code?: string })?.code ?? 'unknown';
+
+            logger.warn('Apple 로그인 프로필 생성 후속 확인 실패', {
+              component: 'authService',
+              provider: 'apple',
+              flowId,
+              sourceAttempt,
+              verificationAttempt,
+              errorCode: verificationErrorCode,
+            });
+            leaveAppleLoginBreadcrumb('apple_login_profile_create_verification', {
+              flowId,
+              sourceAttempt,
+              verificationAttempt,
+              status: 'failed',
+              errorCode: verificationErrorCode,
+            });
+          }
+        }
+
+        return false;
+      };
+
+      try {
+        await createProfileDocument(1);
+      } catch (createError) {
+        const createErrorCode = (createError as { code?: string })?.code ?? '';
+        const isRetryableCreateError =
+          createErrorCode === ERROR_CODES.NETWORK_TIMEOUT ||
+          createErrorCode === 'auth/network-request-failed';
+
+        if (!isRetryableCreateError) {
+          await failProfileCreateAndSignOut(createError);
+        }
+
+        const profileCreatedAfterFirstTimeout = await verifyProfileCreationSettled(1);
+        if (profileCreatedAfterFirstTimeout) {
+          logger.info('Apple 로그인 프로필 생성 지연 후 확인 성공', {
+            component: 'authService',
+            provider: 'apple',
+            flowId,
+            sourceAttempt: 1,
+          });
+        } else {
+          logger.warn('Apple 로그인 프로필 생성 1차 실패, 1초 후 재시도', {
+            component: 'authService',
+            provider: 'apple',
+            flowId,
+            errorCode: createErrorCode,
+            retryDelayMs: APPLE_PROFILE_WRITE_RETRY_DELAY_MS,
+          });
+          leaveAppleLoginBreadcrumb('apple_login_stage_retry', {
+            flowId,
+            stage: 'profile_create',
+            errorCode: createErrorCode,
+            retryDelayMs: APPLE_PROFILE_WRITE_RETRY_DELAY_MS,
+          });
+          await sleep(APPLE_PROFILE_WRITE_RETRY_DELAY_MS);
+
+          try {
+            await createProfileDocument(2);
+            logger.info('Apple 로그인 프로필 생성 재시도 성공', {
+              component: 'authService',
+              provider: 'apple',
+              flowId,
+            });
+          } catch (retryCreateError) {
+            const retryCreateErrorCode = (retryCreateError as { code?: string })?.code ?? '';
+            const isRetryableRetryCreateError =
+              retryCreateErrorCode === ERROR_CODES.NETWORK_TIMEOUT ||
+              retryCreateErrorCode === 'auth/network-request-failed';
+
+            if (isRetryableRetryCreateError) {
+              const profileCreatedAfterRetryTimeout = await verifyProfileCreationSettled(2);
+              if (profileCreatedAfterRetryTimeout) {
+                logger.info('Apple 로그인 프로필 생성 재시도 지연 후 확인 성공', {
+                  component: 'authService',
+                  provider: 'apple',
+                  flowId,
+                  sourceAttempt: 2,
+                });
+              } else {
+                logger.warn('Apple 로그인 프로필 생성이 지연되어 가입 플로우로 우회합니다', {
+                  component: 'authService',
+                  provider: 'apple',
+                  flowId,
+                  errorCode: retryCreateErrorCode,
+                });
+                leaveAppleLoginBreadcrumb('apple_login_profile_create_deferred', {
+                  flowId,
+                  errorCode: retryCreateErrorCode,
+                  fallback: 'social_signup_without_profile_doc',
+                });
+                protectAuthFlow(user.uid, 'social_signup', SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS);
+                preserveProtectedAuthFlow = true;
+              }
+            } else {
+              await failProfileCreateAndSignOut(retryCreateError);
+            }
+          }
+        }
       }
 
       // 프로필 생성 후 best-effort 토큰 갱신 (onUserRoleChange 트리거가 Claims 설정)
@@ -655,8 +825,10 @@ export async function signInWithApple(): Promise<AuthResult> {
         email: user.email || '',
         name: appleName,
         role: 'staff',
+        status: 'active',
         socialProvider: 'apple',
         phoneVerified: false,
+        profileCompleted: false,
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -805,6 +977,10 @@ export async function signInWithApple(): Promise<AuthResult> {
         provider: 'apple',
       },
     });
+  } finally {
+    if (!preserveProtectedAuthFlow) {
+      clearProtectedAuthFlow(protectedAuthFlowUid);
+    }
   }
 }
 
@@ -821,11 +997,14 @@ export async function completeSocialProfile(
   uid: string,
   data: SocialProfileData
 ): Promise<AuthResult> {
+  let shouldClearProtectedAuthFlow = false;
+
   try {
     logger.info('소셜 프로필 완성 시도', { uid });
 
     // 공통 CF 호출: 서버사이드 phone 검증 + Firestore 저장 + Claims 설정
     // 프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
+    protectAuthFlow(uid, 'social_signup', SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS);
     await callVerifyAndSaveProfile({
       verifiedPhone: data.phone,
       name: data.name,
@@ -883,6 +1062,7 @@ export async function completeSocialProfile(
       has_verified_phone: true,
     });
 
+    shouldClearProtectedAuthFlow = true;
     return { user: currentUser, profile: updatedProfile };
   } catch (error) {
     throw handleServiceError(error, {
@@ -890,6 +1070,10 @@ export async function completeSocialProfile(
       component: 'authService',
       context: { uid },
     });
+  } finally {
+    if (shouldClearProtectedAuthFlow) {
+      clearProtectedAuthFlow(uid);
+    }
   }
 }
 

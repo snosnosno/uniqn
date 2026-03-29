@@ -333,14 +333,13 @@ export class FirebaseUserRepository implements IUserRepository {
   async markAsOrphan(
     uid: string,
     reason: string,
-    phone?: string,
+    _phone?: string,
     platform?: string
   ): Promise<void> {
     try {
       const db = getFirebaseDb();
       await setDoc(doc(db, 'orphanAccounts', uid), {
         uid,
-        phone: phone || null,
         reason,
         createdAt: serverTimestamp(),
         platform: platform || null,

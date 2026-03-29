@@ -37,8 +37,11 @@ const paddingStyles: Record<CardPadding, string> = {
 };
 
 // Card is View-backed, so raw primitive children can crash on react-native-web.
-function sanitizeViewChildren(children: React.ReactNode): React.ReactNode[] {
-  return React.Children.toArray(children).flatMap((child) => {
+// While flattening fragments, remap keys so nested fragment children stay unique.
+function sanitizeViewChildren(children: React.ReactNode, path = 'card'): React.ReactNode[] {
+  return React.Children.toArray(children).flatMap((child, index) => {
+    const childPath = `${path}.${index}`;
+
     if (typeof child === 'string') {
       return [];
     }
@@ -51,7 +54,16 @@ function sanitizeViewChildren(children: React.ReactNode): React.ReactNode[] {
       React.isValidElement<{ children?: React.ReactNode }>(child) &&
       child.type === React.Fragment
     ) {
-      return sanitizeViewChildren(child.props.children);
+      return sanitizeViewChildren(child.props.children, childPath);
+    }
+
+    if (React.isValidElement(child)) {
+      const childKey =
+        child.key === null || child.key === undefined
+          ? childPath
+          : `${childPath}:${String(child.key)}`;
+
+      return [React.cloneElement(child, { key: childKey })];
     }
 
     return [child];

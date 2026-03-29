@@ -19,6 +19,8 @@ const mockRequestAppleAuthorization = jest.fn();
 const mockWithTimeout = jest.fn();
 const mockGetMMKVInstance = jest.fn();
 const mockLeaveBreadcrumb = jest.fn();
+const mockProtectAuthFlow = jest.fn();
+const mockClearProtectedAuthFlow = jest.fn();
 
 const mockMmkv = {
   set: jest.fn(),
@@ -64,6 +66,11 @@ jest.mock('@/lib/firebase', () => ({
 
 jest.mock('@/lib/authBridge', () => ({
   syncSignOut: (...args: unknown[]) => mockSyncSignOut(...args),
+}));
+
+jest.mock('@/shared/auth/protectedAuthFlow', () => ({
+  protectAuthFlow: (...args: unknown[]) => mockProtectAuthFlow(...args),
+  clearProtectedAuthFlow: (...args: unknown[]) => mockClearProtectedAuthFlow(...args),
 }));
 
 jest.mock('@/repositories', () => ({
@@ -220,11 +227,122 @@ describe('socialLoginService signInWithApple', () => {
       expect.objectContaining({
         uid: 'firebase-user',
         email: 'apple@example.com',
+        status: 'active',
+        socialProvider: 'apple',
+        phoneVerified: false,
+        profileCompleted: false,
+        isActive: true,
+      })
+    );
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
+  });
+
+  it('retries profile creation once after a timeout and completes the Apple login flow', async () => {
+    jest.useFakeTimers();
+
+    const networkError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple profile creation timed out.',
+    });
+
+    mockGetUserProfile.mockResolvedValue(null);
+    mockWithTimeout
+      .mockResolvedValueOnce({ user: mockAuthUser })
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce('token');
+
+    const { signInWithApple } = loadModule();
+    const signInPromise = signInWithApple();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(3000);
+
+    const result = await signInPromise;
+
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
+  });
+
+  it('continues the Apple login flow when the profile becomes visible after a timed out write', async () => {
+    jest.useFakeTimers();
+
+    const networkError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple profile creation timed out.',
+    });
+
+    mockGetUserProfile.mockResolvedValue(null);
+    mockWithTimeout
+      .mockResolvedValueOnce({ user: mockAuthUser })
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce({
+        uid: 'firebase-user',
+        email: 'apple@example.com',
+        role: 'staff',
         socialProvider: 'apple',
         phoneVerified: false,
         isActive: true,
       })
+      .mockResolvedValueOnce('token');
+
+    const { signInWithApple } = loadModule();
+    const signInPromise = signInWithApple();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(1000);
+
+    const result = await signInPromise;
+
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(1);
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
+  });
+
+  it('falls back to the social signup flow when profile creation keeps timing out', async () => {
+    jest.useFakeTimers();
+
+    const networkError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple profile creation timed out.',
+    });
+
+    mockGetUserProfile.mockResolvedValue(null);
+    mockWithTimeout
+      .mockResolvedValueOnce({ user: mockAuthUser })
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('token');
+
+    const { signInWithApple } = loadModule();
+    const signInPromise = signInWithApple();
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(5000);
+
+    const result = await signInPromise;
+
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
+    expect(mockSyncSignOut).not.toHaveBeenCalled();
+    expect(mockProtectAuthFlow).toHaveBeenNthCalledWith(1, 'firebase-user', 'apple_login');
+    expect(mockProtectAuthFlow).toHaveBeenNthCalledWith(
+      2,
+      'firebase-user',
+      'social_signup',
+      15 * 60 * 1000
     );
+    expect(mockClearProtectedAuthFlow).not.toHaveBeenCalled();
     expect(result.profile.socialProvider).toBe('apple');
     expect(result.profile.phoneVerified).toBe(false);
   });

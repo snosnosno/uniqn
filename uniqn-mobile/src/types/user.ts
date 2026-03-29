@@ -100,6 +100,8 @@ export interface UserProfile<T = Date> {
   };
 
   // 프로필 상태
+  /** 사용자 상태 */
+  status?: 'active' | 'inactive' | 'suspended' | 'deleted';
   /** 프로필 완성 여부 (닉네임 등 필수 프로필 입력 완료) */
   profileCompleted?: boolean;
 

@@ -10,6 +10,7 @@ import { ensureDualSdkSync } from '@/lib/authBridge';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { getUserProfile, signOut as authSignOut } from '@/services/auth';
+import { getProtectedAuthFlowKind } from '@/shared/auth/protectedAuthFlow';
 import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { logger } from '@/utils/logger';
 import { trackLogout, setUserId } from '@/services/observability/analyticsService';
@@ -649,6 +650,24 @@ export async function resolveSession({
       logger.info('Preserving phone-only signup session during initialization', {
         component: 'useAppInitialize',
         uid: authUser.uid,
+      });
+
+      authStore.setUser(authUser);
+      authStore.setProfile(null);
+      commitBootstrapSource('none', false);
+
+      return {
+        deferredInitContext: null,
+        offlineBootstrap: { source: 'none', needsServerReconcile: false },
+      };
+    }
+
+    const protectedAuthFlowKind = getProtectedAuthFlowKind(authUser.uid);
+    if (protectedAuthFlowKind) {
+      logger.info('Preserving protected auth flow session during initialization', {
+        component: 'useAppInitialize',
+        uid: authUser.uid,
+        flowKind: protectedAuthFlowKind,
       });
 
       authStore.setUser(authUser);

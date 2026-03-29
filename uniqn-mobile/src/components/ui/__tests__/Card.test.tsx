@@ -240,5 +240,42 @@ describe('Card', () => {
       expect(screen.queryByText('0')).toBeNull();
       expect(screen.getByText('content')).toBeTruthy();
     });
+
+    it('keeps nested fragment children keys unique after flattening', () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      try {
+        render(
+          <Card>
+            <Text>header</Text>
+            <>
+              <Text>first</Text>
+              <Text>second</Text>
+              <>
+                <Text>third</Text>
+                <Text>fourth</Text>
+              </>
+            </>
+          </Card>
+        );
+
+        expect(screen.getByText('header')).toBeTruthy();
+        expect(screen.getByText('first')).toBeTruthy();
+        expect(screen.getByText('second')).toBeTruthy();
+        expect(screen.getByText('third')).toBeTruthy();
+        expect(screen.getByText('fourth')).toBeTruthy();
+        expect(
+          consoleErrorSpy.mock.calls.some((args) =>
+            args.some(
+              (value) =>
+                typeof value === 'string' &&
+                value.includes('Encountered two children with the same key')
+            )
+          )
+        ).toBe(false);
+      } finally {
+        consoleErrorSpy.mockRestore();
+      }
+    });
   });
 });

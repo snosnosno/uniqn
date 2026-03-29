@@ -80,7 +80,13 @@ export const checkPhoneExists = onCall(
 
           // 고아 계정 감지: Auth에 존재하지만 Firestore users 문서가 없는 phone-only 계정
           // (가입 중단/크래시로 생성된 계정 → 즉시 삭제하여 재가입 허용)
-          if (!authUser.email) {
+          const orphanDoc = await admin
+            .firestore()
+            .collection("orphanAccounts")
+            .doc(authUser.uid)
+            .get();
+
+          if (!authUser.email || orphanDoc.exists) {
             const userDoc = await admin
               .firestore()
               .collection("users")

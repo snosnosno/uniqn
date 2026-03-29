@@ -7,6 +7,7 @@ import { getFirebaseAuth } from '@/lib/firebase';
 import { authStateStorage } from '@/lib/mmkvStorage';
 import { settingsStorage } from '@/lib/secureStorage';
 import { getUserProfile } from '@/services/auth/userProfileService';
+import { getProtectedAuthFlowKind } from '@/shared/auth/protectedAuthFlow';
 import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { clearCriticalOfflineCacheForUser } from '@/services/offline/criticalOfflineCache';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
@@ -486,6 +487,23 @@ export const useAuthStore = create<AuthState>()(
               bootstrapSource: 'server',
             });
           } else {
+            const protectedAuthFlowKind = getProtectedAuthFlowKind(currentUser.uid);
+            if (protectedAuthFlowKind) {
+              logger.info(
+                'Preserving protected auth flow session until profile creation completes',
+                {
+                  component: 'authStore',
+                  uid: currentUser.uid,
+                  flowKind: protectedAuthFlowKind,
+                }
+              );
+              set({
+                needsServerReconcile: false,
+                bootstrapSource: 'none',
+              });
+              return;
+            }
+
             if (isPhoneOnlySignupFirebaseUser(currentUser)) {
               logger.info('Preserving phone-only signup session until profile creation completes', {
                 component: 'authStore',
