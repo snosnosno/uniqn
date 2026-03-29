@@ -11,6 +11,13 @@ import {
   hydrateWorkLogsModificationHistory,
 } from '../workLog/timeModificationLogs';
 
+const mockedLogger = jest.requireMock('@/utils/logger').logger as {
+  info: jest.Mock;
+  warn: jest.Mock;
+  error: jest.Mock;
+  debug: jest.Mock;
+};
+
 const mockQueryBuilderLimit = jest.fn();
 const mockQueryBuilderWhere = jest.fn();
 const mockQueryBuilderWhereIn = jest.fn();
@@ -772,6 +779,35 @@ describe('FirebaseWorkLogRepository', () => {
       expect(onSnapshot).toHaveBeenCalled();
       expect(typeof unsubscribe).toBe('function');
     });
+
+    it('should log snapshot counts and warn once when the realtime limit is reached', () => {
+      const onData = jest.fn();
+      const onError = jest.fn();
+
+      (onSnapshot as jest.Mock).mockImplementation((_query, callback) => {
+        callback({ size: 50, docs: [] });
+        callback({ size: 50, docs: [] });
+        return jest.fn();
+      });
+
+      repository.subscribeByStaffId('staff-1', onData, onError);
+
+      expect(mockedLogger.info).toHaveBeenCalledWith('worklog_realtime_snapshot_count', {
+        listener: 'workLogs_by_staff',
+        count: 50,
+        limit: 50,
+      });
+      expect(mockedLogger.warn).toHaveBeenCalledWith('worklog_realtime_limit_reached', {
+        listener: 'workLogs_by_staff',
+        count: 50,
+        limit: 50,
+      });
+      expect(
+        mockedLogger.warn.mock.calls.filter(
+          ([message]: [string]) => message === 'worklog_realtime_limit_reached'
+        )
+      ).toHaveLength(1);
+    });
   });
 
   // ==========================================================================
@@ -819,6 +855,55 @@ describe('FirebaseWorkLogRepository', () => {
       repository.subscribeById('wl-missing', onData, onError);
 
       expect(onData).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('subscribeTodayActive', () => {
+    it('should prefer a checked-in work log when scheduled and checked-in docs coexist', () => {
+      const onData = jest.fn();
+      const onError = jest.fn();
+
+      (onSnapshot as jest.Mock).mockImplementation((_query, callback) => {
+        callback({
+          empty: false,
+          docs: [
+            {
+              id: 'wl-scheduled',
+              data: () => ({
+                id: 'wl-scheduled',
+                staffId: 'staff-1',
+                date: '2025-01-20',
+                status: 'scheduled',
+              }),
+            },
+            {
+              id: 'wl-checked-in',
+              data: () => ({
+                id: 'wl-checked-in',
+                staffId: 'staff-1',
+                date: '2025-01-20',
+                status: 'checked_in',
+              }),
+            },
+          ],
+        });
+        return jest.fn();
+      });
+
+      repository.subscribeTodayActive(
+        'staff-1',
+        '2025-01-20',
+        ['scheduled', 'checked_in'],
+        onData,
+        onError
+      );
+
+      expect(onData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'wl-checked-in',
+          status: 'checked_in',
+        })
+      );
     });
   });
 

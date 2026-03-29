@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { resetCounters, createMockWorkLog } from '../mocks/factories';
 
 // ============================================================================
@@ -43,6 +43,7 @@ const mockGetTodayCheckedInWorkLog = jest.fn();
 const mockIsCurrentlyWorking = jest.fn();
 const mockGetWorkLogStats = jest.fn();
 const mockGetMonthlyPayroll = jest.fn();
+const mockSubscribeToTodayWorkStatus = jest.fn();
 
 jest.mock('@/services/work/workLogService', () => ({
   getMyWorkLogs: (...args: unknown[]) => mockGetMyWorkLogs(...args),
@@ -52,6 +53,7 @@ jest.mock('@/services/work/workLogService', () => ({
   isCurrentlyWorking: (...args: unknown[]) => mockIsCurrentlyWorking(...args),
   getWorkLogStats: (...args: unknown[]) => mockGetWorkLogStats(...args),
   getMonthlyPayroll: (...args: unknown[]) => mockGetMonthlyPayroll(...args),
+  subscribeToTodayWorkStatus: (...args: unknown[]) => mockSubscribeToTodayWorkStatus(...args),
 }));
 
 // ============================================================================
@@ -88,6 +90,8 @@ const mockQueryClient = {
 };
 
 const mockRefetch = jest.fn().mockResolvedValue({ data: undefined });
+const mockGetCriticalOfflineCache = jest.fn();
+const mockSetCriticalOfflineCache = jest.fn();
 
 let mockIsLoading = false;
 let mockIsRefetching = false;
@@ -95,6 +99,10 @@ let mockData: unknown = undefined;
 let mockError: Error | null = null;
 let mockEnabled: boolean | undefined;
 let lastQueryFn: (() => Promise<unknown>) | undefined;
+let mockIsOnline = true;
+let mockCurrentWorkStatusSnapshot: ReturnType<typeof createMockWorkLog> | null | undefined =
+  undefined;
+let mockCurrentWorkStatusError: Error | null = null;
 
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(
@@ -165,13 +173,21 @@ jest.mock('@/errors/AppError', () => ({
   },
 }));
 
+jest.mock('@/constants', () => ({
+  STATUS: {
+    WORK_LOG: {
+      CHECKED_IN: 'checked_in',
+    },
+  },
+}));
+
 jest.mock('@/hooks/useNetworkStatus', () => ({
   useNetworkStatus: () => ({
-    isOnline: true,
-    isOffline: false,
+    isOnline: mockIsOnline,
+    isOffline: !mockIsOnline,
     isChecking: false,
     connectionType: 'wifi',
-    isInternetReachable: true,
+    isInternetReachable: mockIsOnline,
     lastChecked: null,
     details: null,
     checkConnection: jest.fn(),
@@ -179,8 +195,8 @@ jest.mock('@/hooks/useNetworkStatus', () => ({
 }));
 
 jest.mock('@/services/offline/criticalOfflineCache', () => ({
-  getCriticalOfflineCache: jest.fn(() => null),
-  setCriticalOfflineCache: jest.fn(),
+  getCriticalOfflineCache: (...args: unknown[]) => mockGetCriticalOfflineCache(...args),
+  setCriticalOfflineCache: (...args: unknown[]) => mockSetCriticalOfflineCache(...args),
 }));
 
 // ============================================================================
@@ -197,6 +213,28 @@ describe('useWorkLogs Hooks', () => {
     mockError = null;
     mockEnabled = undefined;
     lastQueryFn = undefined;
+    mockIsOnline = true;
+    mockCurrentWorkStatusSnapshot = undefined;
+    mockCurrentWorkStatusError = null;
+    mockGetCriticalOfflineCache.mockReturnValue(null);
+    mockSetCriticalOfflineCache.mockReset();
+    mockSubscribeToTodayWorkStatus.mockImplementation(
+      (
+        _staffId: string,
+        listeners: {
+          onUpdate: (workLog: ReturnType<typeof createMockWorkLog> | null) => void;
+          onError: (error: Error) => void;
+        }
+      ) => {
+        if (mockCurrentWorkStatusError) {
+          listeners.onError(mockCurrentWorkStatusError);
+        } else if (mockCurrentWorkStatusSnapshot !== undefined) {
+          listeners.onUpdate(mockCurrentWorkStatusSnapshot);
+        }
+
+        return jest.fn();
+      }
+    );
   });
 
   // ==========================================================================
@@ -422,32 +460,151 @@ describe('useWorkLogs Hooks', () => {
     });
 
     it('should return null currentWorkLog and false isWorking when no data', () => {
-      mockData = undefined;
-
       const { result } = renderHook(() => useCurrentWorkStatus());
 
       expect(result.current.currentWorkLog).toBeNull();
       expect(result.current.isWorking).toBe(false);
     });
 
-    it('should return current work status when data available', () => {
+    it('should return current work status when a checked-in snapshot arrives', async () => {
       const mockWorkLog = createMockWorkLog({ id: 'wl-current', status: 'checked_in' });
-      mockData = { workLog: mockWorkLog, isWorking: true };
+      mockCurrentWorkStatusSnapshot = mockWorkLog;
 
       const { result } = renderHook(() => useCurrentWorkStatus());
 
-      expect(result.current.currentWorkLog).toEqual(mockWorkLog);
-      expect(result.current.isWorking).toBe(true);
+      await waitFor(() => {
+        expect(result.current.currentWorkLog).toEqual(mockWorkLog);
+        expect(result.current.isWorking).toBe(true);
+      });
+
+      expect(mockSetCriticalOfflineCache).toHaveBeenCalledWith(
+        'workLogs:staff-1:current-status',
+        { workLog: mockWorkLog, isWorking: true },
+        expect.objectContaining({
+          userId: 'staff-1',
+          schemaVersion: 2,
+        })
+      );
     });
 
-    it('should return not working when workLog exists but not currently working', () => {
-      const mockWorkLog = createMockWorkLog({ id: 'wl-done', status: 'completed' });
-      mockData = { workLog: mockWorkLog, isWorking: false };
+    it('should treat non-checked-in snapshots as not working', async () => {
+      const mockWorkLog = createMockWorkLog({ id: 'wl-scheduled', status: 'scheduled' });
+      mockCurrentWorkStatusSnapshot = mockWorkLog;
 
       const { result } = renderHook(() => useCurrentWorkStatus());
 
+      await waitFor(() => {
+        expect(result.current.currentWorkLog).toBeNull();
+        expect(result.current.isWorking).toBe(false);
+      });
+    });
+
+    it('should subscribe to realtime updates and clean up on unmount', () => {
+      const unsubscribe = jest.fn();
+      mockSubscribeToTodayWorkStatus.mockReturnValue(unsubscribe);
+
+      const { unmount } = renderHook(() => useCurrentWorkStatus());
+
+      expect(mockSubscribeToTodayWorkStatus).toHaveBeenCalledWith(
+        'staff-1',
+        expect.objectContaining({
+          onUpdate: expect.any(Function),
+          onError: expect.any(Function),
+        })
+      );
+
+      unmount();
+
+      expect(unsubscribe).toHaveBeenCalled();
+    });
+
+    it('should expose loading state before the initial realtime snapshot arrives', () => {
+      mockSubscribeToTodayWorkStatus.mockReturnValue(jest.fn());
+
+      const { result } = renderHook(() => useCurrentWorkStatus());
+
+      expect(result.current.isLoading).toBe(true);
+    });
+
+    it('should use cached current status before the initial realtime snapshot arrives', () => {
+      const cachedWorkLog = createMockWorkLog({ id: 'wl-cached', status: 'checked_in' });
+      mockGetCriticalOfflineCache.mockReturnValue({
+        data: { workLog: cachedWorkLog, isWorking: true },
+      });
+      mockSubscribeToTodayWorkStatus.mockReturnValue(jest.fn());
+
+      const { result } = renderHook(() => useCurrentWorkStatus());
+
+      expect(result.current.currentWorkLog).toEqual(cachedWorkLog);
+      expect(result.current.isWorking).toBe(true);
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    it('should keep the latest known status when transitioning offline', async () => {
+      const mockWorkLog = createMockWorkLog({ id: 'wl-online', status: 'checked_in' });
+      mockCurrentWorkStatusSnapshot = mockWorkLog;
+      mockGetCriticalOfflineCache
+        .mockReturnValueOnce(null)
+        .mockReturnValue({ data: { workLog: mockWorkLog, isWorking: true } });
+
+      const { result, rerender } = renderHook(
+        ({ enabled }: { enabled: boolean }) => useCurrentWorkStatus(enabled),
+        {
+          initialProps: { enabled: true },
+        }
+      );
+
+      await waitFor(() => {
+        expect(result.current.currentWorkLog).toEqual(mockWorkLog);
+        expect(result.current.isWorking).toBe(true);
+      });
+
+      act(() => {
+        mockIsOnline = false;
+        rerender({ enabled: true });
+      });
+
+      await waitFor(() => {
+        expect(result.current.currentWorkLog).toEqual(mockWorkLog);
+        expect(result.current.isWorking).toBe(true);
+      });
+    });
+
+    it('should update state from manual refetch when online', async () => {
+      const mockWorkLog = createMockWorkLog({ id: 'wl-refetch', status: 'checked_in' });
+      mockRefetch.mockResolvedValueOnce({
+        data: { workLog: mockWorkLog, isWorking: true },
+      });
+
+      const { result } = renderHook(() => useCurrentWorkStatus());
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+
+      expect(mockRefetch).toHaveBeenCalled();
       expect(result.current.currentWorkLog).toEqual(mockWorkLog);
-      expect(result.current.isWorking).toBe(false);
+      expect(result.current.isWorking).toBe(true);
+      expect(mockSetCriticalOfflineCache).toHaveBeenCalledWith(
+        'workLogs:staff-1:current-status',
+        { workLog: mockWorkLog, isWorking: true },
+        expect.objectContaining({
+          userId: 'staff-1',
+          schemaVersion: 2,
+        })
+      );
+    });
+
+    it('should no-op refetch when offline', async () => {
+      mockIsOnline = false;
+
+      const { result } = renderHook(() => useCurrentWorkStatus());
+
+      await act(async () => {
+        await result.current.refetch();
+      });
+
+      expect(mockRefetch).not.toHaveBeenCalled();
     });
 
     it('should disable query when enabled is false', () => {
@@ -463,6 +620,7 @@ describe('useWorkLogs Hooks', () => {
       renderHook(() => useCurrentWorkStatus());
 
       expect(mockEnabled).toBe(false);
+      expect(mockSubscribeToTodayWorkStatus).not.toHaveBeenCalled();
 
       Object.assign(mockAuthState, originalState);
     });

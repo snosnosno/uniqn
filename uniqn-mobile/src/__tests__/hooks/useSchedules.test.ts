@@ -155,6 +155,13 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
+const mockedLogger = jest.requireMock('@/utils/logger').logger as {
+  info: jest.Mock;
+  error: jest.Mock;
+  warn: jest.Mock;
+  debug: jest.Mock;
+};
+
 function createMockSchedule(overrides: Partial<ScheduleEvent> = {}): ScheduleEvent {
   return {
     id: 'schedule-1',
@@ -558,6 +565,81 @@ describe('useSchedules hooks', () => {
       await waitFor(() => {
         expect(result.current.schedules).toEqual(refreshedSchedules);
       });
+    });
+
+    it('logs filtered realtime snapshot counts for the visible month', async () => {
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
+
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return jest.fn();
+        }
+      );
+
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2, realtime: true }));
+
+      act(() => {
+        onData?.([
+          createMockSchedule({ id: 'feb-1', date: '2024-02-10' }),
+          createMockSchedule({ id: 'mar-1', date: '2024-03-01' }),
+        ]);
+      });
+
+      await waitFor(() => {
+        expect(mockedLogger.info).toHaveBeenCalledWith('schedule_month_realtime_snapshot_count', {
+          listener: 'schedules_by_month',
+          year: 2024,
+          month: 2,
+          count: 1,
+          limit: 50,
+        });
+      });
+
+      expect(mockedLogger.warn).not.toHaveBeenCalledWith(
+        'schedule_month_realtime_limit_reached',
+        expect.anything()
+      );
+    });
+
+    it('warns once when the filtered realtime month data reaches the limit', async () => {
+      let onData: ((schedules: ScheduleEvent[]) => void) | undefined;
+      const limitReachedSchedules = Array.from({ length: 50 }, (_, index) =>
+        createMockSchedule({
+          id: `schedule-${index + 1}`,
+          date: `2024-02-${String((index % 28) + 1).padStart(2, '0')}`,
+        })
+      );
+
+      mockSubscribeToSchedules.mockImplementation(
+        (_staffId: string, next: (schedules: ScheduleEvent[]) => void) => {
+          onData = next;
+          return jest.fn();
+        }
+      );
+
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2, realtime: true }));
+
+      act(() => {
+        onData?.(limitReachedSchedules);
+        onData?.(limitReachedSchedules);
+      });
+
+      await waitFor(() => {
+        expect(mockedLogger.warn).toHaveBeenCalledWith('schedule_month_realtime_limit_reached', {
+          listener: 'schedules_by_month',
+          year: 2024,
+          month: 2,
+          count: 50,
+          limit: 50,
+        });
+      });
+
+      expect(
+        mockedLogger.warn.mock.calls.filter(
+          ([message]: [string]) => message === 'schedule_month_realtime_limit_reached'
+        )
+      ).toHaveLength(1);
     });
   });
 

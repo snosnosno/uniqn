@@ -19,7 +19,7 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { parseWorkLogDocument } from '@/schemas';
 import type { WorkLog } from '@/types';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import { DEFAULT_PAGE_SIZE } from './constants';
 
 // ============================================================================
@@ -92,10 +92,26 @@ export function subscribeByStaffId(
     orderBy(FIELDS.WORK_LOG.date, 'desc'),
     limit(DEFAULT_PAGE_SIZE)
   );
+  let hasLoggedLimitWarning = false;
 
   return onSnapshot(
     q,
     (snapshot) => {
+      logger.info('worklog_realtime_snapshot_count', {
+        listener: 'workLogs_by_staff',
+        count: snapshot.size,
+        limit: DEFAULT_PAGE_SIZE,
+      });
+
+      if (snapshot.size >= DEFAULT_PAGE_SIZE && !hasLoggedLimitWarning) {
+        hasLoggedLimitWarning = true;
+        logger.warn('worklog_realtime_limit_reached', {
+          listener: 'workLogs_by_staff',
+          count: snapshot.size,
+          limit: DEFAULT_PAGE_SIZE,
+        });
+      }
+
       const items: WorkLog[] = [];
 
       for (const docSnapshot of snapshot.docs) {
@@ -223,8 +239,7 @@ export function subscribeTodayActive(
     workLogsRef,
     where(FIELDS.WORK_LOG.staffId, '==', staffId),
     where(FIELDS.WORK_LOG.date, '==', date),
-    where(FIELDS.WORK_LOG.status, 'in', statuses),
-    limit(1)
+    where(FIELDS.WORK_LOG.status, 'in', statuses)
   );
 
   return onSnapshot(
@@ -235,9 +250,13 @@ export function subscribeTodayActive(
         return;
       }
 
-      const docSnap = snapshot.docs[0];
-      const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
-      onData(workLog);
+      const workLogs = snapshot.docs
+        .map((docSnap) => parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() }))
+        .filter((workLog): workLog is WorkLog => workLog !== null);
+      const checkedInWorkLog =
+        workLogs.find((workLog) => workLog.status === STATUS.WORK_LOG.CHECKED_IN) ?? null;
+
+      onData(checkedInWorkLog ?? workLogs[0] ?? null);
     },
     (error) => {
       logger.error('오늘 활성 근무 기록 구독 에러', toError(error), { staffId, date });

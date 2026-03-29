@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,7 +14,9 @@ import {
   getTodayCheckedInWorkLog,
   getWorkLogStats,
   getMonthlyPayroll,
+  subscribeToTodayWorkStatus,
 } from '@/services/work/workLogService';
+import { STATUS } from '@/constants';
 import type { WorkLog } from '@/types';
 
 interface UseWorkLogsOptions {
@@ -22,10 +24,29 @@ interface UseWorkLogsOptions {
   enabled?: boolean;
 }
 
+interface CurrentWorkStatusValue {
+  workLog: WorkLog | null;
+  isWorking: boolean;
+}
+
 const WORK_LOG_CACHE_SCHEMA_VERSION = 2;
+const AUTH_REQUIRED_MESSAGE = '\uB85C\uADF8\uC778\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.';
+const DEFAULT_CURRENT_WORK_STATUS: CurrentWorkStatusValue = {
+  workLog: null,
+  isWorking: false,
+};
 
 function buildWorkLogCacheKey(userId: string | undefined, scope: string, suffix?: string): string {
   return ['workLogs', userId ?? 'anonymous', scope, suffix].filter(Boolean).join(':');
+}
+
+function normalizeCurrentWorkStatus(workLog: WorkLog | null): CurrentWorkStatusValue {
+  const isWorking = workLog?.status === STATUS.WORK_LOG.CHECKED_IN;
+
+  return {
+    workLog: isWorking ? workLog : null,
+    isWorking,
+  };
 }
 
 export function useWorkLogs(options: UseWorkLogsOptions = {}) {
@@ -40,7 +61,7 @@ export function useWorkLogs(options: UseWorkLogsOptions = {}) {
   const query = useQuery({
     queryKey: mineQueryKey,
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
       return getMyWorkLogs(staffId, limit);
     },
     enabled: enabled && !!staffId && isOnline,
@@ -104,7 +125,7 @@ export function useWorkLogsByDate(date: string, enabled = true) {
   const query = useQuery({
     queryKey: byDateQueryKey,
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
       return getWorkLogsByDate(staffId, date);
     },
     enabled: enabled && !!staffId && !!date && isOnline,
@@ -174,54 +195,130 @@ export function useCurrentWorkStatus(enabled = true) {
     'current',
     staffId ?? 'anonymous',
   ] as const;
+  const [subscriptionValue, setSubscriptionValue] = useState<CurrentWorkStatusValue | null>(null);
+  const [subscriptionError, setSubscriptionError] = useState<Error | null>(null);
+  const [hasReceivedInitialSnapshot, setHasReceivedInitialSnapshot] = useState(false);
+  const persistCurrentStatus = useCallback(
+    (value: CurrentWorkStatusValue) => {
+      if (!staffId) {
+        return;
+      }
+
+      setCriticalOfflineCache(cacheKey, value, {
+        userId: staffId,
+        schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
+      });
+    },
+    [cacheKey, staffId]
+  );
 
   const query = useQuery({
     queryKey: currentStatusQueryKey,
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
       const workLog = await getTodayCheckedInWorkLog(staffId);
-      return { workLog, isWorking: workLog !== null };
+      return normalizeCurrentWorkStatus(workLog);
     },
-    enabled: enabled && !!staffId && isOnline,
+    enabled: false,
     staleTime: cachingPolicies.realtime,
-    refetchInterval: isOnline ? 30 * 1000 : false,
   });
 
   useEffect(() => {
-    if (!staffId || !query.data) {
+    if (!enabled || !staffId || !isOnline) {
+      setSubscriptionValue(null);
+      setSubscriptionError(null);
+      setHasReceivedInitialSnapshot(false);
       return;
     }
 
-    setCriticalOfflineCache(cacheKey, query.data, {
+    setSubscriptionValue(null);
+    setSubscriptionError(null);
+    setHasReceivedInitialSnapshot(false);
+
+    const unsubscribe = subscribeToTodayWorkStatus(staffId, {
+      onUpdate: (workLog) => {
+        const nextValue = normalizeCurrentWorkStatus(workLog);
+        persistCurrentStatus(nextValue);
+        setSubscriptionValue(nextValue);
+        setSubscriptionError(null);
+        setHasReceivedInitialSnapshot(true);
+      },
+      onError: (error) => {
+        setSubscriptionError(error);
+        setHasReceivedInitialSnapshot(true);
+      },
+    });
+
+    return () => unsubscribe();
+  }, [enabled, isOnline, persistCurrentStatus, staffId]);
+
+  const currentStatusForCache = subscriptionValue ?? query.data;
+
+  useEffect(() => {
+    if (!staffId || !currentStatusForCache) {
+      return;
+    }
+
+    setCriticalOfflineCache(cacheKey, currentStatusForCache, {
       userId: staffId,
       schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
     });
-  }, [cacheKey, query.data, staffId]);
+  }, [cacheKey, currentStatusForCache, staffId]);
 
-  const cachedCurrentStatus = useMemo(
+  const cachedCurrentStatusEntry = useMemo(
     () =>
       staffId
-        ? (getCriticalOfflineCache<{ workLog: WorkLog | null; isWorking: boolean }>(cacheKey, {
+        ? getCriticalOfflineCache<CurrentWorkStatusValue>(cacheKey, {
             ttlMs: cachingPolicies.realtime,
             userId: staffId,
             schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
-          })?.data ?? { workLog: null, isWorking: false })
-        : { workLog: null, isWorking: false },
-    [cacheKey, staffId]
+          })
+        : null,
+    [cacheKey, enabled, isOnline, staffId]
   );
+  const cachedCurrentStatus = cachedCurrentStatusEntry?.data ?? DEFAULT_CURRENT_WORK_STATUS;
+  const hasCachedCurrentStatus = cachedCurrentStatusEntry !== null;
 
   const shouldUseCachedCurrentStatus =
-    enabled && !!staffId && !isOnline && query.data === undefined;
+    enabled &&
+    !!staffId &&
+    subscriptionValue === null &&
+    query.data === undefined &&
+    hasCachedCurrentStatus;
   const currentStatus =
+    subscriptionValue ??
     query.data ??
-    (shouldUseCachedCurrentStatus ? cachedCurrentStatus : { workLog: null, isWorking: false });
+    (shouldUseCachedCurrentStatus ? cachedCurrentStatus : DEFAULT_CURRENT_WORK_STATUS);
+
+  const refetch = useCallback(async () => {
+    if (!enabled || !staffId || !isOnline) {
+      return Promise.resolve();
+    }
+
+    const result = await query.refetch();
+
+    if (result.data !== undefined) {
+      persistCurrentStatus(result.data);
+      setSubscriptionValue(result.data);
+      setSubscriptionError(null);
+      setHasReceivedInitialSnapshot(true);
+    }
+
+    return result;
+  }, [enabled, isOnline, persistCurrentStatus, query, staffId]);
 
   return {
     currentWorkLog: currentStatus.workLog ?? null,
     isWorking: currentStatus.isWorking ?? false,
-    isLoading: !currentStatus.workLog ? query.isLoading : false,
-    error: isOnline ? query.error : null,
-    refetch: () => (isOnline ? query.refetch() : Promise.resolve()),
+    isLoading:
+      enabled &&
+      !!staffId &&
+      isOnline &&
+      !hasReceivedInitialSnapshot &&
+      !shouldUseCachedCurrentStatus,
+    isRefreshing: isOnline ? query.isRefetching : false,
+    error: isOnline ? (subscriptionError ?? query.error) : null,
+    refetch,
   };
 }
 
@@ -234,7 +331,7 @@ export function useWorkLogStats(enabled = true) {
   const query = useQuery({
     queryKey: statsQueryKey,
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
       return getWorkLogStats(staffId);
     },
     enabled: enabled && !!staffId && isOnline,
@@ -264,7 +361,7 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
   const query = useQuery({
     queryKey: payrollQueryKey,
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new Error(AUTH_REQUIRED_MESSAGE);
       return getMonthlyPayroll(staffId, year, month);
     },
     enabled: enabled && !!staffId && isOnline,

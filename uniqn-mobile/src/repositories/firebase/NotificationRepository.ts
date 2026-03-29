@@ -52,8 +52,9 @@ import type { NotificationData, NotificationSettings } from '@/types/notificatio
 // ============================================================================
 
 const PAGE_SIZE = 20;
-const BATCH_LIMIT = 500; // Firestore writeBatch 최대 작업 수
-const MAX_FCM_TOKENS = 10; // 디바이스당 토큰 최대 개수
+const NOTIFICATION_REALTIME_LIMIT = 50;
+const BATCH_LIMIT = 500; // Firestore writeBatch max operations
+const MAX_FCM_TOKENS = 10; // Maximum tokens stored per device
 
 // ============================================================================
 // Helpers
@@ -548,16 +549,33 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         notificationsRef,
         where(FIELDS.NOTIFICATION.recipientId, '==', userId),
         orderBy(FIELDS.NOTIFICATION.createdAt, 'desc'),
-        limit(50)
+        limit(NOTIFICATION_REALTIME_LIMIT)
       );
 
       let hasErrored = false;
+      let hasLoggedLimitWarning = false;
       let firebaseUnsubscribe: (() => void) | null = null;
 
       firebaseUnsubscribe = onSnapshot(
         q,
         (snapshot) => {
           if (hasErrored) return;
+
+          logger.info('notification_realtime_snapshot_count', {
+            listener: 'notifications',
+            count: snapshot.size,
+            limit: NOTIFICATION_REALTIME_LIMIT,
+          });
+
+          if (snapshot.size >= NOTIFICATION_REALTIME_LIMIT && !hasLoggedLimitWarning) {
+            hasLoggedLimitWarning = true;
+            logger.warn('notification_realtime_limit_reached', {
+              listener: 'notifications',
+              count: snapshot.size,
+              limit: NOTIFICATION_REALTIME_LIMIT,
+            });
+          }
+
           const notifications = snapshot.docs.map(docToNotification);
           onNotifications(notifications);
         },

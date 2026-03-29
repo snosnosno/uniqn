@@ -4,8 +4,15 @@
  * @description Firebase Application Repository 단위 테스트
  */
 
-import { getDoc, getDocs, runTransaction, query } from 'firebase/firestore';
+import { getDoc, getDocs, onSnapshot, query, runTransaction } from 'firebase/firestore';
 import { FirebaseApplicationRepository } from '../application';
+
+const mockedLogger = jest.requireMock('@/utils/logger').logger as {
+  info: jest.Mock;
+  warn: jest.Mock;
+  error: jest.Mock;
+  debug: jest.Mock;
+};
 
 // ============================================================================
 // Mocks
@@ -530,6 +537,66 @@ describe('FirebaseApplicationRepository', () => {
       const result = await repository.getByApplicantIdWithStatuses('staff-1', ['rejected']);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('subscribeByApplicantIdWithStatuses', () => {
+    it('should log snapshot counts and warn once when the realtime limit is reached', () => {
+      const onData = jest.fn();
+      const onError = jest.fn();
+
+      (onSnapshot as jest.Mock).mockImplementation((_query, callback) => {
+        callback({
+          size: 50,
+          docs: [
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              status: 'applied',
+            }),
+          ],
+        });
+        callback({
+          size: 50,
+          docs: [
+            createMockDocSnap('app-1', {
+              id: 'app-1',
+              applicantId: 'staff-1',
+              status: 'applied',
+            }),
+          ],
+        });
+        return jest.fn();
+      });
+
+      repository.subscribeByApplicantIdWithStatuses(
+        'staff-1',
+        ['applied', 'confirmed'],
+        onData,
+        onError
+      );
+
+      expect(mockedLogger.info).toHaveBeenCalledWith('application_realtime_snapshot_count', {
+        listener: 'applications_by_applicant_status',
+        count: 50,
+        limit: 50,
+      });
+      expect(mockedLogger.warn).toHaveBeenCalledWith('application_realtime_limit_reached', {
+        listener: 'applications_by_applicant_status',
+        count: 50,
+        limit: 50,
+      });
+      expect(
+        mockedLogger.warn.mock.calls.filter(
+          ([message]: [string]) => message === 'application_realtime_limit_reached'
+        )
+      ).toHaveLength(1);
+      expect(onData).toHaveBeenCalledWith([
+        expect.objectContaining({
+          id: 'app-1',
+          status: 'applied',
+        }),
+      ]);
     });
   });
 

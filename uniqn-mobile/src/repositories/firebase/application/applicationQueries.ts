@@ -238,10 +238,26 @@ export function subscribeByApplicantIdWithStatuses(
     orderBy(FIELDS.APPLICATION.createdAt, 'desc'),
     limit(pageSize)
   );
+  let hasLoggedLimitWarning = false;
 
   return onSnapshot(
     q,
     (snapshot) => {
+      logger.info('application_realtime_snapshot_count', {
+        listener: 'applications_by_applicant_status',
+        count: snapshot.size,
+        limit: pageSize,
+      });
+
+      if (snapshot.size >= pageSize && !hasLoggedLimitWarning) {
+        hasLoggedLimitWarning = true;
+        logger.warn('application_realtime_limit_reached', {
+          listener: 'applications_by_applicant_status',
+          count: snapshot.size,
+          limit: pageSize,
+        });
+      }
+
       const applications: Application[] = [];
 
       for (const docSnapshot of snapshot.docs) {

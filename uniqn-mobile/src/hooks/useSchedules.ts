@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useAuthStore } from '@/stores/authStore';
@@ -61,6 +61,7 @@ interface NormalizedScheduleQueryPayload extends ScheduleQueryPayload {
 }
 
 const SCHEDULE_CACHE_SCHEMA_VERSION = 3;
+const MONTH_REALTIME_OBSERVATION_LIMIT = 50;
 const EMPTY_SCHEDULE_QUERY_PAYLOAD: NormalizedScheduleQueryPayload = {
   schedules: [],
   groupedSchedules: [],
@@ -220,6 +221,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const [lastRealtimeSnapshotAt, setLastRealtimeSnapshotAt] = useState(0);
   const [isRealtimeLoading, setIsRealtimeLoading] = useState(false);
   const [realtimeError, setRealtimeError] = useState<Error | null>(null);
+  const hasLoggedRealtimeLimitWarningRef = useRef(false);
 
   const query = useQuery({
     queryKey: monthQueryKey,
@@ -273,6 +275,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     setLastRealtimeSnapshotAt(0);
     setIsRealtimeLoading(true);
     setRealtimeError(null);
+    hasLoggedRealtimeLimitWarningRef.current = false;
 
     const unsubscribe = subscribeToSchedules(
       staffId,
@@ -280,6 +283,30 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
         const filteredSchedules = schedules.filter((schedule) =>
           schedule.date.startsWith(monthPrefix)
         );
+        const filteredCount = filteredSchedules.length;
+
+        logger.info('schedule_month_realtime_snapshot_count', {
+          listener: 'schedules_by_month',
+          year,
+          month,
+          count: filteredCount,
+          limit: MONTH_REALTIME_OBSERVATION_LIMIT,
+        });
+
+        if (
+          filteredCount >= MONTH_REALTIME_OBSERVATION_LIMIT &&
+          !hasLoggedRealtimeLimitWarningRef.current
+        ) {
+          hasLoggedRealtimeLimitWarningRef.current = true;
+          logger.warn('schedule_month_realtime_limit_reached', {
+            listener: 'schedules_by_month',
+            year,
+            month,
+            count: filteredCount,
+            limit: MONTH_REALTIME_OBSERVATION_LIMIT,
+          });
+        }
+
         setRealtimeSchedules(filteredSchedules);
         setHasReceivedRealtimeSnapshot(true);
         setLastRealtimeSnapshotAt(Date.now());
