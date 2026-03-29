@@ -130,6 +130,9 @@ export function useApplications() {
       void queryClient.invalidateQueries({
         queryKey: getJobDetailQueryKey(data.jobPostingId, user?.uid),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.schedules.all,
+      });
     },
     onError: createMutationErrorHandler('지원', addToast),
   });
@@ -174,6 +177,9 @@ export function useApplications() {
           queryKey: getJobDetailQueryKey(targetApplication.jobPostingId, user?.uid),
         });
       }
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.schedules.all,
+      });
       addToast({ type: 'success', message: '지원이 취소되었습니다.' });
     },
     onError: createMutationErrorHandler('지원 취소', addToast, {
@@ -230,6 +236,9 @@ export function useApplications() {
     },
     onSuccess: (_, { applicationId }) => {
       logger.info('Cancellation request submitted', { applicationId });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.schedules.all,
+      });
       const targetApplication = effectiveApplications.find(
         (application) => application.id === applicationId
       );

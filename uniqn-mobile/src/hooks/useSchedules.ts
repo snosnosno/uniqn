@@ -216,6 +216,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     staffId
   );
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
+  const [hasReceivedRealtimeSnapshot, setHasReceivedRealtimeSnapshot] = useState(false);
   const [isRealtimeLoading, setIsRealtimeLoading] = useState(false);
   const [realtimeError, setRealtimeError] = useState<Error | null>(null);
 
@@ -225,7 +226,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
       if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByMonth(staffId, year, month);
     },
-    enabled: enabled && !!staffId && isOnline && !realtime,
+    enabled: enabled && !!staffId && isOnline,
     staleTime: queryCachingOptions.schedules.staleTime,
     gcTime: queryCachingOptions.schedules.gcTime,
   });
@@ -257,6 +258,8 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
 
   useEffect(() => {
     if (!realtime || !enabled || !staffId || !isOnline) {
+      setRealtimeSchedules([]);
+      setHasReceivedRealtimeSnapshot(false);
       setIsRealtimeLoading(false);
       setRealtimeError(null);
       return;
@@ -264,6 +267,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
 
     const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
     setRealtimeSchedules([]);
+    setHasReceivedRealtimeSnapshot(false);
     setIsRealtimeLoading(true);
     setRealtimeError(null);
 
@@ -274,6 +278,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
           schedule.date.startsWith(monthPrefix)
         );
         setRealtimeSchedules(filteredSchedules);
+        setHasReceivedRealtimeSnapshot(true);
         setIsRealtimeLoading(false);
         queryClient.setQueryData(monthQueryKey, {
           schedules: filteredSchedules,
@@ -296,17 +301,21 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     return () => unsubscribe();
   }, [enabled, isOnline, month, monthQueryKey, queryClient, realtime, staffId, year]);
 
-  const shouldUseCachedPayload =
-    enabled && !!staffId && !realtime && !isOnline && query.data === undefined;
+  const shouldUseCachedPayload = enabled && !!staffId && !isOnline && query.data === undefined;
   const queryPayload =
     normalizedQueryPayload ??
     (shouldUseCachedPayload ? cachedPayload : EMPTY_SCHEDULE_QUERY_PAYLOAD);
-  const effectivePayload = realtime ? realtimePayload : queryPayload;
+  const effectivePayload = realtime && hasReceivedRealtimeSnapshot ? realtimePayload : queryPayload;
   const schedules = effectivePayload.schedules;
   const stats = effectivePayload.stats;
   const groupedSchedules = effectivePayload.groupedSchedules;
   const markedDates = effectivePayload.markedDates;
-  const warning = realtime ? undefined : effectivePayload.warning;
+  const warning = realtime && hasReceivedRealtimeSnapshot ? undefined : effectivePayload.warning;
+  const hasBootstrapData =
+    schedules.length > 0 ||
+    stats !== undefined ||
+    warning !== undefined ||
+    Object.keys(markedDates).length > 0;
 
   const refresh = useCallback(async () => {
     if (!isOnline) {
@@ -324,9 +333,23 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     markedDates,
     stats,
     warning,
-    isLoading: realtime ? isRealtimeLoading : schedules.length === 0 ? query.isLoading : false,
-    isRefreshing: realtime ? isRealtimeLoading : isOnline ? query.isRefetching : false,
-    error: isOnline ? (realtime ? realtimeError : query.error) : null,
+    isLoading: realtime
+      ? !hasReceivedRealtimeSnapshot && !hasBootstrapData && (query.isLoading || isRealtimeLoading)
+      : schedules.length === 0
+        ? query.isLoading
+        : false,
+    isRefreshing: realtime
+      ? isRealtimeLoading || query.isRefetching
+      : isOnline
+        ? query.isRefetching
+        : false,
+    error: isOnline
+      ? realtime
+        ? hasBootstrapData
+          ? null
+          : (realtimeError ?? query.error)
+        : query.error
+      : null,
     refresh,
   };
 }

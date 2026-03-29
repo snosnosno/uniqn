@@ -20,6 +20,7 @@ const mockGetTodaySchedules = jest.fn();
 const mockGetUpcomingSchedules = jest.fn();
 const mockGetScheduleStats = jest.fn();
 const mockSubscribeToSchedules = jest.fn();
+const mockCalculateScheduleStats = jest.fn();
 const mockGroupSchedulesByDate = jest.fn();
 const mockGetCalendarMarkedDates = jest.fn();
 
@@ -32,6 +33,7 @@ jest.mock('@/services/work/scheduleService', () => ({
   getUpcomingSchedules: (...args: unknown[]) => mockGetUpcomingSchedules(...args),
   getScheduleStats: (...args: unknown[]) => mockGetScheduleStats(...args),
   subscribeToSchedules: (...args: unknown[]) => mockSubscribeToSchedules(...args),
+  calculateScheduleStats: (...args: unknown[]) => mockCalculateScheduleStats(...args),
   groupSchedulesByDate: (...args: unknown[]) => mockGroupSchedulesByDate(...args),
   getCalendarMarkedDates: (...args: unknown[]) => mockGetCalendarMarkedDates(...args),
 }));
@@ -98,8 +100,13 @@ jest.mock('@/errors/AppError', () => ({
 }));
 
 const mockInvalidateQueries = jest.fn();
+const mockSetQueryData = jest.fn();
 const mockRefetch = jest.fn();
 const mockUseQuery = jest.fn();
+const mockQueryClient = {
+  invalidateQueries: mockInvalidateQueries,
+  setQueryData: mockSetQueryData,
+};
 
 let mockQueryData: unknown = undefined;
 let mockQueryError: Error | null = null;
@@ -113,9 +120,7 @@ jest.mock('@tanstack/react-query', () => ({
       enabled?: boolean;
     } & Record<string, unknown>
   ) => mockUseQuery(options),
-  useQueryClient: () => ({
-    invalidateQueries: mockInvalidateQueries,
-  }),
+  useQueryClient: () => mockQueryClient,
 }));
 
 jest.mock('@/lib/queryClient', () => ({
@@ -190,6 +195,8 @@ describe('useSchedules hooks', () => {
     mockIsLoading = false;
     mockIsRefetching = false;
     mockInvalidateQueries.mockResolvedValue(undefined);
+    mockSetQueryData.mockReset();
+    mockCalculateScheduleStats.mockImplementation(() => createMockStats());
     mockRefetch.mockResolvedValue(undefined);
 
     mockUseQuery.mockImplementation(
@@ -473,6 +480,38 @@ describe('useSchedules hooks', () => {
 
       expect(mockGetSchedulesByMonth).not.toHaveBeenCalled();
       expect(result.current.schedules).toEqual([]);
+    });
+
+    it('uses query data as a bootstrap payload before the realtime month subscription responds', async () => {
+      const schedules = [createMockSchedule({ id: 'query-schedule-1' })];
+      const stats = createMockStats();
+      const unsubscribe = jest.fn();
+
+      mockQueryData = { schedules, stats };
+      mockSubscribeToSchedules.mockReturnValue(unsubscribe);
+
+      const { result, unmount } = renderHook(() =>
+        useSchedulesByMonth({ year: 2024, month: 2, realtime: true })
+      );
+
+      await waitFor(() => {
+        expect(mockGetSchedulesByMonth).toHaveBeenCalledWith('staff-1', 2024, 2);
+      });
+
+      await waitFor(() => {
+        expect(mockSubscribeToSchedules).toHaveBeenCalledWith(
+          'staff-1',
+          expect.any(Function),
+          expect.any(Function)
+        );
+      });
+
+      expect(result.current.schedules).toEqual(schedules);
+      expect(result.current.stats).toEqual(stats);
+      expect(result.current.isLoading).toBe(false);
+
+      unmount();
+      expect(unsubscribe).toHaveBeenCalled();
     });
   });
 
