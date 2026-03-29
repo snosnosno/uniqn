@@ -644,24 +644,52 @@ function isWebRootUrl(url: string): boolean {
   }
 }
 
-export function waitForNavigationReady(callback: () => void, retryCount = 0): void {
-  if (retryCount >= COLD_START_MAX_RETRIES) {
-    logger.warn('콜드 스타트 네비게이션: 최대 대기 초과, 강제 실행', {
-      retries: retryCount,
-      totalWaitMs: retryCount * COLD_START_RETRY_INTERVAL_MS,
-    });
-    callback();
-    return;
-  }
+export function waitForNavigationReady(callback: () => void, retryCount = 0): () => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let cancelled = false;
 
-  try {
-    router.canGoBack();
-    setTimeout(callback, COLD_START_RETRY_INTERVAL_MS);
-  } catch {
-    setTimeout(() => {
-      waitForNavigationReady(callback, retryCount + 1);
-    }, COLD_START_RETRY_INTERVAL_MS);
-  }
+  const cancel = () => {
+    cancelled = true;
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  const scheduleNavigationCheck = (attempt: number) => {
+    if (cancelled) {
+      return;
+    }
+
+    if (attempt >= COLD_START_MAX_RETRIES) {
+      logger.warn('콜드 스타트 네비게이션: 최대 대기 초과, 강제 실행', {
+        retries: attempt,
+        totalWaitMs: attempt * COLD_START_RETRY_INTERVAL_MS,
+      });
+      callback();
+      return;
+    }
+
+    try {
+      router.canGoBack();
+      timeoutId = setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+
+        callback();
+      }, COLD_START_RETRY_INTERVAL_MS);
+    } catch {
+      timeoutId = setTimeout(() => {
+        scheduleNavigationCheck(attempt + 1);
+      }, COLD_START_RETRY_INTERVAL_MS);
+    }
+  };
+
+  scheduleNavigationCheck(retryCount);
+
+  return cancel;
 }
 
 export function waitForNavigationReadyAsync(): Promise<void> {
@@ -671,7 +699,14 @@ export function waitForNavigationReadyAsync(): Promise<void> {
 }
 
 export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () => void {
+  let isDisposed = false;
+  let cancelInitialNavigationWait: (() => void) | null = null;
+
   const dispatchDeepLink = (url: string) => {
+    if (isDisposed) {
+      return;
+    }
+
     if (onDeepLink) {
       onDeepLink(url);
       return;
@@ -687,16 +722,27 @@ export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () =>
     dispatchDeepLink(url);
   });
 
-  Linking.getInitialURL().then((url) => {
-    if (!url || isWebRootUrl(url)) return;
+  Linking.getInitialURL()
+    .then((url) => {
+      if (isDisposed || !url || isWebRootUrl(url)) return;
 
-    logger.info('초기 딥링크', { url });
-    waitForNavigationReady(() => {
-      dispatchDeepLink(url);
+      logger.info('초기 딥링크', { url });
+      cancelInitialNavigationWait = waitForNavigationReady(() => {
+        dispatchDeepLink(url);
+      });
+    })
+    .catch((error) => {
+      if (isDisposed) {
+        return;
+      }
+
+      logger.error('초기 딥링크 가져오기 실패', toError(error));
     });
-  });
 
   return () => {
+    isDisposed = true;
+    cancelInitialNavigationWait?.();
+    cancelInitialNavigationWait = null;
     subscription.remove();
   };
 }

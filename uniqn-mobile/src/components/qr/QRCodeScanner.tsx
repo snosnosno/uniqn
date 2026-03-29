@@ -6,7 +6,14 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions, Modal as RNModal } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Modal as RNModal,
+  useWindowDimensions,
+} from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
@@ -37,9 +44,6 @@ interface QRCodeScannerProps {
 // Constants
 // ============================================================================
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -53,9 +57,11 @@ export function QRCodeScanner({
   scanError,
   onClearError,
 }: QRCodeScannerProps) {
+  const { width: windowWidth } = useWindowDimensions();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [flashEnabled, setFlashEnabled] = useState(false);
+  const scanAreaSize = Math.min(Math.max(windowWidth * 0.7, 220), 320);
 
   // 권한 요청
   useEffect(() => {
@@ -179,8 +185,8 @@ export function QRCodeScanner({
             {/* 스캔 영역 가이드 */}
             <View
               style={{
-                width: SCAN_AREA_SIZE,
-                height: SCAN_AREA_SIZE,
+                width: scanAreaSize,
+                height: scanAreaSize,
                 borderWidth: 2,
                 borderColor: scanned ? '#22C55E' : '#FFFFFF',
                 borderRadius: 16,

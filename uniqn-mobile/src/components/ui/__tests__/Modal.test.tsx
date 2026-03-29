@@ -2,8 +2,6 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { ConfirmModal } from '../Modal';
 
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
-
 jest.mock('@/stores/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false }),
 }));

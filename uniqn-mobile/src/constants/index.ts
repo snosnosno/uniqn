@@ -120,6 +120,10 @@ export const BREAKPOINTS = {
   XL: 1280,
 } as const;
 
+export const ANDROID_COMPLIANCE = {
+  LARGE_SCREEN_MIN_WIDTH_DP: 600,
+} as const;
+
 export const LAYOUT = {
   HEADER_HEIGHT: 56,
   TAB_BAR_HEIGHT: 56,

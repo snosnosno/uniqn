@@ -17,6 +17,7 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -347,36 +348,41 @@ function NativeModal({
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
           <Animated.View style={[modalAnimatedStyle, modalMaxHeightStyle, { flexShrink: 1 }]}>
-            <View className={modalClassName}>
-              {/* Header */}
-              {(title || showCloseButton) && (
-                <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                  <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {title || ''}
-                  </Text>
-                  {showCloseButton && (
-                    <Pressable
-                      onPress={onClose}
-                      className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
-                      accessibilityRole="button"
-                      accessibilityLabel="닫기"
-                      hitSlop={8}
-                    >
-                      <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
-                    </Pressable>
-                  )}
-                </View>
-              )}
+            <SafeAreaView
+              edges={position === 'center' ? ['top', 'bottom'] : ['bottom']}
+              style={{ flexShrink: 1 }}
+            >
+              <View className={modalClassName}>
+                {/* Header */}
+                {(title || showCloseButton) && (
+                  <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
+                    <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {title || ''}
+                    </Text>
+                    {showCloseButton && (
+                      <Pressable
+                        onPress={onClose}
+                        className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                        accessibilityRole="button"
+                        accessibilityLabel="닫기"
+                        hitSlop={8}
+                      >
+                        <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
+                      </Pressable>
+                    )}
+                  </View>
+                )}
 
-              {/* Content */}
-              <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
-              >
-                <View className="p-5">{children}</View>
-              </ScrollView>
-            </View>
+                {/* Content */}
+                <ScrollView
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="always"
+                >
+                  <View className="p-5">{children}</View>
+                </ScrollView>
+              </View>
+            </SafeAreaView>
           </Animated.View>
         </View>
       </KeyboardAvoidingView>

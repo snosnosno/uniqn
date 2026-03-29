@@ -22,8 +22,8 @@ jest.mock('@/stores', () => ({
 jest.mock('@/components/review/BubbleScoreBadge', () => ({
   __esModule: true,
   default: ({ score }: { score: number }) => {
-    const ReactLocal = require('react');
-    const { Text: MockText } = require('react-native');
+    const ReactLocal = jest.requireActual<typeof import('react')>('react');
+    const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
     return ReactLocal.createElement(MockText, null, `bubble:${score}`);
   },
 }));

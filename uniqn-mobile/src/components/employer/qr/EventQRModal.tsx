@@ -8,9 +8,9 @@ import {
   Text,
   Pressable,
   ActivityIndicator,
-  Dimensions,
   Animated,
   Easing,
+  useWindowDimensions,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,8 +45,6 @@ export interface EventQRModalProps {
 
 type QRMode = 'checkIn' | 'checkOut';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const QR_SIZE = Math.min(SCREEN_WIDTH * 0.55, 220);
 const TOTAL_SECONDS = 180;
 
 interface ModeToggleProps {
@@ -252,7 +250,9 @@ export function EventQRModal({
   assignmentGroupId,
   timeSlot,
 }: EventQRModalProps) {
+  const { width: windowWidth } = useWindowDimensions();
   const today = useMemo(() => new Date().toISOString().split('T')[0] ?? '', []);
+  const qrSize = Math.min(Math.max(windowWidth * 0.55, 180), 220);
   const { user } = useAuth();
   const createdBy = user?.uid || '';
   const {
@@ -430,7 +430,7 @@ export function EventQRModal({
 
   if (scopeBlockReason === 'loading') {
     qrPanelContent = (
-      <View style={{ width: QR_SIZE, height: QR_SIZE }} className="items-center justify-center">
+      <View style={{ width: qrSize, height: qrSize }} className="items-center justify-center">
         <ActivityIndicator size="large" color={modeColor} />
         <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading QR scope...</Text>
       </View>
@@ -438,7 +438,7 @@ export function EventQRModal({
   } else if (scopeBlockReason === 'error') {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#EF4444" />
@@ -453,7 +453,7 @@ export function EventQRModal({
   } else if (scopeBlockReason === 'unsupported') {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
@@ -465,7 +465,7 @@ export function EventQRModal({
   } else if (scopeBlockReason === 'empty') {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
@@ -477,7 +477,7 @@ export function EventQRModal({
   } else if (scopeBlockReason === 'missing') {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
@@ -489,7 +489,7 @@ export function EventQRModal({
   } else if (scopeBlockReason === 'selection') {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#6366F1" />
@@ -500,7 +500,7 @@ export function EventQRModal({
     );
   } else if (isLoading) {
     qrPanelContent = (
-      <View style={{ width: QR_SIZE, height: QR_SIZE }} className="items-center justify-center">
+      <View style={{ width: qrSize, height: qrSize }} className="items-center justify-center">
         <ActivityIndicator size="large" color={modeColor} />
         <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">Generating QR...</Text>
       </View>
@@ -508,7 +508,7 @@ export function EventQRModal({
   } else if (isExpired) {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#EF4444" />
@@ -530,12 +530,12 @@ export function EventQRModal({
     );
   } else if (hasQRData) {
     qrPanelContent = (
-      <QRCode value={qrValue || ''} size={QR_SIZE} backgroundColor="white" color="black" />
+      <QRCode value={qrValue || ''} size={qrSize} backgroundColor="white" color="black" />
     );
   } else {
     qrPanelContent = (
       <View
-        style={{ width: QR_SIZE, height: QR_SIZE }}
+        style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-xl bg-gray-50"
       >
         <ActivityIndicator size="large" color={modeColor} />

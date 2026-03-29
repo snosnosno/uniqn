@@ -52,6 +52,10 @@ const computeIsDarkMode = (mode: ThemeMode): boolean => {
   return mode === 'dark';
 };
 
+const normalizeNativeColorScheme = (colorScheme: ColorSchemeName): 'light' | 'dark' => {
+  return colorScheme === 'dark' ? 'dark' : 'light';
+};
+
 /**
  * NativeWind colorScheme 설정
  * dark: 클래스가 작동하도록 NativeWind의 colorScheme.set() 사용
@@ -142,7 +146,7 @@ Appearance.addChangeListener(({ colorScheme }: { colorScheme: ColorSchemeName })
   const state = useThemeStore.getState();
   if (state.mode === 'system') {
     // NativeWind colorScheme 즉시 반영
-    nativeWindColorScheme.set(colorScheme || 'light');
+    nativeWindColorScheme.set(normalizeNativeColorScheme(colorScheme));
     useThemeStore.setState({
       isDarkMode: colorScheme === 'dark',
     });

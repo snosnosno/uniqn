@@ -1,8 +1,8 @@
 import '../global.css';
 import { Suspense, lazy, useCallback, useEffect, useRef } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { LogBox, View } from 'react-native';
+import { setStatusBarStyle } from 'expo-status-bar';
+import { LogBox, Platform, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import {
 import { getLayoutColor } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
+import { useAndroidOrientationPolicy } from '@/hooks/useAndroidOrientationPolicy';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { queryClient } from '@/lib/queryClient';
 import { initializeRootSentry } from '@/services/observability/rootSentry';
@@ -88,11 +89,18 @@ function MainNavigator() {
     nativeWindColorScheme.set(effectiveMode);
   }, [isDark, mode]);
 
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    setStatusBarStyle(isDark ? 'light' : 'dark', false);
+  }, [isDark]);
+
   useAuthGuard();
 
   return (
     <View style={{ flex: 1 }} onTouchStart={handleTouchActivity}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
       {isAuthenticated ? (
         <Suspense fallback={null}>
           <AuthenticatedRuntime />
@@ -145,6 +153,8 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  useAndroidOrientationPolicy();
+
   useEffect(() => {
     const unsubscribe = initializeNetworkState();
     return () => {

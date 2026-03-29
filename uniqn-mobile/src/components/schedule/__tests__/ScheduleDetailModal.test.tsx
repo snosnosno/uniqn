@@ -5,8 +5,8 @@ import { createMockScheduleEvent } from '@/__tests__/mocks/factories';
 import type { ScheduleEvent } from '@/types';
 
 jest.mock('@/components/ui', () => {
-  const React = require('react');
-  const { Text, View } = require('react-native');
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
 
   return {
     Modal: ({ visible, children }: any) => (visible ? <View>{children}</View> : null),
@@ -16,8 +16,8 @@ jest.mock('@/components/ui', () => {
 });
 
 jest.mock('@/components/icons', () => {
-  const React = require('react');
-  const { View } = require('react-native');
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { View } = jest.requireActual<typeof import('react-native')>('react-native');
   const MockIcon = () => <View />;
 
   return {
@@ -34,18 +34,18 @@ jest.mock('@/components/icons', () => {
 
 jest.mock('../tabs', () => ({
   InfoTab: () => {
-    const React = require('react');
-    const { Text } = require('react-native');
+    const React = jest.requireActual<typeof import('react')>('react');
+    const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
     return <Text>info-tab</Text>;
   },
   WorkTab: () => {
-    const React = require('react');
-    const { Text } = require('react-native');
+    const React = jest.requireActual<typeof import('react')>('react');
+    const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
     return <Text>work-tab</Text>;
   },
   SettlementTab: () => {
-    const React = require('react');
-    const { Text } = require('react-native');
+    const React = jest.requireActual<typeof import('react')>('react');
+    const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
     return <Text>settlement-tab</Text>;
   },
 }));

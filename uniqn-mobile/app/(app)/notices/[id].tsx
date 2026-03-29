@@ -4,20 +4,21 @@
  * @description 공지사항 상세 내용을 표시하는 페이지
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   ActivityIndicator,
   Pressable,
-  Dimensions,
   Modal,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Badge } from '@/components/ui';
 import {
   AlertCircleOutlineIcon,
@@ -34,8 +35,6 @@ import { getAnnouncementImages } from '@/types/announcement';
 import { toDate } from '@/utils/date';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // 카테고리별 아이콘
 const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
@@ -66,9 +65,13 @@ const CATEGORY_BADGE_VARIANT: Record<
 
 export default function NoticeDetailPage() {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const imageViewerScrollRef = useRef<ScrollView>(null);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: notice, isLoading, error } = useAnnouncementDetail(id ?? '');
   const { mutate: incrementView } = useIncrementViewCount();
+  const imageViewerWidth = Math.max(windowWidth, 1);
 
   // 이미지 뷰어 상태
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
@@ -80,6 +83,17 @@ export default function NoticeDetailPage() {
       incrementView(id);
     }
   }, [id, incrementView]);
+
+  useEffect(() => {
+    if (!imageViewerVisible) {
+      return;
+    }
+
+    imageViewerScrollRef.current?.scrollTo({
+      x: selectedImageIndex * imageViewerWidth,
+      animated: false,
+    });
+  }, [imageViewerVisible, imageViewerWidth, selectedImageIndex]);
 
   if (isLoading) {
     return (
@@ -271,7 +285,10 @@ export default function NoticeDetailPage() {
           >
             <View className="flex-1 bg-black">
               {/* 헤더 */}
-              <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
+              <View
+                className="flex-row items-center justify-between px-4"
+                style={{ paddingTop: insets.top + 12, paddingBottom: 16 }}
+              >
                 <Pressable onPress={() => setImageViewerVisible(false)} className="p-2" hitSlop={8}>
                   <XMarkIcon size={28} color="white" />
                 </Pressable>
@@ -283,24 +300,24 @@ export default function NoticeDetailPage() {
 
               {/* 이미지 */}
               <ScrollView
+                ref={imageViewerScrollRef}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
-                  const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                  const index = Math.round(e.nativeEvent.contentOffset.x / imageViewerWidth);
                   setSelectedImageIndex(index);
                 }}
-                contentOffset={{ x: selectedImageIndex * SCREEN_WIDTH, y: 0 }}
               >
                 {images.map((image: AnnouncementImage) => (
                   <View
                     key={image.id}
-                    style={{ width: SCREEN_WIDTH }}
+                    style={{ width: imageViewerWidth }}
                     className="items-center justify-center"
                   >
                     <Image
                       source={{ uri: image.url }}
-                      style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.75 }}
+                      style={{ width: imageViewerWidth, height: imageViewerWidth * 0.75 }}
                       contentFit="contain"
                       transition={200}
                     />
@@ -310,7 +327,10 @@ export default function NoticeDetailPage() {
 
               {/* 페이지 인디케이터 */}
               {images.length > 1 && (
-                <View className="flex-row justify-center py-4 gap-2">
+                <View
+                  className="flex-row justify-center gap-2"
+                  style={{ paddingTop: 16, paddingBottom: Math.max(insets.bottom, 16) }}
+                >
                   {images.map((_: AnnouncementImage, index: number) => (
                     <View
                       key={index}

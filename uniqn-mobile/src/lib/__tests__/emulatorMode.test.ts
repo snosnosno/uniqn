@@ -14,7 +14,7 @@ function loadModule() {
   let moduleUnderTest: typeof import('../emulatorMode') | undefined;
 
   jest.isolateModules(() => {
-    moduleUnderTest = require('../emulatorMode') as typeof import('../emulatorMode');
+    moduleUnderTest = jest.requireActual<typeof import('../emulatorMode')>('../emulatorMode');
   });
 
   return moduleUnderTest!;
@@ -43,7 +43,13 @@ function setMockWindow(href: string, storageValue: string | null = null): MockWi
 }
 
 function setConfiguredEmulatorFlag(value: boolean) {
-  const expoConstants = require('expo-constants');
+  const expoConstants = jest.requireMock('expo-constants') as {
+    expoConfig: {
+      extra: {
+        useEmulator: boolean;
+      };
+    };
+  };
   expoConstants.expoConfig.extra.useEmulator = value;
 }
 

@@ -265,17 +265,13 @@ export function useCurrentWorkStatus(enabled = true) {
     });
   }, [cacheKey, currentStatusForCache, staffId]);
 
-  const cachedCurrentStatusEntry = useMemo(
-    () =>
-      staffId
-        ? getCriticalOfflineCache<CurrentWorkStatusValue>(cacheKey, {
-            ttlMs: cachingPolicies.realtime,
-            userId: staffId,
-            schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
-          })
-        : null,
-    [cacheKey, enabled, isOnline, staffId]
-  );
+  const cachedCurrentStatusEntry = staffId
+    ? getCriticalOfflineCache<CurrentWorkStatusValue>(cacheKey, {
+        ttlMs: cachingPolicies.realtime,
+        userId: staffId,
+        schemaVersion: WORK_LOG_CACHE_SCHEMA_VERSION,
+      })
+    : null;
   const cachedCurrentStatus = cachedCurrentStatusEntry?.data ?? DEFAULT_CURRENT_WORK_STATUS;
   const hasCachedCurrentStatus = cachedCurrentStatusEntry !== null;
 

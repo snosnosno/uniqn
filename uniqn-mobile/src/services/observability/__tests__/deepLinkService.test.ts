@@ -558,6 +558,35 @@ describe('deepLinkService', () => {
       });
       jest.useRealTimers();
     });
+
+    it('cancels pending initial URL navigation when the listener is cleaned up', async () => {
+      jest.useFakeTimers();
+      const remove = jest.fn();
+      const onDeepLink = jest.fn();
+
+      mockAddEventListener.mockReturnValue({ remove });
+      mockGetInitialURL.mockResolvedValue('uniqn://notifications');
+
+      const cleanup = deepLinkService.setupDeepLinkListener(onDeepLink);
+
+      await Promise.resolve();
+      cleanup();
+      jest.advanceTimersByTime(100);
+
+      expect(remove).toHaveBeenCalled();
+      expect(onDeepLink).not.toHaveBeenCalled();
+      jest.useRealTimers();
+    });
+
+    it('logs initial URL lookup failures without throwing', async () => {
+      mockGetInitialURL.mockRejectedValue(new Error('initial url failed'));
+
+      deepLinkService.setupDeepLinkListener();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockLoggerError).toHaveBeenCalledWith('초기 딥링크 가져오기 실패', expect.any(Error));
+    });
   });
 
   describe('getInitialDeepLink', () => {

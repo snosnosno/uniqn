@@ -6,7 +6,14 @@
  */
 
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Dimensions, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  FlatList,
+  useWindowDimensions,
+} from 'react-native';
 import { Image } from 'expo-image';
 import {
   AddIcon,
@@ -43,11 +50,12 @@ interface AnnouncementImagePickerProps {
 // Constants
 // ============================================================================
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_GAP = 8;
 const PADDING = 16;
 const COLUMNS = 2;
-const IMAGE_SIZE = (SCREEN_WIDTH - PADDING * 2 - IMAGE_GAP * (COLUMNS - 1)) / COLUMNS;
+const MAX_GRID_WIDTH = 520;
+const MIN_IMAGE_SIZE = 120;
+const MAX_IMAGE_SIZE = 220;
 
 // ============================================================================
 // Component
@@ -62,6 +70,12 @@ export function AnnouncementImagePicker({
   onReorderImages,
   disabled = false,
 }: AnnouncementImagePickerProps) {
+  const { width: windowWidth } = useWindowDimensions();
+  const gridWidth = Math.min(Math.max(windowWidth - PADDING * 2, 0), MAX_GRID_WIDTH);
+  const rawImageSize = (gridWidth - IMAGE_GAP * (COLUMNS - 1)) / COLUMNS;
+  const minSupportedImageSize =
+    gridWidth >= IMAGE_GAP * (COLUMNS - 1) + MIN_IMAGE_SIZE * COLUMNS ? MIN_IMAGE_SIZE : 1;
+  const imageSize = Math.min(Math.max(rawImageSize, minSupportedImageSize), MAX_IMAGE_SIZE);
   const isUploading = uploadingIndex !== null;
   const canAddMore = images.length < MAX_ANNOUNCEMENT_IMAGES && !isUploading && !disabled;
 
@@ -98,8 +112,8 @@ export function AnnouncementImagePicker({
       return (
         <View
           style={{
-            width: IMAGE_SIZE,
-            height: IMAGE_SIZE,
+            width: imageSize,
+            height: imageSize,
             marginRight: index % COLUMNS === 0 ? IMAGE_GAP : 0,
             marginBottom: IMAGE_GAP,
           }}
@@ -174,6 +188,7 @@ export function AnnouncementImagePicker({
       uploadProgress,
       onRemoveImage,
       disabled,
+      imageSize,
       images.length,
       handleMoveUp,
       handleMoveDown,
@@ -187,8 +202,8 @@ export function AnnouncementImagePicker({
         <Pressable
           onPress={onAddImages}
           style={{
-            width: IMAGE_SIZE,
-            height: IMAGE_SIZE,
+            width: imageSize,
+            height: imageSize,
             marginBottom: IMAGE_GAP,
           }}
           className="rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
@@ -198,7 +213,7 @@ export function AnnouncementImagePicker({
           <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">이미지 추가</Text>
         </Pressable>
       ) : null,
-    [canAddMore, onAddImages]
+    [canAddMore, imageSize, onAddImages]
   );
 
   return (
@@ -214,22 +229,23 @@ export function AnnouncementImagePicker({
       </View>
 
       {/* 이미지가 있을 때: 그리드 + 추가 버튼 */}
-      {images.length > 0 ? (
-        <FlatList
-          data={images}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          numColumns={COLUMNS}
-          scrollEnabled={false}
-          ListFooterComponent={AddButton}
-          columnWrapperStyle={{ justifyContent: 'flex-start' }}
-        />
-      ) : (
-        /* 이미지가 없을 때: 업로드 영역 */
-        <Pressable
-          onPress={onAddImages}
-          disabled={disabled || isUploading}
-          className={`
+      <View style={{ maxWidth: MAX_GRID_WIDTH, width: '100%' }}>
+        {images.length > 0 ? (
+          <FlatList
+            data={images}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            numColumns={COLUMNS}
+            scrollEnabled={false}
+            ListFooterComponent={AddButton}
+            columnWrapperStyle={{ justifyContent: 'flex-start' }}
+          />
+        ) : (
+          /* 이미지가 없을 때: 업로드 영역 */
+          <Pressable
+            onPress={onAddImages}
+            disabled={disabled || isUploading}
+            className={`
             w-full h-40 rounded-xl border-2 border-dashed
             items-center justify-center
             ${
@@ -238,30 +254,31 @@ export function AnnouncementImagePicker({
                 : 'bg-gray-50 dark:bg-surface/50 border-gray-300 dark:border-surface-overlay active:bg-gray-100 dark:active:bg-gray-700'
             }
           `}
-          accessibilityLabel="이미지 선택"
-        >
-          {isUploading ? (
-            <View className="items-center">
-              <ActivityIndicator size="large" color="#A855F7" />
-              <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                업로드 중... {uploadProgress}%
-              </Text>
-            </View>
-          ) : (
-            <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
-                <ImagesOutlineIcon size={28} color="#9CA3AF" />
+            accessibilityLabel="이미지 선택"
+          >
+            {isUploading ? (
+              <View className="items-center">
+                <ActivityIndicator size="large" color="#A855F7" />
+                <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  업로드 중... {uploadProgress}%
+                </Text>
               </View>
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                이미지를 선택하세요
-              </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                최대 {MAX_ANNOUNCEMENT_IMAGES}장 · JPG, PNG
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      )}
+            ) : (
+              <View className="items-center">
+                <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
+                  <ImagesOutlineIcon size={28} color="#9CA3AF" />
+                </View>
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  이미지를 선택하세요
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  최대 {MAX_ANNOUNCEMENT_IMAGES}장 · JPG, PNG
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        )}
+      </View>
 
       {/* 업로드 진행률 바 */}
       {isUploading && uploadProgress > 0 && (

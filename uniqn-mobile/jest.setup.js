@@ -106,15 +106,14 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-// Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
-  return Reanimated;
-});
+jest.mock('react-native-worklets', () => require('react-native-worklets/lib/module/mock'));
+require('react-native-reanimated').setUpTests();
 
 // Mock NativeWind
 jest.mock('nativewind', () => ({
+  colorScheme: {
+    set: jest.fn(),
+  },
   styled: (component) => component,
   useColorScheme: () => ({
     colorScheme: 'light',
@@ -291,6 +290,19 @@ jest.mock('zustand/middleware', () => ({
 const originalWarn = console.warn;
 const originalError = console.error;
 
+function requireIfLoaded(modulePath) {
+  try {
+    const resolvedPath = require.resolve(modulePath);
+    if (!require.cache[resolvedPath]) {
+      return null;
+    }
+
+    return require(modulePath);
+  } catch {
+    return null;
+  }
+}
+
 beforeAll(() => {
   console.warn = (...args) => {
     if (
@@ -309,6 +321,61 @@ beforeAll(() => {
     }
     originalError.apply(console, args);
   };
+});
+
+afterEach(() => {
+  try {
+    const networkStateModule = requireIfLoaded('@/services/offline/networkState');
+    networkStateModule?.resetNetworkStateForTests?.();
+  } catch {
+    // networkState를 사용하지 않는 테스트 환경에서는 무시합니다.
+  }
+
+  try {
+    const realtimeModule = requireIfLoaded('@/shared/realtime');
+    const stats = realtimeModule?.RealtimeManager?.getStats?.();
+    if (stats?.activeCount > 0) {
+      realtimeModule.RealtimeManager.unsubscribeAll();
+    }
+    realtimeModule?.RealtimeManager?.onNetworkReconnect?.();
+  } catch {
+    // RealtimeManager를 사용하지 않는 테스트 환경에서는 무시합니다.
+  }
+
+  try {
+    const queryClientModule = requireIfLoaded('@/lib/queryClient');
+    queryClientModule?.queryClient?.clear?.();
+  } catch {
+    // queryClient를 사용하지 않는 테스트 환경에서는 무시합니다.
+  }
+
+  try {
+    const sessionModule = requireIfLoaded('@/services/observability/sessionService');
+    sessionModule?.sessionService?.cleanup?.();
+  } catch {
+    // sessionService를 사용하지 않는 테스트 환경에서는 무시합니다.
+  }
+
+  try {
+    const tokenRefreshModule = requireIfLoaded('@/services/observability/tokenRefreshService');
+    tokenRefreshModule?.stop?.();
+    const tokenRefreshState = tokenRefreshModule?.getState?.();
+    const hasResidualTokenRefreshState =
+      tokenRefreshState?.lastRefreshAt !== null ||
+      tokenRefreshState?.failureCount !== 0 ||
+      tokenRefreshState?.nextRetryAt !== null ||
+      tokenRefreshState?.isRefreshing === true ||
+      tokenRefreshState?.nextScheduledAt !== null;
+
+    if (hasResidualTokenRefreshState) {
+      tokenRefreshModule?.resetState?.();
+    }
+  } catch {
+    // tokenRefreshService를 사용하지 않는 테스트 환경에서는 무시합니다.
+  }
+
+  jest.clearAllTimers();
+  jest.useRealTimers();
 });
 
 afterAll(() => {

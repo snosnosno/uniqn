@@ -82,6 +82,11 @@ export {
   type UseAutoLoginReturn,
 } from './useAutoLogin';
 export { useBiometricAuth, type UseBiometricAuthReturn } from './useBiometricAuth';
+export {
+  useAndroidOrientationPolicy,
+  resolveAndroidOrientationPolicy,
+  type AndroidOrientationPolicy,
+} from './useAndroidOrientationPolicy';
 
 export {
   useJobManagement,

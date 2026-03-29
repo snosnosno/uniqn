@@ -128,7 +128,7 @@ describe('mapFirebaseAuthError', () => {
       const error = { code: 'auth/credential-already-in-use', message: 'In use' };
       const result = mapFirebaseAuthError(error);
 
-      expect(result.code).toBe(ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS);
+      expect(result.code).toBe(ERROR_CODES.AUTH_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL);
     });
   });
 

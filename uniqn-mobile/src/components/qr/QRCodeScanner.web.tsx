@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
@@ -34,8 +34,6 @@ type JsQRScanner = JsQRModule['default'];
 // Constants
 // ============================================================================
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SCAN_AREA_SIZE = Math.min(SCREEN_WIDTH * 0.7, 280);
 const VIDEO_WIDTH = 640;
 const VIDEO_HEIGHT = 480;
 const SCAN_INTERVAL = 200; // 200ms마다 스캔
@@ -60,9 +58,11 @@ export function QRCodeScanner({
   expectedAction,
   title = 'QR 코드 스캔',
 }: QRCodeScannerProps) {
+  const { width: windowWidth } = useWindowDimensions();
   const [permission, setPermission] = useState<PermissionState>('pending');
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scanAreaSize = Math.min(Math.max(windowWidth * 0.7, 220), 280);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -317,7 +317,7 @@ export function QRCodeScanner({
             <View
               style={[
                 styles.scanArea,
-                { width: SCAN_AREA_SIZE, height: SCAN_AREA_SIZE },
+                { width: scanAreaSize, height: scanAreaSize },
                 scanned && styles.scanAreaSuccess,
               ]}
             >

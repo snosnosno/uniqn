@@ -157,7 +157,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: envConfig.appName,
   slug: SLUG,
   version: VERSION,
-  orientation: 'portrait',
   icon: APP_ICON,
   userInterfaceStyle: 'automatic',
   scheme: SLUG,
@@ -172,6 +171,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       CFBundleAllowMixedLocalizations: true,
       UIBackgroundModes: ['remote-notification'],
       ITSAppUsesNonExemptEncryption: false,
+      UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+      'UISupportedInterfaceOrientations~ipad': [
+        'UIInterfaceOrientationPortrait',
+        'UIInterfaceOrientationPortraitUpsideDown',
+      ],
       NSCameraUsageDescription: PERMISSION_MESSAGES.camera,
       NSPhotoLibraryUsageDescription: PERMISSION_MESSAGES.photoLibrary,
       NSFaceIDUsageDescription: PERMISSION_MESSAGES.faceId,
@@ -287,6 +291,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         photosPermission: PERMISSION_MESSAGES.photoLibrary,
       },
     ],
+    'expo-image',
     [
       'expo-notifications',
       {
@@ -297,7 +302,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     // Sentry - 에러 모니터링
     [
-      '@sentry/react-native/expo',
+      '@sentry/react-native',
       {
         organization: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
@@ -311,12 +316,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           enableProguardInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           includeNativeDebugSymbols: true,
-          newArchEnabled: true,
         },
         ios: {
           useFrameworks: 'static',
           deploymentTarget: '16.0',
-          newArchEnabled: true,
         },
       },
     ],

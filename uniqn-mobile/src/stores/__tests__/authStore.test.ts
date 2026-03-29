@@ -133,6 +133,7 @@ describe('AuthStore', () => {
         photoURL: null,
         emailVerified: true,
         phoneNumber: '+821012345678',
+        providerIds: [],
       });
       expect(state.status).toBe('authenticated');
       expect(state.isAuthenticated).toBe(true);

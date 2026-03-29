@@ -115,6 +115,20 @@ export function initialize(): void {
 }
 
 export function cleanup(): void {
+  const hadSessionState =
+    isInitialized ||
+    appStateSubscription !== null ||
+    authUnsubscribe !== null ||
+    authStoreUnsubscribe !== null ||
+    sessionTimeoutId !== null ||
+    sessionWarningTimeoutId !== null ||
+    tokenRefreshIntervalId !== null ||
+    managedSessionUserId !== null;
+
+  if (!hadSessionState) {
+    return;
+  }
+
   clearSessionRuntime();
 
   if (appStateSubscription) {
