@@ -1,120 +1,86 @@
 # 아키텍처 가이드
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 모바일앱 기준
-
-현재 아키텍처의 기준은 `uniqn-mobile/`과 `functions/`입니다.
+최종 업데이트: 2026-03-30  
+기준 코드: `uniqn-mobile/`, `functions/`
 
 ## 시스템 개요
 
 - 앱 프레임워크: Expo + React Native
 - 라우팅: Expo Router
-- 상태 관리: Zustand
-- 서버 데이터: TanStack Query
-- 데이터 접근: Repository 패턴
+- 서버 상태: TanStack Query
+- 로컬 상태: Zustand
 - 백엔드: Firebase Auth / Firestore / Functions / Storage
-- 관측성: Sentry, Analytics 서비스, 성능 추적 서비스
+- 관측성: Analytics service, Sentry service, performance service
 
-## 라우트 구조
+## 앱 구조
 
-`uniqn-mobile/app/` 기준:
+### 라우트 그룹
 
-- `(public)`: 공개 접근
-- `(auth)`: 로그인/회원가입
-- `(app)`: 로그인 사용자 공통 기능
-- `(employer)`: 구인자 전용 기능
-- `(admin)`: 관리자 전용 기능
+- `uniqn-mobile/app/(public)`
+- `uniqn-mobile/app/(auth)`
+- `uniqn-mobile/app/(app)`
+- `uniqn-mobile/app/(employer)`
+- `uniqn-mobile/app/(admin)`
 
-권한 가드는 `useAuthGuard`, `useAuth`, `RoleResolver`를 통해 처리합니다.
+### 핵심 폴더
 
-## 레이어 구조
+- `src/components`: UI 컴포넌트
+- `src/hooks`: 화면/도메인 훅
+- `src/services`: 비즈니스 로직
+- `src/repositories`: Firebase 접근 추상화
+- `src/domains`: 순수 도메인 계산 및 모델링
+- `src/shared`: 상태/역할/실시간/딥링크 같은 공통 모듈
+- `src/stores`: Zustand 저장소
+- `src/schemas`: Zod 기반 입력/문서 스키마
 
-기본 데이터 흐름:
+## 기본 데이터 흐름
 
 `Screen -> Hook -> Service -> Repository -> Firebase`
 
-### Screen / Component
+화면은 UI와 라우팅에 집중하고, 비즈니스 로직은 서비스에서, Firestore 접근은 저장소에서 처리합니다.
 
-- 위치: `uniqn-mobile/app/`, `uniqn-mobile/src/components/`
-- 역할: UI, 입력 처리, 라우팅
+## 인증과 권한
 
-### Hook
+- 저장소: `uniqn-mobile/src/stores/authStore.ts`
+- 편의 훅: `uniqn-mobile/src/hooks/useAuth.ts`
+- 가드: `uniqn-mobile/src/hooks/useAuthGuard.ts`
+- 역할 계산: `uniqn-mobile/src/shared/role/RoleResolver.ts`
 
-- 위치: `uniqn-mobile/src/hooks/`
-- 역할: 화면 상태, Query, Mutation, 권한/세션 처리
-
-### Service
-
-- 위치: `uniqn-mobile/src/services/`
-- 역할: 비즈니스 규칙, 여러 Repository 조합, 부수효과 처리
-
-### Repository
-
-- 위치: `uniqn-mobile/src/repositories/`
-- 역할: Firestore/Functions 접근 추상화
-- `src/repositories/index.ts`에서 싱글톤 인스턴스를 내보냅니다.
-
-### Backend
-
-- 앱 클라이언트: `uniqn-mobile/src/lib/firebase.ts`
-- 서버 진입점: `functions/src/index.ts`
-
-## 상태 관리
-
-### 로컬 UI/세션 상태
-
-- Zustand store 사용
-- 예: `authStore`, `themeStore`, `toastStore`, `notificationStore`
-
-### 서버 상태
-
-- TanStack Query 사용
-- 중앙 설정: `uniqn-mobile/src/lib/queryClient.ts`
-- 재시도, 오프라인 처리, Query Key를 중앙 관리합니다.
-
-## 역할 체계
-
-현재 사용자 역할은 세 가지입니다.
+현재 사용자 역할:
 
 - `admin`
 - `employer`
 - `staff`
 
-권한 계층은 `RoleResolver`와 관련 타입이 단일 소스입니다.
+## 캐시와 오프라인
 
-## 주요 도메인
+- QueryClient: `uniqn-mobile/src/lib/queryClient.ts`
+- invalidation 전략: `uniqn-mobile/src/lib/invalidationStrategy.ts`
+- 오프라인 보조 서비스:
+  - `src/services/offline/criticalOfflineCache.ts`
+  - `src/services/offline/reconnectSyncService.ts`
+  - `src/services/offline/remoteMutationGuard.ts`
 
-- 구인공고
-- 지원서
-- 스케줄 / 출퇴근 / QR
-- 정산
-- 공지사항
-- 신고
-- 문의
-- 관리자 통계
+## 실시간과 딥링크
 
-## 관측성
+- realtime: `uniqn-mobile/src/shared/realtime/`
+- deep link: `uniqn-mobile/src/shared/deeplink/`
+- 알림 클릭 라우팅: `uniqn-mobile/src/hooks/useDeepLink.ts`
 
-- 앱 시작 시 `app/_layout.tsx`에서 Sentry 초기화
-- Analytics 서비스는 웹 환경 Firebase Analytics와 연동
-- 성능 추적은 `performanceService`
-- Feature Flag는 `featureFlagService`
+## Functions 구조
 
-## 백엔드 역할
+- 엔트리: `functions/src/index.ts`
+- callable / HTTP: `functions/src/api/`
+- Firestore trigger: `functions/src/triggers/`
+- schedule jobs: `functions/src/scheduled/`
+- 계정 작업: `functions/src/account/`
+- 알림 생성/후처리: `functions/src/notifications/`
 
-`functions/src/index.ts`는 주요 callable/trigger export를 모읍니다.
+## 현재 문서 범위 밖
 
-대표 영역:
+아래는 현재 운영 아키텍처 문서에 포함하지 않습니다.
 
-- 인증/프로필 저장
-- 알림 생성
-- 문의/신고/공지 관련 처리
-- 계정 삭제 스케줄 작업
-- 로그인 알림
-
-## 현재 문서에서 제외하는 것
-
-- 레거시 웹앱 전용 Context 아키텍처
-- 웹 전용 번들/PWA 설계
-- 현재 의존성에 없는 런타임 번역 시스템
-- 실제 코드에 없는 결제/구독 런타임을 현재 구조처럼 설명하는 내용
+- `app2/` 기반 과거 구조
+- 미구현 결제/포인트 런타임
+- 현재 코드에 없는 운영 제어 서비스 또는 관리자 추가 설정 라우트
+- 과거 웹 중심 확장 설계

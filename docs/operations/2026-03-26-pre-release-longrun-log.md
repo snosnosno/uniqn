@@ -1,4 +1,220 @@
-# 2026-03-26 Pre-Release Long-Run Log
+﻿> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 로그입니다.
+> 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
+# Integration Release Runbook (2026-03-22)
+
+## Scope
+
+- `fix(application): 지원 규칙 및 서버 카운터 소유권 전환`
+- `fix(auth): phone-only 회원가입 세션 유지`
+- `chore(mobile): 공고 생성 로그 정리 및 린트 잔여물 해소`
+
+## Contract Changes
+
+- `jobPostings.stats` is the server-owned derived aggregate field.
+- Client transactions must not write legacy applicant counter fields.
+- Applicant self-service updates are limited to:
+  - `applied -> cancelled`
+  - `confirmed -> cancellation_pending`
+  - `cancelled -> applied`
+- Fixed posting public flows are disabled during the V3 cutover.
+- Auth bootstrap now allows `authenticated + profile=null` for phone-only signup sessions that have not created a profile document yet.
+
+## Automated Verification
+
+Verified locally on `2026-03-22`:
+
+- `cd functions && npm run build`
+- `cd functions && npm test`
+- `cd uniqn-mobile && npm run quality`
+- `cd uniqn-mobile && npx jest src/repositories/firebase/__tests__/ApplicationRepository.test.ts src/stores/__tests__/authStore.test.ts src/services/jobs/__tests__/jobManagementService.test.ts --runInBand`
+
+Scenario coverage map:
+
+- `공고 생성 -> 지원 -> 취소 -> 재지원`
+  - `functions/test/firestoreApplicationRules.test.ts`
+- `confirmed -> cancellation_pending`
+  - `functions/test/firestoreApplicationRules.test.ts`
+  - `functions/test/firestoreOccupancyRules.test.ts`
+- `fixed public flow disabled`
+  - employer create/apply/detail UI regression coverage
+- `phone-only signup -> profile 미생성 상태 유지`
+  - `uniqn-mobile/src/stores/__tests__/authStore.test.ts`
+
+Manual smoke is still required before rollout because the above coverage is rule/unit-test heavy rather than full staged UI automation.
+
+## Manual Smoke Checklist
+
+Run these in staging or emulator before the mobile rollout:
+
+1. `공고 생성 -> 지원 -> 취소 -> 재지원`
+   - Create a fresh posting.
+   - Apply as the staff account.
+   - Cancel the application as the applicant.
+   - Reapply with the same applicant.
+   - Confirm the posting remains readable and the application document is reused without client-side counter writes.
+2. `confirmed -> cancellation_pending`
+   - Confirm an applicant from the employer surface.
+   - Submit a cancellation request from the applicant surface.
+   - Confirm the employer sees `cancellation_pending` and can review it.
+3. `fixed public flow disabled`
+   - Confirm the public home chips do not expose `고정`.
+   - Confirm employer create/detail surfaces block fixed posting access with the V3 cutover message.
+4. `phone-only signup -> profile 미생성 상태 유지`
+   - Sign in with a phone-only account that does not have a profile document yet.
+   - Confirm the app stays authenticated with `profile == null` instead of forcing sign-out.
+
+## Deployment Order
+
+Release in one window, in this order:
+
+1. Functions
+   - `cd functions`
+   - `npx firebase-tools deploy --only functions:validateJobPostingData,functions:updateJobPostingApplicantCount`
+2. Firestore Rules
+   - `cd ..`
+   - `npx firebase-tools deploy --only firestore:rules`
+3. Mobile/Web App
+   - Start the normal app rollout only after the backend steps above are confirmed healthy.
+
+Gate condition:
+
+- Do not start the app rollout until both function revisions and Firestore rules are live.
+
+## Historical Cutover Writer Audit
+
+This checklist was part of the V3 cutover validation on `2026-03-22`. Keep it as historical reference if a future canonical writer regression is suspected.
+
+1. List deployed functions:
+   - `npx firebase-tools functions:list`
+2. Review recent logs for the canonical job posting trigger pair:
+   - `npx firebase-tools functions:log --only validateJobPostingData,updateJobPostingApplicantCount --lines 100`
+3. Inspect recent `jobPostings` documents in the production Firebase project.
+4. Investigate any newly written document that includes non-canonical fields such as `applicantCount` or `lastUpdated`.
+
+Historical decision rule:
+
+- If a non-canonical writer was still active during cutover, redeploy or disable that writer before the app rollout.
+- If only old persisted documents remained during cutover, treat data cleanup as a follow-up task rather than a current runtime contract issue.
+
+## Observability And Follow-up
+
+- Set `SENTRY_DSN` in `functions/.env` or the deployment secret store before the production deploy.
+- Track the `functions` dependency audit separately; `npm ci` currently reports 18 vulnerabilities and this release does not fix them.
+ # Cloud Scheduler 감사 로그 변경 대응 기록
+
+**작성일**: 2026년 3월 26일  
+**대상 프로젝트**: `tholdem-ebc18`  
+**상태**: 대응 계획 반영 완료, 운영 자산 확인 대기
+
+## 요약
+
+- 현재 저장소와 실제 배포된 scheduled function 기준으로 이번 Cloud Scheduler 감사 로그 변경의 직접 영향은 없다.
+- 즉시 수정이 필요한 앱/Functions 비즈니스 로직은 확인되지 않았다.
+- 남은 리스크는 저장소 밖 운영 자산이다.
+  - Cloud Logging Log Router sink
+  - BigQuery 감사 로그 export
+  - SIEM/Splunk/Datadog 등 외부 연동
+  - `cloudscheduler.googleapis.com` 감사 로그를 읽는 수동 스크립트
+
+## 배경
+
+- Cloud Scheduler는 2025년 9월 15일부터 App Engine 흐름을 제외하고 표준 GFE 형식의 감사 로그를 생성하기 시작했다.
+- 기존 형식 감사 로그는 2026년 9월 30일까지 병행 제공된다.
+- 2026년 9월 30일부터 기존 payload 구조만 가정한 파서는 실패할 수 있다.
+
+## 확인 근거
+
+### 1. 저장소 코드 검색 결과
+
+- `functions/src`, `uniqn-mobile/src`, `scripts`, `.github`, `docs`에서 아래 감사 로그 파싱 흔적을 찾지 못했다.
+  - `protoPayload`
+  - `authorizationInfo`
+  - `retryConfig` / `retry_config`
+  - `callerIp`
+  - `cloudaudit.googleapis.com`
+  - `@google-cloud/logging`
+- `functions/package.json` 런타임 의존성에도 Logging SDK가 없다.
+
+### 2. 실제 배포된 scheduled function 확인 결과
+
+`npx firebase-tools functions:list --project tholdem-ebc18 --json` 기준으로 현재 배포된 scheduled function은 아래 8개다.
+
+- `cleanupExpiredTokensScheduled`
+- `cleanupOrphanAccountsScheduled`
+- `cleanupRateLimitsScheduled`
+- `expireByLastWorkDate`
+- `expireFixedPostings`
+- `processScheduledDeletions`
+- `retryFailedCounterOpsScheduled`
+- `sendReviewRemindersScheduled`
+
+위 목록은 현재 소스 export와 일치한다.
+
+### 3. 레거시 결제 Scheduler 문서 상태
+
+아래 이름은 문서에는 남아 있지만 현재 저장소와 실제 배포된 Functions 기준 활성 대상이 아니다.
+
+- `cleanupExpiredHearts`
+- `heartExpiry7Days`
+- `heartExpiry3Days`
+- `heartExpiryToday`
+- `archiveOldData`
+
+## 최종 결론
+
+### 직접 영향
+
+- 없음.
+- 현재 `onSchedule()` 기반 함수들은 Cloud Scheduler 감사 로그를 읽지 않고, 스케줄 트리거로만 Cloud Scheduler를 사용한다.
+- 따라서 이번 변경으로 인해 앱 또는 Functions 런타임이 즉시 깨질 부분은 확인되지 않았다.
+
+### 조건부 영향
+
+- 운영팀이 Cloud Scheduler 감사 로그를 외부에서 직접 파싱하는 경우에만 영향이 있다.
+- 이 경우 old/new 포맷 동시 지원 정규화 레이어를 두고 후속 비즈니스 로직은 정규화된 내부 필드만 보도록 전환해야 한다.
+
+## 실행 계획
+
+### 2026년 3월 31일까지
+
+운영/인프라 담당에게 아래 항목을 확인한다.
+
+- IAM 권한 확보 후 실제 Cloud Scheduler job inventory 조회
+- Cloud Logging Log Router sink 존재 여부
+- BigQuery로 내보내는 감사 로그 테이블 존재 여부
+- SIEM/Splunk/Datadog 등 외부 연동 존재 여부
+- `cloudscheduler.googleapis.com` 감사 로그를 읽는 커스텀 스크립트 존재 여부
+
+### 2026년 4월 5일까지
+
+- 외부 연동이 없으면 이번 건을 `무영향, 모니터링 유지`로 종료한다.
+- 외부 연동이 있으면 old/new 포맷 동시 지원 정규화 로직 전환 계획을 수립한다.
+
+### 2026년 4월 30일까지
+
+- 새 형식 감사 로그 유입 여부를 1회 재확인한다.
+- 공지상 일부 고객은 새 로그 수신이 늦을 수 있으므로, 미수신 자체를 즉시 장애로 판단하지 않는다.
+
+### 2026년 8월 31일까지
+
+- 외부 연동이 있는 경우 마이그레이션 완료 목표일로 잡는다.
+- 공식 강제일인 2026년 9월 30일보다 1개월 이상 앞서 마감한다.
+
+## 운영 확인 체크리스트
+
+- `authorizationInfo[].resource`를 직접 문자열 파싱하는 로직이 있는가
+- `request.job.retryConfig`만 가정한 파서가 있는가
+- `callerIp`를 신뢰값으로 사용하는 규칙이 있는가
+- 새 payload 구조의 `resourceAttributes`와 `retry_config`를 수용해야 하는 연동이 있는가
+
+## 제한 사항
+
+- Cloud Scheduler API 조회 권한이 없어 Scheduler job inventory를 직접 열람하지 못했다.
+- Cloud Logging view/sink 조회 권한이 없어 로그 view, sink, export 설정을 직접 열람하지 못했다.
+- 따라서 현재 대응 원칙은 `코드 수정 없음, 운영 자산 확인 후 종료`다.
+ # 2026-03-26 Pre-Release Long-Run Log
 
 ## Batch 0
 
@@ -180,3 +396,4 @@
   - The undated supplement uses dedicated Firestore query shapes, so if production data introduces additional malformed undated non-fixed work logs, they will still rely on downstream eligibility filters to stay hidden.
 - Next priority
   - Run one last code review pass across the pending review source and cache paths, then stop unless a new reproducible blocker appears.
+

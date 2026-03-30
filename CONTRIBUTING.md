@@ -1,84 +1,115 @@
 # Contributing to UNIQN
 
-UNIQN 프로젝트에 기여해 주셔서 감사합니다!
+최종 업데이트: 2026-03-30  
+현재 기준: 모바일 앱 `uniqn-mobile/`, 배포 Functions `functions/`
 
-**버전**: v0.2.3 (모바일앱 중심)
-**최종 업데이트**: 2026년 3월 8일
+## 시작 전
 
-## 개발 환경 설정
+- 저장소 전체보다 먼저 `README.md`와 `docs/README.md`를 읽습니다.
+- 현재 제품 기준은 `uniqn-mobile/`과 `functions/`입니다.
+- `app2/`는 레거시 참고용이며 새 제품 기능 기준으로 사용하지 않습니다.
 
-```bash
-# 저장소 클론
-git clone https://github.com/your-org/t-holdem.git
-cd t-holdem/uniqn-mobile  # 📱 모바일앱 (주력)
+## 개발 환경
 
-# 의존성 설치
+```powershell
+git clone <repository-url>
+cd T-HOLDEM
+```
+
+### 앱
+
+```powershell
+cd uniqn-mobile
 npm install
-
-# Expo 개발 서버 시작
+Copy-Item .env.example .env.local
 npm start
-
-# 플랫폼별 실행
-npx expo run:ios      # iOS 시뮬레이터
-npx expo run:android  # Android 에뮬레이터
 ```
 
-## 코드 스타일
+### Functions
 
-### TypeScript
-- Strict mode 100% 준수
-- `any` 타입 사용 금지
-- 표준 필드명 사용: `staffId`, `eventId`
-
-### React
-- 함수형 컴포넌트 사용
-- 메모이제이션 활용 (`useMemo`, `useCallback`)
-- 다크모드 필수 적용 (`dark:` 클래스)
-
-### 로깅
-- `console.log` 대신 `logger` 사용
-- 에러는 `logger.error()`로 기록
-
-## 커밋 컨벤션
-
-```
-<타입>: <제목>
-
-feat: 새로운 기능
-fix: 버그 수정
-refactor: 리팩토링
-style: 스타일 (다크모드 등)
-docs: 문서 수정
-test: 테스트 추가/수정
-chore: 기타 변경
+```powershell
+cd functions
+npm install
+Copy-Item .env.example .env
+npm run build
 ```
 
-## Pull Request 가이드
+## 코드 원칙
 
-1. `feature/기능명` 브랜치 생성
-2. 코드 작성 및 테스트
-3. `npm run type-check` 통과 확인
-4. `npm run lint` 통과 확인
-5. PR 생성 및 리뷰 요청
+- TypeScript strict 유지
+- 2-space indentation
+- 앱 런타임 로깅은 `logger` 사용
+- Firestore 접근은 `Service -> Repository` 경로를 우선
+- 역할 분기는 `RoleResolver`, `useAuth`, `useAuthGuard` 기준 사용
+- `@/types`는 type-only barrel로 사용
 
-## 테스트
+## 문서 원칙
+
+- 문서가 코드와 다르면 문서를 고칩니다.
+- 존재하지 않는 파일/스크립트/함수는 문서에 적지 않습니다.
+- 설계/기록 문서는 아카이브로 분리합니다.
+
+## 검증
+
+### 앱
 
 ```bash
-npm run test           # 단위 테스트
-npm run test:coverage  # 커버리지 확인
-npm run test:e2e       # E2E 테스트
+cd uniqn-mobile
+npm run quality
+npm test
 ```
 
-## 문서
+필요 시:
 
-- [개발 가이드](docs/core/DEVELOPMENT_GUIDE.md)
-- [테스트 가이드](docs/core/TESTING_GUIDE.md)
-- [아키텍처](docs/reference/ARCHITECTURE.md)
+```bash
+npm run test:coverage
+npm run e2e
+```
 
-## 문의
+### Functions
 
-질문이나 제안사항은 GitHub Issues를 통해 등록해 주세요.
+```bash
+cd functions
+npm run build
+npm test
+```
 
----
+## 커밋 규칙
 
-*마지막 업데이트: 2026년 2월*
+형식:
+
+```text
+<type>(<scope>): <한글 제목>
+```
+
+예시:
+
+```text
+fix(mobile): 로그인 예외 처리 수정
+docs(repo): 운영 문서 최신화
+```
+
+자주 쓰는 타입:
+
+- `feat`
+- `fix`
+- `refactor`
+- `docs`
+- `test`
+- `chore`
+- `perf`
+
+## Pull Request
+
+- 요약
+- 관련 이슈 또는 스펙
+- 영향 범위
+- UI 변경 시 스크린샷 또는 녹화
+- Firebase 규칙, 트랜잭션, 권한 변경 여부
+
+## 참고 문서
+
+- `docs/core/DEVELOPMENT_GUIDE.md`
+- `docs/core/TESTING_GUIDE.md`
+- `docs/reference/ARCHITECTURE.md`
+- `docs/guides/DEPLOYMENT.md`

@@ -1,3 +1,7 @@
+> 아카이브 문서
+>
+> 이 파일은 과거 계획과 방향성을 보존하는 참고 자료입니다. 현재 출시/운영 기준은 `README.md`, `docs/README.md`, `docs/guides/DEPLOYMENT.md`, `docs/reference/ARCHITECTURE.md`를 우선 확인하세요.
+
 # UNIQN 프로젝트 로드맵
 
 **최종 업데이트**: 2026년 3월 8일

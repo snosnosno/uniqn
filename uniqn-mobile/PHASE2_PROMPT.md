@@ -1,3 +1,5 @@
+> 아카이브 문서: 이 문서는 과거 개발 프롬프트와 계획 기록입니다. 현재 출시 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/reference/AUTHENTICATION.md`를 우선 확인하세요.
+
 # Phase 2: 인증 + 구인구직 개발 프롬프트
 
 > 참고: 이 문서는 모바일앱 초기 개발 당시의 내부 프롬프트 기록입니다.
@@ -6,6 +8,7 @@
 ## 컨텍스트
 
 ### Phase 1 완료 상태 (2025-12-17)
+
 ```yaml
 완료 항목:
   - 프로젝트 초기화 (Expo SDK 54, RN 0.81, React 19)
@@ -28,6 +31,7 @@
 ```
 
 ### 프로젝트 구조
+
 ```
 uniqn-mobile/
 ├── app/                      # Expo Router
@@ -55,14 +59,14 @@ uniqn-mobile/
 ## Phase 2 목표
 
 ### 2.1 인증 시스템 [P0]
+
 ```yaml
 인증 방식:
   - ID/PW (이메일/비밀번호) 로그인
   - 소셜 로그인: Apple(P0), Google(P1), 카카오(P1)
   - ⚠️ 이메일 인증 사용 안함 → 휴대폰 본인인증으로 대체
 
-회원가입 (4단계):
-  1. 계정 정보 (이메일/비밀번호 또는 소셜 로그인)
+회원가입 (4단계): 1. 계정 정보 (이메일/비밀번호 또는 소셜 로그인)
   2. 휴대폰 본인인증 (필수) - PASS 또는 카카오 인증
   3. 프로필 정보 (닉네임, 역할 선택)
   4. 약관 동의
@@ -84,6 +88,7 @@ P2 항목 (출시 후):
 ```
 
 ### 2.2 회원탈퇴 + 개인정보 관리 [P0]
+
 ```yaml
 필수 구현 (법적 요구사항):
   - 탈퇴 화면 UI (사유 선택, 경고)
@@ -94,6 +99,7 @@ P2 항목 (출시 후):
 ```
 
 ### 2.3 구인구직 [P0]
+
 ```yaml
 구현 항목:
   - 공고 목록 (FlashList + 무한스크롤)
@@ -107,11 +113,12 @@ P1 항목:
 ```
 
 ### 2.4 비즈니스 에러 클래스 추가
+
 ```typescript
 // src/errors/BusinessError.ts
-export class InsufficientPointsError extends AppError {}  // 포인트(하트/다이아) 부족
-export class AlreadyAppliedError extends AppError {}     // 중복 지원
-export class ApplicationClosedError extends AppError {}  // 지원 마감
+export class InsufficientPointsError extends AppError {} // 포인트(하트/다이아) 부족
+export class AlreadyAppliedError extends AppError {} // 중복 지원
+export class ApplicationClosedError extends AppError {} // 지원 마감
 export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
@@ -120,6 +127,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ## 구현 순서 (의존성 기반)
 
 ### Step 1: 스키마 + 타입 정의
+
 ```yaml
 우선순위: 최우선
 파일:
@@ -133,6 +141,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
 ### Step 2: 서비스 레이어
+
 ```yaml
 우선순위: 높음
 파일:
@@ -147,6 +156,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
 ### Step 3: 인증 컴포넌트
+
 ```yaml
 우선순위: 높음
 컴포넌트:
@@ -169,6 +179,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
 ### Step 4: 구인구직 컴포넌트
+
 ```yaml
 우선순위: 높음
 컴포넌트:
@@ -186,6 +197,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
 ### Step 5: 회원탈퇴 + 개인정보
+
 ```yaml
 우선순위: 중간 (법적 필수)
 파일:
@@ -197,6 +209,7 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ```
 
 ### Step 6: 테스트
+
 ```yaml
 우선순위: 필수
 테스트:
@@ -215,22 +228,22 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 ## 기술적 결정 사항
 
 ### 비밀번호 정책 (Zod 스키마)
+
 ```typescript
 // src/schemas/auth.ts
-export const passwordSchema = z.string()
+export const passwordSchema = z
+  .string()
   .min(8, '최소 8자 이상')
   .max(128, '최대 128자 이하')
   .regex(/[A-Z]/, '대문자 1개 이상')
   .regex(/[a-z]/, '소문자 1개 이상')
   .regex(/[0-9]/, '숫자 1개 이상')
   .regex(/[!@#$%^&*]/, '특수문자 1개 이상')
-  .refine(
-    (val) => !/(.)\1\1/.test(val),
-    '3자 이상 연속 문자 금지'
-  );
+  .refine((val) => !/(.)\1\1/.test(val), '3자 이상 연속 문자 금지');
 ```
 
 ### Firebase 트랜잭션 (지원하기)
+
 ```typescript
 // src/services/applicationService.ts
 export async function applyJob(jobId: string, userId: string) {
@@ -253,6 +266,7 @@ export async function applyJob(jobId: string, userId: string) {
 ```
 
 ### Query Keys 사용
+
 ```typescript
 // 기존 queryKeys 활용 (src/lib/queryClient.ts)
 import { queryKeys } from '@/lib/queryClient';
@@ -271,6 +285,7 @@ useQuery({
 ```
 
 ### 권한 체크 (기존 hasPermission 활용)
+
 ```typescript
 // 기존 authStore 활용
 import { hasPermission, useAuthStore } from '@/stores/authStore';
@@ -285,6 +300,7 @@ const canApply = hasPermission(role, 'staff');
 ## 품질 기준
 
 ### 필수 검증 (매 작업 후)
+
 ```bash
 cd uniqn-mobile
 npm run type-check  # TypeScript 에러 0개
@@ -293,6 +309,7 @@ npm test            # 테스트 통과
 ```
 
 ### Phase 2 완료 기준
+
 ```
 □ ID/PW 회원가입 (4단계) → 로그인 완료
 □ 휴대폰 본인인증 Mock UI 동작
@@ -310,12 +327,12 @@ npm test            # 테스트 통과
 
 ## 참조 문서
 
-| 문서 | 경로 | 용도 |
-|------|------|------|
-| 스크린 스펙 | specs/react-native-app/04-screens.md | 화면 구성 |
-| Firebase 스펙 | specs/react-native-app/06-firebase.md | DB 구조 |
-| 에러 처리 | specs/react-native-app/09-error-handling.md | 에러 체계 |
-| 컴포넌트 스펙 | specs/react-native-app/05-components.md | UI 설계 |
+| 문서            | 경로                                            | 용도      |
+| --------------- | ----------------------------------------------- | --------- |
+| 스크린 스펙     | specs/react-native-app/04-screens.md            | 화면 구성 |
+| Firebase 스펙   | specs/react-native-app/06-firebase.md           | DB 구조   |
+| 에러 처리       | specs/react-native-app/09-error-handling.md     | 에러 체계 |
+| 컴포넌트 스펙   | specs/react-native-app/05-components.md         | UI 설계   |
 | 개발 체크리스트 | specs/react-native-app/DEVELOPMENT_CHECKLIST.md | 진행 추적 |
 
 ---

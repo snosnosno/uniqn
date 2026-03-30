@@ -1,73 +1,65 @@
-# UNIQN 사용자 매뉴얼
+# 사용자 매뉴얼
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 모바일앱 기준
+최종 업데이트: 2026-03-30  
+기준 코드: `uniqn-mobile/app/`
 
-이 문서는 `uniqn-mobile/`의 실제 화면 흐름만 정리합니다. 예전 웹 중심 설명은 현재 기본 사용 경로가 아닙니다.
+이 문서는 현재 모바일 앱 화면 흐름만 정리합니다.
 
 ## 시작하기
 
-- 앱 설치: App Store / Google Play에서 `UNIQN`
-- 로그인 경로: `uniqn-mobile/app/(auth)/login.tsx`
-- 회원가입 경로: `uniqn-mobile/app/(auth)/signup.tsx`
+- 로그인: `/(auth)/login`
+- 회원가입: `/(auth)/signup`
+- 비밀번호 재설정: `/(auth)/forgot-password`
 
-회원가입 흐름:
+## 메인 흐름
 
-1. 약관 동의
-2. 계정 정보 입력
-3. 본인인증
-4. 가입 완료 후 메인 탭 이동
+### 공고 확인
 
-## 메인 사용 흐름
+- 홈 탭: `/(app)/(tabs)/index`
+- 공고 상세: `/(app)/jobs/[id]`
 
-### 구인공고 보기
+### 지원
 
-- 메인 탭 홈: `uniqn-mobile/app/(app)/(tabs)/index.tsx`
-- 공고 검색, 공고 유형 필터, 날짜 필터를 사용할 수 있습니다.
-- 공고 상세: `uniqn-mobile/app/(app)/jobs/[id]/index.tsx`
+- 지원 화면: `/(app)/jobs/[id]/apply`
+- 취소 화면: `/(app)/applications/[id]/cancel`
 
-### 지원하기
+### 일정 / QR
 
-- 지원 화면: `uniqn-mobile/app/(app)/jobs/[id]/apply.tsx`
-- 역할 선택, 사전 질문 답변, 제출 흐름을 처리합니다.
+- 일정 탭: `/(app)/(tabs)/schedule`
+- QR 탭: `/(app)/(tabs)/qr`
 
-### 지원 취소
+### 알림
 
-- 취소 화면: `uniqn-mobile/app/(app)/applications/[id]/cancel.tsx`
-- 취소 가능 상태에서만 취소 요청을 진행합니다.
+- 알림 센터: `/(app)/notifications`
+- 카테고리 필터, 그룹화, 읽음/삭제 지원
 
-### 일정 확인
+### 평가
 
-- 스케줄 탭: `uniqn-mobile/app/(app)/(tabs)/schedule.tsx`
-- 캘린더/목록 전환, 일정 상세, QR 출퇴근, 월별 수익 확인을 지원합니다.
-
-### 알림 확인
-
-- 알림 화면: `uniqn-mobile/app/(app)/notifications.tsx`
-- 카테고리 필터, 그룹핑, 모두 읽음, 삭제를 지원합니다.
+- 대기 평가: `/(app)/reviews/pending`
+- 평가 이력: `/(app)/reviews/history`
+- 평가 작성/상세: `/(app)/reviews/*`
 
 ### 고객지원
 
-- 고객센터 메인: `uniqn-mobile/app/(app)/support/index.tsx`
+- 메인: `/(app)/support`
 - FAQ: `/(app)/support/faq`
-- 1:1 문의: `/(app)/support/create-inquiry`
+- 문의 작성: `/(app)/support/create-inquiry`
 - 내 문의: `/(app)/support/my-inquiries`
 
 ## 설정
 
-- 설정 메인: `uniqn-mobile/app/(app)/settings/index.tsx`
+화면: `/(app)/settings`
 
-현재 설정 화면에서 제공하는 항목:
+현재 제공 항목:
 
-- 푸시 알림 허용 및 설정
+- 푸시 알림
 - 비밀번호 변경
 - 자동 로그인
 - 생체 인증
 - 다크 모드
 - 캐시 삭제
-- 튜토리얼 다시 보기
 - 이용약관 / 개인정보처리방침 / 사업자정보
-- 마케팅 정보 수신 동의
+- 마케팅 수신 동의
 - 계정 삭제
 
 관련 세부 화면:
@@ -77,18 +69,11 @@
 - `/(app)/settings/my-data`
 - `/(app)/settings/terms`
 - `/(app)/settings/privacy`
+- `/(app)/settings/business-info`
 
-## 자주 확인할 항목
+## 문제 발생 시
 
-- 로그인이 안 되면 이메일/비밀번호와 본인 계정 상태를 먼저 확인합니다.
-- 알림이 오지 않으면 앱 알림 권한과 설정 화면의 푸시 알림 토글을 함께 확인합니다.
-- 스케줄이 비어 있으면 지원 상태와 확정 여부를 먼저 확인합니다.
-- 문의 답변은 고객센터의 `문의 내역`에서 확인합니다.
-
-## 현재 문서 범위 밖
-
-아래 내용은 현재 기본 사용자 문서에 포함하지 않습니다.
-
-- 웹 우선 설치 절차
-- 레거시 웹앱 화면 설명
-- 현재 앱에 없는 과거 웹 구현 상세
+- 로그인 문제: 이메일/비밀번호와 계정 상태 확인
+- 알림 문제: 기기 권한 + 앱 설정의 푸시 토글 확인
+- 일정이 비어 있으면 지원/확정 상태 확인
+- 문의 답변은 `문의 내역`에서 확인

@@ -1,3 +1,7 @@
+﻿> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 로그입니다.
+> 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
 # Parallel Refactor Integration Coordination
 
 Last updated: 2026-03-22
@@ -495,3 +499,4 @@ Every stream must report back in this shape:
   - contract drift between app schema, repository writes, Firestore rules, and functions after future fixes
   - the existing mobile lint warning in `app/(employer)/my-postings/[id]/edit.tsx`
   - repository default branch is currently `master`, not `main`; promotion instructions must target the actual default branch
+

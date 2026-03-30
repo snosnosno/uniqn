@@ -1,56 +1,60 @@
 # 성능 가이드
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 모바일앱 기준
+최종 업데이트: 2026-03-30  
+기준 코드: `uniqn-mobile/src/lib/queryClient.ts`, `uniqn-mobile/src/lib/invalidationStrategy.ts`, `uniqn-mobile/src/hooks/`, `uniqn-mobile/src/repositories/`, `uniqn-mobile/src/services/offline/`
 
-현재 성능 가이드는 `uniqn-mobile/`의 실제 구현에 맞춰 작성합니다.
+이 문서는 현재 앱에서 실제 사용 중인 성능 패턴과 검증 포인트만 정리합니다.
 
-## 현재 적용 중인 핵심 패턴
+## 현재 기준
 
-### 1. FlashList 사용
+- 서버 상태 캐싱은 TanStack Query로 통일합니다.
+- 긴 목록은 `@shopify/flash-list` 사용을 우선 검토합니다.
+- 이미지는 `expo-image`를 우선 사용합니다.
+- Firestore 접근은 화면에서 직접 반복 호출하지 않고 `Repository -> Service -> Hook` 흐름을 유지합니다.
+- 오프라인과 재연결 처리, 일부 실시간 동기화는 공통 서비스와 훅에서 관리합니다.
 
-대용량 목록 화면은 `@shopify/flash-list`를 사용합니다.
+## 기준 파일
 
-예:
+1. `uniqn-mobile/src/lib/queryClient.ts`
+2. `uniqn-mobile/src/lib/invalidationStrategy.ts`
+3. `uniqn-mobile/src/hooks/useRealtimeQuery.ts`
+4. `uniqn-mobile/src/services/offline/criticalOfflineCache.ts`
+5. `uniqn-mobile/src/services/offline/reconnectSyncService.ts`
+6. `uniqn-mobile/src/services/offline/remoteMutationGuard.ts`
+7. `uniqn-mobile/src/components/jobs/JobList.tsx`
+8. `uniqn-mobile/src/components/notifications/NotificationList.tsx`
 
-- 공고 목록
-- 알림 목록
-- 문의 목록
-- 내 공고 목록
-- 리뷰 목록
+## 주요 운영 패턴
 
-## 2. 이미지 최적화
+### 목록 렌더링
 
-- `expo-image`를 사용합니다.
-- 상세 화면이나 공지 이미지 선택/표시에서 사용됩니다.
+- 공고, 알림, 문의, 리뷰처럼 항목 수가 커질 수 있는 화면은 `FlashList`를 우선 검토합니다.
+- 고정 크기 선택 UI나 단순 그리드는 `FlatList`를 허용합니다.
 
-## 3. 서버 상태 캐싱
+### 이미지 처리
 
-- TanStack Query를 사용합니다.
-- `src/lib/queryClient.ts`에서 캐시 시간, 재시도, 오프라인 우선 모드를 중앙 관리합니다.
-- Query Key와 invalidation 규칙을 공통화합니다.
+- 공고 상세, 공지 이미지, 이미지 선택 화면은 `expo-image`를 우선 사용합니다.
+- 화면별 예외 캐시 정책을 새로 만들기보다 기존 공통 컴포넌트 패턴을 재사용합니다.
 
-## 4. Repository 재사용
+### Query 캐싱과 무효화
 
-- 화면에서 Firebase를 직접 여러 번 호출하지 않고 Repository를 통해 접근합니다.
-- 같은 도메인 데이터를 Service/Hook에서 재조합해 중복 호출을 줄입니다.
+- Query Key는 `queryClient.ts`와 `invalidationStrategy.ts` 기준으로 관리합니다.
+- 낙관적 갱신을 추가할 때는 캐시 무효화와 오프라인 재시도 흐름을 함께 검토합니다.
 
-## 5. 실시간 동기화 관리
+### 실시간과 오프라인
 
-- 필요 시 `useRealtimeQuery`와 관련 매니저를 통해 실시간 구독을 붙입니다.
-- 앱 상태 전환과 네트워크 상태도 Query 레이어와 연결합니다.
+- 실시간 구독은 `useRealtimeQuery`, `shared/realtime`, 오프라인 서비스와 함께 검토합니다.
+- 앱 포그라운드 전환과 네트워크 상태는 Query 생명주기와 맞물려야 합니다.
 
-## 성능 작업 체크리스트
+## 새 화면 추가 체크리스트
 
-새 화면을 추가할 때:
+1. 긴 목록이면 `FlashList`가 더 적합한지 먼저 확인합니다.
+2. 이미지가 있다면 `expo-image` 또는 기존 이미지 래퍼를 우선 재사용합니다.
+3. Firebase 직접 호출 대신 기존 Repository, Service, Hook을 재사용합니다.
+4. Query Key, 캐시 무효화, 빈 상태, 오류 상태를 함께 설계합니다.
+5. 실시간 갱신이 필요하면 오프라인 재연결 동작까지 같이 확인합니다.
 
-1. 긴 목록이면 `FlashList` 사용 여부를 먼저 검토합니다.
-2. 이미지가 있으면 `expo-image` 사용을 우선 검토합니다.
-3. 직접 Firebase 호출보다 기존 Hook/Service/Repository 재사용을 우선합니다.
-4. Query Key와 invalidation을 기존 패턴에 맞춥니다.
-5. 로딩/새로고침/페이징 상태를 분리합니다.
-
-## 기본 검증 명령어
+## 검증 명령
 
 ```bash
 cd uniqn-mobile
@@ -58,18 +62,14 @@ npm run quality
 npm run analyze:bundle
 ```
 
-## 관련 파일
+## 현재 제외 범위
 
-- `uniqn-mobile/src/lib/queryClient.ts`
-- `uniqn-mobile/src/repositories/index.ts`
-- `uniqn-mobile/src/hooks/useJobPostings.ts`
-- `uniqn-mobile/src/hooks/useRealtimeQuery.ts`
-- `uniqn-mobile/src/components/jobs/JobList.tsx`
-- `uniqn-mobile/src/components/notifications/NotificationList.tsx`
+- 과거 측정값을 현재 앱 성능 수치처럼 고정하는 것
+- 존재하지 않는 최적화 계층을 현재 구현처럼 설명하는 것
+- 웹 전용 렌더링 최적화를 모바일 기준 문서에 섞는 것
 
-## 피해야 할 것
+## 관련 문서
 
-- 화면 안에서 동일 데이터를 여러 번 직접 쿼리하는 것
-- 긴 목록을 일반 `ScrollView`로 처리하는 것
-- 캐시 무효화 없이 낙관적 갱신만 추가하는 것
-- 현재 코드에 없는 과거 웹 최적화 수치를 현재 성능 결과처럼 문서화하는 것
+- `docs/core/DEVELOPMENT_GUIDE.md`
+- `docs/core/TESTING_GUIDE.md`
+- `docs/reference/ARCHITECTURE.md`

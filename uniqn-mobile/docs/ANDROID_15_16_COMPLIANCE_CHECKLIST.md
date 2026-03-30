@@ -7,8 +7,8 @@ This checklist tracks the current shipping posture for Android 15 edge-to-edge a
 
 ## Scope
 
-- Phase 1 is already reflected in the current app code and Expo config.
-- Phase 2 remains a future Expo SDK 55 follow-up and is not part of the current release baseline.
+- 현재 저장소는 이미 Expo SDK 55 기준입니다.
+- 이 문서는 Expo 55 이후에도 유지해야 하는 Android 15 edge-to-edge와 Android 16 대화면 대응 상태를 점검합니다.
 
 ## Applied app changes
 
@@ -43,8 +43,8 @@ This checklist tracks the current shipping posture for Android 15 edge-to-edge a
 
 ## Excluded from current release baseline
 
-- Expo SDK 55 migration
-- Upstream library warning elimination that requires dependency upgrades
+- 추가 네이티브 의존성 업그레이드가 필요한 upstream warning 제거
+- Play Console 경고의 원인이 앱 코드가 아닌 RN 내부 구현인지 더 깊게 추적하는 작업
 
 ## Related documents
 

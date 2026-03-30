@@ -1,3 +1,8 @@
+> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 보안 가이드입니다.
+> 현재 기준 문서는 `docs/README.md`, `docs/reference/AUTHENTICATION.md`, `docs/operations/MONITORING.md`, `docs/operations/TROUBLESHOOTING.md`를 우선 확인하세요.
+
 # 🛡️ UNIQN 보안 가이드라인
 
 **최종 업데이트**: 2026년 3월 14일

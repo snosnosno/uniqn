@@ -1,11 +1,13 @@
-# UNIQN 모바일 테스트 가이드
+# 테스트 가이드
 
-최종 업데이트: 2026-03-26
+최종 업데이트: 2026-03-30  
+기준 코드: `uniqn-mobile/`, `functions/`
 
 ## 테스트 스택
 
-- 단위/통합 테스트: Jest + `jest-expo`
-- E2E 테스트: Playwright + Expo Web build + Firebase Emulator
+- 앱 단위/통합 테스트: Jest + `jest-expo`
+- 앱 E2E: Playwright + Expo Web export + Firebase Emulator
+- Functions 테스트: Mocha + Firebase Emulator
 
 ## 공통 요구사항
 
@@ -15,7 +17,7 @@ Java 17+
 firebase-tools
 ```
 
-## 기본 검증 순서
+## 앱 기본 검증
 
 ```bash
 cd uniqn-mobile
@@ -24,18 +26,15 @@ npm run quality
 npm test
 ```
 
-공유 로직을 크게 건드렸다면 coverage도 확인합니다.
+공유 로직이나 스키마를 크게 건드렸다면:
 
 ```bash
-cd uniqn-mobile
 npm run test:coverage
 ```
 
-## E2E 환경 계약
+## 앱 E2E
 
-E2E는 Firebase production 리소스를 만지지 않도록 emulator mode를 강제합니다.
-
-필수 env:
+필수 env 예시:
 
 ```env
 EXPO_PUBLIC_RELEASE_CHANNEL=development
@@ -49,18 +48,15 @@ EXPO_PUBLIC_FIREBASE_REGION=asia-northeast3
 EXPO_PUBLIC_USE_EMULATOR=true
 ```
 
-## E2E 실행
+실행 순서:
 
 ```bash
-# 1. 루트에서 emulator 실행
-cd ..
+# 루트
 firebase emulators:start --only auth,firestore,functions,storage
 
-# 2. 앱에서 웹 빌드
+# 별도 터미널
 cd uniqn-mobile
 npm run build:web
-
-# 3. Playwright 실행
 npm run e2e
 ```
 
@@ -72,28 +68,17 @@ npm run e2e:headed
 npm run e2e:report
 ```
 
-## 반드시 유지할 보장
-
-- emulator mode에서는 Auth/Firestore/Functions/Storage가 모두 로컬 endpoint로 연결되어야 함
-- 이미지 업로드 경로는 emulator mode에서 production bucket URL을 만들면 안 됨
-- CI, 로컬 실행, global setup이 같은 emulator topology를 사용해야 함
-
-## CI 기준
-
-CI는 Node 22 기준으로 다음을 통과해야 합니다.
-
-```bash
-cd uniqn-mobile
-npm run quality
-npm test
-npm run build:web
-npm run e2e
-```
-
-그리고 backend는 별도로 아래 검증을 통과해야 합니다.
+## Functions 검증
 
 ```bash
 cd functions
 npm ci
 npm run build
+npm test
 ```
+
+## 반드시 확인할 계약
+
+- emulator mode에서는 Auth, Firestore, Functions, Storage가 모두 로컬 endpoint를 사용해야 합니다.
+- `uniqn-mobile/.env.local`과 CI/EAS env 이름이 일치해야 합니다.
+- 문서에 적힌 스크립트는 `package.json` 실제 스크립트와 일치해야 합니다.

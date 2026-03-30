@@ -1,94 +1,57 @@
-# UNIQN 모니터링 가이드
+# 모니터링 가이드
 
-**최종 업데이트**: 2026년 3월 21일
-**상태**: 현재 코드 기준
+최종 업데이트: 2026-03-30  
+기준 코드: `uniqn-mobile/src/services/observability/`, `functions/src/`
 
-이 문서는 `uniqn-mobile/`과 `functions/`의 현재 관측성 구현만 정리합니다. 레거시 웹앱 기준 성능 수치나 웹 전용 관리자 모니터링 경로는 현재 기본 운영 기준이 아닙니다.
+이 문서는 현재 구현된 관측성 수단만 정리합니다.
 
-## 기준 파일
+## 앱 관측성
 
-- `uniqn-mobile/app/_layout.tsx`
-- `uniqn-mobile/src/services/observability/analyticsService.ts`
-- `uniqn-mobile/src/services/observability/sentryService.ts`
-- `uniqn-mobile/src/services/observability/crashlyticsService.ts`
-- `uniqn-mobile/src/services/observability/performanceService.ts`
-- `uniqn-mobile/src/services/observability/featureFlagService.ts`
-- `uniqn-mobile/app/(admin)/stats/index.tsx`
-- `functions/src/index.ts`
+### Analytics
 
-## 현재 모니터링 스택
+- 구현: `uniqn-mobile/src/services/observability/analyticsService.ts`
+- 화면 추적: `useNavigationTracking`
+- 로그인, 회원가입, 공고 조회, 지원, 출퇴근, 정산 등 주요 이벤트 추적
 
-### 앱 에러 추적
+### Sentry
 
-- 실제 SDK: `@sentry/react-native`
-- 초기화 위치: `uniqn-mobile/app/_layout.tsx`
-- canonical 래퍼 이름: `sentryService`
+- 구현: `uniqn-mobile/src/services/observability/sentryService.ts`
+- canonical 이름: `sentryService`
 - 호환 alias: `crashlyticsService`
-- 새 코드는 `sentryService`를 사용하고, 기존 호출부 호환 때문에 `crashlyticsService` alias를 유지합니다.
+- 초기화 진입점: `uniqn-mobile/app/_layout.tsx`
 
-### 에러 분류 및 전송 정책
+### 성능
 
-- `recoverable-business`: `auth`, `validation`, `permission`, `business`의 `low`/`medium` 에러입니다. `handleServiceError()`로 `AppError` 정규화 후 로깅만 하고 Sentry에는 보내지 않습니다.
-- `infra`: `network`, `firebase`, `security`, `unknown` 카테고리 또는 `severity: high` 에러입니다. Sentry에 non-fatal로 보냅니다.
-- `critical-telemetry`: `severity: critical` 에러입니다. Sentry에 fatal로 보냅니다.
-- `handleSilentError()`는 best-effort 작업 전용입니다. telemetry를 억제한 상태로 로깅만 남깁니다.
-- Error Boundary는 기본/네트워크/데이터 페치 경계에서 위 정책을 따르고, 폼 경계는 사용자 입력 오류를 telemetry로 올리지 않습니다.
+- 구현: `uniqn-mobile/src/services/observability/performanceService.ts`
+- 화면/API/렌더 추적용 내부 추상화 제공
 
-### 앱 이벤트 추적
+### 세션
 
-- 구현 파일: `uniqn-mobile/src/services/observability/analyticsService.ts`
-- 웹 환경에서는 Firebase Analytics를 사용합니다.
-- 화면 전환 추적은 `useNavigationTracking`에서 연결됩니다.
+- 구현: `uniqn-mobile/src/services/observability/sessionService.ts`
+- 로그인 시도, 세션 상태, 토큰 갱신 관리
 
-### 앱 성능 추적
+## 관리자 화면에서 볼 수 있는 것
 
-- 구현 파일: `uniqn-mobile/src/services/observability/performanceService.ts`
-- 화면/API/렌더 추적용 내부 추상화를 제공합니다.
-- 네이티브 Firebase Performance SDK는 현재 직접 의존성으로 들어 있지 않습니다.
+- 대시보드: `uniqn-mobile/app/(admin)/index.tsx`
+- 통계: `uniqn-mobile/app/(admin)/stats/index.tsx`
 
-### Feature Flag 관측
+현재 관리자 라우트에는 별도 운영 설정 화면이 없습니다. 아직 없는 원격 제어 기능을 현재 구현처럼 문서화하지 않습니다.
 
-- 구현 파일: `uniqn-mobile/src/services/observability/featureFlagService.ts`
-- Remote Config 사용 가능 여부와 캐시 상태를 관리합니다.
-- 운영자는 `/(admin)/settings`에서 현재 플래그 상태를 확인할 수 있습니다.
+## 백엔드 관측성
 
-### 운영 통계 화면
+- Firebase Functions 로그
+- Firebase Console Auth / Firestore / Functions
+- Functions 내부 Sentry 유틸: `functions/src/utils/sentry.ts`
 
-- 화면: `uniqn-mobile/app/(admin)/stats/index.tsx`
-- 총 사용자, 오늘 신규 가입, 활성 공고, 오늘 지원, 미처리 신고, 7일 추세를 확인합니다.
+## 장애 확인 순서
 
-## 운영자가 확인할 곳
+1. Sentry에서 최근 오류 확인
+2. `firebase functions:log` 확인
+3. 관리자 통계 화면에서 주요 수치 확인
+4. 최근 배포와 env 변경 여부 확인
 
-### 1. 모바일 앱
+## 운영 문서 범위 밖
 
-- Sentry 대시보드
-- 앱 내 관리자 통계 화면
-- 관리자 설정 화면의 점검 모드 / Feature Flag 상태
-
-### 2. Firebase
-
-- Authentication, Firestore, Functions 로그
-- Functions 실패 로그 및 트리거 실행 상태
-
-### 3. 배포 시점 체크
-
-- `EXPO_PUBLIC_SENTRY_DSN` 설정 여부
-- `EXPO_PUBLIC_RELEASE_CHANNEL` 값 확인
-- Functions 배포 후 오류 로그 확인
-
-## 장애 대응 기본 순서
-
-1. Sentry에서 최근 에러 확인
-2. Firebase Functions 로그 확인
-3. 관리자 통계 및 문의/신고 급증 여부 확인
-4. 필요 시 `maintenance_mode` 상태 확인
-5. Feature Flag 캐시를 새로고침해 실제 운영값 반영 여부 점검
-
-## 문서 작성 주의
-
-다음 내용은 현재 기준 문서에 다시 넣지 않습니다.
-
-- Firebase Hosting 성능 수치
-- 웹 전용 관리자 모니터링 URL
-- 웹 전용 Performance Observer 예시를 현재 운영 코드처럼 설명하는 문구
-- Crashlytics SDK가 직접 붙어 있다는 설명
+- 현재 코드에 없는 운영 제어 서비스
+- 현재 코드에 없는 관리자 추가 설정 화면
+- 웹 포털 전용 모니터링 URL

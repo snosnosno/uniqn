@@ -1,3 +1,7 @@
+﻿> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 로그입니다.
+> 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
 # Pre-Release Long-Run Audit Prompt
 
 아래 프롬프트를 그대로 복붙해서 사용하세요.
@@ -305,3 +309,4 @@
 - Codex, Claude Code, Cursor Agent 같은 자율 작업형 에이전트에 바로 넣기 좋게 작성했습니다.
 - 더 강하게 쓰려면 프롬프트 마지막에 `중간에 사용자 확인을 최소화하고, 합리적인 가정을 명시한 뒤 계속 진행하라.`를 덧붙이면 됩니다.
 - 병렬 작업 가능한 에이전트라면 `독립적인 읽기/분석/테스트는 병렬화하라`를 추가해도 좋습니다.
+

@@ -1,3 +1,7 @@
+﻿> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 로그입니다.
+> 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
 # UNIQN 모바일앱 과금 시스템 v4
 
 ## 개요
@@ -688,3 +692,4 @@ npm run build:web    # 빌드 확인
 
 *마지막 업데이트: 2026-02-11*
 *버전: v4.0 (💖 하트 + 💎 다이아 이중 재화 시스템)*
+

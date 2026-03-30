@@ -1,53 +1,75 @@
-# 문서 인덱스
-현재 문서 기준은 `uniqn-mobile/`과 `functions/`입니다. 레거시 웹앱 내용은 별도 참고 문서로만 취급합니다.
+# 문서 허브
 
-## 우선 문서
+최종 업데이트: 2026-03-30  
+현재 기준: `uniqn-mobile/`, `functions/`
+
+이 폴더는 현재 운영 문서와 역사 문서를 분리해서 관리합니다. 현재 제품 동작을 확인할 때는 아래의 `활성 문서`만 먼저 보세요.
+
+## 활성 문서
+
+### Core
 
 - `core/DEVELOPMENT_GUIDE.md`
 - `core/TESTING_GUIDE.md`
+
+### Reference
+
 - `reference/ARCHITECTURE.md`
 - `reference/API_REFERENCE.md`
+- `reference/AUTHENTICATION.md`
+- `reference/DATA_SCHEMA.md`
+
+### Guides
+
 - `guides/DEPLOYMENT.md`
 - `guides/ROLLBACK_PROCEDURES.md`
+
+### Operations
+
 - `operations/MONITORING.md`
 - `operations/TROUBLESHOOTING.md`
+
+### User
+
 - `user/ONBOARDING.md`
 - `user/USER_MANUAL.md`
 - `user/ADMIN_GUIDE.md`
 
-## 카테고리
+### Mobile Release Docs
 
-### core
+- `../uniqn-mobile/docs/EAS_BUILD_GUIDE.md`
+- `../uniqn-mobile/docs/PUSH_NOTIFICATION_TEST_CHECKLIST.md`
+- `../uniqn-mobile/docs/apple-app-review-demo-setup.md`
+- `../uniqn-mobile/README-E2E.md`
 
-- 개발, 테스트 기본 워크플로우
+## 아카이브 문서
 
-### features
+아래 문서군은 현재 운영 기준이 아니라 설계, 이행, 기록, 레거시 참고 자료입니다.
 
-- 현재 기능 설명 문서
-- 결제/승인/권한 문서는 구현 완료 문서가 아니라 설계/계획 문서가 섞여 있을 수 있으므로 코드와 함께 검토해야 합니다.
+- `../specs/react-native-app/*`
+- `planning/*`
+- `features/*`
+- 날짜가 들어간 운영 로그/감사 대응 문서
+- `../ROADMAP.md`
+- `../TODO.md`
+- `../mobile-payment-plan.md`
+- `../refactor PLAN.md`
+- `../app2/**/*.md`
 
-### guides
+이 문서들은 삭제 대상이 아니라 참고 자료입니다. 다만 현재 구현처럼 읽히지 않도록 상단 배너와 canonical 문서 링크를 유지합니다.
 
-- 배포, 롤백, 성능, 국제화 관련 운영 가이드
+## 문서 작성 원칙
 
-### operations
+- 코드와 다르면 코드를 기준으로 수정합니다.
+- 존재하지 않는 파일, 라우트, 스크립트, Functions 이름은 문서에 적지 않습니다.
+- 계획 문서는 계획이라고 명시합니다.
+- 운영 문서에는 실제 코드 경로와 실행 명령을 함께 적습니다.
+- `app2/`는 현재 runtime source가 아닙니다.
 
-- 모니터링, 보안, 트러블슈팅, 알림 운영
+## 빠른 탐색 순서
 
-### reference
-
-- 아키텍처, API, 인증, 데이터 스키마 등 제품 범위 참고
-
-### user
-
-- 사용자, 관리자, 온보딩 문서
-
-## 문서 검색 원칙
-
-- 현재 구현 여부를 항상 코드로 확인합니다.
-- 존재하지 않는 스크립트, 라우트, Functions 이름은 문서에 적지 않습니다.
-- 계획 문서는 계획이라고 명시하고, 구현 문서에는 실제 코드 경로를 함께 적습니다.
-
-# Canonical Source Of Truth
-Current runtime and API contracts for job postings live in `uniqn-mobile/` and `functions/`.
-`app2/` is kept only as a legacy reference archive and must not be used as the source of truth for V3 canonical schemas.
+1. `../README.md`
+2. `core/DEVELOPMENT_GUIDE.md`
+3. `reference/ARCHITECTURE.md`
+4. `reference/API_REFERENCE.md`
+5. `guides/DEPLOYMENT.md`

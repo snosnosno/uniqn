@@ -1,3 +1,7 @@
+﻿> 아카이브 문서
+>
+> 이 문서는 현재 운영 기준이 아니라 설계, 기록, 레거시 참고 또는 시점 한정 로그입니다.
+> 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
 # UNIQN 병렬 리팩터링 실행계획
 
 ## 요약
@@ -108,3 +112,4 @@
 - UI 개선은 의미 수정만 허용하고, 제품 정책 변경이나 대규모 비주얼 리디자인은 범위 밖입니다.
 - fixed posting duration은 별도 제품 요구가 없으면 단일 정책으로 통일합니다.
 - `app2/`는 참조만 가능하며 runtime 판단 근거로 사용하지 않습니다.
+
