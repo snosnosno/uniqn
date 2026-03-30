@@ -185,4 +185,51 @@ describe('job-posting workflow selectors', () => {
     });
     expect(facts.compensation.display.useSameSalary).toBe(true);
   });
+
+  it('treats grouped urgent postings like grouped dated displays', () => {
+    const posting = createBasePosting({
+      postingType: 'urgent',
+      totalPositions: 4,
+      schedule: {
+        kind: 'dated',
+        primaryDate: '2025-02-01',
+        allDates: ['2025-02-01', '2025-02-02'],
+        requirements: [
+          {
+            date: '2025-02-01',
+            isGrouped: true,
+            timeSlots: [
+              {
+                id: 'slot-1',
+                startTime: '10:00',
+                roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 1 }],
+              },
+            ],
+          },
+          {
+            date: '2025-02-02',
+            isGrouped: true,
+            timeSlots: [
+              {
+                id: 'slot-2',
+                startTime: '10:00',
+                roles: [{ id: 'dealer-2', role: 'dealer', count: 2, filled: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const facts = buildPostingFacts(posting);
+
+    expect(facts.workflow).toMatchObject({
+      isUrgent: true,
+      isTournament: false,
+      usesGroupedDateRanges: true,
+    });
+    expect(facts.schedule.display.variant).toBe('grouped_dates');
+    expect(facts.schedule.display.dateGroups).toHaveLength(1);
+    expect(facts.application.selectionMode).toBe('dated_assignment');
+  });
 });

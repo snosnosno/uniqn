@@ -158,7 +158,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
     () => createPostingLegacyDateRequirements(jobPosting),
     [jobPosting]
   );
-  const isTournament = postingFacts.workflow.isTournament;
+  const usesGroupedDateRanges = postingFacts.workflow.usesGroupedDateRanges;
   const scheduleGroups = useMemo(() => {
     return groupDatedSchedules(datedSchedules, groupedRequirements, postingFacts.postingType);
   }, [datedSchedules, groupedRequirements, postingFacts.postingType]);
@@ -190,7 +190,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       </View>
 
       <View>
-        {isTournament
+        {usesGroupedDateRanges
           ? scheduleGroups.map((group) => (
               <DateGroupSelection
                 key={group.id}

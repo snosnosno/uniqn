@@ -27,7 +27,8 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   const [showGroupingModal, setShowGroupingModal] = useState(false);
   const [pendingDates, setPendingDates] = useState<string[]>([]);
 
-  const isTournament = postingType === 'tournament';
+  const supportsGroupedDates =
+    postingType === 'regular' || postingType === 'urgent' || postingType === 'tournament';
   const constraints = useMemo(() => {
     if (!postingType) {
       return { maxDates: 1, label: 'single date' };
@@ -41,12 +42,16 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   }, [data.dateSpecificRequirements]);
 
   const dateRangeGroups = useMemo(() => {
-    if (!isTournament) {
+    if (!supportsGroupedDates) {
       return [];
     }
 
     return groupRequirementsToDateRanges(dateRequirements);
-  }, [dateRequirements, isTournament]);
+  }, [dateRequirements, supportsGroupedDates]);
+
+  const hasGroupedRequirements = useMemo(() => {
+    return dateRequirements.some((requirement) => requirement.isGrouped === true);
+  }, [dateRequirements]);
 
   const existingDates = useMemo(() => {
     return dateRequirements.map((req) => toDateString(req.date)).filter(Boolean);
@@ -97,7 +102,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     (dates: string[]) => {
       const sortedDates = [...dates].sort();
 
-      if (isTournament && sortedDates.length > 1) {
+      if (supportsGroupedDates && sortedDates.length > 1) {
         setPendingDates(sortedDates);
         setShowGroupingModal(true);
         return;
@@ -105,7 +110,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
 
       handleAddDatesIndividually(sortedDates);
     },
-    [handleAddDatesIndividually, isTournament]
+    [handleAddDatesIndividually, supportsGroupedDates]
   );
 
   const handleGroupingConfirm = useCallback(
@@ -200,25 +205,25 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       <View className="mb-4">
         <Text className="text-sm text-gray-600 dark:text-gray-400">
           최대 {constraints.maxDates}개 날짜 추가 가능
-          {isTournament && totalGroupCount > 0 && (
+          {hasGroupedRequirements && totalGroupCount > 0 && (
             <Text className="text-gray-500 dark:text-gray-500">
               {' '}
               (현재 {totalGroupCount}개 일정, {totalDateCount}일)
             </Text>
           )}
         </Text>
-        {isTournament && (
+        {supportsGroupedDates && (
           <Text className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-            연속 날짜는 그룹으로 묶을지 선택할 수 있습니다.
+            연속 날짜는 그룹으로 묶을지, 개별 날짜로 관리할지 선택할 수 있습니다.
           </Text>
         )}
       </View>
 
       {dateRequirements.length === 0 ? (
         <View className="items-center p-8">
-          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해 주세요</Text>
+          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해 주세요.</Text>
         </View>
-      ) : isTournament ? (
+      ) : hasGroupedRequirements ? (
         <View className="mb-4">
           {dateRangeGroups.map((group, groupIndex) => (
             <DateRangeCard
@@ -257,7 +262,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
         testID="job-posting-add-date-button"
-        accessibilityHint={canAddDate ? '새 날짜를 추가합니다' : '더 이상 추가할 수 없습니다'}
+        accessibilityHint={canAddDate ? '새 날짜를 추가합니다.' : '더 이상 추가할 수 없습니다.'}
       >
         <View className="mr-2">
           <PlusIcon size={20} color={canAddDate ? '#A855F7' : '#9CA3AF'} />

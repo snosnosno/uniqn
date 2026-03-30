@@ -33,6 +33,10 @@ export function selectPostingWorkflow(posting: JobPosting): PostingWorkflow {
   const isFixed = posting.schedule.kind === 'fixed';
   const isTournament = posting.postingType === 'tournament';
   const dateGroups = isFixed ? [] : getPostingDateGroups(posting);
+  const hasGroupedRequirements =
+    posting.schedule.kind === 'dated' &&
+    posting.schedule.requirements.some((requirement) => requirement.isGrouped === true);
+  const usesGroupedDateRanges = !isFixed && hasGroupedRequirements && dateGroups.length > 0;
 
   return {
     scheduleKind: posting.schedule.kind,
@@ -41,7 +45,7 @@ export function selectPostingWorkflow(posting: JobPosting): PostingWorkflow {
     isTournament,
     isUrgent: posting.postingType === 'urgent',
     recruitmentType: isFixed ? 'fixed' : 'event',
-    usesGroupedDateRanges: isTournament && dateGroups.length > 0,
+    usesGroupedDateRanges,
   };
 }
 
