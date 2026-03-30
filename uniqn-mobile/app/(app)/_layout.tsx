@@ -1,8 +1,5 @@
 /**
- * UNIQN Mobile - App Layout
- *
- * Renders the authenticated stack and keeps notification initialization behind
- * a route-state gate so incomplete sign-up flows do not start heavy listeners.
+ * Authenticated app layout.
  */
 
 import { useCallback, useEffect } from 'react';
@@ -18,16 +15,17 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { AUTH_ENTRY_ROUTES, getAuthenticatedEntryRoute } from '@/shared/navigation/authRedirect';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { isWeb } from '@/utils/platform';
 import { logger } from '@/utils/logger';
 
 export default function AppLayout() {
-  const isDark = useThemeStore((s) => s.isDarkMode);
+  const isDark = useThemeStore((state) => state.isDarkMode);
   const { isLoading, profile } = useAuthStore();
   const insets = useSafeAreaInsets();
   const segments = useSegments();
 
   const isTabsRoute = segments[0] === '(app)' && segments.includes('(tabs)');
-  const overlayBottomOffset = isTabsRoute ? LAYOUT.TAB_BAR_HEIGHT + insets.bottom : 0;
+  const loadingOverlayBottomOffset = isTabsRoute ? LAYOUT.TAB_BAR_HEIGHT + insets.bottom : 0;
 
   const shouldInitializeNotifications =
     !!profile &&
@@ -43,45 +41,57 @@ export default function AppLayout() {
     isLoading: isOnboardingLoading,
   } = useOnboarding();
 
-  const { requestPermission, isRequestingPermission } = useNotificationHandler({
-    enabled: shouldInitializeNotifications,
-    autoInitialize: shouldInitializeNotifications,
-    autoRegisterToken: shouldInitializeNotifications,
-  });
+  const { requestPermission, openSettings, permissionStatus, isRequestingPermission } =
+    useNotificationHandler({
+      enabled: shouldInitializeNotifications,
+      autoInitialize: shouldInitializeNotifications,
+      autoRegisterToken: shouldInitializeNotifications,
+    });
 
   const handleRequestPermission = useCallback(async () => {
     try {
       const granted = await requestPermission();
-      completeNotificationOnboarding();
+
+      if (granted) {
+        completeNotificationOnboarding();
+      }
+
       return granted;
     } catch (error) {
       logger.error('Notification permission request failed', error as Error, {
         component: 'AppLayout',
         operation: 'handleRequestPermission',
       });
-      completeNotificationOnboarding();
       return false;
     }
   }, [completeNotificationOnboarding, requestPermission]);
 
-  const handleSkip = useCallback(() => {
+  const handleDismiss = useCallback(() => {
     completeNotificationOnboarding();
   }, [completeNotificationOnboarding]);
 
   useEffect(() => {
-    if (!shouldInitializeNotifications || !needsNotificationOnboarding) return;
-
-    const timeout = setTimeout(() => {
-      logger.warn('Notification onboarding timed out', { component: 'AppLayout' });
+    if (
+      shouldInitializeNotifications &&
+      needsNotificationOnboarding &&
+      permissionStatus === 'granted'
+    ) {
       completeNotificationOnboarding();
-    }, 30000);
-
-    return () => clearTimeout(timeout);
-  }, [completeNotificationOnboarding, needsNotificationOnboarding, shouldInitializeNotifications]);
+    }
+  }, [
+    completeNotificationOnboarding,
+    needsNotificationOnboarding,
+    permissionStatus,
+    shouldInitializeNotifications,
+  ]);
 
   const showLoading = isLoading || isOnboardingLoading;
   const showOnboarding =
-    shouldInitializeNotifications && !showLoading && needsNotificationOnboarding;
+    !isWeb &&
+    shouldInitializeNotifications &&
+    !showLoading &&
+    needsNotificationOnboarding &&
+    permissionStatus !== 'granted';
 
   return (
     <NetworkErrorBoundary name="AppLayout">
@@ -133,19 +143,22 @@ export default function AppLayout() {
 
         {showLoading && (
           <View
-            style={[styles.overlay, overlayBottomOffset > 0 && { bottom: overlayBottomOffset }]}
+            style={[
+              styles.overlay,
+              loadingOverlayBottomOffset > 0 && { bottom: loadingOverlayBottomOffset },
+            ]}
           >
             <Loading variant="layout" />
           </View>
         )}
 
         {showOnboarding && (
-          <View
-            style={[styles.overlay, overlayBottomOffset > 0 && { bottom: overlayBottomOffset }]}
-          >
+          <View style={styles.fullscreenOverlay}>
             <NotificationPermissionScreen
+              stage={permissionStatus === 'denied' ? 'settings' : 'request'}
               onRequestPermission={handleRequestPermission}
-              onSkip={handleSkip}
+              onOpenSettings={openSettings}
+              onDismiss={handleDismiss}
               isLoading={isRequestingPermission}
             />
           </View>
@@ -162,5 +175,9 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
+  },
+  fullscreenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
   },
 });

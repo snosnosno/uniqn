@@ -1,56 +1,37 @@
 /**
- * UNIQN Mobile - NotificationList 컴포넌트
- *
- * @description 알림 목록을 표시하는 리스트 컴포넌트
- * @version 1.0.0
+ * UNIQN Mobile - Notification list component
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { BellSlashIcon } from '@/components/icons';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { NotificationItem, NotificationItemSkeleton } from './NotificationItem';
 import { NotificationGroupItem } from './NotificationGroupItem';
 import {
-  NotificationData,
-  NotificationListItem,
-  GroupedNotificationData,
+  type NotificationData,
+  type NotificationListItem,
+  type GroupedNotificationData,
   isGroupedNotification,
 } from '@/types/notification';
-import { EmptyState } from '@/components/ui/EmptyState';
 
 export interface NotificationListProps {
-  /** 알림 목록 (개별 또는 그룹화된) */
   notifications: NotificationListItem[];
-  /** 로딩 상태 */
   isLoading?: boolean;
-  /** 새로고침 중 여부 (pull-to-refresh 스피너용) */
   isRefreshing?: boolean;
-  /** 에러 */
   error?: Error | null;
-  /** 추가 데이터 존재 여부 */
   hasMore?: boolean;
-  /** 다음 페이지 로딩 중 여부 */
   isFetchingNextPage?: boolean;
-  /** 새로고침 핸들러 */
   onRefresh?: () => void;
-  /** 다음 페이지 로드 핸들러 */
   onLoadMore?: () => void;
-  /** 알림 클릭 핸들러 */
   onNotificationPress?: (notification: NotificationData) => void;
-  /** 그룹 클릭 핸들러 */
   onGroupPress?: (group: GroupedNotificationData) => void;
-  /** 알림 삭제 핸들러 */
   onDeleteNotification?: (notificationId: string) => void;
-  /** 모두 읽음 처리 핸들러 */
   onMarkAllAsRead?: () => void;
-  /** 삭제 버튼 표시 여부 */
   showDelete?: boolean;
-  /** 헤더 표시 여부 (모두 읽음 버튼) */
   showHeader?: boolean;
-  /** 빈 상태 커스텀 컴포넌트 */
   ListEmptyComponent?: React.ReactElement;
-  /** 추가 스타일 */
   className?: string;
 }
 
@@ -74,7 +55,6 @@ export const NotificationList = memo(function NotificationList({
   ListEmptyComponent,
   className = '',
 }: NotificationListProps) {
-  // 알림 항목 렌더링 (개별 또는 그룹)
   const renderItem: ListRenderItem<NotificationListItem> = useCallback(
     ({ item }) => {
       if (isGroupedNotification(item)) {
@@ -88,6 +68,7 @@ export const NotificationList = memo(function NotificationList({
           />
         );
       }
+
       return (
         <NotificationItem
           notification={item}
@@ -97,33 +78,34 @@ export const NotificationList = memo(function NotificationList({
         />
       );
     },
-    [onNotificationPress, onGroupPress, onDeleteNotification, showDelete]
+    [onDeleteNotification, onGroupPress, onNotificationPress, showDelete]
   );
 
-  // 키 추출 (그룹 또는 개별)
   const keyExtractor = useCallback(
     (item: NotificationListItem) => (isGroupedNotification(item) ? item.groupId : item.id),
     []
   );
 
-  // 더 로드
   const handleEndReached = useCallback(() => {
     if (hasMore && !isFetchingNextPage && onLoadMore) {
       onLoadMore();
     }
   }, [hasMore, isFetchingNextPage, onLoadMore]);
 
-  // 읽지 않은 알림 수 (그룹 포함)
-  const unreadCount = useMemo(() => {
-    return notifications.reduce((count, item) => {
-      if (isGroupedNotification(item)) {
-        return count + item.unreadCount;
-      }
-      return count + (item.isRead ? 0 : 1);
-    }, 0);
-  }, [notifications]);
+  const unreadCount = useMemo(
+    () =>
+      notifications.reduce((count, item) => {
+        if (isGroupedNotification(item)) {
+          return count + item.unreadCount;
+        }
 
-  // 스켈레톤 렌더링
+        return count + (item.isRead ? 0 : 1);
+      }, 0),
+    [notifications]
+  );
+
+  const showInlineError = !!error && notifications.length > 0;
+
   if (isLoading && notifications.length === 0) {
     return (
       <View className={`flex-1 bg-gray-50 dark:bg-surface-dark ${className}`}>
@@ -134,51 +116,62 @@ export const NotificationList = memo(function NotificationList({
     );
   }
 
-  // 에러 상태
-  if (error) {
+  if (error && notifications.length === 0) {
     return (
       <View
         accessibilityRole="alert"
-        className={`flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center p-4 ${className}`}
+        className={`flex-1 items-center justify-center bg-gray-50 p-4 dark:bg-surface-dark ${className}`}
       >
-        <Text className="text-error-600 dark:text-error-400 text-center">
-          알림을 불러오는데 실패했습니다.
+        <Text className="text-center text-error-600 dark:text-error-400">
+          알림을 불러오지 못했습니다.
         </Text>
-        {onRefresh && (
-          <Pressable onPress={onRefresh} className="mt-4 px-4 py-2 bg-primary-500 rounded-lg">
-            <Text className="text-white font-medium">다시 시도</Text>
+        {onRefresh ? (
+          <Pressable onPress={onRefresh} className="mt-4 rounded-lg bg-primary-500 px-4 py-2">
+            <Text className="font-medium text-white">다시 시도</Text>
           </Pressable>
-        )}
+        ) : null}
       </View>
     );
   }
 
-  // 빈 상태
   const defaultEmptyComponent = (
     <EmptyState
-      icon={<BellSlashIcon size={48} color="#9ca3af" />}
+      icon={<BellSlashIcon size={48} color="#9CA3AF" />}
       title="알림이 없습니다"
-      description="새로운 알림이 오면 여기에 표시됩니다"
+      description="새로운 알림이 오면 이곳에 표시됩니다."
     />
   );
 
   return (
     <View className={`flex-1 bg-gray-50 dark:bg-surface-dark ${className}`}>
-      {/* 헤더 (모두 읽음 버튼) */}
       {showHeader && notifications.length > 0 && (
-        <View className="px-4 py-2 flex-row justify-between items-center border-b border-gray-100 dark:border-surface bg-white dark:bg-surface-dark">
+        <View className="flex-row items-center justify-between border-b border-gray-100 bg-white px-4 py-2 dark:border-surface dark:bg-surface-dark">
           <Text className="text-sm text-gray-500 dark:text-gray-400">
             {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
-          {unreadCount > 0 && onMarkAllAsRead && (
+          {unreadCount > 0 && onMarkAllAsRead ? (
             <Pressable onPress={onMarkAllAsRead} hitSlop={8} className="py-1">
-              <Text className="text-primary-600 dark:text-primary-400 font-medium">모두 읽음</Text>
+              <Text className="font-medium text-primary-600 dark:text-primary-400">모두 읽음</Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
       )}
 
-      {/* 알림 리스트 */}
+      {showInlineError ? (
+        <View className="mx-4 mb-3 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/20">
+          <Text className="text-sm text-amber-800 dark:text-amber-200">
+            새 알림을 가져오지 못했어요. 보고 있던 목록은 그대로 유지했습니다.
+          </Text>
+          {onRefresh ? (
+            <Pressable onPress={onRefresh} hitSlop={8} className="mt-2 self-start">
+              <Text className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                다시 시도
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
       <FlashList<NotificationListItem>
         data={notifications}
         renderItem={renderItem}
@@ -206,19 +199,11 @@ export const NotificationList = memo(function NotificationList({
   );
 });
 
-/**
- * 간단한 알림 리스트 (최근 N개만 표시)
- */
 export interface SimpleNotificationListProps {
-  /** 알림 목록 */
   notifications: NotificationData[];
-  /** 최대 표시 개수 */
   maxItems?: number;
-  /** 알림 클릭 핸들러 */
   onNotificationPress?: (notification: NotificationData) => void;
-  /** 더보기 클릭 핸들러 */
   onSeeAll?: () => void;
-  /** 빈 상태 시 표시할 메시지 */
   emptyMessage?: string;
 }
 
@@ -234,9 +219,9 @@ export function SimpleNotificationList({
 
   if (displayNotifications.length === 0) {
     return (
-      <View className="py-8 items-center">
-        <BellSlashIcon size={32} color="#d1d5db" />
-        <Text className="text-gray-500 dark:text-gray-400 mt-2 text-sm">{emptyMessage}</Text>
+      <View className="items-center py-8">
+        <BellSlashIcon size={32} color="#D1D5DB" />
+        <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">{emptyMessage}</Text>
       </View>
     );
   }
@@ -255,9 +240,9 @@ export function SimpleNotificationList({
       {(hasMore || onSeeAll) && (
         <Pressable
           onPress={onSeeAll}
-          className="py-3 items-center border-t border-gray-100 dark:border-surface"
+          className="items-center border-t border-gray-100 py-3 dark:border-surface"
         >
-          <Text className="text-primary-600 dark:text-primary-400 font-medium">
+          <Text className="font-medium text-primary-600 dark:text-primary-400">
             {hasMore ? `${notifications.length - maxItems}개 더 보기` : '전체 보기'}
           </Text>
         </Pressable>

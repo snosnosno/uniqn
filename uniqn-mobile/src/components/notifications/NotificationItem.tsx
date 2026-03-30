@@ -1,42 +1,25 @@
 /**
- * UNIQN Mobile - NotificationItem 컴포넌트
- *
- * @description 개별 알림을 표시하는 카드 컴포넌트
- * @version 1.1.0
+ * UNIQN Mobile - Notification item component
  */
 
-// 1. React/React Native
 import React, { memo, useCallback } from 'react';
-import { View, Text, Pressable, useColorScheme } from 'react-native';
-
-// 2. 외부 라이브러리
+import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft, Layout } from 'react-native-reanimated';
-
-// 3. 내부 모듈
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
 import { navigateFromNotification } from '@/services/observability/deepLinkService';
+import { useThemeStore } from '@/stores/themeStore';
 import { formatRelativeTime, toDate } from '@/utils/date';
 import { logger } from '@/utils/logger';
-
-// 4. 타입
 import type { NotificationData } from '@/types/notification';
-
-// 5. 상대 경로
 import { NotificationIcon } from './NotificationIcon';
 
 export interface NotificationItemProps {
-  /** 알림 데이터 */
   notification: NotificationData;
-  /** 클릭 핸들러 */
   onPress?: (notification: NotificationData) => void;
-  /** 삭제 핸들러 */
   onDelete?: (notificationId: string) => void;
-  /** 삭제 버튼 표시 여부 */
   showDelete?: boolean;
-  /** 애니메이션 활성화 (기본: true) */
   animated?: boolean;
-  /** 아이콘에 이모지 사용 (기본: true) */
   useEmoji?: boolean;
 }
 
@@ -48,22 +31,26 @@ export const NotificationItem = memo(function NotificationItem({
   animated = true,
   useEmoji = true,
 }: NotificationItemProps) {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   const handlePress = useCallback(() => {
     if (onPress) {
       onPress(notification);
-    } else if (notification.link) {
-      void navigateFromNotification(notification.type, notification.data, notification.link).catch(
-        (error) => {
-          logger.warn('알림 딥링크 이동 실패', {
-            link: notification.link,
-            error: String(error),
-          });
-        }
-      );
+      return;
     }
+
+    if (!notification.link) {
+      return;
+    }
+
+    void navigateFromNotification(notification.type, notification.data, notification.link).catch(
+      (error) => {
+        logger.warn('알림 딥링크 이동 실패', {
+          link: notification.link,
+          error: String(error),
+        });
+      }
+    );
   }, [notification, onPress]);
 
   const handleDelete = useCallback(() => {
@@ -72,64 +59,50 @@ export const NotificationItem = memo(function NotificationItem({
 
   const createdAt = toDate(notification.createdAt);
   const timeAgo = createdAt ? formatRelativeTime(createdAt) : '';
-
-  // 접근성을 위한 설명 텍스트
   const accessibilityLabel = `${notification.isRead ? '읽음' : '읽지 않음'}, ${notification.title}, ${notification.body}, ${timeAgo}`;
 
   const content = (
     <View
-      className={`
-        relative border-b border-gray-100 dark:border-surface
-        ${
-          notification.isRead
-            ? 'bg-white dark:bg-surface-dark'
-            : 'bg-primary-50 dark:bg-primary-900/20'
-        }
-      `}
+      className={`relative border-b border-gray-100 dark:border-surface ${
+        notification.isRead
+          ? 'bg-white dark:bg-surface-dark'
+          : 'bg-primary-50 dark:bg-primary-900/20'
+      }`}
     >
       <Pressable
         onPress={handlePress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityHint={notification.link ? '탭하면 관련 페이지로 이동합니다' : undefined}
+        accessibilityHint={notification.link ? '누르면 관련 페이지로 이동합니다.' : undefined}
         className="px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
       >
         <View className="flex-row items-start">
-          {/* 아이콘 */}
           <NotificationIcon type={notification.type} useEmoji={useEmoji} className="mr-3" />
 
-          {/* 컨텐츠 */}
           <View className="flex-1">
-            {/* 제목 */}
             <View className="flex-row items-center">
               {!notification.isRead && (
-                <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
+                <View className="mr-2 h-2 w-2 rounded-full bg-primary-500" />
               )}
               <Text
                 numberOfLines={1}
-                className={`
-                  text-base flex-1
-                  ${
-                    notification.isRead
-                      ? 'text-gray-700 dark:text-gray-300 font-normal'
-                      : 'text-gray-900 dark:text-white font-semibold'
-                  }
-                `}
+                className={`flex-1 text-base ${
+                  notification.isRead
+                    ? 'font-normal text-gray-700 dark:text-gray-300'
+                    : 'font-semibold text-gray-900 dark:text-white'
+                }`}
               >
                 {notification.title}
               </Text>
             </View>
 
-            {/* 본문 */}
-            <Text numberOfLines={2} className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <Text numberOfLines={2} className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               {notification.body}
             </Text>
 
-            {/* 시간 */}
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{timeAgo}</Text>
+            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">{timeAgo}</Text>
           </View>
 
-          {/* 오른쪽: 링크 화살표 (삭제 모드가 아닐 때만) */}
           {!showDelete && notification.link ? (
             <View className="ml-2 items-center justify-center">
               <ChevronRightIcon size={20} color={getIconColor(isDarkMode, 'secondary')} />
@@ -140,14 +113,13 @@ export const NotificationItem = memo(function NotificationItem({
         </View>
       </Pressable>
 
-      {/* 삭제 버튼: Pressable 외부에 배치하여 button 중첩 방지 */}
       {showDelete && onDelete ? (
         <Pressable
           onPress={handleDelete}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="알림 삭제"
-          className="absolute right-2 top-3 p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+          className="absolute right-2 top-3 rounded-full p-2 active:bg-gray-100 dark:active:bg-gray-800"
         >
           <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
         </Pressable>
@@ -170,28 +142,20 @@ export const NotificationItem = memo(function NotificationItem({
   return content;
 });
 
-/**
- * 알림 아이템 스켈레톤
- */
 export function NotificationItemSkeleton() {
   return (
     <View
-      className="px-4 py-3 border-b border-gray-100 dark:border-surface"
+      className="border-b border-gray-100 px-4 py-3 dark:border-surface"
       accessibilityElementsHidden={true}
     >
       <View className="flex-row items-start">
-        {/* 아이콘 스켈레톤 */}
-        <View className="w-10 h-10 rounded-full bg-gray-200 dark:bg-surface animate-pulse mr-3" />
+        <View className="mr-3 h-10 w-10 animate-pulse rounded-full bg-gray-200 dark:bg-surface" />
 
-        {/* 컨텐츠 스켈레톤 */}
         <View className="flex-1">
-          {/* 제목 스켈레톤 */}
-          <View className="h-4 w-3/4 bg-gray-200 dark:bg-surface rounded animate-pulse" />
-          {/* 본문 스켈레톤 */}
-          <View className="h-3 w-full bg-gray-200 dark:bg-surface rounded animate-pulse mt-2" />
-          <View className="h-3 w-2/3 bg-gray-200 dark:bg-surface rounded animate-pulse mt-1" />
-          {/* 시간 스켈레톤 */}
-          <View className="h-2 w-16 bg-gray-200 dark:bg-surface rounded animate-pulse mt-2" />
+          <View className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-surface" />
+          <View className="mt-2 h-3 w-full animate-pulse rounded bg-gray-200 dark:bg-surface" />
+          <View className="mt-1 h-3 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-surface" />
+          <View className="mt-2 h-2 w-16 animate-pulse rounded bg-gray-200 dark:bg-surface" />
         </View>
       </View>
     </View>

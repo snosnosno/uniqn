@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,8 @@ import { useThemeStore } from '@/stores';
 import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 
+const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
+
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
@@ -35,6 +37,7 @@ export default function JobDetailScreen() {
   } = useHasAppliedToJob(id);
   const { shareJob, isSharing } = useShare();
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
+  const [bottomActionHeight, setBottomActionHeight] = useState(DEFAULT_BOTTOM_ACTION_HEIGHT);
 
   const handleShare = useCallback(() => {
     if (!job) {
@@ -120,7 +123,7 @@ export default function JobDetailScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
         <ErrorState
-          message="고정 공고는 공개 상세 화면에서 아직 지원할 수 없습니다."
+          message="고정 공고는 상세 화면에서 아직 지원할 수 없습니다."
           onRetry={refresh}
         />
       </SafeAreaView>
@@ -140,7 +143,7 @@ export default function JobDetailScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: bottomActionHeight + 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -153,14 +156,22 @@ export default function JobDetailScreen() {
         <JobDetail job={job} />
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+      <View
+        className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface"
+        onLayout={(event) => {
+          const nextHeight = Math.ceil(event.nativeEvent.layout.height);
+          if (nextHeight > 0 && nextHeight !== bottomActionHeight) {
+            setBottomActionHeight(nextHeight);
+          }
+        }}
+      >
         <SafeAreaView edges={['bottom']}>
           {alreadyApplied ? (
             <View className="items-center">
               <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                 {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
-              <View className="flex-row w-full">
+              <View className="w-full flex-row">
                 <View className="mr-2 flex-1">
                   <Button
                     onPress={() => router.push('/(app)/(tabs)/schedule')}
@@ -187,7 +198,7 @@ export default function JobDetailScreen() {
             <View>
               {!sessionUserId ? (
                 <Text className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
-                  앱에서 지원할 수 있어요
+                  로그인 후 지원할 수 있어요
                 </Text>
               ) : null}
               <Button onPress={handleApply} fullWidth>

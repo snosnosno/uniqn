@@ -5,12 +5,13 @@
  * @version 1.0.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   Pressable,
   Modal as RNModal,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -37,6 +38,7 @@ import { WebPortal } from '@/components/ui/WebPortal';
 export interface SheetModalProps {
   visible: boolean;
   onClose: () => void;
+  onRequestClose?: () => void;
   title: string;
   children: React.ReactNode;
   /** 하단 고정 영역 (버튼 등) */
@@ -55,6 +57,7 @@ export interface SheetModalProps {
 function WebSheetModal({
   visible,
   onClose,
+  onRequestClose,
   title,
   children,
   footer,
@@ -97,23 +100,25 @@ function WebSheetModal({
   }, [visible]);
 
   // ESC 키로 닫기
+  const handleRequestClose = useCallback(() => {
+    if (!isLoading) {
+      (onRequestClose ?? onClose)();
+    }
+  }, [isLoading, onClose, onRequestClose]);
+
   useEffect(() => {
     if (!visible || isLoading) return;
     if (typeof document === 'undefined') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleRequestClose();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [visible, isLoading, onClose]);
+  }, [visible, isLoading, handleRequestClose]);
 
   if (!shouldRender) return null;
-
-  const handleClose = () => {
-    if (!isLoading) onClose();
-  };
 
   return (
     <WebPortal>
@@ -126,7 +131,7 @@ function WebSheetModal({
       >
         {/* Backdrop */}
         <Pressable
-          onPress={handleClose}
+          onPress={handleRequestClose}
           disabled={isLoading}
           style={[
             StyleSheet.absoluteFill,
@@ -162,7 +167,7 @@ function WebSheetModal({
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
               {showCloseButton && (
                 <Pressable
-                  onPress={handleClose}
+                  onPress={handleRequestClose}
                   disabled={isLoading}
                   className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityRole="button"
@@ -178,7 +183,8 @@ function WebSheetModal({
               style={fullHeight ? { flex: 1 } : { flex: 1, maxHeight: windowHeight * 0.7 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             >
               {children}
             </ScrollView>
@@ -203,6 +209,7 @@ function WebSheetModal({
 function NativeSheetModal({
   visible,
   onClose,
+  onRequestClose,
   title,
   children,
   footer,
@@ -214,8 +221,23 @@ function NativeSheetModal({
   const { height: windowHeight } = useWindowDimensions();
   const fadeOpacity = useSharedValue(0);
   const translateY = useSharedValue(windowHeight);
+  const isKeyboardVisible = useRef(false);
 
   const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      isKeyboardVisible.current = true;
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      isKeyboardVisible.current = false;
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -242,9 +264,20 @@ function NativeSheetModal({
     }
   }, [visible, fadeOpacity, translateY, windowHeight]);
 
-  const handleClose = () => {
-    if (!isLoading) onClose();
-  };
+  const handleRequestClose = useCallback(() => {
+    if (!isLoading) {
+      (onRequestClose ?? onClose)();
+    }
+  }, [isLoading, onClose, onRequestClose]);
+
+  const handleBackdropPress = useCallback(() => {
+    Keyboard.dismiss();
+    if (isKeyboardVisible.current) {
+      return;
+    }
+
+    handleRequestClose();
+  }, [handleRequestClose]);
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fadeOpacity.value,
@@ -259,7 +292,7 @@ function NativeSheetModal({
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={handleClose}
+      onRequestClose={handleRequestClose}
       statusBarTranslucent
     >
       <KeyboardAvoidingView
@@ -269,7 +302,7 @@ function NativeSheetModal({
         <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
           {/* Backdrop */}
           <Pressable
-            onPress={handleClose}
+            onPress={handleBackdropPress}
             disabled={isLoading}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             accessibilityRole="button"
@@ -295,7 +328,7 @@ function NativeSheetModal({
                 <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
                 {showCloseButton && (
                   <Pressable
-                    onPress={handleClose}
+                    onPress={handleRequestClose}
                     disabled={isLoading}
                     className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                     accessibilityRole="button"
@@ -312,7 +345,8 @@ function NativeSheetModal({
                 style={{ flex: 1 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="always"
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               >
                 {children}
               </ScrollView>

@@ -1,15 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
+import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { SheetModal } from '@/components/ui/SheetModal';
+import { useModalStore } from '@/stores/modalStore';
+import type { Assignment, JobPosting, PostingType, PreQuestionAnswer } from '@/types';
 import { AssignmentSelector } from './AssignmentSelector';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { PreQuestionForm } from './PreQuestionForm';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { SheetModal } from '@/components/ui/SheetModal';
-import type { Assignment, JobPosting, PostingType, PreQuestionAnswer } from '@/types';
-import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
 
 interface ApplicationFormProps {
   job: JobPosting;
@@ -31,6 +32,7 @@ export function ApplicationForm({
   onClose,
 }: ApplicationFormProps) {
   const postingFacts = useMemo(() => buildPostingFacts(job), [job]);
+  const showConfirm = useModalStore((state) => state.showConfirm);
   const [message, setMessage] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
   const [errorQuestionIds, setErrorQuestionIds] = useState<string[]>([]);
@@ -41,6 +43,15 @@ export function ApplicationForm({
 
   const isFixedMode = postingFacts.workflow.isFixed;
   const hasPreQuestions = questions.length > 0;
+  const locationName = typeof job.location === 'string' ? job.location : job.location?.name;
+
+  const hasUnsavedChanges = useMemo(
+    () =>
+      message.trim().length > 0 ||
+      selectedAssignments.length > 0 ||
+      preQuestionAnswers.some((answer) => answer.answer.trim().length > 0),
+    [message, preQuestionAnswers, selectedAssignments.length]
+  );
 
   const canSubmit = useMemo(() => {
     if (isSubmitting || isFixedMode) {
@@ -86,13 +97,34 @@ export function ApplicationForm({
     selectedAssignments,
   ]);
 
-  const handleClose = useCallback(() => {
+  const resetForm = useCallback(() => {
     setMessage('');
     setSelectedAssignments([]);
     setErrorQuestionIds([]);
     setPreQuestionAnswers(initializePreQuestionAnswers(questions));
+  }, [questions]);
+
+  const handleClose = useCallback(() => {
+    resetForm();
     onClose();
-  }, [onClose, questions]);
+  }, [onClose, resetForm]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!hasUnsavedChanges) {
+      handleClose();
+      return;
+    }
+
+    showConfirm(
+      '작성을 그만둘까요?',
+      '입력한 지원 내용은 저장되지 않고 바로 삭제됩니다.',
+      handleClose
+    );
+  }, [handleClose, hasUnsavedChanges, isSubmitting, showConfirm]);
 
   const footer = (
     <Button onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} fullWidth>
@@ -104,6 +136,7 @@ export function ApplicationForm({
     <SheetModal
       visible={visible}
       onClose={handleClose}
+      onRequestClose={handleRequestClose}
       title="지원하기"
       footer={footer}
       isLoading={isSubmitting}
@@ -120,9 +153,7 @@ export function ApplicationForm({
           <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
             {job.title}
           </Text>
-          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-            위치 {job.location.name}
-          </Text>
+          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">위치 {locationName}</Text>
 
           <View className="mb-2">
             <RoleSalaryDisplay
@@ -147,7 +178,7 @@ export function ApplicationForm({
         {isFixedMode ? (
           <View className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
             <Text className="text-base font-semibold text-amber-800 dark:text-amber-200">
-              고정공고 지원은 현재 비활성화되어 있습니다.
+              고정 공고 지원은 현재 비활성화되어 있습니다.
             </Text>
             <Text className="mt-2 text-sm leading-5 text-amber-700 dark:text-amber-300">
               V3 canonical 통합 동안 날짜 기반 공고만 지원합니다. 다른 공고를 선택해 주세요.
@@ -183,7 +214,7 @@ export function ApplicationForm({
           <TextInput
             value={message}
             onChangeText={setMessage}
-            placeholder="간단한 자기소개나 경력을 입력해 주세요"
+            placeholder="간단한 자기소개나 경력을 입력해 주세요."
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={4}
