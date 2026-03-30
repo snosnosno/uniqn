@@ -1,22 +1,16 @@
 /**
- * UNIQN Mobile - 취소 요청 관리 훅
- *
- * @description 취소 요청 조회 및 검토
- * @version 1.0.0
+ * UNIQN Mobile - cancellation management hooks
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { getCancellationRequests, reviewCancellationRequest } from '@/services';
-import { queryKeys, cachingPolicies, invalidateRelated } from '@/lib';
-import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore } from '@/stores/authStore';
-import { logger } from '@/utils/logger';
-import { createMutationErrorHandler } from '@/shared/errors';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { requireAuth } from '@/errors/guardErrors';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { cachingPolicies, invalidateRelated, queryKeys } from '@/lib';
+import { createMutationErrorHandler } from '@/shared/errors';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import { getCancellationRequests, reviewCancellationRequest } from '@/services';
+import { findJobPostingIdForApplications } from './cacheContext';
 
 interface ReviewCancellationInput {
   applicationId: string;
@@ -24,13 +18,6 @@ interface ReviewCancellationInput {
   rejectionReason?: string;
 }
 
-// ============================================================================
-// 취소 요청 관리 훅
-// ============================================================================
-
-/**
- * 공고별 취소 요청 조회 훅
- */
 export function useCancellationRequests(jobPostingId: string) {
   const { user } = useAuthStore();
 
@@ -42,10 +29,8 @@ export function useCancellationRequests(jobPostingId: string) {
   });
 }
 
-/**
- * 취소 요청 검토 뮤테이션 훅
- */
 export function useReviewCancellation() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -62,15 +47,19 @@ export function useReviewCancellation() {
       );
     },
     onSuccess: (_, variables) => {
+      const jobPostingId = findJobPostingIdForApplications(queryClient, [variables.applicationId]);
       const action = variables.approved ? '승인' : '거절';
+
       logger.info(`취소 요청 ${action} 완료`, { applicationId: variables.applicationId });
       addToast({
         type: 'success',
         message: `취소 요청이 ${action}되었습니다.`,
       });
 
-      // 이벤트 기반 캐시 무효화
-      invalidateRelated('applicant.reviewCancellation');
+      invalidateRelated(
+        'applicant.reviewCancellation',
+        jobPostingId ? { jobPostingId } : undefined
+      );
     },
     onError: createMutationErrorHandler('취소 요청 검토', addToast),
   });

@@ -71,16 +71,20 @@ function isCancellationPendingStatus(status: unknown): boolean {
   return status === "cancellation_pending";
 }
 
-function normalizePostingStats(
+function getAuthoritativeFilledPositions(
+  postingData: admin.firestore.DocumentData | undefined,
+): number {
+  return typeof postingData?.filledPositions === "number"
+    ? postingData.filledPositions
+    : typeof postingData?.stats?.filledPositions === "number"
+      ? postingData.stats.filledPositions
+      : 0;
+}
+
+function normalizePersistedPostingStats(
   postingData: admin.firestore.DocumentData | undefined,
 ): PostingStats {
   const stats = postingData?.stats;
-  const filledPositions =
-    typeof stats?.filledPositions === "number"
-      ? stats.filledPositions
-      : typeof postingData?.filledPositions === "number"
-        ? postingData.filledPositions
-        : 0;
 
   return {
     totalApplicants: typeof stats?.totalApplicants === "number" ? stats.totalApplicants : 0,
@@ -91,8 +95,38 @@ function normalizePostingStats(
       typeof stats?.cancellationPendingApplicants === "number"
         ? stats.cancellationPendingApplicants
         : 0,
-    filledPositions,
+    filledPositions: typeof stats?.filledPositions === "number" ? stats.filledPositions : 0,
   };
+}
+
+export function buildPostingStats(
+  postingData: admin.firestore.DocumentData | undefined,
+  statuses: unknown[],
+): PostingStats {
+  return statuses.reduce<PostingStats>(
+    (accumulator, status) => {
+      accumulator.totalApplicants += 1;
+
+      if (isActiveApplicationStatus(status)) {
+        accumulator.activeApplicants += 1;
+      }
+      if (isConfirmedApplicationStatus(status)) {
+        accumulator.confirmedApplicants += 1;
+      }
+      if (isCancellationPendingStatus(status)) {
+        accumulator.cancellationPendingApplicants += 1;
+      }
+
+      return accumulator;
+    },
+    {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: getAuthoritativeFilledPositions(postingData),
+    },
+  );
 }
 
 function arePostingStatsEqual(left: PostingStats, right: PostingStats): boolean {
@@ -139,31 +173,10 @@ async function reconcilePostingStats(
     return;
   }
 
-  const currentStats = normalizePostingStats(postingSnapshot.data());
-  const nextStats = applicationsSnapshot.docs.reduce<PostingStats>(
-    (accumulator, snapshot) => {
-      const status = snapshot.get("status");
-      accumulator.totalApplicants += 1;
-
-      if (isActiveApplicationStatus(status)) {
-        accumulator.activeApplicants += 1;
-      }
-      if (isConfirmedApplicationStatus(status)) {
-        accumulator.confirmedApplicants += 1;
-      }
-      if (isCancellationPendingStatus(status)) {
-        accumulator.cancellationPendingApplicants += 1;
-      }
-
-      return accumulator;
-    },
-    {
-      totalApplicants: 0,
-      activeApplicants: 0,
-      confirmedApplicants: 0,
-      cancellationPendingApplicants: 0,
-      filledPositions: currentStats.filledPositions,
-    },
+  const currentStats = normalizePersistedPostingStats(postingSnapshot.data());
+  const nextStats = buildPostingStats(
+    postingSnapshot.data(),
+    applicationsSnapshot.docs.map((snapshot) => snapshot.get("status")),
   );
 
   if (arePostingStatsEqual(currentStats, nextStats)) {

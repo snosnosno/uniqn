@@ -11,8 +11,8 @@ const CONFIRMED_APPLICATION_STATUSES = new Set<ApplicationStatus>(['confirmed'])
 const CANCELLATION_PENDING_STATUSES = new Set<ApplicationStatus>(['cancellation_pending']);
 
 export function calculateFilledPositionsFromSchedule(schedule: PostingSchedule): number {
-  if (schedule.kind !== 'dated') {
-    return 0;
+  if (schedule.kind === 'fixed') {
+    return (schedule.roleRequirements ?? []).reduce((sum, role) => sum + (role.filled ?? 0), 0);
   }
 
   return schedule.requirements.reduce((dateSum, requirement) => {
@@ -37,16 +37,23 @@ export function createInitialPostingStats(schedule: PostingSchedule): JobPosting
 
 export function normalizePostingAggregateStats(
   stats: Partial<JobPostingAggregateStats> | undefined,
-  schedule: PostingSchedule
+  schedule: PostingSchedule,
+  options?: {
+    authoritativeFilledPositions?: number;
+  }
 ): JobPostingAggregateStats {
   const filledFromSchedule = calculateFilledPositionsFromSchedule(schedule);
+  const filledPositions =
+    typeof options?.authoritativeFilledPositions === 'number'
+      ? options.authoritativeFilledPositions
+      : filledFromSchedule;
 
   return {
     totalApplicants: stats?.totalApplicants ?? 0,
     activeApplicants: stats?.activeApplicants ?? 0,
     confirmedApplicants: stats?.confirmedApplicants ?? 0,
     cancellationPendingApplicants: stats?.cancellationPendingApplicants ?? 0,
-    filledPositions: stats?.filledPositions ?? filledFromSchedule,
+    filledPositions,
   };
 }
 

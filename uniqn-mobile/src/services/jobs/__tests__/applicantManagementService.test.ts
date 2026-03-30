@@ -37,6 +37,7 @@ const mockRejectWithTransaction = jest.fn();
 const mockMarkAsRead = jest.fn();
 const mockSubscribeByJobPosting = jest.fn();
 const mockVerifyOwnership = jest.fn();
+const mockRealtimeSubscribe = jest.fn();
 
 jest.mock('@/repositories', () => ({
   applicationRepository: {
@@ -55,6 +56,15 @@ const mockConfirmApplicationWithHistory = jest.fn();
 
 jest.mock('@/services/jobs/applicationHistoryService', () => ({
   confirmApplicationWithHistory: (...args: unknown[]) => mockConfirmApplicationWithHistory(...args),
+}));
+
+jest.mock('@/shared/realtime', () => ({
+  RealtimeManager: {
+    Keys: {
+      applicants: (jobPostingId: string) => `applicants:${jobPostingId}`,
+    },
+    subscribe: (...args: unknown[]) => mockRealtimeSubscribe(...args),
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -160,6 +170,9 @@ function createMockStats(overrides: Partial<ApplicationStats> = {}): Application
 describe('applicantManagementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRealtimeSubscribe.mockImplementation((_key: string, subscribeFn: () => () => void) =>
+      subscribeFn()
+    );
   });
 
   // ==========================================================================
@@ -835,7 +848,8 @@ describe('applicantManagementService', () => {
       expect(mockSubscribeByJobPosting).toHaveBeenCalledWith(
         'job-1',
         'employer-1',
-        expect.any(Object)
+        expect.any(Object),
+        { verifyOwnership: true }
       );
       expect(typeof unsubscribe).toBe('function');
     });
@@ -917,7 +931,12 @@ describe('applicantManagementService', () => {
       const unsubscribe = await subscribeToApplicantsAsync('job-1', 'employer-1', callbacks);
 
       expect(mockVerifyOwnership).toHaveBeenCalledWith('job-1', 'employer-1');
-      expect(mockSubscribeByJobPosting).toHaveBeenCalled();
+      expect(mockSubscribeByJobPosting).toHaveBeenCalledWith(
+        'job-1',
+        'employer-1',
+        expect.any(Object),
+        { verifyOwnership: false }
+      );
       expect(typeof unsubscribe).toBe('function');
     });
 

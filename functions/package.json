@@ -9,7 +9,8 @@
     "start": "npm run shell",
     "deploy": "npm run build && npx firebase-tools deploy --only functions",
     "logs": "npx firebase-tools functions:log",
-    "test": "npm run build && npx firebase-tools emulators:exec --only firestore \"mocha --require ts-node/register --timeout 15000 test/**/*.test.ts\""
+    "test": "npm run build && npx firebase-tools emulators:exec --only firestore \"mocha --require ts-node/register --timeout 15000 test/**/*.test.ts\"",
+    "backfill:posting-stats": "npm run build && node lib/scripts/backfillPostingStats.js"
   },
   "engines": {
     "node": "22"

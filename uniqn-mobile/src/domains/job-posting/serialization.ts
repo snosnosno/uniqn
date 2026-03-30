@@ -250,7 +250,10 @@ export function serializeJobPostingV3(
   const schedule = normalizeSchedule(input.schedule);
   const compensation = normalizeCompensation(input.compensation);
   const totals = calculateTotalsFromSchedule(schedule);
-  const stats = normalizePostingAggregateStats(current?.stats, schedule);
+  const authoritativeFilledPositions = current?.filledPositions ?? totals.filledPositions;
+  const stats = normalizePostingAggregateStats(current?.stats, schedule, {
+    authoritativeFilledPositions,
+  });
 
   return {
     id: current?.id || '',
@@ -265,7 +268,7 @@ export function serializeJobPostingV3(
     ...(totals.workDates ? { workDates: totals.workDates } : {}),
     roleKeys: getRoleKeysFromCatalog(roleCatalog),
     totalPositions: totals.totalPositions,
-    filledPositions: stats.filledPositions,
+    filledPositions: authoritativeFilledPositions,
     viewCount: current?.viewCount ?? 0,
     stats,
     createdAt: options.createdAt ?? current?.createdAt,
@@ -387,7 +390,9 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
           })),
         };
   const derivedDates = deriveWorkDateFieldsFromSchedule(schedule);
-  const stats = normalizePostingAggregateStats(document.stats, schedule);
+  const stats = normalizePostingAggregateStats(document.stats, schedule, {
+    authoritativeFilledPositions: document.filledPositions,
+  });
 
   return {
     id: document.id,

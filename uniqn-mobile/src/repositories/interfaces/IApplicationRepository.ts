@@ -406,6 +406,7 @@ export interface IApplicationRepository {
   subscribeByJobPosting(
     jobPostingId: string,
     ownerId: string,
-    callbacks: SubscribeCallbacks
+    callbacks: SubscribeCallbacks,
+    options?: { verifyOwnership?: boolean }
   ): Unsubscribe;
 }

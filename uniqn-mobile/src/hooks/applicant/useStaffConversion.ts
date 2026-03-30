@@ -1,23 +1,20 @@
 /**
- * UNIQN Mobile - confirmationHistory lifecycle hooks
- *
- * @description Public applicant management lifecycle is limited to
- * confirm/cancel confirmation flows. Legacy applicant-to-staff conversion
- * hooks are intentionally not exported from the active surface.
+ * UNIQN Mobile - confirmation history lifecycle hooks
  */
 
-import { useMutation } from '@tanstack/react-query';
-import {
-  confirmApplicationWithHistory,
-  cancelConfirmation,
-} from '@/services/jobs/applicationHistoryService';
-import { invalidateRelated } from '@/lib';
-import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore } from '@/stores/authStore';
-import { logger } from '@/utils/logger';
-import { errorHandlerPresets } from '@/shared/errors';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { requireAuth } from '@/errors/guardErrors';
+import { invalidateRelated } from '@/lib';
+import { errorHandlerPresets } from '@/shared/errors';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import type { Assignment } from '@/types';
+import { logger } from '@/utils/logger';
+import {
+  cancelConfirmation,
+  confirmApplicationWithHistory,
+} from '@/services/jobs/applicationHistoryService';
+import { findJobPostingIdForApplications } from './cacheContext';
 
 interface ConfirmWithHistoryInput {
   applicationId: string;
@@ -26,6 +23,7 @@ interface ConfirmWithHistoryInput {
 }
 
 export function useConfirmApplicationWithHistory() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -40,6 +38,8 @@ export function useConfirmApplicationWithHistory() {
       );
     },
     onSuccess: (result) => {
+      const jobPostingId = findJobPostingIdForApplications(queryClient, [result.applicationId]);
+
       logger.info('Application confirmation (v2.0) completed', {
         applicationId: result.applicationId,
         workLogIds: result.workLogIds,
@@ -49,13 +49,14 @@ export function useConfirmApplicationWithHistory() {
         message: result.message,
       });
 
-      invalidateRelated('applicant.confirm');
+      invalidateRelated('applicant.confirm', jobPostingId ? { jobPostingId } : undefined);
     },
     onError: errorHandlerPresets.confirm(addToast),
   });
 }
 
 export function useCancelConfirmation() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -65,13 +66,18 @@ export function useCancelConfirmation() {
       return cancelConfirmation(applicationId, user.uid, reason);
     },
     onSuccess: (result) => {
+      const jobPostingId = findJobPostingIdForApplications(queryClient, [result.applicationId]);
+
       logger.info('Confirmation cancel completed', { applicationId: result.applicationId });
       addToast({
         type: 'success',
-        message: '확정을 취소했습니다.',
+        message: '확정이 취소되었습니다.',
       });
 
-      invalidateRelated('applicant.reviewCancellation');
+      invalidateRelated(
+        'applicant.reviewCancellation',
+        jobPostingId ? { jobPostingId } : undefined
+      );
     },
     onError: errorHandlerPresets.cancel(addToast),
   });

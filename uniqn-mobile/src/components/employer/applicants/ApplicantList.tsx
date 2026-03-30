@@ -17,7 +17,7 @@ import { FilterIcon } from '../../icons';
 import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
-import type { ApplicationStatus, ApplicationStats } from '@/types';
+import type { ApplicationStatus } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 // ============================================================================
@@ -26,7 +26,6 @@ import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 export interface ApplicantListProps {
   applicants: ApplicantWithDetails[];
-  stats?: ApplicationStats;
   isLoading?: boolean;
   error?: Error | null;
   onRefresh?: () => void;

@@ -27,7 +27,6 @@ export default function ApplicantsScreen() {
 
   const {
     applicants,
-    stats,
     isLoading,
     isRefreshing,
     error,
@@ -37,7 +36,7 @@ export default function ApplicantsScreen() {
     isConfirmingWithHistory,
     isRejecting,
     markAsRead,
-  } = useApplicantManagement(jobPostingId || '');
+  } = useApplicantManagement(jobPostingId || '', { realtime: true });
 
   // 모달 상태
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantWithDetails | null>(null);
@@ -161,7 +160,6 @@ export default function ApplicantsScreen() {
       {/* 지원자 목록 */}
       <ApplicantList
         applicants={applicants}
-        stats={stats}
         isLoading={isLoading}
         error={error}
         onRefresh={() => refresh()}

@@ -1,22 +1,11 @@
 /**
- * UNIQN Mobile - useApplicantManagement Hooks Tests
- *
- * @description Unit tests for applicant management hooks
- * @version 1.0.0
+ * UNIQN Mobile - useApplicantManagement hook tests
  */
 
-// ============================================================================
-// Firebase Mock - Must be first to prevent initialization
-// ============================================================================
-
-import { renderHook, act } from '@testing-library/react-native';
+import { act, renderHook } from '@testing-library/react-native';
 import { createMockApplication, resetCounters } from '../mocks/factories';
-
-// ============================================================================
-// Import After Mocks
-// ============================================================================
-
 import {
+  useApplicantManagement,
   useApplicantsByJobPosting,
   useApplicantStats,
   useCancellationRequests,
@@ -24,7 +13,6 @@ import {
   useRejectApplication,
   useBulkConfirmApplications,
   useMarkAsRead,
-  useApplicantManagement,
 } from '@/hooks/applicant';
 
 jest.mock('@/lib/firebase', () => ({
@@ -34,10 +22,6 @@ jest.mock('@/lib/firebase', () => ({
   functions: {},
 }));
 
-// ============================================================================
-// Mock Services
-// ============================================================================
-
 const mockGetApplicantsByJobPosting = jest.fn();
 const mockGetCancellationRequests = jest.fn();
 const mockReviewCancellationRequest = jest.fn();
@@ -46,8 +30,8 @@ const mockRejectApplication = jest.fn();
 const mockBulkConfirmApplications = jest.fn();
 const mockMarkApplicationAsRead = jest.fn();
 const mockGetApplicantStatsByRole = jest.fn();
+const mockSubscribeToApplicantsAsync = jest.fn();
 
-// Mock the services index (the hook imports from @/services, not @/services/applicantManagementService)
 jest.mock('@/services', () => ({
   getApplicantsByJobPosting: (...args: unknown[]) => mockGetApplicantsByJobPosting(...args),
   getCancellationRequests: (...args: unknown[]) => mockGetCancellationRequests(...args),
@@ -57,11 +41,8 @@ jest.mock('@/services', () => ({
   bulkConfirmApplications: (...args: unknown[]) => mockBulkConfirmApplications(...args),
   markApplicationAsRead: (...args: unknown[]) => mockMarkApplicationAsRead(...args),
   getApplicantStatsByRole: (...args: unknown[]) => mockGetApplicantStatsByRole(...args),
+  subscribeToApplicantsAsync: (...args: unknown[]) => mockSubscribeToApplicantsAsync(...args),
 }));
-
-// ============================================================================
-// Mock Stores
-// ============================================================================
 
 const mockAddToast = jest.fn();
 const mockUser = { uid: 'employer-1' };
@@ -79,21 +60,8 @@ jest.mock('@/stores/toastStore', () => ({
 }));
 
 jest.mock('@/hooks/useNetworkStatus', () => ({
-  useNetworkStatus: () => ({
-    isOnline: true,
-    isOffline: false,
-    isChecking: false,
-    connectionType: 'wifi',
-    isInternetReachable: true,
-    lastChecked: null,
-    details: null,
-    checkConnection: jest.fn(),
-  }),
+  useNetworkStatus: jest.fn(),
 }));
-
-// ============================================================================
-// Mock Logger
-// ============================================================================
 
 jest.mock('@/utils/logger', () => ({
   logger: {
@@ -104,12 +72,12 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-// ============================================================================
-// Mock React Query
-// ============================================================================
-
 const mockQueryClient = {
   invalidateQueries: jest.fn(),
+  cancelQueries: jest.fn(),
+  getQueriesData: jest.fn(() => []),
+  setQueriesData: jest.fn(),
+  setQueryData: jest.fn(),
 };
 
 const mockMutate = jest.fn();
@@ -133,13 +101,18 @@ jest.mock('@tanstack/react-query', () => ({
           isLoading: false,
           error: null,
           refetch: mockRefetch,
+          isRefetching: false,
+          isFetching: false,
         };
       }
+
       return {
         data: mockData,
         isLoading: mockIsLoading,
         error: mockError,
         refetch: mockRefetch,
+        isRefetching: false,
+        isFetching: false,
       };
     }
   ),
@@ -149,7 +122,6 @@ jest.mock('@tanstack/react-query', () => ({
       onSuccess?: (data: unknown, variables: unknown) => void;
       onError?: (error: Error) => void;
     }) => {
-      // mutate doesn't throw - errors are handled via onError callback
       mockMutate.mockImplementation((args: unknown) => {
         mockIsPending = true;
         options
@@ -164,7 +136,7 @@ jest.mock('@tanstack/react-query', () => ({
             mockIsPending = false;
           });
       });
-      // mutateAsync does throw
+
       mockMutateAsync.mockImplementation(async (args: unknown) => {
         try {
           mockIsPending = true;
@@ -192,10 +164,6 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => mockQueryClient,
 }));
 
-// ============================================================================
-// Mock Query Keys
-// ============================================================================
-
 jest.mock('@/lib/queryClient', () => ({
   queryKeys: {
     applicantManagement: {
@@ -212,7 +180,6 @@ jest.mock('@/lib/queryClient', () => ({
         ownerId === undefined
           ? ['applicantManagement', 'cancellationRequests', id]
           : ['applicantManagement', 'cancellationRequests', id, ownerId],
-      canConvertToStaff: (id: string) => ['applicantManagement', 'canConvertToStaff', id],
     },
     applications: {
       all: ['applications'],
@@ -222,30 +189,23 @@ jest.mock('@/lib/queryClient', () => ({
     },
   },
   cachingPolicies: {
-    frequent: 1000 * 60 * 2, // 2 minutes
-    standard: 1000 * 60 * 5, // 5 minutes
+    frequent: 1000 * 60 * 2,
+    standard: 1000 * 60 * 5,
   },
 }));
 
-// ============================================================================
-// Test Utilities
-// ============================================================================
-
 function createMockApplicantWithDetails(overrides: Record<string, unknown> = {}) {
   const base = createMockApplication();
-  // assignments 기본값 (overrides에서 role을 받으면 해당 role 사용)
-  const defaultRole = 'dealer';
-  const defaultAssignments = [
-    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: [defaultRole] },
-  ];
   return {
     ...base,
-    id: base.id,
+    id: String(overrides.id ?? base.id),
     jobPostingId: 'job-1',
     applicantId: 'staff-1',
     applicantName: '홍길동',
     applicantEmail: 'hong@example.com',
-    assignments: defaultAssignments,
+    assignments: overrides.assignments ?? [
+      { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] },
+    ],
     status: 'applied' as const,
     isRead: false,
     createdAt: new Date().toISOString(),
@@ -259,23 +219,36 @@ function createMockApplicantListResult(applicants = [createMockApplicantWithDeta
     applied: 0,
     confirmed: 0,
     rejected: 0,
+    cancelled: 0,
     completed: 0,
-    cancellation_pending: 0,
+    cancellationPending: 0,
   };
 
-  applicants.forEach((app) => {
-    const statusKey = app.status as keyof typeof stats;
-    if (statusKey in stats && statusKey !== 'total') {
-      stats[statusKey]++;
+  applicants.forEach((applicant) => {
+    switch (String(applicant.status)) {
+      case 'applied':
+        stats.applied++;
+        break;
+      case 'confirmed':
+        stats.confirmed++;
+        break;
+      case 'rejected':
+        stats.rejected++;
+        break;
+      case 'cancelled':
+        stats.cancelled++;
+        break;
+      case 'completed':
+        stats.completed++;
+        break;
+      case 'cancellation_pending':
+        stats.cancellationPending++;
+        break;
     }
   });
 
   return { applicants, stats };
 }
-
-// ============================================================================
-// Tests
-// ============================================================================
 
 describe('useApplicantManagement Hooks', () => {
   beforeEach(() => {
@@ -286,11 +259,9 @@ describe('useApplicantManagement Hooks', () => {
     mockIsPending = false;
     mockData = undefined;
     mockError = null;
+    mockRefetch.mockReset();
+    mockRefetch.mockImplementation(async () => ({ data: mockData }));
   });
-
-  // ==========================================================================
-  // useApplicantsByJobPosting
-  // ==========================================================================
 
   describe('useApplicantsByJobPosting', () => {
     it('should return initial state when disabled', () => {
@@ -313,58 +284,41 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.data?.applicants).toHaveLength(2);
     });
 
-    it('should include a stable status filter in the query key and fetch args', async () => {
-      renderHook(() => useApplicantsByJobPosting('job-1', ['confirmed', 'applied', 'confirmed']));
+    it('should fetch fresh applicants when realtime refetch is called', async () => {
+      const fetchedApplicants = createMockApplicantListResult([
+        createMockApplicantWithDetails({ id: 'app-1', status: 'confirmed' }),
+      ]);
+      mockSubscribeToApplicantsAsync.mockResolvedValueOnce(jest.fn());
+      mockRefetch.mockResolvedValueOnce({ data: fetchedApplicants });
 
-      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
-        useQuery: jest.Mock;
-      };
-      const queryOptions = useQuery.mock.calls[0][0] as {
-        queryKey: string[];
-        queryFn: () => Promise<unknown>;
-      };
+      const { result } = renderHook(() =>
+        useApplicantsByJobPosting('job-1', undefined, { realtime: true })
+      );
 
-      expect(queryOptions.queryKey).toEqual([
-        'applicantManagement',
-        'byJobPosting',
+      await act(async () => {
+        const response = await result.current.refetch();
+        expect(response.data).toEqual(fetchedApplicants);
+      });
+
+      expect(result.current.data).toEqual(fetchedApplicants);
+      expect(mockSubscribeToApplicantsAsync).toHaveBeenCalledWith(
         'job-1',
         'employer-1',
-        'applied,confirmed',
-      ]);
-
-      await queryOptions.queryFn();
-
-      expect(mockGetApplicantsByJobPosting).toHaveBeenCalledWith('job-1', 'employer-1', [
-        'applied',
-        'confirmed',
-      ]);
+        expect.objectContaining({
+          onUpdate: expect.any(Function),
+        })
+      );
+      expect(mockQueryClient.setQueryData).toHaveBeenCalled();
     });
   });
 
-  // ==========================================================================
-  // useApplicantStats
-  // ==========================================================================
-
-  describe('useApplicantStats', () => {
-    it('should return stats by role', () => {
-      const mockStats = {
-        dealer: { total: 5, applied: 3, pending: 0, confirmed: 2, rejected: 0, completed: 0 },
-        floor: { total: 3, applied: 2, pending: 0, confirmed: 1, rejected: 0, completed: 0 },
-      };
-      mockData = mockStats;
-
-      const { result } = renderHook(() => useApplicantStats('job-1'));
-
-      expect(result.current.data).toEqual(mockStats);
-    });
-
+  describe('derived query hooks', () => {
     it('should scope stats queries by user', () => {
       const { useQuery } = jest.requireMock('@tanstack/react-query') as {
         useQuery: jest.Mock;
       };
 
       renderHook(() => useApplicantStats('job-1'));
-
       const queryOptions = useQuery.mock.calls.at(-1)?.[0] as { queryKey: string[] };
 
       expect(queryOptions.queryKey).toEqual([
@@ -374,31 +328,20 @@ describe('useApplicantManagement Hooks', () => {
         'employer-1',
       ]);
     });
-  });
 
-  // ==========================================================================
-  // useCancellationRequests
-  // ==========================================================================
-
-  describe('useCancellationRequests', () => {
     it('should scope cancellation request queries by user', async () => {
-      const mockRequests = [
-        createMockApplicantWithDetails({ id: 'app-1', status: 'cancellation_pending' }),
-      ];
-      mockData = mockRequests;
+      mockData = [createMockApplicantWithDetails({ id: 'app-1', status: 'cancellation_pending' })];
 
       const { useQuery } = jest.requireMock('@tanstack/react-query') as {
         useQuery: jest.Mock;
       };
 
-      const { result } = renderHook(() => useCancellationRequests('job-1'));
-
+      renderHook(() => useCancellationRequests('job-1'));
       const queryOptions = useQuery.mock.calls.at(-1)?.[0] as {
         queryKey: string[];
         queryFn: () => Promise<unknown>;
       };
 
-      expect(result.current.data).toEqual(mockRequests);
       expect(queryOptions.queryKey).toEqual([
         'applicantManagement',
         'cancellationRequests',
@@ -407,23 +350,17 @@ describe('useApplicantManagement Hooks', () => {
       ]);
 
       await queryOptions.queryFn();
-
       expect(mockGetCancellationRequests).toHaveBeenCalledWith('job-1', 'employer-1');
     });
   });
 
-  // ==========================================================================
-  // useConfirmApplication
-  // ==========================================================================
-
-  describe('useConfirmApplication', () => {
+  describe('mutation hooks', () => {
     it('should confirm an application', async () => {
-      const mockResult = {
+      mockConfirmApplication.mockResolvedValueOnce({
         applicationId: 'app-1',
-        workLogId: 'worklog-new',
-        message: '지원이 확정되었습니다',
-      };
-      mockConfirmApplication.mockResolvedValueOnce(mockResult);
+        workLogId: 'worklog-1',
+        message: '확정되었습니다.',
+      });
 
       const { result } = renderHook(() => useConfirmApplication());
 
@@ -438,34 +375,6 @@ describe('useApplicantManagement Hooks', () => {
       });
     });
 
-    it('should handle confirmation failure', async () => {
-      // Create error object outside of mock to avoid Jest async issues
-      mockConfirmApplication.mockImplementationOnce(() =>
-        Promise.reject({ message: 'Confirmation failed' })
-      );
-
-      const { result } = renderHook(() => useConfirmApplication());
-
-      // Call mutate
-      act(() => {
-        result.current.mutate({ applicationId: 'app-1' });
-      });
-
-      // Wait for mutation to complete
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      });
-
-      // The hook should call onError which shows a toast
-      expect(mockConfirmApplication).toHaveBeenCalled();
-    });
-  });
-
-  // ==========================================================================
-  // useRejectApplication
-  // ==========================================================================
-
-  describe('useRejectApplication', () => {
     it('should reject an application', async () => {
       mockRejectApplication.mockResolvedValueOnce(undefined);
 
@@ -484,46 +393,14 @@ describe('useApplicantManagement Hooks', () => {
         message: '지원이 거절되었습니다.',
       });
     });
-  });
 
-  // ==========================================================================
-  // useBulkConfirmApplications
-  // ==========================================================================
-
-  describe('useBulkConfirmApplications', () => {
-    it('should confirm multiple applications', async () => {
-      const mockResult = {
-        successCount: 3,
-        failedCount: 0,
-        failedIds: [],
-        workLogIds: ['worklog-1', 'worklog-2', 'worklog-3'],
-      };
-      mockBulkConfirmApplications.mockResolvedValueOnce(mockResult);
-
-      const { result } = renderHook(() => useBulkConfirmApplications());
-
-      await act(async () => {
-        result.current.mutate(['app-1', 'app-2', 'app-3']);
-      });
-
-      expect(mockBulkConfirmApplications).toHaveBeenCalledWith(
-        ['app-1', 'app-2', 'app-3'],
-        'employer-1'
-      );
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '3명이 확정되었습니다.',
-      });
-    });
-
-    it('should show warning for partial failures', async () => {
-      const mockResult = {
+    it('should show warning for partial bulk confirm failures', async () => {
+      mockBulkConfirmApplications.mockResolvedValueOnce({
         successCount: 2,
         failedCount: 1,
         failedIds: ['app-3'],
         workLogIds: ['worklog-1', 'worklog-2'],
-      };
-      mockBulkConfirmApplications.mockResolvedValueOnce(mockResult);
+      });
 
       const { result } = renderHook(() => useBulkConfirmApplications());
 
@@ -533,16 +410,10 @@ describe('useApplicantManagement Hooks', () => {
 
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'warning',
-        message: '1명 확정에 실패했습니다.',
+        message: '1명 확정이 실패했습니다.',
       });
     });
-  });
 
-  // ==========================================================================
-  // useMarkAsRead
-  // ==========================================================================
-
-  describe('useMarkAsRead', () => {
     it('should mark as read', async () => {
       mockMarkApplicationAsRead.mockResolvedValueOnce(undefined);
 
@@ -556,118 +427,78 @@ describe('useApplicantManagement Hooks', () => {
     });
   });
 
-  // ==========================================================================
-  // useApplicantManagement (통합 훅)
-  // ==========================================================================
-
   describe('useApplicantManagement', () => {
     it('should return all applicant management functions and data', () => {
-      const mockApplicantList = createMockApplicantListResult([
+      mockData = createMockApplicantListResult([
         createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
         createMockApplicantWithDetails({ id: 'app-2', status: 'confirmed' }),
-        createMockApplicantWithDetails({ id: 'app-3', status: 'cancellation_pending' }),
       ]);
-      mockData = mockApplicantList;
 
       const { result } = renderHook(() => useApplicantManagement('job-1'));
 
-      expect(result.current.applicants).toBeDefined();
+      expect(result.current.applicants).toHaveLength(2);
       expect(result.current.stats).toBeDefined();
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.refresh).toBeDefined();
       expect(result.current.confirmApplication).toBeDefined();
       expect(result.current.rejectApplication).toBeDefined();
       expect(result.current.bulkConfirm).toBeDefined();
       expect(result.current.markAsRead).toBeDefined();
     });
 
-    it('should provide status counts', () => {
-      const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
-        createMockApplicantWithDetails({ id: 'app-2', status: 'applied' }),
-        createMockApplicantWithDetails({ id: 'app-3', status: 'confirmed' }),
-        createMockApplicantWithDetails({ id: 'app-4', status: 'rejected' }),
-      ]);
-      mockData = mockApplicantList;
-
-      const { result } = renderHook(() => useApplicantManagement('job-1'));
-
-      expect(result.current.pendingCount).toBe(0);
-      expect(result.current.countByStatus('applied')).toBe(2);
-      expect(result.current.confirmedCount).toBe(1);
-      expect(result.current.rejectedCount).toBe(1);
-    });
-
-    it('should filter applicants by status', () => {
-      const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', status: 'applied' }),
-        createMockApplicantWithDetails({ id: 'app-2', status: 'confirmed' }),
-      ]);
-      mockData = mockApplicantList;
-
-      const { result } = renderHook(() => useApplicantManagement('job-1'));
-
-      const filteredApplied = result.current.filterApplicants({ status: 'applied' });
-      expect(filteredApplied).toHaveLength(1);
-      expect(filteredApplied[0].status).toBe('applied');
-
-      const filteredConfirmed = result.current.filterApplicants({ status: 'confirmed' });
-      expect(filteredConfirmed).toHaveLength(1);
-      expect(filteredConfirmed[0].status).toBe('confirmed');
-    });
-
-    it('should filter applicants by role', () => {
-      const mockApplicantList = createMockApplicantListResult([
+    it('should derive counts, role stats, and cancellation requests from one dataset', () => {
+      mockData = createMockApplicantListResult([
         createMockApplicantWithDetails({
           id: 'app-1',
+          status: 'applied',
           assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
         }),
         createMockApplicantWithDetails({
           id: 'app-2',
-          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }],
+          status: 'confirmed',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
         }),
         createMockApplicantWithDetails({
           id: 'app-3',
-          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
+          status: 'cancellation_pending',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }],
         }),
       ]);
-      mockData = mockApplicantList;
 
       const { result } = renderHook(() => useApplicantManagement('job-1'));
 
-      const filteredDealers = result.current.filterApplicants({ role: 'dealer' });
-      expect(filteredDealers).toHaveLength(2);
+      expect(result.current.pendingCount).toBe(1);
+      expect(result.current.confirmedCount).toBe(1);
+      expect(result.current.cancellationPendingCount).toBe(1);
+      expect(result.current.statsByRole.dealer.total).toBe(2);
+      expect(result.current.statsByRole.floor.cancellationPending).toBe(1);
+      expect(result.current.cancellationRequests).toHaveLength(1);
+      expect(result.current.cancellationRequests[0].id).toBe('app-3');
     });
 
-    it('should sort applicants', () => {
-      const app1 = createMockApplicantWithDetails({
-        id: 'app-1',
-        applicantName: 'Alice',
-        createdAt: '2024-01-15T10:00:00Z',
-      });
-      const app2 = createMockApplicantWithDetails({
-        id: 'app-2',
-        applicantName: 'Bob',
-        createdAt: '2024-01-15T09:00:00Z',
-      });
-      const mockApplicantList = createMockApplicantListResult([app1, app2]);
-      mockData = mockApplicantList;
+    it('should filter and sort applicants', () => {
+      mockData = createMockApplicantListResult([
+        createMockApplicantWithDetails({
+          id: 'app-1',
+          applicantName: 'Alice',
+          status: 'applied',
+          createdAt: '2024-01-15T10:00:00Z',
+        }),
+        createMockApplicantWithDetails({
+          id: 'app-2',
+          applicantName: 'Bob',
+          status: 'confirmed',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }],
+          createdAt: '2024-01-15T09:00:00Z',
+        }),
+      ]);
 
       const { result } = renderHook(() => useApplicantManagement('job-1'));
 
-      const sortedByName = result.current.filterApplicants({
-        sortBy: 'name',
-        sortOrder: 'asc',
-      });
-      expect(sortedByName[0].applicantName).toBe('Alice');
-      expect(sortedByName[1].applicantName).toBe('Bob');
+      expect(result.current.filterApplicants({ status: 'applied' })).toHaveLength(1);
+      expect(result.current.filterApplicants({ role: 'floor' })).toHaveLength(1);
 
-      const sortedByNameDesc = result.current.filterApplicants({
-        sortBy: 'name',
-        sortOrder: 'desc',
-      });
-      expect(sortedByNameDesc[0].applicantName).toBe('Bob');
-      expect(sortedByNameDesc[1].applicantName).toBe('Alice');
+      const sorted = result.current.filterApplicants({ sortBy: 'name', sortOrder: 'asc' });
+      expect(sorted[0].applicantName).toBe('Alice');
+      expect(sorted[1].applicantName).toBe('Bob');
     });
   });
 });

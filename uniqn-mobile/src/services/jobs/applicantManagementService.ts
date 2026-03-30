@@ -1,18 +1,16 @@
 /**
- * UNIQN Mobile - 지원자 관리 서비스 (고용주용)
+ * UNIQN Mobile - applicant management service
  *
- * Provides applicant list queries, confirmation/rejection flows, and realtime
- * subscription helpers for employer surfaces.
+ * @description Employer-facing applicant queries, mutations, and realtime helpers.
  */
 
 import { type Unsubscribe } from 'firebase/firestore';
-import { logger } from '@/utils/logger';
+import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { BusinessError, ERROR_CODES, isAppError, PermissionError, ValidationError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { rejectApplicationSchema } from '@/schemas';
-import { confirmApplicationWithHistory } from './applicationHistoryService';
 import { applicationRepository, jobPostingRepository } from '@/repositories';
-import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
+import { rejectApplicationSchema } from '@/schemas';
+import { RealtimeManager } from '@/shared/realtime';
 import type {
   Application,
   ApplicationStats,
@@ -23,6 +21,8 @@ import type {
   RejectApplicationInput,
   StaffRole,
 } from '@/types';
+import { logger } from '@/utils/logger';
+import { confirmApplicationWithHistory } from './applicationHistoryService';
 
 export interface ApplicantWithDetails extends Application {
   jobPosting?: JobPosting;
@@ -88,13 +88,13 @@ export async function confirmApplication(
   ownerId: string
 ): Promise<ConfirmResult> {
   try {
-    logger.info('지원 확정 시작', { applicationId: input.applicationId, ownerId });
+    logger.info('지원자 확정 시작', { applicationId: input.applicationId, ownerId });
 
     const applicationData = await applicationRepository.getById(input.applicationId);
 
     if (!applicationData) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 지원입니다',
+        userMessage: '존재하지 않는 지원자입니다.',
       });
     }
 
@@ -108,7 +108,7 @@ export async function confirmApplication(
       input.notes
     );
 
-    logger.info('지원 확정 완료', {
+    logger.info('지원자 확정 완료', {
       applicationId: input.applicationId,
       workLogIds: historyResult.workLogIds,
     });
@@ -124,7 +124,7 @@ export async function confirmApplication(
     }
 
     throw handleServiceError(error, {
-      operation: '지원 확정',
+      operation: '지원자 확정',
       component: 'applicantManagementService',
       context: { applicationId: input.applicationId },
     });
@@ -139,7 +139,7 @@ export async function rejectApplication(
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
     throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-      userMessage: firstError?.message || '입력값을 확인해주세요',
+      userMessage: firstError?.message || '입력값을 확인해주세요.',
       errors: validationResult.error.flatten().fieldErrors,
     });
   }
@@ -185,7 +185,7 @@ export async function bulkConfirmApplications(
       } catch (error) {
         result.failedCount++;
         result.failedIds.push(applicationId);
-        logger.warn('일괄 확정 중 일부 실패', { applicationId, error });
+        logger.warn('일괄 확정 중 개별 확정 실패', { applicationId, error });
       }
     }
 
@@ -212,7 +212,7 @@ export async function markApplicationAsRead(applicationId: string, ownerId: stri
     }
 
     throw handleServiceError(error, {
-      operation: '지원 읽음 처리',
+      operation: '지원서 읽음 처리',
       component: 'applicantManagementService',
       context: { applicationId },
     });
@@ -247,6 +247,7 @@ export async function getApplicantStatsByRole(
       }
 
       statsByRole[effectiveRole].total++;
+
       const statsKey = STATUS_TO_STATS_KEY[application.status];
       if (statsKey && statsKey !== 'total') {
         statsByRole[effectiveRole][statsKey]++;
@@ -274,6 +275,35 @@ export interface SubscribeToApplicantsCallbacks {
   onError?: (error: Error) => void;
 }
 
+const applicantRealtimeObservers = new Map<string, Set<SubscribeToApplicantsCallbacks>>();
+
+function broadcastApplicantUpdate(key: string, result: ApplicantListResult) {
+  applicantRealtimeObservers.get(key)?.forEach((observer) => observer.onUpdate(result));
+}
+
+function broadcastApplicantError(key: string, error: Error) {
+  applicantRealtimeObservers.get(key)?.forEach((observer) => observer.onError?.(error));
+}
+
+function addApplicantObserver(key: string, callbacks: SubscribeToApplicantsCallbacks) {
+  const observers =
+    applicantRealtimeObservers.get(key) ?? new Set<SubscribeToApplicantsCallbacks>();
+  observers.add(callbacks);
+  applicantRealtimeObservers.set(key, observers);
+}
+
+function removeApplicantObserver(key: string, callbacks: SubscribeToApplicantsCallbacks) {
+  const observers = applicantRealtimeObservers.get(key);
+  if (!observers) {
+    return;
+  }
+
+  observers.delete(callbacks);
+  if (observers.size === 0) {
+    applicantRealtimeObservers.delete(key);
+  }
+}
+
 export async function verifyJobPostingOwnership(
   jobPostingId: string,
   ownerId: string
@@ -284,19 +314,41 @@ export async function verifyJobPostingOwnership(
 export function subscribeToApplicants(
   jobPostingId: string,
   ownerId: string,
-  callbacks: SubscribeToApplicantsCallbacks
+  callbacks: SubscribeToApplicantsCallbacks,
+  options: { verifyOwnership?: boolean } = {}
 ): Unsubscribe {
-  logger.info('지원자 목록 실시간 구독 시작', { jobPostingId, ownerId });
-
-  return applicationRepository.subscribeByJobPosting(jobPostingId, ownerId, {
-    onUpdate: (result) => {
-      callbacks.onUpdate({
-        applicants: result.applications as ApplicantWithDetails[],
-        stats: result.stats,
-      });
-    },
-    onError: callbacks.onError,
+  logger.info('지원자 목록 실시간 구독 시작', {
+    jobPostingId,
+    ownerId,
+    verifyOwnership: options.verifyOwnership !== false,
   });
+
+  const realtimeKey = RealtimeManager.Keys.applicants(jobPostingId);
+  addApplicantObserver(realtimeKey, callbacks);
+
+  const unsubscribeManager = RealtimeManager.subscribe(realtimeKey, () =>
+    applicationRepository.subscribeByJobPosting(
+      jobPostingId,
+      ownerId,
+      {
+        onUpdate: (result) => {
+          broadcastApplicantUpdate(realtimeKey, {
+            applicants: result.applications as ApplicantWithDetails[],
+            stats: result.stats,
+          });
+        },
+        onError: (error) => {
+          broadcastApplicantError(realtimeKey, error);
+        },
+      },
+      { verifyOwnership: options.verifyOwnership !== false }
+    )
+  );
+
+  return () => {
+    removeApplicantObserver(realtimeKey, callbacks);
+    unsubscribeManager();
+  };
 }
 
 export async function subscribeToApplicantsAsync(
@@ -308,16 +360,17 @@ export async function subscribeToApplicantsAsync(
 
   if (!isOwner) {
     const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-      userMessage: '해당 공고의 소유자가 아닙니다',
+      userMessage: '해당 공고의 소유자가 아닙니다.',
     });
 
     logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
     callbacks.onError?.(error);
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {};
   }
 
-  logger.info('구독 전 권한 검증 통과, 구독 시작', { jobPostingId, ownerId });
-  return subscribeToApplicants(jobPostingId, ownerId, callbacks);
+  logger.info('구독 전 권한 검증 통과, 지원자 구독 시작', { jobPostingId, ownerId });
+  return subscribeToApplicants(jobPostingId, ownerId, callbacks, {
+    verifyOwnership: false,
+  });
 }

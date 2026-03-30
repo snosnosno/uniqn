@@ -37,6 +37,7 @@ import {
 import { STATUS } from '@/constants';
 import { getLayoutColor } from '@/constants/colors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
+import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { useThemeStore } from '@/stores/themeStore';
@@ -87,7 +88,22 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
-  const { job: posting, isLoading, isRefreshing, error, refresh } = useJobDetail(id || '');
+  const {
+    job: posting,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+  } = useJobDetail(id || '', {
+    realtime: true,
+  });
+  const {
+    data: applicantData,
+    refetch: refreshApplicants,
+    isRefetching: isRefreshingApplicants,
+  } = useApplicantsByJobPosting(id || '', undefined, {
+    realtime: true,
+  });
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
@@ -145,6 +161,10 @@ export default function JobPostingDetailScreen() {
     setIsInfoExpanded((prev) => !prev);
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refresh(), refreshApplicants()]);
+  }, [refresh, refreshApplicants]);
+
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -162,16 +182,17 @@ export default function JobPostingDetailScreen() {
           title="공고를 불러올 수 없습니다"
           message={error?.message || '공고 정보를 찾을 수 없습니다.'}
           error={error}
-          onRetry={refresh}
+          onRetry={handleRefresh}
         />
       </SafeAreaView>
     );
   }
 
-  const totalApplicants = managementView.totalApplicants;
-  const confirmedApplicants = managementView.confirmedApplicants;
-  const pendingApplicants = managementView.pendingApplicants;
-  const cancellationPendingCount = posting.stats?.cancellationPendingApplicants ?? 0;
+  const totalApplicants = applicantData?.stats.total ?? managementView.totalApplicants;
+  const confirmedApplicants = applicantData?.stats.confirmed ?? managementView.confirmedApplicants;
+  const pendingApplicants = applicantData?.stats.applied ?? managementView.pendingApplicants;
+  const cancellationPendingCount =
+    applicantData?.stats.cancellationPending ?? posting.stats?.cancellationPendingApplicants ?? 0;
   const filledPositions = managementView.filledPositions;
   const totalPositions = managementView.totalPositions;
   const title = posting.title || '제목 없음';
@@ -186,8 +207,8 @@ export default function JobPostingDetailScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
+            refreshing={isRefreshing || isRefreshingApplicants}
+            onRefresh={handleRefresh}
             tintColor={getLayoutColor(isDark, 'refreshTint')}
           />
         }
@@ -476,7 +497,12 @@ export default function JobPostingDetailScreen() {
                   </Text>
                 </Pressable>
                 <View className="ml-2 flex-1">
-                  <ResubmitButton postingId={posting.id} size="md" fullWidth onSuccess={refresh} />
+                  <ResubmitButton
+                    postingId={posting.id}
+                    size="md"
+                    fullWidth
+                    onSuccess={handleRefresh}
+                  />
                 </View>
               </View>
             </Card>

@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getApplicantsByJobPosting,
   getApplicantStatsByRole,
   subscribeToApplicantsAsync,
-  type ApplicantWithDetails,
   type ApplicantListResult,
 } from '@/services';
 import { isNetworkError, toError } from '@/errors';
@@ -42,6 +41,22 @@ function getApplicantStatusFilterKey(
   return Array.isArray(statusFilter) ? [...new Set(statusFilter)].sort().join(',') : statusFilter;
 }
 
+function filterApplicantsByStatus(
+  result: ApplicantListResult | undefined,
+  statusFilter?: ApplicationStatus | ApplicationStatus[]
+): ApplicantListResult | undefined {
+  if (!result || !statusFilter) {
+    return result;
+  }
+
+  const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
+
+  return {
+    ...result,
+    applicants: result.applicants.filter((applicant) => statuses.includes(applicant.status)),
+  };
+}
+
 export function useApplicantsByJobPosting(
   jobPostingId: string,
   statusFilter?: ApplicationStatus | ApplicationStatus[],
@@ -49,6 +64,7 @@ export function useApplicantsByJobPosting(
 ) {
   const { realtime = false } = options;
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const normalizedStatusFilter = useMemo(
     () => normalizeApplicantStatusFilter(statusFilter),
     [statusFilter]
@@ -63,6 +79,10 @@ export function useApplicantsByJobPosting(
   const statusFilterKey = useMemo(
     () => getApplicantStatusFilterKey(normalizedStatusFilter),
     [normalizedStatusFilter]
+  );
+  const queryKey = useMemo(
+    () => queryKeys.applicantManagement.byJobPosting(jobPostingId, user?.uid, statusFilterKey),
+    [jobPostingId, statusFilterKey, user?.uid]
   );
   const statusFilterRef = useRef<ApplicationStatus | ApplicationStatus[] | undefined>(
     normalizedStatusFilter
@@ -86,19 +106,11 @@ export function useApplicantsByJobPosting(
             return;
           }
 
-          const currentFilter = statusFilterRef.current;
-          if (currentFilter) {
-            const statuses = Array.isArray(currentFilter) ? currentFilter : [currentFilter];
-            const filteredApplicants = result.applicants.filter((applicant: ApplicantWithDetails) =>
-              statuses.includes(applicant.status)
-            );
+          const filteredResult = filterApplicantsByStatus(result, statusFilterRef.current) ?? null;
 
-            setRealtimeData({
-              ...result,
-              applicants: filteredApplicants,
-            });
-          } else {
-            setRealtimeData(result);
+          setRealtimeData(filteredResult);
+          if (filteredResult) {
+            queryClient.setQueryData(queryKey, filteredResult);
           }
 
           setRealtimeError(null);
@@ -133,7 +145,7 @@ export function useApplicantsByJobPosting(
       logger.error('Failed to start applicant subscription', normalizedError, { jobPostingId });
       setRealtimeError(normalizedError);
     }
-  }, [jobPostingId, realtime, user]);
+  }, [jobPostingId, queryClient, queryKey, realtime, user]);
 
   useNetworkStatus({
     onOnline: useCallback(() => {
@@ -160,19 +172,52 @@ export function useApplicantsByJobPosting(
   }, [jobPostingId, startSubscription, statusFilterKey]);
 
   const query = useQuery({
-    queryKey: queryKeys.applicantManagement.byJobPosting(jobPostingId, user?.uid, statusFilterKey),
+    queryKey,
     queryFn: () => getApplicantsByJobPosting(jobPostingId, user!.uid, normalizedStatusFilter),
     enabled: !!user && !!jobPostingId && !realtime,
     staleTime: cachingPolicies.frequent,
   });
 
+  const refreshRealtimeData = useCallback(async () => {
+    if (!user || !jobPostingId) {
+      return { data: realtimeData ?? undefined };
+    }
+
+    try {
+      const result = await query.refetch();
+      if (result.error) {
+        const normalizedError = toError(result.error);
+        setRealtimeError(normalizedError);
+        throw normalizedError;
+      }
+
+      const fetchedData = filterApplicantsByStatus(
+        (result.data as ApplicantListResult | undefined) ?? undefined,
+        statusFilterRef.current
+      );
+
+      if (fetchedData) {
+        setRealtimeData(fetchedData);
+        queryClient.setQueryData(queryKey, fetchedData);
+      }
+
+      setRealtimeError(null);
+
+      return { data: fetchedData ?? undefined };
+    } catch (error) {
+      const normalizedError = toError(error);
+      setRealtimeError(normalizedError);
+      throw normalizedError;
+    }
+  }, [jobPostingId, query, queryClient, queryKey, realtimeData, user]);
+
   if (realtime) {
     return {
-      data: realtimeData,
-      isLoading: !realtimeData && !realtimeError,
-      error: realtimeError,
-      refetch: async () => ({ data: realtimeData }),
-      isRefetching: false,
+      data: realtimeData ?? query.data,
+      isLoading: !realtimeData && !query.data && !realtimeError,
+      error: realtimeError ?? query.error,
+      refetch: refreshRealtimeData,
+      isRefetching: query.isFetching || query.isRefetching,
     };
   }
 

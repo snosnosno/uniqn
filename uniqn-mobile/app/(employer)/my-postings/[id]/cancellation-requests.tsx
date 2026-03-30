@@ -2,62 +2,44 @@
  * UNIQN Mobile - 취소 요청 관리 화면
  *
  * @description 구인자가 스태프의 취소 요청을 검토하는 화면
- * @version 1.1.0 - 웹 호환성을 위해 Alert → Modal 변경
+ * @version 1.1.0 - 웹호환성을 위해 Alert 대신 Modal 변경
  */
 
-import React, { useCallback, useState, useMemo } from 'react';
-import { View, Text, RefreshControl, Modal, Pressable } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { CancellationRequestCard } from '@/components/employer';
-import { Loading, ErrorState, EmptyState } from '@/components';
+import { EmptyState, ErrorState, Loading } from '@/components';
+import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { InboxIcon } from '@/components/icons';
 import { useApplicantManagement } from '@/hooks/applicant';
 import { useThemeStore } from '@/stores';
 import type { Application } from '@/types';
 
-// ============================================================================
-// Stats Header Component
-// ============================================================================
-
 interface StatsHeaderProps {
   pendingCount: number;
-  approvedCount: number;
-  rejectedCount: number;
 }
 
-function StatsHeader({ pendingCount, approvedCount, rejectedCount }: StatsHeaderProps) {
+function StatsHeader({ pendingCount }: StatsHeaderProps) {
   return (
-    <View className="flex-row justify-between px-4 py-3 bg-white dark:bg-surface border-b border-gray-100 dark:border-surface-overlay">
+    <View className="flex-row justify-between border-b border-gray-100 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
       <View className="flex-row items-center">
         <Badge variant="warning" size="sm" dot>
           대기 {pendingCount}
         </Badge>
       </View>
-      <View className="flex-row items-center gap-2">
-        <Badge variant="success" size="sm">
-          승인 {approvedCount}
-        </Badge>
-        <Badge variant="error" size="sm">
-          거절 {rejectedCount}
-        </Badge>
-      </View>
+      <Text className="text-sm text-gray-500 dark:text-gray-400">검토 대기 요청만 표시됩니다</Text>
     </View>
   );
 }
-
-// ============================================================================
-// Main Component
-// ============================================================================
 
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode } = useThemeStore();
 
-  // 승인 확인 모달 상태 (웹 호환)
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
 
@@ -69,35 +51,23 @@ export default function CancellationRequestsScreen() {
     reviewCancellation,
     isReviewingCancellation,
     error,
-  } = useApplicantManagement(jobPostingId || '');
+  } = useApplicantManagement(jobPostingId || '', { realtime: true });
 
-  // 상태별 카운트 계산
-  const stats = useMemo(() => {
-    const pending = cancellationRequests.filter(
-      (app) => app.cancellationRequest?.status === 'pending'
-    ).length;
-    const approved = cancellationRequests.filter(
-      (app) => app.cancellationRequest?.status === 'approved'
-    ).length;
-    const rejected = cancellationRequests.filter(
-      (app) => app.cancellationRequest?.status === 'rejected'
-    ).length;
+  const pendingCount = useMemo(
+    () =>
+      cancellationRequests.filter((app) => app.cancellationRequest?.status === 'pending').length,
+    [cancellationRequests]
+  );
 
-    return { pending, approved, rejected };
-  }, [cancellationRequests]);
-
-  // 새로고침 핸들러
   const handleRefresh = useCallback(() => {
     refreshCancellationRequests();
   }, [refreshCancellationRequests]);
 
-  // 승인 핸들러 - 모달 열기
   const handleApprove = useCallback((applicationId: string) => {
     setPendingApproveId(applicationId);
     setApproveModalVisible(true);
   }, []);
 
-  // 승인 확정 핸들러
   const handleConfirmApprove = useCallback(() => {
     if (pendingApproveId) {
       reviewCancellation({
@@ -109,13 +79,11 @@ export default function CancellationRequestsScreen() {
     setPendingApproveId(null);
   }, [pendingApproveId, reviewCancellation]);
 
-  // 승인 모달 닫기
   const handleCancelApprove = useCallback(() => {
     setApproveModalVisible(false);
     setPendingApproveId(null);
   }, []);
 
-  // 거절 핸들러
   const handleReject = useCallback(
     (applicationId: string, reason: string) => {
       reviewCancellation({
@@ -127,7 +95,6 @@ export default function CancellationRequestsScreen() {
     [reviewCancellation]
   );
 
-  // 카드 렌더 함수
   const renderItem = useCallback(
     ({ item }: { item: Application }) => (
       <View className="px-4 py-2">
@@ -142,10 +109,8 @@ export default function CancellationRequestsScreen() {
     [handleApprove, handleReject, isReviewingCancellation]
   );
 
-  // 키 추출 함수
   const keyExtractor = useCallback((item: Application) => item.id, []);
 
-  // 로딩 상태
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -157,7 +122,6 @@ export default function CancellationRequestsScreen() {
     );
   }
 
-  // 에러 상태
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -172,18 +136,12 @@ export default function CancellationRequestsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-      {/* 통계 헤더 */}
-      <StatsHeader
-        pendingCount={stats.pending}
-        approvedCount={stats.approved}
-        rejectedCount={stats.rejected}
-      />
+      <StatsHeader pendingCount={pendingCount} />
 
-      {/* 취소 요청 목록 */}
       {cancellationRequests.length === 0 ? (
         <EmptyState
           title="취소 요청이 없습니다"
-          description="스태프의 취소 요청이 들어오면 여기에 표시됩니다."
+          description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
           icon={<InboxIcon size={48} color="#9CA3AF" />}
           variant="content"
         />
@@ -205,7 +163,7 @@ export default function CancellationRequestsScreen() {
           ListEmptyComponent={
             <EmptyState
               title="취소 요청이 없습니다"
-              description="스태프의 취소 요청이 들어오면 여기에 표시됩니다."
+              description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
               icon={<InboxIcon size={48} color="#9CA3AF" />}
               variant="content"
             />
@@ -213,7 +171,6 @@ export default function CancellationRequestsScreen() {
         />
       )}
 
-      {/* 승인 확인 모달 (웹 호환) */}
       <Modal
         visible={approveModalVisible}
         animationType="fade"
@@ -221,23 +178,22 @@ export default function CancellationRequestsScreen() {
         onRequestClose={handleCancelApprove}
       >
         <Pressable
-          className="flex-1 bg-black/50 items-center justify-center p-4"
+          className="flex-1 items-center justify-center bg-black/50 p-4"
           onPress={handleCancelApprove}
         >
           <Pressable
-            className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm p-5"
+            className="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-surface"
             onPress={(e) => e.stopPropagation()}
           >
-            {/* 모달 헤더 */}
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
               취소 요청 승인
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              이 취소 요청을 승인하시겠습니까?{'\n'}
-              승인 시 해당 스태프의 확정이 취소됩니다.
+            <Text className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+              이 취소 요청을 승인하시겠습니까?
+              {'\n'}
+              승인 시 해당 스태프의 확정은 취소됩니다.
             </Text>
 
-            {/* 버튼 */}
             <View className="flex-row gap-3">
               <Button onPress={handleCancelApprove} variant="outline" className="flex-1">
                 취소

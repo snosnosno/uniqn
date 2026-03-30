@@ -289,6 +289,52 @@ describe("job posting function canonical contracts", () => {
     expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(true);
   });
 
+  it("updateJobPostingApplicantCount mirrors top-level filledPositions when legacy stats are stale", async () => {
+    const db = admin.firestore();
+    const stableUpdatedAt = admin.firestore.Timestamp.fromDate(
+      new Date("2026-04-01T10:30:00.000Z"),
+    );
+
+    await db
+      .collection("jobPostings")
+      .doc("job-count-filled-mirror")
+      .set(
+        createCanonicalTournamentPosting({
+          filledPositions: 2,
+          stats: {
+            totalApplicants: 1,
+            activeApplicants: 1,
+            confirmedApplicants: 0,
+            cancellationPendingApplicants: 0,
+            filledPositions: 0,
+          },
+          updatedAt: stableUpdatedAt,
+        }),
+      );
+
+    await db.collection("applications").doc("app-filled-mirror").set({
+      jobPostingId: "job-count-filled-mirror",
+      applicantId: "staff-1",
+      status: "applied",
+    });
+
+    const afterSnapshot = await db.collection("applications").doc("app-filled-mirror").get();
+
+    await updateJobPostingApplicantCount.run({
+      params: { applicationId: "app-filled-mirror" },
+      data: {
+        before: { exists: false },
+        after: afterSnapshot,
+      },
+    } as never);
+
+    const postingSnapshot = await db.collection("jobPostings").doc("job-count-filled-mirror").get();
+    const posting = postingSnapshot.data() as Record<string, unknown>;
+
+    expect((posting.stats as Record<string, unknown>).filledPositions).to.equal(2);
+    expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(false);
+  });
+
   it("updateJobPostingApplicantCount recalculates canonical breakdown when status changes", async () => {
     const db = admin.firestore();
     const stableUpdatedAt = admin.firestore.Timestamp.fromDate(

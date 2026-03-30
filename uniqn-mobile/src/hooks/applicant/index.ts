@@ -8,8 +8,9 @@
 import { useCallback, useMemo } from 'react';
 import type { ApplicantWithDetails } from '@/services';
 import { STATUS } from '@/constants';
+import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { toDateValue } from '@/utils/date';
-import { useApplicantsByJobPosting, useApplicantStats } from './useApplicantsByJobPosting';
+import { useApplicantsByJobPosting } from './useApplicantsByJobPosting';
 import { getPrimaryRoleId } from './helpers';
 import {
   useConfirmApplication,
@@ -17,8 +18,9 @@ import {
   useBulkConfirmApplications,
   useMarkAsRead,
 } from './useApplicantMutations';
-import { useCancellationRequests, useReviewCancellation } from './useCancellationManagement';
+import { useReviewCancellation } from './useCancellationManagement';
 import { useConfirmApplicationWithHistory, useCancelConfirmation } from './useStaffConversion';
+import type { ApplicationStats, StaffRole } from '@/types';
 
 interface ApplicantFilters {
   status?: string;
@@ -46,6 +48,41 @@ export { useCancellationRequests, useReviewCancellation } from './useCancellatio
 export { useConfirmApplicationWithHistory, useCancelConfirmation } from './useStaffConversion';
 export { getPrimaryRoleId, getAllRoleIds } from './helpers';
 
+function createEmptyApplicationStats(): ApplicationStats {
+  return {
+    total: 0,
+    applied: 0,
+    confirmed: 0,
+    rejected: 0,
+    cancelled: 0,
+    completed: 0,
+    cancellationPending: 0,
+  };
+}
+
+function buildStatsByRole(applicants: ApplicantWithDetails[]): Record<StaffRole, ApplicationStats> {
+  const statsByRole: Record<string, ApplicationStats> = {};
+
+  applicants.forEach((application) => {
+    const primaryRole = getPrimaryRoleId(application.assignments);
+    const effectiveRole =
+      primaryRole === 'other' && application.customRole ? application.customRole : primaryRole;
+
+    if (!statsByRole[effectiveRole]) {
+      statsByRole[effectiveRole] = createEmptyApplicationStats();
+    }
+
+    statsByRole[effectiveRole].total++;
+
+    const statsKey = STATUS_TO_STATS_KEY[application.status];
+    if (statsKey && statsKey !== 'total') {
+      statsByRole[effectiveRole][statsKey]++;
+    }
+  });
+
+  return statsByRole as Record<StaffRole, ApplicationStats>;
+}
+
 export function useApplicantManagement(
   jobPostingId: string,
   options: UseApplicantManagementOptions = {}
@@ -53,7 +90,6 @@ export function useApplicantManagement(
   const applicantsQuery = useApplicantsByJobPosting(jobPostingId, undefined, {
     realtime: options.realtime,
   });
-  const statsQuery = useApplicantStats(jobPostingId);
 
   const confirmMutation = useConfirmApplication();
   const rejectMutation = useRejectApplication();
@@ -61,12 +97,19 @@ export function useApplicantManagement(
   const markAsReadMutation = useMarkAsRead();
   const confirmWithHistoryMutation = useConfirmApplicationWithHistory();
   const cancelConfirmationMutation = useCancelConfirmation();
-  const cancellationRequestsQuery = useCancellationRequests(jobPostingId);
   const reviewCancellationMutation = useReviewCancellation();
 
   const applicants = useMemo(
     () => applicantsQuery.data?.applicants ?? [],
     [applicantsQuery.data?.applicants]
+  );
+  const statsByRole = useMemo(() => buildStatsByRole(applicants), [applicants]);
+  const cancellationRequests = useMemo(
+    () =>
+      applicants.filter(
+        (application) => application.status === STATUS.APPLICATION.CANCELLATION_PENDING
+      ),
+    [applicants]
   );
 
   const filterApplicants = useCallback(
@@ -148,8 +191,8 @@ export function useApplicantManagement(
     refresh: applicantsQuery.refetch,
 
     stats: applicantsQuery.data?.stats,
-    statsByRole: statsQuery.data,
-    isLoadingStatsByRole: statsQuery.isLoading,
+    statsByRole,
+    isLoadingStatsByRole: applicantsQuery.isLoading,
 
     confirmApplication: confirmMutation.mutate,
     confirmApplicationAsync: confirmMutation.mutateAsync,
@@ -172,10 +215,10 @@ export function useApplicantManagement(
     cancelConfirmationAsync: cancelConfirmationMutation.mutateAsync,
     isCancellingConfirmation: cancelConfirmationMutation.isPending,
 
-    cancellationRequests: cancellationRequestsQuery.data ?? [],
-    isLoadingCancellationRequests: cancellationRequestsQuery.isLoading,
-    isRefetchingCancellationRequests: cancellationRequestsQuery.isRefetching,
-    refreshCancellationRequests: cancellationRequestsQuery.refetch,
+    cancellationRequests,
+    isLoadingCancellationRequests: applicantsQuery.isLoading,
+    isRefetchingCancellationRequests: applicantsQuery.isRefetching,
+    refreshCancellationRequests: applicantsQuery.refetch,
 
     reviewCancellation: reviewCancellationMutation.mutate,
     reviewCancellationAsync: reviewCancellationMutation.mutateAsync,
@@ -184,7 +227,7 @@ export function useApplicantManagement(
     filterApplicants,
     countByStatus,
 
-    pendingCount: 0,
+    pendingCount: countByStatus(STATUS.APPLICATION.APPLIED),
     confirmedCount: countByStatus(STATUS.APPLICATION.CONFIRMED),
     rejectedCount: countByStatus(STATUS.APPLICATION.REJECTED),
     completedCount: countByStatus(STATUS.APPLICATION.COMPLETED),

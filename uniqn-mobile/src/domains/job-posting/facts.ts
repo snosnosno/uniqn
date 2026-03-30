@@ -54,7 +54,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   };
   const salaryRows = getPostingSalaryRows(posting);
   const defaultSalary = getPostingDefaultSalary(posting);
-  const filledPositions = posting.stats?.filledPositions ?? posting.filledPositions;
+  const filledPositions = posting.filledPositions ?? posting.stats?.filledPositions ?? 0;
   const allowanceLabels = getAllowanceItems(posting.compensation.allowances, {
     includeEmoji: true,
   });
