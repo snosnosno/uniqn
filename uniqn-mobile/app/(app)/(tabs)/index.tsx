@@ -13,7 +13,12 @@ import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 import { searchJobPostings, trackSearch } from '@/services';
-import { buildPostingFacts, projectPostingCard } from '@/domains/job-posting';
+import {
+  buildPostingFacts,
+  focusPostingCardToDate,
+  matchesPostingDate,
+  projectPostingCard,
+} from '@/domains/job-posting';
 import { queryKeys } from '@/lib/queryClient';
 import type { PostingType, JobPostingFilters } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +68,11 @@ export default function JobsScreen() {
   const isSearchMode = normalizedSearchText.length > 0;
   const isSearching = debouncedSearch.length > 0;
   const isSearchPending = isSearchMode && debouncedSearch !== normalizedSearchText;
+  const selectedDateString = useMemo(
+    () =>
+      selectedType === 'regular' && selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined,
+    [selectedDate, selectedType]
+  );
 
   const filters = useMemo<JobPostingFilters>(() => {
     const result: JobPostingFilters = {};
@@ -71,12 +81,12 @@ export default function JobsScreen() {
       result.postingType = selectedType;
     }
 
-    if (selectedType === 'regular' && selectedDate) {
-      result.workDate = format(selectedDate, 'yyyy-MM-dd');
+    if (selectedDateString) {
+      result.workDate = selectedDateString;
     }
 
     return result;
-  }, [selectedDate, selectedType]);
+  }, [selectedDateString, selectedType]);
 
   const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, error, refresh, loadMore } =
     useJobPostings({
@@ -98,18 +108,24 @@ export default function JobsScreen() {
   const filteredSearchJobs = useMemo(() => {
     const searchJobs = searchQuery.data ?? [];
 
-    return searchJobs.filter((job) => {
+    const visibleJobs = searchJobs.filter((job) => {
       if (selectedType && job.postingType !== selectedType) {
         return false;
       }
 
-      if (selectedType === 'regular' && selectedDate) {
-        return job.workDate === format(selectedDate, 'yyyy-MM-dd');
+      if (selectedDateString) {
+        return matchesPostingDate(job, selectedDateString);
       }
 
       return true;
     });
-  }, [searchQuery.data, selectedDate, selectedType]);
+
+    if (!selectedDateString) {
+      return visibleJobs;
+    }
+
+    return visibleJobs.map((job) => focusPostingCardToDate(job, selectedDateString));
+  }, [searchQuery.data, selectedDateString, selectedType]);
 
   useEffect(() => {
     if (debouncedSearch) {

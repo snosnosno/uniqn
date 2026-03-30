@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { getRoleDisplayName } from '@/types/unified';
 import { PostingCompensationContent, PostingScheduleContent, PostingSurfaceState } from '../shared';
+import { FOCUSED_GROUP_DATE_HINT } from '../shared/postingSurfaceModel';
 
 describe('Posting shared content', () => {
   it('renders grouped detail schedules with every time slot and role count', () => {
@@ -48,6 +49,52 @@ describe('Posting shared content', () => {
     expect(getByText(`${dealerLabel} 1명 (1/1)`)).toBeTruthy();
     expect(getByText(`${dealerLabel} 1명 (0/1)`)).toBeTruthy();
     expect(getByText(`${floorLabel} 2명 (1/2)`)).toBeTruthy();
+  });
+
+  it('shows the focused group hint only on cards', () => {
+    const card = render(
+      <PostingScheduleContent
+        display="card"
+        workflow={{ isFixed: false, usesGroupedDateRanges: false }}
+        scheduleDisplay={{
+          variant: 'dated_requirements',
+          workDate: '2026-04-02',
+          timeSlot: '09:00',
+          fixed: undefined,
+          dateRequirements: [
+            {
+              date: '2026-04-02',
+              timeSlots: [{ startTime: '09:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+            },
+          ],
+          dateGroups: [],
+        }}
+        displayContext={{ focusedDate: '2026-04-02', wasGroupedRange: true }}
+      />
+    );
+    expect(card.getByText(FOCUSED_GROUP_DATE_HINT)).toBeTruthy();
+
+    const detail = render(
+      <PostingScheduleContent
+        display="detail"
+        workflow={{ isFixed: false, usesGroupedDateRanges: false }}
+        scheduleDisplay={{
+          variant: 'dated_requirements',
+          workDate: '2026-04-02',
+          timeSlot: '09:00',
+          fixed: undefined,
+          dateRequirements: [
+            {
+              date: '2026-04-02',
+              timeSlots: [{ startTime: '09:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+            },
+          ],
+          dateGroups: [],
+        }}
+        displayContext={{ focusedDate: '2026-04-02', wasGroupedRange: true }}
+      />
+    );
+    expect(detail.queryByText(FOCUSED_GROUP_DATE_HINT)).toBeNull();
   });
 
   it('renders shared compensation rows in detail and card modes', () => {

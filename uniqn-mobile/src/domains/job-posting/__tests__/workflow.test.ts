@@ -1,6 +1,8 @@
 import type { JobPosting } from '@/types';
 import {
   buildPostingFacts,
+  focusPostingCardToDate,
+  matchesPostingDate,
   projectPostingCard,
   projectPostingDetail,
   projectPostingManagement,
@@ -231,5 +233,129 @@ describe('job-posting workflow selectors', () => {
     expect(facts.schedule.display.variant).toBe('grouped_dates');
     expect(facts.schedule.display.dateGroups).toHaveLength(1);
     expect(facts.application.selectionMode).toBe('dated_assignment');
+  });
+
+  it('focuses grouped cards to the selected date without changing canonical workDate', () => {
+    const posting = createBasePosting({
+      postingType: 'regular',
+      workDate: '2025-02-01',
+      workDates: ['2025-02-01', '2025-02-02'],
+      schedule: {
+        kind: 'dated',
+        primaryDate: '2025-02-01',
+        allDates: ['2025-02-01', '2025-02-02'],
+        requirements: [
+          {
+            date: '2025-02-01',
+            isGrouped: true,
+            timeSlots: [
+              {
+                id: 'slot-1',
+                startTime: '10:00',
+                roles: [{ id: 'dealer-1', role: 'dealer', count: 2, filled: 1 }],
+              },
+            ],
+          },
+          {
+            date: '2025-02-02',
+            isGrouped: true,
+            timeSlots: [
+              {
+                id: 'slot-2',
+                startTime: '09:00',
+                roles: [{ id: 'dealer-2', role: 'dealer', count: 2, filled: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const focused = focusPostingCardToDate(
+      projectPostingCard(buildPostingFacts(posting)),
+      '2025-02-02'
+    );
+
+    expect(matchesPostingDate(focused, '2025-02-02')).toBe(true);
+    expect(focused.workDate).toBe('2025-02-01');
+    expect(focused.workflow.usesGroupedDateRanges).toBe(false);
+    expect(focused.scheduleDisplay.variant).toBe('dated_requirements');
+    expect(focused.scheduleDisplay.dateGroups).toEqual([]);
+    expect(focused.dateRequirements.map((requirement) => requirement.date)).toEqual(['2025-02-02']);
+    expect(focused.displayContext).toEqual({
+      focusedDate: '2025-02-02',
+      wasGroupedRange: true,
+    });
+  });
+
+  it('keeps ungrouped cards focusable and returns original cards for unsupported cases', () => {
+    const card = projectPostingCard(
+      buildPostingFacts(
+        createBasePosting({
+          workDate: '2025-03-01',
+          workDates: ['2025-03-01', '2025-03-02'],
+          schedule: {
+            kind: 'dated',
+            primaryDate: '2025-03-01',
+            allDates: ['2025-03-01', '2025-03-02'],
+            requirements: [
+              {
+                date: '2025-03-01',
+                timeSlots: [
+                  {
+                    id: 'slot-1',
+                    startTime: '11:00',
+                    roles: [{ id: 'dealer-1', role: 'dealer', count: 1, filled: 0 }],
+                  },
+                ],
+              },
+              {
+                date: '2025-03-02',
+                timeSlots: [
+                  {
+                    id: 'slot-2',
+                    startTime: '12:00',
+                    roles: [{ id: 'dealer-2', role: 'dealer', count: 1, filled: 0 }],
+                  },
+                ],
+              },
+            ],
+          },
+        })
+      )
+    );
+    const focused = focusPostingCardToDate(card, '2025-03-02');
+    const fixedCard = projectPostingCard(
+      buildPostingFacts(
+        createBasePosting({
+          postingType: 'fixed',
+          schedule: {
+            kind: 'fixed',
+            daysPerWeek: 5,
+            startTime: '19:00',
+            roleRequirements: [{ role: 'dealer', count: 2, filled: 0 }],
+          },
+        })
+      )
+    );
+    const legacyCard = {
+      ...card,
+      scheduleDisplay: {
+        ...card.scheduleDisplay,
+        variant: 'legacy' as const,
+        dateRequirements: [],
+        dateGroups: [],
+      },
+      dateRequirements: [],
+    };
+
+    expect(focused).not.toBe(card);
+    expect(focused.displayContext).toEqual({
+      focusedDate: '2025-03-02',
+      wasGroupedRange: false,
+    });
+    expect(focusPostingCardToDate(card, '2025-03-05')).toBe(card);
+    expect(focusPostingCardToDate(fixedCard, '2025-03-02')).toBe(fixedCard);
+    expect(focusPostingCardToDate(legacyCard, '2025-03-02')).toBe(legacyCard);
   });
 });

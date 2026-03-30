@@ -300,6 +300,11 @@ export interface PostingScheduleDisplay {
   };
 }
 
+export interface PostingCardDisplayContext {
+  focusedDate?: string;
+  wasGroupedRange?: boolean;
+}
+
 export interface PostingSalaryDisplay {
   defaultSalary?: SalaryInfo;
   rows: PostingSalaryRow[];
@@ -418,6 +423,7 @@ export interface PostingCardViewModel {
   salaryDisplay: PostingSalaryDisplay;
   roleAvailability: PostingRoleAvailability;
   applicationEligibility: PostingApplicationEligibility;
+  displayContext?: PostingCardDisplayContext;
 }
 
 export interface PostingDetailViewModel {

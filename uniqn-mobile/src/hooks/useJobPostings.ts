@@ -1,6 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { buildPostingFacts, projectPostingCard } from '@/domains/job-posting';
+import {
+  buildPostingFacts,
+  focusPostingCardToDate,
+  matchesPostingDate,
+  projectPostingCard,
+} from '@/domains/job-posting';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { queryCachingOptions, queryKeys } from '@/lib/queryClient';
 import {
@@ -57,8 +62,16 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
         page.items.map((posting) => projectPostingCard(buildPostingFacts(posting)))
       ) ?? [];
 
-    return sortJobPostings(allJobs);
-  }, [query.data?.pages]);
+    if (!filters.workDate) {
+      return sortJobPostings(allJobs);
+    }
+
+    const focusedJobs = allJobs
+      .filter((job) => matchesPostingDate(job, filters.workDate))
+      .map((job) => focusPostingCardToDate(job, filters.workDate));
+
+    return sortJobPostings(focusedJobs);
+  }, [filters.workDate, query.data?.pages]);
 
   const shouldUseCachedJobs = enabled && isDefaultFilter && !isOnline && query.data === undefined;
 

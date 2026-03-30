@@ -7,10 +7,13 @@ import { fireEvent, render } from '@testing-library/react-native';
 import type { JobPostingCard } from '@/types';
 import { JobCard } from '../JobCard';
 
+const mockToggleBookmark = jest.fn();
+const mockIsBookmarked = jest.fn(() => false);
+
 jest.mock('@/hooks/useBookmarks', () => ({
   useBookmarks: () => ({
-    isBookmarked: () => false,
-    toggleBookmark: jest.fn(),
+    isBookmarked: mockIsBookmarked,
+    toggleBookmark: mockToggleBookmark,
   }),
 }));
 
@@ -185,6 +188,7 @@ describe('JobCard', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockIsBookmarked.mockReturnValue(false);
   });
 
   it('renders the title and location', () => {
@@ -290,6 +294,66 @@ describe('JobCard', () => {
     fireEvent.press(getByText('테스트 공고'));
 
     expect(mockOnPress).toHaveBeenCalledWith('job-1');
+  });
+  it('keeps the canonical workDate when bookmarking a focused grouped card', () => {
+    const focusedJob = createJobCard({
+      workDate: '2025-01-15',
+      workflow: {
+        scheduleKind: 'dated',
+        isFixed: false,
+        isDated: true,
+        isTournament: false,
+        isUrgent: false,
+        recruitmentType: 'event',
+        usesGroupedDateRanges: false,
+      },
+      dateRequirements: [
+        {
+          date: '2025-01-16',
+          timeSlots: [
+            {
+              startTime: '09:00',
+              roles: [{ role: 'dealer', count: 1, filled: 0 }],
+            },
+          ],
+        },
+      ],
+      scheduleDisplay: {
+        variant: 'dated_requirements',
+        workDate: '2025-01-15',
+        timeSlot: '18:00 - 02:00',
+        fixed: undefined,
+        dateRequirements: [
+          {
+            date: '2025-01-16',
+            timeSlots: [
+              {
+                startTime: '09:00',
+                roles: [{ role: 'dealer', count: 1, filled: 0 }],
+              },
+            ],
+          },
+        ],
+        dateGroups: [],
+      },
+      displayContext: {
+        focusedDate: '2025-01-16',
+        wasGroupedRange: true,
+      },
+    });
+
+    const { getAllByRole } = render(<JobCard job={focusedJob} onPress={mockOnPress} />);
+
+    fireEvent.press(getAllByRole('button')[1]);
+
+    expect(mockToggleBookmark).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'job-1',
+        title: focusedJob.title,
+        location: focusedJob.fullLocation,
+        workDate: '2025-01-15',
+      })
+    );
   });
 });
 

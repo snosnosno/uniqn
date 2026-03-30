@@ -11,6 +11,8 @@ export {
 export {
   buildPostingFacts,
   createPostingLegacyDateRequirements,
+  focusPostingCardToDate,
+  matchesPostingDate,
   projectPostingCard,
   projectPostingDetail,
   projectPostingManagement,

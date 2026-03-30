@@ -1,5 +1,6 @@
 import type {
   JobPostingStatus,
+  PostingCardDisplayContext,
   PostingSalaryRow,
   PostingScheduleDisplay,
   PostingWorkflow,
@@ -35,6 +36,8 @@ interface TimeSlotSource {
   roles: RoleSource[];
 }
 
+export const FOCUSED_GROUP_DATE_HINT = '그룹 일정 중 선택 날짜만 표시';
+
 export interface PostingScheduleSource {
   workflow: Pick<PostingWorkflow, 'isFixed' | 'usesGroupedDateRanges'>;
   scheduleDisplay: PostingScheduleDisplay;
@@ -44,6 +47,7 @@ export interface PostingScheduleSource {
   startTime?: string;
   isStartTimeNegotiable?: boolean;
   requiredRolesWithCount?: RoleWithCount[];
+  displayContext?: PostingCardDisplayContext;
 }
 
 export interface PostingCompensationSource {

@@ -1,4 +1,5 @@
 import type {
+  CardDateRequirement,
   JobPosting,
   JobPostingCard,
   PostingAudience,
@@ -113,6 +114,63 @@ export function projectPostingDetail(facts: PostingFacts): PostingDetailViewMode
 
 export function projectPostingManagement(facts: PostingFacts): PostingManagementViewModel {
   return projectManagement(facts);
+}
+
+function getMatchingDateRequirement(
+  card: Pick<JobPostingCard, 'dateRequirements' | 'workDate'>,
+  date: string
+): CardDateRequirement | undefined {
+  return card.dateRequirements.find((requirement) => requirement.date === date);
+}
+
+export function matchesPostingDate(
+  card: Pick<JobPostingCard, 'dateRequirements' | 'workDate'>,
+  date?: string
+): boolean {
+  if (!date) {
+    return true;
+  }
+
+  if (card.dateRequirements.length > 0) {
+    return Boolean(getMatchingDateRequirement(card, date));
+  }
+
+  return card.workDate === date;
+}
+
+export function focusPostingCardToDate(card: JobPostingCard, date?: string): JobPostingCard {
+  if (!date || card.workflow.isFixed || card.scheduleDisplay.variant === 'legacy') {
+    return card;
+  }
+
+  const matchingRequirement = getMatchingDateRequirement(card, date);
+  if (!matchingRequirement) {
+    return card;
+  }
+
+  const wasGroupedRange =
+    card.displayContext?.wasGroupedRange ??
+    (card.workflow.usesGroupedDateRanges || card.scheduleDisplay.variant === 'grouped_dates');
+
+  return {
+    ...card,
+    workflow: {
+      ...card.workflow,
+      usesGroupedDateRanges: false,
+    },
+    dateRequirements: [matchingRequirement],
+    scheduleDisplay: {
+      ...card.scheduleDisplay,
+      variant: 'dated_requirements',
+      dateRequirements: [matchingRequirement],
+      dateGroups: [],
+    },
+    displayContext: {
+      ...card.displayContext,
+      focusedDate: date,
+      wasGroupedRange,
+    },
+  };
 }
 
 export function projectPostingSurface(

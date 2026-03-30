@@ -31,6 +31,46 @@ jest.mock('@/lib/firebase', () => ({
 
 const mockGetJobPostings = jest.fn();
 const mockConvertToCard = jest.fn((posting) => posting as JobPostingCard);
+const mockMatchesPostingDate = jest.fn((job: JobPostingCard, date?: string) => {
+  if (!date) return true;
+
+  if (job.dateRequirements?.length) {
+    return job.dateRequirements.some((requirement) => requirement.date === date);
+  }
+
+  return job.workDate === date;
+});
+const mockFocusPostingCardToDate = jest.fn((job: JobPostingCard, date?: string) => {
+  if (!date || job.workflow?.isFixed || job.scheduleDisplay?.variant === 'legacy') {
+    return job;
+  }
+
+  const matchingRequirement = job.dateRequirements?.find(
+    (requirement) => requirement.date === date
+  );
+  if (!matchingRequirement) {
+    return job;
+  }
+
+  return {
+    ...job,
+    workflow: {
+      ...job.workflow,
+      usesGroupedDateRanges: false,
+    },
+    dateRequirements: [matchingRequirement],
+    scheduleDisplay: {
+      ...job.scheduleDisplay,
+      variant: 'dated_requirements',
+      dateRequirements: [matchingRequirement],
+      dateGroups: [],
+    },
+    displayContext: {
+      focusedDate: date,
+      wasGroupedRange: job.workflow?.usesGroupedDateRanges ?? false,
+    },
+  };
+});
 
 jest.mock('@/services', () => ({
   getJobPostings: (...args: unknown[]) => mockGetJobPostings(...args),
@@ -40,6 +80,10 @@ jest.mock('@/services', () => ({
 jest.mock('@/domains/job-posting', () => ({
   buildPostingFacts: (posting: unknown) => posting,
   projectPostingCard: (posting: unknown) => posting,
+  matchesPostingDate: (...args: [JobPostingCard, string | undefined]) =>
+    mockMatchesPostingDate(...args),
+  focusPostingCardToDate: (...args: [JobPostingCard, string | undefined]) =>
+    mockFocusPostingCardToDate(...args),
 }));
 
 jest.mock('@/utils/queryUtils', () => ({
@@ -103,9 +147,26 @@ function createWrapper() {
 function createMockJobPosting(
   id: string,
   workDate: string,
-  dateRequirements?: { date: string; timeSlots: { startTime: string }[] }[]
+  dateRequirements?: {
+    date: string;
+    isGrouped?: boolean;
+    timeSlots: { startTime: string }[];
+  }[]
 ): JobPostingCard {
   const defaultRole = { role: 'dealer', count: 1, filled: 0 };
+  const normalizedDateRequirements =
+    dateRequirements?.map((dr) => ({
+      date: dr.date,
+      isGrouped: dr.isGrouped,
+      timeSlots: dr.timeSlots.map((ts) => ({
+        startTime: ts.startTime,
+        roles: [defaultRole],
+      })),
+    })) ?? [];
+  const usesGroupedDateRanges = normalizedDateRequirements.some(
+    (requirement) => requirement.isGrouped
+  );
+
   return {
     id,
     title: `Test Job ${id}`,
@@ -113,17 +174,26 @@ function createMockJobPosting(
     postingType: 'regular',
     workDate,
     timeSlot: '10:00 - 18:00',
-    dateRequirements:
-      dateRequirements?.map((dr) => ({
-        date: dr.date,
-        timeSlots: dr.timeSlots.map((ts) => ({
-          startTime: ts.startTime,
-          roles: [defaultRole],
-        })),
-      })) ?? [],
+    dateRequirements: normalizedDateRequirements,
     location: '서울 강남구',
     roles: ['dealer'],
-  } as JobPostingCard;
+    workflow: {
+      isFixed: false,
+      usesGroupedDateRanges,
+    },
+    scheduleDisplay: {
+      variant: normalizedDateRequirements.length
+        ? usesGroupedDateRanges
+          ? 'grouped_dates'
+          : 'dated_requirements'
+        : 'legacy',
+      workDate,
+      timeSlot: '10:00 - 18:00',
+      fixed: undefined,
+      dateRequirements: normalizedDateRequirements,
+      dateGroups: [],
+    },
+  } as unknown as JobPostingCard;
 }
 
 // ============================================================================
@@ -134,6 +204,8 @@ describe('useJobPostings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockConvertToCard.mockImplementation((posting) => posting);
+    mockMatchesPostingDate.mockClear();
+    mockFocusPostingCardToDate.mockClear();
   });
 
   describe('기본 기능', () => {
@@ -284,6 +356,49 @@ describe('useJobPostings', () => {
 
       expect(result.current.jobs[0]?.id).toBe('early');
       expect(result.current.jobs[1]?.id).toBe('late');
+    });
+
+    it('selected workDate focuses grouped cards to the chosen date only', async () => {
+      const selectedDate = nextWeek ?? '';
+      const mockData = [
+        createMockJobPosting('grouped', tomorrow ?? '', [
+          { date: tomorrow ?? '', isGrouped: true, timeSlots: [{ startTime: '18:00' }] },
+          { date: selectedDate, isGrouped: true, timeSlots: [{ startTime: '09:00' }] },
+        ]),
+        createMockJobPosting('single', selectedDate, [
+          { date: selectedDate, timeSlots: [{ startTime: '19:00' }] },
+        ]),
+        createMockJobPosting('invalid', selectedDate, [
+          { date: tomorrow ?? '', timeSlots: [{ startTime: '08:00' }] },
+        ]),
+      ];
+
+      mockGetJobPostings.mockResolvedValue({
+        items: mockData,
+        lastDoc: null,
+        hasMore: false,
+      });
+
+      const { result } = renderHook(
+        () => useJobPostings({ filters: { postingType: 'regular', workDate: selectedDate } }),
+        {
+          wrapper: createWrapper(),
+        }
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.jobs.map((job) => job.id)).toEqual(['grouped', 'single']);
+      expect(result.current.jobs[0]?.dateRequirements).toHaveLength(1);
+      expect(result.current.jobs[0]?.dateRequirements[0]?.date).toBe(selectedDate);
+      expect(result.current.jobs[0]?.displayContext).toEqual({
+        focusedDate: selectedDate,
+        wasGroupedRange: true,
+      });
+      expect(mockMatchesPostingDate).toHaveBeenCalled();
+      expect(mockFocusPostingCardToDate).toHaveBeenCalled();
     });
   });
 

@@ -8,6 +8,7 @@ import { PostingScheduleContent } from './PostingScheduleContent';
 import {
   buildPostingCompensationModel,
   buildPostingScheduleModel,
+  FOCUSED_GROUP_DATE_HINT,
   shouldShowUrgentBadge,
 } from './postingSurfaceModel';
 
@@ -86,6 +87,7 @@ export function PostingCardSurface({
               daysPerWeek={card.daysPerWeek}
               startTime={card.startTime}
               requiredRolesWithCount={card.requiredRolesWithCount}
+              displayContext={card.displayContext}
             />
           </View>
 
@@ -119,8 +121,11 @@ function buildAccessibilityLabel(
       : schedule.variant === 'legacy'
         ? `${schedule.dateLabel}, ${schedule.timeLabel}`
         : schedule.sections[0]?.label || card.workDate;
+  const focusedGroupHint = card.displayContext?.wasGroupedRange
+    ? `, ${FOCUSED_GROUP_DATE_HINT}`
+    : '';
 
-  return `${card.title}, ${card.location}, ${scheduleLabel}, ${compensationLabel}`;
+  return `${card.title}, ${card.location}, ${scheduleLabel}, ${compensationLabel}${focusedGroupHint}`;
 }
 
 export default PostingCardSurface;

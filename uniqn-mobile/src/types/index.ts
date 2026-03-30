@@ -84,6 +84,7 @@ export type {
   PostingRoleAvailability,
   PostingDateGroup,
   PostingScheduleDisplay,
+  PostingCardDisplayContext,
   PostingSalaryRow,
   PostingSalaryDisplay,
   PostingApplicationEligibility,

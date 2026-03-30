@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import type { PostingRoleDisplayModel, PostingScheduleSource } from './postingSurfaceModel';
-import { buildPostingScheduleModel } from './postingSurfaceModel';
+import { buildPostingScheduleModel, FOCUSED_GROUP_DATE_HINT } from './postingSurfaceModel';
 
 interface PostingScheduleContentProps extends PostingScheduleSource {
   display: 'card' | 'detail';
@@ -14,6 +14,7 @@ export function PostingScheduleContent({
   ...source
 }: PostingScheduleContentProps) {
   const schedule = buildPostingScheduleModel(source);
+  const shouldShowFocusedGroupHint = display === 'card' && source.displayContext?.wasGroupedRange;
 
   if (schedule.variant === 'fixed') {
     return display === 'card' ? (
@@ -81,6 +82,12 @@ export function PostingScheduleContent({
 
   return (
     <>
+      {shouldShowFocusedGroupHint ? (
+        <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400">
+          {FOCUSED_GROUP_DATE_HINT}
+        </Text>
+      ) : null}
+
       {schedule.sections.map((section) => (
         <View
           key={section.key}

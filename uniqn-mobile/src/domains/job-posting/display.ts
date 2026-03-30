@@ -1,5 +1,7 @@
 export { buildPostingFacts } from './facts';
 export {
+  focusPostingCardToDate,
+  matchesPostingDate,
   projectPostingCard,
   projectPostingDetail,
   projectPostingManagement,

@@ -6,6 +6,9 @@ import { useAuthStore } from '@/stores';
 import type { JobPosting, PostingDetailViewModel } from '@/types';
 import { JobDetail } from '../JobDetail';
 
+const mockPostingCompensationContent = jest.fn((_props: unknown) => null);
+const mockPostingScheduleContent = jest.fn((_props: unknown) => null);
+
 jest.mock('@/domains/job-posting', () => ({
   buildPostingFacts: jest.fn(),
   projectPostingSurface: jest.fn(),
@@ -37,8 +40,8 @@ jest.mock('../PostingTypeBadge', () => ({
 }));
 
 jest.mock('../shared', () => ({
-  PostingCompensationContent: () => null,
-  PostingScheduleContent: () => null,
+  PostingCompensationContent: (props: unknown) => mockPostingCompensationContent(props),
+  PostingScheduleContent: (props: unknown) => mockPostingScheduleContent(props),
   PostingStatusBadge: () => null,
   shouldShowUrgentBadge: () => false,
 }));
@@ -80,6 +83,8 @@ describe('JobDetail', () => {
     jest.clearAllMocks();
     mockBuildPostingFacts.mockReturnValue({} as never);
     mockProjectPostingSurface.mockReturnValue(baseDetail);
+    mockPostingCompensationContent.mockClear();
+    mockPostingScheduleContent.mockClear();
     mockUseUserProfile.mockReturnValue({
       userProfile: null,
       isLoading: false,
@@ -131,5 +136,86 @@ describe('JobDetail', () => {
       enabled: true,
     });
     expect(getByText('bubble:88')).toBeTruthy();
+  });
+  it('passes the full grouped schedule to detail content without focused card context', () => {
+    const groupedDetail = {
+      ...baseDetail,
+      workflow: {
+        scheduleKind: 'dated',
+        isFixed: false,
+        isDated: true,
+        isTournament: false,
+        isUrgent: false,
+        recruitmentType: 'event',
+        usesGroupedDateRanges: true,
+      },
+      scheduleDisplay: {
+        variant: 'grouped_dates',
+        workDate: '2026-04-01',
+        timeSlot: '10:00',
+        fixed: undefined,
+        dateRequirements: [
+          {
+            date: '2026-04-01',
+            isGrouped: true,
+            timeSlots: [{ startTime: '10:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+          },
+          {
+            date: '2026-04-02',
+            isGrouped: true,
+            timeSlots: [{ startTime: '09:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+          },
+        ],
+        dateGroups: [
+          {
+            id: 'group-a',
+            startDate: '2026-04-01',
+            endDate: '2026-04-02',
+            timeSlots: [{ startTime: '10:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+          },
+        ],
+      },
+      workDate: '2026-04-01',
+      timeSlot: '10:00',
+    } as unknown as PostingDetailViewModel;
+
+    mockProjectPostingSurface.mockReturnValue(groupedDetail);
+
+    render(<JobDetail job={{} as JobPosting} />);
+
+    expect(mockPostingScheduleContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        display: 'detail',
+        workflow: groupedDetail.workflow,
+        scheduleDisplay: groupedDetail.scheduleDisplay,
+        workDate: '2026-04-01',
+        timeSlot: '10:00',
+      })
+    );
+
+    const scheduleProps = mockPostingScheduleContent.mock.calls[0]?.[0] as unknown as {
+      displayContext?: unknown;
+      scheduleDisplay: {
+        dateRequirements: { date: string }[];
+        dateGroups: {
+          id: string;
+          startDate: string;
+          endDate: string;
+          timeSlots: { startTime: string }[];
+        }[];
+      };
+    };
+
+    expect(scheduleProps.displayContext).toBeUndefined();
+    expect(
+      scheduleProps.scheduleDisplay.dateRequirements.map((requirement) => requirement.date)
+    ).toEqual(['2026-04-01', '2026-04-02']);
+    expect(scheduleProps.scheduleDisplay.dateGroups).toHaveLength(1);
+    expect(scheduleProps.scheduleDisplay.dateGroups[0]).toMatchObject({
+      id: 'group-a',
+      startDate: '2026-04-01',
+      endDate: '2026-04-02',
+    });
+    expect(scheduleProps.scheduleDisplay.dateGroups[0]?.timeSlots[0]?.startTime).toBe('10:00');
   });
 });

@@ -3,6 +3,26 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { useQuery } from '@tanstack/react-query';
 import JobsScreen from '../index';
 
+const mockJobList = jest.fn(
+  ({
+    jobs,
+  }: {
+    jobs: {
+      id: string;
+      title: string;
+    }[];
+  }) => {
+    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    return (
+      <ReactNative.View>
+        {jobs.map((job) => (
+          <ReactNative.Text key={job.id}>{job.title}</ReactNative.Text>
+        ))}
+      </ReactNative.View>
+    );
+  }
+);
+
 jest.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ isEmployer: false }),
 }));
@@ -71,29 +91,13 @@ jest.mock('@/components/jobs', () => ({
     return (
       <ReactNative.Pressable
         testID="date-select"
-        onPress={() => onDateSelect(new Date('2026-04-01T00:00:00.000Z'))}
+        onPress={() => onDateSelect(new Date('2026-04-02T00:00:00.000Z'))}
       >
         <ReactNative.Text>date</ReactNative.Text>
       </ReactNative.Pressable>
     );
   },
-  JobList: ({
-    jobs,
-  }: {
-    jobs: {
-      id: string;
-      title: string;
-    }[];
-  }) => {
-    const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
-    return (
-      <ReactNative.View>
-        {jobs.map((job) => (
-          <ReactNative.Text key={job.id}>{job.title}</ReactNative.Text>
-        ))}
-      </ReactNative.View>
-    );
-  },
+  JobList: (props: { jobs: { id: string; title: string }[] }) => mockJobList(props),
 }));
 
 jest.mock('@/components/headers', () => ({
@@ -111,26 +115,84 @@ describe('JobsScreen search filters', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    mockJobList.mockClear();
 
     (useQuery as jest.Mock).mockReturnValue({
       data: [
         {
           id: 'urgent-job',
-          title: '긴급 공고',
+          title: 'urgent job',
           postingType: 'urgent',
           workDate: '2026-04-01',
         },
         {
-          id: 'regular-job-a',
-          title: '정기 공고 A',
+          id: 'grouped-regular-job',
+          title: 'grouped regular job',
           postingType: 'regular',
           workDate: '2026-04-01',
+          dateRequirements: [
+            { date: '2026-04-01', timeSlots: [{ startTime: '10:00', roles: [] }] },
+            { date: '2026-04-02', timeSlots: [{ startTime: '09:00', roles: [] }] },
+          ],
+          workflow: { isFixed: false, usesGroupedDateRanges: true },
+          scheduleDisplay: {
+            variant: 'grouped_dates',
+            workDate: '2026-04-01',
+            timeSlot: '10:00',
+            fixed: undefined,
+            dateRequirements: [
+              { date: '2026-04-01', timeSlots: [{ startTime: '10:00', roles: [] }] },
+              { date: '2026-04-02', timeSlots: [{ startTime: '09:00', roles: [] }] },
+            ],
+            dateGroups: [
+              {
+                id: 'group-a',
+                startDate: '2026-04-01',
+                endDate: '2026-04-02',
+                timeSlots: [{ startTime: '10:00', roles: [] }],
+              },
+            ],
+          },
         },
         {
-          id: 'regular-job-b',
-          title: '정기 공고 B',
+          id: 'direct-regular-job',
+          title: 'direct regular job',
           postingType: 'regular',
           workDate: '2026-04-02',
+          dateRequirements: [
+            { date: '2026-04-02', timeSlots: [{ startTime: '12:00', roles: [] }] },
+          ],
+          workflow: { isFixed: false, usesGroupedDateRanges: false },
+          scheduleDisplay: {
+            variant: 'dated_requirements',
+            workDate: '2026-04-02',
+            timeSlot: '12:00',
+            fixed: undefined,
+            dateRequirements: [
+              { date: '2026-04-02', timeSlots: [{ startTime: '12:00', roles: [] }] },
+            ],
+            dateGroups: [],
+          },
+        },
+        {
+          id: 'off-date-regular-job',
+          title: 'off-date regular job',
+          postingType: 'regular',
+          workDate: '2026-04-01',
+          dateRequirements: [
+            { date: '2026-04-01', timeSlots: [{ startTime: '14:00', roles: [] }] },
+          ],
+          workflow: { isFixed: false, usesGroupedDateRanges: false },
+          scheduleDisplay: {
+            variant: 'dated_requirements',
+            workDate: '2026-04-01',
+            timeSlot: '14:00',
+            fixed: undefined,
+            dateRequirements: [
+              { date: '2026-04-01', timeSlots: [{ startTime: '14:00', roles: [] }] },
+            ],
+            dateGroups: [],
+          },
         },
       ],
       isLoading: false,
@@ -144,34 +206,52 @@ describe('JobsScreen search filters', () => {
     jest.useRealTimers();
   });
 
-  it('applies visible type and date filters to search results', async () => {
+  it('applies type and focused-date filters to grouped search results without reordering', async () => {
     const { getByTestId, getByText, queryByText } = render(<JobsScreen />);
 
-    fireEvent.changeText(getByTestId('search-input'), '공고');
+    fireEvent.changeText(getByTestId('search-input'), 'job');
 
     await act(async () => {
       jest.advanceTimersByTime(300);
     });
 
     await waitFor(() => {
-      expect(getByText('긴급 공고')).toBeTruthy();
+      expect(getByText('urgent job')).toBeTruthy();
     });
-    expect(queryByText('정기 공고 A')).toBeNull();
-    expect(queryByText('정기 공고 B')).toBeNull();
+    expect(queryByText('grouped regular job')).toBeNull();
+    expect(queryByText('direct regular job')).toBeNull();
 
     fireEvent.press(getByText('regular'));
 
     await waitFor(() => {
-      expect(getByText('정기 공고 A')).toBeTruthy();
+      expect(getByText('grouped regular job')).toBeTruthy();
     });
-    expect(getByText('정기 공고 B')).toBeTruthy();
-    expect(queryByText('긴급 공고')).toBeNull();
+    expect(getByText('direct regular job')).toBeTruthy();
+    expect(getByText('off-date regular job')).toBeTruthy();
+    expect(queryByText('urgent job')).toBeNull();
 
     fireEvent.press(getByTestId('date-select'));
 
     await waitFor(() => {
-      expect(getByText('정기 공고 A')).toBeTruthy();
+      expect(getByText('grouped regular job')).toBeTruthy();
     });
-    expect(queryByText('정기 공고 B')).toBeNull();
+    expect(getByText('direct regular job')).toBeTruthy();
+    expect(queryByText('off-date regular job')).toBeNull();
+
+    const latestJobs = (mockJobList.mock.calls.at(-1)?.[0]?.jobs ?? []) as {
+      title: string;
+      displayContext?: {
+        focusedDate?: string;
+        wasGroupedRange?: boolean;
+      };
+    }[];
+    expect(latestJobs.map((job: { title: string }) => job.title)).toEqual([
+      'grouped regular job',
+      'direct regular job',
+    ]);
+    expect(latestJobs[0]?.displayContext).toEqual({
+      focusedDate: '2026-04-02',
+      wasGroupedRange: true,
+    });
   });
 });
