@@ -320,10 +320,7 @@ export async function releaseConfirmedAssignmentsInTransaction(params: {
   });
 
   for (const snapshot of activeConfirmationWorkLogs) {
-    transaction.update(snapshot.ref, {
-      status: STATUS.WORK_LOG.CANCELLED,
-      updatedAt: serverTimestamp(),
-    });
+    transaction.delete(snapshot.ref);
   }
 
   return {

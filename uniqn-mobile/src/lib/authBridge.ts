@@ -141,16 +141,15 @@ export async function ensureDualSdkSync(): Promise<void> {
       return;
     }
 
-    // Native만 로그인된 경우 → 비정상 상태, 양쪽 로그아웃
-    logger.warn('Dual SDK 상태 불일치 감지 - 양쪽 로그아웃으로 복구', {
+    // Native SDK 세션이 먼저 복원되고 Web SDK가 뒤따라오는 구간을 허용한다.
+    logger.info('Native SDK 세션 복원 대기 상태 - Web SDK 동기화까지 세션 유지', {
       component: 'authBridge',
       nativeLoggedIn,
       webLoggedIn,
       nativeUid: nativeUser?.uid,
       webUid: webUser?.uid,
     });
-
-    await syncSignOut();
+    return;
   } catch (error) {
     // Native Firebase 앱 미초기화 등 환경 문제 시 건너뜀
     logger.warn('Dual SDK 상태 확인 실패 - 건너뜀', {

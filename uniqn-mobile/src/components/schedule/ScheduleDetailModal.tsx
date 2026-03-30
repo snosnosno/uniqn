@@ -192,22 +192,33 @@ export function ScheduleDetailModal({
       return;
     }
 
+    const ownerId = schedule.ownerId;
+    const fallbackName = schedule.postingProjection?.ownerName || '구인자';
+
+    setReportTarget({
+      id: ownerId,
+      name: fallbackName,
+    });
+    setIsReportModalVisible(true);
+
     try {
-      // 구인자 이름 조회
-      const profile = await getUserProfile(schedule.ownerId);
-      setReportTarget({
-        id: schedule.ownerId,
-        name: profile?.name || profile?.nickname || '구인자',
-      });
-      setIsReportModalVisible(true);
+      const profile = await getUserProfile(ownerId);
+      const resolvedName = profile?.name || profile?.nickname;
+
+      if (!resolvedName) {
+        return;
+      }
+
+      setReportTarget((current) =>
+        current?.id === ownerId
+          ? {
+              ...current,
+              name: resolvedName,
+            }
+          : current
+      );
     } catch (error) {
       logger.error('Failed to get employer profile', error as Error);
-      // 이름 조회 실패해도 "구인자"로 진행
-      setReportTarget({
-        id: schedule.ownerId,
-        name: '구인자',
-      });
-      setIsReportModalVisible(true);
     }
   }, [schedule, addToast]);
 

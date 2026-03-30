@@ -849,6 +849,38 @@ describe('scheduleService - getScheduleStats', () => {
     expect(stats.completedSchedules).toBe(1);
     expect(stats.totalEarnings).toBe(90000);
   });
+
+  it('하나의 지원이 여러 일정으로 펼쳐져도 지원중은 1건으로 집계한다', async () => {
+    const mockSchedules = [
+      createMockScheduleEvent({
+        id: 'app-1-1',
+        applicationId: 'app-1',
+        date: '2099-01-15',
+        type: STATUS.SCHEDULE.APPLIED,
+      }),
+      createMockScheduleEvent({
+        id: 'app-1-2',
+        applicationId: 'app-1',
+        date: '2099-01-16',
+        type: STATUS.SCHEDULE.APPLIED,
+      }),
+      createMockScheduleEvent({
+        id: 'app-1-3',
+        applicationId: 'app-1',
+        date: '2099-01-17',
+        type: STATUS.SCHEDULE.APPLIED,
+      }),
+    ];
+
+    mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockReturnValue(mockSchedules);
+
+    const stats = await getScheduleStats('staff-123');
+
+    expect(stats.upcomingSchedules).toBe(1);
+  });
 });
 
 describe('scheduleService - groupSchedulesByDate', () => {

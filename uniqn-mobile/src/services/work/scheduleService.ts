@@ -48,6 +48,20 @@ function hasScheduleDate(date: string | undefined): boolean {
   return typeof date === 'string' && date.trim().length > 0;
 }
 
+function buildScheduleStatsCountKey(schedule: ScheduleEvent): string {
+  const applicationId = schedule.applicationId?.trim();
+  if (applicationId) {
+    return `application:${applicationId}`;
+  }
+
+  const jobPostingId = schedule.jobPostingId?.trim();
+  if (jobPostingId) {
+    return `posting:${jobPostingId}`;
+  }
+
+  return `schedule:${schedule.id}`;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -140,10 +154,10 @@ function mergeAndDeduplicateSchedules(
 export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStats {
   const today = toDateString(new Date());
   const datedSchedules = schedules.filter((schedule) => hasScheduleDate(schedule.date));
+  const confirmedScheduleKeys = new Set<string>();
+  const upcomingScheduleKeys = new Set<string>();
 
   let completedSchedules = 0;
-  let confirmedSchedules = 0;
-  let upcomingSchedules = 0;
   let totalEarnings = 0;
   let thisMonthEarnings = 0;
   let hoursWorked = 0;
@@ -186,19 +200,19 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
 
   datedSchedules.forEach((schedule) => {
     if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.CONFIRMED) {
-      confirmedSchedules++;
+      confirmedScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
 
     if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.APPLIED) {
-      upcomingSchedules++;
+      upcomingScheduleKeys.add(buildScheduleStatsCountKey(schedule));
     }
   });
 
   return {
     totalSchedules: schedules.length,
     completedSchedules,
-    confirmedSchedules,
-    upcomingSchedules,
+    confirmedSchedules: confirmedScheduleKeys.size,
+    upcomingSchedules: upcomingScheduleKeys.size,
     totalEarnings,
     thisMonthEarnings,
     hoursWorked: Math.round(hoursWorked * 10) / 10, // 소수점 1자리

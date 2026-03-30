@@ -1,17 +1,20 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { ScheduleDetailModal } from '../ScheduleDetailModal';
 import { createMockScheduleEvent } from '@/__tests__/mocks/factories';
 import type { ScheduleEvent } from '@/types';
 
+const mockGetUserProfile = jest.fn();
+
 jest.mock('@/components/ui', () => {
   const React = jest.requireActual<typeof import('react')>('react');
-  const { Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
+  const { Pressable, Text, View } =
+    jest.requireActual<typeof import('react-native')>('react-native');
 
   return {
     Modal: ({ visible, children }: any) => (visible ? <View>{children}</View> : null),
     Badge: ({ children }: any) => <Text>{children}</Text>,
-    Button: ({ children }: any) => <View>{children}</View>,
+    Button: ({ children, onPress }: any) => <Pressable onPress={onPress}>{children}</Pressable>,
   };
 });
 
@@ -50,12 +53,18 @@ jest.mock('../tabs', () => ({
   },
 }));
 
-jest.mock('@/components/employer/ReportModal', () => ({
-  ReportModal: () => null,
-}));
+jest.mock('@/components/employer/ReportModal', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+
+  return {
+    ReportModal: ({ visible, target }: { visible: boolean; target?: { name?: string } | null }) =>
+      visible ? <Text>{target?.name ?? 'report-modal'}</Text> : null,
+  };
+});
 
 jest.mock('@/services/auth', () => ({
-  getUserProfile: jest.fn(),
+  getUserProfile: (...args: unknown[]) => mockGetUserProfile(...args),
 }));
 
 jest.mock('@/services/admin', () => ({
@@ -77,6 +86,10 @@ jest.mock('@/utils/logger', () => ({
 }));
 
 describe('ScheduleDetailModal', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('hides the duplicate cancellation request action while review is pending', () => {
     const schedule = createMockScheduleEvent({
       type: 'confirmed',
@@ -114,5 +127,30 @@ describe('ScheduleDetailModal', () => {
 
     expect(getByText('info-tab')).toBeTruthy();
     expect(getByText('취소 요청')).toBeTruthy();
+  });
+
+  it('opens the report modal immediately with a fallback target name before profile lookup resolves', async () => {
+    mockGetUserProfile.mockImplementation(() => new Promise(() => undefined));
+
+    const schedule = {
+      ...createMockScheduleEvent(),
+      ownerId: 'owner-1',
+      postingProjection: {
+        ownerName: '기본 구인자',
+        settlement: {
+          roles: [],
+        },
+      },
+    } as unknown as ScheduleEvent;
+
+    const { getByText } = render(
+      <ScheduleDetailModal schedule={schedule} visible={true} onClose={jest.fn()} />
+    );
+
+    fireEvent.press(getByText('신고'));
+
+    await waitFor(() => {
+      expect(getByText('기본 구인자')).toBeTruthy();
+    });
   });
 });

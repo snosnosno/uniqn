@@ -219,6 +219,7 @@ describe('fixed application transaction compatibility', () => {
       }),
       set: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     };
 
     (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
@@ -246,7 +247,7 @@ describe('fixed application transaction compatibility', () => {
     );
   });
 
-  it('cancel marks related scheduled worklogs as cancelled for fixed confirmations', async () => {
+  it('cancel removes related scheduled worklogs for fixed confirmations', async () => {
     (getDoc as jest.Mock).mockResolvedValue(
       createDocSnap('app-1', {
         applicantId: 'staff-1',
@@ -316,6 +317,7 @@ describe('fixed application transaction compatibility', () => {
         );
       }),
       update: jest.fn(),
+      delete: jest.fn(),
     };
 
     (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
@@ -324,12 +326,8 @@ describe('fixed application transaction compatibility', () => {
 
     await cancelConfirmationTransaction('app-1', 'owner-1', 'cancel');
 
-    expect(transaction.update).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'workLogs/wl-fixed' }),
-      expect.objectContaining({
-        status: 'cancelled',
-        updatedAt: { _serverTimestamp: true },
-      })
+    expect(transaction.delete).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'workLogs/wl-fixed' })
     );
   });
 });

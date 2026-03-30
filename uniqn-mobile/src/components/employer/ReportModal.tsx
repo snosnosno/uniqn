@@ -26,6 +26,7 @@ import {
 } from '@/types/report';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types';
+import { useToastStore } from '@/stores/toastStore';
 
 // ============================================================================
 // Types
@@ -179,6 +180,7 @@ export function ReportModal({
 }: ReportModalProps) {
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [description, setDescription] = useState('');
+  const addToast = useToastStore((state) => state.addToast);
 
   // 모드에 따른 신고 유형 목록 (메모이제이션)
   const reportTypes = useMemo(() => {
@@ -219,7 +221,20 @@ export function ReportModal({
 
   // 제출
   const handleSubmit = useCallback(() => {
-    if (!isValid || !reportTarget || !selectedType) return;
+    if (!reportTarget) {
+      addToast({ type: 'error', message: '신고 대상을 찾을 수 없습니다.' });
+      return;
+    }
+
+    if (!selectedType) {
+      addToast({ type: 'error', message: '신고 유형을 선택해주세요.' });
+      return;
+    }
+
+    if (description.trim().length < 10) {
+      addToast({ type: 'error', message: '상세 설명을 10자 이상 입력해주세요.' });
+      return;
+    }
 
     const input: CreateReportInput = {
       type: selectedType,
@@ -239,7 +254,6 @@ export function ReportModal({
 
     onSubmit(input);
   }, [
-    isValid,
     reportTarget,
     selectedType,
     mode,
@@ -248,6 +262,7 @@ export function ReportModal({
     jobPostingTitle,
     description,
     onSubmit,
+    addToast,
   ]);
 
   // 닫기
@@ -305,6 +320,7 @@ export function ReportModal({
           showsVerticalScrollIndicator={true}
           accessibilityRole="radiogroup"
           accessibilityLabel="신고 유형 선택"
+          keyboardShouldPersistTaps="handled"
         >
           {reportTypes.map((typeInfo) => (
             <ReportTypeOption
@@ -375,7 +391,7 @@ export function ReportModal({
             variant="danger"
             onPress={handleSubmit}
             loading={isLoading}
-            disabled={!isValid}
+            disabled={isLoading}
             style={{ flex: 1 }}
             icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
             accessibilityLabel="신고 제출"

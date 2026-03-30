@@ -11,6 +11,7 @@ import {
   Text,
   Pressable,
   Modal as RNModal,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -210,7 +211,8 @@ function WebModal({
               style={{ flex: 1 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             >
               <View className="p-5">{children}</View>
             </ScrollView>
@@ -240,9 +242,24 @@ function NativeModal({
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
+  const isKeyboardVisible = useRef(false);
 
   // 초기 렌더링 시 불필요한 애니메이션 방지
   const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      isKeyboardVisible.current = true;
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      isKeyboardVisible.current = false;
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // 초기 렌더링 시에는 애니메이션 건너뛰기
@@ -288,6 +305,11 @@ function NativeModal({
   }, [visible, position, fadeOpacity, scale, translateY]);
 
   const handleBackdropPress = () => {
+    Keyboard.dismiss();
+    if (isKeyboardVisible.current) {
+      return;
+    }
+
     if (closeOnBackdrop) {
       onClose();
     }
@@ -377,7 +399,8 @@ function NativeModal({
                 <ScrollView
                   contentContainerStyle={{ flexGrow: 1 }}
                   showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="always"
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
                 >
                   <View className="p-5">{children}</View>
                 </ScrollView>

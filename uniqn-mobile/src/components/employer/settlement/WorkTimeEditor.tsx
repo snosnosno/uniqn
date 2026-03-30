@@ -40,6 +40,18 @@ export interface WorkTimeEditorProps {
 // export for future use - suppresses unused warning
 export type EditingField = 'startTime' | 'endTime' | null;
 
+function hasTimeChanged(nextTime: Date | null, previousTime: Date | null): boolean {
+  if (!nextTime && !previousTime) {
+    return false;
+  }
+
+  if (!nextTime || !previousTime) {
+    return true;
+  }
+
+  return formatTimeForInput(nextTime) !== formatTimeForInput(previousTime);
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -63,6 +75,11 @@ export function WorkTimeEditor({
 
   // workLog 변경 시 초기값 설정
   React.useEffect(() => {
+    if (!visible) {
+      setActivePicker(null);
+      return;
+    }
+
     if (workLog) {
       // checkInTime/checkOutTime 필드 확인 (확장 타입)
       const workLogWithCheck = workLog as WorkLog & {
@@ -107,7 +124,7 @@ export function WorkTimeEditor({
 
       setReason('');
     }
-  }, [workLog]);
+  }, [visible, workLog]);
 
   // 파싱된 시간
   const baseDate = useMemo(() => {
@@ -171,15 +188,12 @@ export function WorkTimeEditor({
     if (isEndTimeUndefined !== wasEndTimeUndefined) return true;
 
     // 시간 값 변경 확인 (미정이 아닌 경우만)
-    if (!isStartTimeUndefined && originalStartTime && startTime) {
-      if (formatTimeForInput(startTime) !== formatTimeForInput(originalStartTime)) {
-        return true;
-      }
+    if (!isStartTimeUndefined && hasTimeChanged(startTime, originalStartTime)) {
+      return true;
     }
-    if (!isEndTimeUndefined && originalEndTime && endTime) {
-      if (formatTimeForInput(endTime) !== formatTimeForInput(originalEndTime)) {
-        return true;
-      }
+
+    if (!isEndTimeUndefined && hasTimeChanged(endTime, originalEndTime)) {
+      return true;
     }
 
     return false;
@@ -230,6 +244,20 @@ export function WorkTimeEditor({
     onClose();
   }, [onClose]);
 
+  const handleStartTimeUndefinedChange = useCallback((nextValue: boolean) => {
+    setIsStartTimeUndefined(nextValue);
+    if (nextValue) {
+      setActivePicker((current) => (current === 'start' ? null : current));
+    }
+  }, []);
+
+  const handleEndTimeUndefinedChange = useCallback((nextValue: boolean) => {
+    setIsEndTimeUndefined(nextValue);
+    if (nextValue) {
+      setActivePicker((current) => (current === 'end' ? null : current));
+    }
+  }, []);
+
   // 휠 피커에서 선택 완료
   const handlePickerConfirm = useCallback(
     (timeValue: TimeValue) => {
@@ -239,8 +267,10 @@ export function WorkTimeEditor({
 
       if (activePicker === 'start') {
         setStartTimeStr(timeStr);
+        setIsStartTimeUndefined(false);
       } else if (activePicker === 'end') {
         setEndTimeStr(timeStr);
+        setIsEndTimeUndefined(false);
       }
       setActivePicker(null);
     },
@@ -329,7 +359,7 @@ export function WorkTimeEditor({
               originalTime={originalStartTime}
               iconColor="#9333EA"
               isUndefined={isStartTimeUndefined}
-              onUndefinedChange={setIsStartTimeUndefined}
+              onUndefinedChange={handleStartTimeUndefinedChange}
               onOpenPicker={() => setActivePicker('start')}
             />
 
@@ -340,7 +370,7 @@ export function WorkTimeEditor({
               originalTime={originalEndTime}
               iconColor="#EF4444"
               isUndefined={isEndTimeUndefined}
-              onUndefinedChange={setIsEndTimeUndefined}
+              onUndefinedChange={handleEndTimeUndefinedChange}
               onOpenPicker={() => setActivePicker('end')}
             />
 
