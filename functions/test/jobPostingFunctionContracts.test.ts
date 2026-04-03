@@ -391,4 +391,57 @@ describe("job posting function canonical contracts", () => {
     });
     expect((posting.updatedAt as admin.firestore.Timestamp).isEqual(stableUpdatedAt)).to.equal(false);
   });
+
+  it("updateJobPostingApplicantCount derives filledPositions from schedule when top-level is absent", async () => {
+    const db = admin.firestore();
+    const posting = createCanonicalTournamentPosting({
+      stats: {
+        totalApplicants: 1,
+        activeApplicants: 1,
+        confirmedApplicants: 0,
+        cancellationPendingApplicants: 0,
+        filledPositions: 0,
+      },
+      schedule: {
+        kind: "dated",
+        primaryDate: "2026-04-10",
+        allDates: ["2026-04-10"],
+        requirements: [
+          {
+            date: "2026-04-10",
+            timeSlots: [
+              {
+                startTime: "18:00",
+                roles: [{role: "dealer", count: 2, filled: 2}],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    delete posting.filledPositions;
+
+    await db.collection("jobPostings").doc("job-count-schedule-filled").set(posting);
+
+    await db.collection("applications").doc("app-schedule-filled").set({
+      jobPostingId: "job-count-schedule-filled",
+      applicantId: "staff-1",
+      status: "applied",
+    });
+
+    const afterSnapshot = await db.collection("applications").doc("app-schedule-filled").get();
+
+    await updateJobPostingApplicantCount.run({
+      params: {applicationId: "app-schedule-filled"},
+      data: {
+        before: {exists: false},
+        after: afterSnapshot,
+      },
+    } as never);
+
+    const postingSnapshot = await db.collection("jobPostings").doc("job-count-schedule-filled").get();
+    const updatedPosting = postingSnapshot.data() as Record<string, unknown>;
+
+    expect((updatedPosting.stats as Record<string, unknown>).filledPositions).to.equal(2);
+  });
 });

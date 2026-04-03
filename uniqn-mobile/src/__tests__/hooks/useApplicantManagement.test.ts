@@ -310,6 +310,39 @@ describe('useApplicantManagement Hooks', () => {
       );
       expect(mockQueryClient.setQueryData).toHaveBeenCalled();
     });
+
+    it('should clear stale realtime applicants when the job posting changes', async () => {
+      const unsubscribe = jest.fn();
+      mockSubscribeToApplicantsAsync.mockResolvedValue(unsubscribe);
+
+      const { result, rerender } = renderHook(
+        ({ jobPostingId }: { jobPostingId: string }) =>
+          useApplicantsByJobPosting(jobPostingId, undefined, { realtime: true }),
+        {
+          initialProps: { jobPostingId: 'job-1' },
+        }
+      );
+
+      await act(async () => {});
+
+      const firstSubscription = mockSubscribeToApplicantsAsync.mock.calls[0]?.[2] as {
+        onUpdate: (data: ReturnType<typeof createMockApplicantListResult>) => void;
+      };
+
+      act(() => {
+        firstSubscription.onUpdate(
+          createMockApplicantListResult([createMockApplicantWithDetails({ id: 'app-1' })])
+        );
+      });
+
+      expect(result.current.data?.applicants[0]?.jobPostingId).toBe('job-1');
+
+      rerender({ jobPostingId: 'job-2' });
+      await act(async () => {});
+
+      expect(result.current.data).toBeUndefined();
+      expect(unsubscribe).toHaveBeenCalled();
+    });
   });
 
   describe('derived query hooks', () => {

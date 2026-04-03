@@ -92,4 +92,47 @@ describe("backfillPostingStats", () => {
     expect(result.updated).to.equal(0);
     expect(result.skipped).to.equal(1);
   });
+
+  it("derives filledPositions from schedule when top-level data is missing", async () => {
+    const db = admin.firestore();
+    const posting = {
+      schemaVersion: 3,
+      title: "Schedule Derived Posting",
+      status: "active",
+      ownerId: "employer-1",
+      totalPositions: 2,
+      schedule: {
+        kind: "dated",
+        requirements: [
+          {
+            date: "2026-04-10",
+            timeSlots: [
+              {
+                startTime: "18:00",
+                roles: [{role: "dealer", count: 2, filled: 2}],
+              },
+            ],
+          },
+        ],
+      },
+      stats: {
+        totalApplicants: 0,
+        activeApplicants: 0,
+        confirmedApplicants: 0,
+        cancellationPendingApplicants: 0,
+        filledPositions: 0,
+      },
+    } as Record<string, unknown>;
+    delete posting.filledPositions;
+
+    await db.collection("jobPostings").doc("job-backfill-schedule").set(posting);
+
+    const result = await backfillPostingStats();
+    const updatedPosting = (
+      await db.collection("jobPostings").doc("job-backfill-schedule").get()
+    ).data();
+
+    expect(result.updated).to.equal(1);
+    expect(updatedPosting?.stats?.filledPositions).to.equal(2);
+  });
 });

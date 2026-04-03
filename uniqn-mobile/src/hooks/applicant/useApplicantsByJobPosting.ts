@@ -158,6 +158,8 @@ export function useApplicantsByJobPosting(
 
   useEffect(() => {
     mountedRef.current = true;
+    setRealtimeData(null);
+    setRealtimeError(null);
     void startSubscription();
 
     return () => {

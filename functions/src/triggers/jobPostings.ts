@@ -71,14 +71,66 @@ function isCancellationPendingStatus(status: unknown): boolean {
   return status === "cancellation_pending";
 }
 
+function sumFilledRoles(roles: unknown): number {
+  if (!Array.isArray(roles)) {
+    return 0;
+  }
+
+  return roles.reduce((sum, role) => {
+    const filled =
+      role && typeof role === "object" && typeof (role as {filled?: unknown}).filled === "number"
+        ? ((role as {filled: number}).filled)
+        : 0;
+    return sum + filled;
+  }, 0);
+}
+
+function getScheduleDerivedFilledPositions(
+  postingData: admin.firestore.DocumentData | undefined,
+): number | undefined {
+  const schedule = postingData?.schedule;
+  if (!schedule || typeof schedule !== "object") {
+    return undefined;
+  }
+
+  if (schedule.kind === "fixed") {
+    return sumFilledRoles(schedule.roleRequirements);
+  }
+
+  if (!Array.isArray(schedule.requirements)) {
+    return undefined;
+  }
+
+  return schedule.requirements.reduce((dateSum: number, requirement: unknown) => {
+    const timeSlots =
+      requirement &&
+      typeof requirement === "object" &&
+      Array.isArray((requirement as {timeSlots?: unknown}).timeSlots)
+        ? ((requirement as {timeSlots: unknown[]}).timeSlots)
+        : [];
+
+    return dateSum +
+      timeSlots.reduce((slotSum: number, slot: unknown) => {
+        const roles =
+          slot && typeof slot === "object" ? (slot as {roles?: unknown}).roles : undefined;
+
+        return slotSum + sumFilledRoles(roles);
+      }, 0);
+  }, 0);
+}
+
 function getAuthoritativeFilledPositions(
   postingData: admin.firestore.DocumentData | undefined,
 ): number {
+  const scheduleDerivedFilledPositions = getScheduleDerivedFilledPositions(postingData);
+
   return typeof postingData?.filledPositions === "number"
     ? postingData.filledPositions
+    : typeof scheduleDerivedFilledPositions === "number"
+      ? scheduleDerivedFilledPositions
     : typeof postingData?.stats?.filledPositions === "number"
       ? postingData.stats.filledPositions
-      : 0;
+    : 0;
 }
 
 function normalizePersistedPostingStats(
