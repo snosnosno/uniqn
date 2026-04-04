@@ -49,6 +49,7 @@ const textSizeStyles: Record<AvatarSize, string> = {
 };
 
 const IMAGE_RETRY_DELAYS_MS = [1500, 4000, 30000] as const;
+const MAX_IMAGE_RETRY_ATTEMPTS = IMAGE_RETRY_DELAYS_MS.length;
 
 const getInitials = (name?: string): string => {
   if (!name) return '?';
@@ -97,12 +98,15 @@ export const Avatar = memo(function Avatar({
   }, []);
 
   const handleImageError = useCallback(() => {
-    const retryDelay =
-      IMAGE_RETRY_DELAYS_MS[Math.min(retryCountRef.current, IMAGE_RETRY_DELAYS_MS.length - 1)];
-
-    retryCountRef.current += 1;
     setHasImageError(true);
     clearRetryTimeout();
+
+    if (retryCountRef.current >= MAX_IMAGE_RETRY_ATTEMPTS) {
+      return;
+    }
+
+    const retryDelay = IMAGE_RETRY_DELAYS_MS[retryCountRef.current];
+    retryCountRef.current += 1;
     retryTimeoutRef.current = setTimeout(() => {
       setHasImageError(false);
       setRetryKey((prev) => prev + 1);

@@ -51,7 +51,7 @@ describe('Avatar', () => {
     expect(mockExpoImage).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps retrying after repeated failures using the capped retry delay', () => {
+  it('stops retrying after the configured retry budget is exhausted', () => {
     render(<Avatar source="https://example.com/avatar.jpg" name="Kim" size="md" />);
 
     const firstRenderProps = mockExpoImage.mock.calls.at(-1)?.[0] as {
@@ -82,6 +82,19 @@ describe('Avatar', () => {
     });
 
     expect(screen.getByTestId('expo-image')).toBeTruthy();
+    expect(mockExpoImage).toHaveBeenCalledTimes(4);
+
+    const fourthRenderProps = mockExpoImage.mock.calls.at(-1)?.[0] as {
+      onError?: () => void;
+    };
+
+    act(() => {
+      fourthRenderProps.onError?.();
+      jest.advanceTimersByTime(60000);
+    });
+
+    expect(screen.queryByTestId('expo-image')).toBeNull();
+    expect(screen.getByText('K')).toBeTruthy();
     expect(mockExpoImage).toHaveBeenCalledTimes(4);
   });
 });
