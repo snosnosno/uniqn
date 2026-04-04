@@ -83,6 +83,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       confirmation: smsHook.confirmation,
       verificationIdRef: smsHook.verificationIdRef,
       requestedModeRef: smsHook.requestedModeRef,
+      clearVerificationState: smsHook.resetState,
       phone: smsHook.phone,
       onVerified,
       onError,
@@ -119,6 +120,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     /** 인증번호 요청 */
     const handleRequestOTP = useCallback(async () => {
+      otpHook.setError(null);
       const result = await smsHook.requestSMS((otpData) => {
         // auto-completed callback (Android 자동인증)
         setStep('verified');
@@ -136,15 +138,47 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       }
     }, [smsHook, otpHook, onVerified]);
 
+    /** 전화번호 수정 */
+    const handleEditPhone = useCallback(() => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setTimer(0);
+      smsHook.resetState();
+      smsHook.setError(null);
+      otpHook.resetOTP();
+      setStep('input');
+    }, [smsHook, otpHook]);
+
     /** OTP 코드 확인 */
     const handleConfirmOTP = useCallback(async () => {
       const result = await otpHook.confirmOTP();
-      if (result === 'verified') {
+      if (result.status === 'verified') {
         setStep('verified');
-      } else if (result === 'reset') {
+        return;
+      }
+
+      if (result.status === 'expired') {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        setTimer(0);
+        return;
+      }
+
+      if (result.status === 'reset') {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        setTimer(0);
+        smsHook.setError(result.message ?? null);
+        otpHook.setError(null);
         setStep('input');
       }
-    }, [otpHook]);
+    }, [otpHook, smsHook]);
 
     // 통합 에러 (SMS 또는 OTP)
     const displayError = step === 'otp' ? (otpHook.error ?? smsHook.error) : smsHook.error;
@@ -213,7 +247,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             <View className="flex-col gap-3 mt-2">
               <Text className="text-sm text-gray-600 dark:text-gray-300">
                 인증번호가 발송되었습니다. 수신까지 최대 1분 소요될 수 있습니다.
-                {'\n'}문자가 오지 않으면 스팸함을 확인해주세요.
+                {'\n'}문자가 늦게 도착했거나 만료되면 상단의 다시 요청 버튼으로 새 번호를
+                받아주세요.
               </Text>
               <View className="flex-row gap-2">
                 <View className="flex-1">
@@ -238,6 +273,14 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
                   {isLoading ? <ActivityIndicator color="white" size="small" /> : '확인'}
                 </Button>
               </View>
+              <Button
+                onPress={handleEditPhone}
+                variant="ghost"
+                size="sm"
+                className="self-start px-0"
+              >
+                전화번호 수정
+              </Button>
             </View>
           )}
         </View>

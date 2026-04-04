@@ -11,7 +11,10 @@ import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 import { cleanPhoneNumber, toE164 } from '@/utils/phone';
 import { checkPhoneExists } from '@/services/auth';
-import { getFirebaseOTPErrorMessage } from '@/components/auth/phoneAuthErrors';
+import {
+  getFirebaseOTPErrorMessage,
+  isFirebaseOTPExpiredError,
+} from '@/components/auth/phoneAuthErrors';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { getNativeAuth } from '@/lib/nativeAuth';
 import { getMMKVInstance } from '@/lib/mmkvStorage';
@@ -26,9 +29,16 @@ export interface UseOTPVerificationOptions {
   confirmation: ConfirmationResultLike | null;
   verificationIdRef: React.MutableRefObject<string | null>;
   requestedModeRef: React.MutableRefObject<'signIn' | 'link'>;
+  clearVerificationState: () => void;
   phone: string;
   onVerified: (phone: string, otpData?: { verificationId: string; otpCode: string }) => void;
   onError?: (error: Error) => void;
+}
+
+export interface ConfirmOTPResult {
+  status: 'verified' | 'expired' | 'reset' | 'error';
+  message?: string;
+  firebaseCode?: string;
 }
 
 export interface UseOTPVerificationReturn {
@@ -38,7 +48,7 @@ export interface UseOTPVerificationReturn {
   isVerifying: boolean;
   error: string | null;
   setError: (error: string | null) => void;
-  confirmOTP: () => Promise<'verified' | 'reset' | null>;
+  confirmOTP: () => Promise<ConfirmOTPResult>;
   resetOTP: () => void;
 }
 
@@ -60,6 +70,7 @@ export function useOTPVerification({
   confirmation,
   verificationIdRef,
   requestedModeRef,
+  clearVerificationState,
   phone,
   onVerified,
   onError,
@@ -113,27 +124,31 @@ export function useOTPVerification({
   }, []);
 
   /** OTP 코드 확인 */
-  const confirmOTP = useCallback(async (): Promise<'verified' | 'reset' | null> => {
+  const confirmOTP = useCallback(async (): Promise<ConfirmOTPResult> => {
     // mode 불일치 방어
     if (requestedModeRef.current !== mode) {
       logger.error('OTP mode 불일치', {
         requestedMode: requestedModeRef.current,
         currentMode: mode,
       });
-      setError('인증 상태가 변경되었습니다. 다시 인증해주세요.');
+      const message = '인증 상태가 변경되었습니다. 인증번호를 다시 요청해 주세요.';
+      setError(message);
       setOtpCode('');
       setOtpAttempts(0);
       setPersistedAttempts(0);
-      return 'reset';
+      clearVerificationState();
+      return { status: 'reset', message };
     }
 
     // OTP 시도 횟수 제한
     if (otpAttempts >= MAX_OTP_ATTEMPTS) {
-      setError('인증번호 입력 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.');
+      const message = '인증번호 입력 횟수를 초과했습니다. 인증번호를 다시 요청해 주세요.';
+      setError(message);
       setOtpAttempts(0);
       setPersistedAttempts(0);
       setOtpCode('');
-      return 'reset';
+      clearVerificationState();
+      return { status: 'reset', message };
     }
 
     // link 모드: verificationId 필수
@@ -142,17 +157,22 @@ export function useOTPVerification({
         logger.error('link 모드 OTP 확인 실패: verificationId 없음', {
           hasConfirmation: !!confirmation,
         });
-        setError('인증 세션이 만료되었습니다. 인증번호를 다시 요청해주세요.');
-        return 'reset';
+        const message = '인증 세션이 만료되었습니다. 인증번호를 다시 요청해 주세요.';
+        setError(message);
+        clearVerificationState();
+        return { status: 'reset', message };
       }
     } else if (!confirmation) {
-      setError('인증 세션이 만료되었습니다. 다시 시도해주세요.');
-      return 'reset';
+      const message = '인증 세션이 만료되었습니다. 인증번호를 다시 요청해 주세요.';
+      setError(message);
+      clearVerificationState();
+      return { status: 'reset', message };
     }
 
     if (otpCode.length !== OTP_LENGTH) {
-      setError(`인증번호 ${OTP_LENGTH}자리를 입력해주세요`);
-      return null;
+      const message = `인증번호 ${OTP_LENGTH}자리를 입력해 주세요.`;
+      setError(message);
+      return { status: 'error', message };
     }
 
     setIsVerifying(true);
@@ -171,9 +191,10 @@ export function useOTPVerification({
         try {
           const phoneStillAvailable = !(await checkPhoneExists(cleanPhoneNumber(phone)));
           if (!phoneStillAvailable) {
-            setError('이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.');
+            const message = '이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.';
+            setError(message);
             setIsVerifying(false);
-            return null;
+            return { status: 'error', message };
           }
         } catch {
           logger.warn('OTP 확인 전 전화번호 재검증 실패 — 서버 검증으로 진행');
@@ -194,7 +215,7 @@ export function useOTPVerification({
           phone: maskValue(phone, 'phone'),
           mode,
         });
-        return 'verified';
+        return { status: 'verified' };
       }
 
       // signIn 모드: confirm()으로 로그인 (기존 동작 유지)
@@ -206,9 +227,10 @@ export function useOTPVerification({
       try {
         const phoneStillAvailable = !(await checkPhoneExists(cleanPhoneNumber(phone)));
         if (!phoneStillAvailable) {
-          setError('이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.');
+          const message = '이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.';
+          setError(message);
           setIsVerifying(false);
-          return null;
+          return { status: 'error', message };
         }
       } catch (checkError) {
         logger.warn('OTP 확인 전 전화번호 재검증 실패 — Firebase 검증으로 진행', {
@@ -230,7 +252,7 @@ export function useOTPVerification({
         throw callbackError;
       }
       logger.info('SMS 인증 완료', { phone: maskValue(phone, 'phone'), mode });
-      return 'verified';
+      return { status: 'verified' };
     } catch (err) {
       const firebaseCode = (err as { code?: string })?.code;
       const errorMessage = firebaseCode
@@ -238,7 +260,24 @@ export function useOTPVerification({
         : err instanceof Error
           ? err.message
           : '인증에 실패했습니다. 다시 시도해주세요.';
+      const isExpiredError = isFirebaseOTPExpiredError(err);
       setError(errorMessage);
+
+      if (isExpiredError) {
+        const errorToReport = err instanceof Error ? err : new Error(errorMessage);
+        setOtpCode('');
+        clearVerificationState();
+        onError?.(errorToReport);
+        logger.error('OTP 인증 세션 만료 - 재요청 필요', errorToReport, {
+          mode,
+          firebaseCode: firebaseCode ?? 'non-firebase-error',
+          hasNativeUser: Platform.OS !== 'web' ? !!getNativeAuth?.()?.currentUser : undefined,
+          hasWebUser: !!getFirebaseAuth().currentUser,
+          hasVerificationId: !!verificationIdRef.current,
+        });
+        return { status: 'expired', message: errorMessage, firebaseCode };
+      }
+
       setOtpAttempts((prev) => {
         const next = prev + 1;
         setPersistedAttempts(next);
@@ -252,11 +291,12 @@ export function useOTPVerification({
         hasWebUser: !!getFirebaseAuth().currentUser,
         hasVerificationId: !!verificationIdRef.current,
       });
-      return null;
+      return { status: 'error', message: errorMessage, firebaseCode };
     } finally {
       setIsVerifying(false);
     }
   }, [
+    clearVerificationState,
     confirmation,
     otpCode,
     phone,

@@ -26,6 +26,12 @@ export function getFirebasePhoneAuthErrorMessage(error: unknown): string {
   }
 }
 
+/** OTP 재요청이 필요한 만료 계열 Firebase 에러인지 여부 */
+export function isFirebaseOTPExpiredError(error: unknown): boolean {
+  const code = (error as { code?: string })?.code;
+  return code === 'auth/session-expired' || code === 'auth/code-expired';
+}
+
 /** OTP 확인(confirmOTP) 시 Firebase 에러 → 사용자 메시지 */
 export function getFirebaseOTPErrorMessage(
   error: unknown,
@@ -36,9 +42,8 @@ export function getFirebaseOTPErrorMessage(
     case 'auth/invalid-verification-code':
       return '인증번호가 올바르지 않습니다.';
     case 'auth/session-expired':
-      return '인증 시간이 만료되었습니다. 다시 요청해주세요.';
     case 'auth/code-expired':
-      return '인증번호가 만료되었습니다. 다시 요청해주세요.';
+      return '인증번호가 만료되었거나 새 번호가 발급되었습니다. 인증번호를 다시 요청해 주세요.';
     case 'auth/credential-already-in-use':
       return mode === 'link'
         ? '이미 다른 계정에 등록된 전화번호입니다.'
