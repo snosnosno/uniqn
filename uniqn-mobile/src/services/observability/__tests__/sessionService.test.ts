@@ -9,16 +9,21 @@ import {
   sessionService,
 } from '../sessionService';
 
-const mockAuth = {
+const mockAuth: {
+  currentUser: {
+    getIdToken: jest.Mock;
+    getIdTokenResult: jest.Mock;
+    uid: string;
+  } | null;
+  authStateReady?: jest.Mock;
+  onAuthStateChanged: jest.Mock;
+} = {
   currentUser: {
     getIdToken: jest.fn(),
     getIdTokenResult: jest.fn(),
     uid: 'test-user-id',
-  } as {
-    getIdToken: jest.Mock;
-    getIdTokenResult: jest.Mock;
-    uid: string;
-  } | null,
+  },
+  authStateReady: jest.fn(),
   onAuthStateChanged: jest.fn(),
 };
 
@@ -26,6 +31,7 @@ const mockAuthStoreSubscribers = new Set<() => void>();
 const mockToastAddToast = jest.fn();
 const mockAuthStoreState = {
   status: 'authenticated',
+  bootstrapSource: 'server' as 'none' | 'cache' | 'server',
   suppressedSessionUserId: null as string | null,
   reset: jest.fn(),
   checkAuthState: jest.fn().mockResolvedValue(undefined),
@@ -164,8 +170,10 @@ describe('sessionService', () => {
       getIdTokenResult: jest.fn(),
       uid: 'test-user-id',
     };
+    mockAuth.authStateReady = jest.fn();
     mockAuth.onAuthStateChanged.mockImplementation(() => jest.fn());
     mockAuthStoreState.status = 'authenticated';
+    mockAuthStoreState.bootstrapSource = 'server';
     mockAuthStoreState.suppressedSessionUserId = null;
     mockAuthStoreState.reset.mockReset();
     mockAuthStoreState.checkAuthState.mockResolvedValue(undefined);
@@ -212,6 +220,144 @@ describe('sessionService', () => {
     expect(mockAuth.currentUser?.getIdToken).not.toHaveBeenCalled();
     expect(sessionService.getSessionState().isActive).toBe(false);
     expect(sessionService.isSessionActive()).toBe(false);
+  });
+
+  it('ignores a transient null auth event while Firebase restores the session', async () => {
+    const restoredUser = {
+      getIdToken: jest.fn().mockResolvedValue('restored-token'),
+      getIdTokenResult: jest.fn(),
+      uid: 'test-user-id',
+    };
+    let authCallback:
+      | ((user: typeof mockAuth.currentUser | null) => void | Promise<void>)
+      | undefined;
+
+    mockAuth.onAuthStateChanged.mockImplementation((callback) => {
+      authCallback = callback;
+      return jest.fn();
+    });
+    mockAuth.currentUser = null;
+    setAuthStoreState({
+      bootstrapSource: 'cache',
+    });
+    mockAuth.authStateReady?.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            mockAuth.currentUser = restoredUser;
+            resolve();
+          }, 1000);
+        })
+    );
+
+    sessionService.initialize();
+
+    const transientNullPromise = authCallback?.(null);
+
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
+
+    await jest.advanceTimersByTimeAsync(1000);
+    await transientNullPromise;
+
+    expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(restoredUser);
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
+  });
+
+  it('ignores a synchronous initial null auth snapshot while Firebase restores the session', async () => {
+    const restoredUser = {
+      getIdToken: jest.fn().mockResolvedValue('restored-token'),
+      getIdTokenResult: jest.fn(),
+      uid: 'test-user-id',
+    };
+
+    mockAuth.currentUser = null;
+    setAuthStoreState({
+      bootstrapSource: 'cache',
+    });
+    mockAuth.authStateReady?.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            mockAuth.currentUser = restoredUser;
+            resolve();
+          }, 1000);
+        })
+    );
+    mockAuth.onAuthStateChanged.mockImplementation((callback) => {
+      void callback(null);
+      return jest.fn();
+    });
+
+    sessionService.initialize();
+
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
+
+    await jest.advanceTimersByTimeAsync(1000);
+
+    expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(restoredUser);
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
+  });
+
+  it('does not delay a real null auth event after startup restore guard is absent', async () => {
+    let authCallback:
+      | ((user: typeof mockAuth.currentUser | null) => void | Promise<void>)
+      | undefined;
+
+    mockAuth.onAuthStateChanged.mockImplementation((callback) => {
+      authCallback = callback;
+      return jest.fn();
+    });
+
+    sessionService.initialize();
+    jest.clearAllMocks();
+
+    mockAuth.currentUser = null;
+    const nullEventPromise = authCallback?.(null);
+    await Promise.resolve();
+
+    expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(null);
+    await nullEventPromise;
+  });
+
+  it('cleans up the fallback restore listener after a synchronous auth callback', async () => {
+    const restoredUser = {
+      getIdToken: jest.fn().mockResolvedValue('restored-token'),
+      getIdTokenResult: jest.fn(),
+      uid: 'test-user-id',
+    };
+    const mainUnsubscribe = jest.fn();
+    const restoreUnsubscribe = jest.fn();
+    let authCallback:
+      | ((user: typeof mockAuth.currentUser | null) => void | Promise<void>)
+      | undefined;
+    const originalAuthStateReady = mockAuth.authStateReady;
+
+    mockAuth.currentUser = null;
+    setAuthStoreState({
+      bootstrapSource: 'cache',
+    });
+    (mockAuth as typeof mockAuth & { authStateReady?: jest.Mock }).authStateReady = undefined;
+
+    try {
+      mockAuth.onAuthStateChanged
+        .mockImplementationOnce((callback) => {
+          authCallback = callback;
+          return mainUnsubscribe;
+        })
+        .mockImplementationOnce((callback) => {
+          callback(restoredUser);
+          return restoreUnsubscribe;
+        });
+
+      sessionService.initialize();
+      await authCallback?.(null);
+
+      expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(restoredUser);
+      expect(restoreUnsubscribe).toHaveBeenCalledTimes(1);
+      expect(mainUnsubscribe).not.toHaveBeenCalled();
+    } finally {
+      mockAuth.authStateReady = originalAuthStateReady;
+    }
   });
 
   it('starts session timers after suppressed session becomes authenticated again', async () => {

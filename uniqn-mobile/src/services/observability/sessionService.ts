@@ -25,6 +25,7 @@ const TOKEN_REFRESH_INTERVAL = 50 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000;
 const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000;
+const AUTH_RESTORE_SETTLE_TIMEOUT_MS = 2000;
 
 export interface SessionState {
   isActive: boolean;
@@ -47,6 +48,7 @@ let appStateSubscription: { remove: () => void } | null = null;
 let authUnsubscribe: (() => void) | null = null;
 let authStoreUnsubscribe: (() => void) | null = null;
 let managedSessionUserId: string | null = null;
+let startupAuthRestoreGuardUntil: number | null = null;
 
 function shouldManageSessionForUser(user: FirebaseUser | null): boolean {
   if (!user) {
@@ -98,12 +100,125 @@ function shouldSkipAuthStoreSync(user: FirebaseUser | null): boolean {
   );
 }
 
+function armStartupAuthRestoreGuard(): void {
+  const authState = useAuthStore.getState();
+  const shouldGuard =
+    authState.status === 'authenticated' &&
+    authState.bootstrapSource === 'cache' &&
+    !getFirebaseAuth().currentUser;
+
+  startupAuthRestoreGuardUntil = shouldGuard ? Date.now() + AUTH_RESTORE_SETTLE_TIMEOUT_MS : null;
+}
+
+function clearStartupAuthRestoreGuard(): void {
+  startupAuthRestoreGuardUntil = null;
+}
+
+function shouldWaitForStartupAuthRestore(user: FirebaseUser | null): boolean {
+  if (user || startupAuthRestoreGuardUntil === null) {
+    return false;
+  }
+
+  if (Date.now() > startupAuthRestoreGuardUntil) {
+    clearStartupAuthRestoreGuard();
+    return false;
+  }
+
+  const authState = useAuthStore.getState();
+  return (
+    authState.status === 'authenticated' &&
+    authState.bootstrapSource === 'cache' &&
+    !getFirebaseAuth().currentUser
+  );
+}
+
+async function waitForRestoredAuthUser(
+  timeoutMs = AUTH_RESTORE_SETTLE_TIMEOUT_MS
+): Promise<FirebaseUser | null> {
+  const auth = getFirebaseAuth() as ReturnType<typeof getFirebaseAuth> & {
+    authStateReady?: () => Promise<void>;
+  };
+
+  if (auth.currentUser) {
+    return auth.currentUser;
+  }
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  if (typeof auth.authStateReady === 'function') {
+    try {
+      await Promise.race([
+        auth.authStateReady(),
+        new Promise<void>((resolve) => {
+          timeoutId = setTimeout(resolve, timeoutMs);
+        }),
+      ]);
+    } catch (error) {
+      logger.debug('authStateReady failed while confirming null auth event', {
+        component: 'sessionService',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    return auth.currentUser;
+  }
+
+  return new Promise<FirebaseUser | null>((resolve) => {
+    let settled = false;
+    let unsubscribe: (() => void) | null = null;
+    let shouldCleanupAfterRegister = false;
+
+    const finish = (nextUser: FirebaseUser | null) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (unsubscribe) {
+        const nextUnsubscribe = unsubscribe;
+        unsubscribe = null;
+        nextUnsubscribe();
+      } else {
+        shouldCleanupAfterRegister = true;
+      }
+      resolve(nextUser);
+    };
+
+    timeoutId = setTimeout(() => finish(auth.currentUser), timeoutMs);
+
+    const registeredUnsubscribe = auth.onAuthStateChanged((nextUser) => {
+      if (nextUser || auth.currentUser) {
+        finish(nextUser ?? auth.currentUser);
+      }
+    });
+
+    unsubscribe = () => {
+      registeredUnsubscribe();
+    };
+
+    if (shouldCleanupAfterRegister) {
+      const nextUnsubscribe = unsubscribe;
+      unsubscribe = null;
+      shouldCleanupAfterRegister = false;
+      nextUnsubscribe();
+    }
+  });
+}
+
 export function initialize(): void {
   if (isInitialized) {
     return;
   }
 
   appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+  armStartupAuthRestoreGuard();
   authUnsubscribe = getFirebaseAuth().onAuthStateChanged(handleAuthStateChange);
   authStoreUnsubscribe = useAuthStore.subscribe(() => {
     syncManagedSessionState();
@@ -130,6 +245,7 @@ export function cleanup(): void {
   }
 
   clearSessionRuntime();
+  clearStartupAuthRestoreGuard();
 
   if (appStateSubscription) {
     appStateSubscription.remove();
@@ -165,9 +281,26 @@ function handleAppStateChange(state: AppStateStatus): void {
 }
 
 async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
+  let nextUser = user;
+
+  if (nextUser) {
+    clearStartupAuthRestoreGuard();
+  } else if (shouldWaitForStartupAuthRestore(nextUser)) {
+    const restoredUser = await waitForRestoredAuthUser();
+    clearStartupAuthRestoreGuard();
+
+    if (restoredUser) {
+      logger.debug('Ignored transient null auth event while Firebase session restored', {
+        component: 'sessionService',
+        uid: restoredUser.uid,
+      });
+      nextUser = restoredUser;
+    }
+  }
+
   try {
-    if (!shouldSkipAuthStoreSync(user)) {
-      await useAuthStore.getState().checkAuthState(user);
+    if (!shouldSkipAuthStoreSync(nextUser)) {
+      await useAuthStore.getState().checkAuthState(nextUser);
     }
   } catch (error) {
     logger.warn('인증 상태 변경 중 스토어 동기화에 실패했습니다', {
@@ -178,14 +311,14 @@ async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
 
   syncManagedSessionState();
 
-  if (!shouldManageSessionForUser(user)) {
-    logger.info(user ? '인증 상태 변경 - 세션 관리 보류' : '인증 상태 변경 - 세션 종료');
+  if (!shouldManageSessionForUser(nextUser)) {
+    logger.info(nextUser ? '인증 상태 변경 - 세션 관리 보류' : '인증 상태 변경 - 세션 종료');
     return;
   }
 
   try {
     const currentUser = getFirebaseAuth().currentUser;
-    const activeUser = user;
+    const activeUser = nextUser;
     if (!activeUser) {
       return;
     }
