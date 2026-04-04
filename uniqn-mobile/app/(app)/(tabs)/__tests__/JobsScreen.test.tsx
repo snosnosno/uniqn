@@ -3,6 +3,8 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { useQuery } from '@tanstack/react-query';
 import JobsScreen from '../index';
 
+const mockPostingTypeChips = jest.fn();
+const mockUsePostingTypeCounts = jest.fn();
 const mockJobList = jest.fn(
   ({
     jobs,
@@ -37,10 +39,7 @@ jest.mock('@/hooks/useTutorial', () => ({
 }));
 
 jest.mock('@/hooks/usePostingTypeCounts', () => ({
-  usePostingTypeCounts: () => ({
-    firstAvailableType: 'urgent',
-    isLoading: false,
-  }),
+  usePostingTypeCounts: () => mockUsePostingTypeCounts(),
 }));
 
 jest.mock('@/hooks/useJobPostings', () => ({
@@ -70,11 +69,16 @@ jest.mock('@/components/jobs', () => ({
     );
   },
   PostingTypeChips: ({
+    counts,
+    selected,
     onChange,
   }: {
+    counts?: Partial<Record<'urgent' | 'regular' | 'tournament', number>>;
+    selected: 'urgent' | 'regular' | 'tournament' | null;
     onChange: (value: 'urgent' | 'regular' | 'tournament' | null) => void;
   }) => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+    mockPostingTypeChips({ counts, selected });
     return (
       <ReactNative.View>
         <ReactNative.Pressable onPress={() => onChange('urgent')}>
@@ -116,6 +120,17 @@ describe('JobsScreen search filters', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     mockJobList.mockClear();
+    mockPostingTypeChips.mockClear();
+    mockUsePostingTypeCounts.mockReturnValue({
+      counts: {
+        urgent: 12,
+        tournament: 0,
+        regular: 27,
+      },
+      hasCounts: true,
+      firstAvailableType: 'urgent',
+      isLoading: false,
+    });
 
     (useQuery as jest.Mock).mockReturnValue({
       data: [
@@ -253,5 +268,45 @@ describe('JobsScreen search filters', () => {
       focusedDate: '2026-04-02',
       wasGroupedRange: true,
     });
+
+    const latestChipProps = mockPostingTypeChips.mock.calls.at(-1)?.[0];
+    expect(latestChipProps?.counts).toEqual({
+      urgent: 12,
+      tournament: 0,
+      regular: 27,
+    });
+  });
+
+  it('hides chip counts while the type counts query is still loading', () => {
+    mockUsePostingTypeCounts.mockReturnValue({
+      counts: {
+        urgent: 12,
+        tournament: 0,
+        regular: 27,
+      },
+      hasCounts: true,
+      firstAvailableType: null,
+      isLoading: true,
+    });
+
+    render(<JobsScreen />);
+
+    expect(mockPostingTypeChips).toHaveBeenCalled();
+    expect(mockPostingTypeChips.mock.calls.at(-1)?.[0]?.counts).toBeUndefined();
+  });
+
+  it('hides chip counts when the type counts query fails', () => {
+    mockUsePostingTypeCounts.mockReturnValue({
+      counts: undefined,
+      hasCounts: false,
+      firstAvailableType: null,
+      isLoading: false,
+      error: new Error('count lookup failed'),
+    });
+
+    render(<JobsScreen />);
+
+    expect(mockPostingTypeChips).toHaveBeenCalled();
+    expect(mockPostingTypeChips.mock.calls.at(-1)?.[0]?.counts).toBeUndefined();
   });
 });

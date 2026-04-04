@@ -43,7 +43,12 @@ export default function JobsScreen() {
   const normalizedSearchText = searchText.trim();
 
   const hasAutoSelected = useRef(false);
-  const { firstAvailableType, isLoading: isLoadingTypeCounts } = usePostingTypeCounts();
+  const {
+    counts,
+    hasCounts,
+    firstAvailableType,
+    isLoading: isLoadingTypeCounts,
+  } = usePostingTypeCounts();
 
   useEffect(() => {
     if (!hasAutoSelected.current && !isLoadingTypeCounts && firstAvailableType) {
@@ -72,6 +77,17 @@ export default function JobsScreen() {
     () =>
       selectedType === 'regular' && selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined,
     [selectedDate, selectedType]
+  );
+  const chipCounts = useMemo(
+    () =>
+      !hasCounts || isLoadingTypeCounts || !counts
+        ? undefined
+        : {
+            urgent: counts.urgent,
+            tournament: counts.tournament,
+            regular: counts.regular,
+          },
+    [counts, hasCounts, isLoadingTypeCounts]
   );
 
   const filters = useMemo<JobPostingFilters>(() => {
@@ -155,7 +171,7 @@ export default function JobsScreen() {
 
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
-      <PostingTypeChips selected={selectedType} onChange={handleTypeChange} />
+      <PostingTypeChips selected={selectedType} onChange={handleTypeChange} counts={chipCounts} />
 
       {selectedType === 'regular' && (
         <DateSlider selectedDate={selectedDate} onDateSelect={setSelectedDate} />

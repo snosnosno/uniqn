@@ -1,30 +1,13 @@
-/**
- * UNIQN Mobile - 공고 타입 칩 필터 컴포넌트
- *
- * @description 가로 스크롤 칩 형태의 공고 타입 필터
- * @version 1.0.0
- */
-
 import React, { memo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { PostingType } from '@/types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 interface PostingTypeChipsProps {
-  /** 선택된 공고 타입 (null = 전체) */
   selected: PostingType | null;
-  /** 타입 변경 핸들러 */
   onChange: (type: PostingType | null) => void;
-  /** 추가 클래스 */
+  counts?: Partial<Record<PostingType, number>>;
   className?: string;
 }
-
-// ============================================================================
-// Chip Configuration
-// ============================================================================
 
 interface ChipConfig {
   id: string;
@@ -33,30 +16,36 @@ interface ChipConfig {
   value: PostingType | null;
 }
 
-const CHIPS: ChipConfig[] = [
-  { id: 'urgent', label: '긴급', icon: '🚨', value: 'urgent' },
-  { id: 'tournament', label: '대회', icon: '🏆', value: 'tournament' },
-  { id: 'regular', label: '지원', icon: '📝', value: 'regular' },
-];
-
-// ============================================================================
-// Sub-Components
-// ============================================================================
-
 interface ChipItemProps {
   chip: ChipConfig;
+  count?: number;
   isSelected: boolean;
   onPress: () => void;
 }
 
-const ChipItem = memo(function ChipItem({ chip, isSelected, onPress }: ChipItemProps) {
+const CHIPS: ChipConfig[] = [
+  { id: 'urgent', label: '급구', icon: '⚡', value: 'urgent' },
+  { id: 'tournament', label: '대회', icon: '🏆', value: 'tournament' },
+  { id: 'regular', label: '일반', icon: '📅', value: 'regular' },
+];
+
+function formatCount(count: number): string {
+  return count > 99 ? '99+' : String(count);
+}
+
+const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: ChipItemProps) {
+  const showCount = typeof count === 'number';
+  const accessibilityLabel = showCount
+    ? `${chip.label} 공고 ${count}건`
+    : `${chip.label} 공고 필터`;
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${chip.label} 공고 필터`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected }}
-      className={`flex-row items-center px-4 py-2 rounded-full ${
+      className={`flex-row items-center rounded-full px-4 py-2 ${
         isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
       }`}
     >
@@ -66,26 +55,29 @@ const ChipItem = memo(function ChipItem({ chip, isSelected, onPress }: ChipItemP
       >
         {chip.label}
       </Text>
+      {showCount ? (
+        <View
+          className={`ml-2 rounded-full px-2 py-0.5 ${
+            isSelected ? 'bg-white/20 dark:bg-white/20' : 'bg-white dark:bg-surface-elevated'
+          }`}
+        >
+          <Text
+            className={`text-xs font-semibold ${
+              isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+            }`}
+          >
+            {formatCount(count)}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 });
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-/**
- * 공고 타입 칩 필터
- *
- * @example
- * <PostingTypeChips
- *   selected={selectedType}
- *   onChange={setSelectedType}
- * />
- */
 export const PostingTypeChips = memo(function PostingTypeChips({
   selected,
   onChange,
+  counts,
   className = '',
 }: PostingTypeChipsProps) {
   const handlePress = useCallback(
@@ -100,12 +92,13 @@ export const PostingTypeChips = memo(function PostingTypeChips({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4 py-3 gap-2"
+        contentContainerClassName="gap-2 px-4 py-3"
       >
         {CHIPS.map((chip) => (
           <ChipItem
             key={chip.id}
             chip={chip}
+            count={chip.value ? counts?.[chip.value] : undefined}
             isSelected={selected === chip.value}
             onPress={() => handlePress(chip.value)}
           />

@@ -1,21 +1,11 @@
-/**
- * UNIQN Mobile - 공고 타입별 존재 여부 확인 훅
- *
- * @description 각 공고 타입별로 공고가 있는지 확인하여 자동 탭 선택에 사용
- * @version 1.1.0 - Repository 패턴 적용
- */
-
 import { useQuery } from '@tanstack/react-query';
-import { jobPostingRepository } from '@/repositories';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
-import { logger } from '@/utils/logger';
-import { useAuthStore } from '@/stores/authStore';
 import { STATUS } from '@/constants';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { jobPostingRepository } from '@/repositories';
+import type { PostingTypeCounts } from '@/repositories/interfaces/IJobPostingRepository';
+import { useAuthStore } from '@/stores/authStore';
 import type { PostingType } from '@/types';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { logger } from '@/utils/logger';
 
 export interface PostingTypeAvailability {
   urgent: boolean;
@@ -24,93 +14,64 @@ export interface PostingTypeAvailability {
   fixed: boolean;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
+const DEFAULT_COUNTS: PostingTypeCounts = {
+  regular: 0,
+  urgent: 0,
+  fixed: 0,
+  tournament: 0,
+  total: 0,
+};
 
-/** 자동 탭 선택 우선순위 (공고가 있는 첫 번째 타입 선택) */
 export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular'];
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 모든 타입의 공고 존재 여부 확인 (Repository 사용)
- */
-async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> {
+async function fetchPostingTypeCounts(): Promise<PostingTypeCounts> {
   try {
-    // Repository 메서드로 타입별 개수 조회
-    const counts = await jobPostingRepository.getTypeCounts({ status: STATUS.JOB_POSTING.ACTIVE });
-
-    // 개수 > 0 이면 존재
-    return {
-      urgent: counts.urgent > 0,
-      tournament: counts.tournament > 0,
-      regular: counts.regular > 0,
-      fixed: false,
-    };
+    return await jobPostingRepository.getTypeCounts({ status: STATUS.JOB_POSTING.ACTIVE });
   } catch (error) {
-    logger.warn('공고 타입 존재 확인 실패', { error });
-    // 에러 시 모두 false 반환 (graceful degradation)
-    return {
-      urgent: false,
-      tournament: false,
-      regular: false,
-      fixed: false,
-    };
+    logger.warn('공고 타입 개수 조회 실패', { error });
+    throw error;
   }
 }
 
-// ============================================================================
-// Hook
-// ============================================================================
-
-/**
- * 공고 타입별 존재 여부 확인 훅
- *
- * @example
- * const { availability, firstAvailableType, isLoading } = usePostingTypeCounts();
- * // firstAvailableType: 우선순위에 따른 첫 번째 공고가 있는 타입
- */
 export function usePostingTypeCounts() {
   const { status } = useAuthStore();
 
   const queryResult = useQuery({
-    queryKey: [...queryKeys.jobPostings.all, 'typeAvailability'] as const,
-    queryFn: fetchPostingTypeAvailability,
-    staleTime: cachingPolicies.frequent, // 5분
-    gcTime: cachingPolicies.standard * 2, // 20분
+    queryKey: [...queryKeys.jobPostings.all, 'typeCounts'] as const,
+    queryFn: fetchPostingTypeCounts,
+    staleTime: cachingPolicies.frequent,
+    gcTime: cachingPolicies.standard * 2,
     enabled: status === 'authenticated',
   });
 
-  // 우선순위에 따른 첫 번째 공고가 있는 타입 계산
-  const firstAvailableType: PostingType | null = (() => {
-    if (!queryResult.data) return null;
+  const counts = queryResult.isSuccess ? queryResult.data : undefined;
+  const resolvedCounts = counts ?? DEFAULT_COUNTS;
+  const hasCounts = counts !== undefined;
 
+  const availability: PostingTypeAvailability = {
+    urgent: resolvedCounts.urgent > 0,
+    tournament: resolvedCounts.tournament > 0,
+    regular: resolvedCounts.regular > 0,
+    fixed: resolvedCounts.fixed > 0,
+  };
+
+  const firstAvailableType: PostingType | null = (() => {
     for (const type of AUTO_SELECT_PRIORITY) {
-      if (queryResult.data[type]) {
+      if (resolvedCounts[type] > 0) {
         return type;
       }
     }
+
     return null;
   })();
 
   return {
-    /** 각 타입별 공고 존재 여부 */
-    availability: queryResult.data ?? {
-      urgent: false,
-      tournament: false,
-      regular: false,
-      fixed: false,
-    },
-    /** 우선순위에 따른 첫 번째 공고가 있는 타입 */
+    availability,
+    counts,
+    hasCounts,
     firstAvailableType,
-    /** 로딩 중 여부 */
     isLoading: queryResult.isLoading,
-    /** 에러 */
     error: queryResult.error,
-    /** 리프레시 */
     refetch: queryResult.refetch,
   };
 }
