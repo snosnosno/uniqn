@@ -50,14 +50,14 @@ function createDefaultTemplateTimeSlots(): PostingTimeSlot[] {
       id: generateId(),
       startTime: '09:00',
       isTimeToBeAnnounced: false,
-      roles: [createDefaultSlotRole('staff'), createDefaultSlotRole('manager')],
+      roles: [createDefaultSlotRole('dealer'), createDefaultSlotRole('floor')],
     },
   ];
 }
 
 export const DEFAULT_DRAFT_ROLE_CATALOG: PostingRoleCatalogEntry[] = [
-  { role: 'staff' },
-  { role: 'manager' },
+  { role: 'dealer' },
+  { role: 'floor' },
 ];
 
 export const INITIAL_JOB_POSTING_DRAFT: JobPostingDraft = {

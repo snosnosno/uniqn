@@ -2,6 +2,20 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import AppLayout from '../_layout';
 
+let mockIsWeb = true;
+const mockOnboardingState = {
+  needsNotificationOnboarding: true,
+  completeNotificationOnboarding: jest.fn(),
+  isLoading: false,
+};
+const mockNotificationHandlerState = {
+  isInitialized: false,
+  requestPermission: jest.fn(),
+  openSettings: jest.fn(),
+  permissionStatus: null as 'granted' | 'denied' | 'undetermined' | null,
+  isRequestingPermission: false,
+};
+
 jest.mock('expo-router', () => ({
   Stack: Object.assign(({ children }: { children: React.ReactNode }) => children, {
     Screen: () => null,
@@ -22,20 +36,11 @@ jest.mock('@/components/ui', () => ({
 }));
 
 jest.mock('@/hooks/useOnboarding', () => ({
-  useOnboarding: () => ({
-    needsNotificationOnboarding: true,
-    completeNotificationOnboarding: jest.fn(),
-    isLoading: false,
-  }),
+  useOnboarding: () => mockOnboardingState,
 }));
 
 jest.mock('@/hooks/useNotificationHandler', () => ({
-  useNotificationHandler: () => ({
-    requestPermission: jest.fn(),
-    openSettings: jest.fn(),
-    permissionStatus: null,
-    isRequestingPermission: false,
-  }),
+  useNotificationHandler: () => mockNotificationHandlerState,
 }));
 
 jest.mock('@/shared/navigation/authRedirect', () => ({
@@ -66,13 +71,44 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('@/utils/platform', () => ({
-  isWeb: true,
+  get isWeb() {
+    return mockIsWeb;
+  },
 }));
 
 describe('AppLayout notification onboarding', () => {
+  beforeEach(() => {
+    mockIsWeb = true;
+    mockOnboardingState.needsNotificationOnboarding = true;
+    mockOnboardingState.isLoading = false;
+    mockNotificationHandlerState.isInitialized = false;
+    mockNotificationHandlerState.permissionStatus = null;
+    mockNotificationHandlerState.isRequestingPermission = false;
+  });
+
   it('does not show the notification onboarding on web', () => {
     const { queryByText } = render(<AppLayout />);
 
     expect(queryByText('notification-screen')).toBeNull();
+  });
+
+  it('does not show the notification onboarding before native permission state resolves', () => {
+    mockIsWeb = false;
+    mockNotificationHandlerState.isInitialized = false;
+    mockNotificationHandlerState.permissionStatus = null;
+
+    const { queryByText } = render(<AppLayout />);
+
+    expect(queryByText('notification-screen')).toBeNull();
+  });
+
+  it('shows the notification onboarding once native permission state is known', () => {
+    mockIsWeb = false;
+    mockNotificationHandlerState.isInitialized = true;
+    mockNotificationHandlerState.permissionStatus = 'denied';
+
+    const { getByText } = render(<AppLayout />);
+
+    expect(getByText('notification-screen')).toBeTruthy();
   });
 });

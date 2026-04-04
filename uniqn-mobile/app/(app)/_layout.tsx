@@ -41,12 +41,17 @@ export default function AppLayout() {
     isLoading: isOnboardingLoading,
   } = useOnboarding();
 
-  const { requestPermission, openSettings, permissionStatus, isRequestingPermission } =
-    useNotificationHandler({
-      enabled: shouldInitializeNotifications,
-      autoInitialize: shouldInitializeNotifications,
-      autoRegisterToken: shouldInitializeNotifications,
-    });
+  const {
+    isInitialized: isNotificationHandlerInitialized,
+    requestPermission,
+    openSettings,
+    permissionStatus,
+    isRequestingPermission,
+  } = useNotificationHandler({
+    enabled: shouldInitializeNotifications,
+    autoInitialize: shouldInitializeNotifications,
+    autoRegisterToken: shouldInitializeNotifications,
+  });
 
   const handleRequestPermission = useCallback(async () => {
     try {
@@ -91,6 +96,8 @@ export default function AppLayout() {
     shouldInitializeNotifications &&
     !showLoading &&
     needsNotificationOnboarding &&
+    isNotificationHandlerInitialized &&
+    permissionStatus !== null &&
     permissionStatus !== 'granted';
 
   return (

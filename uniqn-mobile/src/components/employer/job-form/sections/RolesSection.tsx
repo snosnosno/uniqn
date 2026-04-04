@@ -23,7 +23,10 @@ interface RolesSectionProps {
 }
 
 /** 기본 역할 (폼 초기값) */
-const DEFAULT_ROLES: FormRoleWithCount[] = [{ name: '딜러', count: 1, isCustom: false }];
+const DEFAULT_ROLES: FormRoleWithCount[] = [
+  { name: '딜러', count: 1, isCustom: false },
+  { name: '플로어', count: 1, isCustom: false },
+];
 
 // ============================================================================
 // RoleCard Component

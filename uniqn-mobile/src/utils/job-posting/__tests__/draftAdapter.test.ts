@@ -1,5 +1,5 @@
 import { draftToFormData } from '../draftAdapter';
-import type { JobPostingDraft } from '@/types/jobPostingDraft';
+import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
 
 function createDatedDraft(): JobPostingDraft {
   return {
@@ -81,6 +81,21 @@ function createDatedDraft(): JobPostingDraft {
 }
 
 describe('draftAdapter dated seed handling', () => {
+  it('uses dealer and floor as the default dated roles for a fresh draft', () => {
+    const formData = draftToFormData(INITIAL_JOB_POSTING_DRAFT);
+
+    expect(formData.roles).toMatchObject([
+      {
+        name: '딜러',
+        count: 1,
+      },
+      {
+        name: '플로어',
+        count: 1,
+      },
+    ]);
+  });
+
   it('keeps form roles aligned with the first populated requirement instead of aggregating all dates', () => {
     const formData = draftToFormData(createDatedDraft());
 

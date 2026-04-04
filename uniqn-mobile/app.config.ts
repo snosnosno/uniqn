@@ -2,7 +2,7 @@
  * UNIQN Mobile - Expo 동적 설정
  *
  * @description 환경별 설정, 버전 관리, 빌드 설정을 동적으로 관리
- * @version 1.0.0
+ * @version 1.0.1
  *
  * 사용법:
  * - EAS Build에서 EAS_BUILD_RUNNER 환경변수로 빌드 환경 자동 감지
@@ -16,7 +16,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // 상수
 // ============================================================================
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const SLUG = 'uniqn';
 const DOMAIN = 'uniqn.app';
 const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';

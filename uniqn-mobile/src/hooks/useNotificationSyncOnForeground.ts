@@ -13,7 +13,10 @@ import {
   subscribeToUnreadCount,
   syncUnreadCounterFromServer,
 } from '@/services/notifications/notificationService';
-import { pushNotificationService } from '@/services/notifications/pushNotificationService';
+import {
+  pushNotificationService,
+  type NotificationPermissionStatus,
+} from '@/services/notifications/pushNotificationService';
 import * as tokenRefreshService from '@/services/observability/tokenRefreshService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { logger } from '@/utils/logger';
@@ -27,9 +30,11 @@ export interface UseNotificationSyncOnForegroundOptions {
   enabled?: boolean;
   userId: string | undefined;
   isAuthenticated: boolean;
+  permissionStatus: 'granted' | 'denied' | 'undetermined' | null;
   isTokenRegistered: boolean;
   clearBadge: () => Promise<void>;
   registerToken: () => Promise<boolean>;
+  refreshPermissionStatus?: () => Promise<NotificationPermissionStatus>;
 }
 
 export function useNotificationSyncOnForeground(
@@ -39,9 +44,11 @@ export function useNotificationSyncOnForeground(
     enabled = true,
     userId,
     isAuthenticated,
+    permissionStatus,
     isTokenRegistered,
     clearBadge,
     registerToken,
+    refreshPermissionStatus,
   } = options;
 
   const appStateRef = useRef(AppState.currentState);
@@ -54,9 +61,11 @@ export function useNotificationSyncOnForeground(
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
         clearBadge().catch((e) => logger.warn('Badge clear failed', { error: String(e) }));
 
-        const permission = await pushNotificationService.checkPermission();
+        const permission = refreshPermissionStatus
+          ? await refreshPermissionStatus()
+          : await pushNotificationService.checkPermission();
 
-        if (permission.granted && !isTokenRegistered && userId) {
+        if (permission.granted && !isTokenRegistered && userId && permissionStatus === 'granted') {
           registerToken().catch((e) =>
             logger.warn('Token registration failed', { error: String(e) })
           );
@@ -91,7 +100,15 @@ export function useNotificationSyncOnForeground(
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [clearBadge, enabled, isTokenRegistered, registerToken, userId]);
+  }, [
+    clearBadge,
+    enabled,
+    isTokenRegistered,
+    permissionStatus,
+    refreshPermissionStatus,
+    registerToken,
+    userId,
+  ]);
 
   useEffect(() => {
     if (!enabled || !userId || !isAuthenticated) return;

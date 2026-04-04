@@ -17,6 +17,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import {
   pushNotificationService,
+  type NotificationPermissionStatus,
   type NotificationPayload,
 } from '@/services/notifications/pushNotificationService';
 import { createNotificationFromFCM } from '@/services/notifications/notificationService';
@@ -54,6 +55,7 @@ export interface UsePushNotificationSetupReturn {
   isRequestingPermission: boolean;
   /** 권한 요청 */
   requestPermission: () => Promise<boolean>;
+  refreshPermissionStatus: () => Promise<NotificationPermissionStatus>;
   /** 설정 앱 열기 (권한 거부 시) */
   openSettings: () => Promise<void>;
   /** 내부 사용: 인증 상태 */
@@ -192,6 +194,14 @@ export function usePushNotificationSetup(
   // Actions
   // ============================================================================
 
+  const refreshPermissionStatus = useCallback(async (): Promise<NotificationPermissionStatus> => {
+    const permission = await pushNotificationService.checkPermission();
+    setPermissionStatus((currentStatus) =>
+      currentStatus === permission.status ? currentStatus : permission.status
+    );
+    return permission;
+  }, []);
+
   const initialize = useCallback(async () => {
     if (isInitializingRef.current || isInitialized) return;
     if (Platform.OS === 'web') return;
@@ -204,11 +214,10 @@ export function usePushNotificationSetup(
       pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
       pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
 
-      const permission = await pushNotificationService.checkPermission();
+      const permission = await refreshPermissionStatus();
 
       // 권한 상태만 확인하고 자동 요청하지 않음
       // 권한 요청은 온보딩 플로우(NotificationPermissionScreen)에서만 수행
-      setPermissionStatus(permission.status);
       setIsInitialized(true);
       logger.info('알림 핸들러 초기화 완료', { permissionStatus: permission.status });
     } catch (error) {
@@ -217,7 +226,7 @@ export function usePushNotificationSetup(
       isInitializingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 핸들러는 useRef 기반 stable 참조
-  }, [isInitialized]);
+  }, [isInitialized, refreshPermissionStatus]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'web') return false;
@@ -287,6 +296,7 @@ export function usePushNotificationSetup(
     permissionStatus,
     isRequestingPermission,
     requestPermission,
+    refreshPermissionStatus,
     openSettings,
     userId,
     isAuthenticated,

@@ -41,8 +41,8 @@ export interface FormRoleWithCount {
  * 기본 역할 목록
  */
 export const DEFAULT_ROLES: FormRoleWithCount[] = [
-  { name: '직원', count: 1, isCustom: false },
-  { name: '매니저', count: 1, isCustom: false },
+  { name: '딜러', count: 1, isCustom: false },
+  { name: '플로어', count: 1, isCustom: false },
 ];
 
 /**

@@ -52,9 +52,11 @@ export function useNotificationHandler(
     enabled,
     userId: setup.userId,
     isAuthenticated: setup.isAuthenticated,
+    permissionStatus: setup.permissionStatus,
     isTokenRegistered: token.isTokenRegistered,
     clearBadge: token.clearBadge,
     registerToken: token.registerToken,
+    refreshPermissionStatus: setup.refreshPermissionStatus,
   });
 
   return {
