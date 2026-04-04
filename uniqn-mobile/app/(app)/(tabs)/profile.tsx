@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { type ReactNode, useState } from 'react';
 import { Card, Avatar, Divider, SkeletonProfileHeader, SkeletonListItem } from '@/components/ui';
 import { TabHeader } from '@/components/headers';
 import {
@@ -25,17 +26,17 @@ import {
   EditIcon,
   MegaphoneIcon,
 } from '@/components/icons';
-import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/authStore';
+import { useBubbleScore } from '@/hooks/useReviews';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { signOut } from '@/services/auth';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
+import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
-import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
-import { useBubbleScore } from '@/hooks/useReviews';
 
 interface MenuItemProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   onPress: () => void;
   danger?: boolean;
@@ -70,16 +71,11 @@ export default function ProfileScreen() {
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const bubbleScore = useBubbleScore();
-
-  // useUserProfile 훅과 동일한 displayName 로직
-  const displayName = useMemo(() => {
-    const baseName = profile?.name ?? user?.displayName ?? '이름 없음';
-    const nickname = profile?.nickname;
-    if (nickname && nickname !== baseName) {
-      return `${baseName}(${nickname})`;
-    }
-    return baseName;
-  }, [profile?.name, profile?.nickname, user?.displayName]);
+  const currentUserIdentity = buildCurrentUserIdentitySnapshot({
+    profile,
+    authUser: user,
+    fallbackName: '이름 없음',
+  });
 
   const handleLogout = () => {
     const performLogout = async () => {
@@ -89,47 +85,42 @@ export default function ProfileScreen() {
         reset();
         router.replace('/(auth)/login');
       } catch {
-        addToast({ type: 'error', message: '로그아웃에 실패했습니다' });
+        addToast({ type: 'error', message: '로그아웃에 실패했습니다.' });
       } finally {
         setIsLoggingOut(false);
       }
     };
 
     if (Platform.OS === 'web') {
-      // 웹에서는 window.confirm 사용
       if (window.confirm('정말 로그아웃 하시겠습니까?')) {
         performLogout();
       }
-    } else {
-      // 네이티브에서는 Alert.alert 사용
-      Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ]);
+      return;
     }
+
+    Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: performLogout,
+      },
+    ]);
   };
 
-  // 로딩 상태 (스켈레톤 UI)
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="프로필" showSettings />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
-          {/* 프로필 헤더 스켈레톤 */}
           <Card className="mb-4">
             <SkeletonProfileHeader />
           </Card>
-          {/* 메뉴 스켈레톤 */}
           <Card className="mb-4">
             {[1, 2, 3].map((i) => (
               <SkeletonListItem key={i} />
             ))}
           </Card>
-          {/* 로그아웃 버튼 스켈레톤 */}
           <Card>
             <SkeletonListItem />
           </Card>
@@ -140,11 +131,9 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-      {/* 헤더 */}
       <TabHeader title="프로필" showSettings />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
-        {/* 프로필 정보 */}
         <Card className="mb-4">
           <Pressable
             onPress={() => router.push('/(app)/settings/profile')}
@@ -153,13 +142,13 @@ export default function ProfileScreen() {
             accessibilityLabel="프로필 수정"
           >
             <Avatar
-              name={profile?.name ?? user?.displayName ?? '사용자'}
+              name={currentUserIdentity.displayName || '사용자'}
               size="xl"
-              source={profile?.photoURL ?? user?.photoURL ?? undefined}
+              source={currentUserIdentity.photoURL}
             />
             <View className="ml-4 flex-1">
               <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {displayName}
+                {currentUserIdentity.displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 {profile?.email ?? user?.email ?? '이메일 없음'}
@@ -181,7 +170,6 @@ export default function ProfileScreen() {
           </Pressable>
         </Card>
 
-        {/* 메뉴 */}
         <Card className="mb-4">
           <MenuItem
             icon={<MegaphoneIcon size={22} color="#6B7280" />}
@@ -212,7 +200,6 @@ export default function ProfileScreen() {
           )}
         </Card>
 
-        {/* 로그아웃 */}
         <Card>
           <MenuItem
             icon={

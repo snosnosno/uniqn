@@ -8,6 +8,7 @@ import { getReviewBaseTime } from '@/domains/review/reviewDeadline';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
 import type { CreateReviewContext, ReviewPaginationCursor } from '@/repositories';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type { WorkLog } from '@/types';
@@ -65,6 +66,7 @@ export function useGivenReviews(reviewerId: string | undefined, pageSize = 20) {
 
 export function useCreateReview() {
   const addToast = useToastStore((state) => state.addToast);
+  const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
 
   const mutation = useMutation({
@@ -72,10 +74,15 @@ export function useCreateReview() {
       if (!profile?.uid) {
         return Promise.reject(new Error('Login is required.'));
       }
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '',
+      });
 
       const context: CreateReviewContext = {
         reviewerId: profile.uid,
-        reviewerName: profile.nickname ?? profile.name ?? '',
+        reviewerName: identity.reviewName || '',
       };
 
       return reviewService.createReview(input, context);
@@ -195,7 +202,7 @@ export function buildPendingReviewItems({
     items.push({
       workLogId: workLog.id,
       jobPostingId: workLog.jobPostingId,
-      jobPostingTitle: jobPostingName || posting?.title || '',
+      jobPostingTitle: jobPostingName || posting?.title || '공고',
       workDate: workLog.date || '',
       location: posting?.location?.name ?? '',
       reviewerType: 'staff',
@@ -219,7 +226,7 @@ export function buildPendingReviewItems({
       items.push({
         workLogId: workLog.id,
         jobPostingId: workLog.jobPostingId,
-        jobPostingTitle: posting?.title ?? jobPostingName ?? '',
+        jobPostingTitle: posting?.title ?? jobPostingName ?? '공고',
         workDate: workLog.date || '',
         location: posting?.location?.name ?? '',
         reviewerType: 'employer',

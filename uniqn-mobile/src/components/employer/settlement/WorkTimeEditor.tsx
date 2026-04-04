@@ -7,9 +7,10 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
-import { Image } from 'expo-image';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { SheetModal } from '../../ui/SheetModal';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
+import { Avatar } from '../../ui/Avatar';
 import { Card } from '../../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../../ui/TimeWheelPicker';
 import { AlertCircleIcon } from '../../icons';
@@ -72,6 +73,13 @@ export function WorkTimeEditor({
 
   // 휠 피커 상태 (출근/퇴근 구분)
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: workLog?.staffId,
+    enabled: visible,
+    fallbackName: workLog?.staffName,
+    fallbackNickname: workLog?.staffNickname,
+    fallbackPhotoURL: workLog?.staffPhotoURL,
+  });
 
   // workLog 변경 시 초기값 설정
   React.useEffect(() => {
@@ -298,6 +306,13 @@ export function WorkTimeEditor({
 
   if (!workLog) return null;
 
+  if (displayName && workLog.staffName !== displayName) {
+    workLog = {
+      ...workLog,
+      staffName: displayName,
+    };
+  }
+
   const workDate = workLog.date ? parseTimestamp(workLog.date) : null;
 
   // Footer 버튼
@@ -324,25 +339,12 @@ export function WorkTimeEditor({
           {/* 스태프 정보 */}
           <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-surface rounded-lg mb-2">
             {/* 프로필 이미지 */}
-            {workLog.staffPhotoURL ? (
-              <Image
-                source={{ uri: workLog.staffPhotoURL }}
-                className="h-10 w-10 rounded-full"
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
-              <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-                <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-                  {workLog.staffName?.charAt(0)?.toUpperCase() || 'U'}
-                </Text>
-              </View>
-            )}
+            <Avatar source={profilePhotoURL} name={displayName} size="md" />
             <View className="ml-3 flex-1">
               {/* 이름(닉네임) */}
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
                 {workLog.staffName || '이름 없음'}
-                {workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
+                {displayName ? '' : workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 {workDate ? formatDate(workDate) : '날짜 없음'}

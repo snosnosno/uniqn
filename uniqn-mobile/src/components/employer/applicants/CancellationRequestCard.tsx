@@ -14,6 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
 import { STATUS } from '@/constants';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatAppliedDate, formatRelativeTime } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
@@ -67,6 +68,12 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 }: CancellationRequestCardProps) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: application.applicantId,
+    fallbackName: application.applicantName,
+    fallbackNickname: application.applicantNickname,
+    fallbackPhotoURL: application.applicantPhotoURL,
+  });
 
   const cancellationRequest = application.cancellationRequest;
 
@@ -113,11 +120,11 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
       <Card variant="elevated" padding="md">
         {/* 헤더: 지원자 정보 + 상태 */}
         <View className="flex-row items-center mb-3">
-          <Avatar name={application.applicantName} size="md" className="mr-3" />
+          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {application.applicantName}
+                {displayName}
               </Text>
               <Badge
                 variant={

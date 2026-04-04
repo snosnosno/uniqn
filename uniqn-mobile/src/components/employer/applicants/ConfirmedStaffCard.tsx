@@ -49,6 +49,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const { displayName, profilePhotoURL } = useUserProfile({
     userId: staff.staffId,
     fallbackName: staff.staffName,
+    fallbackNickname: staff.staffNickname,
+    fallbackPhotoURL: staff.staffPhotoURL,
   });
 
   const isCheckedIn =

@@ -38,6 +38,8 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     userId: staff?.staffId,
     enabled: visible,
     fallbackName: staff?.staffName,
+    fallbackNickname: staff?.staffNickname,
+    fallbackPhotoURL: staff?.staffPhotoURL,
   });
 
   const startTimeStr = useMemo(() => {

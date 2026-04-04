@@ -61,6 +61,7 @@ export function SettlementDetailModal({
     enabled: visible,
     fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
+    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
   });
 
   // 수정 이력 접기/펼치기 상태 (기본: 접힘)
@@ -191,10 +192,19 @@ export function SettlementDetailModal({
                       params: {
                         workLogId: workLog.id,
                         revieweeId: workLog.staffId,
-                        revieweeName: displayName,
+                        revieweeName:
+                          displayName ||
+                          (workLog as WorkLog & { staffName?: string; staffNickname?: string })
+                            .staffName ||
+                          (workLog as WorkLog & { staffName?: string; staffNickname?: string })
+                            .staffNickname ||
+                          '스태프',
                         reviewerType: 'employer',
                         jobPostingId: workLog.jobPostingId,
-                        jobPostingTitle: jobPostingTitle ?? '',
+                        jobPostingTitle:
+                          jobPostingTitle ||
+                          (workLog as WorkLog & { jobPostingName?: string }).jobPostingName ||
+                          '공고',
                         workDate: workLog.date || '',
                       },
                     });

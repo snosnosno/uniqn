@@ -75,6 +75,7 @@ export const SettlementCard = React.memo(function SettlementCard({
     userId: workLog.staffId,
     fallbackName: (workLog as WorkLog & { staffName?: string }).staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string }).staffNickname,
+    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string }).staffPhotoURL,
   });
 
   // 정산 계산 (수당 + 세금 포함)

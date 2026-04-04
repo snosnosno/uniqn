@@ -108,6 +108,7 @@ export function SettlementEditModal({
     enabled: visible,
     fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
+    fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
   });
 
   // 로컬 상태

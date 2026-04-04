@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { toError, requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { stableFilters } from '@/utils/queryUtils';
 import { getAnnouncementImages } from '@/types/announcement';
 import type {
@@ -128,8 +129,13 @@ export function useCreateAnnouncement() {
   return useMutation({
     mutationFn: async (input: CreateAnnouncementInput) => {
       requireAuth(user?.uid, 'useAnnouncement.createAnnouncement');
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '관리자',
+      });
       const authorName = profile?.name || user.displayName || '관리자';
-      return createAnnouncement(user.uid, authorName, input);
+      return createAnnouncement(user.uid, identity.preferredName || authorName, input);
     },
     onSuccess: (announcementId) => {
       logger.info('공지사항 생성 성공', { announcementId });

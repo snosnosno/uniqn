@@ -4,9 +4,25 @@ import { Timestamp } from 'firebase/firestore';
 import { WorkTimeEditor } from '../WorkTimeEditor';
 import type { WorkLog } from '@/types';
 
-jest.mock('expo-image', () => ({
-  Image: () => null,
+const mockUseUserProfile = jest.fn((_params?: unknown) => ({
+  displayName: '김스노(스노)',
+  profilePhotoURL: 'https://example.com/staff.jpg',
 }));
+
+jest.mock('@/hooks/useUserProfile', () => ({
+  useUserProfile: (params: unknown) => mockUseUserProfile(params),
+}));
+
+jest.mock('../../../ui/Avatar', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+
+  return {
+    Avatar: ({ name, source }: { name?: string; source?: string }) => (
+      <Text>{`avatar:${name ?? ''}:${source ?? ''}`}</Text>
+    ),
+  };
+});
 
 jest.mock('@/utils/date', () => ({
   formatDate: () => '2026-03-30',
@@ -149,6 +165,10 @@ function createWorkLog(overrides?: Partial<WorkLog>): WorkLog {
 }
 
 describe('WorkTimeEditor', () => {
+  beforeEach(() => {
+    mockUseUserProfile.mockClear();
+  });
+
   it('enables saving when a previously undefined start time is set', async () => {
     const onSave = jest.fn();
     const { getByTestId } = render(
@@ -208,5 +228,30 @@ describe('WorkTimeEditor', () => {
         })
       );
     });
+  });
+
+  it('uses the shared profile identity for the staff header', () => {
+    const { getByText } = render(
+      <WorkTimeEditor
+        workLog={createWorkLog({
+          staffName: '레거시 이름',
+          staffNickname: '레거시닉',
+          staffPhotoURL: 'https://example.com/legacy.jpg',
+        })}
+        visible={true}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+      />
+    );
+
+    expect(mockUseUserProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'staff-1',
+        fallbackName: '레거시 이름',
+        fallbackNickname: '레거시닉',
+        fallbackPhotoURL: 'https://example.com/legacy.jpg',
+      })
+    );
+    expect(getByText('avatar:김스노(스노):https://example.com/staff.jpg')).toBeTruthy();
   });
 });

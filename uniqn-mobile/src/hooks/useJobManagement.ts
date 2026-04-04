@@ -20,6 +20,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { requireAuth } from '@/errors';
 import {
   requireOnlineForMutation,
@@ -81,9 +82,14 @@ export function useCreateJobPosting() {
   return useMutation({
     mutationFn: (params: CreateJobParams) => {
       requireAuth(user?.uid, 'useJobManagement');
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '익명',
+      });
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
       requireOnlineForMutation('useJobManagement.createJobPosting');
-      return createJobPosting(params.input, user.uid, ownerName);
+      return createJobPosting(params.input, user.uid, identity.preferredName || ownerName);
     },
     onSuccess: () => {
       addToast({ type: 'success', message: '공고가 등록되었습니다.' });

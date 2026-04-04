@@ -18,6 +18,7 @@ import {
 import { router } from 'expo-router';
 import { MagnifyingGlassIcon, UserIcon, ChevronRightIcon } from '@/components/icons';
 import { useAdminUsers } from '@/hooks/useAdminDashboard';
+import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
@@ -89,11 +90,13 @@ function UserCard({ user, onPress }: UserCardProps) {
         elevation: 2,
       }}
     >
-      <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mr-3">
+      <View className="mr-3">
         {user.photoURL ? (
-          <Text className="text-xl">{user.name.charAt(0)}</Text>
+          <Avatar source={user.photoURL} name={user.name} size="lg" />
         ) : (
-          <UserIcon size={24} color="#9CA3AF" />
+          <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-surface items-center justify-center">
+            <UserIcon size={24} color="#9CA3AF" />
+          </View>
         )}
       </View>
 

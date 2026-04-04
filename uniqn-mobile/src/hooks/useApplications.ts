@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { STATUS } from '@/constants';
 import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
 
@@ -96,11 +97,16 @@ export function useApplications() {
     mutationFn: (params: SubmitApplicationV2Params) => {
       requireAuth(user?.uid, 'useApplications');
       requireOnlineForMutation('useApplications.submitApplication');
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '익명',
+      });
 
       const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
-      const applicantNickname = profile?.nickname || undefined;
-      const applicantPhotoURL = profile?.photoURL || user.photoURL || undefined;
+      const applicantNickname = identity.nickname;
+      const applicantPhotoURL = identity.photoURL;
 
       return applyToJobV2(
         {
@@ -110,7 +116,7 @@ export function useApplications() {
           message: params.message,
         },
         user.uid,
-        applicantName,
+        identity.preferredName || applicantName,
         applicantPhone,
         undefined,
         applicantNickname,

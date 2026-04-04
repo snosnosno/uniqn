@@ -97,6 +97,8 @@ export function ApplicantConfirmModal({
     userId: applicant?.applicantId,
     enabled: visible,
     fallbackName: applicant?.applicantName,
+    fallbackNickname: applicant?.applicantNickname,
+    fallbackPhotoURL: applicant?.applicantPhotoURL,
   });
 
   // 선택된 일정 포맷팅

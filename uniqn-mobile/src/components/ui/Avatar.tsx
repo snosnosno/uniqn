@@ -2,13 +2,15 @@
  * UNIQN Mobile - Avatar 컴포넌트
  *
  * @description expo-image 기반 프로필 이미지 또는 이니셜 표시
- * @version 1.2.0
+ * @version 1.4.0
  *
- * 변경사항:
- * - blurhash placeholder 추가
+ * 변경사항
+ * - 이미지 분기 크기를 style로 고정해 업로드 후에도 안정적으로 표시
+ * - 이미지 로드 실패 시 제한된 자동 재시도로 일시 오류 복구
+ * - 재시도 이후에도 실패하면 이니셜 아바타로 fallback
  */
 
-import React, { memo } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import { Image } from 'expo-image';
 import { DEFAULT_BLURHASH } from './OptimizedImage';
@@ -16,17 +18,12 @@ import { DEFAULT_BLURHASH } from './OptimizedImage';
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
-  /** 이미지 URL */
   source?: string;
-  /** 이니셜 생성용 이름 */
   name?: string;
-  /** 아바타 크기 */
   size?: AvatarSize;
-  /** 추가 스타일 클래스 */
   className?: string;
 }
 
-/** 사이즈별 컨테이너 스타일 */
 const sizeStyles: Record<AvatarSize, string> = {
   xs: 'h-6 w-6',
   sm: 'h-8 w-8',
@@ -35,7 +32,14 @@ const sizeStyles: Record<AvatarSize, string> = {
   xl: 'h-16 w-16',
 };
 
-/** 사이즈별 텍스트 스타일 */
+const sizePixels: Record<AvatarSize, number> = {
+  xs: 24,
+  sm: 32,
+  md: 40,
+  lg: 48,
+  xl: 64,
+};
+
 const textSizeStyles: Record<AvatarSize, string> = {
   xs: 'text-xs',
   sm: 'text-sm',
@@ -44,7 +48,8 @@ const textSizeStyles: Record<AvatarSize, string> = {
   xl: 'text-xl',
 };
 
-/** 이름에서 이니셜 추출 */
+const IMAGE_RETRY_DELAYS_MS = [1500, 4000, 30000] as const;
+
 const getInitials = (name?: string): string => {
   if (!name) return '?';
   const parts = name.trim().split(' ');
@@ -54,7 +59,6 @@ const getInitials = (name?: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-/** 이름 기반 배경색 선택 */
 const getBackgroundColor = (name?: string): string => {
   const colors = [
     'bg-primary-500',
@@ -73,28 +77,72 @@ const getBackgroundColor = (name?: string): string => {
   return colors[index];
 };
 
-/**
- * Avatar 컴포넌트
- *
- * expo-image로 이미지 렌더링, 이미지 없으면 이니셜 표시
- */
 export const Avatar = memo(function Avatar({
   source,
   name,
   size = 'md',
   className = '',
 }: AvatarProps) {
-  if (source) {
+  const [hasImageError, setHasImageError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+  const imageSize = sizePixels[size];
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+
+  const clearRetryTimeout = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    const retryDelay =
+      IMAGE_RETRY_DELAYS_MS[Math.min(retryCountRef.current, IMAGE_RETRY_DELAYS_MS.length - 1)];
+
+    retryCountRef.current += 1;
+    setHasImageError(true);
+    clearRetryTimeout();
+    retryTimeoutRef.current = setTimeout(() => {
+      setHasImageError(false);
+      setRetryKey((prev) => prev + 1);
+    }, retryDelay);
+  }, [clearRetryTimeout]);
+
+  const handleImageLoad = useCallback(() => {
+    clearRetryTimeout();
+    retryCountRef.current = 0;
+    setHasImageError(false);
+  }, [clearRetryTimeout]);
+
+  useEffect(() => {
+    clearRetryTimeout();
+    retryCountRef.current = 0;
+    setHasImageError(false);
+    setRetryKey(0);
+
+    return clearRetryTimeout;
+  }, [clearRetryTimeout, source]);
+
+  if (source && !hasImageError) {
     return (
-      <Image
-        source={source}
-        className={`rounded-full ${sizeStyles[size]} ${className}`}
-        contentFit="cover"
-        placeholder={DEFAULT_BLURHASH.avatar}
-        transition={200}
-        cachePolicy="memory-disk"
-        accessibilityLabel={name ? `${name} 프로필 사진` : '프로필 사진'}
-      />
+      <View
+        className={`overflow-hidden rounded-full ${className}`}
+        style={{ width: imageSize, height: imageSize }}
+      >
+        <Image
+          key={`${source}-${retryKey}`}
+          source={source}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+          placeholder={DEFAULT_BLURHASH.avatar}
+          transition={200}
+          cachePolicy="memory-disk"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          accessibilityLabel={name ? `${name} 프로필 사진` : '프로필 사진'}
+        />
+      </View>
     );
   }
 

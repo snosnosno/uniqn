@@ -7,6 +7,7 @@
 
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
+import { invalidateQueries } from '@/lib/queryClient';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
@@ -86,6 +87,7 @@ export async function updateUserProfile(
       operationName: '프로필 업데이트',
     });
 
+    void invalidateQueries.user();
     logger.info('프로필 업데이트 성공', { uid });
   } catch (error) {
     throw handleServiceError(error, {
@@ -213,6 +215,7 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
       operationName: '프로필 사진 업데이트',
     });
 
+    void invalidateQueries.user();
     logger.info('프로필 사진 업데이트 성공', { uid });
   } catch (error) {
     throw handleServiceError(error, {

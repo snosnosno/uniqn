@@ -17,6 +17,7 @@ import {
   XCircleIcon,
 } from '@/components/icons';
 import { useAdminUserDetail, useUpdateUserRole, useSetUserActive } from '@/hooks/useAdminDashboard';
+import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -177,13 +178,13 @@ export default function AdminUserDetailPage() {
     >
       {/* Profile Header */}
       <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-200 dark:border-surface-overlay">
-        <View className="w-20 h-20 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-3">
-          {user.photoURL ? (
-            <Text className="text-3xl">{user.name.charAt(0)}</Text>
-          ) : (
+        {user.photoURL ? (
+          <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
+        ) : (
+          <View className="w-20 h-20 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-3">
             <UserIcon size={40} color="#9CA3AF" />
-          )}
-        </View>
+          </View>
+        )}
         <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">{user.name}</Text>
         <View className="flex-row items-center">
           <Badge variant={getRoleBadgeVariant(user.role)} size="md">

@@ -24,6 +24,8 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
     userId: applicant?.applicantId,
     enabled: visible,
     fallbackName: applicant?.applicantName,
+    fallbackNickname: applicant?.applicantNickname,
+    fallbackPhotoURL: applicant?.applicantPhotoURL,
   });
 
   const appliedTimeAgo = useMemo(

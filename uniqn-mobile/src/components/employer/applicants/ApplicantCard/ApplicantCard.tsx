@@ -73,6 +73,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const { displayName, profilePhotoURL, userProfile } = useUserProfile({
     userId: applicant.applicantId,
     fallbackName: applicant.applicantName,
+    fallbackNickname: applicant.applicantNickname,
+    fallbackPhotoURL: applicant.applicantPhotoURL,
   });
 
   const appliedTimeAgo = useMemo(

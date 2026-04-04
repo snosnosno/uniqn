@@ -32,6 +32,7 @@ import type {
 import { FAQ_DATA, filterFAQByCategory } from '@/types/inquiry';
 import type { InquiryPaginationCursor } from '@/repositories';
 import { stableFilters } from '@/utils/queryUtils';
+import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 
 // ============================================================================
 // Query Keys - 중앙 관리 (queryClient.ts)에서 import
@@ -203,10 +204,15 @@ export function useCreateInquiry() {
           userMessage: '이메일 정보가 필요합니다',
         });
       }
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '사용자',
+      });
 
       const userName = profile?.name || user.displayName || '사용자';
 
-      return createInquiry(user.uid, user.email, userName, input);
+      return createInquiry(user.uid, user.email, identity.preferredName || userName, input);
     },
     onSuccess: () => {
       // user.uid를 포함한 쿼리 키로 invalidate
@@ -237,10 +243,15 @@ export function useRespondInquiry() {
   return useMutation({
     mutationFn: async ({ inquiryId, input }: RespondInquiryParams) => {
       requireAuth(user?.uid, 'useInquiry.respondToInquiry');
+      const identity = buildCurrentUserIdentitySnapshot({
+        profile,
+        authUser: user,
+        fallbackName: '관리자',
+      });
 
       const responderName = profile?.name || user.displayName || '관리자';
 
-      return respondToInquiry(inquiryId, user.uid, responderName, input);
+      return respondToInquiry(inquiryId, user.uid, identity.preferredName || responderName, input);
     },
     onSuccess: (_, { inquiryId }) => {
       queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
