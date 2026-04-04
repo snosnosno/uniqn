@@ -1,17 +1,13 @@
-/**
- * UNIQN Mobile - Review Write Screen
- * 평가 작성 화면
- */
-
 import { useCallback, useMemo } from 'react';
-import { ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ErrorState } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
 import ReviewForm from '@/components/review/ReviewForm';
 import { isReviewerType } from '@/domains/review';
 import { useCreateReview } from '@/hooks/useReviews';
-import type { ReviewerType } from '@/types/review';
+import { getReviewTextFallback, type ReviewerType } from '@/types/review';
 import type { ReviewFormSchema } from '@/schemas/review.schema';
 
 export default function ReviewWriteScreen() {
@@ -29,21 +25,36 @@ export default function ReviewWriteScreen() {
     () => (isReviewerType(params.reviewerType) ? params.reviewerType : null),
     [params.reviewerType]
   );
+  const fallbackRevieweeName = reviewerType === 'employer' ? '스태프' : '구인자';
+  const resolvedRevieweeName = useMemo(
+    () => getReviewTextFallback(params.revieweeName, fallbackRevieweeName) ?? fallbackRevieweeName,
+    [fallbackRevieweeName, params.revieweeName]
+  );
+  const resolvedJobPostingTitle = useMemo(
+    () => getReviewTextFallback(params.jobPostingTitle, '공고') ?? '공고',
+    [params.jobPostingTitle]
+  );
 
   const createReviewMutation = useCreateReview();
   const { mutate } = createReviewMutation;
+  const goToHistory = useCallback(() => {
+    router.replace('/(app)/reviews/history');
+  }, []);
 
   const handleSubmit = useCallback(
     (values: ReviewFormSchema) => {
-      if (!reviewerType || !params.workLogId || !params.revieweeId) return;
+      if (!reviewerType || !params.workLogId || !params.revieweeId || !params.jobPostingId) {
+        return;
+      }
+
       mutate(
         {
           workLogId: params.workLogId,
           jobPostingId: params.jobPostingId,
-          jobPostingTitle: params.jobPostingTitle,
+          jobPostingTitle: resolvedJobPostingTitle,
           workDate: params.workDate,
           revieweeId: params.revieweeId,
-          revieweeName: params.revieweeName,
+          revieweeName: resolvedRevieweeName,
           reviewerType,
           sentiment: values.sentiment,
           tags: values.tags,
@@ -56,28 +67,50 @@ export default function ReviewWriteScreen() {
         }
       );
     },
-    [params, reviewerType, mutate]
+    [mutate, params, resolvedJobPostingTitle, resolvedRevieweeName, reviewerType]
   );
 
-  // 필수 파라미터 검증
-  if (!params.workLogId || !params.revieweeId || !reviewerType) {
-    return <ErrorState title="잘못된 접근입니다" />;
+  if (!params.workLogId || !params.revieweeId || !params.jobPostingId || !reviewerType) {
+    return (
+      <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['bottom']}>
+        <View className="flex-1">
+          <ErrorState
+            title="잘못된 접근입니다"
+            message="리뷰 작성에 필요한 정보를 확인할 수 없습니다."
+            onRetry={goToHistory}
+            retryText="히스토리로 이동"
+          />
+          <View className="px-8 pb-8">
+            <Button variant="outline" onPress={goToHistory} fullWidth>
+              히스토리로 이동
+            </Button>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['bottom']}>
-      <ScrollView
+      <KeyboardAvoidingView
         className="flex-1"
-        contentContainerClassName="p-4"
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ReviewForm
-          reviewerType={reviewerType}
-          revieweeName={params.revieweeName}
-          onSubmit={handleSubmit}
-          isSubmitting={createReviewMutation.isPending}
-        />
-      </ScrollView>
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="flex-grow p-4 pb-8"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
+        >
+          <ReviewForm
+            reviewerType={reviewerType}
+            revieweeName={resolvedRevieweeName}
+            onSubmit={handleSubmit}
+            isSubmitting={createReviewMutation.isPending}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -85,7 +85,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -95,7 +95,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
       </SafeAreaView>
     );
@@ -111,7 +111,7 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -121,7 +121,12 @@ export default function JobDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+        <JobDetailHeader
+          title={job.title}
+          onShare={handleShare}
+          isSharing={isSharing}
+          fallbackHref="/(app)/(tabs)"
+        />
         <ErrorState
           message="고정 공고는 상세 화면에서 아직 지원할 수 없습니다."
           onRetry={refresh}
@@ -139,7 +144,12 @@ export default function JobDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+      <JobDetailHeader
+        title={job.title}
+        onShare={handleShare}
+        isSharing={isSharing}
+        fallbackHref="/(app)/(tabs)"
+      />
 
       <ScrollView
         className="flex-1"

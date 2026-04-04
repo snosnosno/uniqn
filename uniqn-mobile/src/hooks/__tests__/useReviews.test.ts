@@ -2,7 +2,11 @@ import { buildPendingReviewItems } from '../useReviews';
 import type { WorkLog } from '@/types';
 import type { Review } from '@/types/review';
 
-function createWorkLog(overrides?: Partial<WorkLog>): WorkLog {
+function createWorkLog(
+  overrides?: Partial<WorkLog> & {
+    jobPostingName?: string;
+  }
+): WorkLog {
   return {
     id: 'wl-1',
     staffId: 'staff-1',
@@ -44,6 +48,7 @@ describe('buildPendingReviewItems', () => {
       expect.objectContaining({
         workLogId: 'wl-1',
         reviewerType: 'staff',
+        jobPostingTitle: 'Fixed Job',
         workDate: '',
         location: 'Seoul',
         revieweeId: 'owner-1',
@@ -74,6 +79,7 @@ describe('buildPendingReviewItems', () => {
       expect.objectContaining({
         workLogId: 'wl-employer-1',
         reviewerType: 'employer',
+        jobPostingTitle: 'Fixed Job',
         workDate: '',
         location: 'Seoul',
         revieweeId: 'staff-2',
@@ -99,6 +105,73 @@ describe('buildPendingReviewItems', () => {
     });
 
     expect(items).toEqual([]);
+  });
+
+  it('falls back to a default posting title when pending review metadata is incomplete', () => {
+    const items = buildPendingReviewItems({
+      staffWorkLogs: [createWorkLog({ jobPostingName: '' })],
+      employerWorkLogs: [],
+      givenReviews: [],
+      isEmployerReviewer: false,
+      jobPostingMap: new Map(),
+    });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        jobPostingTitle: '공고',
+      }),
+    ]);
+  });
+
+  it('uses a generic owner label when staff review metadata has no owner name', () => {
+    const items = buildPendingReviewItems({
+      staffWorkLogs: [createWorkLog({ jobPostingName: 'Fixed Job' })],
+      employerWorkLogs: [],
+      givenReviews: [],
+      isEmployerReviewer: false,
+      jobPostingMap: new Map([
+        [
+          'job-1',
+          {
+            title: 'Fixed Job',
+            ownerName: '',
+            location: { name: 'Seoul' },
+          },
+        ],
+      ]),
+    });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        revieweeName: '구인자',
+      }),
+    ]);
+  });
+
+  it('falls back to default employer review metadata when empty strings are stored on the worklog', () => {
+    const items = buildPendingReviewItems({
+      staffWorkLogs: [],
+      employerWorkLogs: [
+        createWorkLog({
+          id: 'wl-employer-empty',
+          staffId: 'staff-2',
+          staffName: '',
+          staffNickname: '',
+          jobPostingName: '',
+        }),
+      ],
+      givenReviews: [],
+      isEmployerReviewer: true,
+      jobPostingMap: new Map(),
+      currentUserId: 'owner-1',
+    });
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        jobPostingTitle: '공고',
+        revieweeName: '스태프',
+      }),
+    ]);
   });
 
   it('sorts pending reviews by earliest review deadline regardless of source order', () => {

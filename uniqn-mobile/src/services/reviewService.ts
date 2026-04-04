@@ -1,16 +1,3 @@
-/**
- * UNIQN Mobile - Review Service
- *
- * @description 리뷰/평가(버블) 비즈니스 로직
- * @version 1.0.0
- *
- * 책임:
- * 1. Zod 스키마 검증
- * 2. 도메인 검증 (ReviewValidator)
- * 3. Repository 호출
- * 4. 에러 변환 및 로깅
- */
-
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
@@ -25,25 +12,13 @@ import {
 import { reviewRepository, workLogRepository } from '@/repositories';
 import { createReviewInputSchema } from '@/schemas/review.schema';
 import { ReviewValidator } from '@/domains/review';
-import { REVIEW_DEADLINE_DAYS } from '@/types/review';
+import { REVIEW_DEADLINE_DAYS, getSentimentTagConsistency } from '@/types/review';
 import type { WorkLogForReview } from '@/domains/review';
 import type { CreateReviewInput, ReviewerType, Review, ReviewBlindResult } from '@/types/review';
 import type { CreateReviewContext, ReviewPaginationCursor, PaginatedReviews } from '@/repositories';
 
-// ============================================================================
-// Service
-// ============================================================================
-
 const validator = new ReviewValidator();
 
-/**
- * 리뷰 생성
- *
- * @param input - 리뷰 입력 데이터
- * @param context - 평가자 컨텍스트
- * @returns 생성된 리뷰 ID
- * @throws Zod ValidationError, BusinessError (E6060~E6064)
- */
 export async function createReview(
   input: CreateReviewInput,
   context: CreateReviewContext
@@ -56,7 +31,6 @@ export async function createReview(
       sentiment: input.sentiment,
     });
 
-    // 1. Zod 스키마 검증
     const parseResult = createReviewInputSchema.safeParse(input);
     if (!parseResult.success) {
       logger.warn('리뷰 입력 검증 실패', {
@@ -66,11 +40,10 @@ export async function createReview(
       const fieldErrors = parseResult.error.flatten().fieldErrors;
       const firstMessage = Object.values(fieldErrors).flat()[0];
       throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-        userMessage: typeof firstMessage === 'string' ? firstMessage : '입력값을 확인해주세요',
+        userMessage: typeof firstMessage === 'string' ? firstMessage : '입력값을 확인해 주세요.',
       });
     }
 
-    // 2. 태그 유효성 검증 (도메인)
     const tagResult = validator.validateTags(input.tags, input.reviewerType);
     if (!tagResult.valid) {
       logger.warn('리뷰 태그 검증 실패', {
@@ -78,26 +51,27 @@ export async function createReview(
         invalidTags: tagResult.invalidTags,
       });
       throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-        userMessage: `허용되지 않은 태그가 포함되어 있습니다: ${tagResult.invalidTags.join(', ')}`,
+        userMessage: `허용되지 않는 태그가 포함되어 있습니다: ${tagResult.invalidTags.join(', ')}`,
       });
     }
 
-    // 3. 감성-태그 일관성 경고 (비블로킹)
-    const consistency = validator.checkSentimentTagConsistency(input.sentiment, input.tags);
+    const consistency = getSentimentTagConsistency(input.sentiment, input.tags);
     if (!consistency.consistent) {
-      logger.info('감성-태그 불일치 경고', {
+      logger.warn('리뷰 감정-태그 정책 검증 실패', {
         component: 'reviewService',
-        warning: consistency.warning,
+        message: consistency.message,
         sentiment: input.sentiment,
         tags: input.tags,
       });
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: consistency.message ?? '선택한 감정과 태그가 일치하지 않습니다.',
+      });
     }
 
-    // 4. 도메인 검증: WorkLog 상태, 권한, 기한 (사전 검증 — fast fail)
     const workLog = await workLogRepository.getById(input.workLogId);
     if (!workLog) {
       throw new ReviewNotFoundError({
-        userMessage: '평가 대상을 찾을 수 없습니다',
+        userMessage: '리뷰 대상을 찾을 수 없습니다.',
         workLogId: input.workLogId,
       });
     }
@@ -144,7 +118,6 @@ export async function createReview(
       }
     }
 
-    // 5. Repository 트랜잭션 (중복 확인 + 버블 점수 원자적 업데이트)
     const reviewId = await reviewRepository.createWithTransaction(input, context);
 
     logger.info('리뷰 생성 완료', {
@@ -157,6 +130,7 @@ export async function createReview(
     if (isAppError(error)) {
       throw error;
     }
+
     throw handleServiceError(error, {
       operation: '리뷰 생성',
       component: 'reviewService',
@@ -165,14 +139,6 @@ export async function createReview(
   }
 }
 
-/**
- * 블라인드 리뷰 조회
- *
- * @param workLogId - 근무 기록 ID
- * @param myReviewerType - 내 평가자 유형
- * @param currentUserId - 현재 사용자 ID (권한 검증용)
- * @returns 블라인드 조회 결과 (내 리뷰 + 상대 리뷰 + 열람 가능 여부)
- */
 export async function getReviewsWithBlindCheck(
   workLogId: string,
   myReviewerType: ReviewerType,
@@ -193,9 +159,6 @@ export async function getReviewsWithBlindCheck(
   }
 }
 
-/**
- * 받은 리뷰 목록 조회 (커서 기반 페이지네이션)
- */
 export async function getReceivedReviews(
   revieweeId: string,
   pageSize?: number,
@@ -212,9 +175,6 @@ export async function getReceivedReviews(
   }
 }
 
-/**
- * 작성한 리뷰 목록 조회 (커서 기반 페이지네이션)
- */
 export async function getGivenReviews(
   reviewerId: string,
   pageSize?: number,
@@ -231,9 +191,6 @@ export async function getGivenReviews(
   }
 }
 
-/**
- * 특정 WorkLog의 리뷰 조회
- */
 export async function getReviewByWorkLog(
   workLogId: string,
   reviewerType: ReviewerType

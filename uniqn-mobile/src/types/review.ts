@@ -129,6 +129,104 @@ export function getAllowedTagKeys(reviewerType: ReviewerType): Set<string> {
   return new Set(tags.map((t) => t.key));
 }
 
+const REVIEW_TAG_INFO_BY_KEY: Record<ReviewTag, ReviewTagInfo<ReviewTag>> = {
+  ...Object.fromEntries(
+    EMPLOYER_TO_STAFF_TAGS.map((tag) => [tag.key, tag as ReviewTagInfo<ReviewTag>])
+  ),
+  ...Object.fromEntries(
+    STAFF_TO_EMPLOYER_TAGS.map((tag) => [tag.key, tag as ReviewTagInfo<ReviewTag>])
+  ),
+} as Record<ReviewTag, ReviewTagInfo<ReviewTag>>;
+
+export interface SentimentTagConsistencyResult {
+  consistent: boolean;
+  invalidTags: string[];
+  message?: string;
+}
+
+export function getReviewTagInfo(tagKey: string): ReviewTagInfo | undefined {
+  return REVIEW_TAG_INFO_BY_KEY[tagKey as ReviewTag];
+}
+
+export function normalizeReviewText(value?: string | null): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+export function getReviewTextFallback(
+  ...values: (string | null | undefined)[]
+): string | undefined {
+  for (const value of values) {
+    const normalized = normalizeReviewText(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return undefined;
+}
+
+export function getVisibleTagsForSentiment(
+  reviewerType: ReviewerType,
+  sentiment: ReviewSentiment
+): ReviewTagInfo[] {
+  const tags = getTagsForReviewerType(reviewerType);
+
+  if (sentiment === 'neutral') {
+    return tags;
+  }
+
+  return tags.filter((tag) => tag.sentiment === sentiment);
+}
+
+export function getIncompatibleTagsForSentiment(
+  sentiment: ReviewSentiment,
+  tags: readonly string[]
+): string[] {
+  if (sentiment === 'neutral') {
+    return [];
+  }
+
+  return tags.filter((tag) => {
+    const tagInfo = getReviewTagInfo(tag);
+    return Boolean(tagInfo && tagInfo.sentiment !== sentiment);
+  });
+}
+
+export function filterTagsForSentiment(
+  sentiment: ReviewSentiment,
+  tags: readonly ReviewTag[]
+): ReviewTag[] {
+  const incompatibleTags = new Set(getIncompatibleTagsForSentiment(sentiment, tags));
+  return tags.filter((tag) => !incompatibleTags.has(tag));
+}
+
+export function getSentimentTagConsistency(
+  sentiment: ReviewSentiment,
+  tags: readonly string[]
+): SentimentTagConsistencyResult {
+  const invalidTags = getIncompatibleTagsForSentiment(sentiment, tags);
+
+  if (invalidTags.length === 0) {
+    return { consistent: true, invalidTags: [] };
+  }
+
+  const message =
+    sentiment === 'positive'
+      ? '긍정 리뷰에는 긍정 태그만 선택할 수 있어요.'
+      : '부정 리뷰에는 부정 태그만 선택할 수 있어요.';
+
+  return {
+    consistent: false,
+    invalidTags,
+    message,
+  };
+}
+
 // ============================================================================
 // 버블 점수 상수
 // ============================================================================

@@ -12,8 +12,14 @@ import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type { WorkLog } from '@/types';
-import { REVIEWABLE_STATUSES, REVIEW_DEADLINE_DAYS } from '@/types/review';
-import type { CreateReviewInput, Review, ReviewerType } from '@/types/review';
+import {
+  getReviewTextFallback,
+  REVIEWABLE_STATUSES,
+  REVIEW_DEADLINE_DAYS,
+  type CreateReviewInput,
+  type Review,
+  type ReviewerType,
+} from '@/types/review';
 import { toDateString, type DateInput } from '@/utils/date';
 import * as reviewService from '@/services/reviewService';
 
@@ -202,12 +208,12 @@ export function buildPendingReviewItems({
     items.push({
       workLogId: workLog.id,
       jobPostingId: workLog.jobPostingId,
-      jobPostingTitle: jobPostingName || posting?.title || '공고',
+      jobPostingTitle: getReviewTextFallback(jobPostingName, posting?.title, '공고')!,
       workDate: workLog.date || '',
       location: posting?.location?.name ?? '',
       reviewerType: 'staff',
       revieweeId: workLog.ownerId,
-      revieweeName: posting?.ownerName || jobPostingName || posting?.title || '구인자',
+      revieweeName: getReviewTextFallback(posting?.ownerName, '구인자')!,
       checkOutTime: workLog.checkOutTime,
     });
   }
@@ -226,12 +232,12 @@ export function buildPendingReviewItems({
       items.push({
         workLogId: workLog.id,
         jobPostingId: workLog.jobPostingId,
-        jobPostingTitle: posting?.title ?? jobPostingName ?? '공고',
+        jobPostingTitle: getReviewTextFallback(posting?.title, jobPostingName, '공고')!,
         workDate: workLog.date || '',
         location: posting?.location?.name ?? '',
         reviewerType: 'employer',
         revieweeId: workLog.staffId,
-        revieweeName: workLog.staffName ?? workLog.staffNickname ?? '스태프',
+        revieweeName: getReviewTextFallback(workLog.staffName, workLog.staffNickname, '스태프')!,
         checkOutTime: workLog.checkOutTime,
       });
     }

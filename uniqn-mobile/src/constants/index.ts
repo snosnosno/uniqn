@@ -357,6 +357,10 @@ export {
   CARD_CLASSES,
   // Border colors (v1.1.0)
   BORDER_CLASSES,
+  // Header colors/classes
+  HEADER_CLASSES,
+  // Layout helpers
+  getLayoutColor,
 } from './colors';
 
 // ============================================================================

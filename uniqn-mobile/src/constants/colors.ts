@@ -244,6 +244,17 @@ export const BORDER_CLASSES = {
   error: 'border-red-500 dark:border-red-400',
 } as const;
 
+/**
+ * Header NativeWind classes
+ */
+export const HEADER_CLASSES = {
+  title: 'text-gray-900 dark:text-white',
+  subtitle: 'text-gray-500 dark:text-gray-400',
+  secondaryTitle: 'text-gray-600 dark:text-gray-400',
+  searchField: 'bg-gray-100 dark:bg-surface-elevated',
+  actionPressed: 'active:bg-gray-100 dark:active:bg-surface-elevated',
+} as const;
+
 // ============================================================================
 // 차트 색상 (v1.2.0)
 // ============================================================================
@@ -337,6 +348,7 @@ export const LAYOUT_COLORS = {
   header: { light: '#ffffff', dark: '#1A1625' },
   content: { light: '#f9fafb', dark: '#1A1625' },
   headerTint: { light: '#1A1625', dark: '#ffffff' },
+  headerBorder: { light: '#e5e7eb', dark: '#3D3350' },
   tabBarActive: { light: '#A855F7', dark: '#C084FC' },
   tabBarInactive: { light: '#6B7280', dark: '#9CA3AF' },
   tabBarBg: { light: '#ffffff', dark: '#1A1625' },

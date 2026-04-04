@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ export default function PublicJobDetailAliasRoute() {
   const isDark = useThemeStore((state) => state.isDarkMode);
   const { openInstallPrompt } = useInstallPrompt();
   const { shareJob, isSharing } = useShare();
+  const [bottomActionHeight, setBottomActionHeight] = useState(116);
 
   const resolvedId = Array.isArray(id) ? id[0] : id;
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(resolvedId ?? '');
@@ -56,7 +57,7 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -70,7 +71,7 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -80,7 +81,7 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader />
+        <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -96,7 +97,12 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+        <JobDetailHeader
+          title={job.title}
+          onShare={handleShare}
+          isSharing={isSharing}
+          fallbackHref="/jobs"
+        />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -110,11 +116,16 @@ export default function PublicJobDetailAliasRoute() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <JobDetailHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
+      <JobDetailHeader
+        title={job.title}
+        onShare={handleShare}
+        isSharing={isSharing}
+        fallbackHref="/jobs"
+      />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: bottomActionHeight + 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -130,6 +141,12 @@ export default function PublicJobDetailAliasRoute() {
       <View
         className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface"
         style={{ zIndex: 10 }}
+        onLayout={(event) => {
+          const nextHeight = Math.ceil(event.nativeEvent.layout.height);
+          if (nextHeight > 0 && nextHeight !== bottomActionHeight) {
+            setBottomActionHeight(nextHeight);
+          }
+        }}
       >
         <SafeAreaView edges={['bottom']}>
           {job.status !== STATUS.JOB_POSTING.ACTIVE ? (

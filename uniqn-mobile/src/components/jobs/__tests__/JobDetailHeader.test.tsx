@@ -2,26 +2,32 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { JobDetailHeader } from '../JobDetailHeader';
 
-jest.mock('expo-router', () => ({
-  router: {
-    back: jest.fn(),
-  },
+const mockHeaderBackButton = jest.fn((_props?: unknown) => null);
+
+jest.mock('@/components/navigation', () => ({
+  HeaderBackButton: (props: unknown) => mockHeaderBackButton(props),
 }));
 
 jest.mock('@/stores', () => ({
   useThemeStore: () => ({ isDarkMode: false }),
 }));
 
-jest.mock('@/components/icons', () => ({
-  ChevronLeftIcon: () => null,
-  ShareIcon: () => null,
-}));
-
 describe('JobDetailHeader', () => {
-  it('renders the job title with a stable test id', () => {
-    const { getByTestId } = render(<JobDetailHeader title="CLD 12345678 Edit" />);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    expect(getByTestId('job-detail-title')).toBeTruthy();
+  it('renders the title and passes the fallback route to HeaderBackButton', () => {
+    const { getByText, getByTestId } = render(
+      <JobDetailHeader title="CLD 12345678 Edit" fallbackHref="/jobs" />
+    );
+
+    expect(getByText('공고 상세')).toBeTruthy();
     expect(getByTestId('job-detail-title').props.children).toBe('CLD 12345678 Edit');
+    expect(mockHeaderBackButton).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fallbackHref: '/jobs',
+      })
+    );
   });
 });

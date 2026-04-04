@@ -118,7 +118,11 @@ export default function NotificationsScreen() {
       <StackHeader
         title="알림"
         titleSuffix={
-          unreadCount > 0 ? <Text className="text-primary-600"> ({unreadCount})</Text> : null
+          unreadCount > 0 ? (
+            <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+              ({unreadCount})
+            </Text>
+          ) : null
         }
         fallbackHref="/(app)/(tabs)"
         rightAction={

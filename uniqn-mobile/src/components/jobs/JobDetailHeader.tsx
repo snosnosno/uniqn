@@ -1,68 +1,72 @@
-/**
- * UNIQN Mobile - Job Detail Header
- *
- * @description 공고 상세 페이지 공통 헤더 (public/authenticated 공용)
- * @version 1.0.0
- */
-
-import { View, Text, Pressable } from 'react-native';
-import { router } from 'expo-router';
-import { ChevronLeftIcon, ShareIcon } from '@/components/icons';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { ShareIcon } from '@/components/icons';
+import { HeaderBackButton } from '@/components/navigation';
+import { getIconColor, getLayoutColor, HEADER_CLASSES } from '@/constants';
 import { useThemeStore } from '@/stores';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface JobDetailHeaderProps {
   title?: string;
   onShare?: () => void;
   isSharing?: boolean;
+  fallbackHref?: string;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
-export function JobDetailHeader({ title, onShare, isSharing }: JobDetailHeaderProps) {
+export function JobDetailHeader({
+  title,
+  onShare,
+  isSharing,
+  fallbackHref = '/(app)/(tabs)',
+}: JobDetailHeaderProps) {
   const { isDarkMode } = useThemeStore();
+  const headerBackgroundColor = getLayoutColor(isDarkMode, 'header');
+  const headerBorderColor = getLayoutColor(isDarkMode, 'headerBorder');
+  const headerTintColor = getLayoutColor(isDarkMode, 'headerTint');
+  const secondaryTextColor = getIconColor(isDarkMode, 'primary');
 
   return (
-    <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-surface-overlay">
-      <Pressable
-        onPress={() => router.back()}
-        className="p-2 -ml-2 mr-2"
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        accessibilityLabel="뒤로 가기"
-        accessibilityRole="button"
-      >
-        <ChevronLeftIcon size={24} color={isDarkMode ? '#ffffff' : '#1A1625'} />
-      </Pressable>
-      <Text className="text-base font-semibold text-gray-900 dark:text-white">공고 상세</Text>
-      {title && (
-        <>
-          <Text className="mx-2 text-gray-400 dark:text-gray-500">|</Text>
-          <Text
-            className="flex-1 text-base text-gray-600 dark:text-gray-400"
-            numberOfLines={1}
-            testID="job-detail-title"
-          >
-            {title}
-          </Text>
-        </>
-      )}
-      {onShare && (
+    <View
+      className="flex-row items-center px-4 py-3"
+      style={{
+        backgroundColor: headerBackgroundColor,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: headerBorderColor,
+      }}
+    >
+      <HeaderBackButton tintColor={headerTintColor} fallbackHref={fallbackHref} className="mr-2" />
+
+      <View className="min-w-0 flex-1 flex-row items-center">
+        <Text className="text-base font-semibold" style={{ color: headerTintColor }}>
+          공고 상세
+        </Text>
+        {title ? (
+          <>
+            <Text className="mx-2" style={{ color: secondaryTextColor }}>
+              |
+            </Text>
+            <Text
+              className="flex-1 text-base"
+              style={{ color: secondaryTextColor }}
+              numberOfLines={1}
+              testID="job-detail-title"
+            >
+              {title}
+            </Text>
+          </>
+        ) : null}
+      </View>
+
+      {onShare ? (
         <Pressable
           onPress={onShare}
           disabled={isSharing}
-          className="p-2 -mr-2 ml-2"
+          className={`-mr-2 ml-2 rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="공고 공유하기"
           accessibilityRole="button"
         >
-          <ShareIcon size={22} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+          <ShareIcon size={22} color={secondaryTextColor} />
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }

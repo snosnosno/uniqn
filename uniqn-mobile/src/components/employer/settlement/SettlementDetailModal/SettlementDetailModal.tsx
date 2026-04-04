@@ -29,6 +29,7 @@ import { SettlementCompletedBanner } from './SettlementCompletedBanner';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
 import type { SettlementDetailModalProps } from './types';
+import { getReviewTextFallback } from '@/types/review';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo } from '@/utils/settlement';
@@ -192,19 +193,21 @@ export function SettlementDetailModal({
                       params: {
                         workLogId: workLog.id,
                         revieweeId: workLog.staffId,
-                        revieweeName:
-                          displayName ||
+                        revieweeName: getReviewTextFallback(
+                          displayName,
                           (workLog as WorkLog & { staffName?: string; staffNickname?: string })
-                            .staffName ||
+                            .staffName,
                           (workLog as WorkLog & { staffName?: string; staffNickname?: string })
-                            .staffNickname ||
-                          '스태프',
+                            .staffNickname,
+                          '스태프'
+                        ),
                         reviewerType: 'employer',
                         jobPostingId: workLog.jobPostingId,
-                        jobPostingTitle:
-                          jobPostingTitle ||
-                          (workLog as WorkLog & { jobPostingName?: string }).jobPostingName ||
-                          '공고',
+                        jobPostingTitle: getReviewTextFallback(
+                          jobPostingTitle,
+                          (workLog as WorkLog & { jobPostingName?: string }).jobPostingName,
+                          '공고'
+                        ),
                         workDate: workLog.date || '',
                       },
                     });
