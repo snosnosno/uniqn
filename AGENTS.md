@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Primary development happens in `uniqn-mobile/`. `app/` holds Expo Router groups: `(public)`, `(auth)`, `(app)`, `(employer)`, and `(admin)`. Keep UI in `src/components/`, hooks in `src/hooks/`, business logic in `src/services/`, Firestore access in `src/repositories/`, and errors in `src/errors/`. Firebase Functions live in `functions/`; docs live in `docs/` and `specs/react-native-app/`; `app2/` is legacy only.
+Primary development happens in `uniqn-mobile/`. `app/` holds Expo Router groups: `(public)`, `(auth)`, `(app)`, `(employer)`, and `(admin)`. Keep UI in `src/components/`, hooks in `src/hooks/`, business logic in `src/services/`, Firestore access in `src/repositories/`, and errors in `src/errors/`. Firebase Functions live in `functions/`; docs live in `docs/` and `specs/react-native-app/`; `app2/` is a dormant product seed with restart docs, not the current source of truth.
 
 ## Build, Test, and Development Commands
 Run mobile commands from `uniqn-mobile/`: `npm start` starts Expo, `npm run android` and `npm run ios` build locally, `npm run quality` runs `type-check + lint + format:check`, `npm test` runs Jest, and `npm run e2e` runs Playwright. In `functions/`, use `npm run build`, `npm test`, and `npm run serve`. Run `npm run quality` before release.

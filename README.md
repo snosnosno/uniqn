@@ -3,7 +3,7 @@
 최종 업데이트: 2026-03-30  
 기준 코드: `uniqn-mobile/`, `functions/`
 
-이 저장소의 현재 실행 기준은 모바일 앱 `uniqn-mobile/`과 배포용 Firebase Functions `functions/`입니다. `app2/`는 레거시 참고용이며 현재 제품 개발의 source of truth가 아닙니다.
+이 저장소의 현재 실행 기준은 모바일 앱 `uniqn-mobile/`과 배포용 Firebase Functions `functions/`입니다. `app2/`는 개발 중단 상태의 휴면 웹 제품이며 자세한 재개 기준은 `app2/README.md`에 정리되어 있습니다. 현재 제품 개발의 source of truth는 아닙니다.
 
 ## 현재 워크스페이스
 
@@ -11,7 +11,7 @@
 - `functions/`: Firebase Functions 배포 엔트리
 - `docs/`: 현재 운영/개발 문서 허브
 - `specs/`: 설계 및 이행 기록 보관
-- `app2/`: 레거시 웹앱 참고 자료
+- `app2/`: 휴면 토너먼트 웹 제품 시드 및 재개 문서 (`app2/README.md`)
 
 ## 빠른 시작
 
@@ -99,5 +99,5 @@ npm test
 ## 주의
 
 - 문서보다 코드가 우선입니다.
-- 현재 구현이 없는 결제/포인트/레거시 웹 설계는 운영 문서가 아니라 아카이브 문서로 취급합니다.
+- 현재 구현이 없는 결제/포인트/휴면 웹 제품 설계는 운영 문서가 아니라 아카이브 문서로 취급합니다.
 - 출시 전 확인은 `uniqn-mobile/`의 `npm run quality`와 `functions/`의 `npm run build`, `npm test`를 기준으로 합니다.
