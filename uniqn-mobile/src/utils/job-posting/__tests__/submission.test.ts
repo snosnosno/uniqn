@@ -172,7 +172,7 @@ describe('job posting submission helpers', () => {
     expect(result.questions.items).toEqual(formData.preQuestions);
   });
 
-  it('omits schedule mutations when confirmed applicants exist', () => {
+  it('omits schedule mutations but preserves role salary updates when confirmed applicants exist', () => {
     const formData = createFormData({
       workDate: '2026-03-22',
       dateSpecificRequirements: [createDateRequirement('2026-03-22')],
@@ -192,7 +192,9 @@ describe('job posting submission helpers', () => {
     });
 
     expect(result.schedule).toBeUndefined();
-    expect(result.roleCatalog).toBeUndefined();
+    expect(result.roleCatalog).toEqual([
+      { role: 'dealer', salary: { type: 'hourly', amount: 12000 } },
+    ]);
     expect(result.questions).toEqual({
       items: formData.preQuestions,
     });
