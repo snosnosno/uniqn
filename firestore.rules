@@ -144,6 +144,176 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    function isManagedBoardType(boardType) {
+      return boardType in ['schedule', 'free', 'tda'];
+    }
+
+    function isCommunityBoardType(boardType) {
+      return boardType in ['free', 'tda'];
+    }
+
+    function isBoardVisibility(visibility) {
+      return visibility in ['public', 'participants_only'];
+    }
+
+    function isBoardVisibleStatus(status) {
+      return status in ['active', 'locked'];
+    }
+
+    function isBoardPostStatus(status) {
+      return status in ['active', 'locked', 'hidden', 'archived'];
+    }
+
+    function isBoardCommentStatus(status) {
+      return status in ['active', 'hidden', 'deleted'];
+    }
+
+    function isBoardVoteType(type) {
+      return type in ['like', 'dislike'];
+    }
+
+    function isBoardAuthorRole(role) {
+      return role in ['admin', 'employer', 'manager', 'staff', 'system'];
+    }
+
+    function isBoardMemberRole(role) {
+      return role in ['author', 'confirmed', 'admin'];
+    }
+
+    function isCommentReactionType(type) {
+      return type in ['thumbs_up', 'heart', 'laugh', 'surprised', 'sad', 'angry'];
+    }
+
+    function isBoardReportTargetType(targetType) {
+      return targetType in ['post', 'comment'];
+    }
+
+    function isBoardReportStatus(status) {
+      return status in ['pending', 'resolved', 'dismissed'];
+    }
+
+    function isValidBoardImageList(images, maxCount) {
+      return images is list && images.size() <= maxCount;
+    }
+
+    function isBoardNoticePostId(postId) {
+      return postId is string && postId.matches('^notice_.+$');
+    }
+
+    function isScheduleBoardPostId(postId, jobPostingId) {
+      return postId is string &&
+        jobPostingId is string &&
+        postId == 'schedule_' + jobPostingId;
+    }
+
+    function getBoardMembershipDocId(postId, userId) {
+      return postId + '_' + userId;
+    }
+
+    function boardPostExists(postId) {
+      return exists(/databases/$(database)/documents/boardPosts/$(postId));
+    }
+
+    function getBoardPostData(postId) {
+      return get(/databases/$(database)/documents/boardPosts/$(postId)).data;
+    }
+
+    function hasScheduleBoardReadMembership(postId) {
+      let membershipId = getBoardMembershipDocId(postId, request.auth.uid);
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/boardMemberships/$(membershipId)) &&
+        get(/databases/$(database)/documents/boardMemberships/$(membershipId)).data.boardType == 'schedule' &&
+        get(/databases/$(database)/documents/boardMemberships/$(membershipId)).data.canRead == true;
+    }
+
+    function hasScheduleBoardCommentMembership(postId) {
+      let membershipId = getBoardMembershipDocId(postId, request.auth.uid);
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/boardMemberships/$(membershipId)) &&
+        get(/databases/$(database)/documents/boardMemberships/$(membershipId)).data.boardType == 'schedule' &&
+        get(/databases/$(database)/documents/boardMemberships/$(membershipId)).data.canRead == true &&
+        get(/databases/$(database)/documents/boardMemberships/$(membershipId)).data.canComment == true;
+    }
+
+    function canManageLinkedJobPosting(jobPostingId) {
+      return isSignedIn() &&
+        jobPostingId is string &&
+        exists(/databases/$(database)/documents/jobPostings/$(jobPostingId)) &&
+        (
+          isAdmin() ||
+          get(/databases/$(database)/documents/jobPostings/$(jobPostingId)).data.ownerId == request.auth.uid
+        );
+    }
+
+    function isBoardPostAuthor(postData) {
+      return isSignedIn() && postData.authorId == request.auth.uid;
+    }
+
+    function canManageBoardPostData(postData) {
+      return isSignedIn() && (isAdmin() || isBoardPostAuthor(postData));
+    }
+
+    function canReadBoardPostData(postId, postData) {
+      return isSignedIn() && (
+        (
+          isCommunityBoardType(postData.boardType) &&
+          (
+            isBoardVisibleStatus(postData.status) ||
+            isAdmin() ||
+            isBoardPostAuthor(postData)
+          )
+        ) ||
+        (
+          postData.boardType == 'schedule' &&
+          (
+            isAdmin() ||
+            isBoardPostAuthor(postData) ||
+            (isBoardVisibleStatus(postData.status) && hasScheduleBoardReadMembership(postId))
+          )
+        )
+      );
+    }
+
+    function canReadBoardPost(postId) {
+      return isSignedIn() &&
+        boardPostExists(postId) &&
+        canReadBoardPostData(postId, getBoardPostData(postId));
+    }
+
+    function canInteractBoardPostData(postId, postData) {
+      return canReadBoardPostData(postId, postData) &&
+        postData.status == 'active' &&
+        postData.isLocked == false &&
+        (
+          isCommunityBoardType(postData.boardType) ||
+          isAdmin() ||
+          isBoardPostAuthor(postData) ||
+          hasScheduleBoardCommentMembership(postId)
+        );
+    }
+
+    function canInteractBoardPost(postId) {
+      return isSignedIn() &&
+        boardPostExists(postId) &&
+        canInteractBoardPostData(postId, getBoardPostData(postId));
+    }
+
+    function canReadBoardReportTarget(postId, targetType, targetId) {
+      return isSignedIn() && (
+        (
+          targetType == 'post' &&
+          canReadBoardPost(postId)
+        ) ||
+        (
+          targetType == 'comment' &&
+          boardPostExists(postId) &&
+          canReadBoardPost(postId) &&
+          exists(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(targetId)) &&
+          get(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(targetId)).data.status == 'active'
+        )
+      );
+    }
+
     function canReadOwnMissingApplication(applicationId) {
       return isSignedIn() &&
         !exists(/databases/$(database)/documents/applications/$(applicationId)) &&
@@ -2172,6 +2342,724 @@ service cloud.firestore {
 
       // 삭제: 관리자만 가능
       allow delete: if isPrivileged();
+    }
+
+    // --- Unified Board Collections (통합 게시판) ---
+    match /boardPosts/{postId} {
+      allow read: if canReadBoardPost(postId);
+
+      allow create: if isSignedIn() && (
+        (
+          request.resource.data.keys().hasAll([
+            'boardType',
+            'source',
+            'title',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'visibility',
+            'status',
+            'linkedJobPostingId',
+            'isAutoCreated',
+            'isLocked',
+            'likeCount',
+            'dislikeCount',
+            'commentCount',
+            'viewCount',
+            'imageAttachments',
+            'lastActivityAt',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.keys().hasOnly([
+            'boardType',
+            'source',
+            'title',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'visibility',
+            'status',
+            'linkedJobPostingId',
+            'isAutoCreated',
+            'isLocked',
+            'lockedBy',
+            'lockedAt',
+            'likeCount',
+            'dislikeCount',
+            'commentCount',
+            'viewCount',
+            'imageAttachments',
+            'lastActivityAt',
+            'createdAt',
+            'updatedAt',
+            'announcementCategory',
+            'isPinned',
+            'jobSummary'
+          ]) &&
+          isCommunityBoardType(request.resource.data.boardType) &&
+          request.resource.data.source == 'board' &&
+          isSafeText(request.resource.data.title, 120) &&
+          isSafeText(request.resource.data.body, 5000) &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.authorName is string &&
+          isBoardAuthorRole(request.resource.data.authorRole) &&
+          request.resource.data.visibility == 'public' &&
+          request.resource.data.status == 'active' &&
+          request.resource.data.linkedJobPostingId == null &&
+          request.resource.data.isAutoCreated == false &&
+          request.resource.data.isLocked == false &&
+          (!('lockedBy' in request.resource.data) || request.resource.data.lockedBy == null) &&
+          (!('lockedAt' in request.resource.data) || request.resource.data.lockedAt == null) &&
+          request.resource.data.likeCount == 0 &&
+          request.resource.data.dislikeCount == 0 &&
+          request.resource.data.commentCount == 0 &&
+          request.resource.data.viewCount == 0 &&
+          isValidBoardImageList(request.resource.data.imageAttachments, 10) &&
+          request.resource.data.lastActivityAt == request.time &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.updatedAt == request.time &&
+          (!('announcementCategory' in request.resource.data) || request.resource.data.announcementCategory == null) &&
+          (!('isPinned' in request.resource.data) || request.resource.data.isPinned == false) &&
+          (!('jobSummary' in request.resource.data) || request.resource.data.jobSummary == null)
+        ) ||
+        (
+          request.resource.data.keys().hasAll([
+            'boardType',
+            'source',
+            'title',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'visibility',
+            'status',
+            'linkedJobPostingId',
+            'isAutoCreated',
+            'isLocked',
+            'likeCount',
+            'dislikeCount',
+            'commentCount',
+            'viewCount',
+            'imageAttachments',
+            'lastActivityAt',
+            'createdAt',
+            'updatedAt',
+            'jobSummary'
+          ]) &&
+          request.resource.data.keys().hasOnly([
+            'boardType',
+            'source',
+            'title',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'visibility',
+            'status',
+            'linkedJobPostingId',
+            'isAutoCreated',
+            'isLocked',
+            'lockedBy',
+            'lockedAt',
+            'likeCount',
+            'dislikeCount',
+            'commentCount',
+            'viewCount',
+            'imageAttachments',
+            'lastActivityAt',
+            'createdAt',
+            'updatedAt',
+            'jobSummary'
+          ]) &&
+          request.resource.data.boardType == 'schedule' &&
+          request.resource.data.source == 'board' &&
+          isSafeText(request.resource.data.title, 120) &&
+          isSafeText(request.resource.data.body, 5000) &&
+          request.resource.data.linkedJobPostingId is string &&
+          isScheduleBoardPostId(postId, request.resource.data.linkedJobPostingId) &&
+          canManageLinkedJobPosting(request.resource.data.linkedJobPostingId) &&
+          request.resource.data.authorId ==
+            get(/databases/$(database)/documents/jobPostings/$(request.resource.data.linkedJobPostingId)).data.ownerId &&
+          request.resource.data.authorName is string &&
+          isBoardAuthorRole(request.resource.data.authorRole) &&
+          request.resource.data.visibility == 'participants_only' &&
+          request.resource.data.status == 'active' &&
+          request.resource.data.isAutoCreated == true &&
+          request.resource.data.isLocked == false &&
+          (!('lockedBy' in request.resource.data) || request.resource.data.lockedBy == null) &&
+          (!('lockedAt' in request.resource.data) || request.resource.data.lockedAt == null) &&
+          request.resource.data.likeCount == 0 &&
+          request.resource.data.dislikeCount == 0 &&
+          request.resource.data.commentCount == 0 &&
+          request.resource.data.viewCount == 0 &&
+          isValidBoardImageList(request.resource.data.imageAttachments, 10) &&
+          request.resource.data.lastActivityAt == request.time &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.updatedAt == request.time &&
+          request.resource.data.jobSummary is map
+        )
+      );
+
+      allow update: if canReadBoardPost(postId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+        request.resource.data.viewCount is number &&
+        resource.data.viewCount is number &&
+        request.resource.data.viewCount == resource.data.viewCount + 1;
+
+      allow update: if canInteractBoardPost(postId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'commentCount',
+          'lastActivityAt',
+          'updatedAt'
+        ]) &&
+        request.resource.data.commentCount is number &&
+        resource.data.commentCount is number &&
+        request.resource.data.commentCount == resource.data.commentCount + 1 &&
+        request.resource.data.lastActivityAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if canInteractBoardPost(postId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'likeCount',
+          'dislikeCount',
+          'updatedAt'
+        ]) &&
+        request.resource.data.likeCount is number &&
+        request.resource.data.dislikeCount is number &&
+        request.resource.data.likeCount >= 0 &&
+        request.resource.data.dislikeCount >= 0 &&
+        request.resource.data.updatedAt == request.time &&
+        (
+          request.resource.data.likeCount == resource.data.likeCount - 1 ||
+          request.resource.data.likeCount == resource.data.likeCount ||
+          request.resource.data.likeCount == resource.data.likeCount + 1
+        ) &&
+        (
+          request.resource.data.dislikeCount == resource.data.dislikeCount - 1 ||
+          request.resource.data.dislikeCount == resource.data.dislikeCount ||
+          request.resource.data.dislikeCount == resource.data.dislikeCount + 1
+        );
+
+      allow update: if canManageBoardPostData(resource.data) &&
+        isCommunityBoardType(resource.data.boardType) &&
+        resource.data.isLocked == false &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title',
+          'body',
+          'imageAttachments',
+          'updatedAt',
+          'lastActivityAt'
+        ]) &&
+        isSafeText(request.resource.data.title, 120) &&
+        isSafeText(request.resource.data.body, 5000) &&
+        isValidBoardImageList(request.resource.data.imageAttachments, 10) &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.lastActivityAt == request.time &&
+        request.resource.data.boardType == resource.data.boardType &&
+        request.resource.data.authorId == resource.data.authorId &&
+        request.resource.data.linkedJobPostingId == resource.data.linkedJobPostingId &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.isLocked == resource.data.isLocked;
+
+      allow update: if resource.data.boardType == 'schedule' &&
+        canManageLinkedJobPosting(resource.data.linkedJobPostingId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title',
+          'body',
+          'authorName',
+          'authorRole',
+          'jobSummary',
+          'updatedAt',
+          'lastActivityAt'
+        ]) &&
+        isSafeText(request.resource.data.title, 120) &&
+        isSafeText(request.resource.data.body, 5000) &&
+        request.resource.data.authorId == resource.data.authorId &&
+        request.resource.data.authorName is string &&
+        isBoardAuthorRole(request.resource.data.authorRole) &&
+        request.resource.data.linkedJobPostingId == resource.data.linkedJobPostingId &&
+        request.resource.data.visibility == resource.data.visibility &&
+        request.resource.data.isAutoCreated == resource.data.isAutoCreated &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.isLocked == resource.data.isLocked &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.lastActivityAt == request.time &&
+        request.resource.data.jobSummary is map;
+
+      allow update: if canManageBoardPostData(resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'isLocked',
+          'status',
+          'lockedBy',
+          'lockedAt',
+          'updatedAt'
+        ]) &&
+        (
+          (
+            request.resource.data.isLocked == true &&
+            request.resource.data.status == 'locked' &&
+            request.resource.data.lockedBy == request.auth.uid &&
+            request.resource.data.lockedAt == request.time
+          ) ||
+          (
+            request.resource.data.isLocked == false &&
+            request.resource.data.status == 'active' &&
+            request.resource.data.lockedBy == null &&
+            request.resource.data.lockedAt == null
+          )
+        ) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if (
+        (
+          isAdmin() &&
+          request.resource.data.status == 'hidden'
+        ) ||
+        (
+          (isAdmin() || isBoardPostAuthor(resource.data)) &&
+          request.resource.data.status == 'archived'
+        )
+      ) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'updatedAt'
+        ]) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if canReadBoardPost(postId);
+
+        allow create: if canInteractBoardPost(postId) &&
+          request.resource.data.keys().hasAll([
+            'postId',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'mentionedUserIds',
+            'reactionCounts',
+            'isPinned',
+            'status',
+            'imageAttachments',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.keys().hasOnly([
+            'postId',
+            'parentCommentId',
+            'body',
+            'authorId',
+            'authorName',
+            'authorRole',
+            'mentionedUserIds',
+            'reactionCounts',
+            'isPinned',
+            'pinnedAt',
+            'pinnedBy',
+            'status',
+            'imageAttachments',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == postId &&
+          (!('parentCommentId' in request.resource.data) ||
+            request.resource.data.parentCommentId == null ||
+            (
+              exists(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(request.resource.data.parentCommentId)) &&
+              get(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(request.resource.data.parentCommentId)).data.status == 'active'
+            )) &&
+          isSafeText(request.resource.data.body, 3000) &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.authorName is string &&
+          isBoardAuthorRole(request.resource.data.authorRole) &&
+          request.resource.data.mentionedUserIds is list &&
+          request.resource.data.mentionedUserIds.size() <= 10 &&
+          request.resource.data.reactionCounts is map &&
+          request.resource.data.reactionCounts.keys().size() == 0 &&
+          request.resource.data.isPinned == false &&
+          (!('pinnedAt' in request.resource.data) || request.resource.data.pinnedAt == null) &&
+          (!('pinnedBy' in request.resource.data) || request.resource.data.pinnedBy == null) &&
+          request.resource.data.status == 'active' &&
+          isValidBoardImageList(request.resource.data.imageAttachments, 3) &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.updatedAt == request.time;
+
+        allow update: if canReadBoardPost(postId) &&
+          getBoardPostData(postId).isLocked == false &&
+          resource.data.status == 'active' &&
+          (isAdmin() || request.auth.uid == resource.data.authorId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'body',
+            'imageAttachments',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == resource.data.postId &&
+          request.resource.data.parentCommentId == resource.data.parentCommentId &&
+          request.resource.data.authorId == resource.data.authorId &&
+          request.resource.data.authorName == resource.data.authorName &&
+          request.resource.data.authorRole == resource.data.authorRole &&
+          request.resource.data.mentionedUserIds == resource.data.mentionedUserIds &&
+          request.resource.data.reactionCounts == resource.data.reactionCounts &&
+          request.resource.data.isPinned == resource.data.isPinned &&
+          request.resource.data.pinnedAt == resource.data.pinnedAt &&
+          request.resource.data.pinnedBy == resource.data.pinnedBy &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          isSafeText(request.resource.data.body, 3000) &&
+          isValidBoardImageList(request.resource.data.imageAttachments, 3) &&
+          request.resource.data.updatedAt == request.time;
+
+        allow update: if canReadBoardPost(postId) &&
+          resource.data.status == 'active' &&
+          (
+            (isAdmin() && request.resource.data.status == 'hidden') ||
+            (
+              (
+                isAdmin() ||
+                (request.auth.uid == resource.data.authorId && getBoardPostData(postId).isLocked == false)
+              ) &&
+              request.resource.data.status == 'deleted'
+            )
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status',
+            'body',
+            'isPinned',
+            'pinnedAt',
+            'pinnedBy',
+            'imageAttachments',
+            'mentionedUserIds',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == resource.data.postId &&
+          request.resource.data.parentCommentId == resource.data.parentCommentId &&
+          request.resource.data.authorId == resource.data.authorId &&
+          request.resource.data.authorName == resource.data.authorName &&
+          request.resource.data.authorRole == resource.data.authorRole &&
+          request.resource.data.reactionCounts == resource.data.reactionCounts &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.isPinned == false &&
+          request.resource.data.pinnedAt == null &&
+          request.resource.data.pinnedBy == null &&
+          request.resource.data.imageAttachments == [] &&
+          request.resource.data.mentionedUserIds == [] &&
+          request.resource.data.body is string &&
+          request.resource.data.updatedAt == request.time;
+
+        allow update: if canManageBoardPostData(getBoardPostData(postId)) &&
+          resource.data.parentCommentId == null &&
+          resource.data.status == 'active' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'isPinned',
+            'pinnedAt',
+            'pinnedBy',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == resource.data.postId &&
+          request.resource.data.parentCommentId == resource.data.parentCommentId &&
+          request.resource.data.authorId == resource.data.authorId &&
+          request.resource.data.authorName == resource.data.authorName &&
+          request.resource.data.authorRole == resource.data.authorRole &&
+          request.resource.data.mentionedUserIds == resource.data.mentionedUserIds &&
+          request.resource.data.reactionCounts == resource.data.reactionCounts &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.body == resource.data.body &&
+          request.resource.data.imageAttachments == resource.data.imageAttachments &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedAt == request.time &&
+          (
+            (
+              request.resource.data.isPinned == true &&
+              request.resource.data.pinnedBy == request.auth.uid &&
+              request.resource.data.pinnedAt == request.time
+            ) ||
+            (
+              request.resource.data.isPinned == false &&
+              request.resource.data.pinnedBy == null &&
+              request.resource.data.pinnedAt == null
+            )
+          );
+
+        allow update: if canInteractBoardPost(postId) &&
+          resource.data.status == 'active' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'reactionCounts',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == resource.data.postId &&
+          request.resource.data.parentCommentId == resource.data.parentCommentId &&
+          request.resource.data.authorId == resource.data.authorId &&
+          request.resource.data.authorName == resource.data.authorName &&
+          request.resource.data.authorRole == resource.data.authorRole &&
+          request.resource.data.mentionedUserIds == resource.data.mentionedUserIds &&
+          request.resource.data.isPinned == resource.data.isPinned &&
+          request.resource.data.pinnedAt == resource.data.pinnedAt &&
+          request.resource.data.pinnedBy == resource.data.pinnedBy &&
+          request.resource.data.status == resource.data.status &&
+          request.resource.data.body == resource.data.body &&
+          request.resource.data.imageAttachments == resource.data.imageAttachments &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedAt == request.time &&
+          request.resource.data.reactionCounts is map &&
+          request.resource.data.reactionCounts.keys().hasOnly([
+            'thumbs_up',
+            'heart',
+            'laugh',
+            'surprised',
+            'sad',
+            'angry'
+          ]) &&
+          (!('thumbs_up' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.thumbs_up is number &&
+             request.resource.data.reactionCounts.thumbs_up >= 0)) &&
+          (!('heart' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.heart is number &&
+             request.resource.data.reactionCounts.heart >= 0)) &&
+          (!('laugh' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.laugh is number &&
+             request.resource.data.reactionCounts.laugh >= 0)) &&
+          (!('surprised' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.surprised is number &&
+             request.resource.data.reactionCounts.surprised >= 0)) &&
+          (!('sad' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.sad is number &&
+             request.resource.data.reactionCounts.sad >= 0)) &&
+          (!('angry' in request.resource.data.reactionCounts) ||
+            (request.resource.data.reactionCounts.angry is number &&
+             request.resource.data.reactionCounts.angry >= 0));
+
+        allow delete: if isAdmin();
+
+        match /reactions/{userId} {
+          allow read: if canReadBoardPost(postId);
+
+          allow create: if canInteractBoardPost(postId) &&
+            get(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(commentId)).data.status == 'active' &&
+            request.auth.uid == userId &&
+            request.resource.data.keys().hasAll([
+              'postId',
+              'commentId',
+              'userId',
+              'type',
+              'createdAt',
+              'updatedAt'
+            ]) &&
+            request.resource.data.keys().hasOnly([
+              'postId',
+              'commentId',
+              'userId',
+              'type',
+              'createdAt',
+              'updatedAt'
+            ]) &&
+            request.resource.data.postId == postId &&
+            request.resource.data.commentId == commentId &&
+            request.resource.data.userId == request.auth.uid &&
+            isCommentReactionType(request.resource.data.type) &&
+            request.resource.data.createdAt == request.time &&
+            request.resource.data.updatedAt == request.time;
+
+          allow update: if canInteractBoardPost(postId) &&
+            get(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(commentId)).data.status == 'active' &&
+            request.auth.uid == userId &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'type',
+              'updatedAt'
+            ]) &&
+            request.resource.data.postId == resource.data.postId &&
+            request.resource.data.commentId == resource.data.commentId &&
+            request.resource.data.userId == resource.data.userId &&
+            isCommentReactionType(request.resource.data.type) &&
+            request.resource.data.createdAt == resource.data.createdAt &&
+            request.resource.data.updatedAt == request.time;
+
+          allow delete: if canInteractBoardPost(postId) &&
+            get(/databases/$(database)/documents/boardPosts/$(postId)/comments/$(commentId)).data.status == 'active' &&
+            request.auth.uid == userId;
+        }
+      }
+
+      match /votes/{userId} {
+        allow read: if canReadBoardPost(postId);
+
+        allow create: if canInteractBoardPost(postId) &&
+          request.auth.uid == userId &&
+          request.resource.data.keys().hasAll([
+            'postId',
+            'userId',
+            'type',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.keys().hasOnly([
+            'postId',
+            'userId',
+            'type',
+            'createdAt',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == postId &&
+          request.resource.data.userId == request.auth.uid &&
+          isBoardVoteType(request.resource.data.type) &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.updatedAt == request.time;
+
+        allow update: if canInteractBoardPost(postId) &&
+          request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'type',
+            'updatedAt'
+          ]) &&
+          request.resource.data.postId == resource.data.postId &&
+          request.resource.data.userId == resource.data.userId &&
+          isBoardVoteType(request.resource.data.type) &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.updatedAt == request.time;
+
+        allow delete: if canInteractBoardPost(postId) && request.auth.uid == userId;
+      }
+    }
+
+    match /boardMemberships/{membershipId} {
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == resource.data.userId ||
+        canReadBoardPost(resource.data.postId)
+      );
+
+      allow create, update: if isSignedIn() &&
+        request.resource.data.keys().hasAll([
+          'boardType',
+          'userId',
+          'postId',
+          'jobPostingId',
+          'role',
+          'displayName',
+          'canRead',
+          'canComment',
+          'title',
+          'workDate',
+          'authorId',
+          'updatedAt'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'boardType',
+          'userId',
+          'postId',
+          'jobPostingId',
+          'role',
+          'displayName',
+          'canRead',
+          'canComment',
+          'title',
+          'workDate',
+          'authorId',
+          'lastActivityAt',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        request.resource.data.boardType == 'schedule' &&
+        request.resource.data.userId is string &&
+        request.resource.data.postId is string &&
+        request.resource.data.jobPostingId is string &&
+        membershipId == getBoardMembershipDocId(request.resource.data.postId, request.resource.data.userId) &&
+        isScheduleBoardPostId(request.resource.data.postId, request.resource.data.jobPostingId) &&
+        canManageLinkedJobPosting(request.resource.data.jobPostingId) &&
+        request.resource.data.authorId ==
+          get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)).data.ownerId &&
+        isBoardMemberRole(request.resource.data.role) &&
+        (!('displayName' in request.resource.data) ||
+          request.resource.data.displayName == null ||
+          isValidString(request.resource.data.displayName, 80)) &&
+        request.resource.data.canRead is bool &&
+        request.resource.data.canComment is bool &&
+        isValidString(request.resource.data.title, 120) &&
+        request.resource.data.workDate is string &&
+        (!('lastActivityAt' in request.resource.data) ||
+          request.resource.data.lastActivityAt == null ||
+          request.resource.data.lastActivityAt is timestamp) &&
+        (!('createdAt' in request.resource.data) ||
+          request.resource.data.createdAt == null ||
+          request.resource.data.createdAt is timestamp) &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isSignedIn() &&
+        resource.data.boardType == 'schedule' &&
+        canManageLinkedJobPosting(resource.data.jobPostingId);
+    }
+
+    match /boardReports/{reportId} {
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == resource.data.reporterId
+      );
+
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.reporterId &&
+        request.resource.data.keys().hasAll([
+          'targetType',
+          'targetId',
+          'postId',
+          'reporterId',
+          'reason',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        request.resource.data.keys().hasOnly([
+          'targetType',
+          'targetId',
+          'postId',
+          'reporterId',
+          'reason',
+          'details',
+          'status',
+          'createdAt',
+          'updatedAt',
+          'resolvedBy',
+          'resolvedAt'
+        ]) &&
+        isBoardReportTargetType(request.resource.data.targetType) &&
+        request.resource.data.targetId is string &&
+        request.resource.data.postId is string &&
+        (
+          request.resource.data.targetType != 'post' ||
+          request.resource.data.targetId == request.resource.data.postId
+        ) &&
+        canReadBoardReportTarget(
+          request.resource.data.postId,
+          request.resource.data.targetType,
+          request.resource.data.targetId
+        ) &&
+        isSafeText(request.resource.data.reason, 80) &&
+        (!('details' in request.resource.data) ||
+          request.resource.data.details == null ||
+          isSafeText(request.resource.data.details, 1000)) &&
+        request.resource.data.status == 'pending' &&
+        (!('resolvedBy' in request.resource.data) || request.resource.data.resolvedBy == null) &&
+        (!('resolvedAt' in request.resource.data) || request.resource.data.resolvedAt == null) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'resolvedBy',
+          'resolvedAt',
+          'updatedAt'
+        ]) &&
+        isBoardReportStatus(request.resource.data.status) &&
+        request.resource.data.status in ['resolved', 'dismissed'] &&
+        request.resource.data.resolvedBy == request.auth.uid &&
+        request.resource.data.resolvedAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if isAdmin();
     }
 
     // --- Reports Collection (신고) ---

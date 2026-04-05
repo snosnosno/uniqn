@@ -3,6 +3,7 @@ export const EXPO_ROUTES = {
 
   home: '/(app)/(tabs)',
   schedule: '/(app)/(tabs)/schedule',
+  board: '/(app)/(tabs)/board',
   profile: '/(app)/(tabs)/profile',
   employerTab: '/(app)/(tabs)/employer',
   qr: '/(app)/(tabs)/qr',
@@ -23,8 +24,8 @@ export const EXPO_ROUTES = {
   applicationCancel: '/(app)/applications/[id]/cancel',
   employerRegister: '/(app)/employer-register',
 
-  notices: '/(app)/notices',
-  noticeDetail: '/(app)/notices/[id]',
+  notices: '/(app)/(tabs)/board/notice',
+  noticeDetail: '/(app)/(tabs)/board/post/[postId]',
 
   support: '/(app)/support',
   supportFaq: '/(app)/support/faq',
@@ -72,6 +73,7 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'home',
   'notifications',
   'schedule',
+  'board',
   'profile',
   'settings',
   'settingsProfile',

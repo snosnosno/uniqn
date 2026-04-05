@@ -7,6 +7,8 @@ export type DeepLinkRoute =
   | { name: 'forgot-password' }
   | { name: 'notifications' }
   | { name: 'schedule' }
+  | { name: 'board' }
+  | { name: 'board/post'; params: { postId: string } }
   | { name: 'profile' }
   | { name: 'settings' }
   | { name: 'settings/profile' }

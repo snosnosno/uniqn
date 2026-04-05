@@ -1,4 +1,5 @@
 import type { UserRole } from '@/types/role';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 import {
   EXPO_ROUTES,
   AUTH_REQUIRED_ROUTES,
@@ -28,6 +29,10 @@ export class RouteMapper {
         return EXPO_ROUTES.notifications;
       case 'schedule':
         return EXPO_ROUTES.schedule;
+      case 'board':
+        return EXPO_ROUTES.board;
+      case 'board/post':
+        return EXPO_ROUTES.noticeDetail.replace('[postId]', route.params.postId);
       case 'profile':
         return EXPO_ROUTES.profile;
       case 'settings':
@@ -63,7 +68,10 @@ export class RouteMapper {
       case 'notices':
         return EXPO_ROUTES.notices;
       case 'notice':
-        return EXPO_ROUTES.noticeDetail.replace('[id]', route.params.id);
+        return EXPO_ROUTES.noticeDetail.replace(
+          '[postId]',
+          buildBoardNoticePostId(route.params.id)
+        );
 
       case 'employer/my-postings':
         return EXPO_ROUTES.employerTab;

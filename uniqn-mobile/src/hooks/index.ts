@@ -172,3 +172,20 @@ export { useJobSchedule, type UseJobScheduleResult } from './useJobSchedule';
 export { useJobRoles, type UseJobRolesResult } from './useJobRoles';
 export { useUserProfile } from './useUserProfile';
 export { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
+export {
+  useBoardHome,
+  useBoardPosts,
+  useBoardPostDetail,
+  useIncrementBoardViewCount,
+  useCreateBoardPost,
+  useUpdateBoardPost,
+  useSetBoardPostLock,
+  useHideBoardPost,
+  useCreateBoardComment,
+  useUpdateBoardComment,
+  useSetBoardCommentStatus,
+  useSetBoardCommentPinned,
+  useToggleBoardPostVote,
+  useToggleBoardCommentReaction,
+  useCreateBoardReport,
+} from './useBoard';

@@ -174,7 +174,7 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<MegaphoneIcon size={22} color="#6B7280" />}
             label="공지사항"
-            onPress={() => router.push('/(app)/notices')}
+            onPress={() => router.push('/(app)/(tabs)/board/notice')}
           />
           <Divider spacing="sm" />
           <MenuItem

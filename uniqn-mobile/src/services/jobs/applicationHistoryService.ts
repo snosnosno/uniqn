@@ -12,6 +12,7 @@ import { confirmApplicationSchema } from '@/schemas';
 import type { Application, Assignment } from '@/types';
 import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
+import { syncScheduleBoardByApplicationId } from '@/services/boardService';
 import type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
 
 // Re-export from domain for backward compatibility.
@@ -19,6 +20,19 @@ export { updateDateSpecificRequirementsFilled } from '@/domains/application';
 
 // Re-export types from repository interfaces for backward compatibility.
 export type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
+
+async function syncScheduleBoardSafely(applicationId: string, action: 'confirm' | 'cancel') {
+  try {
+    await syncScheduleBoardByApplicationId(applicationId);
+  } catch (error) {
+    logger.warn('Schedule board sync failed', {
+      component: 'applicationHistoryService',
+      applicationId,
+      action,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 /**
  * 지원을 확정합니다.
@@ -47,6 +61,7 @@ export async function confirmApplicationWithHistory(
       ownerId,
       validationResult.data.notes
     );
+    await syncScheduleBoardSafely(applicationId, 'confirm');
 
     logger.info('지원 확정 (v2.0) 완료', {
       applicationId,
@@ -82,6 +97,7 @@ export async function cancelConfirmation(
       ownerId,
       cancelReason
     );
+    await syncScheduleBoardSafely(applicationId, 'cancel');
 
     logger.info('확정 취소 완료', { applicationId });
 

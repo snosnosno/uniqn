@@ -1,5 +1,9 @@
 export { onApplicationStatusChanged } from "../notifications/onApplicationStatusChanged";
 export { onApplicationSubmitted } from "../notifications/onApplicationSubmitted";
+export {
+  onBoardCommentCreated,
+  onBoardPostLocked,
+} from "../notifications/onBoardActivity";
 export { onCheckInOut } from "../notifications/onCheckInOut";
 export { onInquiryCreated } from "../notifications/onInquiryCreated";
 export { onJobPostingCancelled } from "../notifications/onJobPostingCancelled";

@@ -1,6 +1,7 @@
 import { RouteMapper } from '../RouteMapper';
 import { EXPO_ROUTES } from '../RouteRegistry';
 import type { DeepLinkRoute } from '../types';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 describe('RouteMapper', () => {
   describe('toExpoPath', () => {
@@ -18,6 +19,10 @@ describe('RouteMapper', () => {
     it('maps authenticated root routes', () => {
       expect(RouteMapper.toExpoPath({ name: 'notifications' })).toBe(EXPO_ROUTES.notifications);
       expect(RouteMapper.toExpoPath({ name: 'schedule' })).toBe(EXPO_ROUTES.schedule);
+      expect(RouteMapper.toExpoPath({ name: 'board' })).toBe(EXPO_ROUTES.board);
+      expect(RouteMapper.toExpoPath({ name: 'board/post', params: { postId: 'post-1' } })).toBe(
+        '/(app)/(tabs)/board/post/post-1'
+      );
       expect(RouteMapper.toExpoPath({ name: 'profile' })).toBe(EXPO_ROUTES.profile);
       expect(RouteMapper.toExpoPath({ name: 'settings' })).toBe(EXPO_ROUTES.settings);
       expect(RouteMapper.toExpoPath({ name: 'support' })).toBe(EXPO_ROUTES.support);
@@ -54,7 +59,7 @@ describe('RouteMapper', () => {
         '/(app)/support/inquiry/inq-1'
       );
       expect(RouteMapper.toExpoPath({ name: 'notice', params: { id: 'notice-1' } })).toBe(
-        '/(app)/notices/notice-1'
+        `/(app)/(tabs)/board/post/${buildBoardNoticePostId('notice-1')}`
       );
     });
 

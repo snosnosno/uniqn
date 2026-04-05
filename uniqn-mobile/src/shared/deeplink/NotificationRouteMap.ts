@@ -53,6 +53,14 @@ export const NOTIFICATION_ROUTE_MAP: Record<
       : { name: 'notices' },
   [NotificationType.MAINTENANCE]: () => ({ name: 'notices' }),
   [NotificationType.APP_UPDATE]: () => ({ name: 'settings' }),
+  [NotificationType.BOARD_COMMENT]: (data) =>
+    data?.postId ? { name: 'board/post', params: { postId: data.postId } } : { name: 'board' },
+  [NotificationType.BOARD_REPLY]: (data) =>
+    data?.postId ? { name: 'board/post', params: { postId: data.postId } } : { name: 'board' },
+  [NotificationType.BOARD_MENTION]: (data) =>
+    data?.postId ? { name: 'board/post', params: { postId: data.postId } } : { name: 'board' },
+  [NotificationType.BOARD_LOCKED]: (data) =>
+    data?.postId ? { name: 'board/post', params: { postId: data.postId } } : { name: 'board' },
 
   [NotificationType.INQUIRY_ANSWERED]: (data) =>
     data?.inquiryId
