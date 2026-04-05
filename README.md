@@ -1,17 +1,16 @@
 # UNIQN Project
 
-최종 업데이트: 2026-03-30  
-기준 코드: `uniqn-mobile/`, `functions/`
+최종 업데이트: 2026-04-05  
+현재 기준 코드: `uniqn-mobile/`, `functions/`
 
-이 저장소의 현재 실행 기준은 모바일 앱 `uniqn-mobile/`과 배포용 Firebase Functions `functions/`입니다. `app2/`는 개발 중단 상태의 휴면 웹 제품이며 자세한 재개 기준은 `app2/README.md`에 정리되어 있습니다. 현재 제품 개발의 source of truth는 아닙니다.
+이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`과 배포용 Firebase Functions `functions/`입니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리하며, 현재 기능 판단 기준으로 사용하지 않습니다.
 
 ## 현재 워크스페이스
 
 - `uniqn-mobile/`: Expo + React Native 앱
 - `functions/`: Firebase Functions 배포 엔트리
 - `docs/`: 현재 운영/개발 문서 허브
-- `specs/`: 설계 및 이행 기록 보관
-- `app2/`: 휴면 토너먼트 웹 제품 시드 및 재개 문서 (`app2/README.md`)
+- `specs/`: 설계 기록 및 이행 아카이브
 
 ## 빠른 시작
 
@@ -87,17 +86,24 @@ npm test
   - `@/shared/realtime`
   - `@/types`는 type-only barrel
 
+## 보안 및 설정 기준
+
+- 네이티브 Firebase 설정의 기준 파일은 `uniqn-mobile/google-services.json`, `uniqn-mobile/GoogleService-Info.plist`입니다.
+- 저장소 루트의 로컬 키/설정 파일은 개발자 개인 자산이며 현재 배포 기준에 포함하지 않습니다.
+- 배포와 실행 설정은 `uniqn-mobile/app.config.ts`, `uniqn-mobile/eas.json`, `firebase.json`을 기준으로 검증합니다.
+
 ## 문서 시작점
 
 - `docs/README.md`
 - `docs/core/DEVELOPMENT_GUIDE.md`
 - `docs/core/TESTING_GUIDE.md`
 - `docs/reference/ARCHITECTURE.md`
-- `docs/reference/API_REFERENCE.md`
+- `docs/reference/REFACTOR_BASELINE.md`
 - `docs/guides/DEPLOYMENT.md`
 
 ## 주의
 
 - 문서보다 코드가 우선입니다.
-- 현재 구현이 없는 결제/포인트/휴면 웹 제품 설계는 운영 문서가 아니라 아카이브 문서로 취급합니다.
-- 출시 전 확인은 `uniqn-mobile/`의 `npm run quality`와 `functions/`의 `npm run build`, `npm test`를 기준으로 합니다.
+- 아카이브 문서는 현재 구현을 설명하지 않습니다.
+- 게시판 작업 영역은 별도 진행 중이므로, 구조 정리 시 보호 범위로 취급합니다.
+- 출시 전 검증 기준은 `uniqn-mobile/`의 `npm run quality`와 `functions/`의 `npm run build`, `npm test`입니다.

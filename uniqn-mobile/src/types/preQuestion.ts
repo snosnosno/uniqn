@@ -4,7 +4,6 @@
  * @description 구인공고 지원 시 추가 질문 및 답변 타입
  *
  * @version 1.0.0
- * @see app2/src/types/jobPosting/base.ts
  */
 
 /**
