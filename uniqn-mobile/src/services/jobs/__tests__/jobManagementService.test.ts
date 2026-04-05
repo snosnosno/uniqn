@@ -350,19 +350,30 @@ describe('jobManagementService', () => {
       expect(result.compensation.defaultSalary?.amount).toBe(20000);
     });
 
-    it('rejects canonical fixed schedule updates in V3 mode', async () => {
+    it('passes fixed schedule updates through to the repository', async () => {
       const update: UpdateJobPostingInput = {
+        postingType: 'fixed',
         schedule: {
           kind: 'fixed',
+          daysPerWeek: 4,
+          startTime: '19:00',
           roleRequirements: [{ role: 'dealer', count: 5, filled: 2 }],
         },
         roleCatalog: [{ role: 'dealer' }],
       };
-      mockUpdateWithTransaction.mockRejectedValueOnce(new Error('Fixed postings are disabled'));
+      const updated = createPosting({
+        postingType: 'fixed',
+        workDate: '',
+        workDates: undefined,
+        schedule: update.schedule!,
+        roleCatalog: update.roleCatalog!,
+      });
+      mockUpdateWithTransaction.mockResolvedValue(updated);
 
-      await expect(updateJobPosting('job-1', update, 'employer-1')).rejects.toThrow(
-        'Fixed postings are disabled'
-      );
+      const result = await updateJobPosting('job-1', update, 'employer-1');
+
+      expect(mockUpdateWithTransaction).toHaveBeenCalledWith('job-1', update, 'employer-1');
+      expect(result.schedule.kind).toBe('fixed');
     });
   });
 
