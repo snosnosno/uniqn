@@ -5,7 +5,6 @@
  * originalApplication + confirmationHistory 패턴
  *
  * @version 1.0.0
- * @see app2/src/types/application.ts
  */
 
 import { Timestamp } from 'firebase/firestore';

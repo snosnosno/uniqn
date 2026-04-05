@@ -1,9 +1,9 @@
 # 문서 허브
 
-최종 업데이트: 2026-03-30  
+최종 업데이트: 2026-04-05  
 현재 기준: `uniqn-mobile/`, `functions/`
 
-이 폴더는 현재 운영 문서와 역사 문서를 분리해서 관리합니다. 현재 제품 동작을 확인할 때는 아래의 `활성 문서`만 먼저 보세요.
+이 폴더는 현재 운영 문서와 아카이브 문서를 분리해서 관리합니다. 현재 제품 동작을 확인할 때는 아래의 활성 문서만 먼저 읽어 주세요.
 
 ## 활성 문서
 
@@ -18,6 +18,7 @@
 - `reference/API_REFERENCE.md`
 - `reference/AUTHENTICATION.md`
 - `reference/DATA_SCHEMA.md`
+- `reference/REFACTOR_BASELINE.md`
 
 ### Guides
 
@@ -44,7 +45,7 @@
 
 ## 아카이브 문서
 
-아래 문서군은 현재 운영 기준이 아니라 설계, 이행, 기록, 휴면 제품 참고 자료입니다.
+아래 문서군은 현재 운영 기준이 아니라 설계 기록, 이행 메모, 과거 검토 자료입니다.
 
 - `../specs/react-native-app/*`
 - `planning/*`
@@ -54,17 +55,8 @@
 - `../TODO.md`
 - `../mobile-payment-plan.md`
 - `../refactor PLAN.md`
-- `../app2/**/*.md`
 
-이 문서들은 삭제 대상이 아니라 참고 자료입니다. `app2` 관련 상세 재개 문서는 `../app2/README.md`부터 시작합니다. 다만 현재 구현처럼 읽히지 않도록 상단 배너와 canonical 문서 링크를 유지합니다.
-
-## 휴면 제품 문서
-
-이 섹션은 현재 제품의 활성 운영 문서가 아니라, 나중에 다시 개발을 시작할 때 참고하는 별도 진입점입니다.
-
-- `../app2/README.md`
-- `../app2/DORMANT_PRODUCT.md`
-- `../app2/RESTART_GUIDE.md`
+아카이브 문서를 읽을 때는 현재 코드와 일치한다고 가정하지 말고, 먼저 활성 문서와 실제 구현을 확인합니다.
 
 ## 문서 작성 원칙
 
@@ -72,12 +64,12 @@
 - 존재하지 않는 파일, 라우트, 스크립트, Functions 이름은 문서에 적지 않습니다.
 - 계획 문서는 계획이라고 명시합니다.
 - 운영 문서에는 실제 코드 경로와 실행 명령을 함께 적습니다.
-- `app2/`는 현재 runtime source가 아닙니다.
+- 제거된 워크스페이스나 외부 백업 자산을 현재 런타임 기준처럼 문서화하지 않습니다.
 
 ## 빠른 탐색 순서
 
 1. `../README.md`
 2. `core/DEVELOPMENT_GUIDE.md`
 3. `reference/ARCHITECTURE.md`
-4. `reference/API_REFERENCE.md`
+4. `reference/REFACTOR_BASELINE.md`
 5. `guides/DEPLOYMENT.md`

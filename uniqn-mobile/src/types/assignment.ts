@@ -7,7 +7,6 @@
  * @version 3.0.0 - role/roles를 roleIds 배열로 통합
  * @version 3.0.1 - 고정공고/시간미정 상수 추가
  * @version 3.1.0 - roleIds 타입 강화 (string[] → StaffRole[])
- * @see app2/src/types/application.ts
  */
 
 import { isStaffRole, type StaffRole } from './role';
