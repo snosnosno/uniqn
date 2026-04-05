@@ -11,7 +11,7 @@ interface PostingTypeSelectorProps {
   disabled?: boolean;
 }
 
-const AVAILABLE_POSTING_TYPES: PostingType[] = ['regular', 'tournament', 'urgent'];
+const AVAILABLE_POSTING_TYPES: PostingType[] = ['regular', 'fixed', 'tournament', 'urgent'];
 
 const TypeCard = memo(function TypeCard({
   type,

@@ -36,6 +36,7 @@ jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     getList: jest.fn(),
     getById: jest.fn(),
+    getByOwnerId: jest.fn(),
     incrementViewCount: jest.fn(),
   },
 }));
@@ -439,14 +440,16 @@ describe('JobService', () => {
       const activeJobs = [createMockJobPosting({ id: 'active-1', status: 'active' })];
       const closedJobs = [createMockJobPosting({ id: 'closed-1', status: 'closed' })];
 
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult(activeJobs) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult(closedJobs) as any);
+      mockRepo.getByOwnerId
+        .mockResolvedValueOnce(activeJobs as any)
+        .mockResolvedValueOnce(closedJobs as any);
 
       const result = await getMyJobPostings('owner-1');
 
       expect(result).toHaveLength(2);
-      expect(mockRepo.getList).toHaveBeenCalledTimes(2);
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledTimes(2);
+      expect(mockRepo.getByOwnerId).toHaveBeenNthCalledWith(1, 'owner-1', 'active');
+      expect(mockRepo.getByOwnerId).toHaveBeenNthCalledWith(2, 'owner-1', 'closed');
     });
 
     it('should merge active and closed postings results', async () => {
@@ -456,16 +459,16 @@ describe('JobService', () => {
       ];
       const closedJobs = [createMockJobPosting({ id: 'c1', status: 'closed' })];
 
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult(activeJobs) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult(closedJobs) as any);
+      mockRepo.getByOwnerId
+        .mockResolvedValueOnce(activeJobs as any)
+        .mockResolvedValueOnce(closedJobs as any);
 
       const result = await getMyJobPostings('owner-1');
 
       expect(result).toHaveLength(3);
     });
 
-    it('should exclude fixed postings from employer-visible lists', async () => {
+    it('should include fixed postings in employer-visible lists', async () => {
       const activeJobs = [
         createMockJobPosting({ id: 'dated-1', status: 'active' }),
         createMockJobPosting({
@@ -482,60 +485,44 @@ describe('JobService', () => {
         }),
       ];
 
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult(activeJobs) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValueOnce(activeJobs as any).mockResolvedValueOnce([]);
 
       const result = await getMyJobPostings('owner-1');
 
-      expect(result).toHaveLength(1);
-      expect(result[0]?.id).toBe('dated-1');
+      expect(result).toHaveLength(2);
+      expect(result.map((posting) => posting.id)).toEqual(['dated-1', 'fixed-1']);
     });
 
     it('should filter by specific status when provided', async () => {
       const activeJobs = [createMockJobPosting({ id: 'a1', status: 'active' })];
-      mockRepo.getList.mockResolvedValue(createMockPaginatedResult(activeJobs) as any);
+      mockRepo.getByOwnerId.mockResolvedValue(activeJobs as any);
 
       await getMyJobPostings('owner-1', { status: 'active' as any });
 
-      expect(mockRepo.getList).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getList).toHaveBeenCalledWith(
-        { ownerId: 'owner-1', status: 'active' },
-        100,
-        undefined
-      );
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledTimes(1);
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledWith('owner-1', 'active');
     });
 
     it('should use active status as default when includeAll is false', async () => {
-      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValue([]);
 
       await getMyJobPostings('owner-1', { includeAll: false });
 
-      expect(mockRepo.getList).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getList).toHaveBeenCalledWith(
-        { ownerId: 'owner-1', status: 'active' },
-        100,
-        undefined
-      );
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledTimes(1);
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledWith('owner-1', 'active');
     });
 
     it('should only fetch specific status when both status and includeAll are set', async () => {
-      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValue([]);
 
       await getMyJobPostings('owner-1', { status: 'closed' as any, includeAll: true });
 
-      expect(mockRepo.getList).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getList).toHaveBeenCalledWith(
-        { ownerId: 'owner-1', status: 'closed' },
-        100,
-        undefined
-      );
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledTimes(1);
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledWith('owner-1', 'closed');
     });
 
     it('should return empty array when no postings found', async () => {
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       const result = await getMyJobPostings('owner-1');
 
@@ -544,7 +531,7 @@ describe('JobService', () => {
 
     it('should propagate errors via handleServiceError', async () => {
       const error = new Error('My postings failed');
-      mockRepo.getList.mockRejectedValue(error);
+      mockRepo.getByOwnerId.mockRejectedValue(error);
       mockHandleServiceError.mockReturnValue(error);
 
       await expect(getMyJobPostings('owner-1')).rejects.toThrow('My postings failed');
@@ -556,15 +543,13 @@ describe('JobService', () => {
     });
 
     it('should handle no options parameter', async () => {
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       const result = await getMyJobPostings('owner-1');
 
       expect(result).toEqual([]);
       // Default includeAll = true, no status => fetches both active and closed
-      expect(mockRepo.getList).toHaveBeenCalledTimes(2);
+      expect(mockRepo.getByOwnerId).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -696,39 +681,23 @@ describe('JobService', () => {
   // ==========================================================================
   describe('getMyJobPostings - additional edge cases', () => {
     it('should pass ownerId in both queries when includeAll', async () => {
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       await getMyJobPostings('owner-123');
 
-      const calls = mockRepo.getList.mock.calls;
-      expect(calls[0][0]).toEqual(expect.objectContaining({ ownerId: 'owner-123' }));
-      expect(calls[1][0]).toEqual(expect.objectContaining({ ownerId: 'owner-123' }));
+      const calls = mockRepo.getByOwnerId.mock.calls;
+      expect(calls[0]).toEqual(['owner-123', 'active']);
+      expect(calls[1]).toEqual(['owner-123', 'closed']);
     });
 
     it('should request active and closed statuses when includeAll', async () => {
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
+      mockRepo.getByOwnerId.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       await getMyJobPostings('owner-1');
 
-      const calls = mockRepo.getList.mock.calls;
-      expect(calls[0][0]).toEqual(expect.objectContaining({ status: 'active' }));
-      expect(calls[1][0]).toEqual(expect.objectContaining({ status: 'closed' }));
-    });
-
-    it('should use page size 100 for all my postings queries', async () => {
-      mockRepo.getList
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any)
-        .mockResolvedValueOnce(createMockPaginatedResult([]) as any);
-
-      await getMyJobPostings('owner-1');
-
-      const calls = mockRepo.getList.mock.calls;
-      expect(calls[0][1]).toBe(100);
-      expect(calls[1][1]).toBe(100);
+      const calls = mockRepo.getByOwnerId.mock.calls;
+      expect(calls[0]).toEqual(['owner-1', 'active']);
+      expect(calls[1]).toEqual(['owner-1', 'closed']);
     });
   });
 });

@@ -24,9 +24,10 @@ interface ChipItemProps {
 }
 
 const CHIPS: ChipConfig[] = [
-  { id: 'urgent', label: '급구', icon: '⚡', value: 'urgent' },
+  { id: 'urgent', label: '긴급', icon: '⚡', value: 'urgent' },
   { id: 'tournament', label: '대회', icon: '🏆', value: 'tournament' },
-  { id: 'regular', label: '일반', icon: '📅', value: 'regular' },
+  { id: 'regular', label: '일반', icon: '🎲', value: 'regular' },
+  { id: 'fixed', label: '고정', icon: '📌', value: 'fixed' },
 ];
 
 function formatCount(count: number): string {

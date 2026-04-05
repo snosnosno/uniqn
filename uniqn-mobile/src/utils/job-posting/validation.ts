@@ -20,9 +20,6 @@ export function validateBasicInfo(data: JobPostingFormData): Record<string, stri
   if (!data.postingType) {
     errors.postingType = '공고 타입을 선택해 주세요';
   }
-  if (data.postingType === 'fixed') {
-    errors.postingType = '고정공고는 현재 생성할 수 없습니다';
-  }
   if (!data.title?.trim()) {
     errors.title = '제목을 입력해 주세요';
   } else if (data.title.trim().length < 2) {
@@ -57,7 +54,14 @@ export function validateSchedule(
     data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0;
 
   if (data.postingType === 'fixed') {
-    errors.dateSpecificRequirements = '고정공고는 현재 지원하지 않습니다';
+    if (data.daysPerWeek < 0 || data.daysPerWeek > 7) {
+      errors.daysPerWeek = '주 출근일수를 선택해 주세요';
+    }
+
+    if (!data.isStartTimeNegotiable && !data.startTime) {
+      errors.startTime = '출근 시간을 선택해 주세요';
+    }
+
     return errors;
   }
 
@@ -89,8 +93,14 @@ export function validateSchedule(
 export function validateRoles(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (data.postingType === 'fixed') {
-    errors.roles = '고정공고 역할 편집은 현재 비활성화되어 있습니다';
+  if (!data.roles || data.roles.length === 0) {
+    errors.roles = '최소 1개 이상의 역할을 추가해 주세요';
+    return errors;
+  }
+
+  const hasInvalidRole = data.roles.some((role) => !role.name.trim() || role.count < 1);
+  if (hasInvalidRole) {
+    errors.roles = '모든 역할의 이름과 인원을 입력해 주세요';
   }
 
   return errors;

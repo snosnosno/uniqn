@@ -31,6 +31,7 @@ const mockAddNotificationResponseReceivedListener = jest.fn();
 const mockRegisterFCMToken = jest.fn();
 const mockUnregisterFCMToken = jest.fn();
 const mockRecordError = jest.fn();
+const mockLeaveBreadcrumb = jest.fn();
 
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: (...args: unknown[]) => mockGetPermissionsAsync(...args),
@@ -73,6 +74,7 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/services/observability', () => ({
   crashlyticsService: {
     recordError: (...args: unknown[]) => mockRecordError(...args),
+    leaveBreadcrumb: (...args: unknown[]) => mockLeaveBreadcrumb(...args),
   },
 }));
 
@@ -81,6 +83,10 @@ jest.mock('@/services/observability', () => ({
 // ============================================================================
 
 describe('pushNotificationService', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     pushNotificationService.cleanup(); // 상태 초기화

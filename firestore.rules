@@ -238,7 +238,7 @@ service cloud.firestore {
         applicationId == data.jobPostingId + '_' + request.auth.uid &&
         exists(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)) &&
         get(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)).data.status == 'active' &&
-        get(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)).data.schedule.kind == 'dated' &&
+        get(/databases/$(database)/documents/jobPostings/$(data.jobPostingId)).data.schedule.kind in ['dated', 'fixed'] &&
         data.applicantName is string &&
         (!('applicantPhone' in data) || data.applicantPhone is string) &&
         (!('applicantEmail' in data) || data.applicantEmail is string) &&
@@ -250,7 +250,7 @@ service cloud.firestore {
         (!('customRole' in data) || data.customRole is string) &&
         (!('message' in data) || data.message is string) &&
         data.status == 'applied' &&
-        data.recruitmentType == 'event' &&
+        data.recruitmentType in ['event', 'fixed'] &&
         data.assignments is list &&
         data.assignments.size() > 0 &&
         (!('preQuestionAnswers' in data) || data.preQuestionAnswers is list) &&
@@ -274,6 +274,9 @@ service cloud.firestore {
 
       return isSignedIn() &&
         request.auth.uid == resource.data.applicantId &&
+        resource.data.jobPostingId is string &&
+        exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
         resource.data.status == 'confirmed' &&
         request.resource.data.status == 'cancellation_pending' &&
         getApplicationChangedFields().hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
@@ -311,7 +314,7 @@ service cloud.firestore {
               'createdAt',
               'updatedAt'
             ]) &&
-            request.resource.data.recruitmentType == 'event' &&
+            request.resource.data.recruitmentType in ['event', 'fixed'] &&
             request.resource.data.assignments is list &&
             request.resource.data.assignments.size() > 0 &&
             (!('preQuestionAnswers' in request.resource.data) ||
@@ -328,6 +331,9 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'confirmed' &&
+            resource.data.jobPostingId is string &&
+            exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
             request.resource.data.status == 'cancellation_pending' &&
             changedFields.hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
             changedFields.hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
@@ -448,6 +454,9 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'confirmed' &&
+            resource.data.jobPostingId is string &&
+            exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
             request.resource.data.status == 'applied' &&
             changedFields.hasOnly([
               'status',
@@ -462,6 +471,9 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
+            resource.data.jobPostingId is string &&
+            exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
             resource.data.cancellationRequest is map &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'cancelled' &&
@@ -480,6 +492,9 @@ service cloud.firestore {
           ) ||
           (
             resource.data.status == 'cancellation_pending' &&
+            resource.data.jobPostingId is string &&
+            exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
             resource.data.cancellationRequest is map &&
             resource.data.cancellationRequest.status == 'pending' &&
             request.resource.data.status == 'confirmed' &&
@@ -579,15 +594,26 @@ service cloud.firestore {
           newData.profileCompleted == true);
     }
 
+    function isValidFcmTokenSelfUpdate() {
+      let newData = request.resource.data;
+      let changedFields = newData.diff(resource.data).affectedKeys();
+
+      return changedFields.hasAny(['fcmTokens']) &&
+        changedFields.hasOnly(['fcmTokens', 'updatedAt']) &&
+        (!changedFields.hasAny(['updatedAt']) || newData.updatedAt == request.time) &&
+        (!('fcmTokens' in newData) || (
+          newData.fcmTokens is map &&
+          newData.fcmTokens.keys().size() <= 10
+        ));
+    }
+
     // ================= Job Posting Type Validation Functions =================
     // ⚠️ 클라이언트 Timestamp는 Security Rules의 `is timestamp` 검증을 통과하지 못함
     // 따라서 timestamp 필드는 존재 여부만 확인 (타입 검증 제거)
 
     // FixedConfig 검증 함수
     function validateFixedConfig(config) {
-      return config.durationDays == 7 &&
-             'expiresAt' in config &&
-             'createdAt' in config;
+      return config.durationDays == 7;
     }
 
     // TournamentConfig 검증 함수
@@ -650,6 +676,7 @@ service cloud.firestore {
                'roleCatalog',
                'compensation',
                'questions',
+               'fixedConfig',
                'tournamentConfig',
                'urgentConfig'
              ]);
@@ -758,8 +785,43 @@ service cloud.firestore {
       return role in ['dealer', 'floor', 'serving', 'manager', 'staff', 'other'];
     }
 
-    function validateCanonicalSchedule(schedule) {
+    function validateCanonicalFixedSchedule(schedule) {
       return schedule is map &&
+        schedule.kind == 'fixed' &&
+        schedule.keys().hasOnly([
+          'kind',
+          'daysPerWeek',
+          'startTime',
+          'isStartTimeNegotiable',
+          'roleRequirements'
+        ]) &&
+        (!('daysPerWeek' in schedule) ||
+          (schedule.daysPerWeek is number &&
+            schedule.daysPerWeek >= 0 &&
+            schedule.daysPerWeek <= 7)) &&
+        (!('startTime' in schedule) || schedule.startTime is string) &&
+        (!('isStartTimeNegotiable' in schedule) || schedule.isStartTimeNegotiable is bool) &&
+        ('roleRequirements' in schedule) &&
+        schedule.roleRequirements is list &&
+        schedule.roleRequirements.size() > 0 &&
+        schedule.roleRequirements[0] is map &&
+        schedule.roleRequirements[0].keys().hasAll(['count']) &&
+        schedule.roleRequirements[0].keys().hasOnly(['role', 'customRole', 'count', 'filled']) &&
+        schedule.roleRequirements[0].count is number &&
+        schedule.roleRequirements[0].count > 0 &&
+        (!('role' in schedule.roleRequirements[0]) ||
+          isValidCanonicalPostingRole(schedule.roleRequirements[0].role)) &&
+        (!('customRole' in schedule.roleRequirements[0]) ||
+          schedule.roleRequirements[0].customRole is string) &&
+        (!('filled' in schedule.roleRequirements[0]) ||
+          (schedule.roleRequirements[0].filled is number &&
+            schedule.roleRequirements[0].filled >= 0 &&
+            schedule.roleRequirements[0].filled <= schedule.roleRequirements[0].count));
+    }
+
+    function validateCanonicalSchedule(schedule) {
+      return (
+        schedule is map &&
         schedule.kind == 'dated' &&
         schedule.keys().hasAll(['kind', 'primaryDate', 'allDates', 'requirements']) &&
         schedule.keys().hasOnly(['kind', 'primaryDate', 'allDates', 'requirements']) &&
@@ -792,7 +854,8 @@ service cloud.firestore {
           (schedule.requirements[0].timeSlots[0].roles[0].filled is number &&
             schedule.requirements[0].timeSlots[0].roles[0].filled >= 0 &&
             schedule.requirements[0].timeSlots[0].roles[0].filled <=
-              schedule.requirements[0].timeSlots[0].roles[0].count));
+              schedule.requirements[0].timeSlots[0].roles[0].count))
+      ) || validateCanonicalFixedSchedule(schedule);
     }
 
     function getCanonicalPostingType(data) {
@@ -801,23 +864,38 @@ service cloud.firestore {
 
     function validateCanonicalPostingTypeSchedule(data) {
       let postingType = getCanonicalPostingType(data);
-      return postingType != 'fixed' && data.schedule.kind == 'dated';
+      return (
+        postingType == 'fixed' && data.schedule.kind == 'fixed'
+      ) || (
+        postingType != 'fixed' && data.schedule.kind == 'dated'
+      );
     }
 
     function validateCanonicalDerivedScheduleFields(data) {
-      return data.schedule.kind == 'dated' &&
+      return (
+        data.schedule.kind == 'dated' &&
         data.workDate == data.schedule.primaryDate &&
         (
           (data.schedule.allDates.size() == 0 && !('workDates' in data)) ||
           (data.schedule.allDates.size() > 0 &&
            'workDates' in data &&
            data.workDates == data.schedule.allDates)
-        );
+        )
+      ) || (
+        data.schedule.kind == 'fixed' &&
+        data.workDate == '' &&
+        !('workDates' in data)
+      );
     }
 
     function validateCanonicalPostingTypeConfigs(data) {
       let postingType = getCanonicalPostingType(data);
       return (
+        postingType == 'fixed' &&
+        !('tournamentConfig' in data) &&
+        !('urgentConfig' in data) &&
+        (!('fixedConfig' in data) || validateFixedConfig(data.fixedConfig))
+      ) || (
         postingType == 'tournament' &&
         !('fixedConfig' in data) &&
         'tournamentConfig' in data &&
@@ -864,7 +942,7 @@ service cloud.firestore {
              validateCanonicalCompensation(data.compensation) &&
              validateCanonicalQuestions(data.questions) &&
              data.status in ['active', 'closed', 'cancelled'] &&
-             (!('postingType' in data) || data.postingType in ['regular', 'tournament', 'urgent']) &&
+             (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
              validateCanonicalPostingTypeConfigs(data);
     }
 
@@ -886,7 +964,7 @@ service cloud.firestore {
              data.compensation is map &&
              data.questions is map &&
              data.status == 'active' &&
-             (!('postingType' in data) || data.postingType in ['regular', 'tournament', 'urgent']) &&
+             (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
              validateCanonicalPostingTypeConfigs(data) &&
              data.totalPositions is number &&
              !('searchIndex' in data) &&
@@ -1320,6 +1398,8 @@ service cloud.firestore {
       allow update: if isSignedIn() && isOwner(userId) && (
         // 일반 프로필 업데이트 (role, bubbleScore 변경 불가)
         isValidSelfUserUpdate() ||
+        // 푸시 토큰 업데이트 (users/{uid}.fcmTokens Map 구조)
+        isValidFcmTokenSelfUpdate() ||
         // 구인자 등록 (staff → employer)
         isValidEmployerRegistration()
       );

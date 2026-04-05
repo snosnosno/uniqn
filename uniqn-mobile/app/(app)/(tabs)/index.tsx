@@ -86,6 +86,7 @@ export default function JobsScreen() {
             urgent: counts.urgent,
             tournament: counts.tournament,
             regular: counts.regular,
+            fixed: counts.fixed,
           },
     [counts, hasCounts, isLoadingTypeCounts]
   );

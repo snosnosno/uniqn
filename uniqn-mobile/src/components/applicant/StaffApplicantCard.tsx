@@ -14,6 +14,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
+import { FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types/assignment';
 import type { Application, ApplicationStatus, Assignment } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { STATUS } from '@/constants';
@@ -98,11 +99,21 @@ const getStatusBadgeVariant = (
 };
 
 const formatDate = (dateStr: string): string => {
+  if (dateStr === FIXED_DATE_MARKER) {
+    return '고정근무';
+  }
   return formatAppliedDate(dateStr) || dateStr || '-';
 };
 
 const getAssignmentsSummary = (assignments: Assignment[]): string => {
   if (!assignments?.length) return '';
+
+  const isFixed = assignments.every((assignment) => assignment.dates.includes(FIXED_DATE_MARKER));
+  if (isFixed) {
+    const roleLabel = getRoleLabel(assignments[0]?.roleIds[0] ?? 'other');
+    const timeLabel = assignments[0]?.timeSlot === FIXED_TIME_MARKER ? '출근시간 협의' : '고정근무';
+    return `${roleLabel} / ${timeLabel}`;
+  }
 
   const uniqueDates = new Set<string>();
   assignments.forEach((a) => a.dates.forEach((d) => uniqueDates.add(d)));
@@ -187,6 +198,23 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
   // 날짜별 그룹화 (Hooks는 조건부 반환 전에 호출해야 함)
   const dateGroups = useMemo(() => {
     if (!assignments?.length) return [];
+
+    const isFixed = assignments.every((assignment) => assignment.dates.includes(FIXED_DATE_MARKER));
+    if (isFixed) {
+      const roles = new Set<string>();
+      const timeSlots = new Set<string>();
+      assignments.forEach((assignment) => {
+        assignment.roleIds.forEach((roleId) => roles.add(roleId));
+        timeSlots.add(
+          assignment.timeSlot === FIXED_TIME_MARKER ? '출근시간 협의' : assignment.timeSlot
+        );
+      });
+
+      return [[FIXED_DATE_MARKER, { roles, timeSlots }]] as [
+        string,
+        { roles: Set<string>; timeSlots: Set<string> },
+      ][];
+    }
 
     const groups = new Map<string, { roles: Set<string>; timeSlots: Set<string> }>();
 

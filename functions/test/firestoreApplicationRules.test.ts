@@ -84,6 +84,61 @@ function createCanonicalJobPosting(
   };
 }
 
+function createCanonicalFixedJobPosting(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const createdAt = Timestamp.fromDate(new Date("2026-04-01T09:00:00.000Z"));
+
+  return {
+    schemaVersion: 3,
+    title: "Canonical fixed posting",
+    status: "active",
+    ownerId: "employer-1",
+    ownerName: "Owner",
+    postingType: "fixed",
+    workDate: "",
+    roleKeys: ["dealer"],
+    totalPositions: 1,
+    filledPositions: 0,
+    viewCount: 0,
+    stats: {
+      totalApplicants: 0,
+      activeApplicants: 0,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
+    createdAt,
+    updatedAt: createdAt,
+    location: {
+      name: "Seoul",
+      district: "Gangnam-gu",
+    },
+    schedule: {
+      kind: "fixed",
+      daysPerWeek: 5,
+      startTime: "18:00",
+      isStartTimeNegotiable: false,
+      roleRequirements: [{ role: "dealer", count: 1, filled: 0 }],
+    },
+    roleCatalog: [
+      {
+        role: "dealer",
+        salary: { type: "daily", amount: 150000 },
+      },
+    ],
+    compensation: {
+      mode: "shared",
+      defaultSalary: { type: "daily", amount: 150000 },
+      allowances: {},
+    },
+    questions: {
+      items: [],
+    },
+    ...overrides,
+  };
+}
+
 function createApplication(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
@@ -99,6 +154,33 @@ function createApplication(
       {
         roleIds: ["dealer"],
         dates: ["2026-04-01"],
+        timeSlot: "18:00",
+        isGrouped: false,
+        checkMethod: "individual",
+      },
+    ],
+    isRead: false,
+    createdAt,
+    updatedAt: createdAt,
+    ...overrides,
+  };
+}
+
+function createFixedApplication(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const createdAt = Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z"));
+
+  return {
+    applicantId: "staff-1",
+    applicantName: "Applicant",
+    jobPostingId: "job-fixed",
+    status: "applied",
+    recruitmentType: "fixed",
+    assignments: [
+      {
+        roleIds: ["dealer"],
+        dates: ["FIXED_SCHEDULE"],
         timeSlot: "18:00",
         isGrouped: false,
         checkMethod: "individual",
@@ -195,6 +277,60 @@ describe("Firestore application rules", () => {
     await assertSucceeds(
       runTransaction(staffDb, async (transaction) => {
         const applicationRef = doc(staffDb, "applications", "job-1_staff-1");
+        await transaction.get(applicationRef);
+        transaction.update(applicationRef, {
+          status: "cancellation_pending",
+          cancellationRequest: {
+            requestedAt: serverTimestamp(),
+            reason: "Need to cancel due to schedule conflict",
+            status: "pending",
+          },
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    );
+  });
+
+  it("allows an applicant transaction to create a fixed application", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "jobPostings", "job-fixed"), createCanonicalFixedJobPosting());
+    });
+
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertSucceeds(
+      runTransaction(staffDb, async (transaction) => {
+        const jobRef = doc(staffDb, "jobPostings", "job-fixed");
+        const applicationRef = doc(staffDb, "applications", "job-fixed_staff-1");
+
+        await transaction.get(jobRef);
+        await transaction.get(applicationRef);
+
+        transaction.set(applicationRef, {
+          ...createFixedApplication(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    );
+  });
+
+  it("rejects cancellation requests for confirmed fixed applications", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "jobPostings", "job-fixed"), createCanonicalFixedJobPosting());
+      await setDoc(
+        doc(db, "applications", "job-fixed_staff-1"),
+        createFixedApplication({ status: "confirmed" }),
+      );
+    });
+
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertFails(
+      runTransaction(staffDb, async (transaction) => {
+        const applicationRef = doc(staffDb, "applications", "job-fixed_staff-1");
         await transaction.get(applicationRef);
         transaction.update(applicationRef, {
           status: "cancellation_pending",

@@ -237,21 +237,13 @@ export async function getMyJobPostings(
     // includeAll이 true면 모든 상태의 공고 조회 (active, closed)
     if (includeAll && !status) {
       const results = await Promise.all([
-        getJobPostings({ ownerId, status: STATUS.JOB_POSTING.ACTIVE }, 100),
-        getJobPostings({ ownerId, status: STATUS.JOB_POSTING.CLOSED }, 100),
+        jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.ACTIVE),
+        jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.CLOSED),
       ]);
-      return [...results[0].items, ...results[1].items].filter(isCanonicalDatedPosting);
+      return [...results[0], ...results[1]];
     }
 
-    const { items } = await getJobPostings(
-      {
-        ownerId,
-        status: status || STATUS.JOB_POSTING.ACTIVE,
-      },
-      100
-    );
-
-    return items.filter(isCanonicalDatedPosting);
+    return jobPostingRepository.getByOwnerId(ownerId, status || STATUS.JOB_POSTING.ACTIVE);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '내 공고 조회',

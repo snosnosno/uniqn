@@ -8,6 +8,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   doc,
+  deleteField,
   runTransaction,
   serverTimestamp,
   setDoc,
@@ -104,6 +105,67 @@ describe("Firestore user and jobPostingDraft rules", () => {
         marketingAgreed: true,
         profileCompleted: true,
         updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it("allows owners to update their push token map without touching profile fields", async () => {
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertSucceeds(
+      updateDoc(doc(staffDb, "users", "staff-1"), {
+        ["fcmTokens.tk_device1"]: {
+          token: "ExponentPushToken[test-device-1]",
+          type: "expo",
+          platform: "ios",
+          registeredAt: serverTimestamp(),
+          lastRefreshedAt: serverTimestamp(),
+        },
+      }),
+    );
+
+    await assertSucceeds(
+      updateDoc(doc(staffDb, "users", "staff-1"), {
+        ["fcmTokens.tk_device1"]: deleteField(),
+      }),
+    );
+  });
+
+  it("rejects push token updates that modify trusted user fields", async () => {
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertFails(
+      updateDoc(doc(staffDb, "users", "staff-1"), {
+        ["fcmTokens.tk_device1"]: {
+          token: "ExponentPushToken[test-device-1]",
+          type: "expo",
+          platform: "ios",
+          registeredAt: serverTimestamp(),
+          lastRefreshedAt: serverTimestamp(),
+        },
+        isActive: false,
+      }),
+    );
+  });
+
+  it("rejects push token maps that exceed the per-user token limit", async () => {
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+    const overLimitTokens = Object.fromEntries(
+      Array.from({ length: 11 }, (_, index) => [
+        `tk_over_limit_${index}`,
+        {
+          token: `ExponentPushToken[limit-${index}]`,
+          type: "expo",
+          platform: "ios",
+          registeredAt: serverTimestamp(),
+          lastRefreshedAt: serverTimestamp(),
+        },
+      ]),
+    );
+
+    await assertFails(
+      updateDoc(doc(staffDb, "users", "staff-1"), {
+        fcmTokens: overLimitTokens,
       }),
     );
   });
