@@ -15,6 +15,7 @@ interface BoardCommentThreadProps {
   canInteract: boolean;
   canManagePost: boolean;
   isAdmin: boolean;
+  onPressImage?: (comment: BoardCommentNode, index: number) => void;
   onReply: (comment: BoardCommentNode) => void;
   onEdit: (comment: BoardCommentNode) => void;
   onDelete: (comment: BoardCommentNode) => void;
@@ -59,6 +60,7 @@ function CommentNodeView({
   canInteract,
   canManagePost,
   isAdmin,
+  onPressImage,
   onReply,
   onEdit,
   onDelete,
@@ -92,7 +94,12 @@ function CommentNodeView({
 
         <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">{comment.body}</Text>
 
-        {!contentDisabled ? <BoardImageGrid images={comment.imageAttachments} /> : null}
+        {!contentDisabled ? (
+          <BoardImageGrid
+            images={comment.imageAttachments}
+            onPressImage={onPressImage ? (index) => onPressImage(comment, index) : undefined}
+          />
+        ) : null}
 
         {!contentDisabled ? (
           <View className="mt-3 flex-row flex-wrap items-center gap-2">
@@ -178,6 +185,7 @@ function CommentNodeView({
               canInteract={canInteract}
               canManagePost={canManagePost}
               isAdmin={isAdmin}
+              onPressImage={onPressImage}
               onReply={onReply}
               onEdit={onEdit}
               onDelete={onDelete}
