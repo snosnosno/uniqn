@@ -862,6 +862,40 @@
       "density": "SPARSE_ALL"
     },
     {
+      "collectionGroup": "deletionRequests",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scheduledDeletionAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletionRequest.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletionRequest.scheduledDeletionAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
       "collectionGroup": "paymentTransactions",
       "queryScope": "COLLECTION",
       "fields": [
