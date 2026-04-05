@@ -47,19 +47,33 @@ interface ActionCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
+  displayTitle?: string;
+  displayDescription?: string;
   badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
   onPress: () => void;
   testID?: string;
 }
 
-function ActionCard({ icon, title, description, badge, onPress, testID }: ActionCardProps) {
+function ActionCard({
+  icon,
+  title,
+  description,
+  displayTitle,
+  displayDescription,
+  badge,
+  onPress,
+  testID,
+}: ActionCardProps) {
+  const resolvedTitle = displayTitle ?? title;
+  const resolvedDescription = displayDescription ?? description;
+
   return (
     <Pressable
       onPress={onPress}
       className="active:opacity-70"
       accessibilityRole="button"
       testID={testID}
-      accessibilityLabel={`${title}, ${description}`}
+      accessibilityLabel={`${resolvedTitle}, ${resolvedDescription}`}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
         <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
@@ -68,7 +82,7 @@ function ActionCard({ icon, title, description, badge, onPress, testID }: Action
         <View className="flex-1">
           <View className="flex-row items-center">
             <Text className="mr-2 text-base font-semibold text-gray-900 dark:text-white">
-              {title}
+              {resolvedTitle}
             </Text>
             {badge ? (
               <Badge variant={badge.variant} size="sm">
@@ -76,7 +90,9 @@ function ActionCard({ icon, title, description, badge, onPress, testID }: Action
               </Badge>
             ) : null}
           </View>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {resolvedDescription}
+          </Text>
         </View>
         <ChevronRightIcon size={20} color="#9CA3AF" />
       </Card>
@@ -441,6 +457,20 @@ export default function JobPostingDetailScreen() {
             )}
           </View>
         </View>
+
+        {isFixed ? (
+          <View className="px-4 pb-4">
+            <ActionCard
+              icon={<EditIcon size={24} color="#6B7280" />}
+              title="怨듦퀬 ?섏젙"
+              description="怨듦퀬 ?댁슜怨??곹깭瑜??섏젙?⑸땲??"
+              displayTitle="Edit Posting"
+              displayDescription="Update this fixed posting."
+              onPress={handleEdit}
+              testID="job-posting-edit-button"
+            />
+          </View>
+        ) : null}
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">

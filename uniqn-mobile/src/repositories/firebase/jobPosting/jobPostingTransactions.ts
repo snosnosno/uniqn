@@ -269,7 +269,7 @@ function getCreateRuleShapeSummary(document: Record<string, unknown>) {
   };
 }
 
-function assertFixedPostingEditDisabled(input: {
+export function assertFixedPostingEditDisabled(input: {
   postingType?: CreateJobPostingInput['postingType'];
   schedule?: CreateJobPostingInput['schedule'];
 }) {
@@ -499,8 +499,6 @@ export async function updateWithTransaction(
 ): Promise<JobPosting> {
   try {
     logger.info('Job posting update transaction', { jobPostingId, ownerId });
-    assertFixedPostingEditDisabled(input);
-
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
         transaction,

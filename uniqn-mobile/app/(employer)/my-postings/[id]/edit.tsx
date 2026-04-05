@@ -7,7 +7,9 @@ import {
   SectionCard,
   BasicInfoSection,
   DateRequirementsSection,
+  RolesSection,
   SalarySection,
+  ScheduleSection,
   PreQuestionsSection,
 } from '@/components/employer/job-form';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,7 +29,7 @@ import {
   draftToFormData,
   patchJobPostingDraft,
 } from '@/utils/job-posting/submission';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import type { UpdateJobPostingInput, JobPostingFormData } from '@/types';
 import type { JobPostingDraft } from '@/types/jobPostingDraft';
 
@@ -56,6 +58,7 @@ export default function EditJobPostingScreen() {
   const sectionPositions = useRef<Record<string, number>>({});
   const updateJobPosting = useUpdateJobPosting();
   const formData = useMemo(() => (draft ? draftToFormData(draft) : null), [draft]);
+  const isFixed = formData?.postingType === 'fixed';
   const allowScheduleFallback = useMemo(() => {
     if (!formData) {
       return false;
@@ -66,7 +69,7 @@ export default function EditJobPostingScreen() {
 
   useEffect(() => {
     if (existingJob && !draft) {
-      if (!isCanonicalDatedPosting(existingJob)) {
+      if (!isEmployerManageablePosting(existingJob)) {
         addToast({
           type: 'warning',
           message: '고정공고 편집은 V3 통합 범위에서 제외되었습니다.',
@@ -258,6 +261,12 @@ export default function EditJobPostingScreen() {
                     확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
                 </View>
+              ) : isFixed ? (
+                <ScheduleSection
+                  data={formData}
+                  onUpdate={updateFormData}
+                  errors={errors.schedule}
+                />
               ) : (
                 <DateRequirementsSection
                   data={formData}
@@ -267,6 +276,34 @@ export default function EditJobPostingScreen() {
               )}
             </SectionCard>
           </View>
+
+          {isFixed && (
+            <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
+              <SectionCard
+                title="紐⑥쭛 ??븷"
+                displayTitle="Roles"
+                required
+                hasError={getErrorCount(errors.roles) > 0}
+                errorCount={getErrorCount(errors.roles)}
+              >
+                {hasConfirmedApplicants ? (
+                  <View className="rounded-lg bg-gray-100 p-4 dark:bg-surface">
+                    <Text
+                      className="text-center text-gray-500 dark:text-gray-400"
+                      style={{ display: 'none' }}
+                    >
+                      ?뺤젙??吏?먯옄媛 ?덉뼱 ??븷 ?뺣낫??섏젙?????놁뒿?덈떎.
+                    </Text>
+                    <Text className="text-center text-gray-500 dark:text-gray-400">
+                      Roles cannot be edited after applicants are confirmed.
+                    </Text>
+                  </View>
+                ) : (
+                  <RolesSection data={formData} onUpdate={updateFormData} errors={errors.roles} />
+                )}
+              </SectionCard>
+            </View>
+          )}
 
           <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
             <SectionCard
