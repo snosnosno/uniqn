@@ -30,10 +30,10 @@ import { normalizeAssignmentRole } from '@/types/assignment';
 import {
   createHistoryEntry,
   findActiveConfirmation,
+  updatePostingScheduleFilled,
   validateAssignmentSlotCapacity,
 } from '@/domains/application';
 import { type Assignment, type JobPosting } from '@/types';
-import { WorkLogCreator } from '@/domains/schedule';
 import type { ConfirmWithHistoryResult, CancelConfirmationResult } from '../../interfaces';
 import { COLLECTIONS, STATUS } from '@/constants';
 import { releaseConfirmedAssignmentsInTransaction } from './applicationLifecycleHelpers';
@@ -112,7 +112,7 @@ export async function confirmWithHistoryTransaction(
       const confirmableStatuses: string[] = [STATUS.APPLICATION.APPLIED];
       if (!confirmableStatuses.includes(applicationData.status)) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '대기 중인 지원만 확정할 수 있습니다.',
+          userMessage: '대기중인 지원만 확정할 수 있습니다.',
         });
       }
 
@@ -120,7 +120,7 @@ export async function confirmWithHistoryTransaction(
         const activeConfirmation = findActiveConfirmation(applicationData.confirmationHistory);
         if (activeConfirmation) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '이미 확정된 지원입니다.',
+            userMessage: '이미 확정된 지원자입니다.',
           });
         }
       }
@@ -130,27 +130,53 @@ export async function confirmWithHistoryTransaction(
         applicationData.jobPostingId
       );
 
-      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
+      assertJobPostingOwner(jobData, ownerId, '본인 공고만 관리할 수 있습니다.');
 
-      if (jobData.schedule.kind !== 'dated') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '고정공고 확정은 현재 지원하지 않습니다.',
-        });
-      }
+      const isFixedPosting = jobData.schedule.kind === 'fixed';
+      const assignmentsToConfirm = isFixedPosting
+        ? (applicationData.assignments ?? [])
+        : (selectedAssignments ?? applicationData.assignments ?? []);
 
-      const assignmentsToConfirm = selectedAssignments ?? applicationData.assignments ?? [];
       if (assignmentsToConfirm.length === 0) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '확정할 일정을 선택해주세요',
+          userMessage: '확정할 일정을 선택해 주세요.',
         });
       }
 
-      const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
-      if (!slotCapacity.available) {
-        throw new MaxCapacityReachedError({
-          userMessage: '모집 인원이 마감되었습니다.',
-          jobPostingId: applicationData.jobPostingId,
-        });
+      if (jobData.schedule.kind === 'fixed') {
+        const fixedRoleId = assignmentsToConfirm[0]?.roleIds?.[0];
+        if (
+          !fixedRoleId ||
+          assignmentsToConfirm.length !== 1 ||
+          assignmentsToConfirm[0].roleIds.length !== 1
+        ) {
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+            userMessage: '고정공고는 역할 1개만 확정할 수 있습니다.',
+          });
+        }
+
+        const targetRole = (jobData.schedule.roleRequirements ?? []).find(
+          (role: { role?: string; customRole?: string; count: number; filled?: number }) => {
+            if (role.role === fixedRoleId) return true;
+            if (role.role === 'other' && role.customRole === fixedRoleId) return true;
+            return false;
+          }
+        );
+
+        if (!targetRole || (targetRole.filled ?? 0) >= targetRole.count) {
+          throw new MaxCapacityReachedError({
+            userMessage: '선택한 역할의 모집 인원이 마감되었습니다.',
+            jobPostingId: applicationData.jobPostingId,
+          });
+        }
+      } else {
+        const slotCapacity = validateAssignmentSlotCapacity(jobData, assignmentsToConfirm);
+        if (!slotCapacity.available) {
+          throw new MaxCapacityReachedError({
+            userMessage: '모집 인원이 마감되었습니다.',
+            jobPostingId: applicationData.jobPostingId,
+          });
+        }
       }
 
       let originalApplication = applicationData.originalApplication;
@@ -163,42 +189,44 @@ export async function confirmWithHistoryTransaction(
 
       const historyEntry = createHistoryEntry(assignmentsToConfirm, ownerId);
       const confirmationHistory = [...(applicationData.confirmationHistory ?? []), historyEntry];
-
       const workLogIds: string[] = [];
-      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-      const now = serverTimestamp();
 
-      for (const assignment of assignmentsToConfirm) {
-        const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
+      if (!isFixedPosting) {
+        const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+        const now = serverTimestamp();
 
-        for (const date of assignment.dates) {
-          const workLogRef = doc(workLogsRef);
-          const workLogData = {
-            staffId: applicationData.applicantId,
-            staffName: applicationData.applicantName,
-            jobPostingId: applicationData.jobPostingId,
-            jobPostingName: jobData.title,
-            ownerId: jobData.ownerId,
-            role: normalizedRole.role,
-            customRole: normalizedRole.customRole ?? null,
-            date,
-            timeSlot: assignment.timeSlot,
-            isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
-            tentativeDescription: assignment.tentativeDescription ?? null,
-            status: STATUS.WORK_LOG.SCHEDULED,
-            checkInTime: null,
-            checkOutTime: null,
-            workDuration: null,
-            payrollAmount: null,
-            isSettled: false,
-            assignmentGroupId: assignment.groupId ?? null,
-            checkMethod: assignment.checkMethod ?? 'individual',
-            createdAt: now,
-            updatedAt: now,
-          };
+        for (const assignment of assignmentsToConfirm) {
+          const normalizedRole = normalizeAssignmentRole(assignment.roleIds[0]);
 
-          transaction.set(workLogRef, workLogData);
-          workLogIds.push(workLogRef.id);
+          for (const date of assignment.dates) {
+            const workLogRef = doc(workLogsRef);
+            const workLogData = {
+              staffId: applicationData.applicantId,
+              staffName: applicationData.applicantName,
+              jobPostingId: applicationData.jobPostingId,
+              jobPostingName: jobData.title,
+              ownerId: jobData.ownerId,
+              role: normalizedRole.role,
+              customRole: normalizedRole.customRole ?? null,
+              date,
+              timeSlot: assignment.timeSlot,
+              isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
+              tentativeDescription: assignment.tentativeDescription ?? null,
+              status: STATUS.WORK_LOG.SCHEDULED,
+              checkInTime: null,
+              checkOutTime: null,
+              workDuration: null,
+              payrollAmount: null,
+              isSettled: false,
+              assignmentGroupId: assignment.groupId ?? null,
+              checkMethod: assignment.checkMethod ?? 'individual',
+              createdAt: now,
+              updatedAt: now,
+            };
+
+            transaction.set(workLogRef, workLogData);
+            workLogIds.push(workLogRef.id);
+          }
         }
       }
 
@@ -215,36 +243,11 @@ export async function confirmWithHistoryTransaction(
       });
 
       const assignmentCount = countAssignmentDates(assignmentsToConfirm);
-      const updatedSchedule =
-        jobData.schedule.kind === 'dated'
-          ? {
-              ...jobData.schedule,
-              requirements: jobData.schedule.requirements.map((requirement) => ({
-                ...requirement,
-                timeSlots: requirement.timeSlots.map((slot) => ({
-                  ...slot,
-                  roles: slot.roles.map((role) => ({ ...role })),
-                })),
-              })),
-            }
-          : jobData.schedule;
-      assignmentsToConfirm.forEach((assignment) => {
-        const assignmentStartTime = WorkLogCreator.extractStartTime(assignment.timeSlot);
-        assignment.dates.forEach((date) => {
-          const requirement = updatedSchedule.requirements.find((item) => item.date === date);
-          const slot = requirement?.timeSlots.find(
-            (item) => WorkLogCreator.extractStartTime(item.startTime ?? '') === assignmentStartTime
-          );
-          const role = slot?.roles.find((item) => {
-            const roleId =
-              item.role === 'other' && item.customRole ? item.customRole : (item.role ?? '');
-            return roleId === assignment.roleIds[0];
-          });
-          if (role) {
-            role.filled = (role.filled ?? 0) + 1;
-          }
-        });
-      });
+      const updatedSchedule = updatePostingScheduleFilled(
+        jobData.schedule,
+        assignmentsToConfirm,
+        'increment'
+      );
 
       const nextFilledPositions = Math.max(0, jobData.filledPositions + assignmentCount);
       const shouldClose =
@@ -335,7 +338,13 @@ export async function cancelConfirmationTransaction(
         applicationData.jobPostingId
       );
 
-      assertJobPostingOwner(jobData, ownerId, '본인의 공고만 관리할 수 있습니다');
+      assertJobPostingOwner(jobData, ownerId, '본인 공고만 관리할 수 있습니다.');
+
+      if (jobData.schedule.kind === 'fixed') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정공고는 1차 범위에서 확정 취소를 지원하지 않습니다.',
+        });
+      }
 
       return releaseConfirmedAssignmentsInTransaction({
         transaction,

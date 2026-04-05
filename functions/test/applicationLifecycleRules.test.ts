@@ -83,6 +83,61 @@ function createCanonicalJobPosting(
   };
 }
 
+function createCanonicalFixedJobPosting(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const createdAt = Timestamp.fromDate(new Date("2026-04-01T09:00:00.000Z"));
+
+  return {
+    schemaVersion: 3,
+    title: "Canonical fixed posting",
+    status: "active",
+    ownerId: "employer-1",
+    ownerName: "Owner",
+    postingType: "fixed",
+    workDate: "",
+    roleKeys: ["dealer"],
+    totalPositions: 1,
+    filledPositions: 0,
+    viewCount: 0,
+    stats: {
+      totalApplicants: 1,
+      activeApplicants: 1,
+      confirmedApplicants: 0,
+      cancellationPendingApplicants: 0,
+      filledPositions: 0,
+    },
+    createdAt,
+    updatedAt: createdAt,
+    location: {
+      name: "Seoul",
+      district: "Gangnam-gu",
+    },
+    schedule: {
+      kind: "fixed",
+      daysPerWeek: 5,
+      startTime: "18:00",
+      isStartTimeNegotiable: false,
+      roleRequirements: [{ role: "dealer", count: 1, filled: 0 }],
+    },
+    roleCatalog: [
+      {
+        role: "dealer",
+        salary: { type: "daily", amount: 150000 },
+      },
+    ],
+    compensation: {
+      mode: "shared",
+      defaultSalary: { type: "daily", amount: 150000 },
+      allowances: {},
+    },
+    questions: {
+      items: [],
+    },
+    ...overrides,
+  };
+}
+
 function createApplication(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
@@ -97,6 +152,33 @@ function createApplication(
       {
         roleIds: ["dealer"],
         dates: ["2026-04-01"],
+        timeSlot: "18:00",
+        isGrouped: false,
+        checkMethod: "individual",
+      },
+    ],
+    confirmationHistory: [],
+    createdAt,
+    updatedAt: createdAt,
+    ...overrides,
+  };
+}
+
+function createFixedApplication(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const createdAt = Timestamp.fromDate(new Date("2026-04-01T10:00:00.000Z"));
+
+  return {
+    applicantId: "staff-1",
+    applicantName: "Applicant",
+    jobPostingId: "job-fixed",
+    status: "applied",
+    recruitmentType: "fixed",
+    assignments: [
+      {
+        roleIds: ["dealer"],
+        dates: ["FIXED_SCHEDULE"],
         timeSlot: "18:00",
         isGrouped: false,
         checkMethod: "individual",
@@ -181,6 +263,69 @@ describe("application lifecycle rules", () => {
                 {
                   roleIds: ["dealer"],
                   dates: ["2026-04-01"],
+                  timeSlot: "18:00",
+                  isGrouped: false,
+                  checkMethod: "individual",
+                },
+              ],
+            },
+          ],
+          confirmedAt,
+          processedBy: "employer-1",
+          processedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    );
+  });
+
+  it("allows owner confirmation transactions for fixed applications without worklog writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "jobPostings", "job-fixed"), createCanonicalFixedJobPosting());
+      await setDoc(doc(db, "applications", "job-fixed_staff-1"), createFixedApplication());
+    });
+
+    const employerDb = testEnv.authenticatedContext("employer-1").firestore();
+    const confirmedAt = Timestamp.fromDate(new Date("2026-04-01T11:00:00.000Z"));
+
+    await assertSucceeds(
+      runTransaction(employerDb, async (transaction) => {
+        const applicationRef = doc(employerDb, "applications", "job-fixed_staff-1");
+
+        await transaction.get(applicationRef);
+
+        transaction.update(applicationRef, {
+          status: "confirmed",
+          assignments: [
+            {
+              roleIds: ["dealer"],
+              dates: ["FIXED_SCHEDULE"],
+              timeSlot: "18:00",
+              isGrouped: false,
+              checkMethod: "individual",
+            },
+          ],
+          originalApplication: {
+            assignments: [
+              {
+                roleIds: ["dealer"],
+                dates: ["FIXED_SCHEDULE"],
+                timeSlot: "18:00",
+                isGrouped: false,
+                checkMethod: "individual",
+              },
+            ],
+            appliedAt: confirmedAt,
+          },
+          confirmationHistory: [
+            {
+              confirmedAt,
+              confirmedBy: "employer-1",
+              assignments: [
+                {
+                  roleIds: ["dealer"],
+                  dates: ["FIXED_SCHEDULE"],
                   timeSlot: "18:00",
                   isGrouped: false,
                   checkMethod: "individual",

@@ -114,8 +114,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     !isFixedMode &&
     applicant.status === STATUS.APPLICATION.CONFIRMED &&
     Boolean(onCancelConfirmation);
-  const canShowActions =
-    showActions && !isFixedMode && applicant.status === STATUS.APPLICATION.APPLIED;
+  const canShowActions = showActions && applicant.status === STATUS.APPLICATION.APPLIED;
 
   return (
     <Card variant="elevated" padding="md">

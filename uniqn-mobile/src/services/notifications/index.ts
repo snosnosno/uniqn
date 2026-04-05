@@ -47,7 +47,7 @@ export {
   checkPermission as checkPushPermission,
   requestPermission as requestPushPermission,
   // 토큰
-  getToken as getPushToken,
+  getTokenWithRecovery as getPushToken,
   registerToken as registerPushToken,
   unregisterToken as unregisterPushToken,
   getCurrentToken,

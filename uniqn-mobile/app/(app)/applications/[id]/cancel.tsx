@@ -144,6 +144,13 @@ export default function CancellationRequestScreen() {
   const canRequestCancel = (() => {
     if (!application) return { allowed: false, reason: '지원서를 찾을 수 없습니다' };
 
+    if (application.recruitmentType === 'fixed') {
+      return {
+        allowed: false,
+        reason: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+      };
+    }
+
     // 확정 또는 취소 요청 대기 중 상태 확인
     if (
       application.status !== STATUS.APPLICATION.CONFIRMED &&

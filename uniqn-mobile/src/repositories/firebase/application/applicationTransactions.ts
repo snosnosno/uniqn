@@ -30,7 +30,13 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { applicationValidator, validateRequiredAnswers } from '@/domains/application';
 import { selectPostingWorkflow } from '@/domains/job-posting';
-import { normalizeAssignmentRole, isValidAssignment } from '@/types/assignment';
+import {
+  FIXED_DATE_MARKER,
+  FIXED_TIME_MARKER,
+  normalizeAssignmentRole,
+  isValidAssignment,
+  type Assignment,
+} from '@/types/assignment';
 import type { ApplyContext } from '../../interfaces';
 import type {
   Application,
@@ -188,6 +194,45 @@ function updateJobPostingStatsInTransaction(params: {
   void params;
 }
 
+function buildCanonicalFixedAssignment(jobData: JobPosting, roleId: string): Assignment {
+  if (jobData.schedule.kind !== 'fixed') {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: '고정공고 assignment를 생성할 수 없습니다.',
+    });
+  }
+
+  return {
+    roleIds: [roleId],
+    timeSlot: jobData.schedule.startTime ?? FIXED_TIME_MARKER,
+    dates: [FIXED_DATE_MARKER],
+    isGrouped: false,
+    checkMethod: 'individual',
+  };
+}
+
+function assertRequiredAnswers(
+  jobData: JobPosting,
+  answers?: CreateApplicationInput['preQuestionAnswers']
+) {
+  const questions = jobData.questions.items ?? [];
+  if (questions.length === 0) {
+    return;
+  }
+
+  if (!answers?.length) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '사전질문에 답변해 주세요.',
+    });
+  }
+
+  const isValid = validateRequiredAnswers(answers);
+  if (!isValid) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '필수 질문에 모두 답변해 주세요.',
+    });
+  }
+}
+
 export async function applyWithTransaction(
   input: CreateApplicationInput,
   context: ApplyContext
@@ -202,7 +247,7 @@ export async function applyWithTransaction(
     for (const assignment of input.assignments) {
       if (!isValidAssignment(assignment)) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해 주세요.',
+          userMessage: '지원 정보가 올바르지 않습니다. 역할, 시간, 날짜를 확인해 주세요.',
         });
       }
     }
@@ -217,39 +262,55 @@ export async function applyWithTransaction(
         });
       }
 
-      if (jobData.schedule.kind !== 'dated') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '고정공고 지원은 현재 지원하지 않습니다.',
-        });
-      }
+      const isFixedPosting = jobData.schedule.kind === 'fixed';
+      const normalizedAssignments = isFixedPosting
+        ? (() => {
+            if (input.assignments.length !== 1) {
+              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+                userMessage: '고정공고는 역할 1개만 선택해 지원할 수 있습니다.',
+              });
+            }
 
-      const validation = applicationValidator.validateApplication(
-        jobData,
-        input.assignments,
-        input.preQuestionAnswers
-      );
-      if (!validation.isValid) {
-        const firstError = validation.errors[0];
-        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: firstError?.message ?? '지원 정보를 확인해 주세요.',
-        });
-      }
+            const requestedRoleId = input.assignments[0]?.roleIds?.[0];
+            if (!requestedRoleId || input.assignments[0].roleIds.length !== 1) {
+              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+                userMessage: '지원할 역할을 선택해 주세요.',
+              });
+            }
 
-      const questions = jobData.questions.items ?? [];
-      if (questions.length > 0) {
-        if (!input.preQuestionAnswers?.length) {
+            const totalCapacity = applicationValidator.checkTotalCapacity(jobData);
+            if (!totalCapacity.available) {
+              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+                userMessage: totalCapacity.reason ?? '모집 인원이 마감되었습니다.',
+              });
+            }
+
+            const roleCapacity = applicationValidator.checkRoleCapacity(jobData, requestedRoleId);
+            if (!roleCapacity.available) {
+              throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+                userMessage: roleCapacity.reason ?? '선택한 역할은 마감되었습니다.',
+              });
+            }
+
+            return [buildCanonicalFixedAssignment(jobData, requestedRoleId)];
+          })()
+        : input.assignments;
+
+      if (!isFixedPosting) {
+        const validation = applicationValidator.validateApplication(
+          jobData,
+          normalizedAssignments,
+          input.preQuestionAnswers
+        );
+        if (!validation.isValid) {
+          const firstError = validation.errors[0];
           throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '사전질문에 답변해 주세요',
+            userMessage: firstError?.message ?? '지원 정보를 확인해 주세요.',
           });
         }
-
-        const isValid = validateRequiredAnswers(input.preQuestionAnswers);
-        if (!isValid) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '필수 질문에 모두 답변해 주세요',
-          });
-        }
       }
+
+      assertRequiredAnswers(jobData, input.preQuestionAnswers);
 
       const applicationId = `${input.jobPostingId}_${context.applicantId}`;
       const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
@@ -270,7 +331,7 @@ export async function applyWithTransaction(
       }
 
       const recruitmentType: RecruitmentType = selectPostingWorkflow(jobData).recruitmentType;
-      const firstAssignment = input.assignments[0];
+      const firstAssignment = normalizedAssignments[0];
       const normalizedPrimaryRole = normalizeAssignmentRole(
         firstAssignment?.roleIds[0] ?? 'dealer'
       );
@@ -287,11 +348,11 @@ export async function applyWithTransaction(
         ...(normalizedPrimaryRole.customRole && { customRole: normalizedPrimaryRole.customRole }),
         jobPostingId: input.jobPostingId,
         jobPostingTitle: jobData.title || '',
-        ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
+        ...(jobData.workDate ? { jobPostingDate: jobData.workDate } : {}),
         status: STATUS.APPLICATION.APPLIED,
         ...(input.message && { message: input.message }),
         recruitmentType,
-        assignments: input.assignments,
+        assignments: normalizedAssignments,
         ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
         isRead: false,
         createdAt: existingData?.createdAt ?? (now as Timestamp),
@@ -317,7 +378,7 @@ export async function applyWithTransaction(
     logger.info('지원하기 트랜잭션 성공', {
       applicationId: result.id,
       jobPostingId: input.jobPostingId,
-      assignmentCount: input.assignments.length,
+      assignmentCount: result.assignments.length,
     });
 
     return result;
@@ -429,6 +490,12 @@ export async function requestCancellationWithTransaction(
         '본인 지원만 취소 요청할 수 있습니다.'
       );
 
+      if (jobData.schedule.kind === 'fixed') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+        });
+      }
+
       if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '확정된 지원만 취소 요청할 수 있습니다.',
@@ -512,9 +579,15 @@ export async function reviewCancellationWithTransaction(
 
         assertJobPostingOwner(jobData, reviewerId, '본인 공고의 취소 요청만 검토할 수 있습니다.');
 
+        if (jobData.schedule.kind === 'fixed') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+          });
+        }
+
         if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '검토 대기 중인 취소 요청이 없습니다.',
+            userMessage: '검토 대기중인 취소 요청이 없습니다.',
           });
         }
 
@@ -563,9 +636,15 @@ export async function reviewCancellationWithTransaction(
 
         assertJobPostingOwner(jobData, reviewerId, '본인 공고의 취소 요청만 검토할 수 있습니다.');
 
+        if (jobData.schedule.kind === 'fixed') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+          });
+        }
+
         if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '검토 대기 중인 취소 요청이 없습니다.',
+            userMessage: '검토 대기중인 취소 요청이 없습니다.',
           });
         }
 
@@ -584,7 +663,7 @@ export async function reviewCancellationWithTransaction(
           reviewedAt: serverTimestamp(),
           reviewedBy: reviewerId,
           status: STATUS.CANCELLATION_REQUEST.REJECTED,
-          rejectionReason: input.rejectionReason?.trim() || '거절됨',
+          rejectionReason: input.rejectionReason?.trim() || '거절',
         };
 
         const activeConfirmation =
@@ -658,7 +737,7 @@ export async function rejectWithTransaction(
 
       if (applicationData.status !== STATUS.APPLICATION.APPLIED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 거절할 수 있습니다.`,
+          userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기중인 지원만 거절할 수 있습니다.`,
         });
       }
 

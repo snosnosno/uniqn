@@ -16,7 +16,9 @@ import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useApplicantManagement } from '@/hooks/applicant';
+import { useJobDetail } from '@/hooks/useJobDetail';
 import { useThemeStore } from '@/stores';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
 
 interface StatsHeaderProps {
@@ -39,6 +41,7 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode } = useThemeStore();
+  const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
@@ -110,6 +113,28 @@ export default function CancellationRequestsScreen() {
   );
 
   const keyExtractor = useCallback((item: Application) => item.id, []);
+
+  if (isLoadingPosting) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+        <View className="flex-1 items-center justify-center">
+          <Loading size="large" />
+          <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (posting && !isCanonicalDatedPosting(posting)) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+        <ErrorState
+          title="지원하지 않는 화면입니다"
+          message="고정공고는 1차 범위에서 취소 요청 관리를 지원하지 않습니다."
+        />
+      </SafeAreaView>
+    );
+  }
 
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (

@@ -1,9 +1,5 @@
 /**
- * UNIQN Mobile - 공고 상세 레이아웃
- * 모든 공고 상세 하위 화면에 헤더에 제목 통합 표시
- *
- * @description 헤더에 "화면명 | 공고제목" 형태로 표시
- * @version 2.0.0
+ * UNIQN Mobile - Employer Job Posting Detail Layout
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -17,22 +13,16 @@ import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor } from '@/constants/colors';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 
-/**
- * 헤더 QR 버튼
- */
 function HeaderQRButton({ tintColor, onPress }: { tintColor: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} hitSlop={8} className="p-2 mr-2">
+    <Pressable onPress={onPress} hitSlop={8} className="mr-2 p-2">
       <QRCodeIcon size={22} color={tintColor} />
     </Pressable>
   );
 }
 
-/**
- * 커스텀 헤더 타이틀 컴포넌트
- */
 function HeaderTitle({
   screenTitle,
   jobTitle,
@@ -43,7 +33,7 @@ function HeaderTitle({
   isDark: boolean;
 }) {
   return (
-    <View className="flex-row items-center flex-1">
+    <View className="flex-1 flex-row items-center">
       <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#1A1625' }}>
         {screenTitle}
       </Text>
@@ -72,19 +62,26 @@ export default function JobPostingDetailLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
   const { job, isLoading } = useJobDetail(id || '', { realtime: true });
-
-  // QR 모달 상태
   const [showQRModal, setShowQRModal] = useState(false);
 
+  const isFixed = job?.schedule.kind === 'fixed';
+
   const handleShowQR = useCallback(() => {
+    if (isFixed) {
+      addToast({
+        type: 'warning',
+        message: '고정공고는 1차 범위에서 QR을 지원하지 않습니다.',
+      });
+      return;
+    }
+
     setShowQRModal(true);
-  }, []);
+  }, [addToast, isFixed]);
 
   const handleCloseQR = useCallback(() => {
     setShowQRModal(false);
   }, []);
 
-  // 공고 제목 (로딩 중이면 빈 문자열)
   const jobTitle = useMemo(() => {
     if (isLoading) return '';
     return job?.title || '';
@@ -104,18 +101,21 @@ export default function JobPostingDetailLayout() {
       return;
     }
 
-    if (isCanonicalDatedPosting(job)) {
+    if (isEmployerManageablePosting(job)) {
       return;
     }
 
     addToast({
       type: 'warning',
-      message: '고정공고는 이번 V3 canonical 범위에서 제외되어 접근할 수 없습니다.',
+      message: '현재 관리 화면에서 지원하지 않는 공고입니다.',
     });
     router.replace('/(app)/(tabs)/employer');
   }, [addToast, currentUserId, job, router]);
 
-  if (job && ((currentUserId && job.ownerId !== currentUserId) || !isCanonicalDatedPosting(job))) {
+  if (
+    job &&
+    ((currentUserId && job.ownerId !== currentUserId) || !isEmployerManageablePosting(job))
+  ) {
     return null;
   }
 
@@ -141,12 +141,13 @@ export default function JobPostingDetailLayout() {
               fallbackHref="/(app)/(tabs)/employer"
             />
           ),
-          headerRight: () => (
-            <HeaderQRButton
-              tintColor={getLayoutColor(isDark, 'headerTint')}
-              onPress={handleShowQR}
-            />
-          ),
+          headerRight: () =>
+            isFixed ? null : (
+              <HeaderQRButton
+                tintColor={getLayoutColor(isDark, 'headerTint')}
+                onPress={handleShowQR}
+              />
+            ),
         }}
       >
         <Stack.Screen
@@ -191,13 +192,14 @@ export default function JobPostingDetailLayout() {
         />
       </Stack>
 
-      {/* 현장 QR 모달 */}
-      <EventQRModal
-        visible={showQRModal}
-        onClose={handleCloseQR}
-        jobPostingId={id || ''}
-        jobTitle={job?.title}
-      />
+      {!isFixed && (
+        <EventQRModal
+          visible={showQRModal}
+          onClose={handleCloseQR}
+          jobPostingId={id || ''}
+          jobTitle={job?.title}
+        />
+      )}
     </View>
   );
 }

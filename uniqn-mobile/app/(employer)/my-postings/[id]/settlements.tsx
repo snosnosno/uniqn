@@ -42,6 +42,7 @@ import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
+import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import {
   getRoleSalaryFromRoles,
   calculateSettlementFromWorkLog,
@@ -606,6 +607,17 @@ export default function StaffSettlementsScreen() {
   // ============================================================================
   // Render
   // ============================================================================
+
+  if (posting && !isCanonicalDatedPosting(posting)) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+        <ErrorState
+          title="지원하지 않는 화면입니다"
+          message="고정공고는 1차 범위에서 정산과 근무 운영을 지원하지 않습니다."
+        />
+      </SafeAreaView>
+    );
+  }
 
   // 로딩 상태
   if (isLoading) {
