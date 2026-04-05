@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
 import { BoardCommentThread } from '@/components/board/BoardCommentThread';
 import { BoardImageGrid } from '@/components/board/BoardImageGrid';
+import { BoardImageViewerOverlay } from '@/components/board/BoardImageViewerOverlay';
 import { Badge, Button, Card, EmptyState, ErrorState, Input, Modal } from '@/components/ui';
 import { ROLE_LABELS } from '@/constants';
 import {
@@ -87,6 +88,10 @@ export default function BoardPostDetailScreen() {
   const [editingComment, setEditingComment] = useState<BoardCommentNode | null>(null);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
   const [isUploadingCommentImages, setIsUploadingCommentImages] = useState(false);
+  const [imageViewerState, setImageViewerState] = useState<{
+    images: BoardImageAttachment[];
+    currentIndex: number;
+  } | null>(null);
   const [reportTarget, setReportTarget] = useState<{
     targetType: 'post' | 'comment';
     targetId: string;
@@ -215,6 +220,17 @@ export default function BoardPostDetailScreen() {
     } finally {
       setIsUploadingCommentImages(false);
     }
+  };
+
+  const openImageViewer = (images: BoardImageAttachment[], index: number) => {
+    if (!images[index]) {
+      return;
+    }
+
+    setImageViewerState({
+      images,
+      currentIndex: index,
+    });
   };
 
   const handleSubmitComment = async () => {
@@ -469,7 +485,10 @@ export default function BoardPostDetailScreen() {
             </Card>
           ) : null}
 
-          <BoardImageGrid images={post.imageAttachments} />
+          <BoardImageGrid
+            images={post.imageAttachments}
+            onPressImage={(index) => openImageViewer(post.imageAttachments, index)}
+          />
 
           {post.boardType !== 'notice' ? (
             <View className="mt-4 flex-row flex-wrap gap-2">
@@ -563,6 +582,9 @@ export default function BoardPostDetailScreen() {
                   canInteract={canInteract}
                   canManagePost={canManagePost}
                   isAdmin={isAdmin}
+                  onPressImage={(comment, index) =>
+                    openImageViewer(comment.imageAttachments, index)
+                  }
                   onReply={(comment) => {
                     setReplyTarget(comment);
                     setEditingComment(null);
@@ -627,6 +649,7 @@ export default function BoardPostDetailScreen() {
                 canInteract={canInteract}
                 canManagePost={canManagePost}
                 isAdmin={isAdmin}
+                onPressImage={(comment, index) => openImageViewer(comment.imageAttachments, index)}
                 onReply={(comment) => {
                   setReplyTarget(comment);
                   setEditingComment(null);
@@ -811,6 +834,16 @@ export default function BoardPostDetailScreen() {
           </Button>
         </View>
       </Modal>
+
+      <BoardImageViewerOverlay
+        visible={Boolean(imageViewerState)}
+        images={imageViewerState?.images ?? []}
+        currentIndex={imageViewerState?.currentIndex ?? 0}
+        onClose={() => setImageViewerState(null)}
+        onChangeIndex={(nextIndex) =>
+          setImageViewerState((prev) => (prev ? { ...prev, currentIndex: nextIndex } : prev))
+        }
+      />
     </SafeAreaView>
   );
 }
