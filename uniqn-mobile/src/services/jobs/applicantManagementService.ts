@@ -366,7 +366,7 @@ export async function subscribeToApplicantsAsync(
     logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
     callbacks.onError?.(error);
 
-    return () => {};
+    return () => undefined;
   }
 
   logger.info('구독 전 권한 검증 통과, 지원자 구독 시작', { jobPostingId, ownerId });

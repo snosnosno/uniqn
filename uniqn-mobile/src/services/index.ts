@@ -45,3 +45,4 @@ export * from './cacheService';
 export * from './reviewService';
 export * from './inquiryService';
 export * from './versionService';
+export * from './boardService';

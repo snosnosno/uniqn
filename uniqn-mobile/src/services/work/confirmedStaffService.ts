@@ -4,6 +4,7 @@ import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
+import { syncScheduleBoardByJobPostingId } from '@/services/boardService';
 import { workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats } from '@/domains/staff';
 import type {
   ConfirmedStaff,
@@ -195,7 +196,21 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
   const currentUser = requireCurrentUser();
   logger.info('Updating confirmed staff status', { workLogId, status });
 
+  const workLog = await workLogRepository.getById(workLogId);
   await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.uid, status });
+
+  if (workLog?.jobPostingId) {
+    try {
+      await syncScheduleBoardByJobPostingId(workLog.jobPostingId);
+    } catch (error) {
+      logger.warn('Schedule board sync failed after confirmed staff status update', {
+        workLogId,
+        jobPostingId: workLog.jobPostingId,
+        status,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
   logger.info('Updated confirmed staff status', { workLogId, status });
 }

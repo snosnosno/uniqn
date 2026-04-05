@@ -323,7 +323,9 @@ describe('useApplicantManagement Hooks', () => {
         }
       );
 
-      await act(async () => {});
+      await act(async () => {
+        await Promise.resolve();
+      });
 
       const firstSubscription = mockSubscribeToApplicantsAsync.mock.calls[0]?.[2] as {
         onUpdate: (data: ReturnType<typeof createMockApplicantListResult>) => void;
@@ -338,7 +340,9 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.data?.applicants[0]?.jobPostingId).toBe('job-1');
 
       rerender({ jobPostingId: 'job-2' });
-      await act(async () => {});
+      await act(async () => {
+        await Promise.resolve();
+      });
 
       expect(result.current.data).toBeUndefined();
       expect(unsubscribe).toHaveBeenCalled();

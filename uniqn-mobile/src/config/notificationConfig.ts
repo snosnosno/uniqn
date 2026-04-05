@@ -21,6 +21,7 @@ import {
   NOTIFICATION_TYPE_TO_CHANNEL,
   NOTIFICATION_TYPE_LABELS,
 } from '@/types/notification';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 // ============================================================================
 // Types
@@ -54,6 +55,7 @@ export interface NotificationLinkData {
   reportId?: string;
   inquiryId?: string;
   announcementId?: string;
+  postId?: string;
   date?: string;
 }
 
@@ -112,9 +114,19 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
 
   // === 시스템 ===
   [NotificationType.ANNOUNCEMENT]: (data) =>
-    data?.announcementId ? `/notices/${data.announcementId}` : '/notices',
-  [NotificationType.MAINTENANCE]: () => '/notices',
+    data?.announcementId
+      ? `/board/post/${buildBoardNoticePostId(data.announcementId)}`
+      : '/board/notice',
+  [NotificationType.MAINTENANCE]: () => '/board/notice',
   [NotificationType.APP_UPDATE]: () => '/settings',
+  [NotificationType.BOARD_COMMENT]: (data) =>
+    data?.postId ? `/board/post/${data.postId}` : '/board',
+  [NotificationType.BOARD_REPLY]: (data) =>
+    data?.postId ? `/board/post/${data.postId}` : '/board',
+  [NotificationType.BOARD_MENTION]: (data) =>
+    data?.postId ? `/board/post/${data.postId}` : '/board',
+  [NotificationType.BOARD_LOCKED]: (data) =>
+    data?.postId ? `/board/post/${data.postId}` : '/board',
 
   // === 관리자 ===
   [NotificationType.INQUIRY_ANSWERED]: (data) =>

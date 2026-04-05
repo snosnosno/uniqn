@@ -1,4 +1,5 @@
 import type { NotificationType } from '@/types/notification';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 const mockRouterPush = jest.fn();
 const mockRouterReplace = jest.fn();
@@ -67,6 +68,10 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
       return '/(app)/notifications';
     case 'schedule':
       return '/(app)/(tabs)/schedule';
+    case 'board':
+      return '/(app)/(tabs)/board';
+    case 'board/post':
+      return `/(app)/(tabs)/board/post/${route.params?.postId}`;
     case 'profile':
       return '/(app)/(tabs)/profile';
     case 'settings':
@@ -100,9 +105,9 @@ const getMockExpoPath = (route: { name: string; params?: Record<string, string> 
     case 'support/inquiry':
       return `/(app)/support/inquiry/${route.params?.id}`;
     case 'notices':
-      return '/(app)/notices';
+      return '/(app)/(tabs)/board/notice';
     case 'notice':
-      return `/(app)/notices/${route.params?.id}`;
+      return `/(app)/(tabs)/board/post/${buildBoardNoticePostId(route.params?.id || '')}`;
     case 'employer/my-postings':
       return '/(employer)/my-postings';
     case 'employer/posting-create':
@@ -163,6 +168,8 @@ const mockNotificationRouteMap: Record<
     params: { jobId: data?.jobPostingId || '' },
   }),
   application_confirmed: () => ({ name: 'schedule' }),
+  board_comment: (data) =>
+    data?.postId ? { name: 'board/post', params: { postId: data.postId } } : { name: 'board' },
   settlement_completed: () => ({ name: 'schedule' }),
   job_updated: (data) => ({ name: 'job', params: { id: data?.jobPostingId || '' } }),
   announcement: (data) =>
@@ -297,6 +304,13 @@ describe('deepLinkService', () => {
       expect(deepLinkService.parseDeepLink('/announcements/notice-1').route).toEqual({
         name: 'notice',
         params: { id: 'notice-1' },
+      });
+    });
+
+    it('parses generic board post links into board post routes', () => {
+      expect(deepLinkService.parseDeepLink('/board/post/post-1').route).toEqual({
+        name: 'board/post',
+        params: { postId: 'post-1' },
       });
     });
 
@@ -436,6 +450,17 @@ describe('deepLinkService', () => {
       expect(route).toEqual({ name: 'notice', params: { id: 'notice-1' } });
     });
 
+    it('maps board notifications to the exact post when postId exists', () => {
+      expect(
+        deepLinkService.getRouteFromNotification('board_comment' as NotificationType, {
+          postId: 'post-99',
+        })
+      ).toEqual({
+        name: 'board/post',
+        params: { postId: 'post-99' },
+      });
+    });
+
     it('falls back to notifications for unknown notification types', () => {
       expect(deepLinkService.getRouteFromNotification('unknown_type' as NotificationType)).toEqual({
         name: 'notifications',
@@ -447,7 +472,7 @@ describe('deepLinkService', () => {
     it('creates canonical custom-scheme links', () => {
       expect(deepLinkService.createDeepLink({ name: 'jobs' })).toBe('uniqn://jobs');
       expect(deepLinkService.createDeepLink({ name: 'notice', params: { id: 'notice-1' } })).toBe(
-        'uniqn://notices/notice-1'
+        `uniqn://board/post/${buildBoardNoticePostId('notice-1')}`
       );
       expect(deepLinkService.createDeepLink({ name: 'admin/stats' })).toBe('uniqn://admin/stats');
     });

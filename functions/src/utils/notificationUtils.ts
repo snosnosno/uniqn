@@ -77,6 +77,10 @@ export type NotificationType =
   | "announcement"
   | "maintenance"
   | "app_update"
+  | "board_comment"
+  | "board_reply"
+  | "board_mention"
+  | "board_locked"
   | "inquiry_answered"
   | "report_resolved"
   | "new_report"
@@ -242,6 +246,10 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   announcement: "system",
   maintenance: "system",
   app_update: "system",
+  board_comment: "system",
+  board_reply: "system",
+  board_mention: "system",
+  board_locked: "system",
   inquiry_answered: "admin",
   report_resolved: "admin",
   new_report: "admin",
@@ -279,6 +287,10 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   announcement: "announcements",
   maintenance: "announcements",
   app_update: "announcements",
+  board_comment: "announcements",
+  board_reply: "announcements",
+  board_mention: "announcements",
+  board_locked: "announcements",
   inquiry_answered: "default",
   report_resolved: "default",
   new_report: "default",
