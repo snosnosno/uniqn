@@ -1028,6 +1028,134 @@ describe('FirebaseJobPostingRepository', () => {
       expect(nextDocument.postingType).toBe('fixed');
     });
 
+    it('allows salary-only role catalog updates after applicants are confirmed', async () => {
+      const fixedPosting = createValidJobPostingData({
+        postingType: 'fixed',
+        workDate: '',
+        workDates: undefined,
+        totalPositions: 3,
+        filledPositions: 1,
+        roleKeys: ['dealer'],
+        schedule: {
+          kind: 'fixed',
+          daysPerWeek: 2,
+          startTime: '18:00',
+          roleRequirements: [{ role: 'dealer', count: 3, filled: 1 }],
+        },
+        roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 12000 } }],
+      });
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', fixedPosting)),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      const result = await repository.updateWithTransaction(
+        'job-1',
+        {
+          title: 'Updated fixed posting',
+          roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 13000 } }],
+        } as Record<string, unknown>,
+        'employer-1'
+      );
+
+      expect(result.roleCatalog).toEqual([
+        { role: 'dealer', salary: { type: 'hourly', amount: 13000 } },
+      ]);
+      expect(mockTransaction.set).toHaveBeenCalledTimes(1);
+      const [, nextDocument] = mockTransaction.set.mock.calls[0];
+      expect(nextDocument.roleCatalog).toEqual([
+        { role: 'dealer', salary: { type: 'hourly', amount: 13000 } },
+      ]);
+    });
+
+    it('blocks role identity changes after applicants are confirmed', async () => {
+      const fixedPosting = createValidJobPostingData({
+        postingType: 'fixed',
+        workDate: '',
+        workDates: undefined,
+        totalPositions: 3,
+        filledPositions: 1,
+        roleKeys: ['dealer'],
+        schedule: {
+          kind: 'fixed',
+          daysPerWeek: 2,
+          startTime: '18:00',
+          roleRequirements: [{ role: 'dealer', count: 3, filled: 1 }],
+        },
+        roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 12000 } }],
+      });
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', fixedPosting)),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await expect(
+        repository.updateWithTransaction(
+          'job-1',
+          {
+            title: 'Updated fixed posting',
+            roleCatalog: [{ role: 'runner', salary: { type: 'hourly', amount: 13000 } }],
+          } as Record<string, unknown>,
+          'employer-1'
+        )
+      ).rejects.toThrow('Cannot change schedule or roles after applicants are confirmed.');
+
+      expect(mockTransaction.set).not.toHaveBeenCalled();
+    });
+
+    it('blocks duplicate role identities after applicants are confirmed', async () => {
+      const fixedPosting = createValidJobPostingData({
+        postingType: 'fixed',
+        workDate: '',
+        workDates: undefined,
+        totalPositions: 3,
+        filledPositions: 1,
+        roleKeys: ['dealer'],
+        schedule: {
+          kind: 'fixed',
+          daysPerWeek: 2,
+          startTime: '18:00',
+          roleRequirements: [{ role: 'dealer', count: 3, filled: 1 }],
+        },
+        roleCatalog: [{ role: 'dealer', salary: { type: 'hourly', amount: 12000 } }],
+      });
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue(createMockDocSnap('job-1', fixedPosting)),
+        set: jest.fn(),
+        update: jest.fn(),
+      };
+
+      (runTransaction as jest.Mock).mockImplementation(async (_db, callback) =>
+        callback(mockTransaction)
+      );
+
+      await expect(
+        repository.updateWithTransaction(
+          'job-1',
+          {
+            title: 'Updated fixed posting',
+            roleCatalog: [
+              { role: 'dealer', salary: { type: 'hourly', amount: 13000 } },
+              { role: 'dealer', salary: { type: 'hourly', amount: 14000 } },
+            ],
+          } as Record<string, unknown>,
+          'employer-1'
+        )
+      ).rejects.toThrow('Cannot change schedule or roles after applicants are confirmed.');
+
+      expect(mockTransaction.set).not.toHaveBeenCalled();
+    });
+
     it('should throw when not the owner', async () => {
       const mockTransaction = {
         get: jest.fn().mockResolvedValue(

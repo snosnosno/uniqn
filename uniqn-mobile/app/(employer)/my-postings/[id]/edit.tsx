@@ -72,7 +72,7 @@ export default function EditJobPostingScreen() {
       if (!isEmployerManageablePosting(existingJob)) {
         addToast({
           type: 'warning',
-          message: '고정공고 편집은 V3 통합 범위에서 제외되었습니다.',
+          message: '지원하지 않는 공고 형식입니다.',
         });
         router.replace('/(app)/(tabs)/employer');
         return;
@@ -280,22 +280,15 @@ export default function EditJobPostingScreen() {
           {isFixed && (
             <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
               <SectionCard
-                title="紐⑥쭛 ??븷"
-                displayTitle="Roles"
+                title="모집 역할"
                 required
                 hasError={getErrorCount(errors.roles) > 0}
                 errorCount={getErrorCount(errors.roles)}
               >
                 {hasConfirmedApplicants ? (
                   <View className="rounded-lg bg-gray-100 p-4 dark:bg-surface">
-                    <Text
-                      className="text-center text-gray-500 dark:text-gray-400"
-                      style={{ display: 'none' }}
-                    >
-                      ?뺤젙??吏?먯옄媛 ?덉뼱 ??븷 ?뺣낫??섏젙?????놁뒿?덈떎.
-                    </Text>
                     <Text className="text-center text-gray-500 dark:text-gray-400">
-                      Roles cannot be edited after applicants are confirmed.
+                      확정된 지원자가 있어 역할 정보는 수정할 수 없습니다.
                     </Text>
                   </View>
                 ) : (

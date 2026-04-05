@@ -104,7 +104,7 @@ export const SectionCard = memo(function SectionCard({
           onPress={onToggle}
           className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay"
           accessibilityRole="button"
-          accessibilityLabel={`${title} 섹션 ${collapsed ? '펼치기' : '접기'}`}
+          accessibilityLabel={`${resolvedTitle} 섹션 ${collapsed ? '펼치기' : '접기'}`}
         >
           {HeaderContent}
         </Pressable>

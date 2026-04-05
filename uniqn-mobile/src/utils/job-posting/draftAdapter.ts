@@ -523,6 +523,7 @@ export function draftToUpdateJobPostingInput(
       tags: updateInput.tags,
       compensation: updateInput.compensation,
       questions: updateInput.questions,
+      roleCatalog: updateInput.roleCatalog,
     };
   }
 

@@ -96,6 +96,55 @@ function isTaxSettingsShape(value: unknown): boolean {
   );
 }
 
+function getRoleCatalogIdentityKey(role: {
+  role?: PostingRoleCatalogEntry['role'];
+  customRole?: string;
+}): string {
+  if (role.role === 'other' && role.customRole) {
+    return `other:${role.customRole}`;
+  }
+
+  return role.role ?? '';
+}
+
+function normalizeRoleCatalogIdentity(roleCatalog?: PostingRoleCatalogEntry[]): string[] {
+  if (!roleCatalog || roleCatalog.length === 0) {
+    return [];
+  }
+
+  return roleCatalog
+    .map((entry) => getRoleCatalogIdentityKey(entry))
+    .filter((key) => key.length > 0)
+    .sort();
+}
+
+function hasDuplicateRoleCatalogIdentity(roleCatalog?: PostingRoleCatalogEntry[]): boolean {
+  const roleKeys = normalizeRoleCatalogIdentity(roleCatalog);
+  return new Set(roleKeys).size !== roleKeys.length;
+}
+
+function hasRoleCatalogIdentityMutation(
+  currentRoleCatalog: PostingRoleCatalogEntry[] | undefined,
+  nextRoleCatalog: PostingRoleCatalogEntry[] | undefined
+): boolean {
+  if (nextRoleCatalog === undefined) {
+    return false;
+  }
+
+  if (hasDuplicateRoleCatalogIdentity(nextRoleCatalog)) {
+    return true;
+  }
+
+  const currentKeys = normalizeRoleCatalogIdentity(currentRoleCatalog);
+  const nextKeys = normalizeRoleCatalogIdentity(nextRoleCatalog);
+
+  if (currentKeys.length !== nextKeys.length) {
+    return true;
+  }
+
+  return currentKeys.some((key, index) => key !== nextKeys[index]);
+}
+
 function getCreateRuleShapeSummary(document: Record<string, unknown>) {
   const location = isPlainObject(document.location) ? document.location : null;
   const compensation = isPlainObject(document.compensation) ? document.compensation : null;
@@ -508,7 +557,9 @@ export async function updateWithTransaction(
       assertJobPostingOwner(currentData, ownerId, 'Only the owner can update this job posting.');
 
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
-      const hasScheduleMutation = input.schedule !== undefined || input.roleCatalog !== undefined;
+      const hasScheduleMutation =
+        input.schedule !== undefined ||
+        hasRoleCatalogIdentityMutation(currentData.roleCatalog, input.roleCatalog);
 
       if (hasConfirmedApplicants && hasScheduleMutation) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
