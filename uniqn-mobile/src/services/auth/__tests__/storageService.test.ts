@@ -10,10 +10,14 @@ import {
   deleteProfileImage,
   replaceProfileImage,
   uploadAnnouncementImage,
+  uploadBoardImage,
   deleteAnnouncementImage,
+  deleteBoardImage,
   replaceAnnouncementImage,
   uploadMultipleAnnouncementImages,
+  uploadMultipleBoardImages,
   deleteMultipleAnnouncementImages,
+  deleteMultipleBoardImages,
 } from '../storageService';
 // UploadResult type is used implicitly
 
@@ -384,6 +388,44 @@ describe('StorageService', () => {
     });
   });
 
+  describe('uploadBoardImage', () => {
+    const userId = 'staff-123';
+    const imageUri = 'file:///board.jpg';
+
+    it('stores board images under the boards path', async () => {
+      const downloadURL = 'https://storage.example.com/board.jpg';
+
+      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
+      (global.fetch as jest.Mock).mockResolvedValue({
+        blob: () => Promise.resolve(createMockBlob(2 * 1024 * 1024)),
+      });
+      mockUploadBytes.mockResolvedValue({});
+      mockGetDownloadURL.mockResolvedValue(downloadURL);
+
+      const result = await uploadBoardImage(userId, imageUri);
+
+      expect(result.downloadURL).toBe(downloadURL);
+      expect(result.path).toContain('boards/');
+      expect(result.path).toContain(userId);
+    });
+  });
+
+  describe('deleteBoardImage', () => {
+    it('deletes only board storage paths', async () => {
+      mockDeleteObject.mockResolvedValue(undefined);
+
+      await deleteBoardImage('boards/staff-123/image.jpg');
+
+      expect(mockDeleteObject).toHaveBeenCalled();
+    });
+
+    it('ignores non-board image paths', async () => {
+      await deleteBoardImage('announcements/admin-123/image.jpg');
+
+      expect(mockDeleteObject).not.toHaveBeenCalled();
+    });
+  });
+
   // ==========================================================================
   // Multiple Images
   // ==========================================================================
@@ -459,6 +501,29 @@ describe('StorageService', () => {
     });
   });
 
+  describe('uploadMultipleBoardImages', () => {
+    const userId = 'staff-123';
+    const uris = ['file:///img1.jpg', 'file:///img2.jpg'];
+
+    it('preserves board image ordering', async () => {
+      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
+      (global.fetch as jest.Mock).mockResolvedValue({
+        blob: () => Promise.resolve(createMockBlob(1024)),
+      });
+      mockUploadBytes.mockResolvedValue({});
+      mockGetDownloadURL
+        .mockResolvedValueOnce('https://board-1.jpg')
+        .mockResolvedValueOnce('https://board-2.jpg');
+
+      const results = await uploadMultipleBoardImages(userId, uris);
+
+      expect(results).toHaveLength(2);
+      expect(results[0].storagePath).toContain('boards/');
+      expect(results[0].order).toBe(0);
+      expect(results[1].order).toBe(1);
+    });
+  });
+
   describe('deleteMultipleAnnouncementImages', () => {
     it('여러 이미지를 병렬로 삭제해야 함', async () => {
       const images = [
@@ -514,6 +579,29 @@ describe('StorageService', () => {
 
     it('빈 배열을 처리해야 함', async () => {
       await expect(deleteMultipleAnnouncementImages([])).resolves.not.toThrow();
+    });
+  });
+  describe('deleteMultipleBoardImages', () => {
+    it('uses the saved board storage path when deleting images', async () => {
+      const images = [
+        {
+          id: '1',
+          url: 'https://example.com/not-a-storage-url.jpg',
+          storagePath: 'boards/staff-1/1.jpg',
+          order: 0,
+        },
+      ];
+
+      mockDeleteObject.mockResolvedValue(undefined);
+
+      await deleteMultipleBoardImages(images);
+
+      expect(mockRef).toHaveBeenCalledWith(expect.anything(), 'boards/staff-1/1.jpg');
+      expect(mockDeleteObject).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles empty board image lists', async () => {
+      await expect(deleteMultipleBoardImages([])).resolves.not.toThrow();
     });
   });
 });

@@ -11,8 +11,8 @@ import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
+import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
-import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
@@ -85,7 +85,8 @@ function UnsupportedPostingState() {
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeUserId = useAuthStore((state) => state.user?.uid);
-  const userId = storeUserId ?? getFirebaseAuth().currentUser?.uid ?? null;
+  const isAuthInitialized = useAuthStore((state) => state.isInitialized);
+  const userId = resolveSessionUserId(storeUserId, isAuthInitialized);
   const { isDarkMode } = useThemeStore();
   const { addToast } = useToastStore();
   const queryClient = useQueryClient();

@@ -134,6 +134,11 @@ export async function fetchNotifications(
 
 export async function getUnreadCount(userId: string): Promise<number> {
   try {
+    const cachedCount = await notificationRepository.getUnreadCounterFromCache(userId);
+    if (cachedCount !== null) {
+      return cachedCount;
+    }
+
     return await notificationRepository.getUnreadCount(userId);
   } catch (error) {
     throw handleServiceError(error, {

@@ -34,6 +34,16 @@
       ],
       "env": {}
     },
+    "firebase": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:\\Users\\user\\Desktop\\T-HOLDEM\\scripts\\firebase-mcp-stdio-wrapper.js",
+        "--dir",
+        "C:\\Users\\user\\Desktop\\T-HOLDEM"
+      ],
+      "env": {}
+    },
     "tosspayments-integration-guide": {
       "type": "stdio",
       "command": "cmd",

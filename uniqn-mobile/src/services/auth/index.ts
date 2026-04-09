@@ -77,6 +77,10 @@ export {
   replaceAnnouncementImage,
   uploadMultipleAnnouncementImages,
   deleteMultipleAnnouncementImages,
+  uploadBoardImage,
+  deleteBoardImage,
+  uploadMultipleBoardImages,
+  deleteMultipleBoardImages,
   type UploadResult,
 } from './storageService';
 

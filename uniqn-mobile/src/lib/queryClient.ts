@@ -487,6 +487,10 @@ export const queryKeys = {
         role ?? 'unknown',
         isAdmin ?? false,
       ] as const,
+    adminReports: (status: string = 'all') =>
+      [...queryKeys.boards.all, 'adminReports', status] as const,
+    adminReportDetail: (reportId: string) =>
+      [...queryKeys.boards.all, 'adminReportDetail', reportId] as const,
   },
 
   // 문의 (Inquiry)

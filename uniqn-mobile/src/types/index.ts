@@ -317,6 +317,7 @@ export type {
   BoardCommentReaction,
   BoardMembership,
   BoardReport,
+  BoardAdminReportRecord,
   BoardHomeData,
   BoardMentionCandidate,
   FetchBoardPostsInput,
@@ -327,4 +328,6 @@ export type {
   CreateBoardReportInput,
   ScheduleBoardSyncInput,
   ScheduleMembershipSyncItem,
+  BoardReportFilterStatus,
+  BoardReportResolutionStatus,
 } from './board';

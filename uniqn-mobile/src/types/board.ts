@@ -124,6 +124,19 @@ export interface BoardReport extends FirebaseDocument {
   resolvedAt?: Timestamp | Date | null;
 }
 
+export type BoardReportFilterStatus = BoardReportStatus | 'all';
+export type BoardReportResolutionStatus = Extract<BoardReportStatus, 'resolved' | 'dismissed'>;
+
+export interface BoardAdminReportRecord {
+  report: BoardReport;
+  post: BoardPost | null;
+  targetComment: BoardComment | null;
+  reporterName: string;
+  reporterRole: BoardAuthorRole;
+  targetAuthorId?: string;
+  targetAuthorName?: string;
+}
+
 export interface BoardHomeData {
   pinnedNotices: BoardPost[];
   recentSchedulePosts: BoardPost[];

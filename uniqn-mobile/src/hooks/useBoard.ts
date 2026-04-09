@@ -18,7 +18,14 @@ import {
   updateBoardPost,
 } from '@/services';
 import { invalidateQueries, queryKeys } from '@/lib/queryClient';
+import { userRepository } from '@/repositories';
+import {
+  selectBootstrapSource,
+  selectNeedsServerReconcile,
+  useAuthStore,
+} from '@/stores/authStore';
 import { useAuth } from '@/hooks/useAuth';
+import { isBoardQueryAuthReady } from '@/hooks/internal/boardQueryAuthGate';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type {
@@ -40,6 +47,7 @@ interface BoardMutationUser {
 interface BoardMutationProfile {
   nickname?: string | null;
   name?: string | null;
+  role?: CreateBoardPostInput['authorRole'] | null;
 }
 
 function requireBoardMutationActor(
@@ -56,28 +64,58 @@ function requireBoardMutationActor(
   };
 }
 
-function requireBoardAuthorIdentity(
+async function requireBoardAuthorIdentity(
   user: BoardMutationUser | null | undefined,
   profile: BoardMutationProfile | null | undefined,
   role: CreateBoardPostInput['authorRole'] | null | undefined,
   isAdmin = false
-): {
+): Promise<{
   userId: string;
   isAdmin: boolean;
   authorName: string;
   authorRole: CreateBoardPostInput['authorRole'];
-} {
+}> {
   const actor = requireBoardMutationActor(user, isAdmin);
+  const needsPersistedProfile = (!profile?.nickname && !profile?.name) || !role;
+  const persistedProfile = needsPersistedProfile
+    ? await userRepository.getById(actor.userId).catch(() => null)
+    : null;
+  const authorName =
+    profile?.nickname?.trim() ||
+    persistedProfile?.nickname?.trim() ||
+    profile?.name?.trim() ||
+    persistedProfile?.name?.trim();
+  const authorRole = role || persistedProfile?.role || null;
+
+  if (!authorName || !authorRole) {
+    throw new Error('프로필 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+  }
 
   return {
     ...actor,
+    authorName,
+    authorRole,
+    /*
     authorName: profile?.nickname || profile?.name || user?.displayName || '사용자',
     authorRole: role || 'staff',
+    */
   };
+}
+
+function useBoardQueryAuthEnabled(userId?: string | null): boolean {
+  const needsServerReconcile = useAuthStore(selectNeedsServerReconcile);
+  const bootstrapSource = useAuthStore(selectBootstrapSource);
+
+  return isBoardQueryAuthReady({
+    userId,
+    bootstrapSource,
+    needsServerReconcile,
+  });
 }
 
 export function useBoardHome() {
   const { user, role, isAdmin } = useAuth();
+  const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
 
   return useQuery({
     queryKey: queryKeys.boards.home(user?.uid, role ?? undefined, isAdmin),
@@ -88,12 +126,13 @@ export function useBoardHome() {
         isAdmin,
       }),
     staleTime: 60 * 1000,
-    enabled: !!user?.uid,
+    enabled: isBoardQueryEnabled,
   });
 }
 
 export function useBoardPosts(boardType: BoardType, limitCount?: number) {
   const { user, role, isAdmin } = useAuth();
+  const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
 
   return useQuery({
     queryKey: queryKeys.boards.list(boardType, user?.uid, role ?? undefined, isAdmin, limitCount),
@@ -105,13 +144,14 @@ export function useBoardPosts(boardType: BoardType, limitCount?: number) {
         isAdmin,
         limitCount,
       }),
-    enabled: boardType === 'notice' || !!user?.uid,
+    enabled: isBoardQueryEnabled,
     staleTime: 60 * 1000,
   });
 }
 
 export function useBoardPostDetail(postId: string, enabled = true) {
   const { user, role, isAdmin } = useAuth();
+  const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
 
   return useQuery({
     queryKey: queryKeys.boards.detail(postId, user?.uid, role ?? undefined, isAdmin),
@@ -121,13 +161,14 @@ export function useBoardPostDetail(postId: string, enabled = true) {
         role,
         isAdmin,
       }),
-    enabled: enabled && !!postId,
+    enabled: enabled && !!postId && isBoardQueryEnabled,
     staleTime: 30 * 1000,
   });
 }
 
 export function useBoardMentionCandidates(postId: string, enabled = true) {
   const { user, role, isAdmin } = useAuth();
+  const isBoardQueryEnabled = useBoardQueryAuthEnabled(user?.uid);
 
   return useQuery({
     queryKey: queryKeys.boards.mentionCandidates(postId, user?.uid, role ?? undefined, isAdmin),
@@ -137,7 +178,7 @@ export function useBoardMentionCandidates(postId: string, enabled = true) {
         role,
         isAdmin,
       }),
-    enabled: enabled && !!postId && !!user?.uid,
+    enabled: enabled && !!postId && isBoardQueryEnabled,
     staleTime: 60 * 1000,
   });
 }
@@ -159,8 +200,10 @@ export function useCreateBoardPost() {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (input: Omit<CreateBoardPostInput, 'authorId' | 'authorName' | 'authorRole'>) => {
-      const actor = requireBoardAuthorIdentity(user, profile, role);
+    mutationFn: async (
+      input: Omit<CreateBoardPostInput, 'authorId' | 'authorName' | 'authorRole'>
+    ) => {
+      const actor = await requireBoardAuthorIdentity(user, profile, role);
 
       return createBoardPost(actor.userId, actor.authorName, actor.authorRole, {
         ...input,
@@ -256,10 +299,10 @@ export function useCreateBoardComment(postId: string) {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (
+    mutationFn: async (
       input: Omit<CreateBoardCommentInput, 'postId' | 'authorId' | 'authorName' | 'authorRole'>
     ) => {
-      const actor = requireBoardAuthorIdentity(user, profile, role, isAdmin);
+      const actor = await requireBoardAuthorIdentity(user, profile, role, isAdmin);
 
       return createBoardComment(
         { userId: actor.userId, isAdmin: actor.isAdmin },
