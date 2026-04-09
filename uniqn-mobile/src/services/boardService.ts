@@ -4,17 +4,26 @@ import {
   PermissionError,
   ValidationError,
   handleServiceError,
+  isAppError,
+  isFirebaseError,
 } from '@/errors';
 import { handleSilentError } from '@/errors/serviceErrorHandler';
+import { getFirebaseAuth } from '@/lib/firebase';
 import {
   announcementRepository,
   applicationRepository,
   boardRepository,
   jobPostingRepository,
+  userRepository,
   workLogRepository,
 } from '@/repositories';
-import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth';
 import {
+  deleteMultipleBoardImages,
+  requireAdminUser,
+  requireMatchingCurrentUser,
+} from '@/services/auth';
+import {
+  type BoardAdminReportRecord,
   MAX_BOARD_COMMENT_IMAGES,
   MAX_BOARD_POST_IMAGES,
   BOARD_TYPE_LABELS,
@@ -23,9 +32,13 @@ import {
   type BoardAuthorRole,
   type BoardComment,
   type BoardHomeData,
+  type BoardImageAttachment,
   type BoardMentionCandidate,
   type BoardMembership,
   type BoardPost,
+  type BoardReport,
+  type BoardReportFilterStatus,
+  type BoardReportResolutionStatus,
   type BoardVoteType,
   type CommentReactionType,
   type CreateBoardCommentInput,
@@ -43,6 +56,7 @@ import {
 import type { JobPosting, UserRole, WorkLog } from '@/types';
 import { toDate } from '@/utils/date';
 import { sanitizeInput, xssValidation } from '@/utils/security';
+import { logger } from '@/utils/logger';
 
 const COMPONENT = 'boardService';
 
@@ -118,6 +132,42 @@ function resolveMentionCandidates(candidates: MentionCandidateSource[]): BoardMe
 
     return left.displayName.localeCompare(right.displayName, 'ko-KR');
   });
+}
+
+function getBoardImageIdentity(image: BoardImageAttachment): string {
+  return image.storagePath || image.url || image.id;
+}
+
+function findRemovedBoardImages(
+  previousImages: BoardImageAttachment[],
+  nextImages?: BoardImageAttachment[]
+): BoardImageAttachment[] {
+  if (!nextImages) {
+    return [];
+  }
+
+  const nextImageIds = new Set(nextImages.map(getBoardImageIdentity));
+  return previousImages.filter((image) => !nextImageIds.has(getBoardImageIdentity(image)));
+}
+
+async function cleanupBoardImages(
+  images: BoardImageAttachment[],
+  context: Record<string, unknown>
+): Promise<void> {
+  if (images.length === 0) {
+    return;
+  }
+
+  try {
+    await deleteMultipleBoardImages(images);
+  } catch (error) {
+    logger.warn('Board image cleanup failed', {
+      component: COMPONENT,
+      imageCount: images.length,
+      error: error instanceof Error ? error.message : String(error),
+      ...context,
+    });
+  }
 }
 
 function normalizeMentionIds(mentionedUserIds?: string[]): string[] {
@@ -296,21 +346,140 @@ function sortSchedulePosts(posts: BoardPost[], memberships?: BoardMembership[]):
     : null;
 
   return [...posts].sort((left, right) => {
-    const leftDate = membershipMap?.get(left.id)?.workDate ?? left.jobSummary?.workDate ?? '';
-    const rightDate = membershipMap?.get(right.id)?.workDate ?? right.jobSummary?.workDate ?? '';
-    const dateComparison = leftDate.localeCompare(rightDate);
-
-    if (dateComparison !== 0) {
-      return dateComparison;
-    }
-
     const leftActivity =
       toDate(left.lastActivityAt ?? left.updatedAt ?? left.createdAt)?.getTime() ?? 0;
     const rightActivity =
       toDate(right.lastActivityAt ?? right.updatedAt ?? right.createdAt)?.getTime() ?? 0;
+    const activityComparison = rightActivity - leftActivity;
 
-    return rightActivity - leftActivity;
+    if (activityComparison !== 0) {
+      return activityComparison;
+    }
+
+    const leftDate = membershipMap?.get(left.id)?.workDate ?? left.jobSummary?.workDate ?? '';
+    const rightDate = membershipMap?.get(right.id)?.workDate ?? right.jobSummary?.workDate ?? '';
+    return leftDate.localeCompare(rightDate);
   });
+}
+
+function isActiveSchedulePostStatus(
+  status: BoardPost['status']
+): status is (typeof ACTIVE_POST_STATUSES)[number] {
+  return ACTIVE_POST_STATUSES.includes(status as (typeof ACTIVE_POST_STATUSES)[number]);
+}
+
+function isSkippableScheduleMembershipPostError(error: unknown): boolean {
+  if (isAppError(error)) {
+    return (
+      error.code === ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND ||
+      error.code === ERROR_CODES.FIREBASE_PERMISSION_DENIED ||
+      error.code === ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS
+    );
+  }
+
+  if (!isFirebaseError(error)) {
+    return false;
+  }
+
+  const firebaseCode = error.code.replace('firestore/', '');
+  return firebaseCode === 'not-found' || firebaseCode === 'permission-denied';
+}
+
+function isSkippableBoardHomeSectionError(error: unknown): boolean {
+  if (isAppError(error)) {
+    return (
+      error.code === ERROR_CODES.FIREBASE_PERMISSION_DENIED ||
+      error.code === ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS
+    );
+  }
+
+  if (!isFirebaseError(error)) {
+    return false;
+  }
+
+  return error.code.replace('firestore/', '') === 'permission-denied';
+}
+
+function handleBoardHomeSectionPermissionError(
+  section: 'pinnedNotices' | 'recentSchedulePosts' | 'popularCommunityPosts',
+  viewer: BoardViewer,
+  error: unknown
+) {
+  const liveUserId = getFirebaseAuth().currentUser?.uid ?? null;
+
+  handleSilentError(error, {
+    operation: '寃뚯떆??홈 섹션 스킵',
+    component: COMPONENT,
+    context: {
+      section,
+      viewerId: viewer.userId ?? null,
+      viewerRole: viewer.role ?? null,
+      isAdmin: viewer.isAdmin ?? false,
+      liveUserId,
+      liveUserMatchesViewer: !!viewer.userId && liveUserId === viewer.userId,
+    },
+  });
+}
+
+async function resolveBoardHomeSection<T>(
+  section: 'pinnedNotices' | 'recentSchedulePosts' | 'popularCommunityPosts',
+  viewer: BoardViewer,
+  resolver: () => Promise<T>,
+  fallback: T
+): Promise<T> {
+  try {
+    return await resolver();
+  } catch (error) {
+    if (isSkippableBoardHomeSectionError(error)) {
+      handleBoardHomeSectionPermissionError(section, viewer, error);
+      return fallback;
+    }
+
+    throw error;
+  }
+}
+
+async function getReadableSchedulePostsByMemberships(
+  memberships: BoardMembership[]
+): Promise<BoardPost[]> {
+  if (memberships.length === 0) {
+    return [];
+  }
+
+  const posts = await Promise.all(
+    memberships.map(async (membership) => {
+      try {
+        const post = await boardRepository.getPostById(membership.postId);
+
+        if (!post || !isActiveSchedulePostStatus(post.status)) {
+          return null;
+        }
+
+        return post;
+      } catch (error) {
+        if (isSkippableScheduleMembershipPostError(error)) {
+          return null;
+        }
+
+        throw error;
+      }
+    })
+  );
+
+  return posts.filter((post): post is BoardPost => post !== null);
+}
+
+async function getSchedulePostsForMemberships(
+  memberships: BoardMembership[],
+  limitCount?: number
+): Promise<BoardPost[]> {
+  if (memberships.length === 0) {
+    return [];
+  }
+
+  const posts = await getReadableSchedulePostsByMemberships(memberships);
+  const sortedPosts = sortSchedulePosts(posts, memberships);
+  return limitCount ? sortedPosts.slice(0, limitCount) : sortedPosts;
 }
 
 async function getBoardPostInternal(postId: string): Promise<BoardPost | null> {
@@ -348,6 +517,90 @@ async function setScheduleBoardStatusIfExists(
 
   await boardRepository.setPostStatus(postId, status);
   return true;
+}
+
+async function getRecentSchedulePosts(
+  viewer: BoardViewer,
+  limitCount: number
+): Promise<BoardPost[]> {
+  if (!viewer.userId) {
+    return [];
+  }
+
+  if (viewer.isAdmin) {
+    const posts = await boardRepository.getPosts({
+      boardTypes: ['schedule'],
+      statuses: [...ADMIN_VISIBLE_POST_STATUSES],
+      sortBy: 'lastActivityAt',
+      sortDirection: 'desc',
+    });
+
+    return sortSchedulePosts(posts).slice(0, limitCount);
+  }
+
+  if (viewer.role === 'employer') {
+    const memberships = await boardRepository.getMembershipsByUser(viewer.userId, {
+      canReadOnly: true,
+      sortBy: 'lastActivityAt',
+      sortDirection: 'desc',
+    });
+    const authoredMemberships = memberships.filter((membership) => membership.role === 'author');
+    return getSchedulePostsForMemberships(authoredMemberships, limitCount);
+  }
+
+  const memberships = await boardRepository.getMembershipsByUser(viewer.userId, {
+    canReadOnly: true,
+    sortBy: 'workDate',
+    sortDirection: 'asc',
+  });
+  return getSchedulePostsForMemberships(memberships, limitCount);
+}
+
+async function resolveBoardReporterInfo(
+  reporterId: string
+): Promise<Pick<BoardAdminReportRecord, 'reporterName' | 'reporterRole'>> {
+  try {
+    const reporter = await userRepository.getById(reporterId);
+
+    return {
+      reporterName: buildDisplayName(
+        reporter?.name,
+        reporter?.nickname,
+        `사용자 ${reporterId.slice(-4)}`
+      ),
+      reporterRole: reporter?.role ?? 'staff',
+    };
+  } catch {
+    return {
+      reporterName: `사용자 ${reporterId.slice(-4)}`,
+      reporterRole: 'staff',
+    };
+  }
+}
+
+async function buildBoardAdminReportRecord(report: BoardReport): Promise<BoardAdminReportRecord> {
+  const [post, reporterInfo, targetComment] = await Promise.all([
+    getBoardPostInternal(report.postId),
+    resolveBoardReporterInfo(report.reporterId),
+    report.targetType === 'comment'
+      ? boardRepository.getCommentById(report.postId, report.targetId)
+      : Promise.resolve(null),
+  ]);
+
+  const targetAuthorId =
+    report.targetType === 'post' ? post?.authorId : (targetComment?.authorId ?? undefined);
+  const targetAuthorName =
+    report.targetType === 'post' ? post?.authorName : (targetComment?.authorName ?? undefined);
+
+  return {
+    report,
+    post,
+    targetComment,
+    reporterName: reporterInfo.reporterName,
+    reporterRole: reporterInfo.reporterRole,
+    targetAuthorId,
+    targetAuthorName,
+  };
 }
 
 async function assertCanViewPost(
@@ -474,15 +727,15 @@ export async function fetchBoardPosts(input: FetchBoardPostsInput): Promise<Boar
       }
 
       if (viewerRole === 'employer') {
-        const posts = await boardRepository.getPosts({
-          boardTypes: ['schedule'],
-          authorId: viewerId,
-          statuses: [...ACTIVE_POST_STATUSES],
-          limitCount,
+        const memberships = await boardRepository.getMembershipsByUser(viewerId, {
+          canReadOnly: true,
           sortBy: 'lastActivityAt',
           sortDirection: 'desc',
         });
-        return sortSchedulePosts(posts);
+        const authoredMemberships = memberships.filter(
+          (membership) => membership.role === 'author'
+        );
+        return getSchedulePostsForMemberships(authoredMemberships, limitCount);
       }
 
       const memberships = await boardRepository.getMembershipsByUser(viewerId, {
@@ -491,10 +744,7 @@ export async function fetchBoardPosts(input: FetchBoardPostsInput): Promise<Boar
         sortBy: 'workDate',
         sortDirection: 'asc',
       });
-      const posts = (
-        await boardRepository.getPostsByIds(memberships.map((membership) => membership.postId))
-      ).filter((post) => post.status === 'active' || post.status === 'locked');
-      return sortSchedulePosts(posts, memberships);
+      return getSchedulePostsForMemberships(memberships, limitCount);
     }
 
     return boardRepository.getPosts({
@@ -515,39 +765,56 @@ export async function fetchBoardPosts(input: FetchBoardPostsInput): Promise<Boar
 
 export async function getBoardHomeData(viewer: BoardViewer): Promise<BoardHomeData> {
   try {
-    const pinnedNoticesResult = await announcementRepository.getPublished(viewer.role ?? null, {
-      pageSize: 10,
-    });
-    const pinnedNotices = pinnedNoticesResult.announcements
-      .filter((announcement) => announcement.isPinned)
-      .slice(0, 3)
-      .map(mapAnnouncementToBoardPost);
+    const [pinnedNotices, recentSchedulePosts, popularCommunityPosts] = await Promise.all([
+      resolveBoardHomeSection(
+        'pinnedNotices',
+        viewer,
+        async () => {
+          const pinnedNoticesResult = await announcementRepository.getPublished(
+            viewer.role ?? null,
+            {
+              pageSize: 10,
+            }
+          );
 
-    const recentSchedulePosts = await fetchBoardPosts({
-      boardType: 'schedule',
-      viewerId: viewer.userId,
-      viewerRole: viewer.role ?? null,
-      isAdmin: viewer.isAdmin,
-      limitCount: 5,
-    });
+          return pinnedNoticesResult.announcements
+            .filter((announcement) => announcement.isPinned)
+            .slice(0, 3)
+            .map(mapAnnouncementToBoardPost);
+        },
+        []
+      ),
+      resolveBoardHomeSection(
+        'recentSchedulePosts',
+        viewer,
+        () => getRecentSchedulePosts(viewer, 5),
+        []
+      ),
+      resolveBoardHomeSection(
+        'popularCommunityPosts',
+        viewer,
+        async () => {
+          const popularCommunityCandidates = await boardRepository.getPosts({
+            boardTypes: ['free', 'tda'],
+            statuses: [...ACTIVE_POST_STATUSES],
+            limitCount: 20,
+            sortBy: 'lastActivityAt',
+            sortDirection: 'desc',
+          });
 
-    const popularCommunityCandidates = await boardRepository.getPosts({
-      boardTypes: ['free', 'tda'],
-      statuses: [...ACTIVE_POST_STATUSES],
-      limitCount: 20,
-      sortBy: 'lastActivityAt',
-      sortDirection: 'desc',
-    });
-
-    const popularCommunityPosts = [...popularCommunityCandidates]
-      .sort(
-        (left, right) =>
-          right.likeCount +
-          right.commentCount +
-          right.viewCount -
-          (left.likeCount + left.commentCount + left.viewCount)
-      )
-      .slice(0, 10);
+          return [...popularCommunityCandidates]
+            .sort(
+              (left, right) =>
+                right.likeCount +
+                right.commentCount +
+                right.viewCount -
+                (left.likeCount + left.commentCount + left.viewCount)
+            )
+            .slice(0, 10);
+        },
+        []
+      ),
+    ]);
 
     return {
       pinnedNotices,
@@ -765,10 +1032,18 @@ export async function updateBoardPost(
       });
     }
 
+    const removedImages = findRemovedBoardImages(post.imageAttachments, input.imageAttachments);
+
     await boardRepository.updatePost(postId, {
       ...(input.title !== undefined ? { title: sanitizeBoardText(input.title) } : {}),
       ...(input.body !== undefined ? { body: sanitizeBoardText(input.body) } : {}),
       ...(input.imageAttachments !== undefined ? { imageAttachments: input.imageAttachments } : {}),
+    });
+
+    await cleanupBoardImages(removedImages, {
+      operation: 'updateBoardPost',
+      postId,
+      viewerId: viewer.userId,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -943,15 +1218,31 @@ export async function updateBoardComment(
       });
     }
 
+    if (!viewer.isAdmin) {
+      await assertCanInteractPost(detail.post, viewer);
+    }
+
     if (!viewer.isAdmin && targetComment.authorId !== viewer.userId) {
       throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
         userMessage: '댓글 수정 권한이 없습니다.',
       });
     }
 
+    const removedImages = findRemovedBoardImages(
+      targetComment.imageAttachments,
+      input.imageAttachments
+    );
+
     await boardRepository.updateComment(postId, commentId, {
       ...(input.body !== undefined ? { body: sanitizeBoardText(input.body) } : {}),
       ...(input.imageAttachments !== undefined ? { imageAttachments: input.imageAttachments } : {}),
+    });
+
+    await cleanupBoardImages(removedImages, {
+      operation: 'updateBoardComment',
+      postId,
+      commentId,
+      viewerId: viewer.userId,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -978,16 +1269,28 @@ export async function setBoardCommentStatus(
       });
     }
 
+    if (targetComment.status !== 'active') {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '鍮꾪솢?깊솕??댓글??泥섎━ ?곹깭瑜?諛붿꿀 ???놁뒿?덈떎.',
+      });
+    }
+
     if (status === 'hidden') {
       if (!viewer.isAdmin) {
         throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '관리자만 댓글을 숨길 수 있습니다.',
         });
       }
-    } else if (!viewer.isAdmin && targetComment.authorId !== viewer.userId) {
-      throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
-        userMessage: '댓글 삭제 권한이 없습니다.',
-      });
+    } else {
+      if (!viewer.isAdmin) {
+        await assertCanInteractPost(detail.post, viewer);
+      }
+
+      if (!viewer.isAdmin && targetComment.authorId !== viewer.userId) {
+        throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+          userMessage: '댓글 삭제 권한이 없습니다.',
+        });
+      }
     }
 
     if (status === 'deleted' && detail.post.isLocked && !viewer.isAdmin) {
@@ -996,7 +1299,17 @@ export async function setBoardCommentStatus(
       });
     }
 
+    const imagesToCleanup = [...targetComment.imageAttachments];
+
     await boardRepository.setCommentStatus(postId, commentId, status);
+
+    await cleanupBoardImages(imagesToCleanup, {
+      operation: 'setBoardCommentStatus',
+      postId,
+      commentId,
+      viewerId: viewer.userId,
+      status,
+    });
   } catch (error) {
     throw handleServiceError(error, {
       operation: status === 'hidden' ? '댓글 숨김' : '댓글 삭제',
@@ -1181,6 +1494,83 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
   }
 }
 
+export async function getBoardReportsForAdmin(
+  adminUserId: string,
+  options: { status?: BoardReportFilterStatus; limitCount?: number } = {}
+): Promise<BoardAdminReportRecord[]> {
+  await requireAdminUser(adminUserId);
+
+  try {
+    const reports = await boardRepository.getReports({
+      status: options.status ?? 'all',
+      limitCount: options.limitCount,
+    });
+
+    return Promise.all(reports.map((report) => buildBoardAdminReportRecord(report)));
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '게시판 신고 목록 조회',
+      component: COMPONENT,
+      context: { adminUserId, status: options.status ?? 'all' },
+    });
+  }
+}
+
+export async function getBoardReportDetailForAdmin(
+  reportId: string,
+  adminUserId: string
+): Promise<BoardAdminReportRecord> {
+  await requireAdminUser(adminUserId);
+
+  try {
+    const report = await boardRepository.getReportById(reportId);
+    if (!report) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '게시판 신고를 찾을 수 없습니다.',
+      });
+    }
+
+    return buildBoardAdminReportRecord(report);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '게시판 신고 상세 조회',
+      component: COMPONENT,
+      context: { reportId, adminUserId },
+    });
+  }
+}
+
+export async function reviewBoardReport(
+  reportId: string,
+  adminUserId: string,
+  status: BoardReportResolutionStatus
+): Promise<void> {
+  await requireAdminUser(adminUserId);
+
+  try {
+    const report = await boardRepository.getReportById(reportId);
+    if (!report) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '게시판 신고를 찾을 수 없습니다.',
+      });
+    }
+
+    if (report.status !== 'pending') {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '이미 처리된 게시판 신고입니다.',
+      });
+    }
+
+    await boardRepository.reviewReport(reportId, status, adminUserId);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '게시판 신고 처리',
+      component: COMPONENT,
+      context: { reportId, adminUserId, status },
+    });
+  }
+}
+
 export async function syncScheduleBoardForJobPosting(jobPosting: JobPosting): Promise<string> {
   try {
     const postId = await boardRepository.upsertSchedulePost({
@@ -1295,6 +1685,9 @@ export const boardService = {
   toggleBoardPostVote,
   toggleBoardCommentReaction,
   createBoardReport,
+  getBoardReportsForAdmin,
+  getBoardReportDetailForAdmin,
+  reviewBoardReport,
   syncScheduleBoardForJobPosting,
   syncScheduleBoardByJobPostingId,
   syncScheduleBoardByApplicationId,

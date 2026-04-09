@@ -217,64 +217,23 @@
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "attendanceRecords",
+      "collectionGroup": "boardMemberships",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "attendanceRecords",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "date",
+          "fieldPath": "boardType",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "checkInTime",
-          "order": "DESCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "attendanceRecords",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "eventId",
+          "fieldPath": "canRead",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "staffId",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "attendanceRecords",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "staffId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
+          "fieldPath": "lastActivityAt",
           "order": "DESCENDING"
         }
       ],
@@ -471,21 +430,6 @@
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "events",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "endDate",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "startDate",
-          "order": "ASCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
       "collectionGroup": "inquiries",
       "queryScope": "COLLECTION",
       "fields": [
@@ -525,6 +469,48 @@
         },
         {
           "fieldPath": "lastSavedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "postingType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tournamentConfig.approvalStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ],
@@ -1273,26 +1259,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "eventId",
+          "fieldPath": "date",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "date",
-          "order": "ASCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "workLogs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "eventId",
+          "fieldPath": "staffId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "date",
+          "fieldPath": "checkInTime",
           "order": "DESCENDING"
         }
       ],
@@ -1302,10 +1277,6 @@
       "collectionGroup": "workLogs",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "eventId",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "staffId",
           "order": "ASCENDING"

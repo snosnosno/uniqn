@@ -53,6 +53,22 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
+    function hasBoardAuthorIdentity(userId, authorName, authorRole) {
+      let userData = get(/databases/$(database)/documents/users/$(userId)).data;
+      let boardAuthorName = (
+        'nickname' in userData &&
+        userData.nickname is string &&
+        userData.nickname.size() > 0
+      )
+        ? userData.nickname
+        : userData.name;
+
+      return isValidString(authorName, 80) &&
+        isBoardAuthorRole(authorRole) &&
+        authorName == boardAuthorName &&
+        authorRole == userData.role;
+    }
+
     // 관리자 권한 확인 (admin, employer, manager)
     // ⚠️ manager는 하위 호환성을 위해 유지 (employer와 동일 권한)
     function isPrivileged() {
@@ -144,28 +160,12 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function isManagedBoardType(boardType) {
-      return boardType in ['schedule', 'free', 'tda'];
-    }
-
     function isCommunityBoardType(boardType) {
       return boardType in ['free', 'tda'];
     }
 
-    function isBoardVisibility(visibility) {
-      return visibility in ['public', 'participants_only'];
-    }
-
     function isBoardVisibleStatus(status) {
       return status in ['active', 'locked'];
-    }
-
-    function isBoardPostStatus(status) {
-      return status in ['active', 'locked', 'hidden', 'archived'];
-    }
-
-    function isBoardCommentStatus(status) {
-      return status in ['active', 'hidden', 'deleted'];
     }
 
     function isBoardVoteType(type) {
@@ -194,10 +194,6 @@ service cloud.firestore {
 
     function isValidBoardImageList(images, maxCount) {
       return images is list && images.size() <= maxCount;
-    }
-
-    function isBoardNoticePostId(postId) {
-      return postId is string && postId.matches('^notice_.+$');
     }
 
     function isScheduleBoardPostId(postId, jobPostingId) {
@@ -298,6 +294,20 @@ service cloud.firestore {
         canInteractBoardPostData(postId, getBoardPostData(postId));
     }
 
+    function canUpdateBoardPostActivityData(postId, postData) {
+      return canInteractBoardPostData(postId, postData) ||
+        (
+          isAdmin() &&
+          postData.status in ['active', 'locked']
+        );
+    }
+
+    function canUpdateBoardPostActivity(postId) {
+      return isSignedIn() &&
+        boardPostExists(postId) &&
+        canUpdateBoardPostActivityData(postId, getBoardPostData(postId));
+    }
+
     function canReadBoardReportTarget(postId, targetType, targetId) {
       return isSignedIn() && (
         (
@@ -318,49 +328,6 @@ service cloud.firestore {
       return isSignedIn() &&
         !exists(/databases/$(database)/documents/applications/$(applicationId)) &&
         applicationId.matches('^.+_' + request.auth.uid + '$');
-    }
-
-    function isApplicantReapplyUpdate() {
-      let changedFields = getApplicationChangedFields();
-
-      return isSignedIn() &&
-        request.auth.uid == resource.data.applicantId &&
-        resource.data.status == 'cancelled' &&
-        request.resource.data.applicantId == resource.data.applicantId &&
-        request.resource.data.jobPostingId == resource.data.jobPostingId &&
-        request.resource.data.createdAt == resource.data.createdAt &&
-        request.resource.data.status == 'applied' &&
-        request.resource.data.isRead == false &&
-        request.resource.data.updatedAt == request.time &&
-        changedFields.hasOnly([
-          'applicantName',
-          'applicantPhone',
-          'applicantEmail',
-          'applicantRole',
-          'applicantNickname',
-          'applicantPhotoURL',
-          'jobPostingTitle',
-          'jobPostingDate',
-          'status',
-          'customRole',
-          'message',
-          'recruitmentType',
-          'assignments',
-          'preQuestionAnswers',
-          'originalApplication',
-          'confirmationHistory',
-          'processedBy',
-          'processedAt',
-          'rejectionReason',
-          'confirmedAt',
-          'cancelledAt',
-          'notes',
-          'cancellationRequest',
-          'isRead',
-          'updatedAt'
-        ]) &&
-        request.resource.data.assignments is list &&
-        (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
     }
 
     function getApplicationChangedFields() {
@@ -427,39 +394,6 @@ service cloud.firestore {
         data.isRead == false &&
         data.createdAt == request.time &&
         data.updatedAt == request.time;
-    }
-
-    function isApplicantCancellationUpdate() {
-      return isSignedIn() &&
-        request.auth.uid == resource.data.applicantId &&
-        resource.data.status == 'applied' &&
-        request.resource.data.status == 'cancelled' &&
-        getApplicationChangedFields().hasOnly(['status', 'updatedAt']) &&
-        getApplicationChangedFields().hasAll(['status', 'updatedAt']) &&
-        request.resource.data.updatedAt == request.time;
-    }
-
-    function isApplicantCancellationRequestUpdate() {
-      let requestData = request.resource.data.cancellationRequest;
-
-      return isSignedIn() &&
-        request.auth.uid == resource.data.applicantId &&
-        resource.data.jobPostingId is string &&
-        exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.schedule.kind == 'dated' &&
-        resource.data.status == 'confirmed' &&
-        request.resource.data.status == 'cancellation_pending' &&
-        getApplicationChangedFields().hasOnly(['status', 'cancellationRequest', 'updatedAt']) &&
-        getApplicationChangedFields().hasAll(['status', 'cancellationRequest', 'updatedAt']) &&
-        request.resource.data.updatedAt == request.time &&
-        requestData is map &&
-        requestData.keys().hasAll(['requestedAt', 'reason', 'status']) &&
-        requestData.keys().hasOnly(['requestedAt', 'reason', 'status']) &&
-        requestData.requestedAt == request.time &&
-        requestData.status == 'pending' &&
-        requestData.reason is string &&
-        requestData.reason.size() >= 5 &&
-        requestData.reason.size() <= 500;
     }
 
     function canApplicantUpdateOwnApplication() {
@@ -861,28 +795,6 @@ service cloud.firestore {
              (!('detailedAddress' in location) || location.detailedAddress is string);
     }
 
-    function validateSalaryInfoMap(salary) {
-      return salary is map &&
-             salary.keys().hasAll(['type', 'amount']) &&
-             salary.keys().hasOnly(['type', 'amount']) &&
-             salary.type in ['hourly', 'daily', 'monthly', 'other'] &&
-             salary.amount is number;
-    }
-
-    function validateAllowancesMap(allowances) {
-      return allowances is map &&
-             allowances.keys().hasOnly([
-               'guaranteedHours',
-               'meal',
-               'transportation',
-               'accommodation'
-             ]) &&
-             (!('guaranteedHours' in allowances) || allowances.guaranteedHours is number) &&
-             (!('meal' in allowances) || allowances.meal is number) &&
-             (!('transportation' in allowances) || allowances.transportation is number) &&
-             (!('accommodation' in allowances) || allowances.accommodation is number);
-    }
-
     function validateTaxableItemsMap(items) {
       return items is map &&
              items.keys().hasOnly([
@@ -897,58 +809,6 @@ service cloud.firestore {
              (!('transportation' in items) || items.transportation is bool) &&
              (!('accommodation' in items) || items.accommodation is bool) &&
              (!('additional' in items) || items.additional is bool);
-    }
-
-    function validateTaxSettingsMap(settings) {
-      return settings is map &&
-             settings.keys().hasAll(['type', 'value']) &&
-             settings.keys().hasOnly(['type', 'value', 'taxableItems']) &&
-             settings.type in ['none', 'rate', 'fixed'] &&
-             settings.value is number &&
-             (!('taxableItems' in settings) || validateTaxableItemsMap(settings.taxableItems));
-    }
-
-    function validateCanonicalCompensation(compensation) {
-      return compensation is map &&
-             compensation.keys().hasAll(['mode']) &&
-             compensation.keys().hasOnly(['mode', 'defaultSalary', 'allowances', 'taxSettings']) &&
-             compensation.mode in ['shared', 'by_role'] &&
-             (!('defaultSalary' in compensation) ||
-               validateSalaryInfoMap(compensation.defaultSalary)) &&
-             (!('allowances' in compensation) ||
-               validateAllowancesMap(compensation.allowances)) &&
-             (!('taxSettings' in compensation) ||
-               validateTaxSettingsMap(compensation.taxSettings));
-    }
-
-    function validateCanonicalQuestions(questions) {
-      return questions is map &&
-             questions.keys().hasAll(['items']) &&
-             questions.keys().hasOnly(['items']) &&
-             questions.items is list;
-    }
-
-    function validateCanonicalPostingStats(stats) {
-      return stats is map &&
-             stats.keys().hasAll([
-               'totalApplicants',
-               'activeApplicants',
-               'confirmedApplicants',
-               'cancellationPendingApplicants',
-               'filledPositions'
-             ]) &&
-             stats.keys().hasOnly([
-               'totalApplicants',
-               'activeApplicants',
-               'confirmedApplicants',
-               'cancellationPendingApplicants',
-               'filledPositions'
-             ]) &&
-             stats.totalApplicants is number &&
-             stats.activeApplicants is number &&
-             stats.confirmedApplicants is number &&
-             stats.cancellationPendingApplicants is number &&
-             stats.filledPositions is number;
     }
 
     function isValidCanonicalPostingRole(role) {
@@ -1085,37 +945,6 @@ service cloud.firestore {
       );
     }
 
-    function validateCanonicalJobPosting(data) {
-      return hasCanonicalJobPostingKeys(data) &&
-             data.schemaVersion == 3 &&
-             isValidString(data.title, 200) &&
-             (!('description' in data) || data.description is string) &&
-             data.ownerId is string &&
-             (!('ownerName' in data) || data.ownerName is string) &&
-             validateCanonicalLocation(data.location) &&
-             data.workDate is string &&
-             (!('workDates' in data) || data.workDates is list) &&
-             validateCanonicalPostingTypeSchedule(data) &&
-             validateCanonicalDerivedScheduleFields(data) &&
-             (!('roleKeys' in data) || data.roleKeys is list) &&
-             data.totalPositions is number &&
-             data.filledPositions is number &&
-             (!('viewCount' in data) || data.viewCount is number) &&
-             (!('stats' in data) || validateCanonicalPostingStats(data.stats)) &&
-             (!('searchIndex' in data) || data.searchIndex is list) &&
-             (!('closedReason' in data) || data.closedReason in ['manual', 'expired', 'expired_by_work_date']) &&
-             (!('tags' in data) || data.tags is list) &&
-             (!('contactPhone' in data) || isValidString(data.contactPhone, 25)) &&
-             validateCanonicalSchedule(data.schedule) &&
-             data.roleCatalog is list &&
-             data.roleCatalog.size() > 0 &&
-             validateCanonicalCompensation(data.compensation) &&
-             validateCanonicalQuestions(data.questions) &&
-             data.status in ['active', 'closed', 'cancelled'] &&
-             (!('postingType' in data) || data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
-             validateCanonicalPostingTypeConfigs(data);
-    }
-
     function validateCanonicalJobPostingCreate(data) {
       return hasCanonicalJobPostingKeys(data) &&
              data.schemaVersion == 3 &&
@@ -1151,63 +980,6 @@ service cloud.firestore {
              ));
     }
 
-    function getCanonicalViewCount(data) {
-      return ('viewCount' in data) ? data.viewCount : 0;
-    }
-
-    function hasCanonicalJobPostingImmutableFields(nextData, currentData) {
-      return nextData.schemaVersion == currentData.schemaVersion &&
-             nextData.ownerId == currentData.ownerId &&
-             nextData.createdAt == currentData.createdAt &&
-             (!('searchIndex' in nextData) ||
-               nextData.searchIndex == currentData.searchIndex) &&
-             getCanonicalViewCount(nextData) == getCanonicalViewCount(currentData);
-    }
-
-    function hasCanonicalJobPostingValidCounters(data) {
-      return data.filledPositions >= 0 &&
-             data.filledPositions <= data.totalPositions &&
-             getCanonicalViewCount(data) >= 0 &&
-             (!('stats' in data) || (
-               data.stats.totalApplicants >= 0 &&
-               data.stats.activeApplicants >= 0 &&
-               data.stats.confirmedApplicants >= 0 &&
-               data.stats.cancellationPendingApplicants >= 0 &&
-               data.stats.filledPositions == data.filledPositions
-             ));
-    }
-
-    function isFilledPositionsOnlyUpdate(changedFields) {
-      return changedFields.hasOnly(['filledPositions', 'stats', 'updatedAt']) &&
-             changedFields.hasAll(['filledPositions', 'stats', 'updatedAt']);
-    }
-
-    function isStatsOnlyUpdate(changedFields) {
-      return changedFields.hasOnly(['stats', 'updatedAt']) &&
-             changedFields.hasAll(['stats', 'updatedAt']);
-    }
-
-    function isScheduleOccupancyUpdate(changedFields) {
-      return changedFields.hasOnly([
-               'filledPositions',
-               'schedule',
-               'stats',
-               'status',
-               'updatedAt',
-               'closedAt',
-               'closedReason'
-             ]) &&
-             changedFields.hasAll(['filledPositions', 'schedule', 'stats', 'updatedAt']);
-    }
-
-    function isCanonicalBodyUpdate(changedFields) {
-      return !changedFields.hasAny(['filledPositions', 'stats', 'schedule', 'viewCount']);
-    }
-
-    function isCanonicalOccupancyUpdate(changedFields) {
-      return changedFields.hasAny(['filledPositions', 'stats', 'schedule']);
-    }
-
     function hasSameCanonicalPostingStats(nextData, currentData) {
       return (
         (!('stats' in nextData) && !('stats' in currentData)) ||
@@ -1222,11 +994,6 @@ service cloud.firestore {
           nextData.stats.filledPositions == currentData.stats.filledPositions
         )
       );
-    }
-
-    function hasCanonicalJobPostingStableCounters(nextData, currentData) {
-      return nextData.filledPositions == currentData.filledPositions &&
-             hasSameCanonicalPostingStats(nextData, currentData);
     }
 
     function validateCanonicalJobPostingUpdate(nextData, currentData) {
@@ -1246,22 +1013,6 @@ service cloud.firestore {
              hasSameCanonicalPostingStats(nextData, currentData) &&
              (!('searchIndex' in nextData) ||
                nextData.searchIndex == currentData.searchIndex);
-    }
-
-    function validateCanonicalJobPostingOccupancyUpdate(nextData, currentData, changedFields) {
-      return hasCanonicalJobPostingImmutableFields(nextData, currentData) &&
-             hasCanonicalJobPostingValidCounters(nextData) &&
-             nextData.totalPositions == currentData.totalPositions &&
-             nextData.status in ['active', 'closed', 'cancelled'] &&
-             (!changedFields.hasAny(['schedule']) ||
-                (validateCanonicalSchedule(nextData.schedule) &&
-                 nextData.schedule.primaryDate == currentData.schedule.primaryDate &&
-                 nextData.schedule.allDates == currentData.schedule.allDates)) &&
-             (
-               isStatsOnlyUpdate(changedFields) ||
-               isFilledPositionsOnlyUpdate(changedFields) ||
-               isScheduleOccupancyUpdate(changedFields)
-             );
     }
 
     function isValidGenericConsentDocument(userId) {
@@ -1721,7 +1472,6 @@ service cloud.firestore {
       }
     }
 
-
     // --- Assignments Collection ---
     match /assignments/{assignmentId} {
       allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
@@ -2051,7 +1801,6 @@ service cloud.firestore {
       }
     }
 
-
     // --- Tables Collection ---
     match /tables/{tableId} {
       allow read: if isSignedIn();
@@ -2228,7 +1977,6 @@ service cloud.firestore {
       allow read: if canReadTimeModificationLog(resource.data);
     }
     
-
     // --- Persons Collection --- [DEPRECATED - Use WorkLog.staffInfo instead]
     // Persons 컬렉션이 WorkLog.staffInfo로 통합됨 
     // 하위 호환성을 위해 읽기만 허용, 새로운 생성/수정은 제한
@@ -2324,7 +2072,9 @@ service cloud.firestore {
 
     // --- Unified Board Collections (통합 게시판) ---
     match /boardPosts/{postId} {
-      allow read: if canReadBoardPost(postId);
+      allow get: if canReadBoardPost(postId);
+      allow list: if isSignedIn() &&
+        canReadBoardPostData(postId, resource.data);
 
       allow create: if isSignedIn() && (
         (
@@ -2382,8 +2132,11 @@ service cloud.firestore {
           isSafeText(request.resource.data.title, 120) &&
           isSafeText(request.resource.data.body, 5000) &&
           request.resource.data.authorId == request.auth.uid &&
-          request.resource.data.authorName is string &&
-          isBoardAuthorRole(request.resource.data.authorRole) &&
+          hasBoardAuthorIdentity(
+            request.auth.uid,
+            request.resource.data.authorName,
+            request.resource.data.authorRole
+          ) &&
           request.resource.data.visibility == 'public' &&
           request.resource.data.status == 'active' &&
           request.resource.data.linkedJobPostingId == null &&
@@ -2461,8 +2214,11 @@ service cloud.firestore {
           canManageLinkedJobPosting(request.resource.data.linkedJobPostingId) &&
           request.resource.data.authorId ==
             get(/databases/$(database)/documents/jobPostings/$(request.resource.data.linkedJobPostingId)).data.ownerId &&
-          request.resource.data.authorName is string &&
-          isBoardAuthorRole(request.resource.data.authorRole) &&
+          hasBoardAuthorIdentity(
+            request.resource.data.authorId,
+            request.resource.data.authorName,
+            request.resource.data.authorRole
+          ) &&
           request.resource.data.visibility == 'participants_only' &&
           request.resource.data.status == 'active' &&
           request.resource.data.isAutoCreated == true &&
@@ -2487,7 +2243,7 @@ service cloud.firestore {
         resource.data.viewCount is number &&
         request.resource.data.viewCount == resource.data.viewCount + 1;
 
-      allow update: if canInteractBoardPost(postId) &&
+      allow update: if canUpdateBoardPostActivity(postId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'commentCount',
           'lastActivityAt',
@@ -2495,7 +2251,10 @@ service cloud.firestore {
         ]) &&
         request.resource.data.commentCount is number &&
         resource.data.commentCount is number &&
-        request.resource.data.commentCount == resource.data.commentCount + 1 &&
+        (
+          request.resource.data.commentCount == resource.data.commentCount + 1 ||
+          request.resource.data.commentCount == resource.data.commentCount - 1
+        ) &&
         request.resource.data.lastActivityAt == request.time &&
         request.resource.data.updatedAt == request.time;
 
@@ -2556,8 +2315,11 @@ service cloud.firestore {
         isSafeText(request.resource.data.title, 120) &&
         isSafeText(request.resource.data.body, 5000) &&
         request.resource.data.authorId == resource.data.authorId &&
-        request.resource.data.authorName is string &&
-        isBoardAuthorRole(request.resource.data.authorRole) &&
+        hasBoardAuthorIdentity(
+          request.resource.data.authorId,
+          request.resource.data.authorName,
+          request.resource.data.authorRole
+        ) &&
         request.resource.data.linkedJobPostingId == resource.data.linkedJobPostingId &&
         request.resource.data.visibility == resource.data.visibility &&
         request.resource.data.isAutoCreated == resource.data.isAutoCreated &&
@@ -2653,8 +2415,11 @@ service cloud.firestore {
             )) &&
           isSafeText(request.resource.data.body, 3000) &&
           request.resource.data.authorId == request.auth.uid &&
-          request.resource.data.authorName is string &&
-          isBoardAuthorRole(request.resource.data.authorRole) &&
+          hasBoardAuthorIdentity(
+            request.auth.uid,
+            request.resource.data.authorName,
+            request.resource.data.authorRole
+          ) &&
           request.resource.data.mentionedUserIds is list &&
           request.resource.data.mentionedUserIds.size() <= 10 &&
           request.resource.data.reactionCounts is map &&
@@ -2667,8 +2432,14 @@ service cloud.firestore {
           request.resource.data.createdAt == request.time &&
           request.resource.data.updatedAt == request.time;
 
-        allow update: if canReadBoardPost(postId) &&
-          getBoardPostData(postId).isLocked == false &&
+        allow update: if (
+            isAdmin() ||
+            canInteractBoardPost(postId)
+          ) &&
+          (
+            isAdmin() ||
+            getBoardPostData(postId).isLocked == false
+          ) &&
           resource.data.status == 'active' &&
           (isAdmin() || request.auth.uid == resource.data.authorId) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -2692,7 +2463,10 @@ service cloud.firestore {
           isValidBoardImageList(request.resource.data.imageAttachments, 3) &&
           request.resource.data.updatedAt == request.time;
 
-        allow update: if canReadBoardPost(postId) &&
+        allow update: if (
+            isAdmin() ||
+            canInteractBoardPost(postId)
+          ) &&
           resource.data.status == 'active' &&
           (
             (isAdmin() && request.resource.data.status == 'hidden') ||
@@ -3149,7 +2923,6 @@ service cloud.firestore {
       // 생성/수정/삭제: Cloud Functions(Admin SDK) 전용
       allow create, update, delete: if false;
     }
-
     // --- Phone Verifications (전화번호 인증) ---
     match /phoneVerifications/{verificationId} {
       // 읽기: 본인의 인증만 가능
@@ -3191,7 +2964,6 @@ service cloud.firestore {
     }
 
     // ================= 모바일 앱 지원 (v1.0.0) =================
-
 
     // --- Device Sessions (디바이스 세션 관리) ---
     match /deviceSessions/{sessionId} {

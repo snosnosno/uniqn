@@ -68,6 +68,5 @@ export {
   selectAddBookmark,
   selectRemoveBookmark,
   selectClearAllBookmarks,
-  selectBookmarkIds,
 } from './bookmarkStore';
 export type { BookmarkedJob } from './bookmarkStore';

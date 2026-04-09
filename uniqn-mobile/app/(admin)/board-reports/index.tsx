@@ -1,0 +1,243 @@
+import { useMemo, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, router } from 'expo-router';
+import { FlagOutlineIcon, SearchIcon } from '@/components/icons';
+import { Card, EmptyState, Loading } from '@/components/ui';
+import { useAdminBoardReports } from '@/hooks/useAdminBoardReports';
+import {
+  BOARD_TYPE_LABELS,
+  type BoardAdminReportRecord,
+  type BoardReportFilterStatus,
+} from '@/types/board';
+import { toDate, type DateInput } from '@/utils/date';
+
+const STATUS_OPTIONS: { value: BoardReportFilterStatus; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'pending', label: '대기' },
+  { value: 'resolved', label: '해결' },
+  { value: 'dismissed', label: '기각' },
+];
+
+function getStatusLabel(status: BoardAdminReportRecord['report']['status']): string {
+  switch (status) {
+    case 'resolved':
+      return '해결';
+    case 'dismissed':
+      return '기각';
+    default:
+      return '대기';
+  }
+}
+
+function getStatusClassName(status: BoardAdminReportRecord['report']['status']): string {
+  switch (status) {
+    case 'resolved':
+      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+    case 'dismissed':
+      return 'bg-gray-100 text-gray-600 dark:bg-surface-elevated dark:text-gray-300';
+    default:
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+  }
+}
+
+function getTargetLabel(record: BoardAdminReportRecord): string {
+  if (record.report.targetType === 'comment') {
+    return '댓글';
+  }
+
+  return record.post?.boardType === 'schedule' ? '일정 게시글' : '게시글';
+}
+
+function formatDateValue(value: DateInput): string {
+  const date = toDate(value);
+  if (!date) {
+    return '';
+  }
+
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+}
+
+function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
+  return (
+    <Card
+      className="mb-3"
+      onPress={() => router.push(`/(admin)/board-reports/${record.report.id}`)}
+    >
+      <View className="mb-2 flex-row items-center justify-between gap-3">
+        <View className="flex-1 flex-row flex-wrap items-center gap-2">
+          <View className="rounded-full bg-red-100 px-2.5 py-1 dark:bg-red-900/30">
+            <Text className="text-xs font-medium text-red-700 dark:text-red-300">
+              {getTargetLabel(record)}
+            </Text>
+          </View>
+          {record.post ? (
+            <View className="rounded-full bg-primary-100 px-2.5 py-1 dark:bg-primary-900/30">
+              <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
+                {BOARD_TYPE_LABELS[record.post.boardType]}
+              </Text>
+            </View>
+          ) : null}
+          <View className={`rounded-full px-2.5 py-1 ${getStatusClassName(record.report.status)}`}>
+            <Text className="text-xs font-medium">{getStatusLabel(record.report.status)}</Text>
+          </View>
+        </View>
+        <Text className="text-xs text-gray-400 dark:text-gray-500">
+          {formatDateValue(record.report.createdAt)}
+        </Text>
+      </View>
+
+      <Text className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
+        {record.post?.title ?? '원본 게시글을 확인할 수 없습니다.'}
+      </Text>
+      <Text className="mb-3 text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
+        사유: {record.report.reason}
+      </Text>
+
+      <View className="flex-row flex-wrap items-center gap-3">
+        <Text className="text-xs text-gray-500 dark:text-gray-400">
+          신고자: {record.reporterName}
+        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">
+          대상 작성자: {record.targetAuthorName ?? '확인 필요'}
+        </Text>
+      </View>
+    </Card>
+  );
+}
+
+export default function AdminBoardReportsPage() {
+  const [status, setStatus] = useState<BoardReportFilterStatus>('pending');
+  const [query, setQuery] = useState('');
+  const { data, isLoading, isRefetching, error, refetch } = useAdminBoardReports(status);
+
+  const filteredReports = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return data;
+    }
+
+    return data.filter((record) => {
+      const haystacks = [
+        record.report.reason,
+        record.report.details ?? '',
+        record.reporterName,
+        record.targetAuthorName ?? '',
+        record.post?.title ?? '',
+      ];
+
+      return haystacks.some((value) => value.toLowerCase().includes(normalizedQuery));
+    });
+  }, [data, query]);
+
+  if (isLoading && !data) {
+    return (
+      <>
+        <Stack.Screen options={{ title: '게시판 신고' }} />
+        <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+          <Loading size="large" message="게시판 신고를 불러오는 중..." />
+        </View>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Stack.Screen options={{ title: '게시판 신고' }} />
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+          <EmptyState
+            title="게시판 신고를 불러오지 못했습니다"
+            description="잠시 후 다시 시도해 주세요."
+            icon="error"
+            actionLabel="다시 시도"
+            onAction={() => refetch()}
+          />
+        </View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ title: '게시판 신고' }} />
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <View className="border-b border-gray-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
+          <View className="flex-row items-center rounded-lg bg-gray-100 px-3 py-2 dark:bg-surface-elevated">
+            <SearchIcon size={18} color="#9CA3AF" />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="사유, 신고자, 게시글 검색"
+              placeholderTextColor="#9CA3AF"
+              className="ml-2 flex-1 text-base text-gray-900 dark:text-white"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </View>
+
+        <View className="border-b border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-4 py-2"
+            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+          >
+            {STATUS_OPTIONS.map((option) => {
+              const isSelected = option.value === status;
+
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setStatus(option.value)}
+                  className={`rounded-full px-4 py-2 ${
+                    isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface-elevated'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${
+                      isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        >
+          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+            총 {filteredReports.length}건
+          </Text>
+
+          {filteredReports.length === 0 ? (
+            <View className="py-20">
+              <EmptyState
+                title="게시판 신고가 없습니다"
+                description="현재 조건에 맞는 신고가 없습니다."
+                icon={<FlagOutlineIcon size={40} color="#9CA3AF" />}
+              />
+            </View>
+          ) : (
+            filteredReports.map((record) => (
+              <BoardReportCard key={record.report.id} record={record} />
+            ))
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </>
+  );
+}

@@ -75,7 +75,6 @@ export const STAFF_ROLE_KEYS = VALID_STAFF_ROLES;
  *
  * @deprecated StaffRole 타입 직접 사용 권장 (types/role.ts)
  */
-export type StaffRoleKey = StaffRole;
 
 /**
  * 스태프 역할 옵션 인터페이스
@@ -115,13 +114,6 @@ export const DEFAULT_ROLE_ICON = '👤';
 /**
  * @deprecated STAFF_ROLES 사용 권장
  */
-export const STAFF_ROLE_OPTIONS = [
-  { value: 'dealer', label: '딜러' },
-  { value: 'floorman', label: '플로어맨' },
-  { value: 'supervisor', label: '슈퍼바이저' },
-  { value: 'chip_runner', label: '칩러너' },
-  { value: 'other', label: '기타' },
-] as const;
 
 /**
  * 기본 시작 시간

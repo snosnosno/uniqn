@@ -383,3 +383,139 @@ export async function deleteMultipleAnnouncementImages(images: AnnouncementImage
   await Promise.all(deletePromises);
   logger.info('다중 공지사항 이미지 삭제 완료', { count: images.length });
 }
+
+export async function uploadBoardImage(
+  userId: string,
+  uri: string,
+  onProgress?: (progress: number) => void
+): Promise<UploadResult> {
+  try {
+    logger.info('Board image upload started', { userId });
+    onProgress?.(0);
+
+    const manipulatedImage = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: ANNOUNCEMENT_IMAGE_MAX_WIDTH } }],
+      {
+        compress: IMAGE_QUALITY,
+        format: ImageManipulator.SaveFormat.JPEG,
+      }
+    );
+    onProgress?.(20);
+
+    const response = await fetch(manipulatedImage.uri);
+    const blob = await response.blob();
+    onProgress?.(40);
+
+    if (blob.size > MAX_IMAGE_SIZE) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '?대?吏 ?ш린媛 5MB瑜?珥덇낵?⑸땲??',
+      });
+    }
+
+    const storage = getFirebaseStorage();
+    const timestamp = Date.now();
+    const path = `boards/${userId}/${timestamp}.jpg`;
+    const imageRef = ref(storage, path);
+    onProgress?.(50);
+
+    await uploadBytes(imageRef, blob, {
+      contentType: 'image/jpeg',
+    });
+    onProgress?.(80);
+
+    const downloadURL = await getDownloadURL(imageRef);
+    onProgress?.(100);
+
+    logger.info('Board image upload succeeded', { userId, path });
+
+    return { downloadURL, path };
+  } catch (error) {
+    logger.error('Board image upload failed', toError(error), { userId });
+
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw new AppError({
+      code: ERROR_CODES.UNKNOWN,
+      category: 'unknown',
+      userMessage: '?대?吏 ?낅줈?쒖뿉 ?ㅽ뙣?덉뒿?덈떎',
+      originalError: toError(error),
+    });
+  }
+}
+
+export async function deleteBoardImage(imageUrl: string): Promise<void> {
+  try {
+    logger.info('Board image deletion started', { imageUrl: imageUrl.substring(0, 50) });
+
+    const storage = getFirebaseStorage();
+    let imagePath = imageUrl;
+
+    if (imageUrl.includes('firebasestorage.googleapis.com')) {
+      const url = new URL(imageUrl);
+      const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
+      if (pathMatch) {
+        imagePath = decodeURIComponent(pathMatch[1]);
+      }
+    }
+
+    if (!imagePath.startsWith('boards/')) {
+      logger.warn('Board image path rejected', { imagePath });
+      return;
+    }
+
+    const imageRef = ref(storage, imagePath);
+    await deleteObject(imageRef);
+
+    logger.info('Board image deletion succeeded', { imagePath });
+  } catch (error) {
+    const errorCode = (error as { code?: string }).code;
+    if (errorCode === 'storage/object-not-found') {
+      logger.warn('Board image already deleted', { imageUrl: imageUrl.substring(0, 50) });
+      return;
+    }
+
+    logger.error('Board image deletion failed', toError(error));
+  }
+}
+
+export async function uploadMultipleBoardImages(
+  userId: string,
+  uris: string[],
+  onProgress?: (index: number, progress: number) => void
+): Promise<AnnouncementImage[]> {
+  const results: AnnouncementImage[] = [];
+
+  for (let i = 0; i < uris.length; i++) {
+    const uri = uris[i];
+    try {
+      const result = await uploadBoardImage(userId, uri, (progress) => {
+        onProgress?.(i, progress);
+      });
+
+      results.push({
+        id: `${Date.now()}-${i}`,
+        url: result.downloadURL,
+        storagePath: result.path,
+        order: i,
+      });
+    } catch (error) {
+      logger.error('Board multi-image upload failed', toError(error), { userId, index: i });
+    }
+  }
+
+  return results;
+}
+
+export async function deleteMultipleBoardImages(images: AnnouncementImage[]): Promise<void> {
+  const deletePromises = images.map((image) =>
+    deleteBoardImage(image.storagePath || image.url).catch((error) => {
+      logger.warn('Board multi-image delete failed', { url: image.url.substring(0, 50), error });
+    })
+  );
+
+  await Promise.all(deletePromises);
+  logger.info('Board multi-image delete completed', { count: images.length });
+}

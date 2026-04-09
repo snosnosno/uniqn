@@ -38,13 +38,23 @@ import type {
   EmployerRegistrationInput,
 } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
 import { toDate } from '@/utils/date';
 import { TimeNormalizer } from '@/shared/time';
 
 // ============================================================================
 // Repository Implementation
 // ============================================================================
+
+const LEGACY_DELETION_REQUESTS_SUBCOLLECTION = 'deletionRequests';
+
+function findPreferredLegacyDeletionRequest(requests: DeletionRequest[]): DeletionRequest | null {
+  return (
+    requests.find((request) => request.status === STATUS.DELETION_REQUEST.PENDING) ??
+    requests[0] ??
+    null
+  );
+}
 
 /**
  * Firebase User Repository
@@ -95,7 +105,7 @@ export class FirebaseUserRepository implements IUserRepository {
       const profileMap = new Map<string, FirestoreUserProfile>();
 
       // Firestore whereIn은 최대 30개 제한
-      const BATCH_SIZE = 30;
+      const BATCH_SIZE = FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS;
       const chunks: string[][] = [];
 
       for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
@@ -171,7 +181,24 @@ export class FirebaseUserRepository implements IUserRepository {
       }
 
       const userData = userDoc.data();
-      return (userData.deletionRequest as DeletionRequest) ?? null;
+      const inlineDeletionRequest = (userData.deletionRequest as DeletionRequest) ?? null;
+      if (inlineDeletionRequest) {
+        return inlineDeletionRequest;
+      }
+
+      const legacyRequestsSnapshot = await getDocs(
+        collection(
+          getFirebaseDb(),
+          COLLECTIONS.USERS,
+          userId,
+          LEGACY_DELETION_REQUESTS_SUBCOLLECTION
+        )
+      );
+      const legacyDeletionRequests = legacyRequestsSnapshot.docs.map(
+        (docSnapshot) => docSnapshot.data() as DeletionRequest
+      );
+
+      return findPreferredLegacyDeletionRequest(legacyDeletionRequests);
     } catch (error) {
       logger.error('탈퇴 상태 조회 실패', toError(error), { userId });
       throw handleServiceError(error, {
@@ -291,15 +318,34 @@ export class FirebaseUserRepository implements IUserRepository {
 
       const userData = userDoc.data();
       const deletionRequest = userData.deletionRequest as DeletionRequest | undefined;
+      const legacyRequestsSnapshot = await getDocs(
+        collection(
+          getFirebaseDb(),
+          COLLECTIONS.USERS,
+          userId,
+          LEGACY_DELETION_REQUESTS_SUBCOLLECTION
+        )
+      );
+      const pendingLegacyDeletionDocs = legacyRequestsSnapshot.docs.filter((docSnapshot) => {
+        const legacyDeletionRequest = docSnapshot.data() as Partial<DeletionRequest>;
+        return legacyDeletionRequest.status === STATUS.DELETION_REQUEST.PENDING;
+      });
+      const effectiveDeletionRequest =
+        deletionRequest ??
+        (pendingLegacyDeletionDocs[0]?.data() as DeletionRequest | undefined) ??
+        undefined;
 
-      if (!deletionRequest || deletionRequest.status !== STATUS.DELETION_REQUEST.PENDING) {
+      if (
+        !effectiveDeletionRequest ||
+        effectiveDeletionRequest.status !== STATUS.DELETION_REQUEST.PENDING
+      ) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '진행 중인 탈퇴 요청이 없습니다',
         });
       }
 
       // 유예 기간 확인
-      const scheduledDeletionAt = toDate(deletionRequest.scheduledDeletionAt);
+      const scheduledDeletionAt = toDate(effectiveDeletionRequest.scheduledDeletionAt);
       if (!scheduledDeletionAt || scheduledDeletionAt < new Date()) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '탈퇴 유예 기간이 만료되었습니다',
@@ -308,9 +354,32 @@ export class FirebaseUserRepository implements IUserRepository {
 
       await updateDoc(userRef, {
         status: 'active',
-        'deletionRequest.status': STATUS.DELETION_REQUEST.CANCELLED,
+        deletionRequest: {
+          ...effectiveDeletionRequest,
+          status: STATUS.DELETION_REQUEST.CANCELLED,
+        },
         updatedAt: serverTimestamp(),
       });
+
+      for (
+        let i = 0;
+        i < pendingLegacyDeletionDocs.length;
+        i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS
+      ) {
+        const batch = writeBatch(getFirebaseDb());
+        const batchDocs = pendingLegacyDeletionDocs.slice(
+          i,
+          i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS
+        );
+
+        batchDocs.forEach((docSnapshot) => {
+          batch.update(docSnapshot.ref, {
+            status: STATUS.DELETION_REQUEST.CANCELLED,
+          });
+        });
+
+        await batch.commit();
+      }
 
       logger.info('회원탈퇴 철회 완료', { userId });
     } catch (error) {
@@ -527,10 +596,11 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('계정 완전 삭제 (배치)', { userId });
 
-      const batch = writeBatch(getFirebaseDb());
+      const db = getFirebaseDb();
+      const operationQueue: ((batch: ReturnType<typeof writeBatch>) => void)[] = [];
 
       // 1. 지원 내역 익명화
-      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
+      const applicationsRef = collection(db, COLLECTIONS.APPLICATIONS);
       const applicationsQuery = query(
         applicationsRef,
         where(FIELDS.APPLICATION.applicantId, '==', userId)
@@ -538,27 +608,31 @@ export class FirebaseUserRepository implements IUserRepository {
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       applicationsSnapshot.docs.forEach((docSnapshot) => {
-        batch.update(docSnapshot.ref, {
-          applicantId: '[deleted]',
-          applicantName: '[탈퇴한 사용자]',
-          applicantPhone: null,
+        operationQueue.push((batch) => {
+          batch.update(docSnapshot.ref, {
+            applicantId: '[deleted]',
+            applicantName: '[탈퇴한 사용자]',
+            applicantPhone: null,
+          });
         });
       });
 
       // 2. 근무 기록 익명화
-      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+      const workLogsRef = collection(db, COLLECTIONS.WORK_LOGS);
       const workLogsQuery = query(workLogsRef, where(FIELDS.WORK_LOG.staffId, '==', userId));
       const workLogsSnapshot = await getDocs(workLogsQuery);
 
       workLogsSnapshot.docs.forEach((docSnapshot) => {
-        batch.update(docSnapshot.ref, {
-          staffId: '[deleted]',
-          staffName: '[탈퇴한 사용자]',
+        operationQueue.push((batch) => {
+          batch.update(docSnapshot.ref, {
+            staffId: '[deleted]',
+            staffName: '[탈퇴한 사용자]',
+          });
         });
       });
 
       // 3. 알림 삭제
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+      const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
       const notificationsQuery = query(
         notificationsRef,
         where(FIELDS.NOTIFICATION.recipientId, '==', userId)
@@ -566,17 +640,47 @@ export class FirebaseUserRepository implements IUserRepository {
       const notificationsSnapshot = await getDocs(notificationsQuery);
 
       notificationsSnapshot.docs.forEach((docSnapshot) => {
-        batch.delete(docSnapshot.ref);
+        operationQueue.push((batch) => {
+          batch.delete(docSnapshot.ref);
+        });
       });
 
-      // 4. 사용자 문서 삭제
-      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-      batch.delete(userRef);
+      // 4. 사용자 하위 문서 삭제
+      const userSubcollections = ['consents', 'notificationSettings', 'counters'] as const;
+      for (const subcollectionName of userSubcollections) {
+        const subcollectionSnapshot = await getDocs(
+          collection(db, COLLECTIONS.USERS, userId, subcollectionName)
+        );
 
-      // 배치 실행
-      await batch.commit();
+        subcollectionSnapshot.docs.forEach((docSnapshot) => {
+          operationQueue.push((batch) => {
+            batch.delete(docSnapshot.ref);
+          });
+        });
+      }
 
-      logger.info('계정 완전 삭제 완료', { userId });
+      // 5. 사용자 문서 삭제
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+      operationQueue.push((batch) => {
+        batch.delete(userRef);
+      });
+
+      // Firestore 배치 한도(500)를 넘지 않도록 청크 단위로 커밋
+      let committedBatchCount = 0;
+      for (let i = 0; i < operationQueue.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
+        const batch = writeBatch(db);
+        const batchOperations = operationQueue.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS);
+
+        batchOperations.forEach((operation) => operation(batch));
+        await batch.commit();
+        committedBatchCount++;
+      }
+
+      logger.info('계정 완전 삭제 완료', {
+        userId,
+        operations: operationQueue.length,
+        committedBatchCount,
+      });
     } catch (error) {
       logger.error('계정 완전 삭제 실패', toError(error), { userId });
       throw handleServiceError(error, {

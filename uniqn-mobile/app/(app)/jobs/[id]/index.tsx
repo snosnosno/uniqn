@@ -15,7 +15,7 @@ import {
   useJobDetail,
   useShare,
 } from '@/hooks';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
 import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
@@ -26,10 +26,10 @@ const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
   const { openInstallPrompt } = useInstallPrompt();
-  const sessionUserId = user?.uid ?? getFirebaseAuth().currentUser?.uid ?? null;
+  const sessionUserId = resolveSessionUserId(user?.uid, isInitialized);
   const {
     data: hasAppliedDirect = false,
     isLoading: isCheckingExistingApplication,

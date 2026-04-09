@@ -43,8 +43,8 @@ function DashboardCard({
 export default function AdminDashboard() {
   const menuItems: DashboardCardProps[] = [
     {
-      title: '대회공고 승인',
-      description: '대회공고 승인 요청 검토 및 처리',
+      title: '대회공고 검토',
+      description: '대회공고 인증 요청을 검토하고 처리합니다.',
       icon: TrophyOutlineIcon,
       iconColor: '#eab308',
       href: '/(admin)/tournaments',
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
     },
     {
       title: '사용자 관리',
-      description: '회원 정보 조회 및 권한 관리',
+      description: '회원 정보와 권한을 확인합니다.',
       icon: PeopleOutlineIcon,
       iconColor: '#9333EA',
       href: '/(admin)/users',
@@ -60,15 +60,23 @@ export default function AdminDashboard() {
     },
     {
       title: '신고 관리',
-      description: '신고된 콘텐츠 검토 및 처리',
+      description: '일반 서비스 신고를 검토하고 처리합니다.',
       icon: FlagOutlineIcon,
       iconColor: '#dc2626',
       href: '/(admin)/reports',
       bgColor: 'bg-red-100 dark:bg-red-900/30',
     },
     {
+      title: '게시판 신고',
+      description: '게시글과 댓글 신고를 검토합니다.',
+      icon: FlagOutlineIcon,
+      iconColor: '#b91c1c',
+      href: '/(admin)/board-reports',
+      bgColor: 'bg-rose-100 dark:bg-rose-900/30',
+    },
+    {
       title: '문의 관리',
-      description: '고객 문의 확인 및 응답',
+      description: '사용자 문의를 확인하고 답변합니다.',
       icon: ChatbubbleEllipsesOutlineIcon,
       iconColor: '#0891b2',
       href: '/(admin)/inquiries',
@@ -76,7 +84,7 @@ export default function AdminDashboard() {
     },
     {
       title: '통계',
-      description: '서비스 상태와 최근 7일 추이 확인',
+      description: '최근 서비스 지표를 확인합니다.',
       icon: RefreshIcon,
       iconColor: '#2563eb',
       href: '/(admin)/stats',
@@ -84,7 +92,7 @@ export default function AdminDashboard() {
     },
     {
       title: '공지사항 관리',
-      description: '공지사항 작성 및 관리',
+      description: '공지사항을 작성하고 관리합니다.',
       icon: DocumentTextOutlineIcon,
       iconColor: '#ea580c',
       href: '/(admin)/announcements',
@@ -96,11 +104,9 @@ export default function AdminDashboard() {
     <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <View className="p-4">
         <View className="mb-6">
-          <Text className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">
-            관리자 대시보드
-          </Text>
+          <Text className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">관리자</Text>
           <Text className="text-gray-500 dark:text-gray-400">
-            UNIQN 서비스 운영과 주요 업무를 빠르게 확인합니다.
+            주요 운영 화면을 한 곳에서 빠르게 확인합니다.
           </Text>
         </View>
 

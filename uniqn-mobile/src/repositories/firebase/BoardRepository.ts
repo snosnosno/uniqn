@@ -43,6 +43,7 @@ import { buildScheduleBoardPostId } from '@/shared/board/boardIds';
 import { logger } from '@/utils/logger';
 import type {
   FetchBoardRepositoryPostsOptions,
+  FetchBoardReportsOptions,
   FetchScheduleMembershipsOptions,
   IBoardRepository,
 } from '../interfaces/IBoardRepository';
@@ -125,6 +126,25 @@ function mapBoardMembership(docSnap: QueryDocumentSnapshot<DocumentData>): Board
     workDate: data.workDate,
     authorId: data.authorId,
     lastActivityAt: data.lastActivityAt ?? null,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
+}
+
+function mapBoardReport(docSnap: QueryDocumentSnapshot<DocumentData>): BoardReport {
+  const data = docSnap.data();
+
+  return {
+    id: docSnap.id,
+    targetType: data.targetType,
+    targetId: data.targetId,
+    postId: data.postId,
+    reporterId: data.reporterId,
+    reason: data.reason,
+    details: data.details,
+    status: data.status,
+    resolvedBy: data.resolvedBy ?? null,
+    resolvedAt: data.resolvedAt ?? null,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
@@ -399,10 +419,22 @@ export class FirebaseBoardRepository implements IBoardRepository {
   ): Promise<void> {
     const placeholder =
       status === 'hidden' ? '관리자에 의해 숨김된 댓글입니다.' : '삭제된 댓글입니다.';
+    const db = getFirebaseDb();
+    const postRef = doc(db, BOARD_POSTS_COLLECTION, postId);
+    const commentRef = doc(db, BOARD_POSTS_COLLECTION, postId, COMMENTS_SUBCOLLECTION, commentId);
 
-    await updateDoc(
-      doc(getFirebaseDb(), BOARD_POSTS_COLLECTION, postId, COMMENTS_SUBCOLLECTION, commentId),
-      {
+    await runTransaction(db, async (transaction) => {
+      const commentSnap = await transaction.get(commentRef);
+      if (!commentSnap.exists()) {
+        return;
+      }
+
+      const previousStatus = (commentSnap.data().status ?? 'active') as BoardComment['status'];
+      if (previousStatus !== 'active' || status === 'active') {
+        return;
+      }
+
+      transaction.update(commentRef, {
         status,
         body: placeholder,
         isPinned: false,
@@ -411,8 +443,16 @@ export class FirebaseBoardRepository implements IBoardRepository {
         imageAttachments: [],
         mentionedUserIds: [],
         updatedAt: serverTimestamp(),
-      }
-    );
+      });
+
+      const postUpdate: Record<string, unknown> = {
+        lastActivityAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        commentCount: increment(-1),
+      };
+
+      transaction.update(postRef, postUpdate);
+    });
   }
 
   async setCommentPinned(
@@ -810,14 +850,48 @@ export class FirebaseBoardRepository implements IBoardRepository {
     return docRef.id;
   }
 
+  async getReportById(reportId: string): Promise<BoardReport | null> {
+    const snapshot = await getDoc(doc(getFirebaseDb(), BOARD_REPORTS_COLLECTION, reportId));
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    return mapBoardReport(snapshot);
+  }
+
+  async getReports(options: FetchBoardReportsOptions = {}): Promise<BoardReport[]> {
+    const snapshot = await getDocs(
+      query(collection(getFirebaseDb(), BOARD_REPORTS_COLLECTION), orderBy('createdAt', 'desc'))
+    );
+
+    const reports = snapshot.docs.map(mapBoardReport);
+
+    const filtered =
+      options.status && options.status !== 'all'
+        ? reports.filter((report) => report.status === options.status)
+        : reports;
+
+    return options.limitCount ? filtered.slice(0, options.limitCount) : filtered;
+  }
+
   async getReportsByPostId(postId: string): Promise<BoardReport[]> {
     const snapshot = await getDocs(
       query(collection(getFirebaseDb(), BOARD_REPORTS_COLLECTION), where('postId', '==', postId))
     );
 
-    return snapshot.docs.map((reportDoc) => ({
-      id: reportDoc.id,
-      ...(reportDoc.data() as Omit<BoardReport, 'id'>),
-    }));
+    return snapshot.docs.map(mapBoardReport);
+  }
+
+  async reviewReport(
+    reportId: string,
+    status: Extract<BoardReport['status'], 'resolved' | 'dismissed'>,
+    resolvedBy: string
+  ): Promise<void> {
+    await updateDoc(doc(getFirebaseDb(), BOARD_REPORTS_COLLECTION, reportId), {
+      status,
+      resolvedBy,
+      resolvedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   }
 }

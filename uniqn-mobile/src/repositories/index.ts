@@ -127,6 +127,7 @@ export type {
   BoardRepositoryType,
   FetchBoardRepositoryPostsOptions,
   FetchScheduleMembershipsOptions,
+  FetchBoardReportsOptions,
 } from './interfaces';
 
 // ============================================================================

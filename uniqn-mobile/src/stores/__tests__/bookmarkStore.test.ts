@@ -14,7 +14,6 @@ import {
   selectAddBookmark,
   selectRemoveBookmark,
   selectClearAllBookmarks,
-  selectBookmarkIds,
   type BookmarkedJob,
 } from '../bookmarkStore';
 
@@ -362,23 +361,6 @@ describe('BookmarkStore', () => {
     it('selectClearAllBookmarks should return the clearAllBookmarks function', () => {
       const clearFn = selectClearAllBookmarks(useBookmarkStore.getState());
       expect(typeof clearFn).toBe('function');
-    });
-
-    it('selectBookmarkIds should return array of bookmark IDs', () => {
-      act(() => {
-        useBookmarkStore.getState().addBookmark(createJob({ id: 'job-1' }));
-      });
-      act(() => {
-        useBookmarkStore.getState().addBookmark(createJob({ id: 'job-2' }));
-      });
-
-      const ids = selectBookmarkIds(useBookmarkStore.getState());
-      expect(ids).toEqual(['job-1', 'job-2']);
-    });
-
-    it('selectBookmarkIds should return empty array when no bookmarks', () => {
-      const ids = selectBookmarkIds(useBookmarkStore.getState());
-      expect(ids).toEqual([]);
     });
   });
 });

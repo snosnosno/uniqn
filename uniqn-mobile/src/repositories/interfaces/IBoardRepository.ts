@@ -37,6 +37,11 @@ export interface FetchScheduleMembershipsOptions {
   sortDirection?: 'asc' | 'desc';
 }
 
+export interface FetchBoardReportsOptions {
+  status?: BoardReport['status'] | 'all';
+  limitCount?: number;
+}
+
 export interface IBoardRepository {
   getPostById(postId: string): Promise<BoardPost | null>;
   getPosts(options?: FetchBoardRepositoryPostsOptions): Promise<BoardPost[]>;
@@ -100,5 +105,12 @@ export interface IBoardRepository {
   upsertSchedulePost(input: ScheduleBoardSyncInput): Promise<string>;
 
   createReport(input: CreateBoardReportInput): Promise<string>;
+  getReportById(reportId: string): Promise<BoardReport | null>;
+  getReports(options?: FetchBoardReportsOptions): Promise<BoardReport[]>;
   getReportsByPostId(postId: string): Promise<BoardReport[]>;
+  reviewReport(
+    reportId: string,
+    status: Extract<BoardReport['status'], 'resolved' | 'dismissed'>,
+    resolvedBy: string
+  ): Promise<void>;
 }
