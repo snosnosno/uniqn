@@ -1973,6 +1973,18 @@ service cloud.firestore {
       // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/participants) 적용
     }
 
+    // collectionGroup('reactions')는 보드 댓글 반응 문서만 읽을 수 있어야 한다.
+    match /{path=**}/reactions/{userId} {
+      allow read: if isSignedIn() &&
+        resource.data.postId is string &&
+        resource.data.commentId is string &&
+        resource.data.userId == userId &&
+        resource.__name__ ==
+          /databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)/reactions/$(userId) &&
+        exists(/databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)) &&
+        canReadBoardPost(resource.data.postId);
+    }
+
     match /{path=**}/timeModificationLogs/{logId} {
       allow read: if canReadTimeModificationLog(resource.data);
     }

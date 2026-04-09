@@ -39,6 +39,8 @@ export type DeepLinkRoute =
   | { name: 'admin/stats' }
   | { name: 'admin/reports' }
   | { name: 'admin/report'; params: { id: string } }
+  | { name: 'admin/board-reports' }
+  | { name: 'admin/board-report'; params: { id: string } }
   | { name: 'admin/announcements' }
   | { name: 'admin/announcement-create' }
   | { name: 'admin/announcement'; params: { id: string } }

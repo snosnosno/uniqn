@@ -408,7 +408,7 @@ function handleBoardHomeSectionPermissionError(
   const liveUserId = getFirebaseAuth().currentUser?.uid ?? null;
 
   handleSilentError(error, {
-    operation: '寃뚯떆??홈 섹션 스킵',
+    operation: '게시판 홈 섹션 스킵',
     component: COMPONENT,
     context: {
       section,
@@ -855,13 +855,49 @@ export async function getBoardPostDetail(
       };
     }
 
-    const comments = await boardRepository.getComments(post.id);
-    const myVote = viewer.userId
-      ? ((await boardRepository.getPostVote(post.id, viewer.userId))?.type ?? null)
-      : null;
-    const myReactions = viewer.userId
-      ? await boardRepository.getCommentReactionsByUser(post.id, viewer.userId)
-      : {};
+    const [commentsResult, myVoteResult, myReactionsResult] = await Promise.allSettled([
+      boardRepository.getComments(post.id),
+      viewer.userId ? boardRepository.getPostVote(post.id, viewer.userId) : Promise.resolve(null),
+      viewer.userId
+        ? boardRepository.getCommentReactionsByUser(post.id, viewer.userId)
+        : Promise.resolve({} as Record<string, CommentReactionType>),
+    ] as const);
+
+    if (commentsResult.status === 'rejected') {
+      throw commentsResult.reason;
+    }
+
+    const comments = commentsResult.value;
+    const myVote =
+      myVoteResult.status === 'fulfilled'
+        ? (myVoteResult.value?.type ?? null)
+        : (() => {
+            logger.warn('Optional board detail vote lookup failed', {
+              component: COMPONENT,
+              postId,
+              viewerId: viewer.userId ?? null,
+              error:
+                myVoteResult.reason instanceof Error
+                  ? myVoteResult.reason.message
+                  : String(myVoteResult.reason),
+            });
+            return null;
+          })();
+    const myReactions =
+      myReactionsResult.status === 'fulfilled'
+        ? myReactionsResult.value
+        : (() => {
+            logger.warn('Optional board detail reaction lookup failed', {
+              component: COMPONENT,
+              postId,
+              viewerId: viewer.userId ?? null,
+              error:
+                myReactionsResult.reason instanceof Error
+                  ? myReactionsResult.reason.message
+                  : String(myReactionsResult.reason),
+            });
+            return {};
+          })();
 
     return {
       post,
@@ -1271,7 +1307,7 @@ export async function setBoardCommentStatus(
 
     if (targetComment.status !== 'active') {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '鍮꾪솢?깊솕??댓글??泥섎━ ?곹깭瑜?諛붿꿀 ???놁뒿?덈떎.',
+        userMessage: '비활성화된 댓글은 처리 상태를 바꿀 수 없습니다.',
       });
     }
 

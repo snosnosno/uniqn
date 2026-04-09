@@ -9,7 +9,6 @@ import {
   type RefObject,
 } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -56,6 +55,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { uploadMultipleBoardImages } from '@/services/auth';
 import { useToastStore } from '@/stores/toastStore';
+import { confirmAction } from '@/utils/confirmAction';
 import {
   BOARD_TYPE_LABELS,
   type BoardCommentNode,
@@ -488,42 +488,36 @@ export default function BoardPostDetailScreen() {
 
   const handleDeleteComment = useCallback(
     (comment: BoardCommentNode) => {
-      Alert.alert('댓글 삭제', '이 댓글을 삭제할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => {
-            void commentMutations.setStatus
-              .mutateAsync({
-                commentId: comment.id,
-                status: 'deleted',
-              })
-              .catch(() => undefined);
-          },
+      confirmAction({
+        title: '댓글 삭제',
+        message: '이 댓글을 삭제할까요?',
+        confirmText: '삭제',
+        destructive: true,
+        onConfirm: async () => {
+          await commentMutations.setStatus.mutateAsync({
+            commentId: comment.id,
+            status: 'deleted',
+          });
         },
-      ]);
+      });
     },
     [commentMutations.setStatus]
   );
 
   const handleHideComment = useCallback(
     (comment: BoardCommentNode) => {
-      Alert.alert('댓글 숨김', '관리자 숨김 처리할까요?', [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '숨김',
-          style: 'destructive',
-          onPress: () => {
-            void commentMutations.setStatus
-              .mutateAsync({
-                commentId: comment.id,
-                status: 'hidden',
-              })
-              .catch(() => undefined);
-          },
+      confirmAction({
+        title: '댓글 숨김',
+        message: '관리자 숨김 처리할까요?',
+        confirmText: '숨김',
+        destructive: true,
+        onConfirm: async () => {
+          await commentMutations.setStatus.mutateAsync({
+            commentId: comment.id,
+            status: 'hidden',
+          });
         },
-      ]);
+      });
     },
     [commentMutations.setStatus]
   );
@@ -533,19 +527,16 @@ export default function BoardPostDetailScreen() {
       return;
     }
 
-    Alert.alert(
-      post.isLocked ? '잠금 해제' : '게시글 잠금',
-      post.isLocked ? '이 게시글의 잠금을 해제할까요?' : '이 게시글의 추가 활동을 막을까요?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: post.isLocked ? '해제' : '잠금',
-          onPress: () => {
-            void lockMutation.mutateAsync(!post.isLocked).catch(() => undefined);
-          },
-        },
-      ]
-    );
+    confirmAction({
+      title: post.isLocked ? '잠금 해제' : '게시글 잠금',
+      message: post.isLocked
+        ? '이 게시글의 잠금을 해제할까요?'
+        : '이 게시글의 추가 활동을 막을까요?',
+      confirmText: post.isLocked ? '해제' : '잠금',
+      onConfirm: async () => {
+        await lockMutation.mutateAsync(!post.isLocked);
+      },
+    });
   }, [lockMutation, post]);
 
   const handleHidePost = useCallback(() => {
@@ -553,21 +544,20 @@ export default function BoardPostDetailScreen() {
       return;
     }
 
-    Alert.alert('게시글 숨김', '관리자 숨김 처리할까요?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '숨김',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await hidePostMutation.mutateAsync();
-            router.replace(`/(app)/(tabs)/board/${post.boardType}`);
-          } catch {
-            // Toast feedback is handled in the mutation hook.
-          }
-        },
+    confirmAction({
+      title: '게시글 숨김',
+      message: '관리자 숨김 처리할까요?',
+      confirmText: '숨김',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await hidePostMutation.mutateAsync();
+          router.replace(`/(app)/(tabs)/board/${post.boardType}`);
+        } catch {
+          // Toast feedback is handled in the mutation hook.
+        }
       },
-    ]);
+    });
   }, [hidePostMutation, post]);
 
   const handleReply = useCallback((comment: BoardCommentNode) => {
@@ -818,6 +808,9 @@ export default function BoardPostDetailScreen() {
         <View className="mt-4 flex-row flex-wrap gap-3">
           {canManagePost && post.boardType !== 'schedule' && !post.isLocked ? (
             <Pressable
+              testID={`board-post-edit-${post.id}`}
+              accessibilityRole="button"
+              accessibilityLabel="게시글 수정"
               onPress={() => router.push(`/(app)/(tabs)/board/edit/${post.id}`)}
               className="active:opacity-70"
             >
@@ -826,6 +819,9 @@ export default function BoardPostDetailScreen() {
           ) : null}
           {canManagePost ? (
             <Pressable
+              testID={`board-post-lock-${post.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={post.isLocked ? '게시글 잠금 해제' : '게시글 잠금'}
               onPress={handleTogglePostLock}
               disabled={isPostActionPending}
               className={isPostActionPending ? 'opacity-50' : 'active:opacity-70'}
@@ -837,6 +833,9 @@ export default function BoardPostDetailScreen() {
           ) : null}
           {isAdmin && post.boardType !== 'notice' ? (
             <Pressable
+              testID={`board-post-hide-${post.id}`}
+              accessibilityRole="button"
+              accessibilityLabel="게시글 숨김"
               onPress={handleHidePost}
               disabled={isPostActionPending}
               className={isPostActionPending ? 'opacity-50' : 'active:opacity-70'}
@@ -846,6 +845,9 @@ export default function BoardPostDetailScreen() {
           ) : null}
           {canReportPost ? (
             <Pressable
+              testID={`board-post-report-${post.id}`}
+              accessibilityRole="button"
+              accessibilityLabel="게시글 신고"
               onPress={() =>
                 setReportTarget({
                   targetType: 'post',

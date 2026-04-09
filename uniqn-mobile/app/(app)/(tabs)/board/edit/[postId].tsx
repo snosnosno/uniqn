@@ -68,10 +68,10 @@ export default function BoardEditScreen() {
   if (!canManagePost) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-        <TabHeader title="湲 ?섏젙" />
+        <TabHeader title="글 수정" />
         <ErrorState
-          title="??寃뚯떆湲???섏젙?????놁뼱??"
-          message="湲 ?묒꽦?먮굹 愿由ъ옄留?寃뚯떆湲???섏젙?????덉뼱??"
+          title="게시글을 수정할 수 없어요"
+          message="글 작성자나 관리자만 게시글을 수정할 수 있어요."
           onRetry={() => router.replace(`/(app)/(tabs)/board/post/${postId}`)}
         />
       </SafeAreaView>
@@ -81,10 +81,10 @@ export default function BoardEditScreen() {
   if (data.post.isLocked) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-        <TabHeader title="湲 ?섏젙" />
+        <TabHeader title="글 수정" />
         <ErrorState
-          title="?좉릿 寃뚯떆湲?낅땲??"
-          message="?좉툑???댁젣???댄썑???섏젙?????덉뼱??"
+          title="잠긴 게시글이에요"
+          message="잠금을 해제한 뒤에만 수정할 수 있어요."
           onRetry={() => router.replace(`/(app)/(tabs)/board/post/${postId}`)}
         />
       </SafeAreaView>

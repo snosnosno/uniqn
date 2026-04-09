@@ -17,7 +17,7 @@ import {
   updateBoardComment,
   updateBoardPost,
 } from '@/services';
-import { invalidateQueries, queryKeys } from '@/lib/queryClient';
+import { invalidateQueries, queryClient, queryKeys } from '@/lib/queryClient';
 import { userRepository } from '@/repositories';
 import {
   selectBootstrapSource,
@@ -38,6 +38,7 @@ import type {
   UpdateBoardCommentInput,
   UpdateBoardPostInput,
 } from '@/types';
+import type { BoardHomeData, BoardPost } from '@/types/board';
 
 interface BoardMutationUser {
   uid: string;
@@ -48,6 +49,131 @@ interface BoardMutationProfile {
   nickname?: string | null;
   name?: string | null;
   role?: CreateBoardPostInput['authorRole'] | null;
+}
+
+type BoardPostDetailQueryData = Awaited<ReturnType<typeof getBoardPostDetail>>;
+type BoardPostListQueryData = Awaited<ReturnType<typeof fetchBoardPosts>>;
+type BoardHomeQueryData = Awaited<ReturnType<typeof getBoardHomeData>>;
+
+interface BoardPostLockMutationContext {
+  detailSnapshots: [readonly unknown[], BoardPostDetailQueryData | undefined][];
+  listSnapshots: [readonly unknown[], BoardPostListQueryData | undefined][];
+  homeSnapshots: [readonly unknown[], BoardHomeQueryData | undefined][];
+}
+
+function isBoardDetailQueryKey(queryKey: readonly unknown[], postId: string): boolean {
+  return queryKey[0] === 'boards' && queryKey[1] === 'detail' && queryKey[2] === postId;
+}
+
+function isBoardListQueryKey(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === 'boards' && queryKey[1] === 'list';
+}
+
+function isBoardHomeQueryKey(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === 'boards' && queryKey[1] === 'home';
+}
+
+function applyBoardPostLockState(
+  post: BoardPost,
+  isLocked: boolean,
+  actorId?: string | null
+): BoardPost {
+  return {
+    ...post,
+    isLocked,
+    status: isLocked ? 'locked' : 'active',
+    lockedBy: isLocked ? (actorId ?? post.lockedBy ?? null) : null,
+    lockedAt: isLocked ? (post.lockedAt ?? new Date()) : null,
+  };
+}
+
+function updateBoardPostCollectionLockState(
+  posts: BoardPost[],
+  postId: string,
+  isLocked: boolean,
+  actorId?: string | null
+): BoardPost[] {
+  return posts.map((post) =>
+    post.id === postId ? applyBoardPostLockState(post, isLocked, actorId) : post
+  );
+}
+
+function updateBoardLockCaches(postId: string, isLocked: boolean, actorId?: string | null) {
+  queryClient.setQueriesData<BoardPostDetailQueryData>(
+    {
+      predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
+    },
+    (current) => {
+      if (!current || current.post.id !== postId) {
+        return current;
+      }
+
+      return {
+        ...current,
+        post: applyBoardPostLockState(current.post, isLocked, actorId),
+      };
+    }
+  );
+
+  queryClient.setQueriesData<BoardPostListQueryData>(
+    {
+      predicate: (query) => isBoardListQueryKey(query.queryKey),
+    },
+    (current) => {
+      if (!current?.some((post) => post.id === postId)) {
+        return current;
+      }
+
+      return updateBoardPostCollectionLockState(current, postId, isLocked, actorId);
+    }
+  );
+
+  queryClient.setQueriesData<BoardHomeQueryData>(
+    {
+      predicate: (query) => isBoardHomeQueryKey(query.queryKey),
+    },
+    (current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        pinnedNotices: updateBoardPostCollectionLockState(
+          current.pinnedNotices,
+          postId,
+          isLocked,
+          actorId
+        ),
+        recentSchedulePosts: updateBoardPostCollectionLockState(
+          current.recentSchedulePosts,
+          postId,
+          isLocked,
+          actorId
+        ),
+        popularCommunityPosts: updateBoardPostCollectionLockState(
+          current.popularCommunityPosts,
+          postId,
+          isLocked,
+          actorId
+        ),
+      } satisfies BoardHomeData;
+    }
+  );
+}
+
+function restoreBoardPostLockCaches(context?: BoardPostLockMutationContext) {
+  context?.detailSnapshots.forEach(([queryKey, data]) => {
+    queryClient.setQueryData(queryKey, data);
+  });
+
+  context?.listSnapshots.forEach(([queryKey, data]) => {
+    queryClient.setQueryData(queryKey, data);
+  });
+
+  context?.homeSnapshots.forEach(([queryKey, data]) => {
+    queryClient.setQueryData(queryKey, data);
+  });
 }
 
 function requireBoardMutationActor(
@@ -256,14 +382,45 @@ export function useSetBoardPostLock(postId: string) {
       const actor = requireBoardMutationActor(user, isAdmin);
       return setBoardPostLock(postId, actor, isLocked);
     },
-    onSuccess: (_, isLocked) => {
-      invalidateQueries.boards();
+    onMutate: async (isLocked) => {
+      await Promise.all([
+        queryClient.cancelQueries({
+          predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
+        }),
+        queryClient.cancelQueries({
+          predicate: (query) => isBoardListQueryKey(query.queryKey),
+        }),
+        queryClient.cancelQueries({
+          predicate: (query) => isBoardHomeQueryKey(query.queryKey),
+        }),
+      ]);
+
+      const context: BoardPostLockMutationContext = {
+        detailSnapshots: queryClient.getQueriesData<BoardPostDetailQueryData>({
+          predicate: (query) => isBoardDetailQueryKey(query.queryKey, postId),
+        }),
+        listSnapshots: queryClient.getQueriesData<BoardPostListQueryData>({
+          predicate: (query) => isBoardListQueryKey(query.queryKey),
+        }),
+        homeSnapshots: queryClient.getQueriesData<BoardHomeQueryData>({
+          predicate: (query) => isBoardHomeQueryKey(query.queryKey),
+        }),
+      };
+
+      updateBoardLockCaches(postId, isLocked, user?.uid);
+
+      return context;
+    },
+    onSuccess: async (_, isLocked) => {
+      updateBoardLockCaches(postId, isLocked, user?.uid);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.boards.all });
       addToast({
         type: 'success',
         message: isLocked ? '게시글을 잠갔습니다.' : '게시글 잠금을 해제했습니다.',
       });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
+      restoreBoardPostLockCaches(context);
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '게시글 잠금 변경에 실패했습니다.',

@@ -92,6 +92,11 @@ describe('RouteMapper', () => {
         [{ name: 'admin/stats' }, EXPO_ROUTES.adminStats],
         [{ name: 'admin/reports' }, EXPO_ROUTES.adminReports],
         [{ name: 'admin/report', params: { id: 'report-1' } }, '/(admin)/reports/report-1'],
+        [{ name: 'admin/board-reports' }, EXPO_ROUTES.adminBoardReports],
+        [
+          { name: 'admin/board-report', params: { id: 'board-report-1' } },
+          '/(admin)/board-reports/board-report-1',
+        ],
         [{ name: 'admin/announcements' }, EXPO_ROUTES.adminAnnouncements],
         [{ name: 'admin/announcement-create' }, EXPO_ROUTES.adminAnnouncementCreate],
         [{ name: 'admin/announcement', params: { id: 'ann-1' } }, '/(admin)/announcements/ann-1'],
@@ -144,7 +149,16 @@ describe('RouteMapper', () => {
     it('marks admin routes as admin-only', () => {
       expect(RouteMapper.getRequiredRole('admin/users')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/stats')).toBe('admin');
+      expect(RouteMapper.getRequiredRole('admin/board-reports')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/announcement-edit')).toBe('admin');
+    });
+  });
+
+  describe('expoRouteRequiresAdmin', () => {
+    it('marks board report routes as admin-only expo routes', () => {
+      expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReports')).toBe(true);
+      expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReportDetail')).toBe(true);
+      expect(RouteMapper.expoRouteRequiresAdmin('board')).toBe(false);
     });
   });
 });

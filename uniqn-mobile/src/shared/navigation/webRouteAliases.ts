@@ -19,6 +19,13 @@ export function resolveAdminAliasHref(slug?: string[] | string): string {
     return '/(admin)/reports';
   }
 
+  if (segments[0] === 'board-reports') {
+    if (segments[1]) {
+      return `/(admin)/board-reports/${segments[1]}`;
+    }
+    return '/(admin)/board-reports';
+  }
+
   if (segments[0] === 'inquiries') {
     if (segments[1]) {
       return `/(admin)/inquiries/${segments[1]}`;
