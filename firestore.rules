@@ -1721,11 +1721,6 @@ service cloud.firestore {
       }
     }
 
-    // --- Events Collection ---
-    match /events/{eventId} {
-      allow read: if isSignedIn();
-      allow write: if isPrivileged();
-    }
 
     // --- Assignments Collection ---
     match /assignments/{assignmentId} {
@@ -1947,7 +1942,6 @@ service cloud.firestore {
       // 사용자는 본인 지원서 생성 가능
       allow create: if isCanonicalApplicationCreate(applicationId) &&
         request.resource.data.keys().hasAll(['applicantId', 'status']) &&
-        (request.resource.data.keys().hasAny(['jobPostingId', 'postId', 'eventId'])) &&  // jobPostingId 우선, 하위 호환성 유지
         request.resource.data.status == 'applied' &&
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
 
@@ -2057,11 +2051,6 @@ service cloud.firestore {
       }
     }
 
-    // --- Participants Collection ---
-    match /participants/{participantId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isPrivileged();
-    }
 
     // --- Tables Collection ---
     match /tables/{tableId} {
@@ -2239,18 +2228,7 @@ service cloud.firestore {
       allow read: if canReadTimeModificationLog(resource.data);
     }
     
-    // --- Attendance Records Collection (표준 필드명 지원) ---
-    match /attendanceRecords/{recordId} {
-      // 표준 필드명 기반 권한 체크
-      allow read: if isSignedIn() && (
-        hasValidRole() ||
-        request.auth.uid == resource.data.staffId ||  // 표준 필드명
-        request.auth.uid == resource.data.dealerId    // 하위 호환성
-      );
-      allow create, update: if isSignedIn() && hasValidRole();
-      allow delete: if isPrivileged();
-    }
-    
+
     // --- Persons Collection --- [DEPRECATED - Use WorkLog.staffInfo instead]
     // Persons 컬렉션이 WorkLog.staffInfo로 통합됨 
     // 하위 호환성을 위해 읽기만 허용, 새로운 생성/수정은 제한
@@ -3129,52 +3107,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Scan History Collection (스캔 이력)
-    match /scanHistory/{historyId} {
-      // 읽기: 본인의 이력, 관련 이벤트 관리자, 또는 전체 관리자
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.staffId ||
-        request.auth.uid == resource.data.scannedBy ||
-        isPrivileged()
-      );
-
-      // 생성: 모든 인증된 사용자 (스캔 시 자동 생성)
-      allow create: if isSignedIn() &&
-        request.resource.data.keys().hasAll(['staffId', 'staffName', 'eventId', 'date', 'mode', 'scannedAt', 'workLogId', 'scannedBy']) &&
-        request.resource.data.staffId is string &&
-        request.resource.data.staffName is string &&
-        request.resource.data.eventId is string &&
-        request.resource.data.date is string &&
-        request.resource.data.mode in ['check-in', 'check-out'] &&
-        request.resource.data.scannedAt is timestamp &&
-        request.resource.data.workLogId is string &&
-        request.resource.data.scannedBy is string &&
-        (!('deviceInfo' in request.resource.data) || request.resource.data.deviceInfo is string) &&
-        (!('location' in request.resource.data) || request.resource.data.location is map);
-
-      // 수정/삭제: 관리자만
-      allow update, delete: if isAdmin();
-    }
-
-    // Scan Cooldowns Collection (5분 중복 스캔 방지)
-    match /scanCooldowns/{cooldownId} {
-      // 읽기: 모든 인증된 사용자 (중복 확인용)
-      allow read: if isSignedIn();
-
-      // 생성/수정: 모든 인증된 사용자 (스캔 시 자동 생성)
-      allow create, update: if isSignedIn() &&
-        request.resource.data.keys().hasAll(['key', 'staffId', 'eventId', 'date', 'mode', 'lastScanAt', 'expiresAt']) &&
-        request.resource.data.key is string &&
-        request.resource.data.staffId is string &&
-        request.resource.data.eventId is string &&
-        request.resource.data.date is string &&
-        request.resource.data.mode in ['check-in', 'check-out'] &&
-        request.resource.data.lastScanAt is timestamp &&
-        request.resource.data.expiresAt is timestamp;
-
-      // 삭제: 관리자만 (만료된 쿨다운 정리용)
-      allow delete: if isAdmin();
-    }
 
     // --- System Announcements Collection (시스템 공지사항) ---
     match /systemAnnouncements/{announcementId} {
@@ -3202,14 +3134,20 @@ service cloud.firestore {
 
     // --- Job Posting Announcements Collection (공고별 공지) ---
     match /jobPostingAnnouncements/{announcementId} {
-      // 읽기: 모든 인증된 사용자
-      allow read: if isSignedIn();
+      // 단건 조회: 대상 스태프 또는 권한 있는 사용자만 가능
+      allow get: if isSignedIn() && (
+        isPrivileged() ||
+        (
+          resource.data.targetStaffIds is list &&
+          resource.data.targetStaffIds.hasAny([request.auth.uid])
+        )
+      );
 
-      // 생성: 관리자와 매니저만 가능
-      allow create: if isPrivileged();
+      // 목록 조회: 운영용 화면만 허용
+      allow list: if isSignedIn() && isPrivileged();
 
-      // 수정/삭제: 관리자만 가능
-      allow update, delete: if isAdmin();
+      // 생성/수정/삭제: Cloud Functions(Admin SDK) 전용
+      allow create, update, delete: if false;
     }
 
     // --- Phone Verifications (전화번호 인증) ---
@@ -3254,33 +3192,6 @@ service cloud.firestore {
 
     // ================= 모바일 앱 지원 (v1.0.0) =================
 
-    // --- FCM Tokens (푸시 알림 토큰) ---
-    match /fcmTokens/{tokenId} {
-      // 읽기: 본인의 토큰만 가능, 관리자는 전체 조회 가능
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId ||
-        isPrivileged()
-      );
-
-      // 생성: 본인의 토큰만 등록 가능
-      allow create: if isSignedIn() &&
-        request.auth.uid == request.resource.data.userId &&
-        request.resource.data.keys().hasAll(['userId', 'token', 'platform', 'createdAt']) &&
-        request.resource.data.token is string &&
-        request.resource.data.platform in ['ios', 'android', 'web'] &&
-        request.resource.data.createdAt is timestamp &&
-        (!('deviceId' in request.resource.data) || request.resource.data.deviceId is string) &&
-        (!('appVersion' in request.resource.data) || request.resource.data.appVersion is string);
-
-      // 수정: 본인의 토큰만 수정 가능
-      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 삭제: 본인 또는 관리자만 가능
-      allow delete: if isSignedIn() && (
-        request.auth.uid == resource.data.userId ||
-        isPrivileged()
-      );
-    }
 
     // --- Device Sessions (디바이스 세션 관리) ---
     match /deviceSessions/{sessionId} {

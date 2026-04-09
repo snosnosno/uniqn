@@ -7,7 +7,7 @@
  * @version 2.0.0
  * @since 2025-10-25
  *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
+ * @note FCM 토큰은 users/{uid}.fcmTokens Map 구조를 기준으로 수집
  */
 
 import { onCall } from "firebase-functions/v2/https";
@@ -133,7 +133,7 @@ export const sendSystemAnnouncement = onCall<SendSystemAnnouncementRequest>(
         };
       }
 
-      // 5. FCM 토큰 수집 (fcmTokens: string[] 배열만 사용)
+      // 5. FCM 토큰 수집 (users/{uid}.fcmTokens Map 구조)
       const usersData = usersSnapshot.docs.map((doc) => ({
         id: doc.id,
         data: doc.data(),

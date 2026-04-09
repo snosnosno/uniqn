@@ -38,9 +38,13 @@ import { logger } from '@/utils/logger';
 import { toError, normalizeError } from '@/errors';
 import { RealtimeManager } from '@/shared/realtime';
 import { QueryBuilder, processPaginatedResults, type PaginatedResult } from '@/utils/firestore';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, FIREBASE_LIMITS } from '@/constants';
 import { parseNotificationSettingsDocument } from '@/schemas';
-import { createDefaultNotificationSettings } from '@/types/notification';
+import {
+  createDefaultNotificationSettings,
+  getNotificationCategory,
+  getNotificationPriority,
+} from '@/types/notification';
 import type {
   INotificationRepository,
   GetNotificationsOptions,
@@ -53,7 +57,7 @@ import type { NotificationData, NotificationSettings } from '@/types/notificatio
 
 const PAGE_SIZE = 20;
 const NOTIFICATION_REALTIME_LIMIT = 50;
-const BATCH_LIMIT = 500; // Firestore writeBatch max operations
+const BATCH_LIMIT = FIREBASE_LIMITS.BATCH_MAX_OPERATIONS;
 const MAX_FCM_TOKENS = 10; // Maximum tokens stored per device
 
 // ============================================================================
@@ -144,15 +148,19 @@ export function buildRegisterFcmTokenUpdate(
  */
 function docToNotification(doc: QueryDocumentSnapshot<DocumentData>): NotificationData {
   const data = doc.data();
+  const type = data.type as NotificationData['type'];
+
   return {
     id: doc.id,
     recipientId: data.recipientId,
-    type: data.type,
+    type,
+    category: getNotificationCategory(type),
     title: data.title,
     body: data.body,
     link: data.link,
     data: data.data,
     isRead: data.isRead ?? false,
+    priority: getNotificationPriority(type),
     createdAt: data.createdAt,
     readAt: data.readAt,
   };
@@ -352,7 +360,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
     // 삭제 전 미읽음 알림 개수 확인 (카운터 관리는 Service 레이어에서 처리)
     let unreadCount = 0;
-    const IN_QUERY_LIMIT = 10; // Firestore in 쿼리 제한
+    const IN_QUERY_LIMIT = FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS;
 
     for (let i = 0; i < notificationIds.length; i += IN_QUERY_LIMIT) {
       const chunk = notificationIds.slice(i, i + IN_QUERY_LIMIT);

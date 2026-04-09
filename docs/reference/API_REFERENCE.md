@@ -87,7 +87,6 @@
 |---|---|---|
 | `validateJobPostingData` | onDocumentWritten | 공고 canonical 필드 / search index 검증 및 동기화 |
 | `updateJobPostingApplicantCount` | onDocumentWritten | 공고 지원자 수 집계 |
-| `updateEventParticipantCount` | onDocumentWritten | 이벤트 참가자 수 집계 |
 | `onJobPostingOGSync` | onDocumentWritten | OG projection 동기화 |
 | `onUserRoleChange` | onDocumentWritten | 사용자 role claim 동기화 |
 | `syncApplicationCompletionFromWorkLogs` | onDocumentWritten | work log 기반 완료 상태 동기화 |

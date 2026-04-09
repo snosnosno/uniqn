@@ -1,10 +1,13 @@
 import * as admin from "firebase-admin";
 import { expect } from "chai";
-import { backfillPostingStats } from "../src/scripts/backfillPostingStats";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+const { backfillPostingStats } = require("../src/scripts/backfillPostingStats") as typeof import(
+  "../src/scripts/backfillPostingStats"
+);
 
 describe("backfillPostingStats", () => {
   beforeEach(async () => {
