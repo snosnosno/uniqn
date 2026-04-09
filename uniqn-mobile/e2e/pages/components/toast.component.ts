@@ -6,22 +6,35 @@ import type { Page } from '@playwright/test';
 export class ToastComponent {
   constructor(private readonly page: Page) {}
 
-  private get toast() {
-    return this.page.locator('[role="alert"]').first();
+  private get toasts() {
+    return this.page.locator('[role="alert"]');
+  }
+
+  private get latestToast() {
+    return this.toasts.last();
+  }
+
+  private async getToastContents(): Promise<string[]> {
+    await this.waitForVisible();
+    const contents = await this.toasts.evaluateAll((nodes) =>
+      nodes.map((node) => node.textContent?.trim() ?? '').filter((content) => content.length > 0)
+    );
+
+    return contents;
   }
 
   async waitForVisible(timeout = 5_000): Promise<void> {
-    await this.toast.waitFor({ state: 'visible', timeout });
+    await this.latestToast.waitFor({ state: 'visible', timeout });
   }
 
   async waitForHidden(timeout = 6_000): Promise<void> {
-    await this.toast.waitFor({ state: 'hidden', timeout });
+    await this.latestToast.waitFor({ state: 'hidden', timeout });
   }
 
   async getMessage(): Promise<string | null> {
     try {
-      await this.waitForVisible();
-      return this.toast.textContent();
+      const contents = await this.getToastContents();
+      return contents.at(-1) ?? null;
     } catch {
       return null;
     }
@@ -29,19 +42,18 @@ export class ToastComponent {
 
   async hasMessage(text: string | RegExp): Promise<boolean> {
     try {
-      await this.waitForVisible();
-      const content = await this.toast.textContent();
-      if (!content) return false;
-      return typeof text === 'string'
-        ? content.includes(text)
-        : text.test(content);
+      const contents = await this.getToastContents();
+
+      return contents.some((content) =>
+        typeof text === 'string' ? content.includes(text) : text.test(content)
+      );
     } catch {
       return false;
     }
   }
 
   async dismiss(): Promise<void> {
-    const button = this.toast.locator('button').first();
+    const button = this.latestToast.locator('button').first();
     try {
       await button.click({ timeout: 2_000 });
     } catch {

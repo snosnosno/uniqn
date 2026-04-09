@@ -1,9 +1,11 @@
 import { announcementRepository, boardRepository } from '@/repositories';
 import { deleteMultipleBoardImages } from '@/services/auth';
+import { logger } from '@/utils/logger';
 import type { BoardComment, BoardImageAttachment, BoardMembership, BoardPost } from '@/types/board';
 import {
   fetchBoardPosts,
   getBoardHomeData,
+  getBoardPostDetail,
   setBoardCommentStatus,
   updateBoardComment,
   updateBoardPost,
@@ -60,6 +62,7 @@ jest.mock('@/utils/logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
+    appError: jest.fn(),
   },
 }));
 
@@ -70,6 +73,7 @@ const mockBoardRepository = boardRepository as jest.Mocked<typeof boardRepositor
 const mockDeleteMultipleBoardImages = deleteMultipleBoardImages as jest.MockedFunction<
   typeof deleteMultipleBoardImages
 >;
+const mockLogger = logger as jest.Mocked<typeof logger>;
 
 function createImage(id: string, storagePath = `boards/staff-1/${id}.jpg`): BoardImageAttachment {
   return {
@@ -369,6 +373,78 @@ describe('boardService.getBoardHomeData', () => {
       pinnedNotices: [],
       recentSchedulePosts: [],
       popularCommunityPosts: [],
+    });
+  });
+});
+
+describe('boardService.getBoardPostDetail', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockBoardRepository.getMembership.mockResolvedValue(null as never);
+    mockBoardRepository.getComments.mockResolvedValue([] as never);
+    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
+    mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
+  });
+
+  it('keeps the detail page alive when optional vote and reaction lookups fail', async () => {
+    const post = createBoardPost({
+      id: 'free-post-1',
+      boardType: 'free',
+      authorId: 'staff-1',
+      authorRole: 'staff',
+      visibility: 'public',
+      linkedJobPostingId: null,
+      isAutoCreated: false,
+    });
+    const comments = [createBoardComment({ postId: 'free-post-1' })];
+
+    mockBoardRepository.getPostById.mockResolvedValue(post as never);
+    mockBoardRepository.getComments.mockResolvedValue(comments as never);
+    mockBoardRepository.getPostVote.mockRejectedValue(
+      Object.assign(new Error('vote denied'), { code: 'permission-denied' }) as never
+    );
+    mockBoardRepository.getCommentReactionsByUser.mockRejectedValue(
+      Object.assign(new Error('reaction denied'), { code: 'permission-denied' }) as never
+    );
+
+    const result = await getBoardPostDetail('free-post-1', {
+      userId: 'staff-1',
+      role: 'staff',
+    });
+
+    expect(result.post.id).toBe('free-post-1');
+    expect(result.comments).toEqual(comments);
+    expect(result.commentTree).toHaveLength(1);
+    expect(result.myVote).toBeNull();
+    expect(result.myReactions).toEqual({});
+    expect(mockLogger.warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('still fails when the core comments query fails', async () => {
+    const post = createBoardPost({
+      id: 'free-post-1',
+      boardType: 'free',
+      authorId: 'staff-1',
+      authorRole: 'staff',
+      visibility: 'public',
+      linkedJobPostingId: null,
+      isAutoCreated: false,
+    });
+
+    mockBoardRepository.getPostById.mockResolvedValue(post as never);
+    mockBoardRepository.getComments.mockRejectedValue(
+      Object.assign(new Error('comments denied'), { code: 'permission-denied' }) as never
+    );
+    mockBoardRepository.getPostVote.mockResolvedValue(null as never);
+    mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);
+
+    await expect(
+      getBoardPostDetail('free-post-1', {
+        userId: 'staff-1',
+        role: 'staff',
+      })
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('comments denied'),
     });
   });
 });

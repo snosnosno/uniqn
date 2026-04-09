@@ -98,6 +98,10 @@ export class RouteMapper {
         return EXPO_ROUTES.adminReports;
       case 'admin/report':
         return EXPO_ROUTES.adminReportDetail.replace('[id]', route.params.id);
+      case 'admin/board-reports':
+        return EXPO_ROUTES.adminBoardReports;
+      case 'admin/board-report':
+        return EXPO_ROUTES.adminBoardReportDetail.replace('[id]', route.params.id);
       case 'admin/announcements':
         return EXPO_ROUTES.adminAnnouncements;
       case 'admin/announcement-create':

@@ -26,6 +26,7 @@ import {
 } from './factories/work-log.factory';
 import { createUnreadNotifications, createNotification } from './factories/notification.factory';
 import { createReviewHistoryItem } from './factories/review.factory';
+import { BOARD_FIXTURE_CONTENT, BOARD_FIXTURE_IDS } from './fixtures/board-fixtures';
 import { E2E_CONFIG } from './config';
 
 const EMULATOR_PROJECT_ID = E2E_CONFIG.projectId;
@@ -71,6 +72,20 @@ const REVIEW_IDS = {
 const REPORT_IDS = {
   pending: 'seed-report-pending-001',
   resolved: 'seed-report-resolved-002',
+} as const;
+
+const BOARD_POST_DATES = {
+  freeCreated: new Date('2026-04-02T09:00:00Z'),
+  freeUpdated: new Date('2026-04-07T08:30:00Z'),
+  tdaCreated: new Date('2026-04-03T10:00:00Z'),
+  tdaUpdated: new Date('2026-04-06T11:00:00Z'),
+  lockedCreated: new Date('2026-04-04T07:00:00Z'),
+  lockedUpdated: new Date('2026-04-08T06:15:00Z'),
+  commentCreated: new Date('2026-04-06T12:00:00Z'),
+  replyCreated: new Date('2026-04-07T08:30:00Z'),
+  pendingReportCreated: new Date('2026-04-08T04:00:00Z'),
+  resolvedReportCreated: new Date('2026-04-05T03:00:00Z'),
+  resolvedReportUpdated: new Date('2026-04-06T05:30:00Z'),
 } as const;
 
 // ============================================================================
@@ -355,6 +370,193 @@ async function seedAnnouncements(db: Firestore): Promise<void> {
 }
 
 /**
+ * 게시판/댓글 시드 데이터
+ */
+async function seedBoardData(db: Firestore): Promise<void> {
+  const staff = TEST_ACCOUNTS.staff;
+  const employer = TEST_ACCOUNTS.employer;
+
+  const boardPosts = [
+    {
+      id: BOARD_FIXTURE_IDS.freePost,
+      boardType: 'free' as const,
+      source: 'board' as const,
+      title: BOARD_FIXTURE_CONTENT.freeTitle,
+      body: BOARD_FIXTURE_CONTENT.freeBody,
+      authorId: staff.uid,
+      authorName: staff.displayName,
+      authorRole: staff.role,
+      visibility: 'public' as const,
+      status: 'active' as const,
+      linkedJobPostingId: null,
+      isAutoCreated: false,
+      isLocked: false,
+      lockedBy: null,
+      lockedAt: null,
+      likeCount: 2,
+      dislikeCount: 0,
+      commentCount: 2,
+      viewCount: 12,
+      imageAttachments: [],
+      createdAt: BOARD_POST_DATES.freeCreated,
+      updatedAt: BOARD_POST_DATES.freeUpdated,
+      lastActivityAt: BOARD_POST_DATES.replyCreated,
+    },
+    {
+      id: BOARD_FIXTURE_IDS.employerTdaPost,
+      boardType: 'tda' as const,
+      source: 'board' as const,
+      title: BOARD_FIXTURE_CONTENT.employerTdaTitle,
+      body: BOARD_FIXTURE_CONTENT.employerTdaBody,
+      authorId: employer.uid,
+      authorName: employer.displayName,
+      authorRole: employer.role,
+      visibility: 'public' as const,
+      status: 'active' as const,
+      linkedJobPostingId: null,
+      isAutoCreated: false,
+      isLocked: false,
+      lockedBy: null,
+      lockedAt: null,
+      likeCount: 3,
+      dislikeCount: 1,
+      commentCount: 0,
+      viewCount: 9,
+      imageAttachments: [],
+      createdAt: BOARD_POST_DATES.tdaCreated,
+      updatedAt: BOARD_POST_DATES.tdaUpdated,
+      lastActivityAt: BOARD_POST_DATES.tdaUpdated,
+    },
+    {
+      id: BOARD_FIXTURE_IDS.lockedFreePost,
+      boardType: 'free' as const,
+      source: 'board' as const,
+      title: BOARD_FIXTURE_CONTENT.lockedFreeTitle,
+      body: BOARD_FIXTURE_CONTENT.lockedFreeBody,
+      authorId: staff.uid,
+      authorName: staff.displayName,
+      authorRole: staff.role,
+      visibility: 'public' as const,
+      status: 'locked' as const,
+      linkedJobPostingId: null,
+      isAutoCreated: false,
+      isLocked: true,
+      lockedBy: staff.uid,
+      lockedAt: BOARD_POST_DATES.lockedUpdated,
+      likeCount: 0,
+      dislikeCount: 0,
+      commentCount: 0,
+      viewCount: 4,
+      imageAttachments: [],
+      createdAt: BOARD_POST_DATES.lockedCreated,
+      updatedAt: BOARD_POST_DATES.lockedUpdated,
+      lastActivityAt: BOARD_POST_DATES.lockedUpdated,
+    },
+  ];
+
+  const comments = [
+    {
+      id: BOARD_FIXTURE_IDS.freeComment,
+      postId: BOARD_FIXTURE_IDS.freePost,
+      parentCommentId: null,
+      body: BOARD_FIXTURE_CONTENT.commentBody,
+      authorId: employer.uid,
+      authorName: employer.displayName,
+      authorRole: employer.role,
+      mentionedUserIds: [],
+      reactionCounts: {},
+      isPinned: false,
+      pinnedAt: null,
+      pinnedBy: null,
+      status: 'active' as const,
+      imageAttachments: [],
+      createdAt: BOARD_POST_DATES.commentCreated,
+      updatedAt: BOARD_POST_DATES.commentCreated,
+    },
+    {
+      id: BOARD_FIXTURE_IDS.freeReply,
+      postId: BOARD_FIXTURE_IDS.freePost,
+      parentCommentId: BOARD_FIXTURE_IDS.freeComment,
+      body: BOARD_FIXTURE_CONTENT.replyBody,
+      authorId: staff.uid,
+      authorName: staff.displayName,
+      authorRole: staff.role,
+      mentionedUserIds: [],
+      reactionCounts: {},
+      isPinned: false,
+      pinnedAt: null,
+      pinnedBy: null,
+      status: 'active' as const,
+      imageAttachments: [],
+      createdAt: BOARD_POST_DATES.replyCreated,
+      updatedAt: BOARD_POST_DATES.replyCreated,
+    },
+  ];
+
+  const batch = db.batch();
+
+  for (const boardPost of boardPosts) {
+    const { id, ...data } = boardPost;
+    batch.set(db.collection('boardPosts').doc(id), data);
+  }
+
+  for (const comment of comments) {
+    const { id, ...data } = comment;
+    batch.set(db.collection('boardPosts').doc(comment.postId).collection('comments').doc(id), data);
+  }
+
+  await batch.commit();
+}
+
+/**
+ * 게시판 신고 시드 데이터
+ */
+async function seedBoardReports(db: Firestore): Promise<void> {
+  const staff = TEST_ACCOUNTS.staff;
+  const admin = TEST_ACCOUNTS.admin;
+
+  const reports = [
+    {
+      id: BOARD_FIXTURE_IDS.pendingCommentReport,
+      targetType: 'comment' as const,
+      targetId: BOARD_FIXTURE_IDS.freeComment,
+      postId: BOARD_FIXTURE_IDS.freePost,
+      reporterId: staff.uid,
+      reason: BOARD_FIXTURE_CONTENT.pendingReportReason,
+      details: BOARD_FIXTURE_CONTENT.pendingReportDetails,
+      status: 'pending' as const,
+      createdAt: BOARD_POST_DATES.pendingReportCreated,
+      updatedAt: BOARD_POST_DATES.pendingReportCreated,
+      resolvedBy: null,
+      resolvedAt: null,
+    },
+    {
+      id: BOARD_FIXTURE_IDS.resolvedPostReport,
+      targetType: 'post' as const,
+      targetId: BOARD_FIXTURE_IDS.employerTdaPost,
+      postId: BOARD_FIXTURE_IDS.employerTdaPost,
+      reporterId: staff.uid,
+      reason: BOARD_FIXTURE_CONTENT.resolvedReportReason,
+      details: BOARD_FIXTURE_CONTENT.resolvedReportDetails,
+      status: 'resolved' as const,
+      createdAt: BOARD_POST_DATES.resolvedReportCreated,
+      updatedAt: BOARD_POST_DATES.resolvedReportUpdated,
+      resolvedBy: admin.uid,
+      resolvedAt: BOARD_POST_DATES.resolvedReportUpdated,
+    },
+  ];
+
+  const batch = db.batch();
+
+  for (const report of reports) {
+    const { id, ...data } = report;
+    batch.set(db.collection('boardReports').doc(id), data);
+  }
+
+  await batch.commit();
+}
+
+/**
  * 리뷰 데이터 시딩
  */
 async function seedReviews(db: Firestore): Promise<void> {
@@ -482,6 +684,8 @@ async function seedTestData(db: Firestore): Promise<void> {
   await seedNotifications(db);
   await seedNotificationCounters(db);
   await seedAnnouncements(db);
+  await seedBoardData(db);
+  await seedBoardReports(db);
   await seedReviews(db);
   await seedReports(db);
 }

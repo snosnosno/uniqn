@@ -1,9 +1,10 @@
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Badge, Button, Card, EmptyState, Loading } from '@/components/ui';
 import { useAdminBoardReportDetail, useReviewBoardReport } from '@/hooks/useAdminBoardReports';
 import { BOARD_TYPE_LABELS, type BoardReportResolutionStatus } from '@/types/board';
+import { confirmAction } from '@/utils/confirmAction';
 import { toDate, type DateInput } from '@/utils/date';
 
 function formatTimestamp(value: DateInput): string {
@@ -50,15 +51,14 @@ export default function AdminBoardReportDetailPage() {
   const handleReview = (status: BoardReportResolutionStatus) => {
     const label = status === 'resolved' ? '해결' : '기각';
 
-    Alert.alert('게시판 신고 검토', `이 게시판 신고를 ${label} 처리할까요?`, [
-      { text: '취소', style: 'cancel' },
-      {
-        text: label,
-        onPress: () => {
-          void reviewMutation.mutateAsync(status).catch(() => undefined);
-        },
+    confirmAction({
+      title: '게시판 신고 검토',
+      message: `이 게시판 신고를 ${label} 처리할까요?`,
+      confirmText: label,
+      onConfirm: async () => {
+        await reviewMutation.mutateAsync(status);
       },
-    ]);
+    });
   };
 
   if (isLoading) {
