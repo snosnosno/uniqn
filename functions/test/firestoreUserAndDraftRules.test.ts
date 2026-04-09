@@ -131,6 +131,19 @@ describe("Firestore user and jobPostingDraft rules", () => {
     );
   });
 
+  it("rejects writes to the deprecated top-level fcmTokens collection", async () => {
+    const staffDb = testEnv.authenticatedContext("staff-1").firestore();
+
+    await assertFails(
+      setDoc(doc(staffDb, "fcmTokens", "token-1"), {
+        userId: "staff-1",
+        token: "ExponentPushToken[top-level]",
+        platform: "ios",
+        createdAt: serverTimestamp(),
+      }),
+    );
+  });
+
   it("rejects push token updates that modify trusted user fields", async () => {
     const staffDb = testEnv.authenticatedContext("staff-1").firestore();
 

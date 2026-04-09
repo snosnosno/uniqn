@@ -3,7 +3,7 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "eslint .",
-    "build": "tsc",
+    "build": "node -e \"require('fs').rmSync('lib', { recursive: true, force: true })\" && tsc",
     "serve": "npm run build && npx firebase-tools emulators:start --only functions",
     "shell": "npm run build && npx firebase-tools functions:shell",
     "start": "npm run shell",

@@ -7,7 +7,7 @@
  * @version 2.0.0
  * @since 2025-09-30
  *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
+ * @note FCM 토큰은 users/{uid}.fcmTokens Map 구조를 기준으로 수집
  */
 
 import { onCall } from "firebase-functions/v2/https";
@@ -35,7 +35,8 @@ const db = admin.firestore();
  * 공지 전송 요청 데이터
  */
 interface SendAnnouncementRequest {
-  eventId: string; // 이벤트 ID (공고 ID)
+  jobPostingId?: string;
+  eventId?: string; // legacy fallback
   title: string;
   message: string; // 클라이언트에서 전달되는 필드명
   targetStaffIds: string[];
@@ -56,6 +57,14 @@ interface SendAnnouncementResponse {
     errors?: Array<{ userId: string; error: string }>;
   };
   error?: string;
+}
+
+function resolveJobPostingId(data: SendAnnouncementRequest): string {
+  if (typeof data.jobPostingId === "string" && data.jobPostingId.trim().length > 0) {
+    return requireString(data.jobPostingId, "공고 ID");
+  }
+
+  return requireString(data.eventId, "공고 ID");
 }
 
 /**
@@ -82,7 +91,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
       requireRole(request, "admin", "employer");
 
       // 2. 입력 데이터 검증
-      const eventId = requireString(request.data.eventId, "이벤트 ID");
+      const jobPostingId = resolveJobPostingId(request.data);
       const title = requireString(request.data.title, "공지 제목");
       requireMaxLength(title, 50, "공지 제목");
 
@@ -102,16 +111,23 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
 
       const jobPostingTitle = request.data.jobPostingTitle;
 
+      if (!request.data.jobPostingId && request.data.eventId) {
+        logger.warn("Legacy eventId field used for sendJobPostingAnnouncement", {
+          userId,
+          eventId: request.data.eventId,
+        });
+      }
+
       // 3. 공고 정보 조회
       const jobPostingDoc = await db
         .collection("jobPostings")
-        .doc(eventId)
+        .doc(jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         throw new NotFoundError({
           userMessage: "공고를 찾을 수 없습니다.",
-          metadata: { eventId },
+          metadata: { jobPostingId },
         });
       }
 
@@ -132,7 +148,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
 
       const announcementData = {
         id: announcementId,
-        eventId,
+        jobPostingId,
         title,
         message: announcementMessage,
         createdBy: userId,
@@ -150,7 +166,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
 
       await announcementRef.set(announcementData);
 
-      // 6. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
+      // 6. 스태프 FCM 토큰 조회 (Map 구조)
       const allUsersData: Array<{
         id: string;
         data: FirebaseFirestore.DocumentData | undefined;
@@ -216,8 +232,8 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         data: {
           type: "announcement",
           announcementId,
-          eventId,
-          link: `/jobs/${eventId}`,
+          jobPostingId,
+          link: `/jobs/${jobPostingId}`,
         },
         channelId: "announcements",
         priority: "high",
@@ -262,11 +278,11 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
             priority: "high",
             title: `📢 ${notificationTitle}`,
             body: announcementMessage,
-            link: `/jobs/${eventId}`,
+            link: `/jobs/${jobPostingId}`,
             data: {
               type: "announcement",
               announcementId,
-              eventId,
+              jobPostingId,
             },
             relatedId: announcementId,
             senderId: userId,
@@ -329,7 +345,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
     } catch (error: unknown) {
       throw handleFunctionError(error, {
         operation: "sendJobPostingAnnouncement",
-        context: { eventId: request.data?.eventId },
+        context: { jobPostingId: request.data?.jobPostingId ?? request.data?.eventId },
       });
     }
   },

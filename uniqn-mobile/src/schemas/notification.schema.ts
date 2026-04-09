@@ -9,6 +9,11 @@ import { z } from 'zod';
 import { logger } from '@/utils/logger';
 import { timestampSchema, optionalTimestampSchema, metadataSchema } from './common';
 import type { NotificationData, NotificationSettings } from '@/types';
+import {
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_PRIORITIES,
+  NOTIFICATION_TYPES,
+} from '@/types/notification';
 
 // ============================================================================
 // 알림 타입 스키마
@@ -17,64 +22,21 @@ import type { NotificationData, NotificationSettings } from '@/types';
 /**
  * 알림 타입 스키마
  */
-export const notificationTypeSchema = z.enum([
-  // 지원 관련
-  'new_application',
-  'application_cancelled',
-  'application_confirmed',
-  'confirmation_cancelled',
-  'application_rejected',
-  'cancellation_approved',
-  'cancellation_rejected',
-  // 출퇴근/스케줄 관련
-  'staff_checked_in',
-  'staff_checked_out',
-  'check_in_confirmed',
-  'check_out_confirmed',
-  'checkin_reminder',
-  'no_show_alert',
-  'schedule_change',
-  'schedule_created',
-  'schedule_cancelled',
-  // 정산 관련
-  'settlement_completed',
-  'settlement_requested',
-  // 공고 관련
-  'job_updated',
-  'job_cancelled',
-  'job_closed',
-  // 시스템
-  'announcement',
-  'maintenance',
-  'app_update',
-  // 관리자
-  'inquiry_answered',
-  'report_resolved',
-  'new_report',
-  'new_inquiry',
-  'tournament_approval_request',
-]);
+export const notificationTypeSchema = z.enum(NOTIFICATION_TYPES);
 
 export type NotificationTypeSchema = z.infer<typeof notificationTypeSchema>;
 
 /**
  * 알림 카테고리 스키마
  */
-export const notificationCategorySchema = z.enum([
-  'application',
-  'attendance',
-  'settlement',
-  'job',
-  'system',
-  'admin',
-]);
+export const notificationCategorySchema = z.enum(NOTIFICATION_CATEGORIES);
 
 export type NotificationCategorySchema = z.infer<typeof notificationCategorySchema>;
 
 /**
  * 알림 우선순위 스키마
  */
-export const notificationPrioritySchema = z.enum(['low', 'normal', 'high', 'urgent']);
+export const notificationPrioritySchema = z.enum(NOTIFICATION_PRIORITIES);
 
 export type NotificationPrioritySchema = z.infer<typeof notificationPrioritySchema>;
 

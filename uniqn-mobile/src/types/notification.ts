@@ -106,6 +106,11 @@ export const NotificationType = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 
+export const NOTIFICATION_TYPES = Object.values(NotificationType) as [
+  NotificationType,
+  ...NotificationType[],
+];
+
 // ============================================================================
 // Notification Categories
 // ============================================================================
@@ -125,6 +130,11 @@ export const NotificationCategory = {
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationCategory = (typeof NotificationCategory)[keyof typeof NotificationCategory];
+
+export const NOTIFICATION_CATEGORIES = Object.values(NotificationCategory) as [
+  NotificationCategory,
+  ...NotificationCategory[],
+];
 
 /**
  * 알림 타입 → 카테고리 매핑
@@ -189,7 +199,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
 /**
  * 알림 우선순위
  */
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export const NOTIFICATION_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;
+
+export type NotificationPriority = (typeof NOTIFICATION_PRIORITIES)[number];
 
 /**
  * 알림 타입별 기본 우선순위

@@ -1,14 +1,22 @@
 import * as admin from "firebase-admin";
 import { expect } from "chai";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const indexExports = require("../src/index") as typeof import("../src/index");
+const distIndexPath = resolve(__dirname, "../lib/index.js");
+const sourceIndexPath = resolve(__dirname, "../src/index");
+const sourceExports = require(sourceIndexPath) as typeof import("../src/index");
+const indexExports = require(
+  existsSync(distIndexPath) ? distIndexPath : sourceIndexPath,
+) as typeof import("../src/index");
 
 const EXPECTED_EXPORTS = [
   "approveJobPosting",
+  "buildPostingStats",
   "checkEmailExists",
   "checkNicknameExists",
   "checkPhoneExists",
@@ -28,6 +36,8 @@ const EXPECTED_EXPORTS = [
   "manualExpireFixedPostings",
   "onApplicationStatusChanged",
   "onApplicationSubmitted",
+  "onBoardCommentCreated",
+  "onBoardPostLocked",
   "onCheckInOut",
   "onFixedPostingExpired",
   "onInquiryCreated",
@@ -63,7 +73,6 @@ const EXPECTED_EXPORTS = [
   "sendReviewRemindersScheduled",
   "sendSystemAnnouncement",
   "syncApplicationCompletionFromWorkLogs",
-  "updateEventParticipantCount",
   "updateJobPostingApplicantCount",
   "updateUser",
   "validateJobPostingData",
@@ -77,5 +86,20 @@ describe("root function exports", () => {
       .sort();
 
     expect(exportKeys).to.deep.equal(EXPECTED_EXPORTS.slice().sort());
+  });
+
+  it("keeps the built entrypoint in sync with the source barrel when lib exists", () => {
+    if (!existsSync(distIndexPath)) {
+      return;
+    }
+
+    const distExportKeys = Object.keys(indexExports)
+      .filter((key) => key !== "__esModule")
+      .sort();
+    const sourceExportKeys = Object.keys(sourceExports)
+      .filter((key) => key !== "__esModule")
+      .sort();
+
+    expect(distExportKeys).to.deep.equal(sourceExportKeys);
   });
 });
