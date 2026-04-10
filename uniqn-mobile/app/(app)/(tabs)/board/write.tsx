@@ -1,6 +1,6 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TabHeader } from '@/components/headers';
+import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
 import { BoardPostEditor } from '@/components/board/BoardPostEditor';
 import { useCreateBoardPost } from '@/hooks/useBoard';
@@ -17,7 +17,7 @@ export default function BoardWriteScreen() {
   if (!isWritableBoard) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-        <TabHeader title="글쓰기" />
+        <StackHeader title="글쓰기" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
           title="글을 작성할 수 없는 게시판이에요"
           message="자유게시판과 TDA 토론만 직접 글을 작성할 수 있어요."
@@ -29,7 +29,10 @@ export default function BoardWriteScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
-      <TabHeader title={`${BOARD_TYPE_LABELS[boardType]} 글쓰기`} />
+      <StackHeader
+        title={`${BOARD_TYPE_LABELS[boardType]} 글쓰기`}
+        fallbackHref={`/(app)/(tabs)/board/${boardType}`}
+      />
       <BoardPostEditor
         boardType={boardType}
         mode="create"

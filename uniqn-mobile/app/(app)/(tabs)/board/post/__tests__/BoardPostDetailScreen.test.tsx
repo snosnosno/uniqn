@@ -85,6 +85,12 @@ jest.mock('@/components/headers', () => {
 
   return {
     TabHeader: ({ title }: { title: string }) => <ReactNative.Text>{title}</ReactNative.Text>,
+    StackHeader: ({ title }: { title: string }) => (
+      <ReactNative.View>
+        <ReactNative.Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" />
+        <ReactNative.Text>{title}</ReactNative.Text>
+      </ReactNative.View>
+    ),
   };
 });
 
@@ -96,6 +102,8 @@ jest.mock('@/components/icons', () => {
     CloseCircleOutlineIcon: Icon,
     FlagOutlineIcon: Icon,
     HeartIcon: Icon,
+    ChatbubbleEllipsesOutlineIcon: Icon,
+    EyeIcon: Icon,
     LockIcon: Icon,
     PinIcon: Icon,
     ImageIcon: Icon,
@@ -236,6 +244,9 @@ jest.mock('@/components/ui', () => {
           {children}
         </ReactNative.View>
       ) : null,
+    Skeleton: () => <ReactNative.View />,
+    SkeletonText: () => <ReactNative.View />,
+    SkeletonButton: () => <ReactNative.View />,
   };
 });
 
@@ -306,6 +317,27 @@ beforeEach(() => {
 });
 
 describe('BoardPostDetailScreen', () => {
+  it('renders a back button in the header', () => {
+    const { getByRole } = render(<BoardPostDetailScreen />);
+
+    expect(getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
+  });
+
+  it('shows a loading placeholder instead of a blank screen', () => {
+    mockUseBoardPostDetail.mockReturnValueOnce({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: jest.fn(),
+      isRefetching: false,
+    });
+
+    const { getByText, getByRole } = render(<BoardPostDetailScreen />);
+
+    expect(getByRole('button', { name: '뒤로 가기' })).toBeTruthy();
+    expect(getByText('게시글을 불러오는 중이에요.')).toBeTruthy();
+  });
+
   it('switches from the root composer to an inline reply composer', () => {
     const { getAllByText, getByText, queryByText } = render(<BoardPostDetailScreen />);
 

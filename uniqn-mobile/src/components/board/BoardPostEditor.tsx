@@ -1,8 +1,18 @@
 import React from 'react';
 import { Platform, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoardImagePicker } from './BoardImagePicker';
-import { Badge, Button, Card, Input } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Input,
+  Skeleton,
+  SkeletonButton,
+  SkeletonText,
+} from '@/components/ui';
+import { LAYOUT } from '@/constants';
 import { BOARD_TYPE_LABELS, type BoardImageAttachment, type BoardType } from '@/types/board';
 import { useBoardImages } from '@/hooks/useBoardImages';
 
@@ -31,6 +41,7 @@ export function BoardPostEditor({
   onCancel,
   onSubmit,
 }: BoardPostEditorProps) {
+  const insets = useSafeAreaInsets();
   const {
     images,
     uploadingIndex,
@@ -44,6 +55,7 @@ export function BoardPostEditor({
   const [title, setTitle] = React.useState(initialTitle);
   const [body, setBody] = React.useState(initialBody);
   const isSubmitDisabled = isSubmitting || isUploading || !title.trim() || !body.trim();
+  const bottomPadding = LAYOUT.TAB_BAR_HEIGHT + insets.bottom + 32;
 
   const handleSubmit = async () => {
     try {
@@ -60,7 +72,7 @@ export function BoardPostEditor({
   return (
     <KeyboardAwareScrollView
       className="flex-1 bg-gray-50 dark:bg-surface-dark"
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       enableOnAndroid
@@ -135,3 +147,59 @@ export function BoardPostEditor({
 }
 
 export default BoardPostEditor;
+
+interface BoardPostEditorLoadingProps {
+  title?: string;
+}
+
+export function BoardPostEditorLoading({
+  title = '게시글 편집 화면을 준비하는 중이에요.',
+}: BoardPostEditorLoadingProps) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = LAYOUT.TAB_BAR_HEIGHT + insets.bottom + 32;
+
+  return (
+    <KeyboardAwareScrollView
+      className="flex-1 bg-gray-50 dark:bg-surface-dark"
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid
+      enableAutomaticScroll
+      extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
+      keyboardOpeningTime={0}
+    >
+      <View className="p-4">
+        <Card className="mb-4">
+          <View className="mb-3 flex-row items-center gap-2">
+            <Skeleton width={72} height={28} borderRadius={14} />
+            <Skeleton width={84} height={16} />
+          </View>
+
+          <Skeleton width={56} height={14} className="mb-2" />
+          <Skeleton width="100%" height={48} borderRadius={12} />
+
+          <View className="mt-4">
+            <Skeleton width={56} height={14} className="mb-2" />
+            <Skeleton width="100%" height={180} borderRadius={16} />
+          </View>
+
+          <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">{title}</Text>
+        </Card>
+
+        <Card className="mb-4">
+          <Skeleton width={96} height={20} className="mb-3" />
+          <View className="rounded-2xl border border-dashed border-gray-200 p-5 dark:border-surface-overlay">
+            <Skeleton width={52} height={52} borderRadius={26} className="mb-3" />
+            <SkeletonText lines={2} lineHeight={14} lastLineWidth="55%" />
+          </View>
+        </Card>
+
+        <View className="flex-row gap-3">
+          <SkeletonButton width="48%" />
+          <SkeletonButton width="48%" />
+        </View>
+      </View>
+    </KeyboardAwareScrollView>
+  );
+}
