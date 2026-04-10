@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { Tabs, useNavigation } from 'expo-router';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
+import { HomeIcon, CalendarIcon, MessageIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 import { LAYOUT } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
@@ -65,6 +65,13 @@ export default function TabLayout() {
         options={{
           title: '내 스케줄',
           tabBarIcon: ({ color, size }) => <CalendarIcon color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="board"
+        options={{
+          title: '게시판',
+          tabBarIcon: ({ color, size }) => <MessageIcon color={color} size={size} />,
         }}
       />
       <Tabs.Screen

@@ -73,6 +73,10 @@ jest.mock('@/constants', () => ({
     NOTIFICATIONS: 'notifications',
     USERS: 'users',
   },
+  FIREBASE_LIMITS: {
+    BATCH_MAX_OPERATIONS: 500,
+    WHERE_IN_MAX_ITEMS: 10,
+  },
   FIELDS: {
     NOTIFICATION: {
       recipientId: 'recipientId',
@@ -86,9 +90,7 @@ jest.mock('@/schemas', () => ({
   parseNotificationSettingsDocument: jest.fn(),
 }));
 
-jest.mock('@/types/notification', () => ({
-  createDefaultNotificationSettings: jest.fn(),
-}));
+jest.mock('@/types/notification', () => jest.requireActual('@/types/notification'));
 
 const mockedLogger = jest.requireMock('@/utils/logger').logger as {
   info: jest.Mock;
@@ -219,6 +221,47 @@ describe('FirebaseNotificationRepository', () => {
         expect.objectContaining({
           id: 'notification-1',
           recipientId: 'user-1',
+        }),
+      ]);
+      expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('derives category and priority from the runtime notification type map', () => {
+      const repository = new FirebaseNotificationRepository();
+      const onNotifications = jest.fn();
+      const onError = jest.fn();
+      const snapshot = {
+        size: 1,
+        docs: [
+          {
+            id: 'notification-review-1',
+            data: () => ({
+              recipientId: 'user-1',
+              type: 'review_received',
+              title: '리뷰가 등록되었어요',
+              body: '새 리뷰를 확인해 주세요.',
+              link: '/reviews/review-1',
+              data: { reviewId: 'review-1' },
+              isRead: false,
+              createdAt: new Date('2025-01-01T00:00:00.000Z'),
+            }),
+          },
+        ],
+      };
+
+      mockOnSnapshot.mockImplementation((_query, onNext) => {
+        onNext(snapshot);
+        return jest.fn();
+      });
+
+      repository.subscribeToNotifications('user-1', onNotifications, onError);
+
+      expect(onNotifications).toHaveBeenCalledWith([
+        expect.objectContaining({
+          id: 'notification-review-1',
+          type: 'review_received',
+          category: 'review',
+          priority: 'normal',
         }),
       ]);
       expect(onError).not.toHaveBeenCalled();

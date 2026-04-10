@@ -115,9 +115,9 @@ match /workLogs/{logId} {
 }
 
 function validateWorkLog(data) {
-  return data.keys().hasAll(['staffId', 'eventId', 'date']) &&
+  return data.keys().hasAll(['staffId', 'jobPostingId', 'date']) &&
          data.staffId is string &&
-         data.eventId is string &&
+         data.jobPostingId is string &&
          data.date matches /^\d{4}-\d{2}-\d{2}$/;
 }
 ```
@@ -527,7 +527,7 @@ export class InputValidator {
   
   // 스태프 데이터 검증
   static validateStaffData(data: any): boolean {
-    const required = ['name', 'role', 'eventId'];
+    const required = ['name', 'role', 'jobPostingId'];
     const hasRequiredFields = required.every(field => data[field]);
     
     if (!hasRequiredFields) return false;

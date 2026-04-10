@@ -11,6 +11,10 @@ describe('webRouteAliases', () => {
     it('maps admin child routes to internal admin screens', () => {
       expect(resolveAdminAliasHref(['reports'])).toBe('/(admin)/reports');
       expect(resolveAdminAliasHref(['reports', 'report-1'])).toBe('/(admin)/reports/report-1');
+      expect(resolveAdminAliasHref(['board-reports'])).toBe('/(admin)/board-reports');
+      expect(resolveAdminAliasHref(['board-reports', 'board-report-1'])).toBe(
+        '/(admin)/board-reports/board-report-1'
+      );
       expect(resolveAdminAliasHref(['inquiries', 'inq-1'])).toBe('/(admin)/inquiries/inq-1');
       expect(resolveAdminAliasHref(['announcements', 'create'])).toBe(
         '/(admin)/announcements/create'

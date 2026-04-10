@@ -47,19 +47,33 @@ interface ActionCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
+  displayTitle?: string;
+  displayDescription?: string;
   badge?: { label: string; variant: 'primary' | 'success' | 'warning' | 'error' };
   onPress: () => void;
   testID?: string;
 }
 
-function ActionCard({ icon, title, description, badge, onPress, testID }: ActionCardProps) {
+function ActionCard({
+  icon,
+  title,
+  description,
+  displayTitle,
+  displayDescription,
+  badge,
+  onPress,
+  testID,
+}: ActionCardProps) {
+  const resolvedTitle = displayTitle ?? title;
+  const resolvedDescription = displayDescription ?? description;
+
   return (
     <Pressable
       onPress={onPress}
       className="active:opacity-70"
       accessibilityRole="button"
       testID={testID}
-      accessibilityLabel={`${title}, ${description}`}
+      accessibilityLabel={`${resolvedTitle}, ${resolvedDescription}`}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
         <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
@@ -68,7 +82,7 @@ function ActionCard({ icon, title, description, badge, onPress, testID }: Action
         <View className="flex-1">
           <View className="flex-row items-center">
             <Text className="mr-2 text-base font-semibold text-gray-900 dark:text-white">
-              {title}
+              {resolvedTitle}
             </Text>
             {badge ? (
               <Badge variant={badge.variant} size="sm">
@@ -76,7 +90,9 @@ function ActionCard({ icon, title, description, badge, onPress, testID }: Action
               </Badge>
             ) : null}
           </View>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {resolvedDescription}
+          </Text>
         </View>
         <ChevronRightIcon size={20} color="#9CA3AF" />
       </Card>
@@ -188,6 +204,7 @@ export default function JobPostingDetailScreen() {
     );
   }
 
+  const isFixed = posting.schedule.kind === 'fixed';
   const totalApplicants = applicantData?.stats.total ?? managementView.totalApplicants;
   const confirmedApplicants = applicantData?.stats.confirmed ?? managementView.confirmedApplicants;
   const pendingApplicants = applicantData?.stats.applied ?? managementView.pendingApplicants;
@@ -245,7 +262,6 @@ export default function JobPostingDetailScreen() {
                   className="flex-row items-center rounded-lg px-2 py-1 active:bg-gray-100 dark:active:bg-gray-700"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
-                  accessibilityLabel={isInfoExpanded ? '상세 정보 접기' : '상세 정보 펼치기'}
                 >
                   <Text className="mr-1 text-xs text-gray-500 dark:text-gray-400">
                     {isInfoExpanded ? '접기' : '상세'}
@@ -286,7 +302,7 @@ export default function JobPostingDetailScreen() {
                       startTime={managementView.startTime}
                       isStartTimeNegotiable={managementView.isStartTimeNegotiable}
                       requiredRolesWithCount={managementView.requiredRolesWithCount}
-                      showFilledCount={true}
+                      showFilledCount
                     />
                   </View>
                 </View>
@@ -345,13 +361,7 @@ export default function JobPostingDetailScreen() {
             ) : null}
 
             <View className="rounded-lg bg-gray-50 px-3 pb-2 pt-3 dark:bg-surface">
-              <View
-                className={`flex-row justify-around ${
-                  posting.postingType === 'tournament'
-                    ? 'mb-2 border-b border-gray-200 pb-2 dark:border-surface-overlay'
-                    : ''
-                }`}
-              >
+              <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                     {totalApplicants}
@@ -374,19 +384,17 @@ export default function JobPostingDetailScreen() {
                 </View>
               </View>
 
-              {posting.postingType === 'tournament' ? (
-                <View className="flex-row items-center justify-center">
-                  <Text className="mr-1.5 text-xs text-gray-500 dark:text-gray-400">배정 현황</Text>
-                  <Text className="text-base font-bold text-gray-900 dark:text-white">
-                    {filledPositions}
-                  </Text>
-                  <Text className="mx-0.5 text-base text-gray-400 dark:text-gray-500">/</Text>
-                  <Text className="text-base font-bold text-gray-600 dark:text-gray-400">
-                    {totalPositions}
-                  </Text>
-                  <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">명</Text>
-                </View>
-              ) : null}
+              <View className="mt-2 flex-row items-center justify-center">
+                <Text className="mr-1.5 text-xs text-gray-500 dark:text-gray-400">배정 현황</Text>
+                <Text className="text-base font-bold text-gray-900 dark:text-white">
+                  {filledPositions}
+                </Text>
+                <Text className="mx-0.5 text-base text-gray-400 dark:text-gray-500">/</Text>
+                <Text className="text-base font-bold text-gray-600 dark:text-gray-400">
+                  {totalPositions}
+                </Text>
+                <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">명</Text>
+              </View>
             </View>
           </Card>
         </View>
@@ -408,41 +416,61 @@ export default function JobPostingDetailScreen() {
               testID="job-posting-manage-applicants"
             />
 
-            <ActionCard
-              icon={<XCircleIcon size={24} color="#EF4444" />}
-              title="취소 요청 관리"
-              description="스태프의 취소 요청을 검토합니다."
-              badge={
-                cancellationPendingCount > 0
-                  ? { label: `${cancellationPendingCount}건`, variant: 'error' }
-                  : undefined
-              }
-              onPress={handleCancellationRequests}
-              testID="job-posting-manage-cancellation-requests"
-            />
+            {!isFixed && (
+              <ActionCard
+                icon={<XCircleIcon size={24} color="#EF4444" />}
+                title="취소 요청 관리"
+                description="스태프의 취소 요청을 검토합니다."
+                badge={
+                  cancellationPendingCount > 0
+                    ? { label: `${cancellationPendingCount}건`, variant: 'error' }
+                    : undefined
+                }
+                onPress={handleCancellationRequests}
+                testID="job-posting-manage-cancellation-requests"
+              />
+            )}
 
-            <ActionCard
-              icon={<BanknotesIcon size={24} color="#10B981" />}
-              title="스태프 정산 관리"
-              description="확정 스태프 관리와 정산을 진행합니다."
-              badge={
-                filledPositions > 0
-                  ? { label: `${filledPositions}명`, variant: 'success' }
-                  : undefined
-              }
-              onPress={handleSettlements}
-              testID="job-posting-manage-settlements"
-            />
+            {!isFixed && (
+              <ActionCard
+                icon={<BanknotesIcon size={24} color="#10B981" />}
+                title="스태프 정산 관리"
+                description="확정 스태프 관리와 정산을 진행합니다."
+                badge={
+                  filledPositions > 0
+                    ? { label: `${filledPositions}명`, variant: 'success' }
+                    : undefined
+                }
+                onPress={handleSettlements}
+                testID="job-posting-manage-settlements"
+              />
+            )}
 
+            {!isFixed && (
+              <ActionCard
+                icon={<EditIcon size={24} color="#6B7280" />}
+                title="공고 수정"
+                description="공고 내용과 상태를 수정합니다."
+                onPress={handleEdit}
+                testID="job-posting-edit-button"
+              />
+            )}
+          </View>
+        </View>
+
+        {isFixed ? (
+          <View className="px-4 pb-4">
             <ActionCard
               icon={<EditIcon size={24} color="#6B7280" />}
-              title="공고 수정"
-              description="공고 내용과 상태를 수정합니다."
+              title="怨듦퀬 ?섏젙"
+              description="怨듦퀬 ?댁슜怨??곹깭瑜??섏젙?⑸땲??"
+              displayTitle="Edit Posting"
+              displayDescription="Update this fixed posting."
               onPress={handleEdit}
               testID="job-posting-edit-button"
             />
           </View>
-        </View>
+        ) : null}
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">
@@ -457,7 +485,8 @@ export default function JobPostingDetailScreen() {
           </View>
         ) : null}
 
-        {posting.postingType === 'tournament' &&
+        {!isFixed &&
+        posting.postingType === 'tournament' &&
         posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.REJECTED ? (
           <View className="px-4 pb-4">
             <Card
@@ -468,7 +497,7 @@ export default function JobPostingDetailScreen() {
               <View className="mb-3 flex-row items-start">
                 <XCircleIcon size={20} color="#EF4444" />
                 <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
-                  승인에 반려되었습니다
+                  승인 반려되었습니다
                 </Text>
               </View>
 
@@ -484,7 +513,7 @@ export default function JobPostingDetailScreen() {
               ) : null}
 
               <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                공고 내용을 수정한 뒤 다시 제출하면 재검토가 진행됩니다.
+                공고 내용을 수정한 뒤 다시 제출하면 재심사가 진행됩니다.
               </Text>
 
               <View className="flex-row">
@@ -543,7 +572,7 @@ export default function JobPostingDetailScreen() {
         confirmTestID="job-posting-delete-confirm"
         cancelTestID="job-posting-delete-cancel"
         title="공고 삭제"
-        message="정말 이 공고를 삭제하시겠습니까? 삭제한 공고는 복구할 수 없습니다."
+        message="정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다."
         confirmText="삭제"
         cancelText="취소"
         isDestructive

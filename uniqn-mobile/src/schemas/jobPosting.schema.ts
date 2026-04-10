@@ -312,10 +312,6 @@ export const createJobPostingSchema = z
   .superRefine((data, ctx) => {
     validatePostingTypeScheduleContract(data, ctx);
   })
-  .refine((data) => data.postingType !== 'fixed' && data.schedule.kind !== 'fixed', {
-    message: 'Fixed postings are disabled in V3 canonical mode',
-    path: ['postingType'],
-  })
   .refine(
     (data) => {
       if (data.postingType !== 'urgent' || data.schedule.kind !== 'dated') {
@@ -391,9 +387,6 @@ function validateDocumentContract(
 
   switch (postingType) {
     case 'fixed':
-      if (!hasFixedConfig) {
-        addContractIssue(ctx, ['fixedConfig'], 'fixed postings require fixedConfig');
-      }
       if (hasTournamentConfig) {
         addContractIssue(
           ctx,

@@ -44,7 +44,7 @@ export interface NotificationIconProps {
 // 타입별 아이콘 컴포넌트 매핑
 type IconComponent = React.FC<{ size?: number; color?: string }>;
 
-const typeIcons: Record<NotificationType, IconComponent> = {
+const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   // 지원 관련
   [NotificationType.NEW_APPLICATION]: UserPlusIcon,
   [NotificationType.APPLICATION_CANCELLED]: UserMinusIcon,
@@ -79,6 +79,10 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.ANNOUNCEMENT]: MegaphoneIcon,
   [NotificationType.MAINTENANCE]: WrenchScrewdriverIcon,
   [NotificationType.APP_UPDATE]: ArrowPathIcon,
+  [NotificationType.BOARD_COMMENT]: ChatBubbleLeftIcon,
+  [NotificationType.BOARD_REPLY]: ChatBubbleLeftIcon,
+  [NotificationType.BOARD_MENTION]: BellIcon,
+  [NotificationType.BOARD_LOCKED]: ShieldCheckIcon,
 
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: ChatBubbleLeftIcon,
@@ -94,7 +98,7 @@ const typeIcons: Record<NotificationType, IconComponent> = {
 };
 
 // 타입별 이모지 매핑
-const typeEmojis: Record<NotificationType, string> = {
+const typeEmojis: Partial<Record<NotificationType, string>> = {
   // 지원 관련
   [NotificationType.NEW_APPLICATION]: '👤',
   [NotificationType.APPLICATION_CANCELLED]: '❌',

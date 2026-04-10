@@ -22,10 +22,6 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-jest.mock('@/utils/job-posting/dateUtils', () => ({
-  getClosingStatus: jest.fn(() => ({ total: 10, filled: 2 })),
-}));
-
 jest.mock('@/errors/serviceErrorHandler', () => ({
   handleServiceError: jest.fn((error: unknown) => {
     if (error instanceof Error) return error;
@@ -68,8 +64,8 @@ jest.mock('@/errors', () => {
 jest.mock('@/types/assignment', () => ({
   FIXED_DATE_MARKER: 'FIXED_SCHEDULE',
   normalizeAssignmentRole: jest.fn((roleId: string) => ({
-    role: roleId === 'other:조명' ? 'other' : 'dealer',
-    customRole: roleId === 'other:조명' ? '조명' : undefined,
+    role: roleId === 'custom-role' ? 'other' : 'dealer',
+    customRole: roleId === 'custom-role' ? '커스텀 역할' : undefined,
   })),
 }));
 
@@ -79,22 +75,11 @@ jest.mock('@/domains/application', () => ({
     confirmedAt: '2026-03-21T00:00:00.000Z',
     confirmedBy: 'owner-1',
   })),
-  addCancellationToEntry: jest.fn((entry: Record<string, unknown>, reason: string | undefined) => ({
-    ...entry,
-    cancelledAt: '2026-03-21T01:00:00.000Z',
-    cancelReason: reason,
-  })),
   findActiveConfirmation: jest.fn((history: Record<string, unknown>[]) =>
     history.find((entry) => !entry.cancelledAt)
   ),
   updatePostingScheduleFilled: jest.fn((schedule: unknown) => schedule),
-}));
-
-jest.mock('../applicationRoleUtils', () => ({
-  resolvePrimaryApplicationRole: jest.fn(() => ({
-    role: 'dealer',
-    customRole: undefined,
-  })),
+  validateAssignmentSlotCapacity: jest.fn(() => ({ available: true })),
 }));
 
 jest.mock('@/constants', () => ({
@@ -103,12 +88,6 @@ jest.mock('@/constants', () => ({
     JOB_POSTINGS: 'jobPostings',
     WORK_LOGS: 'workLogs',
     STAFF: 'staff',
-  },
-  FIELDS: {
-    WORK_LOG: {
-      staffId: 'staffId',
-      jobPostingId: 'jobPostingId',
-    },
   },
   STATUS: {
     APPLICATION: {
@@ -128,6 +107,10 @@ jest.mock('@/constants', () => ({
       NOT_STARTED: 'not_started',
     },
   },
+}));
+
+jest.mock('../applicationLifecycleHelpers', () => ({
+  releaseConfirmedAssignmentsInTransaction: jest.fn(),
 }));
 
 jest.mock('firebase/firestore', () => {
@@ -188,7 +171,7 @@ describe('fixed application transaction compatibility', () => {
     jest.clearAllMocks();
   });
 
-  it('blocks fixed confirmation writes during the V3 cutover', async () => {
+  it('confirms fixed applications without creating worklogs', async () => {
     const transaction = {
       get: jest.fn((ref: { path: string }) => {
         if (ref.path === 'applications/app-1') {
@@ -199,9 +182,15 @@ describe('fixed application transaction compatibility', () => {
               applicantId: 'staff-1',
               applicantName: 'Alice',
               jobPostingId: 'job-1',
-              assignments: [],
+              assignments: [
+                {
+                  roleIds: ['dealer'],
+                  dates: ['FIXED_SCHEDULE'],
+                  timeSlot: 'FIXED_TIME',
+                  isGrouped: false,
+                },
+              ],
               confirmationHistory: [],
-              schedule: { kind: 'fixed' },
               createdAt: Timestamp.now(),
             })
           );
@@ -213,7 +202,12 @@ describe('fixed application transaction compatibility', () => {
             title: 'Fixed Job',
             ownerId: 'owner-1',
             status: 'active',
-            schedule: { kind: 'fixed' },
+            filledPositions: 0,
+            totalPositions: 1,
+            schedule: {
+              kind: 'fixed',
+              roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
+            },
           })
         );
       }),
@@ -226,48 +220,39 @@ describe('fixed application transaction compatibility', () => {
       callback(transaction)
     );
 
-    await expect(
-      confirmWithHistoryTransaction(
-        'app-1',
-        [
-          {
+    const result = await confirmWithHistoryTransaction('app-1', undefined, 'owner-1');
+
+    expect(result.workLogIds).toEqual([]);
+    expect(transaction.set).not.toHaveBeenCalled();
+    expect(transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'applications/app-1' }),
+      expect.objectContaining({
+        status: 'confirmed',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
             roleIds: ['dealer'],
             dates: ['FIXED_SCHEDULE'],
-            timeSlot: 'FIXED_TIME',
-          },
-        ] as never,
-        'owner-1'
-      )
-    ).rejects.toThrow('고정공고 확정은 현재 지원하지 않습니다.');
-
-    expect(transaction.set).not.toHaveBeenCalled();
-    expect(transaction.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ path: expect.stringMatching(/^workLogs\/auto-/) }),
-      expect.anything()
+          }),
+        ]),
+      })
+    );
+    expect(transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'jobPostings/job-1' }),
+      expect.objectContaining({
+        filledPositions: 1,
+        status: 'closed',
+      })
     );
   });
 
-  it('cancel removes related scheduled worklogs for fixed confirmations', async () => {
+  it('blocks fixed confirmation cancellation in phase 1', async () => {
     (getDoc as jest.Mock).mockResolvedValue(
       createDocSnap('app-1', {
         applicantId: 'staff-1',
         jobPostingId: 'job-1',
       })
     );
-    (getDocs as jest.Mock).mockResolvedValue({
-      docs: [
-        {
-          id: 'wl-fixed',
-          data: () => ({
-            status: 'scheduled',
-            role: 'dealer',
-            date: 'FIXED_SCHEDULE',
-            timeSlot: 'FIXED_TIME',
-            assignmentGroupId: null,
-          }),
-        },
-      ],
-    });
+    (getDocs as jest.Mock).mockResolvedValue({ docs: [] });
 
     const transaction = {
       get: jest.fn((ref: { path: string }) => {
@@ -279,7 +264,14 @@ describe('fixed application transaction compatibility', () => {
               applicantId: 'staff-1',
               applicantName: 'Alice',
               jobPostingId: 'job-1',
-              assignments: [],
+              assignments: [
+                {
+                  roleIds: ['dealer'],
+                  dates: ['FIXED_SCHEDULE'],
+                  timeSlot: 'FIXED_TIME',
+                  isGrouped: false,
+                },
+              ],
               confirmationHistory: [
                 {
                   assignments: [
@@ -295,24 +287,16 @@ describe('fixed application transaction compatibility', () => {
             })
           );
         }
-        if (ref.path === 'jobPostings/job-1') {
-          return Promise.resolve(
-            createDocSnap('job-1', {
-              id: 'job-1',
-              ownerId: 'owner-1',
-              status: 'active',
-              schedule: { kind: 'fixed' },
-            })
-          );
-        }
 
         return Promise.resolve(
-          createDocSnap('wl-fixed', {
-            status: 'scheduled',
-            role: 'dealer',
-            date: 'FIXED_SCHEDULE',
-            timeSlot: 'FIXED_TIME',
-            assignmentGroupId: null,
+          createDocSnap('job-1', {
+            id: 'job-1',
+            ownerId: 'owner-1',
+            status: 'active',
+            schedule: {
+              kind: 'fixed',
+              roleRequirements: [{ role: 'dealer', count: 1, filled: 1 }],
+            },
           })
         );
       }),
@@ -324,10 +308,10 @@ describe('fixed application transaction compatibility', () => {
       callback(transaction)
     );
 
-    await cancelConfirmationTransaction('app-1', 'owner-1', 'cancel');
-
-    expect(transaction.delete).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'workLogs/wl-fixed' })
+    await expect(cancelConfirmationTransaction('app-1', 'owner-1', 'cancel')).rejects.toThrow(
+      '고정공고는 1차 범위에서 확정 취소를 지원하지 않습니다.'
     );
+
+    expect(transaction.delete).not.toHaveBeenCalled();
   });
 });

@@ -5,7 +5,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useAppStartupStore, type StartupPhase } from '@/stores/appStartupStore';
 import { validateEnv } from '@/lib/env';
-import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
+import { tryInitializeFirebase } from '@/lib/firebase';
 import { ensureDualSdkSync } from '@/lib/authBridge';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
@@ -27,6 +27,12 @@ import { checkAutoLoginEnabled } from './useAutoLogin';
 import { retryWithBackoff } from '@/utils/retry';
 import { isNetworkError, toError } from '@/errors';
 import { useNetworkStatus } from './useNetworkStatus';
+import {
+  getCurrentAuthUser,
+  waitForAuthUser,
+  waitForInitialAuthUser,
+  type InitialAuthResolution,
+} from './internal/appInitializeAuthSession';
 
 interface AppInitState {
   isInitialized: boolean;
@@ -70,16 +76,7 @@ interface InitializationTrace {
 }
 
 const AUTH_STORE_HYDRATION_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 5000;
-const INITIAL_AUTH_READY_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 10000;
 const FOREGROUND_AUTH_SETTLE_TIMEOUT_MS = 2000;
-
-type AuthUserResolution =
-  | { user: FirebaseUser; source: 'current' | 'event' }
-  | { user: null; source: 'event' | 'timeout' };
-
-type InitialAuthResolution =
-  | { user: FirebaseUser; source: 'current' | 'ready' }
-  | { user: null; source: 'ready' | 'timeout' };
 
 const noopPutAttribute = (_key: string, _value: string): void => undefined;
 const noopStopTrace = (): void => undefined;
@@ -136,110 +133,7 @@ async function importWithFallback<T>(loader: () => Promise<T>, moduleId: string)
   }
 }
 
-async function waitForAuthUser(timeoutMs = 3000): Promise<AuthUserResolution> {
-  const auth = getFirebaseAuth();
-
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'current' };
-  }
-
-  return new Promise<AuthUserResolution>((resolve) => {
-    let unsubscribe: (() => void) | null = null;
-
-    const timeoutId = setTimeout(() => {
-      unsubscribe?.();
-      resolve({ user: null, source: 'timeout' });
-    }, timeoutMs);
-
-    unsubscribe = auth.onAuthStateChanged((user) => {
-      clearTimeout(timeoutId);
-      unsubscribe?.();
-      resolve({
-        user,
-        source: 'event',
-      });
-    });
-  });
-}
-
-export async function waitForInitialAuthUser(
-  timeoutMs = INITIAL_AUTH_READY_TIMEOUT_MS
-): Promise<InitialAuthResolution> {
-  const auth = getFirebaseAuth();
-
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'current' };
-  }
-
-  if (typeof auth.authStateReady !== 'function') {
-    const fallbackResolution = await waitForAuthUser(timeoutMs);
-
-    if (fallbackResolution.user) {
-      return {
-        user: fallbackResolution.user,
-        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
-      };
-    }
-
-    return {
-      user: null,
-      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
-    };
-  }
-
-  let timedOut = false;
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  try {
-    await Promise.race([
-      auth.authStateReady(),
-      new Promise<void>((resolve) => {
-        timeoutId = setTimeout(() => {
-          timedOut = true;
-          resolve();
-        }, timeoutMs);
-      }),
-    ]);
-  } catch (error) {
-    logger.warn('authStateReady failed during initialization, falling back to auth observer', {
-      component: 'useAppInitialize',
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    const fallbackResolution = await waitForAuthUser(timeoutMs);
-
-    if (fallbackResolution.user) {
-      return {
-        user: fallbackResolution.user,
-        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
-      };
-    }
-
-    return {
-      user: null,
-      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
-    };
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'ready' };
-  }
-
-  if (timedOut) {
-    logger.warn('Timed out waiting for initial auth state', {
-      component: 'useAppInitialize',
-      timeoutMs,
-      platform: Platform.OS,
-    });
-    return { user: null, source: 'timeout' };
-  }
-
-  return { user: null, source: 'ready' };
-}
+export { waitForInitialAuthUser } from './internal/appInitializeAuthSession';
 
 function isFatalAuthError(error: unknown): boolean {
   const errorCode = (error as { code?: string } | undefined)?.code;
@@ -696,8 +590,7 @@ export async function resolveSession({
 }
 
 async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsRetry: boolean }> {
-  const auth = getFirebaseAuth();
-  const activeUser = auth.currentUser;
+  const activeUser = getCurrentAuthUser();
 
   if (!activeUser || activeUser.uid !== context.authUser.uid) {
     return { needsRetry: false };
@@ -871,7 +764,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       return;
     }
 
-    const firebaseUser = getFirebaseAuth().currentUser;
+    const firebaseUser = getCurrentAuthUser();
     if (!firebaseUser || firebaseUser.uid !== authUser.uid) {
       return;
     }

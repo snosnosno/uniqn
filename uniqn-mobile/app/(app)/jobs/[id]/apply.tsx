@@ -11,12 +11,12 @@ import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
+import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
-import { getFirebaseAuth } from '@/lib/firebase';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
 import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
 
@@ -27,7 +27,7 @@ function LoadingState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <View className="flex-1 items-center justify-center bg-gray-50 p-6 dark:bg-surface-dark">
-      <Text className="mb-4 text-4xl">앗</Text>
+      <Text className="mb-4 text-4xl">!</Text>
       <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
         오류가 발생했습니다
       </Text>
@@ -39,7 +39,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-function AlreadyAppliedState() {
+function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-gray-50 p-6 dark:bg-surface-dark">
       <Text className="mb-4 text-4xl">이미</Text>
@@ -47,11 +47,16 @@ function AlreadyAppliedState() {
         이미 지원한 공고입니다
       </Text>
       <Text className="mb-6 text-center text-gray-500 dark:text-gray-400">
-        지원 현황은 일정 탭에서 확인할 수 있습니다
+        {isFixed
+          ? '지원 현황은 프로필에서 확인할 수 있습니다.'
+          : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}
       </Text>
       <View className="w-full max-w-xs gap-3">
-        <Button onPress={() => router.push('/(app)/(tabs)/schedule')} fullWidth>
-          내 일정 보기
+        <Button
+          onPress={() => router.push(isFixed ? '/(app)/(tabs)/profile' : '/(app)/(tabs)/schedule')}
+          fullWidth
+        >
+          {isFixed ? '프로필 보기' : '내 일정 보기'}
         </Button>
         <Button onPress={() => router.back()} variant="outline" fullWidth>
           돌아가기
@@ -68,7 +73,7 @@ function UnsupportedPostingState() {
         현재 지원할 수 없는 공고입니다
       </Text>
       <Text className="mb-6 text-center text-gray-500 dark:text-gray-400">
-        V3 canonical 통합 동안 고정 공고 지원은 비활성화되어 있습니다.
+        이 공고는 현재 앱 내부 지원 범위에 포함되어 있지 않습니다.
       </Text>
       <Button onPress={() => router.back()} variant="outline">
         돌아가기
@@ -80,7 +85,8 @@ function UnsupportedPostingState() {
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeUserId = useAuthStore((state) => state.user?.uid);
-  const userId = storeUserId ?? getFirebaseAuth().currentUser?.uid ?? null;
+  const isAuthInitialized = useAuthStore((state) => state.isInitialized);
+  const userId = resolveSessionUserId(storeUserId, isAuthInitialized);
   const { isDarkMode } = useThemeStore();
   const { addToast } = useToastStore();
   const queryClient = useQueryClient();
@@ -144,15 +150,8 @@ export default function ApplyScreen() {
           addToast({ type: 'error', message: '모집 인원이 마감되었습니다' });
           return;
         }
-
-        logger.info('지원서 제출 검증 통과', {
-          jobId: job.id,
-          status: latestJob.status,
-          filled,
-          total,
-        });
       } catch (error) {
-        logger.warn('지원 전 검증 실패, 서버에서 최종 검증', { error });
+        logger.warn('지원 전 최신 공고 검증 실패', { error });
       }
 
       submitApplication(
@@ -176,9 +175,14 @@ export default function ApplyScreen() {
     router.back();
   }, []);
 
-  const handleViewSchedule = useCallback(() => {
+  const handleViewPostSubmitTarget = useCallback(() => {
+    if (job?.schedule.kind === 'fixed') {
+      router.replace('/(app)/(tabs)/profile');
+      return;
+    }
+
     router.replace('/(app)/(tabs)/schedule');
-  }, []);
+  }, [job?.schedule.kind]);
 
   const handleReturnToJob = useCallback(() => {
     if (!id) {
@@ -216,7 +220,7 @@ export default function ApplyScreen() {
     );
   }
 
-  if (!isCanonicalDatedPosting(job)) {
+  if (!isSupportedReleasePosting(job)) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
@@ -225,11 +229,13 @@ export default function ApplyScreen() {
     );
   }
 
+  const isFixed = job.schedule.kind === 'fixed';
+
   if (hasApplied(job.id) || hasAppliedDirect) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
-        <AlreadyAppliedState />
+        <AlreadyAppliedState isFixed={isFixed} />
       </SafeAreaView>
     );
   }
@@ -249,13 +255,15 @@ export default function ApplyScreen() {
             지원이 완료되었습니다
           </Text>
           <Text className="mb-8 text-center text-gray-500 dark:text-gray-400">
-            지원 현황은 일정 탭에서 확인할 수 있습니다.
+            {isFixed
+              ? '지원 결과는 프로필에서 확인할 수 있습니다.'
+              : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}
             {'\n'}
             지금 바로 다음 행동을 선택해 주세요.
           </Text>
           <View className="w-full max-w-xs gap-3">
-            <Button onPress={handleViewSchedule} fullWidth>
-              내 일정 보기
+            <Button onPress={handleViewPostSubmitTarget} fullWidth>
+              {isFixed ? '프로필 보기' : '내 일정 보기'}
             </Button>
             <Button onPress={handleReturnToJob} variant="outline" fullWidth>
               공고 상세로 돌아가기

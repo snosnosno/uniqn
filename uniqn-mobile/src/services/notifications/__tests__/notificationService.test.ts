@@ -241,24 +241,29 @@ describe('NotificationService', () => {
   // getUnreadCount
   // ==========================================================================
   describe('getUnreadCount', () => {
-    it('should return unread count from repository', async () => {
-      mockRepo.getUnreadCount.mockResolvedValue(5);
+    it('should return cached unread count when the counter document exists', async () => {
+      mockRepo.getUnreadCounterFromCache.mockResolvedValue(5);
 
       const result = await getUnreadCount('user-1');
 
-      expect(mockRepo.getUnreadCount).toHaveBeenCalledWith('user-1');
+      expect(mockRepo.getUnreadCounterFromCache).toHaveBeenCalledWith('user-1');
+      expect(mockRepo.getUnreadCount).not.toHaveBeenCalled();
       expect(result).toBe(5);
     });
 
-    it('should return 0 when no unread notifications', async () => {
-      mockRepo.getUnreadCount.mockResolvedValue(0);
+    it('should fall back to a count query when the cached counter is missing', async () => {
+      mockRepo.getUnreadCounterFromCache.mockResolvedValue(null);
+      mockRepo.getUnreadCount.mockResolvedValue(3);
 
       const result = await getUnreadCount('user-1');
 
-      expect(result).toBe(0);
+      expect(mockRepo.getUnreadCounterFromCache).toHaveBeenCalledWith('user-1');
+      expect(mockRepo.getUnreadCount).toHaveBeenCalledWith('user-1');
+      expect(result).toBe(3);
     });
 
     it('should propagate repository errors', async () => {
+      mockRepo.getUnreadCounterFromCache.mockResolvedValue(null);
       mockRepo.getUnreadCount.mockRejectedValue(new Error('Count failed'));
 
       await expect(getUnreadCount('user-1')).rejects.toThrow('Count failed');

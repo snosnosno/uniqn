@@ -40,6 +40,7 @@ import {
   FirebaseAdminRepository,
   FirebaseReviewRepository,
   FirebaseTemplateRepository,
+  FirebaseBoardRepository,
 } from './firebase';
 
 // ============================================================================
@@ -121,6 +122,12 @@ export type {
   PaginatedReviews,
   // Template
   ITemplateRepository,
+  // Board
+  IBoardRepository,
+  BoardRepositoryType,
+  FetchBoardRepositoryPostsOptions,
+  FetchScheduleMembershipsOptions,
+  FetchBoardReportsOptions,
 } from './interfaces';
 
 // ============================================================================
@@ -142,6 +149,7 @@ export {
   FirebaseAdminRepository,
   FirebaseReviewRepository,
   FirebaseTemplateRepository,
+  FirebaseBoardRepository,
 } from './firebase';
 
 // ============================================================================
@@ -435,3 +443,8 @@ export const reviewRepository = new FirebaseReviewRepository();
  * ```
  */
 export const templateRepository = new FirebaseTemplateRepository();
+
+/**
+ * Board Repository singleton
+ */
+export const boardRepository = new FirebaseBoardRepository();

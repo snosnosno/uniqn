@@ -5,7 +5,9 @@ import {
   SectionCard,
   BasicInfoSection,
   DateRequirementsSection,
+  RolesSection,
   SalarySection,
+  ScheduleSection,
   PreQuestionsSection,
 } from './sections';
 import type { JobPostingFormData } from '@/types';
@@ -76,6 +78,7 @@ export function JobPostingScrollForm({
   }, []);
 
   const isTournament = data.postingType === 'tournament';
+  const isFixed = data.postingType === 'fixed';
 
   return (
     <View className="flex-1">
@@ -104,9 +107,26 @@ export function JobPostingScrollForm({
             hasError={getErrorCount(errors.schedule) > 0}
             errorCount={getErrorCount(errors.schedule)}
           >
-            <DateRequirementsSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
+            {isFixed ? (
+              <ScheduleSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
+            ) : (
+              <DateRequirementsSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
+            )}
           </SectionCard>
         </View>
+
+        {isFixed && (
+          <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
+            <SectionCard
+              title="모집 역할"
+              required
+              hasError={getErrorCount(errors.roles) > 0}
+              errorCount={getErrorCount(errors.roles)}
+            >
+              <RolesSection data={data} onUpdate={onUpdate} errors={errors.roles} />
+            </SectionCard>
+          </View>
+        )}
 
         <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
           <SectionCard

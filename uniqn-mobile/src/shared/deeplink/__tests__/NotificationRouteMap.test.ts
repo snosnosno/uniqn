@@ -10,7 +10,7 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(33);
+    expect(allNotificationTypes.length).toBe(37);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -85,6 +85,21 @@ describe('NotificationRouteMap', () => {
   it('routes maintenance and app update notifications to real screens', () => {
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.MAINTENANCE]()).toEqual({ name: 'notices' });
     expect(NOTIFICATION_ROUTE_MAP[NotificationType.APP_UPDATE]()).toEqual({ name: 'settings' });
+  });
+
+  it('routes board activity notifications to the board surface or exact post', () => {
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_COMMENT]()).toEqual({ name: 'board' });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_REPLY]()).toEqual({ name: 'board' });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_MENTION]()).toEqual({ name: 'board' });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_LOCKED]()).toEqual({ name: 'board' });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_COMMENT]({ postId: 'post-1' })).toEqual({
+      name: 'board/post',
+      params: { postId: 'post-1' },
+    });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.BOARD_MENTION]({ postId: 'post-2' })).toEqual({
+      name: 'board/post',
+      params: { postId: 'post-2' },
+    });
   });
 
   it('routes answered inquiries to my inquiries or the exact inquiry detail', () => {

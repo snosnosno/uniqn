@@ -1,6 +1,7 @@
 import { RouteMapper } from '../RouteMapper';
 import { EXPO_ROUTES } from '../RouteRegistry';
 import type { DeepLinkRoute } from '../types';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 describe('RouteMapper', () => {
   describe('toExpoPath', () => {
@@ -18,6 +19,10 @@ describe('RouteMapper', () => {
     it('maps authenticated root routes', () => {
       expect(RouteMapper.toExpoPath({ name: 'notifications' })).toBe(EXPO_ROUTES.notifications);
       expect(RouteMapper.toExpoPath({ name: 'schedule' })).toBe(EXPO_ROUTES.schedule);
+      expect(RouteMapper.toExpoPath({ name: 'board' })).toBe(EXPO_ROUTES.board);
+      expect(RouteMapper.toExpoPath({ name: 'board/post', params: { postId: 'post-1' } })).toBe(
+        '/(app)/(tabs)/board/post/post-1'
+      );
       expect(RouteMapper.toExpoPath({ name: 'profile' })).toBe(EXPO_ROUTES.profile);
       expect(RouteMapper.toExpoPath({ name: 'settings' })).toBe(EXPO_ROUTES.settings);
       expect(RouteMapper.toExpoPath({ name: 'support' })).toBe(EXPO_ROUTES.support);
@@ -54,7 +59,7 @@ describe('RouteMapper', () => {
         '/(app)/support/inquiry/inq-1'
       );
       expect(RouteMapper.toExpoPath({ name: 'notice', params: { id: 'notice-1' } })).toBe(
-        '/(app)/notices/notice-1'
+        `/(app)/(tabs)/board/post/${buildBoardNoticePostId('notice-1')}`
       );
     });
 
@@ -87,6 +92,11 @@ describe('RouteMapper', () => {
         [{ name: 'admin/stats' }, EXPO_ROUTES.adminStats],
         [{ name: 'admin/reports' }, EXPO_ROUTES.adminReports],
         [{ name: 'admin/report', params: { id: 'report-1' } }, '/(admin)/reports/report-1'],
+        [{ name: 'admin/board-reports' }, EXPO_ROUTES.adminBoardReports],
+        [
+          { name: 'admin/board-report', params: { id: 'board-report-1' } },
+          '/(admin)/board-reports/board-report-1',
+        ],
         [{ name: 'admin/announcements' }, EXPO_ROUTES.adminAnnouncements],
         [{ name: 'admin/announcement-create' }, EXPO_ROUTES.adminAnnouncementCreate],
         [{ name: 'admin/announcement', params: { id: 'ann-1' } }, '/(admin)/announcements/ann-1'],
@@ -139,7 +149,16 @@ describe('RouteMapper', () => {
     it('marks admin routes as admin-only', () => {
       expect(RouteMapper.getRequiredRole('admin/users')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/stats')).toBe('admin');
+      expect(RouteMapper.getRequiredRole('admin/board-reports')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/announcement-edit')).toBe('admin');
+    });
+  });
+
+  describe('expoRouteRequiresAdmin', () => {
+    it('marks board report routes as admin-only expo routes', () => {
+      expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReports')).toBe(true);
+      expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReportDetail')).toBe(true);
+      expect(RouteMapper.expoRouteRequiresAdmin('board')).toBe(false);
     });
   });
 });

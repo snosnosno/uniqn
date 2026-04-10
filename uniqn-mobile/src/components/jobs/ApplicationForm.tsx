@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
 import { findUnansweredRequired, initializePreQuestionAnswers } from '@/domains/application';
+import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, type Assignment } from '@/types/assignment';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { useModalStore } from '@/stores/modalStore';
-import type { Assignment, JobPosting, PostingType, PreQuestionAnswer } from '@/types';
+import type { JobPosting, PostingType, PreQuestionAnswer } from '@/types';
 import { AssignmentSelector } from './AssignmentSelector';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { PreQuestionForm } from './PreQuestionForm';
@@ -24,6 +25,67 @@ interface ApplicationFormProps {
   onClose: () => void;
 }
 
+function FixedRoleSelector({
+  selectedRoleId,
+  onSelect,
+  disabled,
+  options,
+}: {
+  selectedRoleId: string | null;
+  onSelect: (roleId: string) => void;
+  disabled: boolean;
+  options: ReturnType<typeof buildPostingFacts>['application']['availableRoleOptions'];
+}) {
+  return (
+    <View className="gap-3">
+      <Text className="text-base font-semibold text-gray-900 dark:text-white">지원 역할</Text>
+      {options.map((option) => {
+        const isSelected = selectedRoleId === option.key;
+        const isDisabled = disabled || !option.isAvailable;
+
+        return (
+          <Pressable
+            key={option.key}
+            onPress={() => !isDisabled && onSelect(option.key)}
+            disabled={isDisabled}
+            className={`rounded-xl border p-4 ${
+              isSelected
+                ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
+                : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+            } ${isDisabled ? 'opacity-50' : 'active:opacity-80'}`}
+          >
+            <View className="flex-row items-center justify-between">
+              <View className="flex-1">
+                <Text
+                  className={`text-base font-semibold ${
+                    isSelected
+                      ? 'text-primary-700 dark:text-primary-300'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  {option.roleLabel}
+                </Text>
+                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  모집 {option.count}명 · 남은 자리 {option.remaining}명
+                </Text>
+              </View>
+              {isSelected ? (
+                <Badge variant="primary" size="sm">
+                  선택됨
+                </Badge>
+              ) : !option.isAvailable ? (
+                <Badge variant="error" size="sm">
+                  마감
+                </Badge>
+              ) : null}
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function ApplicationForm({
   job,
   visible,
@@ -35,6 +97,7 @@ export function ApplicationForm({
   const showConfirm = useModalStore((state) => state.showConfirm);
   const [message, setMessage] = useState('');
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
+  const [selectedFixedRoleId, setSelectedFixedRoleId] = useState<string | null>(null);
   const [errorQuestionIds, setErrorQuestionIds] = useState<string[]>([]);
   const questions = postingFacts.questions.items;
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(() =>
@@ -45,20 +108,38 @@ export function ApplicationForm({
   const hasPreQuestions = questions.length > 0;
   const locationName = typeof job.location === 'string' ? job.location : job.location?.name;
 
+  const fixedAssignment = useMemo<Assignment[]>(
+    () =>
+      selectedFixedRoleId
+        ? [
+            {
+              roleIds: [selectedFixedRoleId],
+              timeSlot: postingFacts.application.fixedAssignmentTimeSlot || FIXED_TIME_MARKER,
+              dates: [FIXED_DATE_MARKER],
+              isGrouped: false,
+              checkMethod: 'individual',
+            },
+          ]
+        : [],
+    [postingFacts.application.fixedAssignmentTimeSlot, selectedFixedRoleId]
+  );
+
+  const assignmentsForSubmit = isFixedMode ? fixedAssignment : selectedAssignments;
+
   const hasUnsavedChanges = useMemo(
     () =>
       message.trim().length > 0 ||
-      selectedAssignments.length > 0 ||
+      assignmentsForSubmit.length > 0 ||
       preQuestionAnswers.some((answer) => answer.answer.trim().length > 0),
-    [message, preQuestionAnswers, selectedAssignments.length]
+    [assignmentsForSubmit.length, message, preQuestionAnswers]
   );
 
   const canSubmit = useMemo(() => {
-    if (isSubmitting || isFixedMode) {
+    if (isSubmitting) {
       return false;
     }
 
-    if (selectedAssignments.length === 0) {
+    if (assignmentsForSubmit.length === 0) {
       return false;
     }
 
@@ -67,10 +148,10 @@ export function ApplicationForm({
     }
 
     return true;
-  }, [hasPreQuestions, isFixedMode, isSubmitting, preQuestionAnswers, selectedAssignments.length]);
+  }, [assignmentsForSubmit.length, hasPreQuestions, isSubmitting, preQuestionAnswers]);
 
   const handleSubmit = useCallback(() => {
-    if (!canSubmit || isFixedMode) {
+    if (!canSubmit) {
       return;
     }
 
@@ -83,23 +164,16 @@ export function ApplicationForm({
     }
 
     onSubmit(
-      selectedAssignments,
+      assignmentsForSubmit,
       message.trim() || undefined,
       hasPreQuestions ? preQuestionAnswers : undefined
     );
-  }, [
-    canSubmit,
-    hasPreQuestions,
-    isFixedMode,
-    message,
-    onSubmit,
-    preQuestionAnswers,
-    selectedAssignments,
-  ]);
+  }, [assignmentsForSubmit, canSubmit, hasPreQuestions, message, onSubmit, preQuestionAnswers]);
 
   const resetForm = useCallback(() => {
     setMessage('');
     setSelectedAssignments([]);
+    setSelectedFixedRoleId(null);
     setErrorQuestionIds([]);
     setPreQuestionAnswers(initializePreQuestionAnswers(questions));
   }, [questions]);
@@ -120,8 +194,8 @@ export function ApplicationForm({
     }
 
     showConfirm(
-      '작성을 그만둘까요?',
-      '입력한 지원 내용은 저장되지 않고 바로 삭제됩니다.',
+      '작성을 그만할까요?',
+      '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.',
       handleClose
     );
   }, [handleClose, hasUnsavedChanges, isSubmitting, showConfirm]);
@@ -167,7 +241,7 @@ export function ApplicationForm({
           {postingFacts.compensation.allowanceLabels.length > 0 && (
             <View className="mt-1 flex-row flex-wrap">
               {postingFacts.compensation.allowanceLabels.map((item, index) => (
-                <Badge key={`${item}-${index}`} variant="default" size="sm" className="mr-1 mb-1">
+                <Badge key={`${item}-${index}`} variant="default" size="sm" className="mb-1 mr-1">
                   {item}
                 </Badge>
               ))}
@@ -175,25 +249,23 @@ export function ApplicationForm({
           )}
         </View>
 
-        {isFixedMode ? (
-          <View className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
-            <Text className="text-base font-semibold text-amber-800 dark:text-amber-200">
-              고정 공고 지원은 현재 비활성화되어 있습니다.
-            </Text>
-            <Text className="mt-2 text-sm leading-5 text-amber-700 dark:text-amber-300">
-              V3 canonical 통합 동안 날짜 기반 공고만 지원합니다. 다른 공고를 선택해 주세요.
-            </Text>
-          </View>
-        ) : (
-          <View className="mb-6">
+        <View className="mb-6">
+          {isFixedMode ? (
+            <FixedRoleSelector
+              selectedRoleId={selectedFixedRoleId}
+              onSelect={setSelectedFixedRoleId}
+              disabled={isSubmitting}
+              options={postingFacts.application.availableRoleOptions}
+            />
+          ) : (
             <AssignmentSelector
               jobPosting={job}
               selectedAssignments={selectedAssignments}
               onSelectionChange={setSelectedAssignments}
               disabled={isSubmitting}
             />
-          </View>
-        )}
+          )}
+        </View>
 
         {hasPreQuestions && (
           <View className="mb-6">
@@ -214,12 +286,12 @@ export function ApplicationForm({
           <TextInput
             value={message}
             onChangeText={setMessage}
-            placeholder="간단한 자기소개나 경력을 입력해 주세요."
+            placeholder="간단한 자기소개나 경력을 입력해 주세요"
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={4}
             maxLength={200}
-            editable={!isSubmitting && !isFixedMode}
+            editable={!isSubmitting}
             className="min-h-[120px] rounded-lg bg-gray-50 p-4 text-base text-gray-900 dark:bg-surface dark:text-white"
             textAlignVertical="top"
           />

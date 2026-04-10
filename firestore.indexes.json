@@ -217,64 +217,179 @@
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "attendanceRecords",
+      "collectionGroup": "boardMemberships",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "date",
-          "order": "DESCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "attendanceRecords",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "date",
+          "fieldPath": "boardType",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "checkInTime",
+          "fieldPath": "canRead",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityAt",
           "order": "DESCENDING"
         }
       ],
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "attendanceRecords",
+      "collectionGroup": "boardMemberships",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "eventId",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "staffId",
+          "fieldPath": "boardType",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "createdAt",
+          "fieldPath": "canRead",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "workDate",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardMemberships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "workDate",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardMemberships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityAt",
           "order": "DESCENDING"
         }
       ],
       "density": "SPARSE_ALL"
     },
     {
-      "collectionGroup": "attendanceRecords",
+      "collectionGroup": "boardMemberships",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "staffId",
+          "fieldPath": "postId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "createdAt",
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardMemberships",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "postId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "canRead",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "authorId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "boardPosts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "boardType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isPinned",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastActivityAt",
           "order": "DESCENDING"
         }
       ],
@@ -310,21 +425,6 @@
         {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "events",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "endDate",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "startDate",
-          "order": "ASCENDING"
         }
       ],
       "density": "SPARSE_ALL"
@@ -369,6 +469,48 @@
         },
         {
           "fieldPath": "lastSavedAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "postingType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tournamentConfig.approvalStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ],
@@ -706,6 +848,40 @@
       "density": "SPARSE_ALL"
     },
     {
+      "collectionGroup": "deletionRequests",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scheduledDeletionAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletionRequest.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deletionRequest.scheduledDeletionAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
       "collectionGroup": "paymentTransactions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -844,6 +1020,21 @@
         {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "reactions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "postId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
         }
       ],
       "density": "SPARSE_ALL"
@@ -1068,26 +1259,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "eventId",
+          "fieldPath": "date",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "date",
-          "order": "ASCENDING"
-        }
-      ],
-      "density": "SPARSE_ALL"
-    },
-    {
-      "collectionGroup": "workLogs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "eventId",
+          "fieldPath": "staffId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "date",
+          "fieldPath": "checkInTime",
           "order": "DESCENDING"
         }
       ],
@@ -1097,10 +1277,6 @@
       "collectionGroup": "workLogs",
       "queryScope": "COLLECTION",
       "fields": [
-        {
-          "fieldPath": "eventId",
-          "order": "ASCENDING"
-        },
         {
           "fieldPath": "staffId",
           "order": "ASCENDING"

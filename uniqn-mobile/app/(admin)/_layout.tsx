@@ -44,19 +44,21 @@ export default function AdminLayout() {
         },
       }}
     >
-      <Stack.Screen name="index" options={{ title: '관리자 대시보드' }} />
-      <Stack.Screen name="stats/index" options={{ title: '서비스 통계' }} />
+      <Stack.Screen name="index" options={{ title: '관리자' }} />
+      <Stack.Screen name="stats/index" options={{ title: '통계' }} />
       <Stack.Screen name="users/index" options={{ title: '사용자 관리' }} />
       <Stack.Screen name="users/[id]" options={{ title: '사용자 상세' }} />
       <Stack.Screen name="reports/index" options={{ title: '신고 관리' }} />
       <Stack.Screen name="reports/[id]" options={{ title: '신고 상세' }} />
+      <Stack.Screen name="board-reports/index" options={{ title: '게시판 신고' }} />
+      <Stack.Screen name="board-reports/[id]" options={{ title: '게시판 신고 상세' }} />
       <Stack.Screen name="inquiries/index" options={{ title: '문의 관리' }} />
       <Stack.Screen name="inquiries/[id]" options={{ title: '문의 상세' }} />
       <Stack.Screen name="announcements/index" options={{ title: '공지사항 관리' }} />
       <Stack.Screen name="announcements/create" options={{ title: '공지사항 작성' }} />
       <Stack.Screen name="announcements/[id]/index" options={{ title: '공지사항 상세' }} />
       <Stack.Screen name="announcements/[id]/edit" options={{ title: '공지사항 수정' }} />
-      <Stack.Screen name="tournaments/index" options={{ title: '대회공고 승인' }} />
+      <Stack.Screen name="tournaments/index" options={{ title: '대회공고 검토' }} />
     </Stack>
   );
 }

@@ -6,6 +6,7 @@
  */
 
 import { NotificationType } from '@/types/notification';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 // ============================================================================
 // Types
@@ -205,14 +206,17 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.ANNOUNCEMENT]: {
     title: (d) => d.announcementTitle || '공지사항',
     body: (d) => d.announcementBody || '새로운 공지사항이 있습니다.',
-    link: (d) => (d.announcementId ? `/notices/${d.announcementId}` : '/notices'),
+    link: (d) =>
+      d.announcementId
+        ? `/board/post/${buildBoardNoticePostId(d.announcementId)}`
+        : '/board/notice',
     icon: '📢',
   },
 
   [NotificationType.MAINTENANCE]: {
     title: '🔧 시스템 점검',
     body: (d) => d.maintenanceMessage || '시스템 점검이 예정되어 있습니다.',
-    link: () => '/notices',
+    link: () => '/board/notice',
     icon: '🔧',
   },
 
@@ -226,6 +230,34 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   // =========================================================================
   // 관리자
   // =========================================================================
+
+  [NotificationType.BOARD_COMMENT]: {
+    title: '새 댓글',
+    body: (d) => d.body || `"${d.boardTitle || '게시글'}"에 새 댓글이 달렸습니다.`,
+    link: (d) => (d.postId ? `/board/post/${d.postId}` : '/board'),
+    icon: '💬',
+  },
+
+  [NotificationType.BOARD_REPLY]: {
+    title: '새 답글',
+    body: (d) => d.body || `"${d.boardTitle || '게시글'}" 댓글에 새 답글이 달렸습니다.`,
+    link: (d) => (d.postId ? `/board/post/${d.postId}` : '/board'),
+    icon: '↩️',
+  },
+
+  [NotificationType.BOARD_MENTION]: {
+    title: '멘션',
+    body: (d) => d.body || `"${d.boardTitle || '게시글'}"에서 회원님을 멘션했습니다.`,
+    link: (d) => (d.postId ? `/board/post/${d.postId}` : '/board'),
+    icon: '@',
+  },
+
+  [NotificationType.BOARD_LOCKED]: {
+    title: '게시글 잠금',
+    body: (d) => d.body || `"${d.boardTitle || '게시글'}"이 잠겼습니다.`,
+    link: (d) => (d.postId ? `/board/post/${d.postId}` : '/board'),
+    icon: '🔒',
+  },
 
   [NotificationType.INQUIRY_ANSWERED]: {
     title: '💬 문의 답변',

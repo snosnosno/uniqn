@@ -4,7 +4,6 @@ import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
-import { getFirebaseAuth } from '@/lib/firebase';
 import {
   getCriticalOfflineCache,
   setCriticalOfflineCache,
@@ -26,6 +25,7 @@ import { requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
+import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { STATUS } from '@/constants';
 import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
 
@@ -310,9 +310,9 @@ export function useApplications() {
 }
 
 export function useHasAppliedToJob(jobPostingId?: string) {
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const { isOnline } = useNetworkStatus();
-  const applicantId = user?.uid ?? getFirebaseAuth().currentUser?.uid ?? null;
+  const applicantId = resolveSessionUserId(user?.uid, isInitialized);
 
   return useQuery({
     queryKey: [

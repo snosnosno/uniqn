@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
@@ -94,6 +94,55 @@ function isTaxSettingsShape(value: unknown): boolean {
     typeof value.value === 'number' &&
     (value.taxableItems === undefined || isTaxableItemsShape(value.taxableItems))
   );
+}
+
+function getRoleCatalogIdentityKey(role: {
+  role?: PostingRoleCatalogEntry['role'];
+  customRole?: string;
+}): string {
+  if (role.role === 'other' && role.customRole) {
+    return `other:${role.customRole}`;
+  }
+
+  return role.role ?? '';
+}
+
+function normalizeRoleCatalogIdentity(roleCatalog?: PostingRoleCatalogEntry[]): string[] {
+  if (!roleCatalog || roleCatalog.length === 0) {
+    return [];
+  }
+
+  return roleCatalog
+    .map((entry) => getRoleCatalogIdentityKey(entry))
+    .filter((key) => key.length > 0)
+    .sort();
+}
+
+function hasDuplicateRoleCatalogIdentity(roleCatalog?: PostingRoleCatalogEntry[]): boolean {
+  const roleKeys = normalizeRoleCatalogIdentity(roleCatalog);
+  return new Set(roleKeys).size !== roleKeys.length;
+}
+
+function hasRoleCatalogIdentityMutation(
+  currentRoleCatalog: PostingRoleCatalogEntry[] | undefined,
+  nextRoleCatalog: PostingRoleCatalogEntry[] | undefined
+): boolean {
+  if (nextRoleCatalog === undefined) {
+    return false;
+  }
+
+  if (hasDuplicateRoleCatalogIdentity(nextRoleCatalog)) {
+    return true;
+  }
+
+  const currentKeys = normalizeRoleCatalogIdentity(currentRoleCatalog);
+  const nextKeys = normalizeRoleCatalogIdentity(nextRoleCatalog);
+
+  if (currentKeys.length !== nextKeys.length) {
+    return true;
+  }
+
+  return currentKeys.some((key, index) => key !== nextKeys[index]);
 }
 
 function getCreateRuleShapeSummary(document: Record<string, unknown>) {
@@ -269,7 +318,7 @@ function getCreateRuleShapeSummary(document: Record<string, unknown>) {
   };
 }
 
-function assertFixedPostingDisabled(input: {
+export function assertFixedPostingEditDisabled(input: {
   postingType?: CreateJobPostingInput['postingType'];
   schedule?: CreateJobPostingInput['schedule'];
 }) {
@@ -437,8 +486,6 @@ export async function createWithTransaction(
   let createRuleShapeSummary: ReturnType<typeof getCreateRuleShapeSummary> | undefined;
 
   try {
-    assertFixedPostingDisabled(input);
-
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const newDocRef = doc(jobsRef);
     const now = Timestamp.now();
@@ -501,8 +548,6 @@ export async function updateWithTransaction(
 ): Promise<JobPosting> {
   try {
     logger.info('Job posting update transaction', { jobPostingId, ownerId });
-    assertFixedPostingDisabled(input);
-
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       const { jobRef, jobPosting: currentData } = await loadJobPostingForTransaction(
         transaction,
@@ -512,7 +557,9 @@ export async function updateWithTransaction(
       assertJobPostingOwner(currentData, ownerId, 'Only the owner can update this job posting.');
 
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
-      const hasScheduleMutation = input.schedule !== undefined || input.roleCatalog !== undefined;
+      const hasScheduleMutation =
+        input.schedule !== undefined ||
+        hasRoleCatalogIdentityMutation(currentData.roleCatalog, input.roleCatalog);
 
       if (hasConfirmedApplicants && hasScheduleMutation) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -664,6 +711,16 @@ export async function reopenWithTransaction(jobPostingId: string, ownerId: strin
         });
       }
 
+      if (
+        currentData.schedule.kind === 'fixed' &&
+        currentData.totalPositions > 0 &&
+        currentData.filledPositions >= currentData.totalPositions
+      ) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '모든 역할 정원이 마감된 고정공고는 재오픈할 수 없습니다.',
+        });
+      }
+
       const updateData: Record<string, unknown> = {
         status: STATUS.JOB_POSTING.ACTIVE,
         updatedAt: serverTimestamp(),
@@ -776,7 +833,7 @@ export async function getStatsByOwnerId(ownerId: string): Promise<JobPostingStat
       totalViews: 0,
     };
 
-    jobPostings.filter(isCanonicalDatedPosting).forEach((data) => {
+    jobPostings.filter(isEmployerManageablePosting).forEach((data) => {
       stats.total++;
       stats.totalApplications += data.stats?.totalApplicants ?? 0;
       stats.totalViews += data.viewCount ?? 0;

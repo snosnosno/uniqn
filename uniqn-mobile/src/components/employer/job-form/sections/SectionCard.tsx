@@ -16,6 +16,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 interface SectionCardProps {
   /** 섹션 제목 */
   title: string;
+  displayTitle?: string;
   /** 필수 여부 표시 */
   required?: boolean;
   /** 선택 사항 표시 */
@@ -42,6 +43,7 @@ interface SectionCardProps {
 
 export const SectionCard = memo(function SectionCard({
   title,
+  displayTitle,
   required = false,
   optional = false,
   children,
@@ -52,6 +54,7 @@ export const SectionCard = memo(function SectionCard({
   collapsed = false,
   onToggle,
 }: SectionCardProps) {
+  const resolvedTitle = displayTitle ?? title;
   const borderColor = hasError
     ? 'border-red-300 dark:border-red-700'
     : 'border-gray-200 dark:border-surface-overlay';
@@ -59,7 +62,9 @@ export const SectionCard = memo(function SectionCard({
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+          {resolvedTitle}
+        </Text>
         {required && <Text className="ml-1 text-red-500">*</Text>}
         {optional && <Text className="ml-2 text-xs text-gray-400 dark:text-gray-500">(선택)</Text>}
       </View>
@@ -99,7 +104,7 @@ export const SectionCard = memo(function SectionCard({
           onPress={onToggle}
           className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay"
           accessibilityRole="button"
-          accessibilityLabel={`${title} 섹션 ${collapsed ? '펼치기' : '접기'}`}
+          accessibilityLabel={`${resolvedTitle} 섹션 ${collapsed ? '펼치기' : '접기'}`}
         >
           {HeaderContent}
         </Pressable>

@@ -22,7 +22,7 @@ const DEFAULT_COUNTS: PostingTypeCounts = {
   total: 0,
 };
 
-export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular'];
+export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular', 'fixed'];
 
 async function fetchPostingTypeCounts(): Promise<PostingTypeCounts> {
   try {

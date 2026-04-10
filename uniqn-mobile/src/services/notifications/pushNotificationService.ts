@@ -172,6 +172,14 @@ export const DEFAULT_CHANNELS: NotificationChannel[] = [
   },
 ];
 
+const EXPO_PUSH_TOKEN_RETRY_DELAYS_MS = [750, 2000] as const;
+
+interface ExpoPushTokenErrorMetadata {
+  isTransient: boolean;
+  requestId?: string;
+  statusCode?: number;
+}
+
 // ============================================================================
 // State
 // ============================================================================
@@ -202,6 +210,69 @@ async function loadNotificationsModule(): Promise<typeof import('expo-notificati
   } catch {
     return null;
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractExpoPushTokenErrorMetadata(error: Error): ExpoPushTokenErrorMetadata {
+  const message = error.message ?? '';
+  const statusCodeMatch = message.match(/received:\s*(\d{3})/i);
+  const requestIdMatch = message.match(/"requestId":"([^"]+)"/);
+  const statusCode = statusCodeMatch ? Number(statusCodeMatch[1]) : undefined;
+  const isTransient =
+    (statusCode !== undefined && statusCode >= 500) ||
+    message.includes('SERVICE_UNAVAILABLE') ||
+    message.includes('temporarily unavailable due to high load') ||
+    message.includes('"isTransient":true') ||
+    message.includes('"isTransient": true');
+
+  return {
+    isTransient,
+    requestId: requestIdMatch?.[1],
+    statusCode,
+  };
+}
+
+async function getExpoPushTokenWithRetry(projectId: string): Promise<string> {
+  if (!Notifications) {
+    throw new Error('expo-notifications module is not loaded');
+  }
+
+  for (let attempt = 0; attempt <= EXPO_PUSH_TOKEN_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+      return data;
+    } catch (error) {
+      const normalizedError = toError(error);
+      const metadata = extractExpoPushTokenErrorMetadata(normalizedError);
+      const nextRetryMs = EXPO_PUSH_TOKEN_RETRY_DELAYS_MS[attempt];
+
+      if (!metadata.isTransient || nextRetryMs === undefined) {
+        throw normalizedError;
+      }
+
+      logger.warn('Expo Push Token fetch temporarily unavailable - retrying', {
+        component: 'pushNotificationService',
+        action: 'getToken',
+        attempt: attempt + 1,
+        nextRetryMs,
+        requestId: metadata.requestId,
+        statusCode: metadata.statusCode,
+      });
+      void crashlyticsService.leaveBreadcrumb('expo_push_token_retry_scheduled', {
+        attempt: attempt + 1,
+        nextRetryMs,
+        requestId: metadata.requestId,
+        statusCode: metadata.statusCode,
+      });
+
+      await sleep(nextRetryMs);
+    }
+  }
+
+  throw new Error('Expo Push Token retry loop exited unexpectedly');
 }
 
 // ============================================================================
@@ -448,10 +519,9 @@ export async function requestPermission(): Promise<NotificationPermissionStatus>
  * 푸시 토큰 가져오기
  */
 export async function getToken(): Promise<PushTokenResult | null> {
-  if (Platform.OS === 'web' || !Notifications) {
-    return null;
-  }
+  return getTokenWithRecovery();
 
+  /*
   try {
     // 권한 확인
     const permission = await checkPermission();
@@ -467,9 +537,7 @@ export async function getToken(): Promise<PushTokenResult | null> {
       return null;
     }
 
-    const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({
-      projectId,
-    });
+    const expoPushToken = await getExpoPushTokenWithRetry(projectId);
 
     currentToken = expoPushToken;
     logger.info('Expo Push Token 발급', {
@@ -484,7 +552,66 @@ export async function getToken(): Promise<PushTokenResult | null> {
     };
   } catch (error) {
     logger.error('푸시 토큰 발급 실패', toError(error));
-    crashlyticsService.recordError(toError(error), {
+    return null;
+  }
+  */
+}
+
+/**
+ * 사용자에게 토큰 등록
+ */
+export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
+  if (Platform.OS === 'web' || !Notifications) {
+    return null;
+  }
+
+  try {
+    const permission = await checkPermission();
+    if (!permission.granted) {
+      logger.warn('?몄떆 ?뚮┝ 沅뚰븳???놁뼱 ?좏겙??媛?몄삱 ???놁뒿?덈떎');
+      return null;
+    }
+
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      logger.error('EAS projectId瑜?李얠쓣 ???놁뒿?덈떎');
+      return null;
+    }
+
+    const expoPushToken = await getExpoPushTokenWithRetry(projectId);
+
+    currentToken = expoPushToken;
+    logger.info('Expo Push Token 諛쒓툒', {
+      tokenLength: expoPushToken.length,
+      type: 'expo',
+      platform: Platform.OS,
+    });
+
+    return {
+      token: expoPushToken,
+      type: 'expo',
+    };
+  } catch (error) {
+    const normalizedError = toError(error);
+    const metadata = extractExpoPushTokenErrorMetadata(normalizedError);
+
+    if (metadata.isTransient) {
+      logger.warn('Expo Push Token fetch temporarily unavailable', {
+        component: 'pushNotificationService',
+        action: 'getToken',
+        error: normalizedError.message,
+        requestId: metadata.requestId,
+        statusCode: metadata.statusCode,
+      });
+      void crashlyticsService.leaveBreadcrumb('expo_push_token_temporarily_unavailable', {
+        isTransient: true,
+        requestId: metadata.requestId,
+        statusCode: metadata.statusCode,
+      });
+      return null;
+    }
+
+    logger.error('?몄떆 ?좏겙 諛쒓툒 ?ㅽ뙣', normalizedError, {
       component: 'pushNotificationService',
       action: 'getToken',
     });
@@ -492,12 +619,9 @@ export async function getToken(): Promise<PushTokenResult | null> {
   }
 }
 
-/**
- * 사용자에게 토큰 등록
- */
 export async function registerToken(userId: string): Promise<boolean> {
   try {
-    const tokenResult = await getToken();
+    const tokenResult = await getTokenWithRecovery();
     if (!tokenResult) {
       logger.warn('토큰 없음 - 등록 스킵');
       return false;
@@ -726,7 +850,7 @@ export const pushNotificationService = {
   requestPermission,
 
   // 토큰
-  getToken,
+  getToken: getTokenWithRecovery,
   registerToken,
   unregisterToken,
   getCurrentToken,

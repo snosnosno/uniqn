@@ -1,6 +1,11 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import {
+  archiveScheduleBoard,
+  syncScheduleBoardByJobPostingId,
+  syncScheduleBoardForJobPosting,
+} from '@/services/boardService';
 import type { TaxSettings } from '@/utils/settlement';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
@@ -11,6 +16,21 @@ import type {
 } from '@/types';
 
 export type { CreateJobPostingResult, JobPostingStats };
+
+async function syncScheduleBoardSafely(
+  task: () => Promise<unknown>,
+  context: Record<string, unknown>
+) {
+  try {
+    await task();
+  } catch (error) {
+    logger.warn('Schedule board sync failed', {
+      component: 'jobManagementService',
+      ...context,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 async function createSinglePosting(
   input: CreateJobPostingInput,
@@ -29,7 +49,13 @@ export async function createJobPosting(
   ownerName: string
 ): Promise<CreateJobPostingResult> {
   try {
-    return await createSinglePosting(input, ownerId, ownerName);
+    const result = await createSinglePosting(input, ownerId, ownerName);
+    await syncScheduleBoardSafely(() => syncScheduleBoardForJobPosting(result.jobPosting), {
+      jobPostingId: result.id,
+      ownerId,
+      action: 'create',
+    });
+    return result;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 생성',
@@ -48,6 +74,11 @@ export async function updateJobPosting(
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
     const result = await jobPostingRepository.updateWithTransaction(jobPostingId, input, ownerId);
+    await syncScheduleBoardSafely(() => syncScheduleBoardForJobPosting(result), {
+      jobPostingId,
+      ownerId,
+      action: 'update',
+    });
 
     logger.info('공고 수정 완료', { jobPostingId });
     return result;
@@ -64,6 +95,11 @@ export async function deleteJobPosting(jobPostingId: string, ownerId: string): P
   try {
     logger.info('공고 삭제 시작', { jobPostingId, ownerId });
     await jobPostingRepository.deleteWithTransaction(jobPostingId, ownerId);
+    await syncScheduleBoardSafely(() => archiveScheduleBoard(jobPostingId), {
+      jobPostingId,
+      ownerId,
+      action: 'delete',
+    });
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -78,6 +114,11 @@ export async function closeJobPosting(jobPostingId: string, ownerId: string): Pr
   try {
     logger.info('공고 마감 시작', { jobPostingId, ownerId });
     await jobPostingRepository.closeWithTransaction(jobPostingId, ownerId);
+    await syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
+      jobPostingId,
+      ownerId,
+      action: 'close',
+    });
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -92,6 +133,11 @@ export async function reopenJobPosting(jobPostingId: string, ownerId: string): P
   try {
     logger.info('공고 재오픈 시작', { jobPostingId, ownerId });
     await jobPostingRepository.reopenWithTransaction(jobPostingId, ownerId);
+    await syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
+      jobPostingId,
+      ownerId,
+      action: 'reopen',
+    });
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -129,6 +175,16 @@ export async function bulkUpdateJobPostingStatus(
       jobPostingIds,
       status,
       ownerId
+    );
+    await Promise.all(
+      jobPostingIds.map((jobPostingId) =>
+        syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
+          jobPostingId,
+          ownerId,
+          action: 'bulk-status',
+          status,
+        })
+      )
     );
 
     logger.info('공고 상태 일괄 변경 완료', { successCount });

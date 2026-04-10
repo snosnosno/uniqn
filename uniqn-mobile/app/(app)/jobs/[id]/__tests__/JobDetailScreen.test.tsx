@@ -58,6 +58,7 @@ jest.mock('@/hooks', () => ({
       location: { name: 'Seoul' },
       workDate: '2025-01-16',
       status: 'active',
+      schedule: { kind: 'fixed' },
     },
     isLoading: false,
     isRefreshing: false,
@@ -93,6 +94,7 @@ jest.mock('@/utils/applicationStatusMessage', () => ({
 
 jest.mock('@/utils/jobPostingVisibility', () => ({
   isCanonicalDatedPosting: () => true,
+  isSupportedReleasePosting: () => true,
 }));
 
 describe('JobDetailScreen', () => {

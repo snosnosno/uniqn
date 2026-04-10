@@ -77,6 +77,10 @@ export const NotificationType = {
   MAINTENANCE: 'maintenance',
   /** 앱 업데이트 */
   APP_UPDATE: 'app_update',
+  BOARD_COMMENT: 'board_comment',
+  BOARD_REPLY: 'board_reply',
+  BOARD_MENTION: 'board_mention',
+  BOARD_LOCKED: 'board_locked',
 
   // === 관리자 ===
   /** 문의 답변 완료 */
@@ -102,6 +106,11 @@ export const NotificationType = {
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 
+export const NOTIFICATION_TYPES = Object.values(NotificationType) as [
+  NotificationType,
+  ...NotificationType[],
+];
+
 // ============================================================================
 // Notification Categories
 // ============================================================================
@@ -121,6 +130,11 @@ export const NotificationCategory = {
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationCategory = (typeof NotificationCategory)[keyof typeof NotificationCategory];
+
+export const NOTIFICATION_CATEGORIES = Object.values(NotificationCategory) as [
+  NotificationCategory,
+  ...NotificationCategory[],
+];
 
 /**
  * 알림 타입 → 카테고리 매핑
@@ -160,6 +174,10 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
   [NotificationType.MAINTENANCE]: NotificationCategory.SYSTEM,
   [NotificationType.APP_UPDATE]: NotificationCategory.SYSTEM,
+  [NotificationType.BOARD_COMMENT]: NotificationCategory.SYSTEM,
+  [NotificationType.BOARD_REPLY]: NotificationCategory.SYSTEM,
+  [NotificationType.BOARD_MENTION]: NotificationCategory.SYSTEM,
+  [NotificationType.BOARD_LOCKED]: NotificationCategory.SYSTEM,
 
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: NotificationCategory.ADMIN,
@@ -181,7 +199,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
 /**
  * 알림 우선순위
  */
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export const NOTIFICATION_PRIORITIES = ['low', 'normal', 'high', 'urgent'] as const;
+
+export type NotificationPriority = (typeof NOTIFICATION_PRIORITIES)[number];
 
 /**
  * 알림 타입별 기본 우선순위
@@ -221,6 +241,10 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.ANNOUNCEMENT]: 'normal',
   [NotificationType.MAINTENANCE]: 'high',
   [NotificationType.APP_UPDATE]: 'low',
+  [NotificationType.BOARD_COMMENT]: 'normal',
+  [NotificationType.BOARD_REPLY]: 'normal',
+  [NotificationType.BOARD_MENTION]: 'high',
+  [NotificationType.BOARD_LOCKED]: 'high',
 
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: 'normal',
@@ -384,6 +408,10 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
   [NotificationType.MAINTENANCE]: AndroidChannelId.ANNOUNCEMENTS,
   [NotificationType.APP_UPDATE]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.BOARD_COMMENT]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.BOARD_REPLY]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.BOARD_MENTION]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.BOARD_LOCKED]: AndroidChannelId.ANNOUNCEMENTS,
 
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: AndroidChannelId.DEFAULT,
@@ -440,6 +468,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.ANNOUNCEMENT]: '공지사항',
   [NotificationType.MAINTENANCE]: '시스템 점검',
   [NotificationType.APP_UPDATE]: '앱 업데이트',
+  [NotificationType.BOARD_COMMENT]: '새 댓글',
+  [NotificationType.BOARD_REPLY]: '새 답글',
+  [NotificationType.BOARD_MENTION]: '멘션',
+  [NotificationType.BOARD_LOCKED]: '게시글 잠금',
 
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: '문의 답변',

@@ -117,3 +117,12 @@ export type {
 
 // Template Repository
 export type { ITemplateRepository } from './ITemplateRepository';
+
+// Board Repository
+export type {
+  IBoardRepository,
+  BoardRepositoryType,
+  FetchBoardRepositoryPostsOptions,
+  FetchScheduleMembershipsOptions,
+  FetchBoardReportsOptions,
+} from './IBoardRepository';

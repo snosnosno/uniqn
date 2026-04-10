@@ -172,7 +172,7 @@ describe('job posting submission helpers', () => {
     expect(result.questions.items).toEqual(formData.preQuestions);
   });
 
-  it('omits schedule mutations when confirmed applicants exist', () => {
+  it('omits schedule mutations but preserves role salary updates when confirmed applicants exist', () => {
     const formData = createFormData({
       workDate: '2026-03-22',
       dateSpecificRequirements: [createDateRequirement('2026-03-22')],
@@ -192,10 +192,43 @@ describe('job posting submission helpers', () => {
     });
 
     expect(result.schedule).toBeUndefined();
-    expect(result.roleCatalog).toBeUndefined();
+    expect(result.roleCatalog).toEqual([
+      { role: 'dealer', salary: { type: 'hourly', amount: 12000 } },
+    ]);
     expect(result.questions).toEqual({
       items: formData.preQuestions,
     });
+  });
+
+  it('builds canonical update payloads for fixed postings', () => {
+    const formData = createFormData({
+      postingType: 'fixed',
+      workDate: '',
+      dateSpecificRequirements: [],
+      daysPerWeek: 3,
+      startTime: '18:30',
+      isStartTimeNegotiable: false,
+      roles: [
+        {
+          name: DEALER_ROLE_NAME,
+          count: 3,
+          salary: { type: 'hourly', amount: 14000 },
+        },
+      ],
+    });
+
+    const result = buildUpdateJobPostingInput(formData);
+
+    expect(result.postingType).toBe('fixed');
+    expect(result.schedule?.kind).toBe('fixed');
+    if (result.schedule?.kind === 'fixed') {
+      expect(result.schedule.daysPerWeek).toBe(3);
+      expect(result.schedule.startTime).toBe('18:30');
+      expect(result.schedule.roleRequirements).toEqual([{ role: 'dealer', count: 3, filled: 0 }]);
+    }
+    expect(result.roleCatalog).toEqual([
+      { role: 'dealer', salary: { type: 'hourly', amount: 14000 } },
+    ]);
   });
 
   it('keeps hidden pre-question drafts out of canonical payloads when the toggle is off', () => {

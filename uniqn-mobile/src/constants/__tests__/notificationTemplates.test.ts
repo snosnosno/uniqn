@@ -10,6 +10,7 @@ import {
   NOTIFICATION_DATA_PATTERNS,
 } from '../notificationTemplates';
 import { NotificationType } from '@/types/notification';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 describe('notificationTemplates', () => {
   // ============================================================================
@@ -363,13 +364,15 @@ describe('notificationTemplates', () => {
     it('should fallback ANNOUNCEMENT link to notices list when announcementId is missing', () => {
       const template = NotificationTemplates[NotificationType.ANNOUNCEMENT];
 
-      expect(template.link({})).toBe('/notices');
+      expect(template.link({})).toBe('/board/notice');
     });
 
     it('should generate ANNOUNCEMENT detail link when announcementId exists', () => {
       const template = NotificationTemplates[NotificationType.ANNOUNCEMENT];
 
-      expect(template.link({ announcementId: 'notice-123' })).toBe('/notices/notice-123');
+      expect(template.link({ announcementId: 'notice-123' })).toBe(
+        `/board/post/${buildBoardNoticePostId('notice-123')}`
+      );
     });
   });
 
@@ -474,7 +477,7 @@ describe('notificationTemplates', () => {
 
       expect(result.title).toBe('공지사항');
       expect(result.body).toContain('공지사항');
-      expect(result.link).toBe('/notices');
+      expect(result.link).toBe('/board/notice');
     });
 
     it('should include icon when available', () => {

@@ -21,6 +21,7 @@ import {
   NOTIFICATION_TYPE_TO_CHANNEL,
   NOTIFICATION_TYPE_LABELS,
 } from '@/types/notification';
+import { buildBoardNoticePostId } from '@/shared/board/boardIds';
 
 describe('notificationConfig', () => {
   // ============================================================================
@@ -273,19 +274,19 @@ describe('notificationConfig', () => {
     describe('system types', () => {
       it('should generate static link for ANNOUNCEMENT', () => {
         const link = generateDeepLink(NotificationType.ANNOUNCEMENT);
-        expect(link).toBe('/notices');
+        expect(link).toBe('/board/notice');
       });
 
       it('should generate notice detail link for ANNOUNCEMENT with id', () => {
         const link = generateDeepLink(NotificationType.ANNOUNCEMENT, {
           announcementId: 'notice-123',
         });
-        expect(link).toBe('/notices/notice-123');
+        expect(link).toBe(`/board/post/${buildBoardNoticePostId('notice-123')}`);
       });
 
       it('should generate static link for MAINTENANCE', () => {
         const link = generateDeepLink(NotificationType.MAINTENANCE);
-        expect(link).toBe('/notices');
+        expect(link).toBe('/board/notice');
       });
 
       it('should generate static link for APP_UPDATE', () => {

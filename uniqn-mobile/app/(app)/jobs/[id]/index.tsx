@@ -15,21 +15,21 @@ import {
   useJobDetail,
   useShare,
 } from '@/hooks';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { trackJobView } from '@/services/observability';
 import { useThemeStore } from '@/stores';
 import { getApplicationStatusMessage } from '@/utils/applicationStatusMessage';
-import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
+import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 
 const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
   const { openInstallPrompt } = useInstallPrompt();
-  const sessionUserId = user?.uid ?? getFirebaseAuth().currentUser?.uid ?? null;
+  const sessionUserId = resolveSessionUserId(user?.uid, isInitialized);
   const {
     data: hasAppliedDirect = false,
     isLoading: isCheckingExistingApplication,
@@ -117,7 +117,7 @@ export default function JobDetailScreen() {
     );
   }
 
-  if (!isCanonicalDatedPosting(job)) {
+  if (!isSupportedReleasePosting(job)) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
@@ -128,16 +128,18 @@ export default function JobDetailScreen() {
           fallbackHref="/(app)/(tabs)"
         />
         <ErrorState
-          message="고정 공고는 상세 화면에서 아직 지원할 수 없습니다."
+          message="이 공고는 현재 앱 내부 상세 화면에서 지원하지 않습니다."
           onRetry={refresh}
         />
       </SafeAreaView>
     );
   }
 
+  const isFixed = job.schedule.kind === 'fixed';
   const alreadyApplied = !!sessionUserId && (hasApplied(job.id) || hasAppliedDirect);
   const applicationStatus = getApplicationStatus(job.id);
   const canRequestCancel =
+    !isFixed &&
     applicationStatus?.status === STATUS.APPLICATION.CONFIRMED &&
     !applicationStatus?.cancellationRequest;
 
@@ -184,11 +186,13 @@ export default function JobDetailScreen() {
               <View className="w-full flex-row">
                 <View className="mr-2 flex-1">
                   <Button
-                    onPress={() => router.push('/(app)/(tabs)/schedule')}
+                    onPress={() =>
+                      router.push(isFixed ? '/(app)/(tabs)/profile' : '/(app)/(tabs)/schedule')
+                    }
                     variant="outline"
                     fullWidth
                   >
-                    내 지원 확인
+                    {isFixed ? '프로필 보기' : '내 일정 확인'}
                   </Button>
                 </View>
                 {canRequestCancel ? (

@@ -46,7 +46,6 @@ export const COLLECTIONS = {
   USERS: 'users',
   STAFF: 'staff',
   WORK_LOGS: 'workLogs',
-  ATTENDANCE_RECORDS: 'attendanceRecords',
   JOB_POSTINGS: 'jobPostings',
   APPLICATIONS: 'applications',
   NOTIFICATIONS: 'notifications',
@@ -323,10 +322,8 @@ export {
   STAFF_ROLES,
   ROLE_ICONS,
   DEFAULT_ROLE_ICON,
-  STAFF_ROLE_OPTIONS,
   DEFAULT_START_TIME,
   DATE_REQUIREMENT_ERRORS,
-  type StaffRoleKey,
   type StaffRoleOption,
 } from './jobPosting';
 

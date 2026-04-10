@@ -443,6 +443,56 @@ export const queryKeys = {
     unreadCount: () => [...queryKeys.announcements.all, 'unreadCount'] as const,
   },
 
+  boards: {
+    all: ['boards'] as const,
+    home: (userId?: string, role?: string, isAdmin?: boolean) =>
+      [
+        ...queryKeys.boards.all,
+        'home',
+        userId ?? 'anonymous',
+        role ?? 'unknown',
+        isAdmin ?? false,
+      ] as const,
+    list: (
+      boardType: string,
+      userId?: string,
+      role?: string,
+      isAdmin?: boolean,
+      limitCount?: number
+    ) =>
+      [
+        ...queryKeys.boards.all,
+        'list',
+        boardType,
+        userId ?? 'anonymous',
+        role ?? 'unknown',
+        isAdmin ?? false,
+        limitCount ?? 'default',
+      ] as const,
+    detail: (postId: string, userId?: string, role?: string, isAdmin?: boolean) =>
+      [
+        ...queryKeys.boards.all,
+        'detail',
+        postId,
+        userId ?? 'anonymous',
+        role ?? 'unknown',
+        isAdmin ?? false,
+      ] as const,
+    mentionCandidates: (postId: string, userId?: string, role?: string, isAdmin?: boolean) =>
+      [
+        ...queryKeys.boards.all,
+        'mentionCandidates',
+        postId,
+        userId ?? 'anonymous',
+        role ?? 'unknown',
+        isAdmin ?? false,
+      ] as const,
+    adminReports: (status: string = 'all') =>
+      [...queryKeys.boards.all, 'adminReports', status] as const,
+    adminReportDetail: (reportId: string) =>
+      [...queryKeys.boards.all, 'adminReportDetail', reportId] as const,
+  },
+
   // 문의 (Inquiry)
   inquiries: {
     all: ['inquiries'] as const,
@@ -609,6 +659,7 @@ export const invalidateQueries = {
   },
   /** 공지사항 관련 모든 쿼리 무효화 */
   announcements: () => queryClient.invalidateQueries({ queryKey: queryKeys.announcements.all }),
+  boards: () => queryClient.invalidateQueries({ queryKey: queryKeys.boards.all }),
   /** 리뷰/평가 관련 모든 쿼리 무효화 */
   reviews: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all }),
   all: () => queryClient.invalidateQueries(),

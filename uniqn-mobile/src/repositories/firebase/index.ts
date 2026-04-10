@@ -19,3 +19,4 @@ export { FirebaseInquiryRepository } from './InquiryRepository';
 export { FirebaseAdminRepository } from './AdminRepository';
 export { FirebaseReviewRepository } from './ReviewRepository';
 export { FirebaseTemplateRepository } from './TemplateRepository';
+export { FirebaseBoardRepository } from './BoardRepository';

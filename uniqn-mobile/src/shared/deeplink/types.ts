@@ -7,6 +7,8 @@ export type DeepLinkRoute =
   | { name: 'forgot-password' }
   | { name: 'notifications' }
   | { name: 'schedule' }
+  | { name: 'board' }
+  | { name: 'board/post'; params: { postId: string } }
   | { name: 'profile' }
   | { name: 'settings' }
   | { name: 'settings/profile' }
@@ -37,6 +39,8 @@ export type DeepLinkRoute =
   | { name: 'admin/stats' }
   | { name: 'admin/reports' }
   | { name: 'admin/report'; params: { id: string } }
+  | { name: 'admin/board-reports' }
+  | { name: 'admin/board-report'; params: { id: string } }
   | { name: 'admin/announcements' }
   | { name: 'admin/announcement-create' }
   | { name: 'admin/announcement'; params: { id: string } }

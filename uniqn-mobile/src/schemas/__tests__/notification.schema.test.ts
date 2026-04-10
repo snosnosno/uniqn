@@ -22,6 +22,7 @@ import {
   isNotificationDocument,
   parseNotificationSettingsDocument,
 } from '../notification.schema';
+import { NOTIFICATION_CATEGORIES, NOTIFICATION_TYPES } from '@/types/notification';
 
 // ============================================================================
 // Mock Timestamp (jest.setup.js MockTimestamp)
@@ -39,37 +40,7 @@ const createMockTimestamp = (seconds = 1700000000, nanoseconds = 0) => ({
 // ============================================================================
 
 describe('notificationTypeSchema', () => {
-  const validTypes = [
-    'new_application',
-    'application_cancelled',
-    'application_confirmed',
-    'confirmation_cancelled',
-    'application_rejected',
-    'cancellation_approved',
-    'cancellation_rejected',
-    'staff_checked_in',
-    'staff_checked_out',
-    'check_in_confirmed',
-    'check_out_confirmed',
-    'checkin_reminder',
-    'no_show_alert',
-    'schedule_change',
-    'schedule_created',
-    'schedule_cancelled',
-    'settlement_completed',
-    'settlement_requested',
-    'job_updated',
-    'job_cancelled',
-    'job_closed',
-    'announcement',
-    'maintenance',
-    'app_update',
-    'inquiry_answered',
-    'report_resolved',
-    'new_report',
-    'new_inquiry',
-    'tournament_approval_request',
-  ];
+  const validTypes = [...NOTIFICATION_TYPES];
 
   it.each(validTypes)('should accept valid type: %s', (type) => {
     expect(notificationTypeSchema.safeParse(type).success).toBe(true);
@@ -94,7 +65,7 @@ describe('notificationTypeSchema', () => {
 // ============================================================================
 
 describe('notificationCategorySchema', () => {
-  const validCategories = ['application', 'attendance', 'settlement', 'job', 'system', 'admin'];
+  const validCategories = [...NOTIFICATION_CATEGORIES];
 
   it.each(validCategories)('should accept valid category: %s', (cat) => {
     expect(notificationCategorySchema.safeParse(cat).success).toBe(true);

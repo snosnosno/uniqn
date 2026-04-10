@@ -211,6 +211,28 @@ describe("Firestore jobPosting canonical rules", () => {
     );
   });
 
+  it("allows phase-1 fixed posting creates without fixedConfig", async () => {
+    const employerDb = testEnv.authenticatedContext("employer-1").firestore();
+    const fixedPosting = createCanonicalFixedJobPosting({
+      schedule: {
+        kind: "fixed",
+        daysPerWeek: 5,
+        startTime: "18:00",
+        isStartTimeNegotiable: false,
+        roleRequirements: [{ role: "dealer", count: 1, filled: 0 }],
+      },
+    });
+
+    delete fixedPosting.fixedConfig;
+
+    await assertSucceeds(
+      setDoc(
+        doc(employerDb, "jobPostings", "job-create-fixed-phase1"),
+        fixedPosting,
+      ),
+    );
+  });
+
   it("rejects canonical creates from staff accounts", async () => {
     const staffDb = testEnv.authenticatedContext("staff-1").firestore();
 
