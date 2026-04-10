@@ -1,6 +1,7 @@
 /**
- * UNIQN Mobile - ?몄쬆 肄붿뼱 ?쒕퉬?? *
- * @description 濡쒓렇?? ?뚯썝媛?? ?몄뀡 愿由? ?꾪솕踰덊샇/?대찓???됰꽕??以묐났 ?뺤씤
+ * UNIQN Mobile - 인증 코어 서비스
+ *
+ * @description 로그인, 회원가입, 세션 관리, 전화번호/이메일/닉네임 중복 확인
  * @version 1.0.0
  */
 
@@ -61,22 +62,22 @@ import { getUserProfile as fetchUserProfile } from './userProfileService';
 // Internal Helpers
 // ============================================================================
 
-/** ?대찓??留덉뒪??(濡쒓퉭?? - maskValue ?섑띁 */
+/** 이메일 마스킹 (로깅용) - maskValue 래퍼 */
 const maskEmail = (email: string) => maskValue(email, 'email');
 
-/** Email Enumeration ?꾪솕: 遺꾨떦 5???쒗븳 (?대씪?댁뼵?몄륫) */
+/** Email Enumeration 완화: 분당 5회 제한 (클라이언트측) */
 const emailCheckLimiter = createClientRateLimiter(5, 60_000);
-/** Email 議댁옱 ?뺤씤 理쒖냼 ?묐떟 ?쒓컙 (??대컢 怨듦꺽 ?꾪솕) */
+/** Email 존재 확인 최소 응답 시간 (타이밍 공격 완화) */
 const EMAIL_CHECK_MIN_RESPONSE_MS = 300;
 
 /**
- * [H3] Native Auth ?덉쟾 媛?? *
- * getNativeAuth!() 媛뺤젣 ?몃옒??????ъ슜. Native SDK 誘몄큹湲고솕 ??紐낇솗???먮윭.
+ * [H3] Native Auth 안전 가드
+ * getNativeAuth!() 강제 언래핑 대신 사용. Native SDK 미초기화 시 명확한 에러.
  */
 function requireNativeAuth() {
   if (!getNativeAuth) {
     throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-      userMessage: '?ㅼ씠?곕툕 ?몄쬆???ъ슜?????놁뒿?덈떎. ?깆쓣 ?ㅼ떆 ?쒖옉?댁＜?몄슂.',
+      userMessage: '네이티브 인증을 사용할 수 없습니다. 앱을 다시 시작해주세요.',
     });
   }
   return getNativeAuth();
@@ -205,7 +206,7 @@ export async function rollbackPhoneOnlyAccount(
 function requireNativeLink() {
   if (!nativeLinkWithCredential) {
     throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-      userMessage: '?ㅼ씠?곕툕 ?몄쬆???ъ슜?????놁뒿?덈떎.',
+      userMessage: '네이티브 인증을 사용할 수 없습니다.',
     });
   }
   return nativeLinkWithCredential;
@@ -214,7 +215,7 @@ function requireNativeLink() {
 function requireNativeEmailProvider() {
   if (!NativeEmailAuthProvider) {
     throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-      userMessage: '?ㅼ씠?곕툕 ?몄쬆???ъ슜?????놁뒿?덈떎.',
+      userMessage: '네이티브 인증을 사용할 수 없습니다.',
     });
   }
   return NativeEmailAuthProvider;
@@ -314,8 +315,7 @@ async function ensureWebAuthSession(
   if (!webUser || webUser.uid !== expectedUid) {
     throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
       userMessage:
-        options.missingUserMessage ??
-        '?몄쬆 ?뺣낫瑜?李얠쓣 ???놁뒿?덈떎. ?ㅼ떆 濡쒓렇?명빐二쇱꽭??',
+        options.missingUserMessage ?? '인증 정보를 찾을 수 없습니다. 다시 로그인해주세요.',
     });
   }
 
@@ -323,10 +323,10 @@ async function ensureWebAuthSession(
 }
 
 /**
- * Dual SDK UID 遺덉씪移?寃利?(?ㅼ씠?곕툕 ?꾩슜)
+ * Dual SDK UID 불일치 검증 (네이티브 전용)
  *
- * 濡쒓렇???뚯썝媛???깃났 ??Native SDK? Web SDK??currentUser UID媛 ?쇱튂?섎뒗吏 寃利?
- * 遺덉씪移???syncSignOut?쇰줈 ?묒そ 紐⑤몢 濡쒓렇?꾩썐?섏뿬 ?곗씠???뺥빀??蹂댄샇.
+ * 로그인/회원가입 성공 후 Native SDK와 Web SDK의 currentUser UID가 일치하는지 검증.
+ * 불일치 시 syncSignOut으로 양쪽 모두 로그아웃하여 데이터 혼합을 보호.
  */
 async function verifyDualSDKConsistency(context: string): Promise<void> {
   if (Platform.OS === 'web') return;
@@ -335,7 +335,7 @@ async function verifyDualSDKConsistency(context: string): Promise<void> {
   const webUid = getFirebaseAuth().currentUser?.uid;
 
   if (nativeUid && webUid && nativeUid !== webUid) {
-    logger.error('Dual SDK UID 遺덉씪移?媛먯? ???묒そ 濡쒓렇?꾩썐', {
+    logger.error('Dual SDK UID 불일치 감지 → 양쪽 로그아웃', {
       component: 'authService',
       context,
       nativeUid,
@@ -343,12 +343,12 @@ async function verifyDualSDKConsistency(context: string): Promise<void> {
     });
     await syncSignOut();
     throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-      userMessage: '?몄쬆 ?곹깭媛 ?쇱튂?섏? ?딆뒿?덈떎. ?ㅼ떆 濡쒓렇?명빐二쇱꽭??',
+      userMessage: '인증 상태가 일치하지 않습니다. 다시 로그인해주세요.',
     });
   }
 }
 
-/** SignUpFormData ??VerifyAndSavePayload 蹂??(?꾨줈???꾨뱶 ?쒖쇅 ??媛????蹂꾨룄 ?낅젰) */
+/** SignUpFormData → VerifyAndSavePayload 변환 (프론트 필드 제외 후 가공된 별도 입력) */
 function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
   return {
     verifiedPhone: data.verifiedPhone,
@@ -370,7 +370,7 @@ function createPostCommitSessionRestoreError(error: unknown): AuthError {
   });
 }
 
-/** ?뚯썝媛??Analytics ?대깽??(Web/Native 怨듯넻) */
+/** 회원가입 Analytics 이벤트 (Web/Native 공통) */
 interface RollbackPhoneOnlyAccountOptions {
   email?: string;
   password?: string;
@@ -596,9 +596,9 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
 // ============================================================================
 
 /**
- * [H5] Phone-only 怨좎븘 怨꾩젙 濡ㅻ갚 (Web/Native 怨듯넻)
+ * [H5] Phone-only 고아 계정 롤백 (Web/Native 공통)
  *
- * ?뚯썝媛???ㅽ뙣 ??phone-only 怨꾩젙????젣?섍퀬, ?ㅽ뙣 ??怨좎븘 怨꾩젙?쇰줈 留덊궧.
+ * 회원가입 실패 시 phone-only 계정을 삭제하고, 실패 시 고아 계정으로 마킹.
  */
 /* export async function rollbackPhoneOnlyAccount(
   uid: string,
@@ -606,13 +606,13 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
   phone?: string,
   options: RollbackPhoneOnlyAccountOptions = {}
 ): Promise<void> {
-  logger.warn('phone-only 怨꾩젙 濡ㅻ갚 ?쒕룄', { uid, reason, component: 'authService' });
+  logger.warn('phone-only 계정 롤백 시도', { uid, reason, component: 'authService' });
 
   let deleted = false;
 
   try {
 
-  // 1李??쒕룄: ?꾩옱 ?뚮옯??SDK濡???젣
+  // 1차 시도: 현재 플랫폼 SDK로 삭제
   try {
     if (Platform.OS === 'web') {
       const webUser = getFirebaseAuth().currentUser;
@@ -629,13 +629,13 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
       }
     }
   } catch (primaryError) {
-    logger.warn('phone-only 怨꾩젙 1李???젣 ?ㅽ뙣 ??cross-platform fallback ?쒕룄', {
+    logger.warn('phone-only 계정 1차 삭제 실패 → cross-platform fallback 시도', {
       uid,
       platform: Platform.OS,
       error: primaryError instanceof Error ? primaryError.message : String(primaryError),
     });
 
-    // 2李??쒕룄: 諛섎?履?SDK濡???젣 (Native ?ㅽ뙣 ??Web, Web ?ㅽ뙣 ??Native)
+    // 2차 시도: 반대편 SDK로 삭제 (Native 실패 시 Web, Web 실패 시 Native)
     try {
       if (Platform.OS !== 'web') {
         const webUser = getFirebaseAuth().currentUser;
@@ -652,7 +652,7 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
         }
       }
     } catch (fallbackError) {
-      logger.error('phone-only 怨꾩젙 cross-platform ??젣???ㅽ뙣 ??怨좎븘 留덊궧', {
+      logger.error('phone-only 계정 cross-platform 삭제도 실패 → 고아 마킹', {
         uid,
         error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
       });
@@ -662,7 +662,7 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
   let orphanMarkingFailed: Error | null = null;
 
   if (deleted) {
-    logger.info('phone-only 怨좎븘 怨꾩젙 ??젣 ?꾨즺', { uid });
+    logger.info('phone-only 고아 계정 삭제 완료', { uid });
   } else {
     try {
       await markOrphanAccount(uid, reason, phone, options);
@@ -677,9 +677,9 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
         orphanMarkingFailed =
           orphanError instanceof Error ? orphanError : new Error(String(orphanError));
 
-      // CRITICAL: ??젣???ㅽ뙣, 留덊궧???ㅽ뙣 ???섎룞 媛쒖엯 ?꾩닔
+    // CRITICAL: 삭제도 실패, 마킹도 실패 시 수동 개입 필수
       logger.error(
-        'CRITICAL: 怨좎븘 怨꾩젙 ??젣+留덊궧 紐⑤몢 ?ㅽ뙣 ???섎룞 ?뺣━ ?꾩슂',
+          'CRITICAL: 고아 계정 삭제+마킹 모두 실패 → 수동 정리 필요',
         orphanMarkingFailed,
         {
           uid,
@@ -690,7 +690,7 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
         }
       );
 
-      // Sentry??紐낆떆?곸쑝濡??꾩넚
+    // Sentry에 명시적으로 전송
       try {
         const { recordError } = await import('@/services/observability/crashlyticsService');
         await recordError(orphanMarkingFailed, {
@@ -707,18 +707,18 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
     }
   }
 
-  // SDK ?몄뀡 ?뺣━ (?묒そ 紐⑤몢 ??syncSignOut??Native+Web ?숈떆 泥섎━)
+  // SDK 세션 정리 (양쪽 모두 → syncSignOut은 Native+Web 동시 처리)
   clearProtectedAuthFlow(uid);
   try {
     await syncSignOut();
   } catch {
-    // ?몄뀡 ?뺣━ ?ㅽ뙣??臾댁떆
+    // 세션 정리 실패는 무시
   }
 
-  // ??젣??留덊궧???ㅽ뙣??寃쎌슦 ?몄텧?먯뿉寃??꾪뙆
+  // 삭제도 마킹도 실패한 경우 호출자에게 전파
   if (orphanMarkingFailed) {
     throw new AuthError(ERROR_CODES.UNKNOWN, {
-      userMessage: '怨꾩젙 ?뺣━ 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎. 怨좉컼?쇳꽣??臾몄쓽?댁＜?몄슂.',
+      userMessage: '계정 정리 중 오류가 발생했습니다. 고객센터로 문의해주세요.',
       originalError: orphanMarkingFailed,
       metadata: { orphanFailure: true, uid, reason },
     });
@@ -727,9 +727,9 @@ async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResu
 */
 
 /**
- * ?꾩옱 ?ъ슜?먯뿉寃??ㅼ젙???꾪솕踰덊샇 諛섑솚
+ * 현재 사용자에게 설정된 전화번호 반환
  *
- * admin.auth().updateUser濡??ㅼ젙??phoneNumber???ы븿
+ * admin.auth().updateUser로 설정된 phoneNumber도 포함
  */
 export function getLinkedPhoneNumber(): string | null {
   const user = getFirebaseAuth().currentUser;
@@ -740,9 +740,9 @@ export function getLinkedPhoneNumber(): string | null {
 }
 
 /**
- * 怨좎븘 怨꾩젙 留덊궧 (??젣 ?ㅽ뙣 ??Firestore??湲곕줉)
+ * 고아 계정 마킹 (삭제 실패 시 Firestore에 기록)
  *
- * Cloud Function Scheduler媛 二쇨린?곸쑝濡??뺣━?⑸땲??
+ * Cloud Function Scheduler가 주기적으로 정리합니다.
  */
 export async function markOrphanAccount(
   uid: string,
@@ -769,13 +769,13 @@ export async function markOrphanAccount(
 // ============================================================================
 
 /**
- * ?대찓??鍮꾨?踰덊샇 濡쒓렇?? */
+ * 이메일/비밀번호 로그인 */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
     // Rate Limiting 泥댄겕 (?좉툑 ?곹깭硫?AuthError throw)
     await checkLoginAttempts(data.email);
 
-    logger.info('濡쒓렇???쒕룄', { email: maskEmail(data.email), platform: Platform.OS });
+    logger.info('로그인 시도', { email: maskEmail(data.email), platform: Platform.OS });
 
     let userCredential;
 
@@ -787,11 +787,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
         data.password
       );
     } else {
-      // ?ㅼ씠?곕툕: Native SDK + Web SDK ?숈떆 濡쒓렇??(Dual SDK)
+      // 네이티브: Native SDK + Web SDK 동시 로그인 (Dual SDK)
       const nativeAuth = requireNativeAuth();
       if (!nativeSignInWithEmailAndPassword) {
         throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-          userMessage: '?ㅼ씠?곕툕 ?몄쬆???ъ슜?????놁뒿?덈떎. ?깆쓣 ?ㅼ떆 ?쒖옉?댁＜?몄슂.',
+          userMessage: '네이티브 인증을 사용할 수 없습니다. 앱을 다시 시작해주세요.',
         });
       }
       const [, webCredential] = await Promise.all([
@@ -801,8 +801,8 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       userCredential = webCredential;
     }
 
-    // Web login 吏곹썑?먮뒗 媛뺤젣 ?좏겙 ?덈줈怨좎묠??媛꾪뿉?곸쑝濡?abort?????덈떎.
-    // ?꾩옱 ?몄쬆 ?몄뀡? ?좎??섍퀬, ?꾩슂?섎㈃ 遺?몄뒪?몃옪 ?ъ“??寃쎈줈?먯꽌 claims瑜??ㅼ떆 留욎텣??
+    // Web login 직후에는 강제 토큰 리로드를 가급적으로 abort할 수 없다.
+    // 현재 인증 세션을 유지하고, 필요하면 비즈니스 로직 경로에서 claims를 다시 매핑한다.
     if (Platform.OS === 'web') {
       try {
         const tokenResult = await userCredential.user.getIdTokenResult();
@@ -822,11 +822,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
         });
       }
     } else {
-      // ?ㅼ씠?곕툕??freshly-assigned custom claims瑜?諛붾줈 諛섏쁺?댁빞 ?쒕떎.
+      // 네이티브는 freshly-assigned custom claims를 바로 반영해야 한다.
       await userCredential.user.getIdToken(true);
     }
 
-    // Dual SDK UID 遺덉씪移?寃利?(?ㅼ씠?곕툕) ??Firestore 荑쇰━ ?꾩뿉 SDK ?뺥빀???뺤씤
+    // Dual SDK UID 불일치 검증 (네이티브) → Firestore 쿼리 전에 SDK 정합성 확인
     await verifyDualSDKConsistency('login');
     await waitForWebAuthSession(userCredential.user.uid);
 
@@ -839,14 +839,14 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       });
     }
 
-    // 鍮꾪솢?깊솕??怨꾩젙 泥댄겕 (紐낆떆?곸쑝濡?false??寃쎌슦留?
+    // 비활성화된 계정 체크 (명시적으로 false인 경우만)
     if (profile.isActive === false) {
       throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
-        userMessage: '鍮꾪솢?깊솕??怨꾩젙?낅땲?? 怨좉컼?쇳꽣??臾몄쓽?댁＜?몄슂',
+        userMessage: '비활성화된 계정입니다. 고객센터로 문의해주세요',
       });
     }
 
-    logger.info('濡쒓렇???깃났', { uid: userCredential.user.uid });
+    logger.info('로그인 성공', { uid: userCredential.user.uid });
 
     // 로그인 성공 시도 횟수 초기화
     await resetLoginAttempts(data.email);
@@ -864,8 +864,8 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
-    // 濡쒓렇???ㅽ뙣 ???쒕룄 ?잛닔 利앷?
-    // Rate Limiting ?먮윭? ?꾨줈??誘몄〈???먮윭???쒖쇅 (?뺤긽 ?먭꺽 利앸챸?몃뜲 ?곗씠??遺덉씪移섏씤 寃쎌슦 ?좉? 諛⑹?)
+    // 로그인 실패 시 시도 횟수 증가
+    // Rate Limiting 에러와 프로필 미존재 에러는 제외 (정상 동작 범주인데 데이터 불일치인 경우 초과 방지)
     const skipIncrement =
       error instanceof AuthError &&
       (error.code === ERROR_CODES.AUTH_RATE_LIMITED ||
@@ -874,11 +874,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       try {
         await incrementLoginAttempts(data.email);
       } catch {
-        // Rate limiting ?낅뜲?댄듃 ?ㅽ뙣??臾댁떆 (?먮옒 ?먮윭媛 ?곗꽑)
+        // Rate limiting 업데이트 실패는 무시 (원래 에러가 우선)
       }
     }
 
-    // 遺遺?濡쒓렇???곹깭 ?뺣━ (?쒖そ留??깃났??寃쎌슦)
+    // 부분 로그인 상태 정리 (네이티브만 성공한 경우)
     try {
       await syncSignOut();
     } catch {
@@ -893,19 +893,20 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 }
 
 /**
- * ?대찓??以묐났 ?뺤씤
+ * 이메일 중복 확인
  *
- * @description Step 1?먯꽌 ?ㅼ쓬 ?④퀎濡??섏뼱媛湲??꾩뿉 ?대찓??以묐났 ?щ? ?뺤씤
+ * @description Step 1에서 다음 단계로 넘어가기 전에 이메일 중복 여부 확인
  * Cloud Function???듯빐 ?쒕쾭 痢≪뿉??Firebase Auth瑜?吏곸젒 議고쉶?⑸땲??
- * (?대씪?댁뼵?몄쓽 fetchSignInMethodsForEmail? Email Enumeration Protection?쇰줈 臾대젰?붾맖)
+ * (클라이언트의 fetchSignInMethodsForEmail은 Email Enumeration Protection으로 무력화됨)
  *
- * @param email ?뺤씤???대찓?? * @returns ?대찓?쇱씠 ?대? 議댁옱?섎㈃ true, ?놁쑝硫?false
+ * @param email 확인할 이메일
+ * @returns 이메일이 이미 존재하면 true, 없으면 false
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
-  // ?대씪?댁뼵?몄륫 Rate Limit (?먮룞??怨듦꺽 ?쒖씠??利앷?)
+  // 클라이언트측 Rate Limit (자동화 공격 시간 벌기)
   if (!emailCheckLimiter.tryAcquire()) {
     throw new AuthError(ERROR_CODES.AUTH_RATE_LIMITED, {
-      userMessage: '?붿껌???덈Т 留롮뒿?덈떎. ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.',
+      userMessage: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
       metadata: { waitMs: emailCheckLimiter.getWaitTime() },
     });
   }
@@ -913,10 +914,10 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   const startTime = Date.now();
 
   try {
-    logger.info('?대찓??以묐났 ?뺤씤', { email: maskEmail(email) });
+    logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
-    // ?? reCAPTCHA v3 ?ㅽ겕由쏀듃 濡쒕뱶瑜??ㅽ궢?섏뿬 Firebase RecaptchaVerifier(Enterprise)???異⑸룎 諛⑹?
-    // (v3 api.js媛 window.grecaptcha瑜??좎젏?섎㈃ ?꾩냽 Phone Auth Enterprise ?좏겙??臾댄슚?붾맖)
+    // ※ reCAPTCHA v3 스크립트 로드를 스킵하여 Firebase RecaptchaVerifier(Enterprise)와 충돌 방지
+    // (v3 api.js가 window.grecaptcha를 점거하면 이속 Phone Auth Enterprise 토큰이 무효화됨)
     let recaptchaToken: string | undefined;
     if (Platform.OS !== 'web') {
       const { getRecaptchaToken } = await import('@/utils/recaptcha');
@@ -950,12 +951,12 @@ export async function checkEmailExists(email: string): Promise<boolean> {
       result = await checkEmail(payload);
     }
 
-    logger.info('?대찓??以묐났 ?뺤씤 ?꾨즺', {
+    logger.info('이메일 중복 확인 완료', {
       email: maskEmail(email),
       exists: result.data.exists,
     });
 
-    // ??대컢 怨듦꺽 ?꾪솕: exists=true/false ?묐떟 ?쒓컙 李⑥씠濡??대찓??議댁옱 ?щ? 異붾줎 諛⑹?
+    // 타이밍 공격 완화: exists=true/false 응답 시간 차이로 이메일 존재 여부 추론 방지
     const elapsed = Date.now() - startTime;
     if (elapsed < EMAIL_CHECK_MIN_RESPONSE_MS) {
       await new Promise((r) => setTimeout(r, EMAIL_CHECK_MIN_RESPONSE_MS - elapsed));
@@ -963,18 +964,18 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 
     return result.data.exists;
   } catch (error) {
-    // ??대컢 怨듦꺽 ?꾪솕: ?먮윭 寃쎈줈?먯꽌??理쒖냼 ?묐떟 ?쒓컙 蹂댁옣
+    // 타이밍 공격 완화: 에러 경로에서도 최소 응답 시간 보장
     const elapsed = Date.now() - startTime;
     if (elapsed < EMAIL_CHECK_MIN_RESPONSE_MS) {
       await new Promise((r) => setTimeout(r, EMAIL_CHECK_MIN_RESPONSE_MS - elapsed));
     }
 
-    // Rate limit ?먮윭??洹몃?濡??꾪뙆
+    // Rate limit 에러는 그대로 전파
     if (error instanceof AuthError && error.code === ERROR_CODES.AUTH_RATE_LIMITED) {
       throw error;
     }
     throw handleServiceError(error, {
-      operation: '?대찓??以묐났 ?뺤씤',
+      operation: '이메일 중복 확인',
       component: 'authService',
       context: { email: maskEmail(email) },
     });
@@ -982,14 +983,15 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 }
 
 /**
- * ?됰꽕??以묐났 ?뺤씤
+ * 닉네임 중복 확인
  *
- * @param nickname ?뺤씤???됰꽕?? * @param excludeUid ?꾨줈???섏젙 ???먭린 ?먯떊???쒖쇅??UID (?좏깮)
+ * @param nickname 확인할 닉네임
+ * @param excludeUid 프로필 설정 시 자기 자신을 제외할 UID (선택)
  * @returns 以묐났 ?щ?
  */
 export async function checkNicknameExists(nickname: string, excludeUid?: string): Promise<boolean> {
   try {
-    // ?? reCAPTCHA v3 ?ㅽ겕由쏀듃 濡쒕뱶瑜??ㅽ궢 (Phone Auth Enterprise ?ㅽ겕由쏀듃???異⑸룎 諛⑹?)
+    // ※ reCAPTCHA v3 스크립트 로드를 스킵 (Phone Auth Enterprise 스크립트와 충돌 방지)
     let recaptchaToken: string | undefined;
     if (Platform.OS !== 'web') {
       const { getRecaptchaToken } = await import('@/utils/recaptcha');
@@ -1009,7 +1011,7 @@ export async function checkNicknameExists(nickname: string, excludeUid?: string)
     return result.data.exists;
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '?됰꽕??以묐났 ?뺤씤',
+      operation: '닉네임 중복 확인',
       component: 'authService',
       context: { nickname },
     });
@@ -1017,15 +1019,15 @@ export async function checkNicknameExists(nickname: string, excludeUid?: string)
 }
 
 /**
- * ?뚯썝媛??(4?④퀎 ?꾨즺 ???몄텧)
+ * 회원가입 (4단계 완료 시 호출)
  *
  * ?뚮줈??
- * 1. linkWithCredential濡?phone-only 怨꾩젙???대찓??鍮꾨?踰덊샇 ?곌껐
- * 2. Web SDK ?숆린??(?ㅼ씠?곕툕留???CF ?몄텧???꾩슂)
- * 3. verifyAndSaveProfile CF ?몄텧 (?쒕쾭?ъ씠??寃利?+ Firestore ???+ Claims ?ㅼ젙)
- * 4. ?좏겙 媛깆떊 + ?꾨줈??議고쉶
+ * 1. linkWithCredential로 phone-only 계정에 이메일/비밀번호 연결
+ * 2. Web SDK 동기화 (네이티브만 → CF 호출에 필요)
+ * 3. verifyAndSaveProfile CF 호출 (서버사이드 검증 + Firestore 저장 + Claims 설정)
+ * 4. 토큰 갱신 + 프로필 조회
  *
- * ?ㅽ뙣 ??phone-only 怨꾩젙 濡ㅻ갚
+ * 실패 시 phone-only 계정 롤백
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
@@ -1033,7 +1035,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       return await signUpWithPortOneIdentity(data);
     }
 
-    logger.info('?뚯썝媛???쒕룄', {
+    logger.info('회원가입 시도', {
       email: maskEmail(data.email),
       platform: Platform.OS,
     });
@@ -1043,7 +1045,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       const currentUser = getFirebaseAuth().currentUser;
       if (!currentUser) {
         throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-          userMessage: '?꾪솕踰덊샇 ?몄쬆???꾩슂?⑸땲?? ?ㅼ떆 ?쒕룄?댁＜?몄슂.',
+          userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
         });
       }
 
@@ -1055,11 +1057,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         const emailCredential = EmailAuthProvider.credential(data.email, data.password);
         await linkWithCredential(currentUser, emailCredential);
 
-        // 2. CF ?몄텧: ?쒕쾭?ъ씠??寃利?+ Firestore ???+ Claims + displayName
+        // 2. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
         await callVerifyAndSaveProfile(toVerifyPayload(data));
         profilePersisted = true;
 
-        // 3. Custom Claims 媛깆떊
+        // 3. Custom Claims 갱신
         await currentUser.getIdToken(true);
 
         // 4. ??λ맂 ?꾨줈??議고쉶
@@ -1070,7 +1072,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           });
         }
 
-        logger.info('?뚯썝媛???깃났', { uid: currentUser.uid });
+        logger.info('회원가입 성공', { uid: currentUser.uid });
         trackSignupAnalytics(currentUser.uid, 'staff');
 
         return { user: currentUser, profile };
@@ -1084,7 +1086,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           throw createPostCommitSessionRestoreError(innerError);
         }
 
-        // email credential???대? link??寃쎌슦, unlink?섏뿬 phone-only濡?蹂듭썝
+        // email credential이 이미 link된 경우, unlink하여 phone-only로 복원
         try {
           const webUser = getFirebaseAuth().currentUser;
           if (webUser) {
@@ -1094,7 +1096,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
             }
           }
         } catch {
-          // unlink ?ㅽ뙣 ??臾댁떆 ??rollback?먯꽌 ?꾩껜 ??젣
+          // unlink 실패는 무시 → rollback에서 전체 삭제
         }
         try {
           await rollbackPhoneOnlyAccount(
@@ -1104,8 +1106,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
             { email: data.email, password: data.password }
           );
         } catch (rollbackError) {
-          // 濡ㅻ갚 ?ㅽ뙣???먮옒 ?먮윭蹂대떎 ?ш컖 ??濡ㅻ갚 ?먮윭瑜??꾪뙆
-          logger.error('?뚯썝媛???ㅽ뙣 ??濡ㅻ갚???ㅽ뙣', {
+          // 롤백 실패는 원래 에러보다 덜 심각 → 롤백 에러를 전파
+          logger.error('회원가입 실패 후 롤백도 실패', {
             component: 'authService',
             originalError: innerError instanceof Error ? innerError.message : String(innerError),
             uid: currentUser.uid,
@@ -1123,7 +1125,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     const nativeUser = nativeAuth.currentUser;
     if (!nativeUser) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: '?꾪솕踰덊샇 ?몄쬆???꾩슂?⑸땲?? ?ㅼ떆 ?쒕룄?댁＜?몄슂.',
+        userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
       });
     }
 
@@ -1156,16 +1158,16 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         }
       }
 
-      // 3. Dual SDK UID 遺덉씪移?寃利?(CF ?몄텧 ????遺덉씪移????꾨줈?????諛⑹?)
+      // 3. Dual SDK UID 불일치 검증 (CF 호출 전 → 불일치면 프로필 조회 방지)
       await ensureWebAuthSession(nativeUser.uid, {
         context: 'signUp:postInitialSync',
         email: data.email,
         password: data.password,
-        missingUserMessage: 'Web SDK ?숆린?????몄쬆 ?뺣낫瑜?李얠쓣 ???놁뒿?덈떎.',
+        missingUserMessage: 'Web SDK 동기화 후 인증 정보를 찾을 수 없습니다.',
       });
       await verifyDualSDKConsistency('signUp');
 
-      // 4. CF ?몄텧: ?쒕쾭?ъ씠??寃利?+ Firestore ???+ Claims + displayName
+      // 4. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
       await callVerifyAndSaveProfile(toVerifyPayload(data));
       profilePersisted = true;
 
@@ -1186,7 +1188,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         });
       }
 
-      logger.info('?뚯썝媛???깃났', { uid: nativeUser.uid });
+      logger.info('회원가입 성공', { uid: nativeUser.uid });
       trackSignupAnalytics(nativeUser.uid, 'staff');
 
       return { user: webUser, profile };
@@ -1200,7 +1202,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         throw createPostCommitSessionRestoreError(innerError);
       }
 
-      // email credential???대? link??寃쎌슦, unlink?섏뿬 phone-only濡?蹂듭썝
+      // email credential이 이미 link된 경우, unlink하여 phone-only로 복원
       try {
         if (nativeUnlink) {
           const currentNativeUser = nativeAuth.currentUser;
@@ -1214,7 +1216,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           }
         }
       } catch {
-        // unlink ?ㅽ뙣 ??臾댁떆 ??rollback?먯꽌 ?꾩껜 ??젣
+        // unlink 실패는 무시 → rollback에서 전체 삭제
       }
       try {
         await rollbackPhoneOnlyAccount(
@@ -1224,8 +1226,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           { email: data.email, password: data.password }
         );
       } catch (rollbackError) {
-        // 濡ㅻ갚 ?ㅽ뙣???먮옒 ?먮윭蹂대떎 ?ш컖 ??濡ㅻ갚 ?먮윭瑜??꾪뙆
-        logger.error('?뚯썝媛???ㅽ뙣 ??濡ㅻ갚???ㅽ뙣', {
+        // 롤백 실패는 원래 에러보다 덜 심각 → 롤백 에러를 전파
+        logger.error('회원가입 실패 후 롤백도 실패', {
           component: 'authService',
           originalError: innerError instanceof Error ? innerError.message : String(innerError),
           uid: nativeUser.uid,
@@ -1246,13 +1248,13 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 }
 
 /**
- * 濡쒓렇?꾩썐
+ * 로그아웃
  */
 export async function signOut(): Promise<void> {
   try {
-    logger.info('濡쒓렇?꾩썐 ?쒕룄');
+    logger.info('로그아웃 시도');
 
-    // 紐⑤뱺 Firestore ?ㅼ떆媛?援щ룆 ?댁젣 (硫붾え由??꾩닔 諛⑹?)
+    // 모든 Firestore 캐시값 강제 삭제 (메모리 누수 방지)
     const webUid = getFirebaseAuth().currentUser?.uid;
     const nativeUid = getNativeAuth?.()?.currentUser?.uid;
     clearProtectedAuthFlow(webUid);
@@ -1265,17 +1267,17 @@ export async function signOut(): Promise<void> {
     // ?꾩뿭 罹먯떆 ?뺣━
     clearCounterSyncCache();
 
-    // Native + Web SDK ?숈떆 濡쒓렇?꾩썐
+    // Native + Web SDK 동시 로그아웃
     await syncSignOut();
 
     // Analytics 이벤트
     trackLogout();
     setUserId(null);
 
-    logger.info('濡쒓렇?꾩썐 ?깃났');
+    logger.info('로그아웃 성공');
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '濡쒓렇?꾩썐',
+      operation: '로그아웃',
       component: 'authService',
     });
   }
@@ -1299,13 +1301,13 @@ export async function resetPassword(email: string): Promise<void> {
 }
 
 /**
- * ?ъ슜???꾨줈??媛?몄삤湲? */
+ * 사용자 프로필 가져오기 */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   return fetchUserProfile(uid);
 }
 
 /**
- * 鍮꾨?踰덊샇 ?ъ씤利?(誘쇨컧???묒뾽 ???꾩슂)
+ * 비밀번호 재인증 (민감한 작업 시 필요)
  */
 export async function reauthenticate(password: string): Promise<void> {
   try {
@@ -1318,7 +1320,7 @@ export async function reauthenticate(password: string): Promise<void> {
     const credential = EmailAuthProvider.credential(user.email, password);
     await reauthenticateWithCredential(user, credential);
 
-    logger.info('?ъ씤利??깃났', { uid: user.uid });
+    logger.info('재인증 성공', { uid: user.uid });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '재인증',
@@ -1328,17 +1330,17 @@ export async function reauthenticate(password: string): Promise<void> {
 }
 
 /**
- * ?꾩옱 濡쒓렇?몃맂 ?ъ슜??媛?몄삤湲? */
+ * 현재 로그인된 사용자 가져오기 */
 export function getCurrentUser(): FirebaseUser | null {
   return getFirebaseAuth().currentUser;
 }
 
 /**
- * ?꾩옱 濡쒓렇?몃맂 ?ъ슜??媛?몄삤湲?(?꾩닔)
+ * 현재 로그인된 사용자 가져오기 (필수)
  *
  * @description getCurrentUser()??non-null 踰꾩쟾.
  * ?쒕퉬???덉씠?댁뿉??Firebase auth 吏곸젒 ?묎렐 ????ъ슜.
- * @throws {AuthError} 濡쒓렇?몃릺吏 ?딆? 寃쎌슦
+ * @throws {AuthError} 로그인되지 않은 경우
  */
 export function requireCurrentUser(): FirebaseUser {
   const user = getFirebaseAuth().currentUser;
@@ -1351,22 +1353,22 @@ export function requireCurrentUser(): FirebaseUser {
 }
 
 /**
- * ?몄쬆 ?곹깭 蹂寃?由ъ뒪?? */
+ * 인증 상태 변경 리스너 */
 export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void): () => void {
   return getFirebaseAuth().onAuthStateChanged(callback);
 }
 
 /**
- * ?꾪솕踰덊샇 以묐났 ?뺤씤 (Cloud Function ?몄텧)
+ * 전화번호 중복 확인 (Cloud Function 호출)
  *
- * @param phone ?꾪솕踰덊샇 (?レ옄留??먮뒗 E.164 ?뺤떇)
+ * @param phone 전화번호 (숫자만 또는 E.164 형식)
  * @returns 以묐났 ?щ?
  */
 export async function checkPhoneExists(phone: string): Promise<boolean> {
   try {
-    // ?? reCAPTCHA v3 ?ㅽ겕由쏀듃 濡쒕뱶瑜??ㅽ궢?섏뿬 Firebase RecaptchaVerifier???異⑸룎 諛⑹?
-    // (v3 ?ㅽ겕由쏀듃媛 window.grecaptcha瑜??좎젏?섎㈃ Phone Auth ?좏겙??臾댄슚?붾맖)
-    // ?뱀뿉?쒕뒗 ?꾩냽 signInWithPhoneNumber??RecaptchaVerifier媛 遊?蹂댄샇瑜??대떦
+    // ※ reCAPTCHA v3 스크립트 로드를 스킵하여 Firebase RecaptchaVerifier와 충돌 방지
+    // (v3 스크립트가 window.grecaptcha를 점거하면 Phone Auth 토큰이 무효화됨)
+    // 앱에서는 이속 signInWithPhoneNumber의 RecaptchaVerifier가 빈 보호를 담당
     let recaptchaToken: string | undefined;
     if (Platform.OS !== 'web') {
       const { getRecaptchaToken } = await import('@/utils/recaptcha');
@@ -1386,7 +1388,7 @@ export async function checkPhoneExists(phone: string): Promise<boolean> {
     return result.data.exists;
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '?꾪솕踰덊샇 以묐났 ?뺤씤',
+      operation: '전화번호 중복 확인',
       component: 'authService',
       context: { phone: maskValue(phone, 'phone') },
     });
