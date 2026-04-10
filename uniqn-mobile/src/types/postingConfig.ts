@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import {
   getDateFromRequirement as getDateFromRequirementBase,
   sortDateRequirements as sortDateRequirementsBase,
@@ -13,8 +12,8 @@ export type TournamentApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface FixedConfig {
   durationDays: 7;
-  expiresAt: Timestamp;
-  createdAt: Timestamp;
+  expiresAt: Date;
+  createdAt: Date;
 }
 
 export interface FixedJobPostingData {
@@ -32,16 +31,16 @@ export interface RoleWithCount {
 export interface TournamentConfig {
   approvalStatus: 'pending' | 'approved' | 'rejected';
   approvedBy?: string;
-  approvedAt?: Timestamp;
+  approvedAt?: Date;
   rejectedBy?: string;
-  rejectedAt?: Timestamp;
+  rejectedAt?: Date;
   rejectionReason?: string;
-  resubmittedAt?: Timestamp;
-  submittedAt: Timestamp;
+  resubmittedAt?: Date;
+  submittedAt: Date;
 }
 
 export interface UrgentConfig {
-  createdAt: Timestamp;
+  createdAt: Date;
   priority: 'high';
 }
 

@@ -127,7 +127,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
       const { docSnap, data } = matchedEntry;
 
       // 만료 확인 및 자동 비활성화 (트랜잭션으로 TOCTOU 방지)
-      if (data.expiresAt.toMillis() < Date.now()) {
+      if (data.expiresAt.getTime() < Date.now()) {
         return await runTransaction(getFirebaseDb(), async (transaction) => {
           const freshDoc = await transaction.get(
             doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id)
@@ -137,7 +137,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
           const freshData = freshDoc.data() as Omit<EventQRCode, 'id'>;
           if (!freshData.isActive) return null;
 
-          if (freshData.expiresAt.toMillis() < Date.now()) {
+          if (freshData.expiresAt.getTime() < Date.now()) {
             transaction.update(freshDoc.ref, { isActive: false });
             return null;
           }
@@ -184,7 +184,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
       }
 
       // 서버 시간 기준 만료 확인
-      if (data.expiresAt.toMillis() < Date.now()) {
+      if (data.expiresAt.getTime() < Date.now()) {
         return null;
       }
 

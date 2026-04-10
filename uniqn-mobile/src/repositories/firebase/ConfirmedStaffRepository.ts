@@ -137,7 +137,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           newRole: context.newRole,
           reason: context.reason,
           changedBy: context.changedBy,
-          changedAt: Timestamp.now(),
+          changedAt: new Date(),
         });
 
         const roleUpdate = context.isStandardRole

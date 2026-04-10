@@ -5,7 +5,6 @@
  * @version 2.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 
 // ============================================================================
@@ -293,9 +292,9 @@ export interface NotificationData extends FirebaseDocument {
   /** 우선순위 */
   priority?: NotificationPriority;
   /** 생성 시간 */
-  createdAt: Timestamp;
+  createdAt: Date;
   /** 읽은 시간 */
-  readAt?: Timestamp;
+  readAt?: Date;
 }
 
 /**
@@ -329,7 +328,7 @@ export interface NotificationSettings {
     timeWindowHours: number;
   };
   /** 업데이트 시간 */
-  updatedAt?: Timestamp;
+  updatedAt?: Date;
 }
 
 /**
@@ -594,7 +593,7 @@ export interface GroupedNotificationData {
   /** 읽지 않은 알림 수 */
   unreadCount: number;
   /** 가장 최근 알림 시간 (그룹 정렬용) */
-  latestCreatedAt: Timestamp;
+  latestCreatedAt: Date;
   /** 그룹 대표 제목 (예: "새 지원자 5명") */
   groupTitle: string;
   /** 그룹 대표 본문 (최근 알림 내용 요약) */

@@ -5,7 +5,6 @@
  * stay focused on fetching canonical postings and repositories.
  */
 
-import { Timestamp } from 'firebase/firestore';
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import type { PostingSettlementContext } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
@@ -26,7 +25,7 @@ import {
   normalizeAssignmentRole,
 } from '@/types/assignment';
 import { parseTimeSlotToDate } from '@/utils/date/ranges';
-import { normalizeTimestamp } from '@/utils/firestore';
+import { toDate } from '@/utils/date';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
 
 export interface SchedulePostingContext {
@@ -93,12 +92,8 @@ export class ScheduleConverter {
     const jobPostingName = postingContext?.title || '이벤트';
     const effectiveDate = workLog.date || FIXED_DATE_MARKER;
     const timeSlotParsed = parseTimeSlotToDate(workLog.timeSlot ?? null, effectiveDate);
-    const startTimeFromTimeSlot = timeSlotParsed.startTime
-      ? Timestamp.fromDate(timeSlotParsed.startTime)
-      : null;
-    const endTimeFromTimeSlot = timeSlotParsed.endTime
-      ? Timestamp.fromDate(timeSlotParsed.endTime)
-      : null;
+    const startTimeFromTimeSlot = timeSlotParsed.startTime ?? null;
+    const endTimeFromTimeSlot = timeSlotParsed.endTime ?? null;
 
     return {
       id: workLog.id,
@@ -107,8 +102,8 @@ export class ScheduleConverter {
       date: workLog.date,
       startTime: startTimeFromTimeSlot,
       endTime: endTimeFromTimeSlot,
-      checkInTime: normalizeTimestamp(workLog.checkInTime),
-      checkOutTime: normalizeTimestamp(workLog.checkOutTime),
+      checkInTime: toDate(workLog.checkInTime),
+      checkOutTime: toDate(workLog.checkOutTime),
       jobPostingId,
       jobPostingName,
       location: postingContext?.location || '',
@@ -201,7 +196,7 @@ export class ScheduleConverter {
     timeSlot: string,
     date: string,
     type: 'start' | 'end'
-  ): Timestamp | null {
+  ): Date | null {
     if (
       !timeSlot ||
       timeSlot === FIXED_TIME_MARKER ||
@@ -213,6 +208,6 @@ export class ScheduleConverter {
 
     const { startTime, endTime } = parseTimeSlotToDate(timeSlot, date);
     const parsedTime = type === 'start' ? startTime : (endTime ?? startTime);
-    return parsedTime ? Timestamp.fromDate(parsedTime) : null;
+    return parsedTime ?? null;
   }
 }

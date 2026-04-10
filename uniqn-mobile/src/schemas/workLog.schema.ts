@@ -196,7 +196,7 @@ export function parseWorkLogDocument(data: unknown): WorkLog | null {
     timeSlot: result.data.timeSlot ?? undefined,
     noShowAt: result.data.noShowAt ?? undefined,
     noShowReason: result.data.noShowReason ?? undefined,
-  } as WorkLog;
+  } as unknown as WorkLog;
 }
 
 /**

@@ -10,7 +10,6 @@ import {
   query,
   runTransaction,
   serverTimestamp,
-  Timestamp,
   where,
   type Transaction,
 } from 'firebase/firestore';
@@ -355,8 +354,8 @@ export async function applyWithTransaction(
         assignments: normalizedAssignments,
         ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
         isRead: false,
-        createdAt: existingData?.createdAt ?? (now as Timestamp),
-        updatedAt: now as Timestamp,
+        createdAt: existingData?.createdAt ?? (now as unknown as Date),
+        updatedAt: now as unknown as Date,
       };
 
       transaction.set(applicationRef, applicationData);

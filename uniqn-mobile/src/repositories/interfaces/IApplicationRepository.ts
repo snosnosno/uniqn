@@ -22,7 +22,6 @@ import type {
   ReviewCancellationInput,
   JobPosting,
 } from '@/types';
-import type { Timestamp } from 'firebase/firestore';
 import type { UnsubscribeFn } from '@/types/common';
 
 // ============================================================================
@@ -71,7 +70,7 @@ export interface ConfirmWithHistoryResult {
  */
 export interface CancelConfirmationResult {
   applicationId: string;
-  cancelledAt: Timestamp;
+  cancelledAt: Date;
   restoredStatus: 'applied';
 }
 

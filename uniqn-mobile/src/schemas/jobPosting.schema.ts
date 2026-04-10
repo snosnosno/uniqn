@@ -496,7 +496,7 @@ function toJobPostingDocumentV3(document: JobPostingDocumentData): JobPostingDoc
           resubmittedAt: rest.tournamentConfig.resubmittedAt ?? undefined,
         }
       : undefined,
-  };
+  } as unknown as JobPostingDocumentV3;
 }
 
 export function parseJobPostingDocument(data: unknown): JobPosting | null {

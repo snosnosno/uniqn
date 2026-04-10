@@ -11,7 +11,6 @@
  * - 계정 완전 삭제
  */
 
-import type { Timestamp } from 'firebase/firestore';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -36,8 +35,8 @@ export interface DeletionRequest {
   userId: string;
   reason: DeletionReason;
   reasonDetail?: string;
-  requestedAt: Timestamp;
-  scheduledDeletionAt: Timestamp;
+  requestedAt: Date;
+  scheduledDeletionAt: Date;
   status: 'pending' | 'cancelled' | 'completed';
 }
 

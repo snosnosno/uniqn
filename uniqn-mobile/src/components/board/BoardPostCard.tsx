@@ -21,7 +21,7 @@ function formatMetaDate(post: BoardPost): string {
     return '';
   }
 
-  const date = value instanceof Date ? value : 'toDate' in value ? value.toDate() : new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
     date.getDate()
   ).padStart(2, '0')}`;

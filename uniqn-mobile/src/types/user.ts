@@ -12,7 +12,6 @@
  * - 개인정보 열람: `ProfileViewFields`
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { UserRole } from './role';
 
 // ============================================================================
@@ -140,11 +139,12 @@ export interface UserProfile<T = Date> {
 // ============================================================================
 
 /**
- * Firestore용 UserProfile (Timestamp 사용)
+ * Firestore용 UserProfile (Date 타입 사용)
  *
- * @description Firestore 문서 저장/조회 시 사용
+ * @description Repository에서 Timestamp→Date 변환 후 반환하는 타입.
+ *              기존 호환성을 위해 별칭 유지.
  */
-export type FirestoreUserProfile = UserProfile<Timestamp>;
+export type FirestoreUserProfile = UserProfile;
 
 /**
  * 프로필 수정 가능 필드

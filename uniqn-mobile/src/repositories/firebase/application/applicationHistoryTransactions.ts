@@ -11,7 +11,6 @@ import {
   where,
   runTransaction,
   serverTimestamp,
-  Timestamp,
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -183,7 +182,7 @@ export async function confirmWithHistoryTransaction(
       if (!originalApplication && applicationData.assignments) {
         originalApplication = {
           assignments: applicationData.assignments,
-          appliedAt: (applicationData.createdAt as Timestamp) ?? Timestamp.now(),
+          appliedAt: applicationData.createdAt ?? new Date(),
         };
       }
 
@@ -363,7 +362,7 @@ export async function cancelConfirmationTransaction(
 
     return {
       applicationId,
-      cancelledAt: result.cancelledAt,
+      cancelledAt: result.cancelledAt instanceof Date ? result.cancelledAt : new Date(),
       restoredStatus: 'applied',
     };
   } catch (error) {

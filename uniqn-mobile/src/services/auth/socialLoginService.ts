@@ -25,7 +25,7 @@ import {
 } from 'firebase/auth';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Platform } from 'react-native';
-import { serverTimestamp, Timestamp } from 'firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { syncSignOut } from '@/lib/authBridge';
 import { getMMKVInstance } from '@/lib/mmkvStorage';
@@ -309,8 +309,8 @@ async function createMockProfile(
     marketingAgreed: false,
     profileCompleted: false,
     isActive: true,
-    createdAt: serverTimestamp() as Timestamp,
-    updatedAt: serverTimestamp() as Timestamp,
+    createdAt: serverTimestamp() as unknown as Date,
+    updatedAt: serverTimestamp() as unknown as Date,
   };
 
   await userRepository.createOrMerge(uid, {
@@ -599,7 +599,7 @@ export async function signInWithApple(): Promise<AuthResult> {
 
     // 5. 신규/미완성 사용자 → 최소 프로필 생성
     if (!existingProfile) {
-      const now = Timestamp.now();
+      const now = new Date();
 
       // Firestore에 저장할 데이터 (serverTimestamp 사용)
       const createProfileDocument = async (attempt: number) => {

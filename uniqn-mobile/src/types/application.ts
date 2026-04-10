@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import type { ApplicationStatus } from '@/shared/status';
 import type { FirebaseDocument } from './common';
 import type { StaffRole } from './role';
@@ -9,7 +8,7 @@ import type { JobPosting } from './jobPosting';
 
 export type { ApplicationStatus };
 
-type CancellationRequestTimestamp = string | Timestamp;
+type CancellationRequestTimestamp = string | Date;
 
 export type CancellationRequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -72,10 +71,10 @@ export interface Application extends FirebaseDocument {
   preQuestionAnswers?: PreQuestionAnswer[];
 
   processedBy?: string;
-  processedAt?: Timestamp;
+  processedAt?: Date;
   rejectionReason?: string;
-  confirmedAt?: Timestamp;
-  cancelledAt?: Timestamp;
+  confirmedAt?: Date;
+  cancelledAt?: Date;
 
   isRead?: boolean;
   notes?: string;

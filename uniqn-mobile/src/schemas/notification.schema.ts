@@ -195,7 +195,7 @@ export function parseNotificationDocument(data: unknown): NotificationData | nul
     });
     return null;
   }
-  return result.data as NotificationData;
+  return result.data as unknown as NotificationData;
 }
 
 /**

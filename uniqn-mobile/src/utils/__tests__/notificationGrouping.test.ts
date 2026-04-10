@@ -4,7 +4,6 @@
  * @description 알림 그룹핑 유틸리티 함수들의 단위 테스트
  */
 
-import { Timestamp } from 'firebase/firestore';
 import {
   NotificationType,
   NotificationCategory,
@@ -26,10 +25,6 @@ import {
 // Test Helpers
 // ============================================================================
 
-function createTimestamp(date: Date): Timestamp {
-  return Timestamp.fromDate(date);
-}
-
 function createNotification(overrides: Partial<NotificationData> = {}): NotificationData {
   return {
     id: 'notif-1',
@@ -38,7 +33,7 @@ function createNotification(overrides: Partial<NotificationData> = {}): Notifica
     title: '새로운 지원자',
     body: '홍길동님이 지원했습니다',
     isRead: false,
-    createdAt: createTimestamp(new Date()),
+    createdAt: new Date(),
     ...overrides,
   } as NotificationData;
 }
@@ -49,7 +44,7 @@ function createNotificationWithTime(
 ): NotificationData {
   const date = new Date(Date.now() - minutesAgo * 60 * 1000);
   return createNotification({
-    createdAt: createTimestamp(date),
+    createdAt: date,
     ...overrides,
   });
 }
@@ -205,7 +200,7 @@ describe('groupNotifications', () => {
         type: NotificationType.NEW_APPLICATION,
         data: { jobPostingId: 'job-1', staffName: '김철수' },
         body: '김철수님이 지원했습니다',
-        createdAt: createTimestamp(oldDate),
+        createdAt: oldDate,
       }),
     ];
     const result = groupNotifications(notifications, {
@@ -524,7 +519,7 @@ describe('countUnreadInGroupedList', () => {
       notifications: [],
       count: 3,
       unreadCount: 2,
-      latestCreatedAt: createTimestamp(new Date()),
+      latestCreatedAt: new Date(),
       groupTitle: '새 지원자 3명',
       groupBody: '홍길동, 김철수',
     };
@@ -539,7 +534,7 @@ describe('countUnreadInGroupedList', () => {
       notifications: [],
       count: 3,
       unreadCount: 2,
-      latestCreatedAt: createTimestamp(new Date()),
+      latestCreatedAt: new Date(),
       groupTitle: '새 지원자 3명',
       groupBody: '홍길동, 김철수',
     };
@@ -648,7 +643,7 @@ describe('isGroupedNotification', () => {
       notifications: [],
       count: 2,
       unreadCount: 1,
-      latestCreatedAt: createTimestamp(new Date()),
+      latestCreatedAt: new Date(),
       groupTitle: '새 지원자 2명',
       groupBody: '홍길동, 김철수',
     };

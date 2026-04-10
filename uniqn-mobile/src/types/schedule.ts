@@ -4,7 +4,6 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { TaxSettings as UtilityTaxSettings } from '@/utils/settlement';
 import { FirebaseDocument } from './common';
 import type { JobRoleStats, PostingCompensation, SalaryInfo, SalaryType } from './jobPosting';
@@ -117,8 +116,8 @@ export interface ScheduleEvent extends FirebaseDocument {
   date: string; // YYYY-MM-DD
 
   // ?쒓컙 ?뺣낫
-  startTime: Timestamp | null;
-  endTime: Timestamp | null;
+  startTime: Date | null;
+  endTime: Date | null;
   /** ?ㅼ젣 異쒓렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
   checkInTime?: TimeInput;
   /** ?ㅼ젣 ?닿렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
@@ -141,7 +140,7 @@ export interface ScheduleEvent extends FirebaseDocument {
   // ?뺤궛 ?뺣낫
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
-  payrollDate?: Timestamp;
+  payrollDate?: Date;
   /** 誘몃━ 怨꾩궛???뺤궛 ?몃? ?댁뿭 */
   settlementBreakdown?: SettlementBreakdown;
 
@@ -343,7 +342,7 @@ export function isGroupedScheduleEvent(
 export interface AttendanceRequest {
   scheduleId: string;
   action: 'checkIn' | 'checkOut';
-  timestamp: Timestamp;
+  timestamp: Date;
   qrCodeId?: string;
 }
 
@@ -366,7 +365,7 @@ export interface WorkTimeModification {
  * ??븷 蹂寃??대젰
  */
 export interface RoleChangeHistory {
-  changedAt: string | Timestamp;
+  changedAt: string | Date;
   changedBy: string;
   reason: string;
   previousRole: string;
@@ -377,7 +376,7 @@ export interface RoleChangeHistory {
  * ?뺤궛 湲덉븸 ?섏젙 ?대젰
  */
 export interface SettlementModification {
-  modifiedAt: string | Timestamp;
+  modifiedAt: string | Date;
   modifiedBy: string;
   reason?: string;
   /** 이전 급여 정보 */
@@ -442,7 +441,7 @@ export interface WorkLog extends FirebaseDocument {
   // 정산
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
-  payrollDate?: Timestamp;
+  payrollDate?: Date;
   payrollNotes?: string;
   noShowAt?: TimeInput;
   noShowReason?: string;
@@ -567,9 +566,9 @@ export interface EventQRCode {
   /** ?앹꽦??ID (援ъ씤?? */
   createdBy: string;
   /** ?앹꽦 ?쒓컙 */
-  createdAt: Timestamp;
+  createdAt: Date;
   /** 留뚮즺 ?쒓컙 */
-  expiresAt: Timestamp;
+  expiresAt: Date;
   /** ?쒖꽦???щ? (留뚮즺 ?쒓컙?쇰줈 愿由? isUsed ????ъ슜) */
   isActive: boolean;
 }

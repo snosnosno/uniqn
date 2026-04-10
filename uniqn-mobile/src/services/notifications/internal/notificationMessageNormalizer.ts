@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import {
   NotificationType as NotificationTypeEnum,
   NOTIFICATION_TYPE_LABELS,
@@ -304,6 +303,6 @@ export function createNotificationFromFCM(
     link,
     data: payload.data as Record<string, string> | undefined,
     isRead: false,
-    createdAt: Timestamp.now(),
+    createdAt: new Date(),
   });
 }

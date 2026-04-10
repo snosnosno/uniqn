@@ -143,31 +143,30 @@ export default function EmployerRegisterScreen() {
         liabilityWaiverVersion: EMPLOYER_LIABILITY_WAIVER_VERSION,
       });
 
-      // 프로필 저장 (Timestamp → Date 변환)
+      // 프로필 저장
       setProfile({
         ...updatedProfile,
-        createdAt: updatedProfile.createdAt?.toDate?.() ?? new Date(),
-        updatedAt: updatedProfile.updatedAt?.toDate?.() ?? new Date(),
-        identityVerifiedAt: updatedProfile.identityVerifiedAt?.toDate?.() ?? undefined,
+        createdAt: updatedProfile.createdAt ?? new Date(),
+        updatedAt: updatedProfile.updatedAt ?? new Date(),
+        identityVerifiedAt: updatedProfile.identityVerifiedAt ?? undefined,
         identity: updatedProfile.identity
           ? {
               ...updatedProfile.identity,
-              verifiedAt: updatedProfile.identity.verifiedAt?.toDate?.() ?? new Date(),
+              verifiedAt: updatedProfile.identity.verifiedAt ?? new Date(),
             }
           : undefined,
         employerAgreements: updatedProfile.employerAgreements
           ? {
-              termsAgreedAt:
-                updatedProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+              termsAgreedAt: updatedProfile.employerAgreements.termsAgreedAt ?? new Date(),
               liabilityWaiverAgreedAt:
-                updatedProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+                updatedProfile.employerAgreements.liabilityWaiverAgreedAt ?? new Date(),
             }
           : undefined,
-        employerRegisteredAt: updatedProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+        employerRegisteredAt: updatedProfile.employerRegisteredAt ?? undefined,
         bubbleScore: updatedProfile.bubbleScore
           ? {
               ...updatedProfile.bubbleScore,
-              lastUpdatedAt: updatedProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+              lastUpdatedAt: updatedProfile.bubbleScore.lastUpdatedAt ?? new Date(),
             }
           : undefined,
       });

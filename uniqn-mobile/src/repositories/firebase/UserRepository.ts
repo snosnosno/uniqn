@@ -500,7 +500,7 @@ export class FirebaseUserRepository implements IUserRepository {
           },
           employerRegisteredAt: timestamp,
           updatedAt: timestamp,
-        } as FirestoreUserProfile;
+        } as unknown as FirestoreUserProfile;
       });
 
       return updatedProfile;

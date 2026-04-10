@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import type {
   CreateJobPostingInput,
   JobPosting,
@@ -21,8 +20,8 @@ interface SerializeJobPostingV3Options {
   ownerName?: string;
   status?: JobPostingStatus;
   current?: Partial<JobPosting>;
-  createdAt?: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const FIXED_POSTING_DURATION_DAYS = 7 as const;
@@ -298,7 +297,7 @@ export function serializeJobPostingV3(
     ...(postingType === 'urgent'
       ? {
           urgentConfig: current?.urgentConfig || {
-            createdAt: Timestamp.now(),
+            createdAt: new Date(),
             priority: 'high',
           },
         }

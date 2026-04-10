@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import { ScheduleConverter, createSchedulePostingContext } from '../ScheduleConverter';
 import type { Application, JobPosting, WorkLog } from '@/types';
 
@@ -54,8 +53,8 @@ function createPosting(): JobPosting {
     questions: {
       items: [],
     },
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 
@@ -68,8 +67,8 @@ function createWorkLog(overrides: Partial<WorkLog> = {}): WorkLog {
     status: 'scheduled',
     role: 'floor',
     timeSlot: '09:00~18:00',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   };
 }
@@ -91,8 +90,8 @@ function createApplication(overrides: Partial<Application> = {}): Application {
         groupId: 'slot-1',
       },
     ],
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   };
 }
@@ -106,10 +105,10 @@ describe('ScheduleConverter.parseTimeSlotToTimestamp', () => {
     );
 
     expect(timestamp).not.toBeNull();
-    expect(timestamp?.toDate().getFullYear()).toBe(2025);
-    expect(timestamp?.toDate().getMonth()).toBe(0);
-    expect(timestamp?.toDate().getDate()).toBe(15);
-    expect(timestamp?.toDate().getHours()).toBe(9);
+    expect(timestamp?.getFullYear()).toBe(2025);
+    expect(timestamp?.getMonth()).toBe(0);
+    expect(timestamp?.getDate()).toBe(15);
+    expect(timestamp?.getHours()).toBe(9);
   });
 
   it('returns null for invalid date input', () => {

@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { FirebaseDocument } from './common';
 
 // ============================================================================
@@ -73,7 +72,7 @@ export interface Inquiry extends FirebaseDocument {
   responderName?: string;
 
   /** 응답일시 (선택) */
-  respondedAt?: Timestamp;
+  respondedAt?: Date;
 }
 
 /**

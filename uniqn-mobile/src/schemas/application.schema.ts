@@ -301,7 +301,7 @@ export function parseApplicationDocument(data: unknown): Application | null {
   return {
     ...result.data,
     notes: result.data.notes ?? undefined,
-  } as Application;
+  } as unknown as Application;
 }
 
 /**

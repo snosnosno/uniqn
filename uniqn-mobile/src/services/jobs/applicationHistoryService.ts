@@ -4,7 +4,6 @@
  * @version 1.0.0
  */
 
-import type { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { ERROR_CODES, ValidationError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -155,8 +154,8 @@ export async function getApplicationHistorySummary(applicationId: string): Promi
   totalConfirmations: number;
   cancellations: number;
   isCurrentlyConfirmed: boolean;
-  lastConfirmedAt?: Timestamp;
-  lastCancelledAt?: Timestamp;
+  lastConfirmedAt?: Date;
+  lastCancelledAt?: Date;
 } | null> {
   try {
     const applicationData = await applicationRepository.getById(applicationId);

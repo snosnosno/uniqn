@@ -7,7 +7,6 @@
  * @version 1.1.0
  */
 
-import type { Timestamp } from 'firebase/firestore';
 import type { FirebaseDocument } from './common';
 
 // ============================================================================
@@ -292,7 +291,7 @@ export interface Report extends FirebaseDocument {
   reviewerNotes?: string;
 
   /** 처리 일시 */
-  reviewedAt?: Timestamp;
+  reviewedAt?: Date;
 
   /** 심각도 */
   severity: 'low' | 'medium' | 'high' | 'critical';

@@ -7,7 +7,6 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { Assignment } from './assignment';
 
 /**
@@ -21,7 +20,7 @@ export interface OriginalApplication {
   assignments: Assignment[];
 
   /** 최초 지원 시간 */
-  appliedAt?: Timestamp;
+  appliedAt?: Date;
 }
 
 /**
@@ -32,10 +31,10 @@ export interface OriginalApplication {
  */
 export interface ConfirmationHistoryEntry {
   /** 확정 시간 */
-  confirmedAt: Timestamp;
+  confirmedAt: Date;
 
   /** 취소 시간 (취소된 경우에만) */
-  cancelledAt?: Timestamp;
+  cancelledAt?: Date;
 
   /** 취소 사유 (취소된 경우에만) */
   cancelReason?: string;
@@ -62,7 +61,7 @@ export function createHistoryEntry(
   confirmedBy?: string
 ): ConfirmationHistoryEntry {
   return {
-    confirmedAt: Timestamp.now(),
+    confirmedAt: new Date(),
     assignments,
     confirmedBy,
   };
@@ -83,7 +82,7 @@ export function addCancellationToEntry(
 ): ConfirmationHistoryEntry {
   return {
     ...entry,
-    cancelledAt: Timestamp.now(),
+    cancelledAt: new Date(),
     cancelReason,
     cancelledBy,
   };
@@ -143,10 +142,10 @@ export interface HistorySummary {
   isCurrentlyConfirmed: boolean;
 
   /** 마지막 확정 시간 */
-  lastConfirmedAt?: Timestamp;
+  lastConfirmedAt?: Date;
 
   /** 마지막 취소 시간 */
-  lastCancelledAt?: Timestamp;
+  lastCancelledAt?: Date;
 }
 
 /**

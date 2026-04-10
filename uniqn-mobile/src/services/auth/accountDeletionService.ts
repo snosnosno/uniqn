@@ -7,7 +7,6 @@
  * - 개인정보 열람/수정/삭제 권리
  */
 
-import { Timestamp } from 'firebase/firestore';
 import { reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
@@ -170,9 +169,9 @@ export async function requestAccountDeletion(
     }
 
     // 2. 탈퇴 요청 정보 준비
-    const now = Timestamp.now();
-    const scheduledDeletion = Timestamp.fromDate(
-      new Date(Date.now() + DELETION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000)
+    const now = new Date();
+    const scheduledDeletion = new Date(
+      Date.now() + DELETION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
     );
 
     const deletionRequestData: Omit<DeletionRequest, 'userId'> = {

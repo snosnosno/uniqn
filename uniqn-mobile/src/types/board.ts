@@ -1,4 +1,3 @@
-import type { Timestamp } from 'firebase/firestore';
 import { toDate } from '@/utils/date';
 import {
   BOARD_NOTICE_PREFIX,
@@ -53,13 +52,13 @@ export interface BoardPost extends FirebaseDocument {
   isAutoCreated: boolean;
   isLocked: boolean;
   lockedBy?: string | null;
-  lockedAt?: Timestamp | Date | null;
+  lockedAt?: Date | null;
   likeCount: number;
   dislikeCount: number;
   commentCount: number;
   viewCount: number;
   imageAttachments: BoardImageAttachment[];
-  lastActivityAt?: Timestamp | Date | null;
+  lastActivityAt?: Date | null;
   announcementCategory?: AnnouncementCategory;
   isPinned?: boolean;
   jobSummary?: BoardJobSummary;
@@ -75,7 +74,7 @@ export interface BoardComment extends FirebaseDocument {
   mentionedUserIds: string[];
   reactionCounts: Partial<Record<CommentReactionType, number>>;
   isPinned: boolean;
-  pinnedAt?: Timestamp | Date | null;
+  pinnedAt?: Date | null;
   pinnedBy?: string | null;
   status: BoardCommentStatus;
   imageAttachments: BoardImageAttachment[];
@@ -109,7 +108,7 @@ export interface BoardMembership extends FirebaseDocument {
   title: string;
   workDate: string;
   authorId: string;
-  lastActivityAt?: Timestamp | Date | null;
+  lastActivityAt?: Date | null;
 }
 
 export interface BoardReport extends FirebaseDocument {
@@ -121,7 +120,7 @@ export interface BoardReport extends FirebaseDocument {
   details?: string;
   status: BoardReportStatus;
   resolvedBy?: string | null;
-  resolvedAt?: Timestamp | Date | null;
+  resolvedAt?: Date | null;
 }
 
 export type BoardReportFilterStatus = BoardReportStatus | 'all';
@@ -224,7 +223,7 @@ export interface ScheduleMembershipSyncItem {
   title: string;
   workDate: string;
   authorId: string;
-  lastActivityAt?: Timestamp | Date | null;
+  lastActivityAt?: Date | null;
 }
 
 export const MAX_BOARD_POST_IMAGES = 10;

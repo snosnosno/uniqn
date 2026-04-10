@@ -5,7 +5,6 @@
  * view-model types used by posting surfaces.
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { FirebaseDocument, Location } from './common';
 import type { StaffRole } from './role';
 import type {
@@ -150,9 +149,9 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   filledPositions: number;
   viewCount?: number;
   stats?: JobPostingAggregateStats;
-  createdAt?: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
-  closedAt?: Timestamp;
+  createdAt?: Date;
+  updatedAt?: Date;
+  closedAt?: Date;
   closedReason?: ClosedReason;
   tags?: string[];
   contactPhone?: string;

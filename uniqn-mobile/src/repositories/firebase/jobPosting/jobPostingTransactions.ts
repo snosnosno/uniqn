@@ -9,7 +9,6 @@ import {
   increment,
   serverTimestamp,
   runTransaction,
-  Timestamp,
   type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -488,7 +487,7 @@ export async function createWithTransaction(
   try {
     const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
     const newDocRef = doc(jobsRef);
-    const now = Timestamp.now();
+    const now = new Date();
     const current: Partial<JobPosting> = {
       id: newDocRef.id,
       viewCount: 0,
@@ -568,7 +567,7 @@ export async function updateWithTransaction(
       }
 
       const mergedInput = mergeJobPostingInput(currentData, input);
-      const updatedAt = Timestamp.now();
+      const updatedAt = new Date();
       const serialized = serializeJobPostingV3(mergedInput, {
         ownerId: currentData.ownerId,
         ownerName: currentData.ownerName,
@@ -771,7 +770,7 @@ export async function updateSettlementSettings(
           taxSettings: data.taxSettings as CreateJobPostingInput['compensation']['taxSettings'],
         },
       });
-      const updatedAt = Timestamp.now();
+      const updatedAt = new Date();
       const serialized = serializeJobPostingV3(mergedInput, {
         ownerId: currentData.ownerId,
         ownerName: currentData.ownerName,

@@ -4,8 +4,6 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
-
 /**
  * 인증 상태
  */
@@ -94,6 +92,6 @@ export interface SessionInfo {
   userId: string;
   deviceId: string;
   platform: 'ios' | 'android' | 'web';
-  lastActiveAt: Timestamp;
-  createdAt: Timestamp;
+  lastActiveAt: Date;
+  createdAt: Date;
 }

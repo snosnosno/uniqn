@@ -1,4 +1,3 @@
-import type { Timestamp } from 'firebase/firestore';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
 import { draftToFormData, formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import type { JobPostingDraft, JobPostingDraftDatedSchedule } from './jobPostingDraft';
@@ -33,10 +32,10 @@ export interface JobPostingTemplate {
   name: string;
   description?: string;
   createdBy: string;
-  createdAt: Timestamp;
+  createdAt: Date;
   templateData: TemplateFormData;
   usageCount?: number;
-  lastUsedAt?: Timestamp;
+  lastUsedAt?: Date;
 }
 
 export interface CreateTemplateInput {

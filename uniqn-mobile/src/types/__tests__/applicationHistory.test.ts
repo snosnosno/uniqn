@@ -5,7 +5,6 @@
  *   countConfirmations, countCancellations, createHistorySummary 함수 테스트
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { Assignment } from '../assignment';
 import type { ConfirmationHistoryEntry } from '../applicationHistory';
 import {
@@ -31,7 +30,7 @@ const mockAssignment = (overrides = {}): Assignment => ({
 const createMockEntry = (
   overrides: Partial<ConfirmationHistoryEntry> = {}
 ): ConfirmationHistoryEntry => ({
-  confirmedAt: Timestamp.fromDate(new Date('2025-03-01T10:00:00Z')),
+  confirmedAt: new Date('2025-03-01T10:00:00Z'),
   assignments: [mockAssignment()],
   ...overrides,
 });
@@ -50,7 +49,7 @@ describe('applicationHistory', () => {
       const entry = createHistoryEntry(assignments);
 
       expect(entry.assignments).toEqual(assignments);
-      expect(entry.confirmedAt).toBeInstanceOf(Timestamp);
+      expect(entry.confirmedAt).toBeInstanceOf(Date);
       expect(entry.confirmedBy).toBeUndefined();
       expect(entry.cancelledAt).toBeUndefined();
       expect(entry.cancelReason).toBeUndefined();
@@ -88,7 +87,7 @@ describe('applicationHistory', () => {
       const original = createMockEntry();
       const cancelled = addCancellationToEntry(original, '개인 사정', 'employer-1');
 
-      expect(cancelled.cancelledAt).toBeInstanceOf(Timestamp);
+      expect(cancelled.cancelledAt).toBeInstanceOf(Date);
       expect(cancelled.cancelReason).toBe('개인 사정');
       expect(cancelled.cancelledBy).toBe('employer-1');
       // Should preserve original fields
@@ -100,7 +99,7 @@ describe('applicationHistory', () => {
       const original = createMockEntry();
       const cancelled = addCancellationToEntry(original);
 
-      expect(cancelled.cancelledAt).toBeInstanceOf(Timestamp);
+      expect(cancelled.cancelledAt).toBeInstanceOf(Date);
       expect(cancelled.cancelReason).toBeUndefined();
       expect(cancelled.cancelledBy).toBeUndefined();
     });
@@ -121,12 +120,12 @@ describe('applicationHistory', () => {
     it('should return the most recent uncancelled entry', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-01-01')),
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          confirmedAt: new Date('2025-01-01'),
+          cancelledAt: new Date('2025-01-15'),
           cancelReason: '취소',
         }),
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-02-01')),
+          confirmedAt: new Date('2025-02-01'),
         }),
       ];
 
@@ -137,10 +136,10 @@ describe('applicationHistory', () => {
     it('should return null if all entries are cancelled', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          cancelledAt: new Date('2025-01-15'),
         }),
         createMockEntry({
-          cancelledAt: Timestamp.fromDate(new Date('2025-02-15')),
+          cancelledAt: new Date('2025-02-15'),
         }),
       ];
 
@@ -154,10 +153,10 @@ describe('applicationHistory', () => {
     it('should return the last uncancelled entry when multiple exist', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-01-01')),
+          confirmedAt: new Date('2025-01-01'),
         }),
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-02-01')),
+          confirmedAt: new Date('2025-02-01'),
         }),
       ];
 
@@ -169,11 +168,11 @@ describe('applicationHistory', () => {
     it('should skip cancelled entries and find active one earlier in array', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-01-01')),
+          confirmedAt: new Date('2025-01-01'),
         }),
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-02-01')),
-          cancelledAt: Timestamp.fromDate(new Date('2025-02-15')),
+          confirmedAt: new Date('2025-02-01'),
+          cancelledAt: new Date('2025-02-15'),
         }),
       ];
 
@@ -203,7 +202,7 @@ describe('applicationHistory', () => {
     it('should count cancelled entries too (they were confirmed at some point)', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          cancelledAt: new Date('2025-01-15'),
         }),
         createMockEntry(),
       ];
@@ -219,11 +218,11 @@ describe('applicationHistory', () => {
     it('should count entries with cancelledAt', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          cancelledAt: new Date('2025-01-15'),
         }),
         createMockEntry(),
         createMockEntry({
-          cancelledAt: Timestamp.fromDate(new Date('2025-03-15')),
+          cancelledAt: new Date('2025-03-15'),
         }),
       ];
 
@@ -248,11 +247,11 @@ describe('applicationHistory', () => {
     it('should create correct summary for mixed history', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-01-01')),
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          confirmedAt: new Date('2025-01-01'),
+          cancelledAt: new Date('2025-01-15'),
         }),
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-02-01')),
+          confirmedAt: new Date('2025-02-01'),
         }),
       ];
 
@@ -278,12 +277,12 @@ describe('applicationHistory', () => {
     it('should handle all cancelled history', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-01-01')),
-          cancelledAt: Timestamp.fromDate(new Date('2025-01-15')),
+          confirmedAt: new Date('2025-01-01'),
+          cancelledAt: new Date('2025-01-15'),
         }),
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-02-01')),
-          cancelledAt: Timestamp.fromDate(new Date('2025-02-15')),
+          confirmedAt: new Date('2025-02-01'),
+          cancelledAt: new Date('2025-02-15'),
         }),
       ];
 
@@ -297,7 +296,7 @@ describe('applicationHistory', () => {
     it('should handle single active confirmation', () => {
       const entries: ConfirmationHistoryEntry[] = [
         createMockEntry({
-          confirmedAt: Timestamp.fromDate(new Date('2025-03-01')),
+          confirmedAt: new Date('2025-03-01'),
         }),
       ];
 

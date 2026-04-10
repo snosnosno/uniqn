@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import { Platform } from 'react-native';
-import { Timestamp } from 'firebase/firestore';
 import { reauthenticateWithCredential } from 'firebase/auth';
 import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
 import { BusinessError, ERROR_CODES } from '@/errors';
@@ -99,16 +98,16 @@ const mockProfile: FirestoreUserProfile = {
   nickname: 'tester',
   phone: '01012345678',
   photoURL: undefined,
-  createdAt: Timestamp.now(),
-  updatedAt: Timestamp.now(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 const mockDeletionRequest: DeletionRequest = {
   userId: 'user-123',
   reason: 'no_longer_needed',
   reasonDetail: 'No longer needed',
-  requestedAt: Timestamp.now(),
-  scheduledDeletionAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+  requestedAt: new Date(),
+  scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   status: STATUS.DELETION_REQUEST.PENDING,
 };
 

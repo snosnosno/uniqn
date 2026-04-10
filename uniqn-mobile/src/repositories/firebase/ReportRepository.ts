@@ -85,7 +85,7 @@ export class FirebaseReportRepository implements IReportRepository {
         return null;
       }
 
-      return report as Report;
+      return report as unknown as Report;
     } catch (error) {
       throw handleServiceError(error, {
         operation: '신고 상세 조회',
@@ -438,7 +438,7 @@ export class FirebaseReportRepository implements IReportRepository {
       });
     }
 
-    return reports as Report[];
+    return reports as unknown as Report[];
   }
 }
 

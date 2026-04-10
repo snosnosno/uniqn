@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import { STATUS } from '@/constants';
 import type { ScheduleEvent } from '@/types';
 import { ScheduleMerger } from '../ScheduleMerger';
@@ -9,8 +8,8 @@ function createScheduleEvent(overrides: Partial<ScheduleEvent> = {}): ScheduleEv
     type: STATUS.SCHEDULE.CONFIRMED,
     assignmentGroupId: 'slot-1',
     date: '2025-01-15',
-    startTime: Timestamp.now(),
-    endTime: Timestamp.now(),
+    startTime: new Date(),
+    endTime: new Date(),
     jobPostingId: 'job-1',
     jobPostingName: 'Poker Event',
     location: 'Seoul',
@@ -19,8 +18,8 @@ function createScheduleEvent(overrides: Partial<ScheduleEvent> = {}): ScheduleEv
     sourceCollection: 'applications',
     sourceId: 'source-1',
     timeSlot: '09:00~18:00',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   };
 }

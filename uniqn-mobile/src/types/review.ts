@@ -7,8 +7,6 @@
  * @version 1.0.0
  */
 
-import type { Timestamp } from 'firebase/firestore';
-
 // ============================================================================
 // 기본 타입
 // ============================================================================
@@ -271,7 +269,7 @@ export const REVIEW_COMMENT_MAX_LENGTH = 200;
 /**
  * 버블 점수 (users 컬렉션 비정규화 필드)
  */
-export interface BubbleScore<T = Timestamp> {
+export interface BubbleScore<T = Date> {
   score: number;
   totalReviewCount: number;
   positiveCount: number;
@@ -303,7 +301,7 @@ export interface Review {
   tags: ReviewTag[];
   comment?: string;
   bubbleScoreChange: number;
-  createdAt: Timestamp;
+  createdAt: Date;
 }
 
 /**

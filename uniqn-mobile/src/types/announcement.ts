@@ -5,7 +5,6 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
 import type { FirebaseDocument } from './common';
 import type { UserRole } from './role';
 import { toDate } from '@/utils/date';
@@ -110,7 +109,7 @@ export interface Announcement extends FirebaseDocument {
   viewCount: number;
 
   /** 발행일시 (선택) */
-  publishedAt?: Timestamp;
+  publishedAt?: Date;
 
   /** 첨부 이미지 URL (선택, 단일 이미지 - 호환성 유지) */
   imageUrl?: string | null;

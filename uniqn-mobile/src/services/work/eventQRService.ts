@@ -21,7 +21,6 @@
  * }
  */
 
-import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -112,8 +111,8 @@ export async function generateEventQR(
       action: input.action,
       securityCode,
       createdBy: input.createdBy,
-      createdAt: Timestamp.fromMillis(now),
-      expiresAt: Timestamp.fromMillis(expiresAt),
+      createdAt: new Date(now),
+      expiresAt: new Date(expiresAt),
       isActive: true,
     };
 

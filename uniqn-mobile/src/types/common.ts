@@ -8,7 +8,6 @@
  * 역할 타입 사용 시 '@/types/role'에서 직접 import할 것.
  */
 
-import type { Timestamp } from 'firebase/firestore';
 import type { UserRole, StaffRole } from './role';
 
 /**
@@ -19,8 +18,8 @@ export interface FcmTokenRecord {
   token: string;
   type: 'expo' | 'fcm';
   platform: 'ios' | 'android';
-  registeredAt: Timestamp | Date;
-  lastRefreshedAt: Timestamp | Date;
+  registeredAt: Date;
+  lastRefreshedAt: Date;
 }
 
 /**
@@ -28,8 +27,8 @@ export interface FcmTokenRecord {
  */
 export interface FirebaseDocument {
   id: string;
-  createdAt?: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 /**

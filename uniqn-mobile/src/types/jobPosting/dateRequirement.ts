@@ -1,4 +1,3 @@
-import { Timestamp } from 'firebase/firestore';
 import { generateId } from '@/utils/generateId';
 import { getTodayString, toDateString, type SerializedTimestamp } from '@/utils/date';
 import type { SalaryInfo } from '../jobPosting';
@@ -22,7 +21,7 @@ export interface TimeSlot {
 }
 
 export interface DateSpecificRequirement {
-  date: string | Timestamp | SerializedTimestamp;
+  date: string | Date | SerializedTimestamp;
   timeSlots: TimeSlot[];
   isGrouped?: boolean;
 }
@@ -32,7 +31,7 @@ export interface DateConstraint {
   label: string;
 }
 
-export function getDateString(dateInput: string | Timestamp | SerializedTimestamp): string {
+export function getDateString(dateInput: string | Date | SerializedTimestamp): string {
   return toDateString(dateInput);
 }
 
