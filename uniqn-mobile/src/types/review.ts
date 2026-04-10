@@ -269,13 +269,13 @@ export const REVIEW_COMMENT_MAX_LENGTH = 200;
 /**
  * 버블 점수 (users 컬렉션 비정규화 필드)
  */
-export interface BubbleScore<T = Date> {
+export interface BubbleScore {
   score: number;
   totalReviewCount: number;
   positiveCount: number;
   neutralCount: number;
   negativeCount: number;
-  lastUpdatedAt: T;
+  lastUpdatedAt: Date;
 }
 
 // ============================================================================

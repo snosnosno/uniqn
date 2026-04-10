@@ -18,11 +18,11 @@ import type { UserRole } from './role';
 // Core Types
 // ============================================================================
 
-export interface PortOneIdentityProfile<T = Date> {
+export interface PortOneIdentityProfile {
   provider: 'portone';
   channel: 'inicis_unified';
   identityVerificationId: string;
-  verifiedAt: T;
+  verifiedAt: Date;
   name: string;
   birthDate: string;
   gender?: 'male' | 'female';
@@ -34,16 +34,14 @@ export interface PortOneIdentityProfile<T = Date> {
 /**
  * 사용자 프로필
  *
- * @template T - 타임스탬프 타입 (기본: Date, Firestore: Timestamp)
- *
  * @example
- * // Zustand Store에서 사용 (Date)
+ * // Zustand Store에서 사용
  * const profile: UserProfile = { ... };
  *
- * // Firestore에서 사용 (Timestamp)
+ * // Firestore Repository에서 반환
  * const firestoreProfile: FirestoreUserProfile = { ... };
  */
-export interface UserProfile<T = Date> {
+export interface UserProfile {
   /** Firebase Auth UID */
   uid: string;
   /** 이메일 주소 */
@@ -65,11 +63,11 @@ export interface UserProfile<T = Date> {
   /** 포트원 본인인증 완료 여부 */
   identityVerified?: boolean;
   /** 포트원 본인인증 완료 시간 */
-  identityVerifiedAt?: T;
+  identityVerifiedAt?: Date;
   /** 본인인증 제공 서비스 */
   identityProvider?: 'portone_inicis';
   /** 본인인증 원본 데이터 */
-  identity?: PortOneIdentityProfile<T>;
+  identity?: PortOneIdentityProfile;
 
   // 추가 정보
   /** 성별 (회원가입 Step2 입력, 수정 불가) */
@@ -99,14 +97,14 @@ export interface UserProfile<T = Date> {
   /** 구인자 약관 동의 정보 */
   employerAgreements?: {
     /** 구인자 이용약관 동의 일시 */
-    termsAgreedAt: T;
+    termsAgreedAt: Date;
     termsVersion?: string;
     /** 서약서 동의 일시 */
-    liabilityWaiverAgreedAt: T;
+    liabilityWaiverAgreedAt: Date;
     liabilityWaiverVersion?: string;
   };
   /** 구인자 등록 일시 */
-  employerRegisteredAt?: T;
+  employerRegisteredAt?: Date;
 
   // 버블 점수 (리뷰/평가 시스템)
   /** 버블 점수 (비정규화, reviews 컬렉션에서 계산) */
@@ -116,7 +114,7 @@ export interface UserProfile<T = Date> {
     positiveCount: number;
     neutralCount: number;
     negativeCount: number;
-    lastUpdatedAt: T;
+    lastUpdatedAt: Date;
   };
 
   // 프로필 상태
@@ -129,9 +127,9 @@ export interface UserProfile<T = Date> {
   /** 활성 상태 (Firestore 전용, Store에서는 optional) */
   isActive?: boolean;
   /** 생성일 */
-  createdAt: T;
+  createdAt: Date;
   /** 수정일 */
-  updatedAt: T;
+  updatedAt: Date;
 }
 
 // ============================================================================
@@ -139,10 +137,9 @@ export interface UserProfile<T = Date> {
 // ============================================================================
 
 /**
- * Firestore용 UserProfile (Date 타입 사용)
+ * Firestore용 UserProfile 호환성 별칭
  *
- * @description Repository에서 Timestamp→Date 변환 후 반환하는 타입.
- *              기존 호환성을 위해 별칭 유지.
+ * @description 하위 호환성을 위한 별칭. UserProfile과 동일.
  */
 export type FirestoreUserProfile = UserProfile;
 

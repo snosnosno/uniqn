@@ -22,6 +22,7 @@ export type { UserRole, StaffRole, RoleFlags } from './role';
 
 // 공통 타입
 export type {
+  BaseDocument,
   FirebaseDocument,
   User,
   Staff,

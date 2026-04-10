@@ -23,18 +23,21 @@ export interface FcmTokenRecord {
 }
 
 /**
- * Firebase 문서 기본 타입
+ * 문서 기본 타입
  */
-export interface FirebaseDocument {
+export interface BaseDocument {
   id: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
+/** @deprecated Use BaseDocument */
+export type FirebaseDocument = BaseDocument;
+
 /**
  * 사용자 타입
  */
-export interface User extends FirebaseDocument {
+export interface User extends BaseDocument {
   email: string;
   name: string;
   nickname?: string;
@@ -48,7 +51,7 @@ export interface User extends FirebaseDocument {
 /**
  * 스태프 타입
  */
-export interface Staff extends FirebaseDocument {
+export interface Staff extends BaseDocument {
   /** 연결된 사용자 ID */
   userId?: string;
   name: string;
