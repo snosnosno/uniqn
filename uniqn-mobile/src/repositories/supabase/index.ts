@@ -1,0 +1,15 @@
+export { SupabaseUserRepository } from './UserRepository';
+export { SupabaseJobPostingRepository } from './JobPostingRepository';
+export { SupabaseApplicationRepository } from './ApplicationRepository';
+export { SupabaseWorkLogRepository } from './WorkLogRepository';
+export { SupabaseConfirmedStaffRepository } from './ConfirmedStaffRepository';
+export { SupabaseSettlementRepository } from './SettlementRepository';
+export { SupabaseNotificationRepository } from './NotificationRepository';
+export { SupabaseBoardRepository } from './BoardRepository';
+export { SupabaseAnnouncementRepository } from './AnnouncementRepository';
+export { SupabaseReviewRepository } from './ReviewRepository';
+export { SupabaseReportRepository } from './ReportRepository';
+export { SupabaseInquiryRepository } from './InquiryRepository';
+export { SupabaseTemplateRepository } from './TemplateRepository';
+export { SupabaseEventQRRepository } from './EventQRRepository';
+export { SupabaseAdminRepository } from './AdminRepository';

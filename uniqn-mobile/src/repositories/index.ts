@@ -7,7 +7,7 @@
  * ## 아키텍처
  *
  * ```
- * Service Layer → Repository Interface → Firebase Implementation
+ * Service Layer → Repository Interface → Supabase Implementation
  *                         ↓
  *                 Mock Implementation (테스트용)
  * ```
@@ -26,22 +26,22 @@
  */
 
 import {
-  FirebaseApplicationRepository,
-  FirebaseJobPostingRepository,
-  FirebaseWorkLogRepository,
-  FirebaseUserRepository,
-  FirebaseEventQRRepository,
-  FirebaseNotificationRepository,
-  FirebaseReportRepository,
-  FirebaseSettlementRepository,
-  FirebaseConfirmedStaffRepository,
-  FirebaseAnnouncementRepository,
-  FirebaseInquiryRepository,
-  FirebaseAdminRepository,
-  FirebaseReviewRepository,
-  FirebaseTemplateRepository,
-  FirebaseBoardRepository,
-} from './firebase';
+  SupabaseApplicationRepository,
+  SupabaseJobPostingRepository,
+  SupabaseWorkLogRepository,
+  SupabaseUserRepository,
+  SupabaseEventQRRepository,
+  SupabaseNotificationRepository,
+  SupabaseReportRepository,
+  SupabaseSettlementRepository,
+  SupabaseConfirmedStaffRepository,
+  SupabaseAnnouncementRepository,
+  SupabaseInquiryRepository,
+  SupabaseAdminRepository,
+  SupabaseReviewRepository,
+  SupabaseTemplateRepository,
+  SupabaseBoardRepository,
+} from './supabase';
 
 // ============================================================================
 // Interfaces
@@ -131,26 +131,26 @@ export type {
 } from './interfaces';
 
 // ============================================================================
-// Firebase Implementations
+// Supabase Implementations
 // ============================================================================
 
 export {
-  FirebaseApplicationRepository,
-  FirebaseJobPostingRepository,
-  FirebaseWorkLogRepository,
-  FirebaseUserRepository,
-  FirebaseEventQRRepository,
-  FirebaseNotificationRepository,
-  FirebaseReportRepository,
-  FirebaseSettlementRepository,
-  FirebaseConfirmedStaffRepository,
-  FirebaseAnnouncementRepository,
-  FirebaseInquiryRepository,
-  FirebaseAdminRepository,
-  FirebaseReviewRepository,
-  FirebaseTemplateRepository,
-  FirebaseBoardRepository,
-} from './firebase';
+  SupabaseApplicationRepository,
+  SupabaseJobPostingRepository,
+  SupabaseWorkLogRepository,
+  SupabaseUserRepository,
+  SupabaseEventQRRepository,
+  SupabaseNotificationRepository,
+  SupabaseReportRepository,
+  SupabaseSettlementRepository,
+  SupabaseConfirmedStaffRepository,
+  SupabaseAnnouncementRepository,
+  SupabaseInquiryRepository,
+  SupabaseAdminRepository,
+  SupabaseReviewRepository,
+  SupabaseTemplateRepository,
+  SupabaseBoardRepository,
+} from './supabase';
 
 // ============================================================================
 // Singleton Instances
@@ -172,7 +172,7 @@ export {
  * const application = await applicationRepository.applyWithTransaction(input, context);
  * ```
  */
-export const applicationRepository = new FirebaseApplicationRepository();
+export const applicationRepository = new SupabaseApplicationRepository();
 
 /**
  * JobPosting Repository 싱글톤 인스턴스
@@ -190,7 +190,7 @@ export const applicationRepository = new FirebaseApplicationRepository();
  * const { items, hasMore } = await jobPostingRepository.getList(filters);
  * ```
  */
-export const jobPostingRepository = new FirebaseJobPostingRepository();
+export const jobPostingRepository = new SupabaseJobPostingRepository();
 
 /**
  * WorkLog Repository 싱글톤 인스턴스
@@ -208,7 +208,7 @@ export const jobPostingRepository = new FirebaseJobPostingRepository();
  * const stats = await workLogRepository.getStats(staffId);
  * ```
  */
-export const workLogRepository = new FirebaseWorkLogRepository();
+export const workLogRepository = new SupabaseWorkLogRepository();
 
 /**
  * User Repository 싱글톤 인스턴스
@@ -229,7 +229,7 @@ export const workLogRepository = new FirebaseWorkLogRepository();
  * await userRepository.requestDeletion(userId, deletionRequest);
  * ```
  */
-export const userRepository = new FirebaseUserRepository();
+export const userRepository = new SupabaseUserRepository();
 
 /**
  * EventQR Repository 싱글톤 인스턴스
@@ -250,7 +250,7 @@ export const userRepository = new FirebaseUserRepository();
  * await eventQRRepository.deactivate(qrId);
  * ```
  */
-export const eventQRRepository = new FirebaseEventQRRepository();
+export const eventQRRepository = new SupabaseEventQRRepository();
 
 /**
  * Notification Repository 싱글톤 인스턴스
@@ -271,7 +271,7 @@ export const eventQRRepository = new FirebaseEventQRRepository();
  * const settings = await notificationRepository.getSettings(userId);
  * ```
  */
-export const notificationRepository = new FirebaseNotificationRepository();
+export const notificationRepository = new SupabaseNotificationRepository();
 
 /**
  * Report Repository 싱글톤 인스턴스
@@ -292,7 +292,7 @@ export const notificationRepository = new FirebaseNotificationRepository();
  * await reportRepository.reviewWithTransaction(input, reviewerId);
  * ```
  */
-export const reportRepository = new FirebaseReportRepository();
+export const reportRepository = new SupabaseReportRepository();
 
 /**
  * Settlement Repository 싱글톤 인스턴스
@@ -316,7 +316,7 @@ export const reportRepository = new FirebaseReportRepository();
  * await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, ownerId);
  * ```
  */
-export const settlementRepository = new FirebaseSettlementRepository();
+export const settlementRepository = new SupabaseSettlementRepository();
 
 /**
  * ConfirmedStaff Repository 싱글톤 인스턴스
@@ -340,7 +340,7 @@ export const settlementRepository = new FirebaseSettlementRepository();
  * const unsubscribe = confirmedStaffRepository.subscribeByJobPostingId(jobPostingId, callbacks);
  * ```
  */
-export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();
+export const confirmedStaffRepository = new SupabaseConfirmedStaffRepository();
 
 /**
  * Announcement Repository 싱글톤 인스턴스
@@ -361,7 +361,7 @@ export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();
  * const id = await announcementRepository.create(authorId, authorName, input);
  * ```
  */
-export const announcementRepository = new FirebaseAnnouncementRepository();
+export const announcementRepository = new SupabaseAnnouncementRepository();
 
 /**
  * Inquiry Repository 싱글톤 인스턴스
@@ -382,7 +382,7 @@ export const announcementRepository = new FirebaseAnnouncementRepository();
  * const id = await inquiryRepository.create(context, input);
  * ```
  */
-export const inquiryRepository = new FirebaseInquiryRepository();
+export const inquiryRepository = new SupabaseInquiryRepository();
 
 /**
  * Admin Repository 싱글톤 인스턴스
@@ -403,7 +403,7 @@ export const inquiryRepository = new FirebaseInquiryRepository();
  * const prevRole = await adminRepository.updateUserRole(userId, 'employer');
  * ```
  */
-export const adminRepository = new FirebaseAdminRepository();
+export const adminRepository = new SupabaseAdminRepository();
 
 /**
  * Review Repository 싱글톤 인스턴스
@@ -421,7 +421,7 @@ export const adminRepository = new FirebaseAdminRepository();
  * const reviewId = await reviewRepository.createWithTransaction(input, context);
  * ```
  */
-export const reviewRepository = new FirebaseReviewRepository();
+export const reviewRepository = new SupabaseReviewRepository();
 
 /**
  * Template Repository 싱글톤 인스턴스
@@ -442,9 +442,9 @@ export const reviewRepository = new FirebaseReviewRepository();
  * const template = await templateRepository.loadTemplate(templateId);
  * ```
  */
-export const templateRepository = new FirebaseTemplateRepository();
+export const templateRepository = new SupabaseTemplateRepository();
 
 /**
  * Board Repository singleton
  */
-export const boardRepository = new FirebaseBoardRepository();
+export const boardRepository = new SupabaseBoardRepository();
