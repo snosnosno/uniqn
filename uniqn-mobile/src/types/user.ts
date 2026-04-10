@@ -19,6 +19,19 @@ import type { UserRole } from './role';
 // Core Types
 // ============================================================================
 
+export interface PortOneIdentityProfile<T = Date> {
+  provider: 'portone';
+  channel: 'inicis_unified';
+  identityVerificationId: string;
+  verifiedAt: T;
+  name: string;
+  birthDate: string;
+  gender?: 'male' | 'female';
+  phoneNumber?: string;
+  ciHash?: string;
+  isForeigner?: boolean;
+}
+
 /**
  * 사용자 프로필
  *
@@ -50,6 +63,14 @@ export interface UserProfile<T = Date> {
   // 전화번호 인증 (Firebase Phone Auth)
   /** 전화번호 인증 완료 여부 */
   phoneVerified?: boolean;
+  /** 포트원 본인인증 완료 여부 */
+  identityVerified?: boolean;
+  /** 포트원 본인인증 완료 시간 */
+  identityVerifiedAt?: T;
+  /** 본인인증 제공 서비스 */
+  identityProvider?: 'portone_inicis';
+  /** 본인인증 원본 데이터 */
+  identity?: PortOneIdentityProfile<T>;
 
   // 추가 정보
   /** 성별 (회원가입 Step2 입력, 수정 불가) */

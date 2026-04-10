@@ -260,6 +260,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     '@react-native-firebase/auth',
     'expo-apple-authentication',
     'expo-router',
+    '@portone/react-native-sdk/plugin',
     'expo-secure-store',
     [
       'expo-splash-screen',
@@ -349,6 +350,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false',
     // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
     recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
+    // PortOne KG Inicis identity verification
+    portOne: {
+      storeId: process.env.EXPO_PUBLIC_PORTONE_STORE_ID || '',
+      inicisChannelKey: process.env.EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY || '',
+      inicisDirectAgency: process.env.EXPO_PUBLIC_PORTONE_INICIS_DIRECT_AGENCY || '',
+      inicisLogoUrl: process.env.EXPO_PUBLIC_PORTONE_INICIS_LOGO_URL || '',
+      inicisFrgndInfo: process.env.EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO || 'N',
+    },
   },
 
   // 업데이트 설정 (EAS Update)

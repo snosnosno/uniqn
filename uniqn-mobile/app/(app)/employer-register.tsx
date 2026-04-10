@@ -148,6 +148,13 @@ export default function EmployerRegisterScreen() {
         ...updatedProfile,
         createdAt: updatedProfile.createdAt?.toDate?.() ?? new Date(),
         updatedAt: updatedProfile.updatedAt?.toDate?.() ?? new Date(),
+        identityVerifiedAt: updatedProfile.identityVerifiedAt?.toDate?.() ?? undefined,
+        identity: updatedProfile.identity
+          ? {
+              ...updatedProfile.identity,
+              verifiedAt: updatedProfile.identity.verifiedAt?.toDate?.() ?? new Date(),
+            }
+          : undefined,
         employerAgreements: updatedProfile.employerAgreements
           ? {
               termsAgreedAt:

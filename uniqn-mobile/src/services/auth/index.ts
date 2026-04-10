@@ -9,6 +9,19 @@
 // Auth Types (공유 타입)
 // ============================================================================
 export { type UserProfile, type AuthResult, type SocialProfileData } from './authTypes';
+export type {
+  PortOneInicisIdentityConfig,
+  PortOneInicisIdentityRequest,
+  PortOneInicisIdentityRequestInput,
+  PortOneIdentityVerificationResult,
+  PendingPortOneIdentityRequest,
+  PortOneInicisDirectAgency,
+  VerifiedPortOneIdentity,
+  VerifyAndSavePortOneProfilePayload,
+  VerifyAndSavePortOneProfileResult,
+  VerifyPortOneIdentityPayload,
+  VerifyPortOneIdentityResult,
+} from './portOneIdentityService';
 
 // ============================================================================
 // Auth Core Service (로그인, 회원가입, 세션)
@@ -36,6 +49,20 @@ export {
   requireCurrentUserRole,
   requireAdminUser,
 } from './authorizationService';
+export {
+  buildPortOneInicisIdentityRequest,
+  callVerifyAndSavePortOneProfile,
+  callVerifyPortOneIdentity,
+  clearPendingPortOneIdentityRequest,
+  clearPortOneIdentityVerificationResult,
+  consumePortOneIdentityVerificationResult,
+  createPortOneIdentityVerificationId,
+  getPendingPortOneIdentityRequest,
+  getPortOneInicisIdentityConfig,
+  isPortOneInicisIdentityConfigured,
+  savePendingPortOneIdentityRequest,
+  savePortOneIdentityVerificationResult,
+} from './portOneIdentityService';
 
 // ============================================================================
 // Social Login Service (Apple, Google, 카카오)

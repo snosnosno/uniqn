@@ -6,6 +6,7 @@
 
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   EmailAuthProvider,
   linkWithCredential,
@@ -53,6 +54,7 @@ import {
   type VerifyAndSavePayload,
   callVerifyAndSaveProfile,
 } from './authTypes';
+import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
 
 // ============================================================================
@@ -452,6 +454,141 @@ function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin')
     account_created_date: new Date().toISOString().split('T')[0],
     has_verified_phone: true,
   });
+}
+
+async function rollbackFreshEmailSignupAccount(uid: string): Promise<void> {
+  let deleted = false;
+
+  try {
+    const nativeUser = getNativeAuth?.()?.currentUser;
+    if (nativeUser && nativeUser.uid === uid && nativeDeleteUser) {
+      await nativeDeleteUser(nativeUser);
+      deleted = true;
+    }
+  } catch (nativeError) {
+    logger.warn('Fresh signup rollback native delete failed', {
+      component: 'authService',
+      uid,
+      error: nativeError instanceof Error ? nativeError.message : String(nativeError),
+    });
+  }
+
+  try {
+    const webUser = getFirebaseAuth().currentUser;
+    if (webUser && webUser.uid === uid) {
+      await webDeleteUser(webUser);
+      deleted = true;
+    }
+  } catch (webError) {
+    logger.warn('Fresh signup rollback web delete failed', {
+      component: 'authService',
+      uid,
+      error: webError instanceof Error ? webError.message : String(webError),
+    });
+  }
+
+  try {
+    await syncSignOut();
+  } catch {
+    // Ignore cleanup failures during rollback.
+  }
+
+  if (!deleted) {
+    logger.warn('Fresh signup rollback could not confirm user deletion', {
+      component: 'authService',
+      uid,
+    });
+  }
+}
+
+async function signUpWithPortOneIdentity(data: SignUpFormData): Promise<AuthResult> {
+  const identityVerificationId = data.identityVerificationId;
+  if (!identityVerificationId) {
+    throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      userMessage: '본인인증 정보가 누락되었습니다. 다시 시도해주세요.',
+    });
+  }
+
+  logger.info('PortOne identity signup started', {
+    component: 'authService',
+    email: maskEmail(data.email),
+    platform: Platform.OS,
+  });
+
+  let createdUid: string | null = null;
+  let profilePersisted = false;
+
+  try {
+    const webCredential = await createUserWithEmailAndPassword(
+      getFirebaseAuth(),
+      data.email,
+      data.password
+    );
+    const webUser = webCredential.user;
+    createdUid = webUser.uid;
+
+    protectAuthFlow(createdUid, 'email_signup');
+
+    if (Platform.OS !== 'web') {
+      const nativeAuth = requireNativeAuth();
+      if (!nativeSignInWithEmailAndPassword) {
+        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+          userMessage: '네이티브 인증 SDK가 준비되지 않았습니다.',
+        });
+      }
+
+      await nativeSignInWithEmailAndPassword(nativeAuth, data.email, data.password);
+      await verifyDualSDKConsistency('signUpWithPortOneIdentity');
+    }
+
+    await waitForWebAuthSession(createdUid);
+
+    await callVerifyAndSavePortOneProfile({
+      identityVerificationId,
+      termsAgreed: data.termsAgreed,
+      privacyAgreed: data.privacyAgreed,
+      marketingAgreed: data.marketingAgreed,
+      email: data.email,
+      mode: 'signup',
+    });
+    profilePersisted = true;
+
+    await webUser.getIdToken(true);
+
+    const profile = await getUserProfile(createdUid);
+    if (!profile) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '회원가입은 완료되었지만 프로필 정보를 가져오지 못했습니다.',
+      });
+    }
+
+    logger.info('PortOne identity signup completed', {
+      component: 'authService',
+      uid: createdUid,
+    });
+    trackSignupAnalytics(createdUid, 'staff');
+
+    return { user: webUser, profile };
+  } catch (error) {
+    if (profilePersisted) {
+      try {
+        await syncSignOut();
+      } catch {
+        // Ignore cleanup failures after profile persistence.
+      }
+      throw createPostCommitSessionRestoreError(error);
+    }
+
+    if (createdUid) {
+      await rollbackFreshEmailSignupAccount(createdUid);
+    }
+
+    throw error;
+  } finally {
+    if (createdUid) {
+      clearProtectedAuthFlow(createdUid);
+    }
+  }
 }
 
 // ============================================================================
@@ -892,6 +1029,10 @@ export async function checkNicknameExists(nickname: string, excludeUid?: string)
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
+    if (data.identityVerificationId) {
+      return await signUpWithPortOneIdentity(data);
+    }
+
     logger.info('?뚯썝媛???쒕룄', {
       email: maskEmail(data.email),
       platform: Platform.OS,

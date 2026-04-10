@@ -210,6 +210,7 @@ export const signUpIdentitySchema = z.object({
     message: '전화번호 인증이 필요합니다',
   }),
   verifiedPhone: phoneSchema,
+  identityVerificationId: z.string().min(1).max(200).optional(),
   /** 서버사이드 OTP 검증용 (소셜 로그인 link 모드) */
   verificationId: z.string().min(1).max(2000).optional(),
   otpCode: z

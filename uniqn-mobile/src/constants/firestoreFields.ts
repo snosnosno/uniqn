@@ -32,6 +32,9 @@ export const USER_FIELDS = {
   role: 'role',
   isActive: 'isActive',
   phoneVerified: 'phoneVerified',
+  identityVerified: 'identityVerified',
+  identityVerifiedAt: 'identityVerifiedAt',
+  identityProvider: 'identityProvider',
   birthDate: 'birthDate',
   userId: 'userId',
 } as const;

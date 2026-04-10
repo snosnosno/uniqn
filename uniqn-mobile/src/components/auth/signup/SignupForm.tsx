@@ -155,6 +155,7 @@ export function SignupForm({
         gender: data.gender,
         phoneVerified: data.phoneVerified as true,
         verifiedPhone: data.verifiedPhone,
+        identityVerificationId: data.identityVerificationId,
         // 서버사이드 OTP 검증 (소셜 로그인 link 모드)
         verificationId: data.verificationId,
         otpCode: data.otpCode,
