@@ -40,6 +40,8 @@ export interface SocialProfileData {
   gender: 'male' | 'female';
   /** 전화번호 (E.164 형식: +821012345678) */
   phone: string;
+  /** 포트원 본인인증 ID */
+  identityVerificationId?: string;
   // 약관
   termsAgreed: boolean;
   privacyAgreed: boolean;

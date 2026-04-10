@@ -92,6 +92,7 @@ export default function SignUpScreen() {
           birthDate: data.birthDate,
           gender: data.gender,
           phone: data.verifiedPhone || '',
+          identityVerificationId: data.identityVerificationId,
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           marketingAgreed: data.marketingAgreed,

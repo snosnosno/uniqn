@@ -1,44 +1,63 @@
 /**
  * UNIQN Mobile - 회원가입 Step 2: 본인인증
  *
- * @description 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
- * @version 4.1.0
+ * @description 이름/생년월일/성별 입력 + 전화번호 인증
+ *              포트원 KG이니시스가 설정된 네이티브 환경에서는 이니시스 본인인증을 우선 사용
+ * @version 4.2.0
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
+import { PortOneIdentityVerification } from '@/components/auth/PortOneIdentityVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
-import { getLinkedPhoneNumber } from '@/services/auth';
+import {
+  getLinkedPhoneNumber,
+  isPortOneInicisIdentityConfigured,
+  type VerifiedPortOneIdentity,
+} from '@/services/auth';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface SignupStepIdentityProps {
   onNext: (data: SignUpIdentityData) => void;
   onBack: () => void;
   initialData?: Partial<SignUpIdentityData>;
   isLoading?: boolean;
-  /** PhoneVerification 모드: signIn(기본)=새 계정 생성, link=기존 계정에 링크 */
   phoneMode?: 'signIn' | 'link';
-  /** Apple 소셜 로그인 사용자 여부 (이름 미제공 시 안내 메시지 표시) */
   isAppleUser?: boolean;
-  /** 제출 버튼 텍스트 (기본: '다음') */
   submitLabel?: string;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
+function createInitialPortOneIdentity(
+  initialData?: Partial<SignUpIdentityData>
+): VerifiedPortOneIdentity | null {
+  if (
+    !initialData?.identityVerificationId ||
+    !initialData.name ||
+    !initialData.birthDate ||
+    !initialData.verifiedPhone
+  ) {
+    return null;
+  }
+
+  return {
+    provider: 'portone',
+    channel: 'inicis_unified',
+    identityVerificationId: initialData.identityVerificationId,
+    verifiedAt: new Date().toISOString(),
+    name: initialData.name,
+    birthDate: initialData.birthDate,
+    gender: initialData.gender,
+    phoneNumber: initialData.verifiedPhone,
+  };
+}
 
 export function SignupStepIdentity({
   onNext,
@@ -49,14 +68,19 @@ export function SignupStepIdentity({
   isAppleUser = false,
   submitLabel = '다음',
 }: SignupStepIdentityProps) {
+  const usePortOneIdentity = Platform.OS !== 'web' && isPortOneInicisIdentityConfigured();
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
+  );
+  const [portOneIdentity, setPortOneIdentity] = useState<VerifiedPortOneIdentity | null>(() =>
+    createInitialPortOneIdentity(initialData)
   );
 
   const {
     control,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<SignUpIdentityData>({
     resolver: zodResolver(signUpIdentitySchema),
@@ -66,14 +90,21 @@ export function SignupStepIdentity({
       gender: initialData?.gender,
       phoneVerified: initialData?.phoneVerified || false,
       verifiedPhone: initialData?.verifiedPhone || '',
+      identityVerificationId: initialData?.identityVerificationId,
     },
   });
 
-  const handleVerified = useCallback(
+  const watchedName = watch('name');
+  const isIdentityLocked = usePortOneIdentity && Boolean(portOneIdentity);
+
+  const handlePhoneVerified = useCallback(
     (phone: string, otpData?: { verificationId: string; otpCode: string }) => {
       setVerifiedPhone(phone);
-      setValue('phoneVerified', true);
-      setValue('verifiedPhone', phone);
+      setPortOneIdentity(null);
+      setValue('phoneVerified', true, { shouldValidate: true });
+      setValue('verifiedPhone', phone, { shouldValidate: true });
+      setValue('identityVerificationId', undefined);
+
       if (otpData) {
         setValue('verificationId', otpData.verificationId);
         setValue('otpCode', otpData.otpCode);
@@ -82,20 +113,45 @@ export function SignupStepIdentity({
     [setValue]
   );
 
-  // 소셜 모드: 이미 link된 전화번호 자동 감지 (중단 복구 / 뒤로가기 후 재진입)
+  const handlePortOneVerified = useCallback(
+    (identity: VerifiedPortOneIdentity) => {
+      if (!identity.phoneNumber || !identity.gender) {
+        logger.warn('PortOne identity missing required fields', {
+          component: 'SignupStepIdentity',
+          identityVerificationId: identity.identityVerificationId,
+        });
+        return;
+      }
+
+      setPortOneIdentity(identity);
+      setVerifiedPhone(identity.phoneNumber);
+      setValue('name', identity.name, { shouldValidate: true });
+      setValue('birthDate', identity.birthDate, { shouldValidate: true });
+      setValue('gender', identity.gender, { shouldValidate: true });
+      setValue('phoneVerified', true, { shouldValidate: true });
+      setValue('verifiedPhone', identity.phoneNumber, { shouldValidate: true });
+      setValue('identityVerificationId', identity.identityVerificationId, {
+        shouldValidate: true,
+      });
+      setValue('verificationId', undefined);
+      setValue('otpCode', undefined);
+    },
+    [setValue]
+  );
+
   useEffect(() => {
-    if (phoneMode !== 'link') return;
+    if (phoneMode !== 'link' || usePortOneIdentity) return;
 
     const linkedPhone = getLinkedPhoneNumber();
-    if (linkedPhone) {
-      logger.info('소셜 모드: 이미 전화번호 링크됨', {
-        component: 'SignupStepIdentity',
-      });
-      setVerifiedPhone(linkedPhone);
-      setValue('phoneVerified', true);
-      setValue('verifiedPhone', linkedPhone);
-    }
-  }, [phoneMode, setValue]);
+    if (!linkedPhone) return;
+
+    logger.info('Social signup linked phone restored', {
+      component: 'SignupStepIdentity',
+    });
+    setVerifiedPhone(linkedPhone);
+    setValue('phoneVerified', true, { shouldValidate: true });
+    setValue('verifiedPhone', linkedPhone, { shouldValidate: true });
+  }, [phoneMode, setValue, usePortOneIdentity]);
 
   const onSubmit = useCallback(
     (data: SignUpIdentityData) => {
@@ -106,9 +162,8 @@ export function SignupStepIdentity({
 
   return (
     <View className="w-full flex-col gap-5">
-      {/* 이름 입력 */}
       <View>
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           이름 (실명)
         </Text>
         <Controller
@@ -120,73 +175,92 @@ export function SignupStepIdentity({
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              editable={!isLoading}
+              editable={!isLoading && !isIdentityLocked}
               accessibilityLabel="이름 입력"
               error={errors.name?.message}
             />
           )}
         />
         {isAppleUser && !initialData?.name && (
-          <View className="mt-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+          <View className="mt-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
             <Text className="text-xs text-blue-700 dark:text-blue-300">
-              Apple은 최초 로그인 시에만 이름을 제공합니다. 이전에 이름 공유를 거부했거나 앱을
-              재설치한 경우 직접 입력해주세요.
+              Apple은 최초 로그인 시에만 이름을 제공합니다. 이전에 이름 공유를 거부했거나 삭제한
+              경우 직접 입력해주세요.
             </Text>
           </View>
         )}
       </View>
 
-      {/* 생년월일 입력 */}
       <View>
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">생년월일</Text>
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">생년월일</Text>
         <Controller
           control={control}
           name="birthDate"
           render={({ field: { onChange, value } }) => (
-            <BirthDateInput value={value} onChange={onChange} disabled={isLoading} />
+            <BirthDateInput
+              value={value}
+              onChange={onChange}
+              disabled={isLoading || isIdentityLocked}
+            />
           )}
         />
         {errors.birthDate && (
-          <Text className="text-sm text-error-500 mt-1">{errors.birthDate.message}</Text>
+          <Text className="mt-1 text-sm text-error-500">{errors.birthDate.message}</Text>
         )}
       </View>
 
-      {/* 성별 선택 */}
       <View>
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">성별</Text>
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">성별</Text>
         <Controller
           control={control}
           name="gender"
           render={({ field: { onChange, value } }) => (
-            <GenderSelector value={value} onChange={onChange} disabled={isLoading} />
+            <GenderSelector
+              value={value}
+              onChange={onChange}
+              disabled={isLoading || isIdentityLocked}
+            />
           )}
         />
         {errors.gender && (
-          <Text className="text-sm text-error-500 mt-1">{errors.gender.message}</Text>
+          <Text className="mt-1 text-sm text-error-500">{errors.gender.message}</Text>
         )}
       </View>
 
-      {/* 전화번호 인증 */}
       <View>
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          전화번호 인증
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          {usePortOneIdentity ? '본인인증' : '전화번호 인증'}
         </Text>
-        <PhoneVerification
-          onVerified={handleVerified}
-          onError={(error) =>
-            logger.error('전화번호 인증 오류', { component: 'SignupStepIdentity', error })
-          }
-          initialPhone={verifiedPhone || initialData?.verifiedPhone}
-          disabled={isLoading}
-          compact
-          mode={phoneMode}
-        />
+        {usePortOneIdentity ? (
+          <PortOneIdentityVerification
+            onVerified={handlePortOneVerified}
+            onError={(error) =>
+              logger.error('PortOne identity verification error', error, {
+                component: 'SignupStepIdentity',
+              })
+            }
+            initialIdentity={portOneIdentity}
+            disabled={isLoading}
+            customerFullName={watchedName || undefined}
+          />
+        ) : (
+          <PhoneVerification
+            onVerified={handlePhoneVerified}
+            onError={(error) =>
+              logger.error('Phone verification error', { component: 'SignupStepIdentity', error })
+            }
+            initialPhone={verifiedPhone || initialData?.verifiedPhone}
+            disabled={isLoading}
+            compact
+            mode={phoneMode}
+          />
+        )}
       </View>
+
       {errors.phoneVerified && !verifiedPhone && (
-        <Text className="text-sm text-error-500 -mt-2">{errors.phoneVerified.message}</Text>
+        <Text className="-mt-2 text-sm text-error-500">{errors.phoneVerified.message}</Text>
       )}
 
-      {/* 버튼 영역 */}
       <View className="mt-4 flex-col gap-3">
         <Button onPress={handleSubmit(onSubmit)} disabled={isLoading} fullWidth>
           {submitLabel}
