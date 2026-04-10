@@ -27,6 +27,10 @@ const envSchema = z.object({
   // Firebase Analytics (웹 전용, 선택적)
   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
 
+  // Supabase 설정
+  EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
+  EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+
   // 선택적 설정
   EXPO_PUBLIC_RELEASE_CHANNEL: z
     .enum(['development', 'staging', 'production'])
@@ -74,6 +78,8 @@ export function getEnv(): Env {
     EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
     EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
     EXPO_PUBLIC_FIREBASE_REGION: process.env.EXPO_PUBLIC_FIREBASE_REGION,
+    EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   };
 
   // 스키마 검증
