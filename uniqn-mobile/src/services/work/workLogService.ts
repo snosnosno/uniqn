@@ -105,9 +105,6 @@ export async function getWorkLogById(workLogId: string): Promise<WorkLog | null>
   }
 }
 
-// @deprecated checkIn, checkOut 함수는 eventQRService.processEventQRCheckIn으로 대체됨
-// QR 스캔 없이 수동 출퇴근은 더 이상 지원하지 않음
-
 /**
  * 오늘 출근한 근무 기록 조회
  */

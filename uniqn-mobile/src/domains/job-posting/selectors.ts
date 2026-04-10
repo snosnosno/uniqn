@@ -10,7 +10,6 @@ import { FIXED_TIME_MARKER } from '@/types/assignment';
 import { getRoleDisplayName } from '@/types/unified';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import {
-  createPostingLegacyDateRequirements,
   getPostingDateGroups,
   getPostingDateRequirements,
   getPostingDefaultSalary,
@@ -159,8 +158,4 @@ export function selectPostingApplicationEligibility(
     availableRoleOptions: roleAvailability.availableItems,
     reason,
   };
-}
-
-export function selectPostingLegacyDateRequirements(posting: JobPosting) {
-  return createPostingLegacyDateRequirements(posting);
 }

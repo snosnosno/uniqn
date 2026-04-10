@@ -183,10 +183,6 @@ export const selectRemoveBookmark = (state: BookmarkStore) => state.removeBookma
  */
 export const selectClearAllBookmarks = (state: BookmarkStore) => state.clearAllBookmarks;
 
-/**
- * 북마크 ID 목록 선택자
- * @deprecated 매번 새 배열 생성으로 인해 selectBookmarks 사용 권장
- */
 // ============================================================================
 // Export
 // ============================================================================

@@ -6,7 +6,6 @@
 언어: 항상 한글로 답변
 작업 디렉토리: uniqn-mobile/
 배포 전 검증: npm run quality  # type-check + lint + format:check
-레거시 참고: app2/  # 토너먼트 로직 참고용 (개발 중단)
 ```
 
 | 항목 | 필수 | 금지 |

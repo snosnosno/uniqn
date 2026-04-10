@@ -64,8 +64,6 @@ export interface Staff extends FirebaseDocument {
   notes?: string;
   /** 총 근무 횟수 */
   totalWorkCount?: number;
-  /** @deprecated 버블 점수(UserProfile.bubbleScore)로 대체됨 */
-  rating?: number;
 }
 
 /**

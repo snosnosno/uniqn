@@ -29,11 +29,6 @@ export interface SentryUser {
   name?: string;
 }
 
-export type CrashSeverity = SentrySeverity;
-export type CrashContext = SentryContext;
-export type CrashlyticsAttributes = SentryAttributes;
-export type CrashlyticsUser = SentryUser;
-
 let isInitialized = false;
 let isEnabled = true;
 let currentUser: SentryUser = {};

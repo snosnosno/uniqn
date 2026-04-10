@@ -5,13 +5,12 @@
  * @description 날짜별 요구사항 섹션 구현을 위한 상수
  *
  * ## 역할 통합 (v2.1.0)
- * - STAFF_ROLE_KEYS는 types/role.ts의 VALID_STAFF_ROLES와 동기화
  * - UI용 STAFF_ROLES는 별도 유지 (아이콘, 표시명 포함)
  */
 
 import { PostingType } from '@/types/postingConfig';
 import { DateConstraint } from '@/types/jobPosting/dateRequirement';
-import { VALID_STAFF_ROLES, type StaffRole } from '@/types/role';
+import { type StaffRole } from '@/types/role';
 
 /**
  * 타입별 날짜 제약사항
@@ -59,16 +58,6 @@ export const MAX_HEADCOUNT = 200;
  * 역할당 최소 인원
  */
 export const MIN_HEADCOUNT = 1;
-
-/**
- * 스태프 역할 키 목록 (types/role.ts에서 파생)
- *
- * @description
- * - types/role.ts의 VALID_STAFF_ROLES와 동기화
- * - 스키마 검증, 타입 정의, UI 옵션 등에 공통 사용
- * - 순서: 딜러 → 플로어 → 서빙 → 매니저 → 직원 → 기타
- */
-export const STAFF_ROLE_KEYS = VALID_STAFF_ROLES;
 
 /**
  * 스태프 역할 키 타입 (StaffRole과 동일)

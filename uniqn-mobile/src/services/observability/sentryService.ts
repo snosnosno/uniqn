@@ -42,11 +42,6 @@ export interface SentryUser {
   name?: string;
 }
 
-export type CrashSeverity = SentrySeverity;
-export type CrashContext = SentryContext;
-export type CrashlyticsAttributes = SentryAttributes;
-export type CrashlyticsUser = SentryUser;
-
 interface SentryScopeLike {
   setUser(user: { id: string } | null): void;
   setTag(key: string, value: string): void;

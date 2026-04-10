@@ -278,17 +278,3 @@ export function getGroupSelectionState(
   if (selectedCount === groupKeys.length) return 'all';
   return 'some';
 }
-
-// ============================================================================
-// Backward Compatibility Aliases
-// ============================================================================
-
-/**
- * @deprecated createAssignmentKey 대신 makeSelectionKey 사용
- * ApplicantCard utils.ts 호환용
- */
-
-/**
- * @deprecated getDateFromKey (options 없는 버전) 호환용
- * ApplicantCard utils.ts 호환용
- */

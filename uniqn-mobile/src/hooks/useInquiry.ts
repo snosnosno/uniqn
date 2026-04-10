@@ -38,18 +38,6 @@ import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 // Query Keys - 중앙 관리 (queryClient.ts)에서 import
 // ============================================================================
 
-/**
- * @deprecated queryKeys.inquiries 사용 권장 (하위 호환성용)
- */
-export const inquiryKeys = {
-  all: queryKeys.inquiries.all,
-  mine: () => queryKeys.inquiries.mine(),
-  adminList: (filters?: InquiryFilters) => queryKeys.inquiries.adminList(stableFilters(filters)),
-  detail: (id: string) => queryKeys.inquiries.detail(id),
-  unansweredCount: () => queryKeys.inquiries.unansweredCount(),
-  faq: (category?: InquiryCategory | 'all') => queryKeys.inquiries.faq(category),
-};
-
 // ============================================================================
 // 내 문의 목록 (사용자)
 // ============================================================================
@@ -68,7 +56,7 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   const query = useQuery({
-    queryKey: [...inquiryKeys.mine(), user?.uid],
+    queryKey: [...queryKeys.inquiries.mine(), user?.uid],
     queryFn: async () => {
       if (!user?.uid) return { inquiries: [], lastDoc: null, hasMore: false };
       const result = await fetchMyInquiries({ userId: user.uid, pageSize });
@@ -134,7 +122,7 @@ export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
   const [hasMore, setHasMore] = useState(true);
 
   const query = useQuery({
-    queryKey: inquiryKeys.adminList(filters),
+    queryKey: queryKeys.inquiries.adminList(stableFilters(filters)),
     queryFn: async () => {
       const result = await fetchAllInquiries({ filters, pageSize });
       setAllInquiries(result.inquiries);
@@ -178,7 +166,7 @@ export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
 
 export function useInquiryDetail(inquiryId: string | undefined) {
   return useQuery({
-    queryKey: inquiryKeys.detail(inquiryId || ''),
+    queryKey: queryKeys.inquiries.detail(inquiryId || ''),
     queryFn: () => getInquiry(inquiryId!),
     enabled: !!inquiryId,
     staleTime: cachingPolicies.standard, // 5분
@@ -216,7 +204,7 @@ export function useCreateInquiry() {
     },
     onSuccess: () => {
       // user.uid를 포함한 쿼리 키로 invalidate
-      queryClient.invalidateQueries({ queryKey: [...inquiryKeys.mine(), user?.uid] });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.inquiries.mine(), user?.uid] });
       addToast({ type: 'success', message: '문의가 접수되었습니다' });
     },
     onError: () => {
@@ -254,8 +242,8 @@ export function useRespondInquiry() {
       return respondToInquiry(inquiryId, user.uid, identity.preferredName || responderName, input);
     },
     onSuccess: (_, { inquiryId }) => {
-      queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
-      queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inquiries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inquiries.detail(inquiryId) });
       addToast({ type: 'success', message: '답변이 등록되었습니다' });
     },
     onError: () => {
@@ -282,8 +270,8 @@ export function useUpdateInquiryStatus() {
       return updateInquiryStatus(inquiryId, status);
     },
     onSuccess: (_, { inquiryId }) => {
-      queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
-      queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inquiries.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inquiries.detail(inquiryId) });
       addToast({ type: 'success', message: '상태가 변경되었습니다' });
     },
     onError: () => {
@@ -298,7 +286,7 @@ export function useUpdateInquiryStatus() {
 
 export function useUnansweredCount() {
   return useQuery({
-    queryKey: inquiryKeys.unansweredCount(),
+    queryKey: queryKeys.inquiries.unansweredCount(),
     queryFn: getUnansweredCount,
     staleTime: cachingPolicies.standard, // 5분
   });
@@ -316,7 +304,7 @@ export function useFAQ(options: UseFAQOptions = {}) {
   const { category = 'all' } = options;
 
   return useQuery({
-    queryKey: inquiryKeys.faq(category),
+    queryKey: queryKeys.inquiries.faq(category),
     queryFn: () => {
       // 하드코딩된 FAQ 데이터 사용
       return filterFAQByCategory(FAQ_DATA, category);

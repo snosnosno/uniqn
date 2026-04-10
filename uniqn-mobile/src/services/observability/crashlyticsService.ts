@@ -31,10 +31,5 @@ export {
   type SentryUser,
 } from './sentryService';
 
-export type CrashSeverity = import('./sentryService').SentrySeverity;
-export type CrashContext = import('./sentryService').SentryContext;
-export type CrashlyticsAttributes = import('./sentryService').SentryAttributes;
-export type CrashlyticsUser = import('./sentryService').SentryUser;
-
 export { sentryService as crashlyticsService } from './sentryService';
 export { sentryService as default } from './sentryService';

@@ -125,7 +125,7 @@ export interface ScheduleEvent extends FirebaseDocument {
   checkOutTime?: TimeInput;
 
   // 怨듦퀬 ?뺣낫
-  /** 怨듦퀬 ID */
+  /** 공고 ID */
   jobPostingId: string;
   /** 怨듦퀬紐?*/
   jobPostingName: string;
@@ -380,26 +380,26 @@ export interface SettlementModification {
   modifiedAt: string | Timestamp;
   modifiedBy: string;
   reason?: string;
-  /** ?댁쟾 湲됱뿬 ?뺣낫 */
+  /** 이전 급여 정보 */
   previousSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
   };
-  /** ??湲됱뿬 ?뺣낫 */
+  /** 새 급여 정보 */
   newSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
   };
-  /** ?댁쟾 ?섎떦 ?뺣낫 */
+  /** 이전 수당 정보 */
   previousAllowances?: Record<string, number>;
-  /** ???섎떦 ?뺣낫 */
+  /** 새 수당 정보 */
   newAllowances?: Record<string, number>;
-  /** ?댁쟾 ?멸툑 ?ㅼ젙 */
+  /** 이전 세금 설정 */
   previousTaxSettings?: {
     type: 'none' | 'rate' | 'fixed';
     value: number;
   };
-  /** ???멸툑 ?ㅼ젙 */
+  /** 새 세금 설정 */
   newTaxSettings?: {
     type: 'none' | 'rate' | 'fixed';
     value: number;
@@ -407,43 +407,39 @@ export interface SettlementModification {
 }
 
 /**
- * 洹쇰Т 湲곕줉 (WorkLog)
+ * 근무 기록 (WorkLog)
  */
 export interface WorkLog extends FirebaseDocument {
   staffId: string;
-  /** 怨듦퀬 ID */
+  /** 공고 ID */
   jobPostingId: string;
   assignmentGroupId?: string | null;
   hasTimeModificationLogs?: boolean;
   date: string;
   isFixedPosting?: boolean;
 
-  // ?ㅽ깭???꾨줈???뺣낫 (鍮꾩젙洹쒗솕 - 議고쉶 ?몄쓽)
-  /** ?ㅽ깭???대쫫 */
+  // 스태프 프로필 정보 (비정규화 - 조회 편의)
+  /** 스태프 이름 */
   staffName?: string;
-  /** ?ㅽ깭???됰꽕??*/
+  /** 스태프 닉네임 */
   staffNickname?: string;
-  /** ?ㅽ깭???꾨줈???ъ쭊 URL */
+  /** 스태프 프로필 사진 URL */
   staffPhotoURL?: string;
 
-  // ?덉젙 ?쒓컙
-  /** @deprecated checkInTime??以묐났媛? timeSlot?먯꽌 ?덉젙 ?쒓컙???뚯떛?섏꽭??*/
-  /** @deprecated checkOutTime??以묐났媛? timeSlot?먯꽌 ?덉젙 ?쒓컙???뚯떛?섏꽭??*/
-
-  // ?ㅼ젣 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙)
-  /** ?ㅼ젣 異쒓렐 ?쒓컙 */
+  // 실제 시간 (QR 스탬프 또는 관리자 수정)
+  /** 실제 출근 시간 */
   checkInTime?: TimeInput;
-  /** ?ㅼ젣 ?닿렐 ?쒓컙 */
+  /** 실제 퇴근 시간 */
   checkOutTime?: TimeInput;
 
-  // ?곹깭
+  // 상태
   status: WorkLogStatus;
-  /** ?ㅽ깭??吏곷Т ??븷 */
+  /** 스태프 직무 역할 */
   role: StaffRole;
-  /** 而ㅼ뒪? ??븷紐?(role??'other'???? */
+  /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
 
-  // ?뺤궛
+  // 정산
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
   payrollDate?: Timestamp;
@@ -451,16 +447,16 @@ export interface WorkLog extends FirebaseDocument {
   noShowAt?: TimeInput;
   noShowReason?: string;
 
-  // ?섏젙 ?대젰 (援ъ씤?먯뿉 ?섑븳 ?쒓컙 ?섏젙)
+  // 수정 이력 (구인처에 의한 시간 수정)
   modificationHistory?: WorkTimeModification[];
 
-  // ??븷 蹂寃??대젰
+  // 역할 변경 이력
   roleChangeHistory?: RoleChangeHistory[];
 
-  // ?뺤궛 湲덉븸 ?섏젙 ?대젰
+  // 정산 금액 수정 이력
   settlementModificationHistory?: SettlementModification[];
 
-  // 媛쒕퀎 ?ㅻ쾭?쇱씠???ㅼ젙 (援ъ씤?먭? ?섏젙??寃쎌슦)
+  // 개별 오버라이드 설정 (구인처가 수정한 경우)
   customSalaryInfo?: {
     type: 'hourly' | 'daily' | 'monthly' | 'other';
     amount: number;
@@ -470,11 +466,11 @@ export interface WorkLog extends FirebaseDocument {
 
   notes?: string;
 
-  /** ?쒓컙? 臾몄옄??(?? "18:00~02:00") - Firestore ?곗씠??*/
+  /** 시간대 문자열 (예: "18:00~02:00") - Firestore 데이터 */
   timeSlot?: string;
 
-  // 援ъ씤???뺣낫 (鍮꾩젙洹쒗솕 - ?좉퀬 湲곕뒫 ?깆뿉???ъ슜)
-  /** 援ъ씤??ID */
+  // 구인처 정보 (비정규화 - 신고 기능 등에서 사용)
+  /** 구인처 ID */
   ownerId?: string;
 }
 
