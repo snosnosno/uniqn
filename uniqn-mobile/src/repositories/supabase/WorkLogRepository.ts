@@ -1,0 +1,1026 @@
+/**
+ * UNIQN Mobile - Supabase WorkLog Repository
+ *
+ * @description Supabase PostgREST 기반 WorkLog Repository 구현
+ * @version 1.0.0
+ *
+ * 책임:
+ * 1. 근무 기록 조회 (13개 메서드)
+ * 2. 실시간 구독 (5개 메서드)
+ * 3. 상태/시간 변경 트랜잭션 (5개 메서드)
+ */
+
+import { supabase } from '@/lib/supabase';
+import { logger } from '@/utils/logger';
+import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
+import {
+  InvalidQRCodeError,
+  AlreadyCheckedInError,
+  NotCheckedInError,
+} from '@/errors/BusinessErrors';
+import { handleSupabaseError, toCamelCase, createRealtimeSubscription } from '@/utils/supabase';
+import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
+import { getTodayString } from '@/utils/date';
+import { TimeNormalizer } from '@/shared/time';
+import { STATUS } from '@/constants';
+import type { UnsubscribeFn } from '@/types/common';
+import type { WorkLog, PayrollStatus, QRCodeAction } from '@/types';
+import type {
+  IWorkLogRepository,
+  WorkLogStats,
+  MonthlyPayrollSummary,
+  WorkLogFilterOptions,
+} from '../interfaces';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const TABLE = 'work_logs';
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_STATS_PAGE_SIZE = 1000;
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function toWorkLog(row: Record<string, unknown>): WorkLog | null {
+  const camel = toCamelCase<Record<string, unknown>>(row);
+  return parseWorkLogDocument({ ...camel, id: row.id });
+}
+
+function rowsToWorkLogs(rows: Record<string, unknown>[]): WorkLog[] {
+  return parseWorkLogDocuments(
+    rows.map((row) => ({ ...toCamelCase<Record<string, unknown>>(row), id: row.id }))
+  );
+}
+
+/** 공통 catch 핸들러 */
+function rethrowOrHandle(
+  error: unknown,
+  operation: string,
+  context?: Record<string, unknown>
+): never {
+  if (isAppError(error)) throw error;
+  logger.error(`${operation} 실패`, toError(error), context);
+  handleSupabaseError(error, { operation, table: TABLE });
+}
+
+// ============================================================================
+// Repository Implementation
+// ============================================================================
+
+export class SupabaseWorkLogRepository implements IWorkLogRepository {
+  // ==========================================================================
+  // 조회 (Read)
+  // ==========================================================================
+
+  async getById(workLogId: string): Promise<WorkLog | null> {
+    try {
+      logger.info('근무 기록 상세 조회', { workLogId });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('id', workLogId)
+        .maybeSingle();
+
+      if (error) handleSupabaseError(error, { operation: '근무 기록 상세 조회', table: TABLE });
+      if (!data) return null;
+
+      const workLog = toWorkLog(data as Record<string, unknown>);
+      if (!workLog) {
+        logger.warn('근무 기록 데이터 파싱 실패', { workLogId });
+        return null;
+      }
+
+      return workLog;
+    } catch (error) {
+      rethrowOrHandle(error, '근무 기록 상세 조회', { workLogId });
+    }
+  }
+
+  async getByStaffId(staffId: string, pageSize: number = DEFAULT_PAGE_SIZE): Promise<WorkLog[]> {
+    try {
+      logger.info('스태프별 근무 기록 조회', { staffId, pageSize });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .order('date', { ascending: false })
+        .limit(pageSize);
+
+      if (error) handleSupabaseError(error, { operation: '스태프별 근무 기록 조회', table: TABLE });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('스태프별 근무 기록 조회 완료', { staffId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '스태프별 근무 기록 조회', { staffId });
+    }
+  }
+
+  async getUndatedByStaffId(staffId: string): Promise<WorkLog[]> {
+    try {
+      logger.info('날짜 없는 스태프 근무 기록 조회', { staffId });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .eq('date', '');
+
+      if (error)
+        handleSupabaseError(error, {
+          operation: '날짜 없는 스태프 근무 기록 조회',
+          table: TABLE,
+        });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('날짜 없는 스태프 근무 기록 조회 완료', { staffId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '날짜 없는 스태프 근무 기록 조회', { staffId });
+    }
+  }
+
+  async getByStaffIdWithFilters(
+    staffId: string,
+    options?: WorkLogFilterOptions
+  ): Promise<WorkLog[]> {
+    try {
+      logger.info('필터를 포함한 스태프별 근무 기록 조회', { staffId, options });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query: any = supabase.from(TABLE).select('*').eq('staff_id', staffId);
+
+      if (options?.dateRange) {
+        query = query.gte('date', options.dateRange.start).lte('date', options.dateRange.end);
+      }
+
+      if (options?.status) {
+        query = query.eq('status', options.status);
+      }
+
+      query = query
+        .order('date', { ascending: false })
+        .limit(options?.pageSize ?? DEFAULT_PAGE_SIZE);
+
+      const { data, error } = await query;
+
+      if (error)
+        handleSupabaseError(error, {
+          operation: '필터를 포함한 스태프별 근무 기록 조회',
+          table: TABLE,
+        });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('필터를 포함한 스태프별 근무 기록 조회 완료', { staffId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '필터를 포함한 스태프별 근무 기록 조회', { staffId });
+    }
+  }
+
+  async getByDate(staffId: string, date: string): Promise<WorkLog[]> {
+    try {
+      logger.info('날짜별 근무 기록 조회', { staffId, date });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .eq('date', date)
+        .order('check_in_time', { ascending: false });
+
+      if (error) handleSupabaseError(error, { operation: '날짜별 근무 기록 조회', table: TABLE });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('날짜별 근무 기록 조회 완료', { staffId, date, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '날짜별 근무 기록 조회', { staffId, date });
+    }
+  }
+
+  async getByJobPostingId(jobPostingId: string): Promise<WorkLog[]> {
+    try {
+      logger.info('공고별 근무 기록 조회', { jobPostingId });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('job_posting_id', jobPostingId)
+        .order('date', { ascending: false });
+
+      if (error) handleSupabaseError(error, { operation: '공고별 근무 기록 조회', table: TABLE });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('공고별 근무 기록 조회 완료', { jobPostingId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '공고별 근무 기록 조회', { jobPostingId });
+    }
+  }
+
+  async getCompletedByOwnerId(
+    ownerId: string,
+    dateRange?: { start: string; end: string }
+  ): Promise<WorkLog[]> {
+    try {
+      logger.info('구인자별 완료된 근무 기록 조회', { ownerId });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query: any = supabase
+        .from(TABLE)
+        .select('*')
+        .eq('owner_id', ownerId)
+        .in('status', [STATUS.WORK_LOG.CHECKED_OUT, STATUS.WORK_LOG.COMPLETED]);
+
+      if (dateRange) {
+        query = query.gte('date', dateRange.start).lte('date', dateRange.end);
+      }
+
+      query = query.order('date', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error)
+        handleSupabaseError(error, { operation: '구인자별 완료된 근무 기록 조회', table: TABLE });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('구인자별 완료된 근무 기록 조회 완료', { ownerId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '구인자별 완료된 근무 기록 조회', { ownerId });
+    }
+  }
+
+  async getUndatedCompletedByOwnerId(ownerId: string): Promise<WorkLog[]> {
+    try {
+      logger.info('날짜 없는 구인자별 완료 근무 기록 조회', { ownerId });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('owner_id', ownerId)
+        .eq('date', '')
+        .in('status', [STATUS.WORK_LOG.CHECKED_OUT, STATUS.WORK_LOG.COMPLETED]);
+
+      if (error)
+        handleSupabaseError(error, {
+          operation: '날짜 없는 구인자별 완료 근무 기록 조회',
+          table: TABLE,
+        });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('날짜 없는 구인자별 완료 근무 기록 조회 완료', { ownerId, count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '날짜 없는 구인자별 완료 근무 기록 조회', { ownerId });
+    }
+  }
+
+  async getTodayCheckedIn(staffId: string): Promise<WorkLog | null> {
+    try {
+      const today = getTodayString();
+      logger.info('오늘 출근 기록 조회', { staffId, today });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .eq('date', today)
+        .eq('status', STATUS.WORK_LOG.CHECKED_IN)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) handleSupabaseError(error, { operation: '오늘 출근 기록 조회', table: TABLE });
+      if (!data) return null;
+
+      return toWorkLog(data as Record<string, unknown>);
+    } catch (error) {
+      rethrowOrHandle(error, '오늘 출근 기록 조회', { staffId });
+    }
+  }
+
+  async getStats(staffId: string): Promise<WorkLogStats> {
+    try {
+      logger.info('근무 기록 통계 조회', { staffId });
+
+      const workLogs = await this.getByStaffId(staffId, MAX_STATS_PAGE_SIZE);
+
+      if (workLogs.length >= MAX_STATS_PAGE_SIZE) {
+        logger.warn('통계 조회 건수 한도 도달, 결과가 불완전할 수 있음', {
+          staffId,
+          limit: MAX_STATS_PAGE_SIZE,
+        });
+      }
+
+      const stats: WorkLogStats = {
+        totalWorkLogs: workLogs.length,
+        completedCount: 0,
+        totalHoursWorked: 0,
+        averageHoursPerDay: 0,
+        pendingPayroll: 0,
+        completedPayroll: 0,
+      };
+
+      for (const workLog of workLogs) {
+        if (workLog.status === STATUS.WORK_LOG.COMPLETED) {
+          stats.completedCount++;
+        }
+
+        if (workLog.checkInTime && workLog.checkOutTime) {
+          const checkInDate = TimeNormalizer.parseTime(workLog.checkInTime);
+          const checkOutDate = TimeNormalizer.parseTime(workLog.checkOutTime);
+          if (checkInDate && checkOutDate) {
+            const durationMs = checkOutDate.getTime() - checkInDate.getTime();
+            const durationHours = durationMs / (1000 * 60 * 60);
+            if (durationHours > 0) {
+              stats.totalHoursWorked += durationHours;
+            }
+          }
+        }
+
+        const amount = workLog.payrollAmount ?? 0;
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          stats.completedPayroll += amount;
+        } else {
+          stats.pendingPayroll += amount;
+        }
+      }
+
+      if (stats.completedCount > 0) {
+        stats.averageHoursPerDay = stats.totalHoursWorked / stats.completedCount;
+      }
+
+      logger.info('근무 기록 통계 조회 완료', { staffId, stats });
+      return stats;
+    } catch (error) {
+      rethrowOrHandle(error, '근무 기록 통계 조회', { staffId });
+    }
+  }
+
+  async getMonthlyPayroll(
+    staffId: string,
+    year: number,
+    month: number
+  ): Promise<MonthlyPayrollSummary> {
+    try {
+      const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+      logger.info('월별 정산 요약 조회', { staffId, monthStr });
+
+      const startDate = `${monthStr}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+
+      if (error) handleSupabaseError(error, { operation: '월별 정산 요약 조회', table: TABLE });
+
+      const summary: MonthlyPayrollSummary = {
+        month: monthStr,
+        totalAmount: 0,
+        pendingAmount: 0,
+        completedAmount: 0,
+        workLogCount: 0,
+        workLogs: [],
+      };
+
+      const workLogs: WorkLog[] = [];
+      for (const row of (data ?? []) as Record<string, unknown>[]) {
+        const workLog = toWorkLog(row);
+        if (!workLog) continue;
+
+        workLogs.push(workLog);
+        summary.workLogCount++;
+        const amount = workLog.payrollAmount ?? 0;
+        summary.totalAmount += amount;
+
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          summary.completedAmount += amount;
+        } else {
+          summary.pendingAmount += amount;
+        }
+      }
+
+      summary.workLogs = workLogs;
+
+      logger.info('월별 정산 요약 조회 완료', {
+        staffId,
+        summary: { ...summary, workLogs: undefined },
+      });
+      return summary;
+    } catch (error) {
+      rethrowOrHandle(error, '월별 정산 요약 조회', { staffId, year, month });
+    }
+  }
+
+  async getByDateRange(staffId: string, startDate: string, endDate: string): Promise<WorkLog[]> {
+    try {
+      logger.info('날짜 범위 근무 기록 조회', { staffId, startDate, endDate });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('staff_id', staffId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+
+      if (error)
+        handleSupabaseError(error, { operation: '날짜 범위 근무 기록 조회', table: TABLE });
+
+      const items = rowsToWorkLogs((data ?? []) as Record<string, unknown>[]);
+      logger.info('날짜 범위 근무 기록 조회 완료', {
+        staffId,
+        startDate,
+        endDate,
+        count: items.length,
+      });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '날짜 범위 근무 기록 조회', { staffId, startDate, endDate });
+    }
+  }
+
+  async findByJobPostingStaffDate(
+    jobPostingId: string,
+    staffId: string,
+    date: string,
+    assignmentGroupId?: string | null,
+    timeSlot?: string | null
+  ): Promise<WorkLog | null> {
+    try {
+      logger.info('공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
+
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('job_posting_id', jobPostingId)
+        .eq('staff_id', staffId)
+        .eq('date', date);
+
+      if (error)
+        handleSupabaseError(error, { operation: '공고-스태프-날짜 근무 기록 조회', table: TABLE });
+
+      if (!data || data.length === 0) {
+        logger.info('공고-스태프-날짜 근무 기록 없음', { jobPostingId, staffId, date });
+        return null;
+      }
+
+      const matchingWorkLogs = (data as Record<string, unknown>[])
+        .map((row) => toWorkLog(row))
+        .filter((workLog): workLog is WorkLog => Boolean(workLog))
+        .filter((workLog) => {
+          if (
+            assignmentGroupId !== undefined &&
+            (workLog.assignmentGroupId ?? null) !== assignmentGroupId
+          ) {
+            return false;
+          }
+          if (timeSlot !== undefined && (workLog.timeSlot ?? null) !== timeSlot) {
+            return false;
+          }
+          return true;
+        });
+
+      if (matchingWorkLogs.length === 0) {
+        return null;
+      }
+
+      if (matchingWorkLogs.length > 1) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '동일 날짜에 여러 배정이 있어 assignment별 QR이 필요합니다.',
+        });
+      }
+
+      const [workLog] = matchingWorkLogs;
+      logger.info('공고-스태프-날짜 근무 기록 조회 완료', {
+        jobPostingId,
+        staffId,
+        date,
+        found: !!workLog,
+      });
+      return workLog;
+    } catch (error) {
+      rethrowOrHandle(error, '공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
+    }
+  }
+
+  // ==========================================================================
+  // 실시간 구독 (Realtime)
+  // ==========================================================================
+
+  subscribeByDate(
+    staffId: string,
+    date: string,
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): UnsubscribeFn {
+    logger.info('날짜별 근무 기록 구독 시작', { staffId, date });
+
+    return createRealtimeSubscription(
+      TABLE,
+      `staff_id=eq.${staffId}&date=eq.${date}`,
+      (_payload) => {
+        try {
+          // Realtime은 변경 이벤트만 전달하므로 전체 목록을 다시 조회
+          void this.getByDate(staffId, date).then(onData).catch(onError);
+        } catch (error) {
+          logger.error('날짜별 근무 기록 구독 처리 에러', toError(error), { staffId, date });
+          onError(toError(error));
+        }
+      }
+    );
+  }
+
+  subscribeByStaffId(
+    staffId: string,
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): UnsubscribeFn {
+    logger.info('스태프별 근무 기록 실시간 구독 시작', { staffId });
+
+    return createRealtimeSubscription(TABLE, `staff_id=eq.${staffId}`, (_payload) => {
+      try {
+        void this.getByStaffId(staffId, DEFAULT_PAGE_SIZE).then(onData).catch(onError);
+      } catch (error) {
+        logger.error('스태프별 근무 기록 구독 에러', toError(error), { staffId });
+        onError(toError(error));
+      }
+    });
+  }
+
+  subscribeById(
+    workLogId: string,
+    onData: (workLog: WorkLog | null) => void,
+    onError: (error: Error) => void
+  ): UnsubscribeFn {
+    logger.info('단일 근무 기록 구독 시작', { workLogId });
+
+    return createRealtimeSubscription(TABLE, `id=eq.${workLogId}`, (payload) => {
+      try {
+        if (payload.eventType === 'DELETE') {
+          onData(null);
+          return;
+        }
+
+        const row = payload.new as Record<string, unknown>;
+        if (!row || Object.keys(row).length === 0) {
+          onData(null);
+          return;
+        }
+
+        const workLog = toWorkLog(row);
+        onData(workLog);
+      } catch (error) {
+        logger.error('단일 근무 기록 구독 에러', toError(error), { workLogId });
+        onError(toError(error));
+      }
+    });
+  }
+
+  subscribeByStaffIdWithFilters(
+    staffId: string,
+    options: { dateRange?: { start: string; end: string }; pageSize?: number },
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): UnsubscribeFn {
+    logger.info('필터를 포함한 스태프별 근무 기록 구독 시작', {
+      staffId,
+      dateRange: options.dateRange,
+    });
+
+    return createRealtimeSubscription(TABLE, `staff_id=eq.${staffId}`, (_payload) => {
+      try {
+        void this.getByStaffIdWithFilters(staffId, {
+          dateRange: options.dateRange,
+          pageSize: options.pageSize,
+        })
+          .then(onData)
+          .catch(onError);
+      } catch (error) {
+        logger.error('필터를 포함한 스태프별 근무 기록 구독 에러', toError(error), { staffId });
+        onError(toError(error));
+      }
+    });
+  }
+
+  subscribeTodayActive(
+    staffId: string,
+    date: string,
+    statuses: string[],
+    onData: (workLog: WorkLog | null) => void,
+    onError: (error: Error) => void
+  ): UnsubscribeFn {
+    logger.info('오늘 활성 근무 기록 구독 시작', { staffId, date, statuses });
+
+    return createRealtimeSubscription(
+      TABLE,
+      `staff_id=eq.${staffId}&date=eq.${date}`,
+      (_payload) => {
+        try {
+          // 변경 이벤트 발생 시 전체 조회 후 statuses 필터링
+          void supabase
+            .from(TABLE)
+            .select('*')
+            .eq('staff_id', staffId)
+            .eq('date', date)
+            .in('status', statuses)
+            .then(({ data, error: queryError }) => {
+              if (queryError) {
+                onError(new Error(queryError.message));
+                return;
+              }
+
+              if (!data || data.length === 0) {
+                onData(null);
+                return;
+              }
+
+              const workLogs = (data as Record<string, unknown>[])
+                .map((row) => toWorkLog(row))
+                .filter((wl): wl is WorkLog => wl !== null);
+
+              const checkedIn =
+                workLogs.find((wl) => wl.status === STATUS.WORK_LOG.CHECKED_IN) ?? null;
+              onData(checkedIn ?? workLogs[0] ?? null);
+            });
+        } catch (error) {
+          logger.error('오늘 활성 근무 기록 구독 에러', toError(error), { staffId, date });
+          onError(toError(error));
+        }
+      }
+    );
+  }
+
+  // ==========================================================================
+  // 변경 (Write)
+  // ==========================================================================
+
+  async updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void> {
+    try {
+      logger.info('정산 상태 변경', { workLogId, status });
+
+      const now = new Date().toISOString();
+      const updateData: Record<string, unknown> = {
+        payroll_status: status,
+        updated_at: now,
+      };
+
+      if (status === STATUS.PAYROLL.COMPLETED) {
+        updateData.payroll_date = now;
+      }
+
+      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
+
+      if (error) handleSupabaseError(error, { operation: '정산 상태 변경', table: TABLE });
+
+      logger.info('정산 상태 변경 완료', { workLogId, status });
+    } catch (error) {
+      rethrowOrHandle(error, '정산 상태 변경', { workLogId, status });
+    }
+  }
+
+  async updateWorkTimeTransaction(
+    workLogId: string,
+    updates: {
+      checkInTime?: Date;
+      checkOutTime?: Date;
+      notes?: string;
+    }
+  ): Promise<void> {
+    try {
+      logger.info('근무 시간 수정', { workLogId });
+
+      // 1. 현재 상태 조회
+      const { data: current, error: fetchError } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('id', workLogId)
+        .maybeSingle();
+
+      if (fetchError)
+        handleSupabaseError(fetchError, { operation: '근무 시간 수정 조회', table: TABLE });
+      if (!current) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
+      }
+
+      const workLog = toWorkLog(current as Record<string, unknown>);
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
+
+      // 2. 정산 완료된 경우 수정 불가
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
+        });
+      }
+
+      // 3. 업데이트 데이터 구성
+      const updateData: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if (updates.checkInTime) {
+        updateData.check_in_time = updates.checkInTime.toISOString();
+      }
+
+      if (updates.checkOutTime) {
+        updateData.check_out_time = updates.checkOutTime.toISOString();
+      }
+
+      if (updates.notes !== undefined) {
+        updateData.notes = updates.notes;
+      }
+
+      // workDuration 재계산
+      const finalCheckIn =
+        updates.checkInTime ?? TimeNormalizer.parseTime(workLog.checkInTime ?? null);
+      const finalCheckOut =
+        updates.checkOutTime ?? TimeNormalizer.parseTime(workLog.checkOutTime ?? null);
+
+      if (finalCheckIn && finalCheckOut) {
+        const durationMinutes = Math.round(
+          (finalCheckOut.getTime() - finalCheckIn.getTime()) / (1000 * 60)
+        );
+        updateData.work_duration = Math.round((durationMinutes / 60) * 100) / 100;
+      }
+
+      // 4. 상태 업데이트 (check_in/out 둘 다 있으면 checked_out)
+      if (updates.checkInTime && updates.checkOutTime) {
+        updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
+      } else if (updates.checkInTime && !workLog.checkOutTime && !updates.checkOutTime) {
+        updateData.status = STATUS.WORK_LOG.CHECKED_IN;
+      }
+
+      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
+
+      if (error) handleSupabaseError(error, { operation: '근무 시간 수정', table: TABLE });
+
+      logger.info('근무 시간 수정 완료', { workLogId });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      rethrowOrHandle(error, '근무 시간 수정 (Transaction)', { workLogId });
+    }
+  }
+
+  async updatePayrollStatusTransaction(
+    workLogId: string,
+    status: PayrollStatus,
+    amount?: number
+  ): Promise<void> {
+    try {
+      logger.info('정산 상태 업데이트 (Transaction)', { workLogId, status });
+
+      // 1. 현재 상태 조회
+      const { data: current, error: fetchError } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('id', workLogId)
+        .maybeSingle();
+
+      if (fetchError)
+        handleSupabaseError(fetchError, { operation: '정산 상태 조회', table: TABLE });
+      if (!current) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
+      }
+
+      const workLog = toWorkLog(current as Record<string, unknown>);
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
+
+      // 2. 중복 정산 방지
+      if (
+        status === STATUS.PAYROLL.COMPLETED &&
+        workLog.payrollStatus === STATUS.PAYROLL.COMPLETED
+      ) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무 기록입니다',
+        });
+      }
+
+      // 3. 업데이트
+      const now = new Date().toISOString();
+      const updateData: Record<string, unknown> = {
+        payroll_status: status,
+        updated_at: now,
+      };
+
+      if (amount !== undefined) {
+        updateData.payroll_amount = amount;
+      }
+
+      if (status === STATUS.PAYROLL.COMPLETED) {
+        updateData.payroll_date = now;
+      }
+
+      const { error } = await supabase.from(TABLE).update(updateData).eq('id', workLogId);
+
+      if (error)
+        handleSupabaseError(error, { operation: '정산 상태 업데이트 (Transaction)', table: TABLE });
+
+      logger.info('정산 상태 업데이트 완료', { workLogId, status });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      rethrowOrHandle(error, '정산 상태 업데이트 (Transaction)', { workLogId, status });
+    }
+  }
+
+  async flagNegativeSettlement(workLogId: string, amount: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from(TABLE)
+        .update({
+          _negative_settlement_detected: true,
+          _negative_settlement_amount: amount,
+          _negative_settlement_detected_at: new Date().toISOString(),
+        })
+        .eq('id', workLogId);
+
+      if (error) handleSupabaseError(error, { operation: '음수 정산 플래그 기록', table: TABLE });
+
+      logger.info('음수 정산 플래그 기록', { workLogId, amount });
+    } catch (error) {
+      rethrowOrHandle(error, '음수 정산 플래그 기록', { workLogId, amount });
+    }
+  }
+
+  async processQRCheckInOutTransaction(
+    workLogId: string,
+    staffId: string,
+    jobPostingId: string,
+    action: QRCodeAction,
+    checkTime: Date,
+    date: string
+  ): Promise<{
+    action: QRCodeAction;
+    hasExistingCheckInTime: boolean;
+    workDuration: number;
+  }> {
+    try {
+      logger.info('QR 체크인/아웃', { workLogId, staffId, action });
+
+      // 1. 근무 기록 + 공고 조회 (병렬)
+      const [workLogResult, jobPostingResult] = await Promise.all([
+        supabase.from(TABLE).select('*').eq('id', workLogId).maybeSingle(),
+        supabase
+          .from('job_postings')
+          .select('id, status, owner_id')
+          .eq('id', jobPostingId)
+          .maybeSingle(),
+      ]);
+
+      if (workLogResult.error)
+        handleSupabaseError(workLogResult.error, { operation: 'QR 근무 기록 조회', table: TABLE });
+      if (!workLogResult.data) {
+        throw new InvalidQRCodeError({
+          message: '근무 기록이 존재하지 않습니다',
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
+      }
+
+      const workLog = toWorkLog(workLogResult.data as Record<string, unknown>);
+      if (!workLog) {
+        throw new InvalidQRCodeError({
+          message: '근무 기록 데이터가 유효하지 않습니다',
+          userMessage: '근무 기록을 처리할 수 없습니다',
+        });
+      }
+
+      // 공고 상태 확인
+      if (jobPostingResult.error || !jobPostingResult.data) {
+        throw new InvalidQRCodeError({
+          message: '공고가 존재하지 않습니다',
+          userMessage: '공고를 찾을 수 없습니다',
+        });
+      }
+
+      const jpData = jobPostingResult.data as Record<string, unknown>;
+      if (jpData.status !== 'active') {
+        throw new InvalidQRCodeError({
+          message: `공고 상태가 ${jpData.status as string}입니다`,
+          userMessage: '활성 상태가 아닌 공고입니다',
+        });
+      }
+
+      // 방어적 검증
+      if (workLog.staffId !== staffId) {
+        throw new InvalidQRCodeError({
+          message: 'WorkLog staffId 불일치',
+          userMessage: '권한이 없는 근무 기록입니다',
+        });
+      }
+
+      if (workLog.jobPostingId !== jobPostingId) {
+        throw new InvalidQRCodeError({
+          message: 'WorkLog jobPostingId 불일치',
+          userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
+        });
+      }
+
+      if (!workLog.isFixedPosting && workLog.date !== date) {
+        throw new InvalidQRCodeError({
+          message: `QR date(${date})와 WorkLog date(${workLog.date}) 불일치`,
+          userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
+        });
+      }
+
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무는 출퇴근 처리할 수 없습니다',
+        });
+      }
+
+      const now = new Date().toISOString();
+
+      if (action === 'checkIn') {
+        if (
+          workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
+          workLog.status === STATUS.WORK_LOG.CHECKED_OUT
+        ) {
+          throw new AlreadyCheckedInError({
+            message: '이미 출근 처리되었습니다',
+            userMessage: '이미 출근 처리가 완료되었습니다',
+            workLogId,
+          });
+        }
+
+        const { error } = await supabase
+          .from(TABLE)
+          .update({
+            status: STATUS.WORK_LOG.CHECKED_IN,
+            check_in_time: now,
+            updated_at: now,
+          })
+          .eq('id', workLogId);
+
+        if (error) handleSupabaseError(error, { operation: 'QR 출근 처리', table: TABLE });
+
+        return {
+          action: 'checkIn' as const,
+          hasExistingCheckInTime: !!workLog.checkInTime,
+          workDuration: 0,
+        };
+      } else {
+        if (workLog.status !== STATUS.WORK_LOG.CHECKED_IN) {
+          throw new NotCheckedInError({
+            message: '먼저 출근 처리가 필요합니다',
+            userMessage: '출근 처리 후 퇴근할 수 있습니다',
+          });
+        }
+
+        let workDuration = 0;
+        const checkInSource = workLog.checkInTime;
+        if (checkInSource) {
+          const startTime = TimeNormalizer.parseTime(checkInSource);
+          if (startTime) {
+            const durationMinutes = Math.round(
+              (checkTime.getTime() - startTime.getTime()) / (1000 * 60)
+            );
+            workDuration = Math.round((durationMinutes / 60) * 100) / 100;
+          }
+        }
+
+        const { error } = await supabase
+          .from(TABLE)
+          .update({
+            status: STATUS.WORK_LOG.CHECKED_OUT,
+            check_out_time: now,
+            updated_at: now,
+          })
+          .eq('id', workLogId);
+
+        if (error) handleSupabaseError(error, { operation: 'QR 퇴근 처리', table: TABLE });
+
+        return {
+          action: 'checkOut' as const,
+          hasExistingCheckInTime: false,
+          workDuration,
+        };
+      }
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      rethrowOrHandle(error, 'QR 체크인/아웃 (Transaction)', { workLogId, staffId, action });
+    }
+  }
+}
