@@ -14,7 +14,46 @@
  */
 
 import { z } from 'zod';
-import { Timestamp } from 'firebase/firestore';
+
+// ============================================================================
+// TimestampLike - Firebase Timestamp 추상화
+// ============================================================================
+
+/**
+ * toDate() 메서드를 가진 Timestamp-like 인터페이스
+ *
+ * @description Firebase Timestamp와 호환되는 duck-typed 인터페이스.
+ *              실제 Timestamp 클래스를 import하지 않고도 동일한 인터페이스를 제공.
+ */
+interface TimestampLike {
+  toDate(): Date;
+  seconds: number;
+  nanoseconds: number;
+}
+
+/**
+ * TimestampLike 객체 생성 헬퍼
+ *
+ * @description Date -> TimestampLike 변환. Firebase Timestamp과 동일한 인터페이스 제공.
+ */
+function createTimestampLike(date: Date): TimestampLike {
+  const seconds = Math.floor(date.getTime() / 1000);
+  const nanoseconds = (date.getTime() % 1000) * 1_000_000;
+  return {
+    toDate: () => date,
+    seconds,
+    nanoseconds,
+  };
+}
+
+function createTimestampLikeFromParts(seconds: number, nanoseconds: number): TimestampLike {
+  const date = new Date(seconds * 1000 + nanoseconds / 1_000_000);
+  return {
+    toDate: () => date,
+    seconds,
+    nanoseconds,
+  };
+}
 
 // ============================================================================
 // Firebase Timestamp Schemas
@@ -25,7 +64,7 @@ import { Timestamp } from 'firebase/firestore';
  *
  * @description toDate() 메서드가 있는 객체인지 확인
  */
-function isTimestampLike(value: unknown): value is Timestamp {
+function isTimestampLike(value: unknown): value is { toDate: () => Date } {
   return (
     value !== null &&
     typeof value === 'object' &&
@@ -87,7 +126,10 @@ function isServerTimestampSentinel(value: unknown): value is { _methodName: 'ser
  */
 export const timestampSchema = z
   .custom<
-    Timestamp | Date | { seconds: number; nanoseconds: number } | { _methodName: 'serverTimestamp' }
+    | { toDate: () => Date }
+    | Date
+    | { seconds: number; nanoseconds: number }
+    | { _methodName: 'serverTimestamp' }
   >(
     (val) =>
       isTimestampLike(val) ||
@@ -96,23 +138,24 @@ export const timestampSchema = z
       isServerTimestampSentinel(val),
     { message: 'Timestamp 형식이 아닙니다' }
   )
-  .transform((val): Timestamp => {
-    // 이미 Timestamp-like 객체인 경우 그대로 반환
+  .transform((val): TimestampLike => {
+    // 이미 Timestamp-like 객체인 경우 TimestampLike로 래핑
     if (isTimestampLike(val)) {
-      return val as Timestamp;
+      const date = val.toDate();
+      return createTimestampLike(date);
     }
-    // Date 객체인 경우 Timestamp로 변환
+    // Date 객체인 경우 TimestampLike로 변환
     if (val instanceof Date) {
-      return Timestamp.fromDate(val);
+      return createTimestampLike(val);
     }
-    // { seconds, nanoseconds } 객체인 경우 Timestamp로 변환
+    // { seconds, nanoseconds } 객체인 경우 TimestampLike로 변환
     if (isTimestampObject(val)) {
-      return new Timestamp(val.seconds, val.nanoseconds);
+      return createTimestampLikeFromParts(val.seconds, val.nanoseconds);
     }
     // serverTimestamp() 센티널 값인 경우 현재 시간으로 변환
     // (pendingWrites 상태에서 읽은 경우)
     if (isServerTimestampSentinel(val)) {
-      return Timestamp.now();
+      return createTimestampLike(new Date());
     }
     // 여기에 도달하면 안됨 (위의 custom에서 이미 검증됨)
     throw new Error('Invalid timestamp format');

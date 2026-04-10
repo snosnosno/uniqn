@@ -1,5 +1,4 @@
 import { format, isValid, parseISO } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
 
 export interface TimestampLike {
   toDate: () => Date;
@@ -12,7 +11,6 @@ export interface SerializedTimestamp {
 
 export type DateInput =
   | Date
-  | Timestamp
   | TimestampLike
   | SerializedTimestamp
   | number

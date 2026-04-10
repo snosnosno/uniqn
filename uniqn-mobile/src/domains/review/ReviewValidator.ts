@@ -1,4 +1,3 @@
-import type { Timestamp } from 'firebase/firestore';
 import type { ReviewerType, ReviewSentiment } from '@/types/review';
 import {
   REVIEW_DEADLINE_DAYS,
@@ -16,7 +15,7 @@ export interface WorkLogForReview {
   ownerId: string;
   status: string;
   date: string;
-  completedAt?: Timestamp | Date;
+  completedAt?: Date;
 }
 
 export interface ReviewEligibilityResult {

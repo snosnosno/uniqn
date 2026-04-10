@@ -10,9 +10,17 @@
  * 3. 트랜잭션 내 배치 생성 지원
  */
 
-import { Timestamp, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { STATUS } from '@/constants';
 import { parseTimeSlotToDate } from '@/utils/date';
+
+/**
+ * 서버 타임스탬프 센티널 마커
+ *
+ * @description Firestore serverTimestamp()의 추상화.
+ *              Repository 레이어에서 이 마커를 감지하여 실제 serverTimestamp()로 변환.
+ */
+const SERVER_TIMESTAMP_SENTINEL = { __type: 'serverTimestamp' } as const;
+export type ServerTimestampSentinel = typeof SERVER_TIMESTAMP_SENTINEL;
 
 // ============================================================================
 // Types
@@ -68,15 +76,15 @@ export interface WorkLogData {
   isTimeToBeAnnounced: boolean;
   tentativeDescription: string | null;
   status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
-  checkInTime: Timestamp | null;
+  checkInTime: Date | null;
   checkOutTime: null;
   workDuration: null;
   payrollAmount: null;
   isSettled: boolean;
   assignmentGroupId: string | null;
   checkMethod: 'individual' | 'group';
-  createdAt: FieldValue;
-  updatedAt: FieldValue;
+  createdAt: ServerTimestampSentinel;
+  updatedAt: ServerTimestampSentinel;
 }
 
 /** 배치 생성 결과 */
@@ -142,13 +150,13 @@ export class WorkLogCreator {
   }
 
   /**
-   * 날짜와 시간 문자열을 Timestamp로 변환
+   * 날짜와 시간 문자열을 Date로 변환
    *
    * @param date - 날짜 (YYYY-MM-DD)
    * @param time - 시간 (HH:mm)
-   * @returns Timestamp 또는 null (파싱 실패 시)
+   * @returns Date 또는 null (파싱 실패 시)
    */
-  static createTimestampFromDateTime(date: string, time: string): Timestamp | null {
+  static createTimestampFromDateTime(date: string, time: string): Date | null {
     if (!date || !time) return null;
 
     // 시간 형식 검증 (HH:mm 또는 H:mm)
@@ -165,7 +173,7 @@ export class WorkLogCreator {
       const paddedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       const { startTime } = parseTimeSlotToDate(paddedTime, date);
 
-      return startTime ? Timestamp.fromDate(startTime) : null;
+      return startTime ?? null;
     } catch {
       return null;
     }
@@ -200,8 +208,8 @@ export class WorkLogCreator {
       isSettled: false,
       assignmentGroupId: input.assignmentGroupId ?? null,
       checkMethod: input.checkMethod ?? 'individual',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: SERVER_TIMESTAMP_SENTINEL,
+      updatedAt: SERVER_TIMESTAMP_SENTINEL,
     };
   }
 
