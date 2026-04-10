@@ -1,0 +1,52 @@
+# ============================================================================
+# Line ending normalization — enforces LF in index AND working tree
+# Resolves Windows core.autocrlf=true vs prettier endOfLine="lf" conflict
+# ============================================================================
+
+# Default: auto-detect text, force LF everywhere
+* text=auto eol=lf
+
+# Explicit text files
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.js       text eol=lf
+*.jsx      text eol=lf
+*.json     text eol=lf
+*.md       text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.html     text eol=lf
+*.css      text eol=lf
+*.scss     text eol=lf
+*.sh       text eol=lf
+*.env      text eol=lf
+*.env.*    text eol=lf
+*.toml     text eol=lf
+*.lock     text eol=lf
+
+# Binary files — no conversion
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.ico      binary
+*.webp     binary
+*.svg      binary
+*.pdf      binary
+*.zip      binary
+*.gz       binary
+*.tar      binary
+*.ttf      binary
+*.otf      binary
+*.woff     binary
+*.woff2    binary
+*.eot      binary
+*.mp3      binary
+*.mp4      binary
+*.wav      binary
+*.ogg      binary
+
+# Windows-specific scripts (must keep CRLF to function)
+*.bat      text eol=crlf
+*.cmd      text eol=crlf
+*.ps1      text eol=crlf
