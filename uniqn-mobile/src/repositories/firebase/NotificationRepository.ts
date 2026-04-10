@@ -211,7 +211,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         filter?.endDate ? Timestamp.fromDate(filter.endDate) : undefined
       )
       .orderByDesc(FIELDS.NOTIFICATION.createdAt)
-      .paginate(pageSize, lastDoc)
+      .paginate(pageSize, lastDoc as QueryDocumentSnapshot<DocumentData> | undefined)
       .build();
 
     const snapshot = await getDocs(q);

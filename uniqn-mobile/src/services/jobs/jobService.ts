@@ -12,8 +12,7 @@
  * - Repository: 데이터 접근 + 쿼리 빌딩 캡슐화
  */
 
-import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
-import type { UnsubscribeFn } from '@/types/common';
+import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
@@ -48,7 +47,7 @@ const DEFAULT_PAGE_SIZE = 20;
 export async function getJobPostings(
   filters?: JobPostingFilters,
   pageSize: number = DEFAULT_PAGE_SIZE,
-  lastDocument?: QueryDocumentSnapshot<DocumentData>
+  lastDocument?: PaginationCursor
 ): Promise<PaginatedJobPostings> {
   const trace = startApiTrace('getJobPostings');
   trace.putAttribute('pageSize', String(pageSize));

@@ -14,6 +14,7 @@ import {
 } from '@/services/offline/criticalOfflineCache';
 import { getJobPostings } from '@/services';
 import type { JobPostingCard, JobPostingFilters } from '@/types';
+import type { PaginationCursor } from '@/types/common';
 import { sortJobPostings } from '@/utils/jobPostingSorter';
 import { stableFilters } from '@/utils/queryUtils';
 
@@ -35,21 +36,9 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
   const query = useInfiniteQuery({
     queryKey: queryKeys.jobPostings.list(normalizedFilters),
     queryFn: async ({ pageParam }) => {
-      return getJobPostings(
-        filters,
-        limit,
-        pageParam as
-          | import('firebase/firestore').QueryDocumentSnapshot<
-              import('firebase/firestore').DocumentData
-            >
-          | undefined
-      );
+      return getJobPostings(filters, limit, pageParam as PaginationCursor);
     },
-    initialPageParam: undefined as
-      | import('firebase/firestore').QueryDocumentSnapshot<
-          import('firebase/firestore').DocumentData
-        >
-      | undefined,
+    initialPageParam: undefined as PaginationCursor,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     enabled: enabled && isOnline,
     staleTime: queryCachingOptions.jobPostings.staleTime,

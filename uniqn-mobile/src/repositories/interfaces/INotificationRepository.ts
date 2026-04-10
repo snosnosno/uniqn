@@ -10,8 +10,7 @@
  * 3. 향후 백엔드 교체 가능성 확보
  */
 
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import type { PaginatedResult } from '@/utils/firestore';
+import type { PaginationCursor, PaginatedResult } from '@/types/common';
 import type {
   NotificationData,
   NotificationSettings,
@@ -25,7 +24,7 @@ import type {
 export interface GetNotificationsOptions {
   filter?: NotificationFilter;
   pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot<DocumentData>;
+  lastDoc?: PaginationCursor;
 }
 
 // ============================================================================

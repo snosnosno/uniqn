@@ -17,6 +17,7 @@ import {
   DocumentData,
   type Unsubscribe,
 } from 'firebase/firestore';
+import type { PaginationCursor } from '@/types/common';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -179,7 +180,7 @@ export async function getByIdBatch(jobPostingIds: string[]): Promise<JobPosting[
 export async function getList(
   filters?: JobPostingFilters,
   pageSize: number = DEFAULT_PAGE_SIZE,
-  lastDocument?: QueryDocumentSnapshot<DocumentData>
+  lastDocument?: PaginationCursor
 ): Promise<PaginatedJobPostings> {
   try {
     logger.info('공고 목록 조회', { filters, pageSize });
@@ -224,7 +225,7 @@ export async function getList(
     const q = qb
       .orderByDesc(FIELDS.JOB_POSTING.workDate)
       .orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
-      .paginate(pageSize, lastDocument)
+      .paginate(pageSize, lastDocument as QueryDocumentSnapshot<DocumentData> | undefined)
       .build();
 
     const snapshot = await getDocs(q);

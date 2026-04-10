@@ -1,7 +1,7 @@
-import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import type { PaginationCursor } from '@/types/common';
 import type { NotificationData, NotificationFilter } from '@/types/notification';
 
-export type NotificationPageCursor = QueryDocumentSnapshot;
+export type NotificationPageCursor = PaginationCursor;
 
 export interface FetchNotificationsOptions {
   userId: string;

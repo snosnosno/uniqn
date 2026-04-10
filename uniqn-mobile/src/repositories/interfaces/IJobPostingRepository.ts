@@ -5,8 +5,7 @@
  * @version 1.0.0
  */
 
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import type { UnsubscribeFn } from '@/types/common';
+import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
   JobPosting,
@@ -26,7 +25,7 @@ import type {
  */
 export interface PaginatedJobPostings {
   items: JobPosting[];
-  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  lastDoc: PaginationCursor;
   hasMore: boolean;
 }
 
@@ -114,7 +113,7 @@ export interface IJobPostingRepository {
   getList(
     filters?: JobPostingFilters,
     pageSize?: number,
-    lastDocument?: QueryDocumentSnapshot<DocumentData>
+    lastDocument?: PaginationCursor
   ): Promise<PaginatedJobPostings>;
 
   /**
