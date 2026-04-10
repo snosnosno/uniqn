@@ -336,10 +336,9 @@ export async function batchUpdate<T extends Record<string, unknown>>(
 
   const results = await Promise.all(
     items.map(({ id, updates }) =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       supabase
         .from(table)
-        .update(updates as any)
+        .update(updates as Record<string, unknown>)
         .eq('id', id)
     )
   );
