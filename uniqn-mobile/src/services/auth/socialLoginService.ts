@@ -48,6 +48,7 @@ import {
   type SocialProfileData,
   callVerifyAndSaveProfile,
 } from './authTypes';
+import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { requestAppleAuthorization } from './appleAuthService';
 import { getUserProfile } from './userProfileService';
 
@@ -1005,18 +1006,28 @@ export async function completeSocialProfile(
     // 공통 CF 호출: 서버사이드 phone 검증 + Firestore 저장 + Claims 설정
     // 프로필(닉네임 등)은 가입 후 profile-setup 화면에서 입력
     protectAuthFlow(uid, 'social_signup', SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS);
-    await callVerifyAndSaveProfile({
-      verifiedPhone: data.phone,
-      name: data.name,
-      birthDate: data.birthDate,
-      gender: data.gender,
-      termsAgreed: data.termsAgreed,
-      privacyAgreed: data.privacyAgreed,
-      marketingAgreed: data.marketingAgreed ?? false,
-      mode: 'social',
-      verificationId: data.verificationId,
-      otpCode: data.otpCode,
-    });
+    if (data.identityVerificationId) {
+      await callVerifyAndSavePortOneProfile({
+        identityVerificationId: data.identityVerificationId,
+        termsAgreed: data.termsAgreed,
+        privacyAgreed: data.privacyAgreed,
+        marketingAgreed: data.marketingAgreed ?? false,
+        mode: 'social',
+      });
+    } else {
+      await callVerifyAndSaveProfile({
+        verifiedPhone: data.phone,
+        name: data.name,
+        birthDate: data.birthDate,
+        gender: data.gender,
+        termsAgreed: data.termsAgreed,
+        privacyAgreed: data.privacyAgreed,
+        marketingAgreed: data.marketingAgreed ?? false,
+        mode: 'social',
+        verificationId: data.verificationId,
+        otpCode: data.otpCode,
+      });
+    }
 
     // Custom Claims 갱신 (CF가 setCustomUserClaims 호출 후, 클라이언트 토큰 새로고침)
     try {

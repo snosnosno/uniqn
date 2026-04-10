@@ -39,6 +39,21 @@ export function toStoreProfile(profile: {
   role: string;
   photoURL?: string | null;
   phoneVerified?: boolean;
+  identityVerified?: boolean;
+  identityVerifiedAt?: unknown;
+  identityProvider?: 'portone_inicis';
+  identity?: {
+    provider: 'portone';
+    channel: 'inicis_unified';
+    identityVerificationId: string;
+    verifiedAt: unknown;
+    name: string;
+    birthDate: string;
+    gender?: 'male' | 'female';
+    phoneNumber?: string;
+    ciHash?: string;
+    isForeigner?: boolean;
+  };
   birthDate?: string;
   gender?: 'male' | 'female';
   socialProvider?: string;
@@ -76,6 +91,17 @@ export function toStoreProfile(profile: {
     role: profile.role as UserProfile['role'],
     photoURL: profile.photoURL,
     phoneVerified: profile.phoneVerified,
+    identityVerified: profile.identityVerified,
+    identityVerifiedAt: profile.identityVerifiedAt
+      ? toOptionalDate(profile.identityVerifiedAt)
+      : undefined,
+    identityProvider: profile.identityProvider,
+    identity: profile.identity
+      ? {
+          ...profile.identity,
+          verifiedAt: toRequiredDate(profile.identity.verifiedAt),
+        }
+      : undefined,
     birthDate: profile.birthDate,
     gender: profile.gender,
     socialProvider: profile.socialProvider as UserProfile['socialProvider'],

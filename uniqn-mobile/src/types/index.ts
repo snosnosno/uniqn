@@ -37,6 +37,7 @@ export type {
 export type {
   UserProfile,
   FirestoreUserProfile,
+  PortOneIdentityProfile,
   EditableProfileFields,
   ProfileViewFields,
   MyDataEditableFields,

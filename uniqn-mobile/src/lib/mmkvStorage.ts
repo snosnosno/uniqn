@@ -368,6 +368,8 @@ export const STORAGE_KEYS = {
   FORM_DRAFT: 'form-draft',
   SEARCH_HISTORY: 'search-history',
   RECENT_JOBS: 'recent-jobs',
+  PORTONE_IDENTITY_REQUEST: 'portone-identity-request',
+  PORTONE_IDENTITY_RESULT: 'portone-identity-result',
 
   // 토큰 갱신
   TOKEN_REFRESH_STATE: 'token-refresh-state',
