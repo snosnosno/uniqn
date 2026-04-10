@@ -22,9 +22,9 @@ service firebase.storage {
       return request.auth.token.role == 'admin';
     }
 
-    // 권한자 확인 (admin 또는 manager)
+    // 권한자 확인 (admin 또는 employer)
     function isPrivileged() {
-      return request.auth.token.role == 'admin' || request.auth.token.role == 'manager';
+      return request.auth.token.role == 'admin' || request.auth.token.role == 'employer';
     }
 
     // 구인자 확인 (employer 또는 admin) - 공고 작성 권한

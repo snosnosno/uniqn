@@ -1,9 +1,45 @@
 rules_version = '2';
 
+// ═══════════════════════════════════════════════════════════
+// UNIQN Firestore 보안 규칙
+// 최종 수정: 2026-04-10
+// ═══════════════════════════════════════════════════════════
+//
+// [목차]
+//
+// ── 헬퍼 함수 ──
+//   SECTION 1: 핵심 인증 & 보안 함수
+//   SECTION 2: 역할 & 권한 함수
+//   SECTION 3: 게시판 헬퍼 함수
+//   SECTION 4: 지원서 검증 함수
+//   SECTION 5: 근무일지 검증 함수
+//   SECTION 6: 공고 검증 함수
+//   SECTION 7: 동의 & 사용자 검증 함수
+//
+// ── MATCH 규칙 ──
+//   SECTION 8:  사용자 & 하위 컬렉션 (users)
+//   SECTION 9:  공고 & 하위 컬렉션 (jobPostings)
+//   SECTION 10: 지원서 (applications)
+//   SECTION 11: 스태프 (staff)
+//   SECTION 12: 근무일지 & 시간수정 로그 (workLogs)
+//   SECTION 13: 게시판 시스템 (boardPosts/comments/votes/memberships/reports)
+//   SECTION 14: QR & 출퇴근 (eventQRCodes, qrMetadata)
+//   SECTION 15: 시스템 컬렉션 (announcements, notifications, inquiries 등)
+//   SECTION 16: 리뷰 & 신고 (reviews, reports)
+//   SECTION 17: 모바일 앱 지원 (deviceSessions, featureFlags 등)
+//   SECTION 18: 서버 전용 컬렉션 (클라이언트 접근 차단)
+//   SECTION 19: 레거시 컬렉션 [LEGACY]
+//   SECTION 20: collectionGroup 쿼리
+//   SECTION 21: Fallback deny
+//
+// ═══════════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ================= Helper Functions =================
+    // ═══════════════════════════════════════════════════════
+    // SECTION 1: 핵심 인증 & 보안 함수
+    // ═══════════════════════════════════════════════════════
     function isSignedIn() {
       return request.auth != null;
     }
@@ -27,23 +63,16 @@ service cloud.firestore {
              !text.matches('.*expression\\s*\\(.*');
     }
     
-    // SQL Injection 패턴 검사
-    function hasNoSQLInjection(text) {
-      return !text.matches('.*union.*select.*') &&
-             !text.matches('.*select.*from.*') &&
-             !text.matches('.*insert.*into.*') &&
-             !text.matches('.*delete.*from.*') &&
-             !text.matches('.*drop.*table.*');
-    }
-    
-    // 안전한 텍스트 검증
+    // 안전한 텍스트 검증 (XSS 방지 + 길이 제한)
+    // 참고: SQL Injection 검사는 Firestore가 NoSQL이므로 불필요하여 제거
     function isSafeText(text, maxLength) {
-      return isValidString(text, maxLength) && 
-             hasNoXSS(text) && 
-             hasNoSQLInjection(text);
+      return isValidString(text, maxLength) &&
+             hasNoXSS(text);
     }
 
-    // ================= Role Helper Functions (Firestore 문서 기반) =================
+    // ═══════════════════════════════════════════════════════
+    // SECTION 2: 역할 & 권한 함수
+    // ═══════════════════════════════════════════════════════
     // Custom Claims 대신 Firestore users 문서에서 role을 읽어옴
     // 장점: 즉시 반영 (토큰 갱신 불필요)
     // 단점: 각 요청마다 추가 읽기 1회 발생
@@ -69,20 +98,19 @@ service cloud.firestore {
         authorRole == userData.role;
     }
 
-    // 관리자 권한 확인 (admin, employer, manager)
-    // ⚠️ manager는 하위 호환성을 위해 유지 (employer와 동일 권한)
+    // 관리자 권한 확인 (admin, employer)
     function isPrivileged() {
-      return getUserRole() in ['admin', 'employer', 'manager'];
+      return getUserRole() in ['admin', 'employer'];
     }
 
-    // 유효한 역할 확인 (admin, employer, manager, staff)
-    // 역할 계층: admin(100) > employer/manager(50) > staff(10)
+    // 유효한 역할 확인 (admin, employer, staff)
+    // 역할 계층: admin(100) > employer(50) > staff(10)
     function hasValidRole() {
-      return getUserRole() in ['admin', 'employer', 'manager', 'staff'];
+      return getUserRole() in ['admin', 'employer', 'staff'];
     }
 
     function canManageJobPostings() {
-      return getUserRole() in ['admin', 'employer', 'manager'];
+      return getUserRole() in ['admin', 'employer'];
     }
 
     // 관리자 여부 확인
@@ -160,6 +188,20 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // 공고 소유자 확인 (12회 이상 반복되는 패턴 추출)
+    function isJobPostingOwner(postId) {
+      return exists(/databases/$(database)/documents/jobPostings/$(postId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid;
+    }
+
+    // 공고 하위 컬렉션 관리 권한 (applications, workSessions, attendance, payroll 공통)
+    function canManageJobPostingSubcollection(postId) {
+      return isSignedIn() && (
+        isPrivileged() ||
+        isJobPostingOwner(postId)
+      );
+    }
+
     function isCommunityBoardType(boardType) {
       return boardType in ['free', 'tda'];
     }
@@ -173,7 +215,7 @@ service cloud.firestore {
     }
 
     function isBoardAuthorRole(role) {
-      return role in ['admin', 'employer', 'manager', 'staff', 'system'];
+      return role in ['admin', 'employer', 'staff', 'system'];
     }
 
     function isBoardMemberRole(role) {
@@ -614,7 +656,10 @@ service cloud.firestore {
         );
     }
 
-    // ================= Employer Registration Validation =================
+    // ═══════════════════════════════════════════════════════
+    // SECTION 7: 동의 & 사용자 검증 함수
+    // ═══════════════════════════════════════════════════════
+
     // 구인자 등록 시 역할 변경 검증
     // - staff → employer 변경만 허용
     // - 본인인증 완료 필수
@@ -711,7 +756,9 @@ service cloud.firestore {
         ));
     }
 
-    // ================= Job Posting Type Validation Functions =================
+    // ═══════════════════════════════════════════════════════
+    // SECTION 6: 공고 검증 함수
+    // ═══════════════════════════════════════════════════════
     // ⚠️ 클라이언트 Timestamp는 Security Rules의 `is timestamp` 검증을 통과하지 못함
     // 따라서 timestamp 필드는 존재 여부만 확인 (타입 검증 제거)
 
@@ -1300,9 +1347,9 @@ service cloud.firestore {
         );
     }
 
-    // ================= Collection Rules =================
-
-    // --- Users Collection ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 8: 사용자 & 하위 컬렉션
+    // ═══════════════════════════════════════════════════════
     match /users/{userId} {
       allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
 
@@ -1472,26 +1519,9 @@ service cloud.firestore {
       }
     }
 
-    // --- Assignments Collection ---
-    match /assignments/{assignmentId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
-      allow create, update, delete: if isPrivileged();
-    }
-    
-    // --- Payrolls Collection ---
-    match /payrolls/{payrollId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
-      allow create, update, delete: if isPrivileged();
-    }
-
-    // --- Ratings Collection ---
-    match /ratings/{ratingId} {
-      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
-      allow create: if isPrivileged();
-      allow update, delete: if false; // Ratings are immutable
-    }
-
-    // --- Announcements Collection ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 15: 시스템 컬렉션
+    // ═══════════════════════════════════════════════════════
     match /announcements/{announcementId} {
       allow read: if isSignedIn();
       allow write: if isPrivileged();
@@ -1524,31 +1554,25 @@ service cloud.firestore {
       allow create: if false;
     }
 
-    // --- Staff Availability ---
-    match /staffAvailability/{staffId} {
-        allow read: if isSignedIn() && (isOwner(staffId) || isPrivileged());
-        allow write: if isSignedIn() && isOwner(staffId);
-    }
-
-    // --- Job Postings Collection ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 9: 공고 & 하위 컬렉션
+    // ═══════════════════════════════════════════════════════
     match /jobPostings/{postId} {
-      // Public detail and list reads share the same active-only visibility.
+      // 읽기: 로그인 사용자 또는 활성 공고는 누구나 조회 가능
       allow get: if isSignedIn() ||
         resource.data.status == 'active';
       allow list: if isSignedIn() ||
         resource.data.status == 'active';
 
-      // Admin can create/update any job posting
-      // Employer and manager can create job postings and update their own
-      // v2.0: 앱 타입 정의에 맞춘 status 허용 값 + location 객체 지원
+      // 생성: 관리자/구인자만 가능, 본인 소유로만 생성
       allow create: if canManageJobPostings() &&
         validateCanonicalJobPostingCreate(request.resource.data) &&
         request.resource.data.ownerId == request.auth.uid;
         // 추가 필드 검증
         // 타입별 config 검증 (timestamp 타입 체크 제거됨)
 
-      // Admin can update any job posting, employer/manager can update their own
-      // Tournament 승인은 admin만 가능
+      // 수정: 관리자는 모든 공고, 구인자는 본인 공고만 수정 가능
+      // 토너먼트 승인은 admin만 가능
       allow update: if canManageJobPostings() &&
         (isAdmin() || request.auth.uid == resource.data.ownerId) &&
         request.resource.data.ownerId == resource.data.ownerId &&
@@ -1560,34 +1584,18 @@ service cloud.firestore {
             resource.data.tournamentConfig.approvalStatus)) &&
         validateCanonicalJobPostingUpdate(request.resource.data, resource.data);
 
-      allow update: if false;
-         /* legacy duplicate condition removed
-         // (tournament approval check handled above)
-         // duplicate line removed
-         // duplicate line removed
-         // Tournament 승인 필드는 admin만 수정 가능
-         (!('tournamentConfig' in request.resource.data) ||
-         // legacy duplicate line removed
-         // legacy duplicate line removed
-         // legacy duplicate line removed
-         // legacy duplicate line removed
-        // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - updatedAt 검증 제거
-
-      // Phase 4: 조회수 증가 권한 (로그인한 사용자는 누구나 조회수 증가 가능)
-      // fixedData.viewCount 필드만 변경되는 경우 허용
-      */
+      // 조회수 증가: 로그인한 사용자는 누구나 viewCount만 +1 가능
       allow update: if isSignedIn() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
         request.resource.data.viewCount is number &&
         resource.data.viewCount is number &&
         request.resource.data.viewCount == resource.data.viewCount + 1;
 
-      // Admin can delete any job posting, Manager/Staff can delete their own
+      // 삭제: 관리자 또는 본인 공고만 삭제 가능
       allow delete: if (isAdmin()) ||
         (hasValidRole() && request.auth.uid == resource.data.ownerId);
         
-      // --- Subcollections for Job Postings ---
-      // Staff subcollection
+      // 공고 하위 컬렉션: 스태프
       match /staff/{userId} {
         allow read: if isSignedIn();
         allow write: if isPrivileged() ||
@@ -1628,56 +1636,27 @@ service cloud.firestore {
           canManageWorkLogAuthoritatively();
       }
 
-      // Hybrid Architecture: Applications subcollection (공고별 지원서)
+      // 공고 하위 컬렉션: 관리자 또는 공고 소유자만 읽기/쓰기 가능
       match /applications/{appId} {
-        allow read: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
-        allow write: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
+        allow read, write: if canManageJobPostingSubcollection(postId);
       }
 
-      // Hybrid Architecture: WorkSessions subcollection (공고별 근무 세션)
       match /workSessions/{sessionId} {
-        allow read: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
-        allow write: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
+        allow read, write: if canManageJobPostingSubcollection(postId);
       }
 
-      // Hybrid Architecture: Attendance subcollection (공고별 출석)
       match /attendance/{recordId} {
-        allow read: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
-        allow write: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
+        allow read, write: if canManageJobPostingSubcollection(postId);
       }
 
-      // Hybrid Architecture: Payroll subcollection (공고별 정산)
       match /payroll/{payrollId} {
-        allow read: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
-        allow write: if isSignedIn() && (
-          isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
-        );
+        allow read, write: if canManageJobPostingSubcollection(postId);
       }
     }
 
-    // --- Applications Collection (jobPostingId 통일) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 10: 지원서
+    // ═══════════════════════════════════════════════════════
     match /applications/{applicationId} {
       // 본인 지원서, 공고 소유자, 관리자만 읽기 가능
       allow read: if isSignedIn() && (
@@ -1726,7 +1705,9 @@ service cloud.firestore {
       );
     }
 
-    // --- Staff Collection (최적화 서비스 지원) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 11: 스태프
+    // ═══════════════════════════════════════════════════════
     match /staff/{staffId} {
       // 인증된 사용자가 스태프 정보 읽기 가능
       allow read: if isSignedIn() && (
@@ -1750,7 +1731,9 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
-    // --- Work Logs Collection (표준 필드명 + 최적화 지원) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 12: 근무일지 & 시간수정 로그
+    // ═══════════════════════════════════════════════════════
     match /workLogs/{workLogId} {
       // 본인 근무기록, 공고 소유자, 관리자만 읽기 가능
       // ownerId 직접 비교: 리스트 쿼리에서 get() 교차조회 불가 문제 해결
@@ -1801,26 +1784,7 @@ service cloud.firestore {
       }
     }
 
-    // --- Tables Collection ---
-    match /tables/{tableId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isPrivileged();
-    }
-
-    // --- Shift Schedules Collection ---
-    match /shiftSchedules/{scheduleId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isPrivileged();
-    }
-
-    // --- Attendance Collection ---
-    match /attendance/{attendanceId} {
-      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.userId);
-      allow create, update: if isSignedIn() && hasValidRole();
-      allow delete: if isPrivileged();
-    }
-
-    // --- Job Posting Drafts Collection (임시저장) ---
+    // 공고 임시저장
     match /jobPostingDrafts/{draftId} {
       // Helper: 공고 관리 권한 확인 (hasValidRole에 employer 포함됨)
       // 개별 문서 읽기: 본인의 임시저장만 가능
@@ -1854,15 +1818,15 @@ service cloud.firestore {
         request.auth.uid == resource.data.ownerId;
     }
 
-    // --- Job Posting Templates Collection ---
+    // 공고 템플릿 (웹)
     match /jobPostingTemplates/{templateId} {
-      // Users can read their own templates, privileged users can read all
+      // 읽기: 본인 또는 관리자
       allow read: if isSignedIn() && (
         isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
 
-      // Users can create templates for themselves, privileged users can create for anyone
+      // 생성: 본인 이름으로만 가능
       allow create: if isSignedIn() &&
         request.resource.data.keys().hasAll(['name', 'templateData', 'createdBy', 'createdAt']) &&
         (isPrivileged() || isOwner(request.resource.data.createdBy)) &&
@@ -1875,20 +1839,20 @@ service cloud.firestore {
         (!('usageCount' in request.resource.data) || request.resource.data.usageCount is number) &&
         (!('isPublic' in request.resource.data) || request.resource.data.isPublic is bool);
 
-      // Users can update their own templates, privileged users can update all
+      // 수정: 본인 또는 관리자
       allow update: if isSignedIn() && (
         isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
 
-      // Users can delete their own templates, privileged users can delete all
+      // 삭제: 본인 또는 관리자
       allow delete: if isSignedIn() && (
         isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
     }
 
-    // --- Mobile Job Posting Templates Collection (모바일 앱 전용) ---
+    // 공고 템플릿 (모바일 앱 전용)
     match /mobileJobPostingTemplates/{templateId} {
       // 읽기: 본인의 템플릿만 가능, 관리자는 전체 조회 가능
       allow read: if isSignedIn() && (
@@ -1922,93 +1886,6 @@ service cloud.firestore {
       );
     }
 
-    // --- Tournaments Collection ---
-    match /tournaments/{tournamentId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isPrivileged();
-    }
-
-    // ================= 멀티 테넌트 아키텍처 =================
-    // users/{userId}/tournaments/{tournamentId} 구조
-
-    match /users/{userId}/tournaments/{tournamentId} {
-      // 본인의 토너먼트만 읽기/쓰기 가능 (관리자는 모든 토너먼트 접근 가능)
-      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-      allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
-
-      // --- Participants Subcollection ---
-      match /participants/{participantId} {
-        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-        allow create, update, delete: if isSignedIn() && (isOwner(userId) || isPrivileged());
-      }
-
-      // --- Tables Subcollection ---
-      match /tables/{tableId} {
-        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-        allow create, update, delete: if isSignedIn() && (isOwner(userId) || isPrivileged());
-      }
-
-      // --- Settings Subcollection ---
-      match /settings/{settingId} {
-        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-        allow create, update: if isSignedIn() && (isOwner(userId) || isPrivileged());
-        allow delete: if isPrivileged(); // 관리자만 삭제 가능
-      }
-    }
-
-    // ================= collectionGroup 쿼리 지원 =================
-    // collectionGroup('tables') 등의 쿼리를 위한 규칙
-    match /{path=**}/tables/{tableId} {
-      // users/{userId}/tournaments/{tournamentId}/tables/{tableId} 경로의 모든 테이블
-      // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
-      allow read: if isSignedIn();
-      // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/tables) 적용
-    }
-
-    // collectionGroup('participants') 쿼리를 위한 규칙
-    match /{path=**}/participants/{participantId} {
-      // users/{userId}/tournaments/{tournamentId}/participants/{participantId} 경로의 모든 참가자
-      // 인증된 사용자만 읽을 수 있음 (본인 또는 관리자)
-      allow read: if isSignedIn();
-      // 쓰기는 상위 규칙 (users/{userId}/tournaments/{tournamentId}/participants) 적용
-    }
-
-    // collectionGroup('reactions')는 보드 댓글 반응 문서만 읽을 수 있어야 한다.
-    match /{path=**}/reactions/{userId} {
-      allow read: if isSignedIn() &&
-        resource.data.postId is string &&
-        resource.data.commentId is string &&
-        resource.data.userId == userId &&
-        resource.__name__ ==
-          /databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)/reactions/$(userId) &&
-        exists(/databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)) &&
-        canReadBoardPost(resource.data.postId);
-    }
-
-    match /{path=**}/timeModificationLogs/{logId} {
-      allow read: if canReadTimeModificationLog(resource.data);
-    }
-    
-    // --- Persons Collection --- [DEPRECATED - Use WorkLog.staffInfo instead]
-    // Persons 컬렉션이 WorkLog.staffInfo로 통합됨 
-    // 하위 호환성을 위해 읽기만 허용, 새로운 생성/수정은 제한
-    match /persons/{personId} {
-      // 기존 데이터 읽기만 허용 (마이그레이션 및 하위 호환성용)
-      allow read: if isSignedIn();
-      // 새로운 생성/수정/삭제는 제한 - WorkLog 사용 권장
-      allow create, update, delete: if false;
-    }
-    
-    // --- Applicants Collection --- [DEPRECATED - Use /persons collection instead]
-    // Removed - All applicant operations should use /persons collection with type='applicant' or 'both'
-    
-    // --- Work Sessions Collection (다중 세션 지원) ---
-    match /workSessions/{sessionId} {
-      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.personId);
-      allow create, update: if isSignedIn() && hasValidRole();
-      allow delete: if isPrivileged();
-    }
-    
     // --- Migration Backups Collection ---
     match /migration_backups/{backupId} {
       // 관리자만 접근 가능
@@ -2082,7 +1959,9 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
-    // --- Unified Board Collections (통합 게시판) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 13: 게시판 시스템
+    // ═══════════════════════════════════════════════════════
     match /boardPosts/{postId} {
       allow get: if canReadBoardPost(postId);
       allow list: if isSignedIn() &&
@@ -2871,9 +2750,11 @@ service cloud.firestore {
       allow delete: if isPrivileged();
     }
 
-    // --- Staff-based QR Attendance System Collections (v2.0) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 14: QR & 출퇴근
+    // ═══════════════════════════════════════════════════════
 
-    // User QR Metadata Subcollection (users/{userId}/qrMetadata/{docId})
+    // QR 메타데이터 (users/{userId}/qrMetadata) (users/{userId}/qrMetadata/{docId})
     // 각 사용자의 QR 메타데이터 (보안 코드, 통계)
     match /users/{userId}/qrMetadata/{metadataId} {
       // 읽기: 본인과 관리자만
@@ -2894,12 +2775,11 @@ service cloud.firestore {
     }
 
 
-    // --- System Announcements Collection (시스템 공지사항) ---
+    // 시스템 공지사항
     match /systemAnnouncements/{announcementId} {
-      // 읽기: 모든 인증된 사용자
       allow read: if isSignedIn();
 
-      // 생성: 관리자와 매니저만 가능
+      // 생성: 관리자/구인자만 가능
       allow create: if isPrivileged() &&
         request.resource.data.keys().hasAll(['title', 'content', 'priority', 'startDate', 'createdBy', 'createdByName', 'isActive', 'viewCount']) &&
         isSafeText(request.resource.data.title, 100) &&
@@ -2911,7 +2791,7 @@ service cloud.firestore {
         request.resource.data.isActive is bool &&
         request.resource.data.viewCount is number;
 
-      // 수정: 관리자와 매니저만 가능
+      // 수정: 관리자/구인자만 가능
       allow update: if isPrivileged();
 
       // 삭제: 관리자만 가능
@@ -2961,7 +2841,11 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
-    // --- [서버 전용] Pending Verifications ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 18: 서버 전용 컬렉션 (클라이언트 접근 차단)
+    // ═══════════════════════════════════════════════════════
+
+    // [서버 전용] 본인인증 임시 저장
     // Cloud Functions(Admin SDK)에서만 접근. 클라이언트 접근 차단.
     // 포트원 V2 본인인증 임시 저장 (TTL 30분, 스케줄러 자동 정리)
     match /pendingVerifications/{verificationId} {
@@ -2975,9 +2859,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // ================= 모바일 앱 지원 (v1.0.0) =================
+    // ═══════════════════════════════════════════════════════
+    // SECTION 17: 모바일 앱 지원
+    // ═══════════════════════════════════════════════════════
 
-    // --- Device Sessions (디바이스 세션 관리) ---
+    // 디바이스 세션 관리
     match /deviceSessions/{sessionId} {
       // 읽기: 본인의 세션만 가능
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
@@ -3032,44 +2918,7 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // --- App Analytics (앱 분석 데이터) ---
-    match /appAnalytics/{analyticsId} {
-      // 읽기: 관리자만 가능
-      allow read: if isPrivileged();
-
-      // 생성: 모든 인증된 사용자 (익명 분석 데이터)
-      allow create: if isSignedIn() &&
-        request.resource.data.keys().hasAll(['event', 'timestamp', 'platform']) &&
-        request.resource.data.event is string &&
-        request.resource.data.timestamp is timestamp &&
-        request.resource.data.platform in ['ios', 'android', 'web'] &&
-        (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
-
-      // 수정/삭제: 불가 (분석 데이터 보존)
-      allow update, delete: if false;
-    }
-
-    // --- Crash Reports (크래시 리포트) ---
-    match /crashReports/{reportId} {
-      // 읽기: 관리자만 가능
-      allow read: if isPrivileged();
-
-      // 생성: 모든 인증된 사용자 (크래시 발생 시 자동 생성)
-      allow create: if isSignedIn() &&
-        request.resource.data.keys().hasAll(['error', 'stack', 'timestamp', 'platform', 'appVersion']) &&
-        request.resource.data.error is string &&
-        request.resource.data.timestamp is timestamp &&
-        request.resource.data.platform in ['ios', 'android', 'web'] &&
-        request.resource.data.appVersion is string;
-
-      // 수정: 관리자만 가능 (상태 변경)
-      allow update: if isPrivileged();
-
-      // 삭제: 관리자만 가능
-      allow delete: if isAdmin();
-    }
-
-    // --- User Favorites (사용자 즐겨찾기 - 공고) ---
+    // 사용자 즐겨찾기
     match /users/{userId}/favorites/{favoriteId} {
       // 읽기: 본인만 가능
       allow read: if isSignedIn() && isOwner(userId);
@@ -3144,7 +2993,11 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- Reviews Collection (버블 상호 평가) ---
+    // ═══════════════════════════════════════════════════════
+    // SECTION 16: 리뷰 & 신고
+    // ═══════════════════════════════════════════════════════
+
+    // 버블 상호 평가
     // 문서 ID: `{workLogId}_{reviewerType}` (결정적 ID)
     // 평가는 생성 후 수정/삭제 불가 (불변)
     match /reviews/{reviewId} {
@@ -3196,7 +3049,139 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // Fallback rule: deny all other access
+    // ═══════════════════════════════════════════════════════
+    // SECTION 19: 레거시 컬렉션 [LEGACY]
+    // 앱에서 미사용. 읽기만 허용, 쓰기 차단.
+    // 계정 삭제(scheduledDeletion.ts) 등 서버 정리용으로 유지.
+    // ═══════════════════════════════════════════════════════
+
+    // [LEGACY] 배정 — 원래 권한 유지 (dealerId 기반 접근)
+    match /assignments/{assignmentId} {
+      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 급여 — 원래 권한 유지
+    match /payrolls/{payrollId} {
+      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 평점 — 원래 권한 유지
+    match /ratings/{ratingId} {
+      allow read: if isSignedIn() && (isPrivileged() || request.auth.uid == resource.data.dealerId);
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 테이블
+    match /tables/{tableId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 교대 스케줄
+    match /shiftSchedules/{scheduleId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 출결 (top-level)
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 근무 세션 — 원래 권한 유지 (유효 역할 또는 본인)
+    match /workSessions/{sessionId} {
+      allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.personId);
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 가용성 — 원래 권한 유지 (본인 또는 관리자만 읽기)
+    match /staffAvailability/{staffId} {
+      allow read: if isSignedIn() && (isOwner(staffId) || isPrivileged());
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] Persons (WorkLog.staffInfo로 통합됨)
+    match /persons/{personId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 토너먼트
+    match /tournaments/{tournamentId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 사용자별 토너먼트 (멀티 테넌트)
+    match /users/{userId}/tournaments/{tournamentId} {
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+      allow write: if false;
+
+      match /participants/{participantId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow write: if false;
+      }
+
+      match /tables/{tableId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow write: if false;
+      }
+
+      match /settings/{settingId} {
+        allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+        allow write: if false;
+      }
+    }
+
+    // [LEGACY] 앱 분석 데이터 — 앱 미사용 확인 (2026-04-10)
+    match /appAnalytics/{analyticsId} {
+      allow read: if isPrivileged();
+      allow create, update, delete: if false;
+    }
+
+    // [LEGACY] 크래시 리포트 — 앱 미사용 확인 (2026-04-10)
+    match /crashReports/{reportId} {
+      allow read: if isPrivileged();
+      allow create, update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SECTION 20: collectionGroup 쿼리
+    // ═══════════════════════════════════════════════════════
+
+    // 보드 댓글 반응 (collectionGroup)
+    match /{path=**}/reactions/{userId} {
+      allow read: if isSignedIn() &&
+        resource.data.postId is string &&
+        resource.data.commentId is string &&
+        resource.data.userId == userId &&
+        resource.__name__ ==
+          /databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)/reactions/$(userId) &&
+        exists(/databases/$(database)/documents/boardPosts/$(resource.data.postId)/comments/$(resource.data.commentId)) &&
+        canReadBoardPost(resource.data.postId);
+    }
+
+    // 시간수정 로그 (collectionGroup)
+    match /{path=**}/timeModificationLogs/{logId} {
+      allow read: if canReadTimeModificationLog(resource.data);
+    }
+
+    // [LEGACY] 토너먼트 테이블 (collectionGroup)
+    match /{path=**}/tables/{tableId} {
+      allow read: if isSignedIn();
+    }
+
+    // [LEGACY] 토너먼트 참가자 (collectionGroup)
+    match /{path=**}/participants/{participantId} {
+      allow read: if isSignedIn();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SECTION 21: Fallback deny
+    // ═══════════════════════════════════════════════════════
     match /{document=**} {
       allow read, write: if false;
     }
