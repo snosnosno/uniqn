@@ -2,25 +2,32 @@
  * UNIQN Mobile - 실시간 구독 훅
  *
  * @description Phase 2.2 - 실시간 구독 추상화 훅
- * @version 1.0.0
+ * @version 2.0.0
  *
  * 기능:
  * - RealtimeManager를 활용한 중복 구독 방지
  * - 자동 재연결 (네트워크 복구 시)
  * - 로딩/에러/데이터 상태 관리
  * - 구독 활성화/비활성화 제어
+ * - Firebase 비의존 설계 (subscribeFn 패턴)
  *
  * @example
  * const { data, isLoading, error, reconnect } = useRealtimeSubscription({
  *   key: RealtimeManager.Keys.notifications(userId),
- *   queryFn: () => query(collection(db, 'notifications'), where('userId', '==', userId)),
+ *   subscribeFn: (onData, onError) => {
+ *     const q = query(collection(db, 'notifications'), where('userId', '==', userId));
+ *     return onSnapshot(
+ *       q,
+ *       (snapshot) => onData(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))),
+ *       onError,
+ *     );
+ *   },
  *   parser: parseNotificationDocuments,
  *   enabled: isAuthenticated,
  * });
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { onSnapshot, type Query, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { RealtimeManager } from './RealtimeManager';
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -35,6 +42,19 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 export type DocumentParser<T> = (docs: { id: string; [key: string]: unknown }[]) => T[];
 
 /**
+ * 구독 함수 타입
+ *
+ * 호출자가 구독 로직(Firebase onSnapshot, Supabase realtime 등)을 직접 제공한다.
+ * - onData: 새 문서 배열이 도착할 때 호출
+ * - onError: 에러 발생 시 호출
+ * - 반환값: 구독 해제 함수, 또는 구독이 불가능한 경우 null
+ */
+export type SubscribeFn<T> = (
+  onData: (docs: { id: string; [key: string]: unknown }[]) => void,
+  onError: (error: Error) => void
+) => (() => void) | null;
+
+/**
  * useRealtimeSubscription 옵션
  */
 export interface UseRealtimeSubscriptionOptions<T> {
@@ -44,10 +64,11 @@ export interface UseRealtimeSubscriptionOptions<T> {
   key: string;
 
   /**
-   * Firestore Query를 반환하는 함수
+   * 구독 로직을 포함하는 함수
+   * - onData / onError 콜백을 받아 내부에서 구독을 설정하고 unsubscribe 함수를 반환한다.
    * - null 반환 시 구독하지 않음
    */
-  queryFn: () => Query<DocumentData> | null;
+  subscribeFn: SubscribeFn<T>;
 
   /**
    * 문서 배열을 파싱하는 함수
@@ -108,19 +129,28 @@ export interface UseRealtimeSubscriptionResult<T> {
 /**
  * 실시간 구독 훅
  *
- * @description Firestore onSnapshot 구독을 React 훅으로 추상화
+ * @description subscribeFn 패턴으로 구독 로직을 추상화한 React 훅.
+ * Firebase, Supabase 등 어떤 실시간 백엔드도 subscribeFn에 주입하여 사용할 수 있다.
  *
  * @example
  * ```tsx
- * // 알림 실시간 구독
+ * // 알림 실시간 구독 (Firebase 예시)
  * const { data: notifications, isLoading, error } = useRealtimeSubscription({
  *   key: RealtimeManager.Keys.notifications(userId),
- *   queryFn: () => query(
- *     collection(db, 'notifications'),
- *     where('userId', '==', userId),
- *     orderBy('createdAt', 'desc'),
- *     limit(50)
- *   ),
+ *   subscribeFn: (onData, onError) => {
+ *     if (!userId) return null;
+ *     const q = query(
+ *       collection(db, 'notifications'),
+ *       where('userId', '==', userId),
+ *       orderBy('createdAt', 'desc'),
+ *       limit(50),
+ *     );
+ *     return onSnapshot(
+ *       q,
+ *       (snapshot) => onData(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))),
+ *       onError,
+ *     );
+ *   },
  *   parser: parseNotificationDocuments,
  *   enabled: !!userId,
  * });
@@ -131,7 +161,7 @@ export function useRealtimeSubscription<T>(
 ): UseRealtimeSubscriptionResult<T> {
   const {
     key,
-    queryFn,
+    subscribeFn,
     parser,
     enabled = true,
     autoReconnect = true,
@@ -159,53 +189,50 @@ export function useRealtimeSubscription<T>(
       return;
     }
 
-    const q = queryFn();
-    if (!q) {
-      setIsLoading(false);
-      return;
-    }
-
     try {
       // RealtimeManager를 통해 구독 (중복 방지)
       unsubscribeRef.current = RealtimeManager.subscribe(key, () => {
         logger.debug('useRealtimeSubscription: 구독 시작', { key });
 
-        return onSnapshot(
-          q,
-          (snapshot: QuerySnapshot<DocumentData>) => {
-            const docs = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+        const handleData = (docs: { id: string; [key: string]: unknown }[]) => {
+          const parsed = parser(docs);
 
-            const parsed = parser(docs);
+          setData(parsed);
+          setIsLoading(false);
+          setError(null);
+          setIsSubscribed(true);
 
-            setData(parsed);
-            setIsLoading(false);
-            setError(null);
-            setIsSubscribed(true);
+          onData?.(parsed);
+        };
 
-            onData?.(parsed);
-          },
-          (err: Error) => {
-            const appError = handleServiceError(err, {
-              operation: '실시간 구독',
-              component: 'useRealtimeSubscription',
-              context: { key },
-            }) as Error;
+        const handleError = (err: Error) => {
+          const appError = handleServiceError(err, {
+            operation: '실시간 구독',
+            component: 'useRealtimeSubscription',
+            context: { key },
+          }) as Error;
 
-            setError(appError);
-            setIsLoading(false);
-            setIsSubscribed(false);
+          setError(appError);
+          setIsLoading(false);
+          setIsSubscribed(false);
 
-            onError?.(appError);
+          onError?.(appError);
 
-            // 자동 재연결 시도
-            if (autoReconnect) {
-              scheduleReconnect();
-            }
+          // 자동 재연결 시도
+          if (autoReconnect) {
+            scheduleReconnect();
           }
-        );
+        };
+
+        const unsub = subscribeFn(handleData, handleError);
+
+        if (!unsub) {
+          setIsLoading(false);
+          // subscribeFn이 null을 반환하면 구독 불가 → no-op unsubscribe
+          return () => {};
+        }
+
+        return unsub;
       });
 
       setIsSubscribed(true);
@@ -224,7 +251,7 @@ export function useRealtimeSubscription<T>(
     // NOTE: scheduleReconnect는 의도적으로 제외 (순환 의존성 방지)
     // subscribe → scheduleReconnect → subscribe 순환을 피하기 위함
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, queryFn, parser, enabled, autoReconnect, onError, onData]);
+  }, [key, subscribeFn, parser, enabled, autoReconnect, onError, onData]);
 
   /**
    * 구독 해제
