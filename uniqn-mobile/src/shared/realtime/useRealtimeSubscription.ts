@@ -49,7 +49,7 @@ export type DocumentParser<T> = (docs: { id: string; [key: string]: unknown }[])
  * - onError: 에러 발생 시 호출
  * - 반환값: 구독 해제 함수, 또는 구독이 불가능한 경우 null
  */
-export type SubscribeFn<T> = (
+export type SubscribeFn = (
   onData: (docs: { id: string; [key: string]: unknown }[]) => void,
   onError: (error: Error) => void
 ) => (() => void) | null;
@@ -68,7 +68,7 @@ export interface UseRealtimeSubscriptionOptions<T> {
    * - onData / onError 콜백을 받아 내부에서 구독을 설정하고 unsubscribe 함수를 반환한다.
    * - null 반환 시 구독하지 않음
    */
-  subscribeFn: SubscribeFn<T>;
+  subscribeFn: SubscribeFn;
 
   /**
    * 문서 배열을 파싱하는 함수
