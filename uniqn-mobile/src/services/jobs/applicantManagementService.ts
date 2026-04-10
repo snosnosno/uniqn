@@ -4,7 +4,7 @@
  * @description Employer-facing applicant queries, mutations, and realtime helpers.
  */
 
-import { type Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { BusinessError, ERROR_CODES, isAppError, PermissionError, ValidationError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -316,7 +316,7 @@ export function subscribeToApplicants(
   ownerId: string,
   callbacks: SubscribeToApplicantsCallbacks,
   options: { verifyOwnership?: boolean } = {}
-): Unsubscribe {
+): UnsubscribeFn {
   logger.info('지원자 목록 실시간 구독 시작', {
     jobPostingId,
     ownerId,
@@ -355,7 +355,7 @@ export async function subscribeToApplicantsAsync(
   jobPostingId: string,
   ownerId: string,
   callbacks: SubscribeToApplicantsCallbacks
-): Promise<Unsubscribe> {
+): Promise<UnsubscribeFn> {
   const isOwner = await verifyJobPostingOwnership(jobPostingId, ownerId);
 
   if (!isOwner) {

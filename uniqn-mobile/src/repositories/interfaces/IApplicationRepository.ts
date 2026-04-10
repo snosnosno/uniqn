@@ -22,7 +22,8 @@ import type {
   ReviewCancellationInput,
   JobPosting,
 } from '@/types';
-import type { Timestamp, Unsubscribe } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 
 // ============================================================================
 // Types
@@ -156,7 +157,7 @@ export interface IApplicationRepository {
     onData: (applications: Application[]) => void,
     onError: (error: Error) => void,
     pageSize?: number
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   /**
    * 특정 공고의 지원서 목록 조회
@@ -408,5 +409,5 @@ export interface IApplicationRepository {
     ownerId: string,
     callbacks: SubscribeCallbacks,
     options?: { verifyOwnership?: boolean }
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 }

@@ -115,3 +115,35 @@ export type DateString = `${number}-${number}-${number}`;
  * 시간 문자열 타입 (HH:MM)
  */
 export type TimeString = `${number}:${number}`;
+
+// ============================================================================
+// 범용 추상 타입 (Backend-agnostic)
+// ============================================================================
+
+/**
+ * 실시간 구독 해제 함수
+ *
+ * @description Firebase Unsubscribe, Supabase RealtimeChannel.unsubscribe 등
+ *              구현체에 무관한 구독 해제 타입
+ */
+export type UnsubscribeFn = () => void;
+
+/**
+ * 페이지네이션 커서 (구현체별 opaque 값)
+ *
+ * @description Firebase QueryDocumentSnapshot, Supabase range offset 등
+ *              구현체에 무관한 커서 타입
+ */
+export type PaginationCursor = unknown;
+
+/**
+ * 범용 페이지네이션 결과 (인터페이스용)
+ *
+ * @description Repository 인터페이스에서 사용하는 범용 페이지네이션 결과.
+ *              Firebase의 PaginatedResult<T> (@/utils/firestore)는 구현체 내부에서 계속 사용.
+ */
+export interface PaginatedResult<T> {
+  items: T[];
+  lastDoc: PaginationCursor;
+  hasMore: boolean;
+}

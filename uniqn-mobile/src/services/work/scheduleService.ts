@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import type { Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -566,7 +566,7 @@ export function subscribeToSchedules(
   staffId: string,
   onUpdate: (schedules: ScheduleEvent[]) => void,
   onError?: (error: Error) => void
-): Unsubscribe {
+): UnsubscribeFn {
   return RealtimeManager.subscribe(RealtimeManager.Keys.schedules(staffId), () => {
     logger.info('스케줄 구독 시작', { staffId });
 

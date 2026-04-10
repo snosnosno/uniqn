@@ -1,4 +1,4 @@
-import type { Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import type { WorkLogStatus } from '@/shared/status';
 import type { WorkLog } from '@/types';
 
@@ -52,5 +52,5 @@ export interface IConfirmedStaffRepository {
   subscribeByJobPostingId(
     jobPostingId: string,
     callbacks: ConfirmedStaffSubscriptionCallbacks
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 }

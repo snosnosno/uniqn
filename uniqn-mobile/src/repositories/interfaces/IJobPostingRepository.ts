@@ -5,7 +5,8 @@
  * @version 1.0.0
  */
 
-import type { QueryDocumentSnapshot, DocumentData, Unsubscribe } from 'firebase/firestore';
+import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
 import type {
   JobPosting,
@@ -287,5 +288,5 @@ export interface IJobPostingRepository {
    * @param callbacks - 업데이트/에러 콜백
    * @returns 구독 해제 함수
    */
-  subscribeById(jobPostingId: string, callbacks: JobPostingSubscriptionCallbacks): Unsubscribe;
+  subscribeById(jobPostingId: string, callbacks: JobPostingSubscriptionCallbacks): UnsubscribeFn;
 }

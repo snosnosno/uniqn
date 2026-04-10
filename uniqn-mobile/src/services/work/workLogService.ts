@@ -12,7 +12,7 @@
  * - Repository: 단순 조회 캡슐화
  */
 
-import { type Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -272,7 +272,7 @@ export function subscribeToWorkLog(
     onUpdate: (workLog: WorkLog | null) => void;
     onError?: (error: Error) => void;
   }
-): Unsubscribe {
+): UnsubscribeFn {
   return RealtimeManager.subscribe(RealtimeManager.Keys.workLog(workLogId), () => {
     logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
@@ -322,7 +322,7 @@ export function subscribeToMyWorkLogs(
     onUpdate: (workLogs: WorkLog[]) => void;
     onError?: (error: Error) => void;
   }
-): Unsubscribe {
+): UnsubscribeFn {
   const { dateRange, pageSize = DEFAULT_PAGE_SIZE, onUpdate, onError } = options;
 
   return RealtimeManager.subscribe(
@@ -368,7 +368,7 @@ export function subscribeToTodayWorkStatus(
     onUpdate: (workLog: WorkLog | null) => void;
     onError?: (error: Error) => void;
   }
-): Unsubscribe {
+): UnsubscribeFn {
   const today = toDateString(new Date());
 
   return RealtimeManager.subscribe(RealtimeManager.Keys.todayWorkStatus(staffId, today), () => {

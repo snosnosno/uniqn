@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import type { Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import type { WorkLog, PayrollStatus, WorkLogStatus, QRCodeAction } from '@/types';
 
 /**
@@ -203,7 +203,7 @@ export interface IWorkLogRepository {
     date: string,
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   /**
    * 스태프의 전체 근무 기록 실시간 구독 (최근 50개)
@@ -219,7 +219,7 @@ export interface IWorkLogRepository {
     staffId: string,
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   /**
    * 단일 근무 기록 실시간 구독
@@ -232,7 +232,7 @@ export interface IWorkLogRepository {
     workLogId: string,
     onData: (workLog: WorkLog | null) => void,
     onError: (error: Error) => void
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   /**
    * 스태프의 근무 기록 실시간 구독 (날짜 범위 필터 지원)
@@ -250,7 +250,7 @@ export interface IWorkLogRepository {
     options: { dateRange?: { start: string; end: string }; pageSize?: number },
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   /**
    * 오늘의 활성 근무 기록 실시간 구독 (출근 가능/출근 중)
@@ -270,7 +270,7 @@ export interface IWorkLogRepository {
     statuses: string[],
     onData: (workLog: WorkLog | null) => void,
     onError: (error: Error) => void
-  ): Unsubscribe;
+  ): UnsubscribeFn;
 
   // ==========================================================================
   // 변경 (Write)

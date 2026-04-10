@@ -12,11 +12,8 @@
  * - Repository: 데이터 접근 + 쿼리 빌딩 캡슐화
  */
 
-import {
-  type QueryDocumentSnapshot,
-  type DocumentData,
-  type Unsubscribe,
-} from 'firebase/firestore';
+import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
@@ -127,7 +124,7 @@ export function subscribeToJobPosting(
     onUpdate: (jobPosting: JobPosting | null) => void;
     onError?: (error: Error) => void;
   }
-): Unsubscribe {
+): UnsubscribeFn {
   return RealtimeManager.subscribe(RealtimeManager.Keys.jobPosting(jobPostingId), () => {
     logger.info('공고 상세 실시간 구독 시작', { jobPostingId });
 

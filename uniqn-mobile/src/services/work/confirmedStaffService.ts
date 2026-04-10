@@ -1,4 +1,4 @@
-import type { Unsubscribe } from 'firebase/firestore';
+import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
@@ -221,7 +221,7 @@ export function subscribeToConfirmedStaff(
     onUpdate: (result: GetConfirmedStaffResult) => void;
     onError?: (error: Error) => void;
   }
-): Unsubscribe {
+): UnsubscribeFn {
   logger.info('Subscribing to confirmed staff updates', { jobPostingId });
 
   return confirmedStaffRepository.subscribeByJobPostingId(jobPostingId, {
