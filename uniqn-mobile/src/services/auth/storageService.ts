@@ -1,13 +1,12 @@
 /**
- * UNIQN Mobile - Firebase Storage 서비스
+ * UNIQN Mobile - Supabase Storage 서비스
  *
- * @description 프로필 이미지 업로드 및 관리
- * @version 1.0.0
+ * @description 이미지 업로드 및 관리 (프로필, 공지사항, 게시판)
+ * @version 2.0.0
  */
 
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { getFirebaseStorage } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { ValidationError, AppError, ERROR_CODES, toError, isAppError } from '@/errors';
 import type { AnnouncementImage } from '@/types';
@@ -22,11 +21,14 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 /** 프로필 이미지 리사이즈 크기 (px) */
 const PROFILE_IMAGE_SIZE = 500;
 
-/** 공지사항 이미지 리사이즈 최대 너비 (px) */
+/** 공지사항/게시판 이미지 리사이즈 최대 너비 (px) */
 const ANNOUNCEMENT_IMAGE_MAX_WIDTH = 1200;
 
 /** 이미지 압축 품질 (0-1) */
 const IMAGE_QUALITY = 0.8;
+
+/** 비공개 버킷 서명 URL 유효기간 (1년, 초 단위) */
+const SIGNED_URL_EXPIRY = 31536000;
 
 // ============================================================================
 // Types
@@ -37,8 +39,166 @@ export interface UploadResult {
   path: string;
 }
 
+interface ImageResizeOptions {
+  width: number;
+  height?: number;
+}
+
 // ============================================================================
-// Storage Service
+// Internal Helpers
+// ============================================================================
+
+/**
+ * 이미지 리사이즈 + 압축 + 크기 검증
+ *
+ * @param uri 로컬 이미지 URI
+ * @param options 리사이즈 옵션
+ * @returns 처리된 이미지 Blob
+ */
+async function prepareImage(uri: string, options: ImageResizeOptions): Promise<Blob> {
+  const resizeAction: ImageManipulator.Action = options.height
+    ? { resize: { width: options.width, height: options.height } }
+    : { resize: { width: options.width } };
+
+  const manipulatedImage = await ImageManipulator.manipulateAsync(uri, [resizeAction], {
+    compress: IMAGE_QUALITY,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+
+  const response = await fetch(manipulatedImage.uri);
+  const blob = await response.blob();
+
+  if (blob.size > MAX_IMAGE_SIZE) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+      userMessage: '이미지 크기가 5MB를 초과합니다',
+    });
+  }
+
+  return blob;
+}
+
+/**
+ * Supabase Storage에 이미지 업로드 후 URL 반환
+ *
+ * @param bucket 버킷 이름
+ * @param filePath 버킷 내 파일 경로
+ * @param blob 업로드할 Blob
+ * @param isPublicBucket 공개 버킷 여부
+ * @returns 업로드 결과 (URL + 경로)
+ */
+async function uploadToStorage(
+  bucket: string,
+  filePath: string,
+  blob: Blob,
+  isPublicBucket: boolean
+): Promise<UploadResult> {
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, blob, { contentType: 'image/jpeg', upsert: false });
+
+  if (uploadError) {
+    throw new AppError({
+      code: ERROR_CODES.UNKNOWN,
+      category: 'unknown',
+      userMessage: '이미지 업로드에 실패했습니다',
+      originalError: new Error(uploadError.message),
+    });
+  }
+
+  let downloadURL: string;
+
+  if (isPublicBucket) {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    downloadURL = data.publicUrl;
+  } else {
+    const { data, error: signedError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(filePath, SIGNED_URL_EXPIRY);
+
+    if (signedError || !data) {
+      throw new AppError({
+        code: ERROR_CODES.UNKNOWN,
+        category: 'unknown',
+        userMessage: '이미지 URL 생성에 실패했습니다',
+        originalError: new Error(signedError?.message ?? '서명 URL 생성 실패'),
+      });
+    }
+    downloadURL = data.signedUrl;
+  }
+
+  return { downloadURL, path: filePath };
+}
+
+/**
+ * Supabase Storage에서 이미지 삭제 (not-found는 무시)
+ *
+ * @param bucket 버킷 이름
+ * @param filePath 버킷 내 파일 경로
+ */
+async function deleteFromStorage(bucket: string, filePath: string): Promise<void> {
+  const { error } = await supabase.storage.from(bucket).remove([filePath]);
+
+  if (error) {
+    // 이미 삭제된 경우 무시
+    if (error.message?.includes('Not found') || error.message?.includes('not found')) {
+      logger.warn('이미지가 이미 삭제됨', { bucket, filePath });
+      return;
+    }
+    throw error;
+  }
+}
+
+/**
+ * 이미지 URL에서 Storage 상대 경로 추출
+ *
+ * Firebase Storage URL과 Supabase Storage URL 모두 지원 (마이그레이션 기간)
+ *
+ * @param imageUrl 이미지 URL 또는 직접 경로
+ * @param expectedBucket 예상 버킷 이름 (경로 검증용)
+ * @returns 버킷 내 상대 경로 또는 null (경로 추출 실패 시)
+ */
+function extractStoragePath(imageUrl: string, expectedBucket: string): string | null {
+  let imagePath = imageUrl;
+
+  // Firebase Storage URL 처리
+  if (imageUrl.includes('firebasestorage.googleapis.com')) {
+    const url = new URL(imageUrl);
+    const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
+    if (pathMatch) {
+      imagePath = decodeURIComponent(pathMatch[1]);
+    }
+  }
+
+  // Supabase Storage URL 처리
+  // 형식: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+  // 또는: https://<project>.supabase.co/storage/v1/object/sign/<bucket>/<path>
+  if (imageUrl.includes('supabase.co/storage/v1/object/')) {
+    const match = imageUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/([^?]+)/);
+    if (match) {
+      imagePath = decodeURIComponent(match[1]);
+    }
+  }
+
+  // Firebase 경로 형식: "profile-images/userId/timestamp.jpg" → 버킷 prefix 제거
+  if (imagePath.startsWith(`${expectedBucket}/`)) {
+    return imagePath.substring(expectedBucket.length + 1);
+  }
+
+  // 이미 상대 경로인 경우 (Supabase 업로드 후 저장된 경우)
+  // 예: "userId/timestamp.jpg"
+  if (!imagePath.includes('/storage/v1/') && !imagePath.includes('firebasestorage')) {
+    // 버킷 prefix가 없는 순수 상대 경로
+    if (!imagePath.startsWith('http')) {
+      return imagePath;
+    }
+  }
+
+  logger.warn('이미지 경로 추출 실패', { imageUrl: imageUrl.substring(0, 80), expectedBucket });
+  return null;
+}
+
+// ============================================================================
+// Profile Image Service
 // ============================================================================
 
 /**
@@ -52,43 +212,16 @@ export async function uploadProfileImage(userId: string, uri: string): Promise<U
   try {
     logger.info('프로필 이미지 업로드 시작', { userId });
 
-    // 1. 이미지 리사이징 및 압축
-    const manipulatedImage = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: PROFILE_IMAGE_SIZE, height: PROFILE_IMAGE_SIZE } }],
-      {
-        compress: IMAGE_QUALITY,
-        format: ImageManipulator.SaveFormat.JPEG,
-      }
-    );
+    const blob = await prepareImage(uri, { width: PROFILE_IMAGE_SIZE, height: PROFILE_IMAGE_SIZE });
 
-    // 2. 이미지 파일 가져오기
-    const response = await fetch(manipulatedImage.uri);
-    const blob = await response.blob();
-
-    // 3. 파일 크기 검증
-    if (blob.size > MAX_IMAGE_SIZE) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-        userMessage: '이미지 크기가 5MB를 초과합니다',
-      });
-    }
-
-    // 4. Firebase Storage에 업로드
-    const storage = getFirebaseStorage();
     const timestamp = Date.now();
-    const path = `profile-images/${userId}/${timestamp}.jpg`;
-    const imageRef = ref(storage, path);
+    const filePath = `${userId}/${timestamp}.jpg`;
 
-    await uploadBytes(imageRef, blob, {
-      contentType: 'image/jpeg',
-    });
+    const result = await uploadToStorage('profile-images', filePath, blob, true);
 
-    // 5. 다운로드 URL 반환
-    const downloadURL = await getDownloadURL(imageRef);
+    logger.info('프로필 이미지 업로드 성공', { userId, path: result.path });
 
-    logger.info('프로필 이미지 업로드 성공', { userId, path });
-
-    return { downloadURL, path };
+    return result;
   } catch (error) {
     logger.error('프로필 이미지 업로드 실패', toError(error), { userId });
 
@@ -114,39 +247,16 @@ export async function deleteProfileImage(imageUrl: string): Promise<void> {
   try {
     logger.info('프로필 이미지 삭제 시작', { imageUrl: imageUrl.substring(0, 50) });
 
-    const storage = getFirebaseStorage();
-
-    // URL에서 경로 추출 또는 직접 경로 사용
-    let imagePath = imageUrl;
-
-    // Firebase Storage URL인 경우 경로 추출
-    if (imageUrl.includes('firebasestorage.googleapis.com')) {
-      // URL 디코딩하여 경로 추출
-      const url = new URL(imageUrl);
-      const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
-      if (pathMatch) {
-        imagePath = decodeURIComponent(pathMatch[1]);
-      }
-    }
-
-    // profile-images로 시작하는 경로만 삭제 허용 (보안)
-    if (!imagePath.startsWith('profile-images/')) {
-      logger.warn('프로필 이미지 경로가 아님', { imagePath });
+    const filePath = extractStoragePath(imageUrl, 'profile-images');
+    if (!filePath) {
+      logger.warn('프로필 이미지 경로가 아님', { imageUrl: imageUrl.substring(0, 50) });
       return;
     }
 
-    const imageRef = ref(storage, imagePath);
-    await deleteObject(imageRef);
+    await deleteFromStorage('profile-images', filePath);
 
-    logger.info('프로필 이미지 삭제 성공', { imagePath });
+    logger.info('프로필 이미지 삭제 성공', { filePath });
   } catch (error) {
-    // 이미 삭제된 경우 무시 (object-not-found)
-    const errorCode = (error as { code?: string }).code;
-    if (errorCode === 'storage/object-not-found') {
-      logger.warn('이미지가 이미 삭제됨', { imageUrl: imageUrl.substring(0, 50) });
-      return;
-    }
-
     logger.error('프로필 이미지 삭제 실패', toError(error));
     // 삭제 실패는 무시 (업로드 성공이 더 중요)
   }
@@ -197,48 +307,19 @@ export async function uploadAnnouncementImage(
     logger.info('공지사항 이미지 업로드 시작', { userId });
     onProgress?.(0);
 
-    // 1. 이미지 리사이징 및 압축 (가로 기준, 비율 유지)
-    const manipulatedImage = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: ANNOUNCEMENT_IMAGE_MAX_WIDTH } }],
-      {
-        compress: IMAGE_QUALITY,
-        format: ImageManipulator.SaveFormat.JPEG,
-      }
-    );
-    onProgress?.(20);
-
-    // 2. 이미지 파일 가져오기
-    const response = await fetch(manipulatedImage.uri);
-    const blob = await response.blob();
+    const blob = await prepareImage(uri, { width: ANNOUNCEMENT_IMAGE_MAX_WIDTH });
     onProgress?.(40);
 
-    // 3. 파일 크기 검증
-    if (blob.size > MAX_IMAGE_SIZE) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-        userMessage: '이미지 크기가 5MB를 초과합니다',
-      });
-    }
-
-    // 4. Firebase Storage에 업로드
-    const storage = getFirebaseStorage();
     const timestamp = Date.now();
-    const path = `announcements/${userId}/${timestamp}.jpg`;
-    const imageRef = ref(storage, path);
+    const filePath = `${userId}/${timestamp}.jpg`;
     onProgress?.(50);
 
-    await uploadBytes(imageRef, blob, {
-      contentType: 'image/jpeg',
-    });
-    onProgress?.(80);
-
-    // 5. 다운로드 URL 반환
-    const downloadURL = await getDownloadURL(imageRef);
+    const result = await uploadToStorage('announcements', filePath, blob, true);
     onProgress?.(100);
 
-    logger.info('공지사항 이미지 업로드 성공', { userId, path });
+    logger.info('공지사항 이미지 업로드 성공', { userId, path: result.path });
 
-    return { downloadURL, path };
+    return result;
   } catch (error) {
     logger.error('공지사항 이미지 업로드 실패', toError(error), { userId });
 
@@ -264,38 +345,16 @@ export async function deleteAnnouncementImage(imageUrl: string): Promise<void> {
   try {
     logger.info('공지사항 이미지 삭제 시작', { imageUrl: imageUrl.substring(0, 50) });
 
-    const storage = getFirebaseStorage();
-
-    // URL에서 경로 추출 또는 직접 경로 사용
-    let imagePath = imageUrl;
-
-    // Firebase Storage URL인 경우 경로 추출
-    if (imageUrl.includes('firebasestorage.googleapis.com')) {
-      const url = new URL(imageUrl);
-      const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
-      if (pathMatch) {
-        imagePath = decodeURIComponent(pathMatch[1]);
-      }
-    }
-
-    // announcements로 시작하는 경로만 삭제 허용 (보안)
-    if (!imagePath.startsWith('announcements/')) {
-      logger.warn('공지사항 이미지 경로가 아님', { imagePath });
+    const filePath = extractStoragePath(imageUrl, 'announcements');
+    if (!filePath) {
+      logger.warn('공지사항 이미지 경로가 아님', { imageUrl: imageUrl.substring(0, 50) });
       return;
     }
 
-    const imageRef = ref(storage, imagePath);
-    await deleteObject(imageRef);
+    await deleteFromStorage('announcements', filePath);
 
-    logger.info('공지사항 이미지 삭제 성공', { imagePath });
+    logger.info('공지사항 이미지 삭제 성공', { filePath });
   } catch (error) {
-    // 이미 삭제된 경우 무시 (object-not-found)
-    const errorCode = (error as { code?: string }).code;
-    if (errorCode === 'storage/object-not-found') {
-      logger.warn('이미지가 이미 삭제됨', { imageUrl: imageUrl.substring(0, 50) });
-      return;
-    }
-
     logger.error('공지사항 이미지 삭제 실패', toError(error));
     // 삭제 실패는 무시 (업로드 성공이 더 중요)
   }
@@ -384,54 +443,42 @@ export async function deleteMultipleAnnouncementImages(images: AnnouncementImage
   logger.info('다중 공지사항 이미지 삭제 완료', { count: images.length });
 }
 
+// ============================================================================
+// Board Image Service
+// ============================================================================
+
+/**
+ * 게시판 이미지 업로드 (비공개 버킷)
+ *
+ * @param userId 작성자 ID
+ * @param uri 로컬 이미지 URI
+ * @param onProgress 업로드 진행률 콜백 (0-100)
+ * @returns 업로드된 이미지의 서명된 URL 및 경로
+ */
 export async function uploadBoardImage(
   userId: string,
   uri: string,
   onProgress?: (progress: number) => void
 ): Promise<UploadResult> {
   try {
-    logger.info('Board image upload started', { userId });
+    logger.info('게시판 이미지 업로드 시작', { userId });
     onProgress?.(0);
 
-    const manipulatedImage = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: ANNOUNCEMENT_IMAGE_MAX_WIDTH } }],
-      {
-        compress: IMAGE_QUALITY,
-        format: ImageManipulator.SaveFormat.JPEG,
-      }
-    );
-    onProgress?.(20);
-
-    const response = await fetch(manipulatedImage.uri);
-    const blob = await response.blob();
+    const blob = await prepareImage(uri, { width: ANNOUNCEMENT_IMAGE_MAX_WIDTH });
     onProgress?.(40);
 
-    if (blob.size > MAX_IMAGE_SIZE) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-        userMessage: '?대?吏 ?ш린媛 5MB瑜?珥덇낵?⑸땲??',
-      });
-    }
-
-    const storage = getFirebaseStorage();
     const timestamp = Date.now();
-    const path = `boards/${userId}/${timestamp}.jpg`;
-    const imageRef = ref(storage, path);
+    const filePath = `${userId}/${timestamp}.jpg`;
     onProgress?.(50);
 
-    await uploadBytes(imageRef, blob, {
-      contentType: 'image/jpeg',
-    });
-    onProgress?.(80);
-
-    const downloadURL = await getDownloadURL(imageRef);
+    const result = await uploadToStorage('boards', filePath, blob, false);
     onProgress?.(100);
 
-    logger.info('Board image upload succeeded', { userId, path });
+    logger.info('게시판 이미지 업로드 성공', { userId, path: result.path });
 
-    return { downloadURL, path };
+    return result;
   } catch (error) {
-    logger.error('Board image upload failed', toError(error), { userId });
+    logger.error('게시판 이미지 업로드 실패', toError(error), { userId });
 
     if (isAppError(error)) {
       throw error;
@@ -440,47 +487,44 @@ export async function uploadBoardImage(
     throw new AppError({
       code: ERROR_CODES.UNKNOWN,
       category: 'unknown',
-      userMessage: '?대?吏 ?낅줈?쒖뿉 ?ㅽ뙣?덉뒿?덈떎',
+      userMessage: '이미지 업로드에 실패했습니다',
       originalError: toError(error),
     });
   }
 }
 
+/**
+ * 게시판 이미지 삭제
+ *
+ * @param imageUrl 삭제할 이미지 URL 또는 Storage 경로
+ */
 export async function deleteBoardImage(imageUrl: string): Promise<void> {
   try {
-    logger.info('Board image deletion started', { imageUrl: imageUrl.substring(0, 50) });
+    logger.info('게시판 이미지 삭제 시작', { imageUrl: imageUrl.substring(0, 50) });
 
-    const storage = getFirebaseStorage();
-    let imagePath = imageUrl;
-
-    if (imageUrl.includes('firebasestorage.googleapis.com')) {
-      const url = new URL(imageUrl);
-      const pathMatch = url.pathname.match(/\/o\/(.+?)(\?|$)/);
-      if (pathMatch) {
-        imagePath = decodeURIComponent(pathMatch[1]);
-      }
-    }
-
-    if (!imagePath.startsWith('boards/')) {
-      logger.warn('Board image path rejected', { imagePath });
+    const filePath = extractStoragePath(imageUrl, 'boards');
+    if (!filePath) {
+      logger.warn('게시판 이미지 경로가 아님', { imageUrl: imageUrl.substring(0, 50) });
       return;
     }
 
-    const imageRef = ref(storage, imagePath);
-    await deleteObject(imageRef);
+    await deleteFromStorage('boards', filePath);
 
-    logger.info('Board image deletion succeeded', { imagePath });
+    logger.info('게시판 이미지 삭제 성공', { filePath });
   } catch (error) {
-    const errorCode = (error as { code?: string }).code;
-    if (errorCode === 'storage/object-not-found') {
-      logger.warn('Board image already deleted', { imageUrl: imageUrl.substring(0, 50) });
-      return;
-    }
-
-    logger.error('Board image deletion failed', toError(error));
+    logger.error('게시판 이미지 삭제 실패', toError(error));
+    // 삭제 실패는 무시
   }
 }
 
+/**
+ * 게시판 이미지 여러 개 업로드
+ *
+ * @param userId 작성자 ID
+ * @param uris 로컬 이미지 URI 배열
+ * @param onProgress 업로드 진행률 콜백 (index, progress)
+ * @returns 업로드된 이미지 배열
+ */
 export async function uploadMultipleBoardImages(
   userId: string,
   uris: string[],
@@ -502,20 +546,25 @@ export async function uploadMultipleBoardImages(
         order: i,
       });
     } catch (error) {
-      logger.error('Board multi-image upload failed', toError(error), { userId, index: i });
+      logger.error('게시판 다중 이미지 업로드 중 실패', toError(error), { userId, index: i });
     }
   }
 
   return results;
 }
 
+/**
+ * 게시판 이미지 여러 개 삭제
+ *
+ * @param images 삭제할 이미지 배열
+ */
 export async function deleteMultipleBoardImages(images: AnnouncementImage[]): Promise<void> {
   const deletePromises = images.map((image) =>
     deleteBoardImage(image.storagePath || image.url).catch((error) => {
-      logger.warn('Board multi-image delete failed', { url: image.url.substring(0, 50), error });
+      logger.warn('게시판 다중 이미지 삭제 중 실패', { url: image.url.substring(0, 50), error });
     })
   );
 
   await Promise.all(deletePromises);
-  logger.info('Board multi-image delete completed', { count: images.length });
+  logger.info('게시판 다중 이미지 삭제 완료', { count: images.length });
 }
