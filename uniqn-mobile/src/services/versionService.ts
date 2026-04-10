@@ -2,22 +2,18 @@
  * UNIQN Mobile - 버전 관리 서비스
  *
  * @description 앱 버전 확인 및 강제 업데이트 체크
- * @version 1.0.0
+ * @version 2.0.0
  *
- * Firestore 문서 구조 (appVersions/{platform}):
- * {
- *   minVersion: "1.0.0",     // 강제 업데이트 필요 최소 버전
- *   latestVersion: "1.0.0",  // 최신 버전
- *   recommendedVersion: "1.0.0", // 권장 버전
- *   releaseNotes: "...",     // 릴리즈 노트
- *   maintenanceMode: false,  // 점검 모드
- *   maintenanceMessage: "",  // 점검 메시지
- * }
+ * Supabase app_config 테이블 구조:
+ * - force_update_version: { ios, web, android } — 강제 업데이트 최소 버전
+ * - latest_version: { ios, web, android } — 최신 버전
+ * - recommended_version: { ios, web, android } — 권장 버전
+ * - release_notes: { ios, web, android } — 릴리즈 노트
+ * - maintenance_mode: { enabled, message } — 점검 모드
  */
 
 import { Platform } from 'react-native';
-import { doc, getDoc } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { APP_VERSION, compareVersions, type UpdateType } from '@/constants/version';
 
@@ -66,33 +62,71 @@ export interface VersionCheckResult {
 // ============================================================================
 
 /**
- * Firestore에서 원격 버전 설정 가져오기
+ * Supabase app_config 테이블에서 원격 버전 설정 가져오기
  */
 export async function getRemoteVersionConfig(): Promise<RemoteVersionConfig | null> {
   try {
-    const db = getFirebaseDb();
     const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
-    const docRef = doc(db, 'appVersions', platform);
-    const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists()) {
-      logger.warn('원격 버전 설정 문서 없음', {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('key, value')
+      .in('key', [
+        'force_update_version',
+        'latest_version',
+        'recommended_version',
+        'release_notes',
+        'maintenance_mode',
+      ]);
+
+    if (error) {
+      logger.error('원격 버전 설정 쿼리 실패', new Error(error.message), {
+        component: 'versionService',
+        code: error.code,
+      });
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      logger.warn('원격 버전 설정 데이터 없음', {
         component: 'versionService',
         platform,
       });
       return null;
     }
 
-    const data = docSnap.data() as RemoteVersionConfig;
+    const configMap = new Map<string, Record<string, unknown>>(
+      data.map((row: { key: string; value: Record<string, unknown> }) => [row.key, row.value])
+    );
+
+    const forceUpdate = configMap.get('force_update_version') as Record<string, string> | undefined;
+    const latest = configMap.get('latest_version') as Record<string, string> | undefined;
+    const recommended = configMap.get('recommended_version') as Record<string, string> | undefined;
+    const notes = configMap.get('release_notes') as Record<string, string> | undefined;
+    const maintenance = configMap.get('maintenance_mode') as
+      | { enabled?: boolean; message?: string }
+      | undefined;
+
+    const minVersion = forceUpdate?.[platform] ?? '0.0.0';
+    const latestVersion = latest?.[platform] ?? '0.0.0';
+
+    const result: RemoteVersionConfig = {
+      minVersion,
+      latestVersion,
+      recommendedVersion: recommended?.[platform],
+      releaseNotes: notes?.[platform],
+      maintenanceMode: maintenance?.enabled ?? false,
+      maintenanceMessage: maintenance?.message ?? '',
+    };
 
     logger.debug('원격 버전 설정 로드', {
       component: 'versionService',
       platform,
-      minVersion: data.minVersion,
-      latestVersion: data.latestVersion,
+      minVersion: result.minVersion,
+      latestVersion: result.latestVersion,
     });
 
-    return data;
+    return result;
   } catch (error) {
     logger.error(
       '원격 버전 설정 로드 실패',
