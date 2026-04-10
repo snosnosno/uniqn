@@ -2,7 +2,7 @@ import type { BoardCommentNode } from '@/types/board';
 
 export type BoardComposerMode = 'create' | 'reply' | 'edit';
 
-export const BOARD_COMMENT_INDENT_STEP = 8;
+export const BOARD_COMMENT_INDENT_STEP = 6;
 export const MAX_BOARD_COMMENT_VISUAL_DEPTH = 3;
 
 export interface BoardDetailSectionItem {
@@ -46,6 +46,7 @@ interface BuildBoardDetailListItemsInput {
   regularComments: BoardCommentNode[];
   commentsCount: number;
   isLocked: boolean;
+  canInteract: boolean;
   composerMode: BoardComposerMode;
   composerTargetCommentId?: string | null;
 }
@@ -87,6 +88,7 @@ export function buildBoardDetailListItems({
   regularComments,
   commentsCount,
   isLocked,
+  canInteract,
   composerMode,
   composerTargetCommentId = null,
 }: BuildBoardDetailListItemsInput): BoardDetailListItem[] {
@@ -117,8 +119,12 @@ export function buildBoardDetailListItems({
     items.push({
       type: 'empty',
       key: 'comments:empty',
-      title: '아직 댓글이 없어요',
-      description: '첫 댓글을 남겨보세요.',
+      title: isLocked ? '댓글이 잠겨 있어요' : '아직 댓글이 없어요',
+      description: isLocked
+        ? '잠금이 해제되면 새 댓글을 남길 수 있어요.'
+        : canInteract
+          ? '첫 댓글을 남겨보세요.'
+          : '이 게시글에서는 댓글을 읽기만 할 수 있어요.',
     });
   }
 
