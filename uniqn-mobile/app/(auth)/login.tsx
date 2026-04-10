@@ -105,7 +105,7 @@ export default function LoginScreen() {
 
   const handleLoginSuccess = useCallback(
     async (result: AuthResult, providerLabel: string) => {
-      markCurrentAutoLoginSession(result.user.uid);
+      markCurrentAutoLoginSession(result.user.id);
       setUser(result.user);
       setProfile(toStoreProfile(result.profile));
 
@@ -115,7 +115,7 @@ export default function LoginScreen() {
         logger.warn('생체인증 자격 증명 갱신 실패', { error });
       }
 
-      logger.info(`${providerLabel} 로그인 성공`, { userId: result.user.uid });
+      logger.info(`${providerLabel} 로그인 성공`, { userId: result.user.id });
       addToast({ type: 'success', message: '로그인되었습니다.' });
       router.replace(
         getResolvedAuthenticatedRoute({
@@ -174,7 +174,7 @@ export default function LoginScreen() {
       }
 
       if (result.profile.socialProvider && !result.profile.phoneVerified) {
-        markCurrentAutoLoginSession(result.user.uid);
+        markCurrentAutoLoginSession(result.user.id);
         setUser(result.user);
         setProfile(toStoreProfile(result.profile));
         router.replace(

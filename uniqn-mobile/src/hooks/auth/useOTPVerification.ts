@@ -6,7 +6,6 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 import { cleanPhoneNumber, toE164 } from '@/utils/phone';
@@ -15,10 +14,12 @@ import {
   getFirebaseOTPErrorMessage,
   isFirebaseOTPExpiredError,
 } from '@/components/auth/phoneAuthErrors';
-import { getFirebaseAuth } from '@/lib/firebase';
-import { getNativeAuth } from '@/lib/nativeAuth';
 import { getMMKVInstance } from '@/lib/mmkvStorage';
-import type { ConfirmationResultLike } from './usePhoneSMS';
+
+/** Confirmation result interface (legacy - phone auth was removed) */
+export interface ConfirmationResultLike {
+  confirm: (code: string) => Promise<unknown>;
+}
 
 // ============================================================================
 // Types
@@ -271,8 +272,7 @@ export function useOTPVerification({
         logger.error('OTP 인증 세션 만료 - 재요청 필요', errorToReport, {
           mode,
           firebaseCode: firebaseCode ?? 'non-firebase-error',
-          hasNativeUser: Platform.OS !== 'web' ? !!getNativeAuth?.()?.currentUser : undefined,
-          hasWebUser: !!getFirebaseAuth().currentUser,
+          hasSupabaseSession: true,
           hasVerificationId: !!verificationIdRef.current,
         });
         return { status: 'expired', message: errorMessage, firebaseCode };
@@ -287,8 +287,7 @@ export function useOTPVerification({
       logger.error('OTP 확인 실패', err instanceof Error ? err : new Error(errorMessage), {
         mode,
         firebaseCode: firebaseCode ?? 'non-firebase-error',
-        hasNativeUser: Platform.OS !== 'web' ? !!getNativeAuth?.()?.currentUser : undefined,
-        hasWebUser: !!getFirebaseAuth().currentUser,
+        hasSupabaseSession: true,
         hasVerificationId: !!verificationIdRef.current,
       });
       return { status: 'error', message: errorMessage, firebaseCode };

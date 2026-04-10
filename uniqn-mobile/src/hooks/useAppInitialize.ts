@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useAppStartupStore, type StartupPhase } from '@/stores/appStartupStore';
 import { validateEnv } from '@/lib/env';
-import { tryInitializeFirebase } from '@/lib/firebase';
-import { ensureDualSdkSync } from '@/lib/authBridge';
 import { isCurrentAutoLoginSession } from '@/lib/autoLoginSession';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { getUserProfile, signOut as authSignOut } from '@/services/auth';
 import { getProtectedAuthFlowKind } from '@/shared/auth/protectedAuthFlow';
-import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { logger } from '@/utils/logger';
 import { trackLogout, setUserId } from '@/services/observability/analyticsService';
 import { toStoreProfile } from '@/utils/profileConverter';
@@ -28,7 +25,7 @@ import { retryWithBackoff } from '@/utils/retry';
 import { isNetworkError, toError } from '@/errors';
 import { useNetworkStatus } from './useNetworkStatus';
 import {
-  getCurrentAuthUser,
+  getCurrentAuthUserAsync,
   waitForAuthUser,
   waitForInitialAuthUser,
   type InitialAuthResolution,
@@ -49,12 +46,12 @@ interface UseAppInitializeReturn extends AppInitState {
 }
 
 interface DeferredInitContext {
-  authUser: FirebaseUser;
+  authUser: SupabaseUser;
   profile: Awaited<ReturnType<typeof loadLatestProfile>>;
 }
 
 interface BootstrapResult {
-  authUser: FirebaseUser | null;
+  authUser: SupabaseUser | null;
   authResolutionSource: InitialAuthResolution['source'];
   autoLoginEnabled: boolean;
   versionCheckResult: VersionCheckResult;
@@ -136,45 +133,21 @@ async function importWithFallback<T>(loader: () => Promise<T>, moduleId: string)
 export { waitForInitialAuthUser } from './internal/appInitializeAuthSession';
 
 function isFatalAuthError(error: unknown): boolean {
-  const errorCode = (error as { code?: string } | undefined)?.code;
-  return ['auth/user-token-expired', 'auth/user-disabled', 'auth/user-not-found'].includes(
-    errorCode ?? ''
+  const errorMessage = (error as { message?: string } | undefined)?.message ?? '';
+  return (
+    errorMessage.includes('user_not_found') ||
+    errorMessage.includes('token_expired') ||
+    errorMessage.includes('user_banned')
   );
 }
 
-function getRoleClaim(claims: Record<string, unknown>): string | null {
-  return typeof claims.role === 'string' ? claims.role : null;
+function getRoleFromUser(user: SupabaseUser): string | null {
+  const role = user.app_metadata?.role;
+  return typeof role === 'string' ? role : null;
 }
 
 function shouldSynchronizeClaims(profileRole: string | null | undefined, tokenRole: string | null) {
   return typeof profileRole === 'string' && profileRole.length > 0 && tokenRole !== profileRole;
-}
-
-async function refreshRoleClaims(authUser: FirebaseUser, expectedRole: string) {
-  return retryWithBackoff(
-    async () => {
-      await authUser.getIdToken(true);
-      const result = await authUser.getIdTokenResult();
-      const role = getRoleClaim(result.claims as Record<string, unknown>);
-
-      if (!role) {
-        throw new Error('Custom claims role is missing');
-      }
-
-      if (role !== expectedRole) {
-        throw new Error(`Custom claims role mismatch: expected ${expectedRole}, received ${role}`);
-      }
-
-      return result;
-    },
-    {
-      maxRetries: 3,
-      initialDelayMs: 1000,
-      backoffMultiplier: 2,
-      component: 'useAppInitialize',
-      operationName: 'refreshCustomClaims',
-    }
-  );
 }
 
 async function loadLatestProfile(uid: string) {
@@ -234,27 +207,25 @@ async function initializeUnreadCount(uid: string): Promise<number> {
     return 0;
   }
 
-  const [{ httpsCallable }, { getFirebaseFunctions }] = await Promise.all([
-    importWithFallback(() => import('firebase/functions'), 'firebase/functions'),
-    importWithFallback(() => import('@/lib/firebase'), '@/lib/firebase'),
-  ]);
-  const functions = getFirebaseFunctions();
-  const initializeCounter = httpsCallable<void, { unreadCount: number }>(
-    functions,
-    'initializeUnreadCounter'
+  const { supabase: sb } = await importWithFallback(
+    () => import('@/lib/supabase'),
+    '@/lib/supabase'
   );
 
   storage.set(debounceKey, String(now));
 
   try {
-    const result = await initializeCounter();
+    const { data: result, error } = await sb.functions.invoke<{ unreadCount: number }>(
+      'initialize-unread-counter'
+    );
+    if (error) throw error;
     logger.info('Initialized unread count from server', {
       component: 'useAppInitialize',
       uid,
-      unreadCount: result.data.unreadCount,
+      unreadCount: result?.unreadCount ?? 0,
       source: 'calculated',
     });
-    return result.data.unreadCount;
+    return result?.unreadCount ?? 0;
   } catch (error) {
     storage.delete(debounceKey);
     logger.warn('Failed to initialize unread count, falling back to zero', {
@@ -284,10 +255,7 @@ async function bootstrapCore(): Promise<BootstrapResult> {
     });
   }
 
-  const firebaseResult = tryInitializeFirebase();
-  if (!firebaseResult.success) {
-    throw new Error(firebaseResult.error);
-  }
+  // Supabase auto-initializes, no tryInitializeFirebase needed
 
   const versionCheckResult = await checkForceUpdate();
   if (versionCheckResult.isMaintenanceMode) {
@@ -304,7 +272,7 @@ async function bootstrapCore(): Promise<BootstrapResult> {
     );
   }
 
-  await ensureDualSdkSync();
+  // Supabase uses single SDK, no dual SDK sync needed
   await useAuthStore.getState().initialize();
 
   const autoLoginEnabled = await checkAutoLoginEnabled();
@@ -379,8 +347,8 @@ export async function resolveSession({
   const authStore = useAuthStore.getState();
   const persistedUser = authStore.user;
   const persistedProfile = authStore.profile;
-  const preservedUserId = authUser?.uid ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
-  const currentSessionUserId = authUser?.uid ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
+  const preservedUserId = authUser?.id ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
+  const currentSessionUserId = authUser?.id ?? persistedUser?.uid ?? persistedProfile?.uid ?? null;
   const allowCurrentSessionContinuation =
     !!currentSessionUserId && isCurrentAutoLoginSession(currentSessionUserId);
 
@@ -451,13 +419,12 @@ export async function resolveSession({
   let tokenNeedsReconcile = false;
 
   try {
-    await authUser.getIdToken(true);
-    const tokenResult = await authUser.getIdTokenResult();
-    tokenRole = getRoleClaim(tokenResult.claims as Record<string, unknown>);
+    // Supabase: role comes from app_metadata in the JWT
+    tokenRole = getRoleFromUser(authUser);
 
-    logger.info('Token refresh completed during app initialization', {
+    logger.info('Token role resolved during app initialization', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       hasRole: Boolean(tokenRole),
     });
   } catch (error) {
@@ -475,15 +442,15 @@ export async function resolveSession({
     }
 
     tokenNeedsReconcile = true;
-    logger.warn('Token refresh will be retried after initialization', {
+    logger.warn('Token role resolution will be retried after initialization', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       error: error instanceof Error ? error.message : String(error),
     });
   }
 
   try {
-    const freshProfile = await loadLatestProfile(authUser.uid);
+    const freshProfile = await loadLatestProfile(authUser.id);
     const storeProfile = toStoreProfile(freshProfile);
 
     authStore.setUser(authUser);
@@ -497,7 +464,7 @@ export async function resolveSession({
     if (shouldSynchronizeClaims(freshProfile.role, tokenRole)) {
       logger.info('Deferred claims reconciliation scheduled', {
         component: 'useAppInitialize',
-        uid: authUser.uid,
+        uid: authUser.id,
         expectedRole: freshProfile.role,
         tokenRole,
       });
@@ -518,11 +485,11 @@ export async function resolveSession({
 
     logger.warn('Failed to load latest profile during initialization', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       error: resolvedError.message,
     });
 
-    if (isNetworkError(resolvedError) && persistedProfile?.uid === authUser.uid) {
+    if (isNetworkError(resolvedError) && persistedProfile?.uid === authUser.id) {
       authStore.setUser(authUser);
       authStore.setProfile(persistedProfile);
       commitBootstrapSource('cache', true);
@@ -540,27 +507,11 @@ export async function resolveSession({
       throw resolvedError;
     }
 
-    if (isPhoneOnlySignupFirebaseUser(authUser)) {
-      logger.info('Preserving phone-only signup session during initialization', {
-        component: 'useAppInitialize',
-        uid: authUser.uid,
-      });
-
-      authStore.setUser(authUser);
-      authStore.setProfile(null);
-      commitBootstrapSource('none', false);
-
-      return {
-        deferredInitContext: null,
-        offlineBootstrap: { source: 'none', needsServerReconcile: false },
-      };
-    }
-
-    const protectedAuthFlowKind = getProtectedAuthFlowKind(authUser.uid);
+    const protectedAuthFlowKind = getProtectedAuthFlowKind(authUser.id);
     if (protectedAuthFlowKind) {
       logger.info('Preserving protected auth flow session during initialization', {
         component: 'useAppInitialize',
-        uid: authUser.uid,
+        uid: authUser.id,
         flowKind: protectedAuthFlowKind,
       });
 
@@ -576,7 +527,7 @@ export async function resolveSession({
 
     logger.warn('Profile document missing or invalid during initialization, signing user out', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       error: resolvedError.message,
     });
     await signOutAndResetSession();
@@ -590,74 +541,67 @@ export async function resolveSession({
 }
 
 async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsRetry: boolean }> {
-  const activeUser = getCurrentAuthUser();
+  const activeUser = await getCurrentAuthUserAsync();
 
-  if (!activeUser || activeUser.uid !== context.authUser.uid) {
+  if (!activeUser || activeUser.id !== context.authUser.id) {
     return { needsRetry: false };
   }
 
   let needsRetry = false;
 
   try {
-    if (
-      typeof (context.profile as { role?: string | null }).role === 'string' &&
-      (context.profile as { role?: string }).role
-    ) {
-      try {
-        const claimsResult = await refreshRoleClaims(
-          activeUser,
-          (context.profile as { role: string }).role
-        );
-
-        logger.info('Deferred custom claims refresh completed', {
-          component: 'useAppInitialize',
-          uid: activeUser.uid,
-          role: claimsResult.data.claims.role,
-          attempts: claimsResult.attempts,
-        });
-      } catch (error) {
-        needsRetry = true;
-        logger.warn('Deferred custom claims refresh failed', {
-          component: 'useAppInitialize',
-          uid: activeUser.uid,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+    // Supabase: role is in app_metadata, set by server-side.
+    // No client-side claims refresh needed (unlike Firebase custom claims).
+    const currentRole = getRoleFromUser(activeUser);
+    const expectedRole = (context.profile as { role?: string | null }).role;
+    if (shouldSynchronizeClaims(expectedRole, currentRole)) {
+      logger.info('Role mismatch detected, will reconcile on next session refresh', {
+        component: 'useAppInitialize',
+        uid: activeUser.id,
+        expectedRole,
+        currentRole,
+      });
+      needsRetry = true;
     }
 
+    // Supabase: profile metadata reconciliation via updateUser
     const profileNickname =
-      (context.profile as { nickname?: string | null }).nickname ?? activeUser.displayName;
+      (context.profile as { nickname?: string | null }).nickname ??
+      (activeUser.user_metadata?.name as string | null);
     const profilePhotoURL = (context.profile as { photoURL?: string | null }).photoURL ?? null;
+    const currentName = (activeUser.user_metadata?.name as string | null) ?? null;
+    const currentAvatar = (activeUser.user_metadata?.avatar_url as string | null) ?? null;
     const needsProfileReconciliation =
-      profileNickname !== (activeUser.displayName ?? null) ||
-      profilePhotoURL !== (activeUser.photoURL ?? null);
+      profileNickname !== currentName || profilePhotoURL !== currentAvatar;
 
     if (needsProfileReconciliation) {
       try {
-        const { updateProfile } = await importWithFallback(
-          () => import('firebase/auth'),
-          'firebase/auth'
+        const { supabase: sb } = await importWithFallback(
+          () => import('@/lib/supabase'),
+          '@/lib/supabase'
         );
-        await updateProfile(activeUser, {
-          displayName: profileNickname || activeUser.displayName,
-          photoURL: profilePhotoURL ?? undefined,
+        await sb.auth.updateUser({
+          data: {
+            name: profileNickname || currentName,
+            avatar_url: profilePhotoURL ?? undefined,
+          },
         });
         logger.info('Deferred auth profile reconciliation completed', {
           component: 'useAppInitialize',
-          uid: activeUser.uid,
+          uid: activeUser.id,
         });
       } catch (error) {
         needsRetry = true;
         logger.warn('Deferred auth profile reconciliation failed', {
           component: 'useAppInitialize',
-          uid: activeUser.uid,
+          uid: activeUser.id,
           error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
     if ((context.profile as { phoneVerified?: boolean }).phoneVerified) {
-      const unreadCount = await initializeUnreadCount(activeUser.uid);
+      const unreadCount = await initializeUnreadCount(activeUser.id);
       const { useNotificationStore } = await importWithFallback(
         () => import('@/stores/notificationStore'),
         '@/stores/notificationStore'
@@ -675,11 +619,11 @@ async function runPostLoginTasks(context: DeferredInitContext): Promise<{ needsR
   return { needsRetry };
 }
 
-export async function reconcileSessionFromServer(authUser: FirebaseUser): Promise<void> {
+export async function reconcileSessionFromServer(authUser: SupabaseUser): Promise<void> {
   const authStore = useAuthStore.getState();
 
   try {
-    const latestProfile = await loadLatestProfile(authUser.uid);
+    const latestProfile = await loadLatestProfile(authUser.id);
     const storeProfile = toStoreProfile(latestProfile);
 
     authStore.setUser(authUser);
@@ -695,7 +639,7 @@ export async function reconcileSessionFromServer(authUser: FirebaseUser): Promis
 
     logger.info('reconcile_success', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       needsRetry: result.needsRetry,
     });
   } catch (error) {
@@ -704,7 +648,7 @@ export async function reconcileSessionFromServer(authUser: FirebaseUser): Promis
     if (!isNetworkError(resolvedError)) {
       logger.warn('Server rejected reconciled session, signing out', {
         component: 'useAppInitialize',
-        uid: authUser.uid,
+        uid: authUser.id,
         error: resolvedError.message,
       });
       await signOutAndResetSession();
@@ -713,7 +657,7 @@ export async function reconcileSessionFromServer(authUser: FirebaseUser): Promis
 
     logger.warn('reconcile_failure', {
       component: 'useAppInitialize',
-      uid: authUser.uid,
+      uid: authUser.id,
       error: resolvedError.message,
     });
   }
@@ -764,14 +708,14 @@ export function useAppInitialize(): UseAppInitializeReturn {
       return;
     }
 
-    const firebaseUser = getCurrentAuthUser();
-    if (!firebaseUser || firebaseUser.uid !== authUser.uid) {
+    const supabaseUser = await getCurrentAuthUserAsync();
+    if (!supabaseUser || supabaseUser.id !== authUser.uid) {
       return;
     }
 
     isReconciling.current = true;
     try {
-      await reconcileSessionFromServer(firebaseUser);
+      await reconcileSessionFromServer(supabaseUser);
     } finally {
       isReconciling.current = false;
     }

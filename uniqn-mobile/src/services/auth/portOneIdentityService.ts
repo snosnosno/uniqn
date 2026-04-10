@@ -1,7 +1,6 @@
 import Constants from 'expo-constants';
 import type { Customer, IdentityVerificationRequest } from '@portone/browser-sdk/v2';
-import { httpsCallable } from 'firebase/functions';
-import { getFirebaseFunctions } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { getStorageItem, removeStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
 import { logger } from '@/utils/logger';
@@ -230,14 +229,17 @@ export function clearPortOneIdentityVerificationResult(): void {
 export async function callVerifyPortOneIdentity(
   payload: VerifyPortOneIdentityPayload
 ): Promise<VerifyPortOneIdentityResult> {
-  const verifyIdentity = httpsCallable<VerifyPortOneIdentityPayload, VerifyPortOneIdentityResult>(
-    getFirebaseFunctions(),
-    'verifyPortOneIdentity'
-  );
+  const invoke = async () => {
+    const { data, error } = await supabase.functions.invoke<VerifyPortOneIdentityResult>(
+      'verify-portone-identity',
+      { body: payload }
+    );
+    if (error) throw error;
+    return data!;
+  };
 
   try {
-    const response = await verifyIdentity(payload);
-    return response.data;
+    return await invoke();
   } catch (error) {
     if (!isRetryableError(error)) {
       throw error;
@@ -248,22 +250,24 @@ export async function callVerifyPortOneIdentity(
       error: error instanceof Error ? error.message : String(error),
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const response = await verifyIdentity(payload);
-    return response.data;
+    return await invoke();
   }
 }
 
 export async function callVerifyAndSavePortOneProfile(
   payload: VerifyAndSavePortOneProfilePayload
 ): Promise<VerifyAndSavePortOneProfileResult> {
-  const verifyAndSave = httpsCallable<
-    VerifyAndSavePortOneProfilePayload,
-    VerifyAndSavePortOneProfileResult
-  >(getFirebaseFunctions(), 'verifyAndSavePortOneProfile');
+  const invoke = async () => {
+    const { data, error } = await supabase.functions.invoke<VerifyAndSavePortOneProfileResult>(
+      'verify-and-save-portone-profile',
+      { body: payload }
+    );
+    if (error) throw error;
+    return data!;
+  };
 
   try {
-    const response = await verifyAndSave(payload);
-    return response.data;
+    return await invoke();
   } catch (error) {
     if (!isRetryableError(error)) {
       throw error;
@@ -274,7 +278,6 @@ export async function callVerifyAndSavePortOneProfile(
       error: error instanceof Error ? error.message : String(error),
     });
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const response = await verifyAndSave(payload);
-    return response.data;
+    return await invoke();
   }
 }

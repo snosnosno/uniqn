@@ -142,15 +142,16 @@ export function SignupStepIdentity({
   useEffect(() => {
     if (phoneMode !== 'link' || usePortOneIdentity) return;
 
-    const linkedPhone = getLinkedPhoneNumber();
-    if (!linkedPhone) return;
+    getLinkedPhoneNumber().then((linkedPhone) => {
+      if (!linkedPhone) return;
 
-    logger.info('Social signup linked phone restored', {
-      component: 'SignupStepIdentity',
+      logger.info('Social signup linked phone restored', {
+        component: 'SignupStepIdentity',
+      });
+      setVerifiedPhone(linkedPhone);
+      setValue('phoneVerified', true, { shouldValidate: true });
+      setValue('verifiedPhone', linkedPhone, { shouldValidate: true });
     });
-    setVerifiedPhone(linkedPhone);
-    setValue('phoneVerified', true, { shouldValidate: true });
-    setValue('verifiedPhone', linkedPhone, { shouldValidate: true });
   }, [phoneMode, setValue, usePortOneIdentity]);
 
   const onSubmit = useCallback(

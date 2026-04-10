@@ -14,7 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SignupForm } from '@/components/auth';
 import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
-import { signUp, completeSocialProfile, getCurrentUser } from '@/services';
+import { signUp, completeSocialProfile, getCurrentUserAsync } from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -43,11 +43,11 @@ export default function SignUpScreen() {
         const result = await signUp(data);
 
         if (result.user) {
-          markCurrentAutoLoginSession(result.user.uid);
+          markCurrentAutoLoginSession(result.user.id);
           setUser(result.user);
           setProfile(toStoreProfile(result.profile));
 
-          logger.info('회원가입 성공', { userId: result.user.uid });
+          logger.info('회원가입 성공', { userId: result.user.id });
           addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
           router.replace(
             getResolvedAuthenticatedRoute({
@@ -76,7 +76,7 @@ export default function SignUpScreen() {
     async (data: SignUpFormData) => {
       setIsLoading(true);
       try {
-        const user = getCurrentUser();
+        const user = await getCurrentUserAsync();
         if (!user) {
           addToast({ type: 'error', message: '인증 정보가 없습니다. 다시 로그인해주세요.' });
           router.replace(
@@ -87,7 +87,7 @@ export default function SignUpScreen() {
           return;
         }
 
-        const result = await completeSocialProfile(user.uid, {
+        const result = await completeSocialProfile(user.id, {
           name: data.name,
           birthDate: data.birthDate,
           gender: data.gender,
@@ -101,11 +101,11 @@ export default function SignUpScreen() {
         });
 
         if (result.user) {
-          markCurrentAutoLoginSession(result.user.uid);
+          markCurrentAutoLoginSession(result.user.id);
           setUser(result.user);
           setProfile(toStoreProfile(result.profile));
 
-          logger.info('소셜 프로필 등록 완료', { userId: result.user.uid });
+          logger.info('소셜 프로필 등록 완료', { userId: result.user.id });
           addToast({ type: 'success', message: '프로필 등록이 완료되었습니다!' });
           router.replace(
             getResolvedAuthenticatedRoute({

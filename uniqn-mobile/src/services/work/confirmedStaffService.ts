@@ -128,7 +128,7 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
   const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
-  const modifiedBy = input.modifiedBy ?? requireCurrentUser().uid;
+  const modifiedBy = input.modifiedBy ?? (await requireCurrentUser()).id;
 
   logger.info('Updating confirmed staff work time', {
     workLogId: input.workLogId,
@@ -150,7 +150,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
 export async function cancelConfirmedStaffConfirmation(
   input: DeleteConfirmedStaffInput
 ): Promise<void> {
-  const currentUser = requireCurrentUser();
+  const currentUser = await requireCurrentUser();
   logger.info('Cancelling confirmed staff confirmation', { ...input });
 
   const workLog = await workLogRepository.getById(input.workLogId);
@@ -168,7 +168,7 @@ export async function cancelConfirmedStaffConfirmation(
 
   await cancelConfirmation(
     buildApplicationId(workLog.jobPostingId, workLog.staffId),
-    currentUser.uid,
+    currentUser.id,
     input.reason
   );
 
@@ -184,20 +184,20 @@ export async function deleteConfirmedStaff(input: DeleteConfirmedStaffInput): Pr
 }
 
 export async function markAsNoShow(workLogId: string, reason?: string): Promise<void> {
-  const currentUser = requireCurrentUser();
+  const currentUser = await requireCurrentUser();
   logger.info('Marking confirmed staff as no-show', { workLogId, reason });
 
-  await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.uid, reason });
+  await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.id, reason });
 
   logger.info('Marked confirmed staff as no-show', { workLogId });
 }
 
 export async function updateStaffStatus(workLogId: string, status: WorkLogStatus): Promise<void> {
-  const currentUser = requireCurrentUser();
+  const currentUser = await requireCurrentUser();
   logger.info('Updating confirmed staff status', { workLogId, status });
 
   const workLog = await workLogRepository.getById(workLogId);
-  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.uid, status });
+  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.id, status });
 
   if (workLog?.jobPostingId) {
     try {

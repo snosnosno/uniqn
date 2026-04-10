@@ -7,10 +7,8 @@
  * - 개인정보 열람/수정/삭제 권리
  */
 
-import { reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth';
-import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
-import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -53,11 +51,10 @@ export interface DeletionResult {
  */
 async function tryRevokeAppleToken(authorizationCode: string, userId: string): Promise<boolean> {
   try {
-    const revokeAppleTokenFn = httpsCallable<{ authorizationCode: string }, { success: boolean }>(
-      getFirebaseFunctions(),
-      'revokeAppleToken'
-    );
-    await revokeAppleTokenFn({ authorizationCode });
+    const { error } = await supabase.functions.invoke('revoke-apple-token', {
+      body: { authorizationCode },
+    });
+    if (error) throw error;
     logger.info('Apple 토큰 파기 완료', { userId });
     return true;
   } catch (revokeError) {
@@ -77,7 +74,9 @@ async function tryRevokeAppleToken(authorizationCode: string, userId: string): P
  * @returns 파기 성공 여부
  */
 export async function retryAppleTokenRevocation(): Promise<boolean> {
-  const currentUser = getFirebaseAuth().currentUser;
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
   if (!currentUser) return false;
 
   const { credential: appleCredential } = await requestAppleAuthorization({
@@ -87,7 +86,7 @@ export async function retryAppleTokenRevocation(): Promise<boolean> {
 
   if (!appleCredential.authorizationCode) return false;
 
-  return tryRevokeAppleToken(appleCredential.authorizationCode, currentUser.uid);
+  return tryRevokeAppleToken(appleCredential.authorizationCode, currentUser.id);
 }
 
 /**
@@ -102,7 +101,9 @@ export async function requestAccountDeletion(
   password?: string,
   reasonDetail?: string
 ): Promise<DeletionResult> {
-  const currentUser = getFirebaseAuth().currentUser;
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
 
   if (!currentUser) {
     throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
@@ -111,15 +112,15 @@ export async function requestAccountDeletion(
   }
 
   try {
-    logger.info('회원탈퇴 요청 시작', { userId: currentUser.uid, reason });
+    logger.info('회원탈퇴 요청 시작', { userId: currentUser.id, reason });
 
     // 1. 재인증 (Apple 사용자 vs 이메일 사용자 분기)
-    const isAppleUser =
-      currentUser.providerData?.some((p) => p.providerId === 'apple.com') ?? false;
+    const providers = (currentUser.app_metadata?.providers as string[]) ?? [];
+    const isAppleUser = providers.includes('apple');
     let appleTokenRevoked = false;
 
     if (isAppleUser && Platform.OS === 'ios') {
-      // Apple 재인증: Apple Sign In 다이얼로그 → OAuthProvider credential
+      // Apple 재인증: Apple Sign In 다이얼로그
       const { credential: appleCredential, rawNonce } = await requestAppleAuthorization({
         requestedScopes: [],
         operation: 'reauth',
@@ -131,21 +132,27 @@ export async function requestAccountDeletion(
         });
       }
 
-      const oauthCredential = new OAuthProvider('apple.com').credential({
-        idToken: appleCredential.identityToken,
-        rawNonce,
+      // Supabase로 재인증 (signInWithIdToken)
+      const { error: reAuthError } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: appleCredential.identityToken,
+        nonce: rawNonce,
       });
-      await reauthenticateWithCredential(currentUser, oauthCredential);
+      if (reAuthError) {
+        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+          userMessage: 'Apple 재인증에 실패했습니다.',
+          originalError: new Error(reAuthError.message),
+        });
+      }
 
       // Apple Token Revocation (App Store 심사 필수 요구사항)
       if (appleCredential.authorizationCode) {
         appleTokenRevoked = await tryRevokeAppleToken(
           appleCredential.authorizationCode,
-          currentUser.uid
+          currentUser.id
         );
       }
     } else if (isAppleUser) {
-      // Apple 사용자가 비-iOS 플랫폼에서 탈퇴 시도
       throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
         userMessage:
           'Apple 계정 탈퇴는 iOS 기기에서만 가능합니다.\n\n' +
@@ -164,8 +171,16 @@ export async function requestAccountDeletion(
           userMessage: '이메일 정보가 없습니다. 고객센터에 문의해주세요.',
         });
       }
-      const credential = EmailAuthProvider.credential(currentUser.email, password);
-      await reauthenticateWithCredential(currentUser, credential);
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password,
+      });
+      if (reAuthError) {
+        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+          userMessage: '비밀번호가 올바르지 않습니다',
+          originalError: new Error(reAuthError.message),
+        });
+      }
     }
 
     // 2. 탈퇴 요청 정보 준비
@@ -183,15 +198,15 @@ export async function requestAccountDeletion(
     };
 
     // 3. Repository를 통해 저장
-    await userRepository.requestDeletion(currentUser.uid, deletionRequestData);
+    await userRepository.requestDeletion(currentUser.id, deletionRequestData);
 
     const deletionRequest: DeletionRequest = {
-      userId: currentUser.uid,
+      userId: currentUser.id,
       ...deletionRequestData,
     };
 
     logger.info('회원탈퇴 요청 완료', {
-      userId: currentUser.uid,
+      userId: currentUser.id,
       scheduledDeletionAt: toDate(scheduledDeletion)?.toISOString() ?? null,
     });
 
@@ -208,20 +223,13 @@ export async function requestAccountDeletion(
     if (isAppError(error)) throw error;
 
     logger.error('회원탈퇴 요청 실패', toError(error), {
-      userId: currentUser.uid,
+      userId: currentUser.id,
     });
-
-    // 비밀번호 틀린 경우
-    if ((error as { code?: string }).code === 'auth/wrong-password') {
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-        userMessage: '비밀번호가 올바르지 않습니다',
-      });
-    }
 
     throw handleServiceError(error, {
       operation: '회원탈퇴 요청',
       component: 'accountDeletionService',
-      context: { userId: currentUser.uid, reason },
+      context: { userId: currentUser.id, reason },
     });
   }
 }

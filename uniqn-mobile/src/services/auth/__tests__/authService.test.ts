@@ -490,10 +490,7 @@ describe('authCoreService', () => {
     });
 
     await expect(
-      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678', {
-        email: 'rollback@example.com',
-        password: 'Password123!',
-      })
+      rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
     ).resolves.toBeUndefined();
 
     expect(mockSyncToWebAuth).toHaveBeenCalledWith('rollback@example.com', 'Password123!');

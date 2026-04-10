@@ -24,7 +24,7 @@ import {
   type BiometricStatus,
   type BiometricAuthResult,
 } from '@/services/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { getUserProfile } from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -137,18 +137,20 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
     mutationFn: async (enabled: boolean) => {
       if (enabled) {
         // 현재 로그인된 사용자 확인
-        const auth = getFirebaseAuth();
-        const currentUser = auth.currentUser;
-        requireAuth(currentUser?.uid, 'useBiometricAuth.enableBiometric');
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const currentUser = session?.user;
+        requireAuth(currentUser?.id, 'useBiometricAuth.enableBiometric');
 
         // Refresh Token 가져오기
-        const refreshToken = currentUser.refreshToken;
+        const refreshToken = session?.refresh_token;
         if (!refreshToken) {
           throw new Error('인증 토큰을 가져올 수 없습니다');
         }
 
         // 자격 증명 저장
-        await saveBiometricCredentials(currentUser.uid, refreshToken);
+        await saveBiometricCredentials(currentUser.id, refreshToken);
       }
 
       await setBiometricEnabled(enabled);
@@ -264,34 +266,10 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         return false;
       }
 
-      // 3. Firebase Auth 세션 확인
-      const auth = getFirebaseAuth();
-
-      // Firebase Auth 세션 복원 대기
-      const currentUser = await new Promise<typeof auth.currentUser>((resolve) => {
-        if (auth.currentUser) {
-          resolve(auth.currentUser);
-          return;
-        }
-
-        // Auth 상태 변경 리스너로 세션 복원 대기 (settled 플래그로 이중 resolve 방지)
-        let settled = false;
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeoutId);
-          unsubscribe();
-          resolve(user);
-        });
-
-        // 타임아웃 (2초)
-        const timeoutId = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          unsubscribe();
-          resolve(null);
-        }, 2000);
-      });
+      // 3. Supabase Auth 세션 확인
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
 
       if (!currentUser) {
         useToastStore
@@ -304,7 +282,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       }
 
       // 4. 저장된 사용자 ID와 현재 세션 비교
-      if (currentUser.uid !== credentials.userId) {
+      if (currentUser.id !== credentials.userId) {
         useToastStore
           .getState()
           .error('다른 계정으로 로그인되어 있습니다. 비밀번호로 로그인해주세요.');
@@ -314,9 +292,10 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         return false;
       }
 
-      // 5. 토큰 갱신 (실패 시 세션 만료 처리)
+      // 5. 세션 리프레시 (실패 시 세션 만료 처리)
       try {
-        await currentUser.getIdToken(true);
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) throw refreshError;
       } catch (tokenError) {
         logger.error('토큰 갱신 실패 - 세션 만료', toError(tokenError));
         useToastStore
@@ -329,13 +308,13 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       }
 
       // 6. Firestore에서 최신 프로필 로드 (필수 필드 검증 포함)
-      const profile = await getUserProfile(currentUser.uid);
+      const profile = await getUserProfile(currentUser.id);
       if (profile && profile.uid && profile.role) {
         useAuthStore.getState().setUser(currentUser);
         useAuthStore.getState().setProfile(toStoreProfile(profile));
       } else if (profile) {
         logger.warn('생체 인증: 불완전한 프로필 구조 감지', {
-          uid: currentUser.uid,
+          uid: currentUser.id,
           hasRole: !!profile.role,
         });
       }
@@ -372,8 +351,10 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       }
 
       // 현재 로그인된 사용자 확인
-      const auth = getFirebaseAuth();
-      const currentUser = auth.currentUser;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const currentUser = session?.user;
 
       if (!currentUser) {
         logger.debug('생체 인증 자격 증명 갱신 건너뜀: 로그인된 사용자 없음');
@@ -381,15 +362,15 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       }
 
       // Refresh Token 가져오기
-      const refreshToken = currentUser.refreshToken;
+      const refreshToken = session?.refresh_token;
       if (!refreshToken) {
         logger.warn('생체 인증 자격 증명 갱신 실패: 토큰 없음');
         return;
       }
 
       // 자격 증명 저장 (갱신)
-      await saveBiometricCredentials(currentUser.uid, refreshToken);
-      logger.info('생체 인증 자격 증명 갱신 완료', { userId: currentUser.uid });
+      await saveBiometricCredentials(currentUser.id, refreshToken);
+      logger.info('생체 인증 자격 증명 갱신 완료', { userId: currentUser.id });
     } catch (error) {
       // 갱신 실패는 치명적이지 않으므로 경고만 로깅
       logger.warn('생체 인증 자격 증명 갱신 실패', { error });

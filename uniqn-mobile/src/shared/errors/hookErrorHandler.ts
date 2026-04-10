@@ -16,7 +16,8 @@
 
 import { normalizeError, AppError, AuthError, ERROR_CODES } from '@/errors';
 import { logger } from '@/utils/logger';
-import type { User } from 'firebase/auth';
+/** Auth user type that works with both Supabase User (.id) and AuthUser store (.uid) */
+type AuthUserLike = { uid?: string; id?: string } | null | undefined;
 
 // ============================================================================
 // Types
@@ -160,7 +161,7 @@ export function handleHookSilentError(
  *   });
  * }
  */
-export function requireAuth(user: User | null | undefined): asserts user is User {
+export function requireAuth(user: AuthUserLike): asserts user is NonNullable<AuthUserLike> {
   if (!user) {
     throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
       userMessage: '로그인이 필요합니다.',
@@ -171,11 +172,12 @@ export function requireAuth(user: User | null | undefined): asserts user is User
 /**
  * 인증 상태 체크 (옵셔널)
  *
- * @param user - Firebase User 또는 null
+ * @param user - Auth User 또는 null
  * @returns User ID 또는 null
  */
-export function getAuthUserId(user: User | null | undefined): string | null {
-  return user?.uid ?? null;
+export function getAuthUserId(user: AuthUserLike): string | null {
+  if (!user) return null;
+  return user.uid ?? user.id ?? null;
 }
 
 // ============================================================================

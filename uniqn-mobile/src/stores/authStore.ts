@@ -1,14 +1,12 @@
-import { User as FirebaseUser } from 'firebase/auth';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { syncSignOut } from '@/lib/authBridge';
+import { supabase } from '@/lib/supabase';
 import { clearCurrentAutoLoginSession } from '@/lib/autoLoginSession';
-import { getFirebaseAuth } from '@/lib/firebase';
 import { authStateStorage } from '@/lib/mmkvStorage';
 import { settingsStorage } from '@/lib/secureStorage';
 import { getUserProfile } from '@/services/auth/userProfileService';
 import { getProtectedAuthFlowKind } from '@/shared/auth/protectedAuthFlow';
-import { isPhoneOnlySignupFirebaseUser } from '@/shared/auth/sessionState';
 import { clearCriticalOfflineCacheForUser } from '@/services/offline/criticalOfflineCache';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RoleResolver } from '@/shared/role';
@@ -40,7 +38,7 @@ interface AuthState {
   isAdmin: boolean;
   isEmployer: boolean;
   isStaff: boolean;
-  setUser: (user: FirebaseUser | null) => void;
+  setUser: (user: SupabaseUser | null) => void;
   setProfile: (profile: UserProfile | null) => void;
   setStatus: (status: AuthStatus) => void;
   setError: (error: string | null) => void;
@@ -49,7 +47,7 @@ interface AuthState {
   setNeedsServerReconcile: (needsServerReconcile: boolean) => void;
   setBootstrapSource: (source: BootstrapSource) => void;
   initialize: () => Promise<void>;
-  checkAuthState: (firebaseUser?: FirebaseUser | null) => Promise<void>;
+  checkAuthState: (supabaseUser?: SupabaseUser | null) => Promise<void>;
   reset: () => void;
   clearAuthUiState: (preserveUserId?: string | null) => void;
   clearAuthState: () => void;
@@ -171,35 +169,16 @@ function resolveScopedUserId(
   return state.lastScopedUserId ?? state.user?.uid ?? state.profile?.uid ?? null;
 }
 
-function toAuthUser(firebaseUser: FirebaseUser): AuthUser {
-  const providerIds =
-    firebaseUser.providerData
-      ?.map((provider) => provider.providerId)
-      .filter((providerId): providerId is string => Boolean(providerId)) ?? [];
-
+function toAuthUser(supabaseUser: SupabaseUser): AuthUser {
   return {
-    uid: firebaseUser.uid,
-    email: firebaseUser.email,
-    displayName: firebaseUser.displayName,
-    photoURL: firebaseUser.photoURL,
-    emailVerified: firebaseUser.emailVerified,
-    phoneNumber: firebaseUser.phoneNumber,
-    providerIds,
+    uid: supabaseUser.id,
+    email: supabaseUser.email ?? null,
+    displayName: (supabaseUser.user_metadata?.name as string) ?? null,
+    photoURL: (supabaseUser.user_metadata?.avatar_url as string) ?? null,
+    emailVerified: !!supabaseUser.email_confirmed_at,
+    phoneNumber: supabaseUser.phone ?? null,
+    providerIds: (supabaseUser.app_metadata?.providers as string[]) ?? [],
   };
-}
-
-function isExplicitSnapshotStale(firebaseUser: FirebaseUser | null | undefined): boolean {
-  if (firebaseUser === undefined) {
-    return false;
-  }
-
-  const liveUser = getFirebaseAuth().currentUser;
-
-  if (!firebaseUser) {
-    return Boolean(liveUser);
-  }
-
-  return !liveUser || liveUser.uid !== firebaseUser.uid;
 }
 
 async function clearRejectedServerSession(get: () => AuthState, uid: string) {
@@ -209,7 +188,7 @@ async function clearRejectedServerSession(get: () => AuthState, uid: string) {
   });
 
   try {
-    await syncSignOut();
+    await supabase.auth.signOut();
   } catch (error) {
     logger.warn('Failed to fully sign out rejected session', {
       component: 'authStore',
@@ -222,13 +201,13 @@ async function clearRejectedServerSession(get: () => AuthState, uid: string) {
 }
 
 async function clearAutoLoginBlockedSession(get: () => AuthState, uid: string) {
-  logger.info('Signing out restored Firebase session because auto login is disabled', {
+  logger.info('Signing out restored Supabase session because auto login is disabled', {
     component: 'authStore',
     uid,
   });
 
   try {
-    await syncSignOut();
+    await supabase.auth.signOut();
   } catch (error) {
     logger.warn('Failed to sign out restored session while auto login is disabled', {
       component: 'authStore',
@@ -249,10 +228,10 @@ export const useAuthStore = create<AuthState>()(
     return {
       ...initialState,
 
-      setUser: (firebaseUser) => {
+      setUser: (supabaseUser) => {
         const previousUserId = resolveScopedUserId(get());
 
-        if (!firebaseUser) {
+        if (!supabaseUser) {
           clearScopedOfflineState(previousUserId);
           clearCurrentAutoLoginSession();
           set({
@@ -271,17 +250,17 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        if (previousUserId && previousUserId !== firebaseUser.uid) {
+        if (previousUserId && previousUserId !== supabaseUser.id) {
           clearScopedOfflineState(previousUserId);
         }
 
         set({
-          user: toAuthUser(firebaseUser),
+          user: toAuthUser(supabaseUser),
           status: 'authenticated',
           isAuthenticated: true,
           isLoading: false,
           error: null,
-          lastScopedUserId: firebaseUser.uid,
+          lastScopedUserId: supabaseUser.id,
           suppressedSessionUserId: null,
         });
       },
@@ -352,23 +331,21 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      checkAuthState: async (firebaseUser?: FirebaseUser | null) => {
+      checkAuthState: async (supabaseUser?: SupabaseUser | null) => {
         let state = get();
         if (!state.isInitialized) {
           await get().initialize();
           state = get();
         }
 
-        const hasExplicitAuthSnapshot = firebaseUser !== undefined;
-        const currentUser = hasExplicitAuthSnapshot ? firebaseUser : getFirebaseAuth().currentUser;
+        const hasExplicitAuthSnapshot = supabaseUser !== undefined;
+        let currentUser: SupabaseUser | null = null;
 
-        if (hasExplicitAuthSnapshot && isExplicitSnapshotStale(firebaseUser)) {
-          logger.debug('Ignored stale auth snapshot', {
-            component: 'authStore',
-            snapshotUid: firebaseUser?.uid ?? null,
-            liveUid: getFirebaseAuth().currentUser?.uid ?? null,
-          });
-          return;
+        if (hasExplicitAuthSnapshot) {
+          currentUser = supabaseUser ?? null;
+        } else {
+          const { data } = await supabase.auth.getUser();
+          currentUser = data.user;
         }
 
         if (!currentUser) {
@@ -384,7 +361,7 @@ export const useAuthStore = create<AuthState>()(
                 error: null,
               });
             } else {
-              logger.debug('Skipped clearing auth state while Firebase auth is still settling', {
+              logger.debug('Skipped clearing auth state while Supabase auth is still settling', {
                 component: 'authStore',
                 status: state.status,
                 hasUser: Boolean(state.user),
@@ -422,37 +399,28 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           logger.warn('Failed to read auto login preference during auth sync', {
             component: 'authStore',
-            uid: currentUser.uid,
+            uid: currentUser.id,
             error: error instanceof Error ? error.message : String(error),
           });
-        }
-
-        if (hasExplicitAuthSnapshot && isExplicitSnapshotStale(firebaseUser)) {
-          logger.debug('Ignored stale auth snapshot after auto login check', {
-            component: 'authStore',
-            snapshotUid: firebaseUser?.uid ?? null,
-            liveUid: getFirebaseAuth().currentUser?.uid ?? null,
-          });
-          return;
         }
 
         if (
           hasExplicitAuthSnapshot &&
           !autoLoginEnabled &&
-          state.suppressedSessionUserId === currentUser.uid &&
+          state.suppressedSessionUserId === currentUser.id &&
           !state.user &&
           !state.profile &&
           state.status === 'unauthenticated'
         ) {
-          await clearAutoLoginBlockedSession(get, currentUser.uid);
+          await clearAutoLoginBlockedSession(get, currentUser.id);
           return;
         }
 
-        const isDifferentUser = state.user?.uid !== currentUser.uid;
+        const isDifferentUser = state.user?.uid !== currentUser.id;
         const shouldRefreshProfile =
-          isDifferentUser || !state.profile || state.profile.uid !== currentUser.uid;
+          isDifferentUser || !state.profile || state.profile.uid !== currentUser.id;
 
-        if (state.profile?.uid && state.profile.uid !== currentUser.uid) {
+        if (state.profile?.uid && state.profile.uid !== currentUser.id) {
           get().setProfile(null);
         }
 
@@ -468,17 +436,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          const profile = await getUserProfile(currentUser.uid);
-          const liveUser = getFirebaseAuth().currentUser;
-
-          if (!liveUser || liveUser.uid !== currentUser.uid) {
-            logger.debug('Ignored stale auth profile response', {
-              component: 'authStore',
-              requestedUid: currentUser.uid,
-              liveUid: liveUser?.uid ?? null,
-            });
-            return;
-          }
+          const profile = await getUserProfile(currentUser.id);
 
           if (profile) {
             get().setProfile(toStoreProfile(profile));
@@ -487,13 +445,13 @@ export const useAuthStore = create<AuthState>()(
               bootstrapSource: 'server',
             });
           } else {
-            const protectedAuthFlowKind = getProtectedAuthFlowKind(currentUser.uid);
+            const protectedAuthFlowKind = getProtectedAuthFlowKind(currentUser.id);
             if (protectedAuthFlowKind) {
               logger.info(
                 'Preserving protected auth flow session until profile creation completes',
                 {
                   component: 'authStore',
-                  uid: currentUser.uid,
+                  uid: currentUser.id,
                   flowKind: protectedAuthFlowKind,
                 }
               );
@@ -504,36 +462,24 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            if (isPhoneOnlySignupFirebaseUser(currentUser)) {
-              logger.info('Preserving phone-only signup session until profile creation completes', {
-                component: 'authStore',
-                uid: currentUser.uid,
-              });
-              set({
-                needsServerReconcile: false,
-                bootstrapSource: 'none',
-              });
-              return;
-            }
-
-            await clearRejectedServerSession(get, currentUser.uid);
+            await clearRejectedServerSession(get, currentUser.id);
             return;
           }
 
-          logger.debug('Firebase Auth 상태와 스토어를 동기화했습니다', {
+          logger.debug('Supabase Auth 상태와 스토어를 동기화했습니다', {
             component: 'authStore',
-            uid: currentUser.uid,
+            uid: currentUser.id,
             hasProfile: Boolean(profile),
           });
         } catch (error) {
-          logger.warn('Firebase Auth 상태 동기화 중 프로필 로드에 실패했습니다', {
+          logger.warn('Supabase Auth 상태 동기화 중 프로필 로드에 실패했습니다', {
             component: 'authStore',
-            uid: currentUser.uid,
+            uid: currentUser.id,
             error: error instanceof Error ? error.message : String(error),
           });
           set({
             needsServerReconcile: true,
-            bootstrapSource: state.profile?.uid === currentUser.uid ? 'cache' : 'none',
+            bootstrapSource: state.profile?.uid === currentUser.id ? 'cache' : 'none',
           });
         } finally {
           set({

@@ -1,4 +1,4 @@
-import type { User as FirebaseUser } from 'firebase/auth';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import { isUserRole, type UserRole } from '@/types/role';
 import { requireCurrentUser } from './authCoreService';
@@ -11,37 +11,31 @@ function throwUnauthorized(userMessage: string = UNAUTHORIZED_MESSAGE): never {
   });
 }
 
-function getRoleClaim(claims: Record<string, unknown>): UserRole | null {
-  const role = claims.role;
-  return isUserRole(role) ? role : null;
-}
-
-export function requireMatchingCurrentUser(expectedUserId: string): FirebaseUser {
-  const currentUser = requireCurrentUser();
-  if (currentUser.uid !== expectedUserId) {
+export async function requireMatchingCurrentUser(expectedUserId: string): Promise<SupabaseUser> {
+  const currentUser = await requireCurrentUser();
+  if (currentUser.id !== expectedUserId) {
     throwUnauthorized();
   }
   return currentUser;
 }
 
-export async function requireCurrentUserRole(expectedRole: UserRole): Promise<FirebaseUser> {
-  const currentUser = requireCurrentUser();
-  const tokenResult = await currentUser.getIdTokenResult();
-  const currentRole = getRoleClaim(tokenResult.claims as Record<string, unknown>);
+export async function requireCurrentUserRole(expectedRole: UserRole): Promise<SupabaseUser> {
+  const currentUser = await requireCurrentUser();
+  const currentRole = currentUser.app_metadata?.role as string | undefined;
 
-  if (currentRole !== expectedRole) {
+  if (!currentRole || !isUserRole(currentRole) || currentRole !== expectedRole) {
     throwUnauthorized(`${expectedRole} 권한이 필요합니다`);
   }
 
   return currentUser;
 }
 
-export async function requireAdminUser(expectedUserId?: string): Promise<FirebaseUser> {
+export async function requireAdminUser(expectedUserId?: string): Promise<SupabaseUser> {
   const currentUser = expectedUserId
-    ? requireMatchingCurrentUser(expectedUserId)
-    : requireCurrentUser();
-  const tokenResult = await currentUser.getIdTokenResult();
-  const currentRole = getRoleClaim(tokenResult.claims as Record<string, unknown>);
+    ? await requireMatchingCurrentUser(expectedUserId)
+    : await requireCurrentUser();
+
+  const currentRole = currentUser.app_metadata?.role as string | undefined;
 
   if (currentRole !== 'admin') {
     throwUnauthorized('관리자 권한이 필요합니다');

@@ -1,4 +1,4 @@
-import type { User as FirebaseUser, UserInfo } from 'firebase/auth';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import type { AuthUser } from '@/types/auth';
 
 type PhoneOnlyAuthUser = Pick<AuthUser, 'email' | 'phoneNumber' | 'providerIds'>;
@@ -27,17 +27,23 @@ export function isPhoneOnlySignupAuthUser(user?: PhoneOnlyAuthUser | null): bool
   return hasPhoneProvider || !hasNonPhoneProvider;
 }
 
-export function isPhoneOnlySignupFirebaseUser(user?: FirebaseUser | null): boolean {
-  if (!user || !hasPhoneWithoutEmail(user)) {
-    return false;
-  }
+/**
+ * Supabase 사용자가 phone-only signup 상태인지 확인
+ *
+ * Supabase에서는 phone-only signup이 일반적이지 않지만,
+ * 하위 호환성을 위해 유지합니다.
+ */
+export function isPhoneOnlySignupFirebaseUser(user?: SupabaseUser | null): boolean {
+  if (!user) return false;
 
-  const providerIds =
-    user.providerData
-      ?.map((provider: UserInfo) => provider.providerId)
-      .filter((providerId): providerId is string => Boolean(providerId)) ?? [];
-  const hasPhoneProvider = providerIds.includes('phone');
-  const hasNonPhoneProvider = providerIds.some((providerId) => providerId !== 'phone');
+  const hasPhone = typeof user.phone === 'string' && user.phone.length > 0;
+  const hasEmail = typeof user.email === 'string' && user.email.length > 0;
+
+  if (!hasPhone || hasEmail) return false;
+
+  const providers = (user.app_metadata?.providers as string[]) ?? [];
+  const hasPhoneProvider = providers.includes('phone');
+  const hasNonPhoneProvider = providers.some((p) => p !== 'phone');
 
   return hasPhoneProvider || !hasNonPhoneProvider;
 }

@@ -1,4 +1,4 @@
-import { getCurrentAuthUser } from './appInitializeAuthSession';
+import { useAuthStore } from '@/stores/authStore';
 
 type BootstrapSource = 'none' | 'cache' | 'server';
 
@@ -28,6 +28,6 @@ export function canRunBoardQueryWithAuth({
 export function isBoardQueryAuthReady(input: Omit<BoardQueryAuthGateInput, 'liveUserId'>): boolean {
   return canRunBoardQueryWithAuth({
     ...input,
-    liveUserId: getCurrentAuthUser()?.uid ?? null,
+    liveUserId: useAuthStore.getState().user?.uid ?? null,
   });
 }

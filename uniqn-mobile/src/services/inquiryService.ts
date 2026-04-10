@@ -47,8 +47,8 @@ export async function fetchMyInquiries(
       });
     }
 
-    const currentUser = requireMatchingCurrentUser(userId);
-    const result = await inquiryRepository.getByUserId(currentUser.uid, {
+    const currentUser = await requireMatchingCurrentUser(userId);
+    const result = await inquiryRepository.getByUserId(currentUser.id, {
       pageSize,
       cursor,
     });
@@ -110,7 +110,7 @@ export async function createInquiry(
   userName: string,
   input: CreateInquiryInput
 ): Promise<string> {
-  const currentUser = requireMatchingCurrentUser(userId);
+  const currentUser = await requireMatchingCurrentUser(userId);
   const validationResult = createInquirySchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -123,7 +123,7 @@ export async function createInquiry(
   try {
     const validated = validationResult.data;
     const id = await inquiryRepository.create(
-      { userId: currentUser.uid, userEmail, userName },
+      { userId: currentUser.id, userEmail, userName },
       validated
     );
 
@@ -138,7 +138,7 @@ export async function createInquiry(
     throw handleServiceError(error, {
       operation: '문의 생성',
       component: COMPONENT,
-      context: { userId: currentUser.uid, category: input.category },
+      context: { userId: currentUser.id, category: input.category },
     });
   }
 }
@@ -160,19 +160,19 @@ export async function respondToInquiry(
   }
 
   try {
-    await inquiryRepository.respond(inquiryId, admin.uid, responderName, validationResult.data);
+    await inquiryRepository.respond(inquiryId, admin.id, responderName, validationResult.data);
 
     logger.info('문의 응답 완료', {
       component: COMPONENT,
       inquiryId,
-      responderId: admin.uid,
+      responderId: admin.id,
       status: input.status,
     });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '문의 응답',
       component: COMPONENT,
-      context: { inquiryId, responderId: admin.uid },
+      context: { inquiryId, responderId: admin.id },
     });
   }
 }
@@ -186,7 +186,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
       component: COMPONENT,
       inquiryId,
       status,
-      adminId: admin.uid,
+      adminId: admin.id,
     });
   } catch (error) {
     throw handleServiceError(error, {

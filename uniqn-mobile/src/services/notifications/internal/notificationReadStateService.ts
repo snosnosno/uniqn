@@ -1,5 +1,4 @@
-import { httpsCallable } from 'firebase/functions';
-import { getFirebaseFunctions } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
 import { notificationRepository } from '@/repositories';
@@ -24,12 +23,10 @@ async function resetUnreadCounterWithRetry(
 
   while (retryCount < MAX_RETRIES) {
     try {
-      const functions = getFirebaseFunctions();
-      const resetCounter = httpsCallable<{ notificationIds: string[] }, { success: boolean }>(
-        functions,
-        'resetUnreadCounter'
-      );
-      await resetCounter({ notificationIds });
+      const { error } = await supabase.functions.invoke('reset-unread-counter', {
+        body: { notificationIds },
+      });
+      if (error) throw error;
       logger.info('미읽음 카운터 리셋 완료', { userId });
       return true;
     } catch (counterError) {
@@ -53,12 +50,10 @@ async function resetUnreadCounterWithRetry(
 
 async function decrementUnreadCounterWithRetry(delta: number): Promise<boolean> {
   try {
-    const functions = getFirebaseFunctions();
-    const decrementCounter = httpsCallable<{ delta: number }, { success: boolean }>(
-      functions,
-      'decrementUnreadCounter'
-    );
-    await decrementCounter({ delta });
+    const { error } = await supabase.functions.invoke('decrement-unread-counter', {
+      body: { delta },
+    });
+    if (error) throw error;
     logger.info('미읽음 카운터 감소 완료', { delta });
     return true;
   } catch (counterError) {

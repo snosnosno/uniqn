@@ -34,6 +34,7 @@ export {
   getUserProfile,
   reauthenticate,
   getCurrentUser,
+  getCurrentUserAsync,
   requireCurrentUser,
   onAuthStateChanged,
   checkEmailExists,

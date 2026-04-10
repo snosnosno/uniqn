@@ -2,18 +2,16 @@
  * UNIQN Mobile - Session Management Service
  */
 
-import { AppState, Platform, type AppStateStatus } from 'react-native';
-import type { User as FirebaseUser } from 'firebase/auth';
+import { AppState, type AppStateStatus } from 'react-native';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { router } from 'expo-router';
-import { syncSignOut } from '@/lib/authBridge';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { authStorage, userSessionStorage, getItem, setItem, deleteItem } from '@/lib/secureStorage';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { RealtimeManager } from '@/shared/realtime';
-import { toDateValue } from '@/utils/date';
 import { logger } from '@/utils/logger';
 import { sentryService } from './sentryService';
 
@@ -24,7 +22,7 @@ const SESSION_WARNING_BUFFER = 5 * 60 * 1000;
 const TOKEN_REFRESH_INTERVAL = 50 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 15 * 60 * 1000;
-const TOKEN_EXPIRY_BUFFER = 5 * 60 * 1000;
+// TOKEN_EXPIRY_BUFFER removed - Supabase handles token refresh automatically
 const AUTH_RESTORE_SETTLE_TIMEOUT_MS = 2000;
 
 export interface SessionState {
@@ -50,13 +48,14 @@ let authStoreUnsubscribe: (() => void) | null = null;
 let managedSessionUserId: string | null = null;
 let startupAuthRestoreGuardUntil: number | null = null;
 
-function shouldManageSessionForUser(user: FirebaseUser | null): boolean {
+function shouldManageSessionForUser(user: { uid?: string; id?: string } | null): boolean {
   if (!user) {
     return false;
   }
 
+  const userId = user.uid ?? user.id;
   const authState = useAuthStore.getState();
-  return authState.status === 'authenticated' && authState.suppressedSessionUserId !== user.uid;
+  return authState.status === 'authenticated' && authState.suppressedSessionUserId !== userId;
 }
 
 function clearSessionRuntime(): void {
@@ -67,7 +66,7 @@ function clearSessionRuntime(): void {
 }
 
 function syncManagedSessionState(): void {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   const nextManagedUserId =
     currentUser && shouldManageSessionForUser(currentUser) ? currentUser.uid : null;
 
@@ -86,7 +85,7 @@ function syncManagedSessionState(): void {
   startTokenRefreshInterval();
 }
 
-function shouldSkipAuthStoreSync(user: FirebaseUser | null): boolean {
+function shouldSkipAuthStoreSync(user: SupabaseUser | null): boolean {
   if (!user) {
     return false;
   }
@@ -95,8 +94,8 @@ function shouldSkipAuthStoreSync(user: FirebaseUser | null): boolean {
   return (
     authState.isInitialized &&
     authState.status === 'authenticated' &&
-    authState.user?.uid === user.uid &&
-    authState.profile?.uid === user.uid
+    authState.user?.uid === user.id &&
+    authState.profile?.uid === user.id
   );
 }
 
@@ -105,7 +104,7 @@ function armStartupAuthRestoreGuard(): void {
   const shouldGuard =
     authState.status === 'authenticated' &&
     authState.bootstrapSource === 'cache' &&
-    !getFirebaseAuth().currentUser;
+    !useAuthStore.getState().user;
 
   startupAuthRestoreGuardUntil = shouldGuard ? Date.now() + AUTH_RESTORE_SETTLE_TIMEOUT_MS : null;
 }
@@ -114,7 +113,7 @@ function clearStartupAuthRestoreGuard(): void {
   startupAuthRestoreGuardUntil = null;
 }
 
-function shouldWaitForStartupAuthRestore(user: FirebaseUser | null): boolean {
+function shouldWaitForStartupAuthRestore(user: SupabaseUser | null): boolean {
   if (user || startupAuthRestoreGuardUntil === null) {
     return false;
   }
@@ -128,87 +127,40 @@ function shouldWaitForStartupAuthRestore(user: FirebaseUser | null): boolean {
   return (
     authState.status === 'authenticated' &&
     authState.bootstrapSource === 'cache' &&
-    !getFirebaseAuth().currentUser
+    !useAuthStore.getState().user
   );
 }
 
 async function waitForRestoredAuthUser(
   timeoutMs = AUTH_RESTORE_SETTLE_TIMEOUT_MS
-): Promise<FirebaseUser | null> {
-  const auth = getFirebaseAuth() as ReturnType<typeof getFirebaseAuth> & {
-    authStateReady?: () => Promise<void>;
-  };
-
-  if (auth.currentUser) {
-    return auth.currentUser;
+): Promise<SupabaseUser | null> {
+  // Try to get the current user directly
+  const { data } = await supabase.auth.getUser();
+  if (data.user) {
+    return data.user;
   }
 
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  if (typeof auth.authStateReady === 'function') {
-    try {
-      await Promise.race([
-        auth.authStateReady(),
-        new Promise<void>((resolve) => {
-          timeoutId = setTimeout(resolve, timeoutMs);
-        }),
-      ]);
-    } catch (error) {
-      logger.debug('authStateReady failed while confirming null auth event', {
-        component: 'sessionService',
-        error: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    }
-
-    return auth.currentUser;
-  }
-
-  return new Promise<FirebaseUser | null>((resolve) => {
+  // Wait for auth state change with timeout
+  return new Promise<SupabaseUser | null>((resolve) => {
     let settled = false;
-    let unsubscribe: (() => void) | null = null;
-    let shouldCleanupAfterRegister = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const finish = (nextUser: FirebaseUser | null) => {
-      if (settled) {
-        return;
-      }
-
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (settled) return;
       settled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      if (unsubscribe) {
-        const nextUnsubscribe = unsubscribe;
-        unsubscribe = null;
-        nextUnsubscribe();
-      } else {
-        shouldCleanupAfterRegister = true;
-      }
-      resolve(nextUser);
-    };
-
-    timeoutId = setTimeout(() => finish(auth.currentUser), timeoutMs);
-
-    const registeredUnsubscribe = auth.onAuthStateChanged((nextUser) => {
-      if (nextUser || auth.currentUser) {
-        finish(nextUser ?? auth.currentUser);
-      }
+      if (timeoutId) clearTimeout(timeoutId);
+      subscription.unsubscribe();
+      resolve(session?.user ?? null);
     });
 
-    unsubscribe = () => {
-      registeredUnsubscribe();
-    };
-
-    if (shouldCleanupAfterRegister) {
-      const nextUnsubscribe = unsubscribe;
-      unsubscribe = null;
-      shouldCleanupAfterRegister = false;
-      nextUnsubscribe();
-    }
+    timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      subscription.unsubscribe();
+      resolve(null);
+    }, timeoutMs);
   });
 }
 
@@ -219,7 +171,12 @@ export function initialize(): void {
 
   appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
   armStartupAuthRestoreGuard();
-  authUnsubscribe = getFirebaseAuth().onAuthStateChanged(handleAuthStateChange);
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
+    handleAuthStateChange(session?.user ?? null);
+  });
+  authUnsubscribe = () => subscription.unsubscribe();
   authStoreUnsubscribe = useAuthStore.subscribe(() => {
     syncManagedSessionState();
   });
@@ -280,7 +237,7 @@ function handleAppStateChange(state: AppStateStatus): void {
   }
 }
 
-async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
+async function handleAuthStateChange(user: SupabaseUser | null): Promise<void> {
   let nextUser = user;
 
   if (nextUser) {
@@ -290,9 +247,9 @@ async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
     clearStartupAuthRestoreGuard();
 
     if (restoredUser) {
-      logger.debug('Ignored transient null auth event while Firebase session restored', {
+      logger.debug('Ignored transient null auth event while Supabase session restored', {
         component: 'sessionService',
-        uid: restoredUser.uid,
+        uid: restoredUser.id,
       });
       nextUser = restoredUser;
     }
@@ -317,19 +274,12 @@ async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
   }
 
   try {
-    const currentUser = getFirebaseAuth().currentUser;
     const activeUser = nextUser;
     if (!activeUser) {
       return;
     }
-    if (currentUser && currentUser.uid === activeUser.uid) {
-      if (Platform.OS === 'web') {
-        await currentUser.getIdTokenResult();
-      } else {
-        await currentUser.getIdToken(true);
-      }
-      logger.debug('토큰 강제 갱신 완료 (Custom Claims 로드)');
-    }
+    // Supabase handles token refresh automatically
+    logger.debug('세션 상태 확인 완료');
   } catch (error) {
     logger.warn('토큰 갱신 실패', {
       error: error instanceof Error ? error.message : String(error),
@@ -342,13 +292,13 @@ async function handleAuthStateChange(user: FirebaseUser | null): Promise<void> {
 export function recordActivity(): void {
   lastActivity = Date.now();
 
-  if (shouldManageSessionForUser(getFirebaseAuth().currentUser)) {
+  if (shouldManageSessionForUser(useAuthStore.getState().user)) {
     resetActivityTimer();
   }
 }
 
 function checkSession(): void {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!shouldManageSessionForUser(currentUser)) {
     return;
   }
@@ -402,7 +352,7 @@ function clearSessionWarning(): void {
 }
 
 function showSessionWarning(): void {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!shouldManageSessionForUser(currentUser)) {
     return;
   }
@@ -425,7 +375,7 @@ async function expireSession(message: string): Promise<void> {
   try {
     RealtimeManager.unsubscribeAll();
     clearCounterSyncCache();
-    await syncSignOut();
+    await supabase.auth.signOut();
     useAuthStore.getState().reset();
   } catch (error) {
     logger.error('세션 만료 처리 중 로그아웃에 실패했습니다', toError(error));
@@ -436,7 +386,7 @@ async function expireSession(message: string): Promise<void> {
 }
 
 function startTokenRefreshInterval(): void {
-  if (!shouldManageSessionForUser(getFirebaseAuth().currentUser)) {
+  if (!shouldManageSessionForUser(useAuthStore.getState().user)) {
     clearTokenRefreshInterval();
     return;
   }
@@ -456,21 +406,18 @@ function clearTokenRefreshInterval(): void {
 }
 
 async function checkAndRefreshToken(): Promise<void> {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!shouldManageSessionForUser(currentUser)) {
     return;
   }
 
   try {
-    const activeUser = currentUser;
-    if (!activeUser) {
-      return;
-    }
-    const tokenResult = await activeUser.getIdTokenResult();
-    const expirationTime = toDateValue(tokenResult.expirationTime);
-    const now = Date.now();
-
-    if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
+    // Supabase handles token refresh automatically via autoRefreshToken
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+    if (error || !session) {
       await refreshToken();
     }
   } catch (error) {
@@ -483,17 +430,25 @@ async function checkAndRefreshToken(): Promise<void> {
 }
 
 export async function refreshToken(): Promise<string | null> {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!currentUser) {
     logger.warn('토큰 갱신 실패 - 로그인 필요');
     return null;
   }
 
   try {
-    const newToken = await currentUser.getIdToken(true);
-    await authStorage.setAuthToken(newToken);
-    logger.info('토큰 갱신 성공');
-    return newToken;
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.refreshSession();
+    if (error) throw error;
+
+    const accessToken = session?.access_token ?? null;
+    if (accessToken) {
+      await authStorage.setAuthToken(accessToken);
+      logger.info('토큰 갱신 성공');
+    }
+    return accessToken;
   } catch (error) {
     logger.error('토큰 갱신 실패', toError(error));
     void sentryService.recordError(toError(error), {
@@ -506,21 +461,19 @@ export async function refreshToken(): Promise<string | null> {
 }
 
 export async function getValidToken(): Promise<string | null> {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!currentUser) {
     return null;
   }
 
   try {
-    const tokenResult = await currentUser.getIdTokenResult();
-    const expirationTime = toDateValue(tokenResult.expirationTime);
-    const now = Date.now();
-
-    if (expirationTime === null || expirationTime - now < TOKEN_EXPIRY_BUFFER) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
       return await refreshToken();
     }
-
-    return tokenResult.token;
+    return session.access_token;
   } catch (error) {
     logger.error('유효 토큰 조회 실패', toError(error));
     return null;
@@ -614,7 +567,7 @@ export async function getRemainingLoginAttempts(email: string): Promise<number> 
 }
 
 export function getSessionState(): SessionState {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
 
   return {
     isActive: shouldManageSessionForUser(currentUser),
@@ -624,7 +577,7 @@ export function getSessionState(): SessionState {
 }
 
 export function isSessionActive(): boolean {
-  const currentUser = getFirebaseAuth().currentUser;
+  const currentUser = useAuthStore.getState().user;
   if (!shouldManageSessionForUser(currentUser)) {
     return false;
   }

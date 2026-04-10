@@ -2,12 +2,11 @@
  * UNIQN Mobile - 인증 서비스 공유 타입 & 헬퍼
  *
  * @description authService 분할 시 여러 모듈에서 공유하는 타입과 유틸리티
- * @version 1.0.0
+ * @version 2.0.0 - Supabase Auth 전환
  */
 
-import { httpsCallable } from 'firebase/functions';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { getFirebaseFunctions } from '@/lib/firebase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { isRetryableError } from '@/errors';
 import type { FirestoreUserProfile } from '@/types';
@@ -23,7 +22,7 @@ import type { FirestoreUserProfile } from '@/types';
 export type UserProfile = FirestoreUserProfile;
 
 export interface AuthResult {
-  user: FirebaseUser;
+  user: SupabaseUser;
   profile: UserProfile;
 }
 
@@ -56,7 +55,7 @@ export interface SocialProfileData {
 // Shared Helpers
 // ============================================================================
 
-/** CF verifyAndSaveProfile 요청 페이로드 */
+/** Supabase Edge Function verifyAndSaveProfile 요청 페이로드 */
 export interface VerifyAndSavePayload {
   verifiedPhone: string;
   name: string;
@@ -79,22 +78,23 @@ export interface VerifyAndSavePayload {
 }
 
 /**
- * verifyAndSaveProfile CF 호출 (일반 가입 / 소셜 프로필 완성 공통)
+ * verifyAndSaveProfile Supabase Edge Function 호출 (일반 가입 / 소셜 프로필 완성 공통)
  *
- * 서버사이드에서 전화번호 검증, XSS 검증, 중복 검사, Batch Write,
- * Custom Claims 설정, displayName 설정을 모두 처리합니다.
+ * 서버사이드에서 전화번호 검증, XSS 검증, 중복 검사, DB Write,
+ * role 설정, displayName 설정을 모두 처리합니다.
  *
  * 네트워크 에러에 한해 1회 재시도 (2초 대기).
- * CF 내부 Transaction이 중복 실행을 방지하므로 재시도해도 데이터 무결성 보장.
  */
 export async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<void> {
-  const verifyAndSave = httpsCallable<VerifyAndSavePayload, { success: boolean; uid: string }>(
-    getFirebaseFunctions(),
-    'verifyAndSaveProfile'
-  );
+  const invoke = async () => {
+    const { error } = await supabase.functions.invoke('verify-and-save-profile', {
+      body: payload,
+    });
+    if (error) throw error;
+  };
 
   try {
-    await verifyAndSave(payload);
+    await invoke();
   } catch (error) {
     if (!isRetryableError(error)) throw error;
 
@@ -103,6 +103,6 @@ export async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): P
       error: error instanceof Error ? error.message : String(error),
     });
     await new Promise((r) => setTimeout(r, 2000));
-    await verifyAndSave(payload);
+    await invoke();
   }
 }

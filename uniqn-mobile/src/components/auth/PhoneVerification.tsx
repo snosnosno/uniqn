@@ -17,9 +17,39 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { cleanPhoneNumber, toE164 } from '@/utils/phone';
 import { PhoneVerifiedView } from './PhoneVerifiedView';
-import { useRecaptcha } from '@/hooks/auth/useRecaptcha';
-import { usePhoneSMS } from '@/hooks/auth/usePhoneSMS';
 import { useOTPVerification } from '@/hooks/auth/useOTPVerification';
+// useRecaptcha and usePhoneSMS removed - phone SMS auth replaced by PortOne identity verification
+// TODO: This component needs to be updated to use PortOne identity verification flow
+
+/** @deprecated Stub - phone SMS auth replaced by PortOne identity verification */
+function useRecaptcha(_onError?: (msg: string) => void) {
+  return {
+    recaptchaKey: 0,
+    getOrCreateVerifier: () => null,
+    cleanupOnError: () => {},
+  };
+}
+
+/** @deprecated Stub - phone SMS auth replaced by PortOne identity verification */
+function usePhoneSMS(_options: Record<string, unknown>) {
+  return {
+    phone: '',
+    setPhone: (_v: string) => {},
+    isLoading: false,
+    isRequesting: false,
+    error: null,
+    setError: (_v: string | null) => {},
+    confirmation: null,
+    sendSMS: async () => {},
+    requestSMS: async (_otpData?: unknown): Promise<string | void> => {},
+    checkPhoneDuplicate: async () => false,
+    cleanup: () => {},
+    resetState: () => {},
+    handlePhoneChange: (_v: string) => {},
+    verificationIdRef: { current: null },
+    requestedModeRef: { current: 'signIn' as const },
+  };
+}
 
 // ============================================================================
 // Types
@@ -121,11 +151,13 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     /** 인증번호 요청 */
     const handleRequestOTP = useCallback(async () => {
       otpHook.setError(null);
-      const result = await smsHook.requestSMS((otpData) => {
-        // auto-completed callback (Android 자동인증)
-        setStep('verified');
-        onVerified(toE164(smsHook.phone), otpData);
-      });
+      const result = await smsHook.requestSMS(
+        (otpData: { verificationId: string; otpCode: string } | undefined) => {
+          // auto-completed callback (Android 자동인증)
+          setStep('verified');
+          onVerified(toE164(smsHook.phone), otpData);
+        }
+      );
 
       if (result === 'otp') {
         setStep('otp');

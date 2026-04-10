@@ -8,7 +8,7 @@ import {
   isFirebaseError,
 } from '@/errors';
 import { handleSilentError } from '@/errors/serviceErrorHandler';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { useAuthStore } from '@/stores/authStore';
 import {
   announcementRepository,
   applicationRepository,
@@ -405,7 +405,7 @@ function handleBoardHomeSectionPermissionError(
   viewer: BoardViewer,
   error: unknown
 ) {
-  const liveUserId = getFirebaseAuth().currentUser?.uid ?? null;
+  const liveUserId = useAuthStore.getState().user?.uid ?? null;
 
   handleSilentError(error, {
     operation: '게시판 홈 섹션 스킵',
@@ -1010,7 +1010,7 @@ export async function createBoardPost(
   authorRole: BoardAuthorRole,
   input: CreateBoardPostInput
 ): Promise<string> {
-  requireMatchingCurrentUser(userId);
+  await requireMatchingCurrentUser(userId);
   assertCanCreatePost(input);
   assertSafeText('title', input.title, 120);
   assertSafeText('body', input.body, 5000);
@@ -1041,7 +1041,7 @@ export async function updateBoardPost(
   input: UpdateBoardPostInput
 ): Promise<void> {
   if (viewer.userId) {
-    requireMatchingCurrentUser(viewer.userId);
+    await requireMatchingCurrentUser(viewer.userId);
   }
 
   if (input.title !== undefined) {
@@ -1096,7 +1096,7 @@ export async function setBoardPostLock(
   isLocked: boolean
 ): Promise<void> {
   if (viewer.userId) {
-    requireMatchingCurrentUser(viewer.userId);
+    await requireMatchingCurrentUser(viewer.userId);
   }
 
   try {
@@ -1150,7 +1150,7 @@ export async function createBoardComment(
   authorRole: BoardAuthorRole,
   input: CreateBoardCommentInput
 ): Promise<string> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   assertSafeText('body', input.body, 3000);
   assertImageLimit(input.imageAttachments?.length ?? 0, MAX_BOARD_COMMENT_IMAGES);
 
@@ -1227,7 +1227,7 @@ export async function updateBoardComment(
   viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>,
   input: UpdateBoardCommentInput
 ): Promise<void> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   if (input.body !== undefined) {
     assertSafeText('body', input.body, 3000);
   }
@@ -1295,7 +1295,7 @@ export async function setBoardCommentStatus(
   viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>,
   status: 'hidden' | 'deleted'
 ): Promise<void> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   try {
     const detail = await getBoardPostDetail(postId, viewer);
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
@@ -1360,7 +1360,7 @@ export async function setBoardCommentPinned(
   commentId: string,
   viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>
 ): Promise<void> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   try {
     const detail = await getBoardPostDetail(postId, viewer);
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
@@ -1408,7 +1408,7 @@ export async function toggleBoardPostVote(
   viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>,
   type: BoardVoteType
 ): Promise<BoardVoteType | null> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
@@ -1434,7 +1434,7 @@ export async function toggleBoardCommentReaction(
   viewer: Required<Pick<BoardViewer, 'userId'>> & Pick<BoardViewer, 'isAdmin'>,
   type: CommentReactionType
 ): Promise<CommentReactionType | null> {
-  requireMatchingCurrentUser(viewer.userId);
+  await requireMatchingCurrentUser(viewer.userId);
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
@@ -1463,7 +1463,7 @@ export async function toggleBoardCommentReaction(
 }
 
 export async function createBoardReport(input: CreateBoardReportInput): Promise<string> {
-  requireMatchingCurrentUser(input.reporterId);
+  await requireMatchingCurrentUser(input.reporterId);
   assertSafeText('reason', input.reason, 80);
   if (input.details?.trim()) {
     assertSafeText('details', input.details, 1000);

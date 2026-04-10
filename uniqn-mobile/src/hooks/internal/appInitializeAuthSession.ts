@@ -1,42 +1,55 @@
 import { Platform } from 'react-native';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 
 const INITIAL_AUTH_READY_TIMEOUT_MS = Platform.OS === 'web' ? 5000 : 10000;
 
 export type AuthUserResolution =
-  | { user: FirebaseUser; source: 'current' | 'event' }
+  | { user: SupabaseUser; source: 'current' | 'event' }
   | { user: null; source: 'event' | 'timeout' };
 
 export type InitialAuthResolution =
-  | { user: FirebaseUser; source: 'current' | 'ready' }
+  | { user: SupabaseUser; source: 'current' | 'ready' }
   | { user: null; source: 'ready' | 'timeout' };
 
-export function getCurrentAuthUser(): FirebaseUser | null {
-  return getFirebaseAuth().currentUser;
+export function getCurrentAuthUser(): SupabaseUser | null {
+  // Supabase doesn't have a sync currentUser; return null.
+  // Callers should use the async version or authStore.
+  return null;
+}
+
+export async function getCurrentAuthUserAsync(): Promise<SupabaseUser | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user;
 }
 
 export async function waitForAuthUser(timeoutMs = 3000): Promise<AuthUserResolution> {
-  const auth = getFirebaseAuth();
-
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'current' };
+  const { data } = await supabase.auth.getUser();
+  if (data.user) {
+    return { user: data.user, source: 'current' };
   }
 
+  // Wait for auth state change
   return new Promise<AuthUserResolution>((resolve) => {
-    let unsubscribe: (() => void) | null = null;
+    let settled = false;
 
     const timeoutId = setTimeout(() => {
-      unsubscribe?.();
+      if (settled) return;
+      settled = true;
+      subscription.unsubscribe();
       resolve({ user: null, source: 'timeout' });
     }, timeoutMs);
 
-    unsubscribe = auth.onAuthStateChanged((user) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeoutId);
-      unsubscribe?.();
+      subscription.unsubscribe();
       resolve({
-        user,
+        user: session?.user ?? null,
         source: 'event',
       });
     });
@@ -46,78 +59,44 @@ export async function waitForAuthUser(timeoutMs = 3000): Promise<AuthUserResolut
 export async function waitForInitialAuthUser(
   timeoutMs = INITIAL_AUTH_READY_TIMEOUT_MS
 ): Promise<InitialAuthResolution> {
-  const auth = getFirebaseAuth();
+  // First, try to get the current session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'current' };
+  if (session?.user) {
+    return { user: session.user, source: 'current' };
   }
 
-  if (typeof auth.authStateReady !== 'function') {
-    const fallbackResolution = await waitForAuthUser(timeoutMs);
+  // Wait for auth state to settle
+  return new Promise<InitialAuthResolution>((resolve) => {
+    let settled = false;
 
-    if (fallbackResolution.user) {
-      return {
-        user: fallbackResolution.user,
-        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
-      };
-    }
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      subscription.unsubscribe();
+      logger.warn('Timed out waiting for initial auth state', {
+        component: 'useAppInitialize',
+        timeoutMs,
+        platform: Platform.OS,
+      });
+      resolve({ user: null, source: 'timeout' });
+    }, timeoutMs);
 
-    return {
-      user: null,
-      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
-    };
-  }
-
-  let timedOut = false;
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  try {
-    await Promise.race([
-      auth.authStateReady(),
-      new Promise<void>((resolve) => {
-        timeoutId = setTimeout(() => {
-          timedOut = true;
-          resolve();
-        }, timeoutMs);
-      }),
-    ]);
-  } catch (error) {
-    logger.warn('authStateReady failed during initialization, falling back to auth observer', {
-      component: 'useAppInitialize',
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    const fallbackResolution = await waitForAuthUser(timeoutMs);
-
-    if (fallbackResolution.user) {
-      return {
-        user: fallbackResolution.user,
-        source: fallbackResolution.source === 'current' ? 'current' : 'ready',
-      };
-    }
-
-    return {
-      user: null,
-      source: fallbackResolution.source === 'timeout' ? 'timeout' : 'ready',
-    };
-  } finally {
-    if (timeoutId) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeoutId);
-    }
-  }
+      subscription.unsubscribe();
 
-  if (auth.currentUser) {
-    return { user: auth.currentUser, source: 'ready' };
-  }
-
-  if (timedOut) {
-    logger.warn('Timed out waiting for initial auth state', {
-      component: 'useAppInitialize',
-      timeoutMs,
-      platform: Platform.OS,
+      if (session?.user) {
+        resolve({ user: session.user, source: 'ready' });
+      } else {
+        resolve({ user: null, source: 'ready' });
+      }
     });
-    return { user: null, source: 'timeout' };
-  }
-
-  return { user: null, source: 'ready' };
+  });
 }

@@ -30,7 +30,7 @@ import type { UserRole } from '@/types/role';
 export async function getDashboardStats(): Promise<DashboardStats> {
   const admin = await requireAdminUser();
   try {
-    logger.info('대시보드 통계 조회 시작', { adminId: admin.uid });
+    logger.info('대시보드 통계 조회 시작', { adminId: admin.id });
 
     const [counts, recentUsers] = await Promise.all([
       adminRepository.getDashboardCounts(),
@@ -73,7 +73,7 @@ export async function getUsers(
 ): Promise<PaginatedUsers> {
   const admin = await requireAdminUser();
   try {
-    logger.info('사용자 목록 조회', { adminId: admin.uid, filters, page, pageSize });
+    logger.info('사용자 목록 조회', { adminId: admin.id, filters, page, pageSize });
 
     const result = await adminRepository.getUsers(filters, page, pageSize);
 
@@ -94,7 +94,7 @@ export async function getUsers(
 export async function getUserById(userId: string): Promise<AdminUser> {
   const admin = await requireAdminUser();
   try {
-    logger.info('사용자 조회', { adminId: admin.uid, userId });
+    logger.info('사용자 조회', { adminId: admin.id, userId });
 
     const user = await adminRepository.getUserById(userId);
 
@@ -123,7 +123,7 @@ export async function updateUserRole(
 ): Promise<void> {
   const admin = await requireAdminUser();
   try {
-    logger.info('사용자 역할 변경', { adminId: admin.uid, userId, newRole, reason });
+    logger.info('사용자 역할 변경', { adminId: admin.id, userId, newRole, reason });
 
     const previousRole = await adminRepository.updateUserRole(userId, newRole);
 
@@ -149,7 +149,7 @@ export async function setUserActive(
 ): Promise<void> {
   const admin = await requireAdminUser();
   try {
-    logger.info('사용자 상태 변경', { adminId: admin.uid, userId, isActive, reason });
+    logger.info('사용자 상태 변경', { adminId: admin.id, userId, isActive, reason });
 
     await adminRepository.setUserActive(userId, isActive);
 
@@ -170,7 +170,7 @@ export async function setUserActive(
 export async function getSystemMetrics(): Promise<SystemMetrics> {
   const admin = await requireAdminUser();
   try {
-    logger.info('시스템 메트릭스 조회 시작', { adminId: admin.uid });
+    logger.info('시스템 메트릭스 조회 시작', { adminId: admin.id });
 
     const metricsData = await adminRepository.getSystemMetrics();
 

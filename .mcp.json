@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-mcp-config.json",
   "mcpServers": {
     "mcp-installer": {
       "type": "stdio",
@@ -54,6 +53,10 @@
         "@tosspayments/integration-guide-mcp@latest"
       ],
       "env": {}
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ygfxukhktpqymahfrvbz&features=storage%2Cbranching%2Cfunctions%2Cdevelopment%2Cdebugging%2Cdatabase%2Caccount%2Cdocs"
     }
   }
 }

@@ -14,8 +14,7 @@
  * - resubmitJobPosting: 구인자 재제출
  */
 
-import { httpsCallable } from 'firebase/functions';
-import { getFirebaseFunctions } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import {
   mapFirebaseError,
@@ -111,19 +110,18 @@ export async function approveTournamentPosting(
   try {
     logger.info('대회공고 승인 요청', { postingId: data.postingId });
 
-    const functions = getFirebaseFunctions();
-    const approveFunction = httpsCallable<ApproveTournamentData, ApprovalResponse>(
-      functions,
-      'approveJobPosting'
+    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+      'approve-job-posting',
+      { body: data }
     );
+    if (error) throw error;
 
-    const result = await approveFunction(data);
     logger.info('대회공고 승인 완료', {
       postingId: data.postingId,
-      approvedBy: result.data.approvedBy,
+      approvedBy: result?.approvedBy,
     });
 
-    return result.data;
+    return result!;
   } catch (error) {
     logger.error('대회공고 승인 실패', toError(error), {
       postingId: data.postingId,
@@ -149,19 +147,18 @@ export async function rejectTournamentPosting(
       reasonLength: data.reason.length,
     });
 
-    const functions = getFirebaseFunctions();
-    const rejectFunction = httpsCallable<RejectTournamentData, ApprovalResponse>(
-      functions,
-      'rejectJobPosting'
+    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+      'reject-job-posting',
+      { body: data }
     );
+    if (error) throw error;
 
-    const result = await rejectFunction(data);
     logger.info('대회공고 거부 완료', {
       postingId: data.postingId,
-      rejectedBy: result.data.rejectedBy,
+      rejectedBy: result?.rejectedBy,
     });
 
-    return result.data;
+    return result!;
   } catch (error) {
     logger.error('대회공고 거부 실패', toError(error), {
       postingId: data.postingId,
@@ -183,19 +180,18 @@ export async function resubmitTournamentPosting(
   try {
     logger.info('대회공고 재제출 요청', { postingId: data.postingId });
 
-    const functions = getFirebaseFunctions();
-    const resubmitFunction = httpsCallable<ResubmitTournamentData, ApprovalResponse>(
-      functions,
-      'resubmitJobPosting'
+    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+      'resubmit-job-posting',
+      { body: data }
     );
+    if (error) throw error;
 
-    const result = await resubmitFunction(data);
     logger.info('대회공고 재제출 완료', {
       postingId: data.postingId,
-      resubmittedBy: result.data.resubmittedBy,
+      resubmittedBy: result?.resubmittedBy,
     });
 
-    return result.data;
+    return result!;
   } catch (error) {
     logger.error('대회공고 재제출 실패', toError(error), {
       postingId: data.postingId,

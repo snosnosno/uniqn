@@ -5,15 +5,13 @@
  * @version 1.0.0
  */
 
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { invalidateQueries } from '@/lib/queryClient';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isSafeUrl } from '@/utils/security';
-import { withAuthFirestoreSync } from '@/utils/authFirestoreSync';
 import { setUserProperties } from '@/services/observability/analyticsService';
 import type { EditableProfileFields } from '@/types';
 import type { UserProfile } from './authTypes';
@@ -28,8 +26,8 @@ import type { EmployerRegistrationInput } from '@/repositories/interfaces/IUserR
  * 마케팅 동의 상태 업데이트
  */
 export async function updateMarketingConsent(uid: string, marketingAgreed: boolean): Promise<void> {
-  const currentUser = requireCurrentUser();
-  if (uid !== currentUser.uid) {
+  const currentUser = await requireCurrentUser();
+  if (uid !== currentUser.id) {
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
@@ -58,8 +56,8 @@ export async function updateUserProfile(
   uid: string,
   updates: Partial<EditableProfileFields>
 ): Promise<void> {
-  const currentUser = requireCurrentUser();
-  if (uid !== currentUser.uid) {
+  const currentUser = await requireCurrentUser();
+  if (uid !== currentUser.id) {
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
@@ -68,24 +66,29 @@ export async function updateUserProfile(
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
-    // Auth 업데이트 대상 구성
-    // Note: name(본명)은 본인인증 정보이므로 수정 불가
-    const authUpdates: { photoURL?: string; displayName?: string } = {};
-    if ('photoURL' in updates) {
-      authUpdates.photoURL = updates.photoURL ?? undefined;
-    }
+    // Supabase user_metadata 업데이트 (닉네임, 프로필 사진)
+    const metadataUpdates: Record<string, string | undefined> = {};
     if ('nickname' in updates && updates.nickname) {
-      authUpdates.displayName = updates.nickname;
+      metadataUpdates.name = updates.nickname;
+    }
+    if ('photoURL' in updates) {
+      metadataUpdates.avatar_url = updates.photoURL ?? undefined;
     }
 
-    await withAuthFirestoreSync({
-      user: currentUser,
-      authUpdates,
-      firestoreUpdate: () => userRepository.updateFields(uid, updates),
-      errorMessage: '프로필 업데이트에 실패했습니다. 앱을 재시작해주세요.',
-      uid,
-      operationName: '프로필 업데이트',
-    });
+    if (Object.keys(metadataUpdates).length > 0) {
+      const { error: authUpdateError } = await supabase.auth.updateUser({
+        data: metadataUpdates,
+      });
+      if (authUpdateError) {
+        logger.warn('Supabase Auth 프로필 업데이트 실패', {
+          component: 'profileService',
+          uid,
+          error: authUpdateError.message,
+        });
+      }
+    }
+
+    await userRepository.updateFields(uid, updates);
 
     void invalidateQueries.user();
     logger.info('프로필 업데이트 성공', { uid });
@@ -110,7 +113,9 @@ export async function updateUserProfile(
  */
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   try {
-    const user = getFirebaseAuth().currentUser;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user || !user.email) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -118,16 +123,27 @@ export async function changePassword(currentPassword: string, newPassword: strin
       });
     }
 
-    logger.info('비밀번호 변경 시도', { uid: user.uid });
+    logger.info('비밀번호 변경 시도', { uid: user.id });
 
     // 1. 현재 비밀번호로 재인증
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
+    const { error: reAuthError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+    if (reAuthError) {
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: '현재 비밀번호가 올바르지 않습니다.',
+        originalError: new Error(reAuthError.message),
+      });
+    }
 
     // 2. 새 비밀번호로 변경
-    await updatePassword(user, newPassword);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (updateError) throw updateError;
 
-    logger.info('비밀번호 변경 성공', { uid: user.uid });
+    logger.info('비밀번호 변경 성공', { uid: user.id });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '비밀번호 변경',
@@ -153,7 +169,9 @@ export async function changePassword(currentPassword: string, newPassword: strin
  */
 export async function registerAsEmployer(input: EmployerRegistrationInput): Promise<UserProfile> {
   try {
-    const user = getFirebaseAuth().currentUser;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -161,12 +179,12 @@ export async function registerAsEmployer(input: EmployerRegistrationInput): Prom
       });
     }
 
-    logger.info('구인자 등록 시도', { uid: user.uid });
+    logger.info('구인자 등록 시도', { uid: user.id });
 
     // Repository를 통한 Transaction 처리
-    const updatedProfile = await userRepository.registerAsEmployer(user.uid, input);
+    const updatedProfile = await userRepository.registerAsEmployer(user.id, input);
 
-    logger.info('구인자 등록 성공', { uid: user.uid });
+    logger.info('구인자 등록 성공', { uid: user.id });
 
     // Analytics 이벤트
     setUserProperties({
@@ -189,8 +207,8 @@ export async function registerAsEmployer(input: EmployerRegistrationInput): Prom
  * @param photoURL 새 프로필 사진 URL (null이면 삭제)
  */
 export async function updateProfilePhotoURL(uid: string, photoURL: string | null): Promise<void> {
-  const currentUser = requireCurrentUser();
-  if (uid !== currentUser.uid) {
+  const currentUser = await requireCurrentUser();
+  if (uid !== currentUser.id) {
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
@@ -206,14 +224,18 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
   try {
     logger.info('프로필 사진 업데이트', { uid });
 
-    await withAuthFirestoreSync({
-      user: currentUser,
-      authUpdates: { photoURL },
-      firestoreUpdate: () => userRepository.updateFields(uid, { photoURL: photoURL ?? null }),
-      errorMessage: '프로필 사진 업데이트에 실패했습니다. 앱을 재시작해주세요.',
-      uid,
-      operationName: '프로필 사진 업데이트',
+    const { error: authUpdateError } = await supabase.auth.updateUser({
+      data: { avatar_url: photoURL },
     });
+    if (authUpdateError) {
+      logger.warn('Supabase Auth 프로필 사진 업데이트 실패', {
+        component: 'profileService',
+        uid,
+        error: authUpdateError.message,
+      });
+    }
+
+    await userRepository.updateFields(uid, { photoURL: photoURL ?? null });
 
     void invalidateQueries.user();
     logger.info('프로필 사진 업데이트 성공', { uid });
@@ -250,8 +272,8 @@ export interface CompleteProfileData {
  * - Firebase Auth displayName 업데이트
  */
 export async function completeProfile(data: CompleteProfileData): Promise<void> {
-  const currentUser = requireCurrentUser();
-  const uid = currentUser.uid;
+  const currentUser = await requireCurrentUser();
+  const uid = currentUser.id;
 
   try {
     logger.info('프로필 완성 시도', { uid, nickname: data.nickname });
@@ -265,14 +287,18 @@ export async function completeProfile(data: CompleteProfileData): Promise<void> 
     if (data.career !== undefined) firestoreUpdates.career = data.career;
     if (data.note !== undefined) firestoreUpdates.note = data.note;
 
-    await withAuthFirestoreSync({
-      user: currentUser,
-      authUpdates: { displayName: data.nickname },
-      firestoreUpdate: () => userRepository.updateFields(uid, firestoreUpdates),
-      errorMessage: '프로필 완성에 실패했습니다. 앱을 재시작해주세요.',
-      uid,
-      operationName: '프로필 완성',
+    const { error: authUpdateError } = await supabase.auth.updateUser({
+      data: { name: data.nickname },
     });
+    if (authUpdateError) {
+      logger.warn('Supabase Auth displayName 업데이트 실패', {
+        component: 'profileService',
+        uid,
+        error: authUpdateError.message,
+      });
+    }
+
+    await userRepository.updateFields(uid, firestoreUpdates);
 
     logger.info('프로필 완성 성공', { uid, nickname: data.nickname });
   } catch (error) {

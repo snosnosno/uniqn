@@ -102,14 +102,14 @@ export async function createAnnouncement(
   }
 
   try {
-    const id = await announcementRepository.create(admin.uid, authorName, validationResult.data);
+    const id = await announcementRepository.create(admin.id, authorName, validationResult.data);
 
     logger.info('공지사항 생성 완료', {
       component: COMPONENT,
       announcementId: id,
       title: validationResult.data.title,
-      authorId: admin.uid,
-      adminId: admin.uid,
+      authorId: admin.id,
+      adminId: admin.id,
     });
 
     return id;
@@ -117,7 +117,7 @@ export async function createAnnouncement(
     throw handleServiceError(error, {
       operation: '공지사항 생성',
       component: COMPONENT,
-      context: { authorId: admin.uid },
+      context: { authorId: admin.id },
     });
   }
 }
@@ -149,7 +149,7 @@ export async function updateAnnouncement(
     logger.info('공지사항 수정 완료', {
       component: COMPONENT,
       announcementId,
-      adminId: admin.uid,
+      adminId: admin.id,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -171,7 +171,7 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
     logger.info('공지사항 발행 완료', {
       component: COMPONENT,
       announcementId,
-      adminId: admin.uid,
+      adminId: admin.id,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -193,7 +193,7 @@ export async function archiveAnnouncement(announcementId: string): Promise<void>
     logger.info('공지사항 보관 완료', {
       component: COMPONENT,
       announcementId,
-      adminId: admin.uid,
+      adminId: admin.id,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -215,7 +215,7 @@ export async function deleteAnnouncement(announcementId: string): Promise<void> 
     logger.info('공지사항 삭제 완료', {
       component: COMPONENT,
       announcementId,
-      adminId: admin.uid,
+      adminId: admin.id,
     });
   } catch (error) {
     throw handleServiceError(error, {

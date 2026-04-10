@@ -37,7 +37,7 @@ export type { ReportFilters, FetchReportsResult } from '@/repositories';
  * - 중복 체크 + 생성이 원자적으로 처리됨
  */
 export async function createReport(input: CreateReportInput): Promise<string> {
-  const user = requireCurrentUser();
+  const user = await requireCurrentUser();
 
   // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = createReportInputSchema.safeParse(input);
@@ -61,7 +61,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   // 2. 신고자 이름 조회 (userRepository 사용)
   let reporterName = '익명';
   try {
-    const userProfile = await userRepository.getById(user.uid);
+    const userProfile = await userRepository.getById(user.id);
     if (userProfile) {
       reporterName = userProfile.name || userProfile.nickname || '익명';
     }
@@ -74,7 +74,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   // - 본인 신고 방지
   // - 중복 신고 검사 + 생성 (원자적)
   const reportId = await reportRepository.createWithTransaction(validatedInput, {
-    reporterId: user.uid,
+    reporterId: user.id,
     reporterName,
   });
 
@@ -105,10 +105,10 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
  * 내가 신고한 목록 조회
  */
 export async function getMyReports(): Promise<Report[]> {
-  const user = requireCurrentUser();
+  const user = await requireCurrentUser();
 
-  logger.info('Getting my reports', { userId: user.uid });
-  return reportRepository.getByReporterId(user.uid);
+  logger.info('Getting my reports', { userId: user.id });
+  return reportRepository.getByReporterId(user.id);
 }
 
 /**
@@ -151,7 +151,7 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
   // - 존재 확인
   // - 상태 검증 (pending만 처리 가능)
   // - 업데이트 (원자적)
-  await reportRepository.reviewWithTransaction(validatedInput, admin.uid);
+  await reportRepository.reviewWithTransaction(validatedInput, admin.id);
 }
 
 // ============================================================================
