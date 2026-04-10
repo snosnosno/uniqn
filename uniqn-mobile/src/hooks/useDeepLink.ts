@@ -32,17 +32,6 @@ import type { NotificationType, NotificationData } from '@/types/notification';
 // Types
 // ============================================================================
 
-/** 딥링크 상태 (향후 전역 상태 관리 시 활용) */
-// export for future use - suppresses unused warning
-export interface DeepLinkState {
-  /** 마지막으로 처리된 딥링크 URL */
-  lastUrl: string | null;
-  /** 마지막 파싱 결과 */
-  lastParsed: ParsedDeepLink | null;
-  /** 처리 중 여부 */
-  isProcessing: boolean;
-}
-
 interface UseDeepLinkSetupOptions {
   /** 딥링크 수신 시 콜백 */
   onDeepLink?: (url: string, parsed: ParsedDeepLink) => void;

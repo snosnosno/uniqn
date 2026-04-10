@@ -10,9 +10,7 @@ import type { GroupedSettlement } from '@/types/settlement';
 import {
   groupSettlementsByStaff,
   getSettlableWorkLogIds,
-  getSettlableWorkLogs,
   calculateGroupedSettlementStats,
-  filterGroupedSettlements,
   formatGroupRolesDisplay,
 } from '../settlementGrouping';
 import type { SettlementGroupingContext } from '../settlementGrouping';
@@ -373,45 +371,6 @@ describe('getSettlableWorkLogIds', () => {
 });
 
 // ============================================================================
-// getSettlableWorkLogs
-// ============================================================================
-
-describe('getSettlableWorkLogs', () => {
-  it('정산 가능한 WorkLog를 반환한다', () => {
-    const wl1 = createWorkLog({ id: 'wl-1' });
-    const wl2 = createWorkLog({ id: 'wl-2' });
-    const wl3 = createWorkLog({ id: 'wl-3' });
-
-    const group = createGroupedSettlement({
-      originalWorkLogs: [wl1, wl2, wl3],
-    });
-    const result = getSettlableWorkLogs(group);
-    // wl-1 and wl-2 are pending + hasValidTimes=true, wl-3 is completed
-    expect(result).toHaveLength(2);
-    expect(result.map((wl) => wl.id)).toEqual(['wl-1', 'wl-2']);
-  });
-
-  it('정산 가능한 WorkLog가 없으면 빈 배열을 반환한다', () => {
-    const group = createGroupedSettlement({
-      dateStatuses: [
-        {
-          date: '2025-01-15',
-          formattedDate: '1/15(수)',
-          payrollStatus: 'completed',
-          amount: 125710,
-          workLogId: 'wl-1',
-          role: 'dealer',
-          hasValidTimes: true,
-        },
-      ],
-      originalWorkLogs: [createWorkLog({ id: 'wl-1' })],
-    });
-    const result = getSettlableWorkLogs(group);
-    expect(result).toEqual([]);
-  });
-});
-
-// ============================================================================
 // calculateGroupedSettlementStats
 // ============================================================================
 
@@ -477,44 +436,6 @@ describe('calculateGroupedSettlementStats', () => {
     expect(stats.totalPendingAmount).toBe(400000);
     expect(stats.totalCompletedAmount).toBe(100000);
     expect(stats.totalSettlableCount).toBe(3);
-  });
-});
-
-// ============================================================================
-// filterGroupedSettlements
-// ============================================================================
-
-describe('filterGroupedSettlements', () => {
-  const groups = [
-    createGroupedSettlement({ id: 'g1', overallStatus: 'all_pending' }),
-    createGroupedSettlement({ id: 'g2', overallStatus: 'all_completed' }),
-    createGroupedSettlement({ id: 'g3', overallStatus: 'partial' }),
-  ];
-
-  it('payrollStatus가 undefined이면 전체를 반환한다', () => {
-    const result = filterGroupedSettlements(groups);
-    expect(result).toHaveLength(3);
-  });
-
-  it('pending 필터는 all_pending과 partial을 반환한다', () => {
-    const result = filterGroupedSettlements(groups, 'pending');
-    expect(result).toHaveLength(2);
-    expect(result.map((g) => g.id)).toEqual(['g1', 'g3']);
-  });
-
-  it('completed 필터는 all_completed만 반환한다', () => {
-    const result = filterGroupedSettlements(groups, 'completed');
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('g2');
-  });
-
-  it('processing 같은 다른 상태는 전체를 반환한다', () => {
-    const result = filterGroupedSettlements(groups, 'processing');
-    expect(result).toHaveLength(3);
-  });
-
-  it('빈 배열은 빈 배열을 반환한다', () => {
-    expect(filterGroupedSettlements([], 'pending')).toEqual([]);
   });
 });
 

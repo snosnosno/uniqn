@@ -7,7 +7,7 @@
  */
 
 import { getRoleDisplayName } from '@/types/unified';
-import type { WorkLog, PayrollStatus } from '@/types/schedule';
+import type { WorkLog } from '@/types/schedule';
 import { STATUS } from '@/constants';
 import type {
   GroupedSettlement,
@@ -336,17 +336,6 @@ export function getSettlableWorkLogIds(group: GroupedSettlement): string[] {
 }
 
 /**
- * 그룹에서 정산 가능한 WorkLog 배열 반환
- *
- * @param group - GroupedSettlement
- * @returns 정산 가능한 WorkLog 배열
- */
-export function getSettlableWorkLogs(group: GroupedSettlement): WorkLog[] {
-  const settlableIds = new Set(getSettlableWorkLogIds(group));
-  return group.originalWorkLogs.filter((wl) => settlableIds.has(wl.id));
-}
-
-/**
  * 그룹 목록의 전체 통계 계산
  *
  * @param groups - GroupedSettlement 배열
@@ -390,32 +379,6 @@ export function calculateGroupedSettlementStats(groups: GroupedSettlement[]): {
     totalCompletedAmount,
     totalSettlableCount,
   };
-}
-
-/**
- * 필터링된 그룹 목록 반환
- *
- * @param groups - GroupedSettlement 배열
- * @param payrollStatus - 정산 상태 필터 (선택)
- * @returns 필터링된 GroupedSettlement 배열
- */
-export function filterGroupedSettlements(
-  groups: GroupedSettlement[],
-  payrollStatus?: PayrollStatus
-): GroupedSettlement[] {
-  if (!payrollStatus) {
-    return groups;
-  }
-
-  return groups.filter((group) => {
-    if (payrollStatus === STATUS.PAYROLL.PENDING) {
-      return group.overallStatus === 'all_pending' || group.overallStatus === 'partial';
-    }
-    if (payrollStatus === STATUS.PAYROLL.COMPLETED) {
-      return group.overallStatus === 'all_completed';
-    }
-    return true;
-  });
 }
 
 /**

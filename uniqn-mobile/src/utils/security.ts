@@ -7,8 +7,6 @@
  * @module utils/security
  */
 
-import { logger } from '@/utils/logger';
-
 // ============================================================================
 // Encoding Attack Defense (인코딩 공격 방어)
 // ============================================================================
@@ -210,21 +208,6 @@ export function xssValidation(text: string): boolean {
 }
 
 /**
- * 안전한 텍스트 검증 (XSS + SQL Injection + 길이)
- *
- * @param text - 검증할 텍스트
- * @param maxLength - 최대 길이 (기본값: 500)
- * @returns 안전하면 true
- */
-export function isSafeText(text: string, maxLength: number = 500): boolean {
-  if (!text || typeof text !== 'string') return false;
-  if (text.length > maxLength) return false;
-  if (hasXSSPattern(text)) return false;
-  if (hasSQLInjectionPattern(text)) return false;
-  return true;
-}
-
-/**
  * 입력 텍스트에서 위험한 패턴 제거 (간단한 sanitize)
  *
  * @param input - 정제할 텍스트
@@ -242,27 +225,6 @@ export function sanitizeInput(input: string): string {
     .replace(/javascript:/gi, '')
     .replace(/on\w+\s*=/gi, '')
     .trim();
-}
-
-/**
- * HTML 엔티티 이스케이프
- *
- * @param text - 이스케이프할 텍스트
- * @returns 이스케이프된 텍스트
- */
-export function escapeHtml(text: string): string {
-  if (!text || typeof text !== 'string') return '';
-  const htmlEntities: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-    '/': '&#x2F;',
-    '`': '&#x60;',
-    '=': '&#x3D;',
-  };
-  return text.replace(/[&<>"'`=/]/g, (char) => htmlEntities[char] || char);
 }
 
 /**
@@ -311,109 +273,6 @@ export function isValidEmail(email: string): boolean {
   // RFC 5322 기반 간소화된 이메일 패턴
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailPattern.test(email) && !hasXSSPattern(email);
-}
-
-/**
- * 보안 로깅 (민감 정보 마스킹)
- *
- * @param message - 로그 메시지
- * @param data - 로그 데이터
- */
-export function secureLog(message: string, data?: Record<string, unknown>): void {
-  const sensitiveFields = [
-    'password',
-    'token',
-    'accessToken',
-    'refreshToken',
-    'apiKey',
-    'secret',
-    'credential',
-  ];
-
-  const maskedData = data
-    ? Object.fromEntries(
-        Object.entries(data).map(([key, value]) => [
-          key,
-          sensitiveFields.some((field) => key.toLowerCase().includes(field.toLowerCase()))
-            ? '***REDACTED***'
-            : value,
-        ])
-      )
-    : undefined;
-
-  if (__DEV__) {
-    logger.debug(`[Security] ${message}`, maskedData ? { data: maskedData } : undefined);
-  }
-}
-
-/**
- * Rate limiting을 위한 시간 체크
- *
- * @param lastAttempt - 마지막 시도 시간 (timestamp)
- * @param cooldownMs - 쿨다운 시간 (밀리초)
- * @returns 쿨다운 중이면 true
- */
-export function isRateLimited(lastAttempt: number | null, cooldownMs: number = 60000): boolean {
-  if (!lastAttempt) return false;
-  return Date.now() - lastAttempt < cooldownMs;
-}
-
-/**
- * 비밀번호 강도 검증
- *
- * @param password - 검증할 비밀번호
- * @returns 강도 점수 (0-5)
- */
-export function getPasswordStrength(password: string): {
-  score: number;
-  feedback: string[];
-} {
-  const feedback: string[] = [];
-  let score = 0;
-
-  if (!password || password.length < 8) {
-    feedback.push('최소 8자 이상이어야 합니다');
-  } else {
-    score += 1;
-  }
-
-  if (/[a-z]/.test(password)) {
-    score += 1;
-  } else {
-    feedback.push('소문자를 포함해야 합니다');
-  }
-
-  if (/[A-Z]/.test(password)) {
-    score += 1;
-  } else {
-    feedback.push('대문자를 포함해야 합니다');
-  }
-
-  if (/[0-9]/.test(password)) {
-    score += 1;
-  } else {
-    feedback.push('숫자를 포함해야 합니다');
-  }
-
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    score += 1;
-  } else {
-    feedback.push('특수문자를 포함해야 합니다');
-  }
-
-  // 연속 문자 체크
-  if (
-    /(.)\1{2,}/.test(password) ||
-    /012|123|234|345|456|567|678|789|890/.test(password) ||
-    /abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(
-      password
-    )
-  ) {
-    score = Math.max(0, score - 1);
-    feedback.push('연속된 문자나 숫자는 피해주세요');
-  }
-
-  return { score, feedback };
 }
 
 // ============================================================================

@@ -29,4 +29,4 @@ export { SocialLoginButtons } from './SocialLoginButtons';
 export { PhoneVerification } from './PhoneVerification';
 
 // Biometric
-export { BiometricButton, BiometricIconButton } from './BiometricButton';
+export { BiometricButton } from './BiometricButton';

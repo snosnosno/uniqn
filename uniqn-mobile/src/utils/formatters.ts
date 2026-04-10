@@ -41,21 +41,6 @@ export const formatCurrencyShort = (value: number | undefined | null): string =>
 };
 
 /**
- * 이름 마스킹 (홍*동, 김**)
- */
-export const maskName = (name: string | undefined | null): string => {
-  if (!name) return '';
-
-  if (name.length <= 1) return name;
-
-  if (name.length === 2) {
-    return `${name[0]}*`;
-  }
-
-  return `${name[0]}${'*'.repeat(name.length - 2)}${name[name.length - 1]}`;
-};
-
-/**
  * 이메일 마스킹 (h***@gmail.com)
  */
 export const maskEmail = (email: string | undefined | null): string => {

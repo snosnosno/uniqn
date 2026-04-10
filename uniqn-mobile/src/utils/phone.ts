@@ -48,12 +48,6 @@ export function isValidKoreanPhone(phone: string): boolean {
   return e164Regex.test(phone) || localRegex.test(phone);
 }
 
-/** 전화번호 마스킹 (로그용) */
-export function maskPhone(phone: string): string {
-  if (phone.length < 4) return '***';
-  return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
-}
-
 /** E.164 → 로컬 표시 형식 변환 (+821012345678 → 010-1234-5678) */
 export function formatE164ToDisplay(e164: string): string {
   if (!e164.startsWith('+82')) return e164;

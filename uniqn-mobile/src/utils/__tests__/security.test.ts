@@ -8,27 +8,14 @@ import {
   hasXSSPattern,
   hasSQLInjectionPattern,
   xssValidation,
-  isSafeText,
   sanitizeInput,
-  escapeHtml,
   isSafeUrl,
   isValidPhoneNumber,
   isValidEmail,
-  isRateLimited,
-  getPasswordStrength,
   maskSensitiveId,
   sanitizeLogData,
   normalizeForSecurity,
 } from '../security';
-
-jest.mock('@/utils/logger', () => ({
-  logger: {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
 
 describe('security', () => {
   // ============================================================================
@@ -217,33 +204,6 @@ describe('security', () => {
   });
 
   // ============================================================================
-  // isSafeText 테스트
-  // ============================================================================
-  describe('isSafeText', () => {
-    it('안전한 텍스트는 true', () => {
-      expect(isSafeText('안전한 텍스트')).toBe(true);
-    });
-
-    it('XSS 패턴이 있으면 false', () => {
-      expect(isSafeText('<script>evil</script>')).toBe(false);
-    });
-
-    it('SQL Injection 패턴이 있으면 false', () => {
-      expect(isSafeText('union select * from users')).toBe(false);
-    });
-
-    it('maxLength 초과 시 false', () => {
-      const longText = 'a'.repeat(501);
-      expect(isSafeText(longText)).toBe(false);
-      expect(isSafeText(longText, 1000)).toBe(true);
-    });
-
-    it('빈 문자열은 false', () => {
-      expect(isSafeText('')).toBe(false);
-    });
-  });
-
-  // ============================================================================
   // sanitizeInput 테스트
   // ============================================================================
   describe('sanitizeInput', () => {
@@ -268,26 +228,6 @@ describe('security', () => {
 
     it('앞뒤 공백 제거(trim)', () => {
       expect(sanitizeInput('  hello  ')).toBe('hello');
-    });
-  });
-
-  // ============================================================================
-  // escapeHtml 테스트
-  // ============================================================================
-  describe('escapeHtml', () => {
-    it('HTML 엔티티 이스케이프', () => {
-      expect(escapeHtml('<div>')).toBe('&lt;div&gt;');
-      expect(escapeHtml('"quoted"')).toBe('&quot;quoted&quot;');
-      expect(escapeHtml("it's")).toBe('it&#39;s');
-      expect(escapeHtml('a & b')).toBe('a &amp; b');
-    });
-
-    it('빈 문자열 처리', () => {
-      expect(escapeHtml('')).toBe('');
-    });
-
-    it('일반 텍스트는 그대로', () => {
-      expect(escapeHtml('안녕하세요')).toBe('안녕하세요');
     });
   });
 
@@ -363,51 +303,6 @@ describe('security', () => {
       expect(isValidEmail('not-an-email')).toBe(false);
       expect(isValidEmail('@domain.com')).toBe(false);
       expect(isValidEmail('')).toBe(false);
-    });
-  });
-
-  // ============================================================================
-  // isRateLimited 테스트
-  // ============================================================================
-  describe('isRateLimited', () => {
-    it('lastAttempt가 null이면 제한 없음', () => {
-      expect(isRateLimited(null)).toBe(false);
-    });
-
-    it('쿨다운 내에 있으면 true', () => {
-      const recentAttempt = Date.now() - 1000; // 1초 전
-      expect(isRateLimited(recentAttempt, 60000)).toBe(true);
-    });
-
-    it('쿨다운 경과 후에는 false', () => {
-      const oldAttempt = Date.now() - 120000; // 2분 전
-      expect(isRateLimited(oldAttempt, 60000)).toBe(false);
-    });
-  });
-
-  // ============================================================================
-  // getPasswordStrength 테스트
-  // ============================================================================
-  describe('getPasswordStrength', () => {
-    it('짧은 비밀번호는 낮은 점수', () => {
-      const result = getPasswordStrength('abc');
-      expect(result.score).toBeLessThan(3);
-      expect(result.feedback.length).toBeGreaterThan(0);
-    });
-
-    it('강한 비밀번호는 높은 점수', () => {
-      const result = getPasswordStrength('MyStr0ng!Pass');
-      expect(result.score).toBeGreaterThanOrEqual(4);
-    });
-
-    it('연속 문자 패턴 감지', () => {
-      const result = getPasswordStrength('Pass123word!');
-      expect(result.feedback).toEqual(expect.arrayContaining([expect.stringContaining('연속')]));
-    });
-
-    it('빈 비밀번호는 점수 0', () => {
-      const result = getPasswordStrength('');
-      expect(result.score).toBe(0);
     });
   });
 

@@ -8,7 +8,6 @@ import {
   formatNumber,
   formatCurrency,
   formatCurrencyShort,
-  maskName,
   maskEmail,
   formatPositions,
   formatPercent,
@@ -77,27 +76,6 @@ describe('Formatters', () => {
     it('should handle null/undefined', () => {
       expect(formatCurrencyShort(null)).toBe('0원');
       expect(formatCurrencyShort(undefined)).toBe('0원');
-    });
-  });
-
-  describe('maskName', () => {
-    it('should mask middle characters of name', () => {
-      expect(maskName('홍길동')).toBe('홍*동');
-      expect(maskName('김철수민')).toBe('김**민');
-    });
-
-    it('should mask 2-character names', () => {
-      expect(maskName('김철')).toBe('김*');
-    });
-
-    it('should not mask single character names', () => {
-      expect(maskName('김')).toBe('김');
-    });
-
-    it('should return empty string for null/undefined', () => {
-      expect(maskName(null)).toBe('');
-      expect(maskName(undefined)).toBe('');
-      expect(maskName('')).toBe('');
     });
   });
 

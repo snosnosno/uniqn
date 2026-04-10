@@ -9,13 +9,7 @@
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 import { parseDateString } from '@/utils/date';
-import type {
-  ScheduleEvent,
-  GroupedScheduleEvent,
-  DateStatus,
-  ScheduleType,
-  AttendanceStatus,
-} from '@/types';
+import type { ScheduleEvent, GroupedScheduleEvent, DateStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -371,107 +365,4 @@ export function filterSchedulesByDate(
     // ScheduleEvent: 직접 비교
     return schedule.date === date;
   });
-}
-
-/**
- * 그룹화된 스케줄에서 통계 계산
- */
-export function calculateGroupedStats(schedules: (ScheduleEvent | GroupedScheduleEvent)[]): {
-  totalEvents: number;
-  appliedCount: number;
-  confirmedCount: number;
-  completedCount: number;
-  groupedCount: number;
-} {
-  let totalEvents = 0;
-  let appliedCount = 0;
-  let confirmedCount = 0;
-  let completedCount = 0;
-  let groupedCount = 0;
-
-  for (const schedule of schedules) {
-    if ('dateRange' in schedule) {
-      // GroupedScheduleEvent
-      groupedCount++;
-      totalEvents += schedule.dateRange.totalDays;
-
-      switch (schedule.type) {
-        case STATUS.SCHEDULE.APPLIED:
-          appliedCount += schedule.dateRange.totalDays;
-          break;
-        case STATUS.SCHEDULE.CONFIRMED:
-          confirmedCount += schedule.dateRange.totalDays;
-          break;
-        case STATUS.SCHEDULE.COMPLETED:
-          completedCount += schedule.dateRange.totalDays;
-          break;
-      }
-    } else {
-      // ScheduleEvent
-      totalEvents++;
-
-      switch (schedule.type) {
-        case STATUS.SCHEDULE.APPLIED:
-          appliedCount++;
-          break;
-        case STATUS.SCHEDULE.CONFIRMED:
-          confirmedCount++;
-          break;
-        case STATUS.SCHEDULE.COMPLETED:
-          completedCount++;
-          break;
-      }
-    }
-  }
-
-  return {
-    totalEvents,
-    appliedCount,
-    confirmedCount,
-    completedCount,
-    groupedCount,
-  };
-}
-
-/**
- * 캘린더 마킹용 날짜 추출
- *
- * GroupedScheduleEvent의 모든 날짜를 개별적으로 반환
- */
-export function extractAllDatesForCalendar(
-  schedules: (ScheduleEvent | GroupedScheduleEvent)[]
-): { date: string; type: ScheduleType; status?: AttendanceStatus }[] {
-  const result: {
-    date: string;
-    type: ScheduleType;
-    status?: AttendanceStatus;
-  }[] = [];
-
-  for (const schedule of schedules) {
-    if ('dateRange' in schedule) {
-      // GroupedScheduleEvent: 모든 날짜 추출
-      for (const dateStatus of schedule.dateStatuses) {
-        if (!dateStatus.date) {
-          continue;
-        }
-        result.push({
-          date: dateStatus.date,
-          type: schedule.type,
-          status: dateStatus.status,
-        });
-      }
-    } else {
-      // ScheduleEvent
-      if (!schedule.date) {
-        continue;
-      }
-      result.push({
-        date: schedule.date,
-        type: schedule.type,
-        status: schedule.status,
-      });
-    }
-  }
-
-  return result;
 }

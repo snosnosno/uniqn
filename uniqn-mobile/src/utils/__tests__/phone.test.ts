@@ -10,7 +10,6 @@ import {
   toE164,
   isE164,
   isValidKoreanPhone,
-  maskPhone,
   formatE164ToDisplay,
 } from '../phone';
 
@@ -116,21 +115,6 @@ describe('Phone Utils', () => {
       expect(isValidKoreanPhone('010-1234-5678')).toBe(false);
       expect(isValidKoreanPhone('12345')).toBe(false);
       expect(isValidKoreanPhone('')).toBe(false);
-    });
-  });
-
-  describe('maskPhone', () => {
-    it('should mask normal phone numbers', () => {
-      expect(maskPhone('01012345678')).toBe('010****5678');
-    });
-
-    it('should mask short phone numbers (< 4 chars)', () => {
-      expect(maskPhone('010')).toBe('***');
-      expect(maskPhone('01')).toBe('***');
-    });
-
-    it('should handle empty string', () => {
-      expect(maskPhone('')).toBe('***');
     });
   });
 

@@ -37,10 +37,6 @@ export interface WorkTimeEditorProps {
   isLoading?: boolean;
 }
 
-// 편집 필드 타입 (향후 인라인 편집 시 활용)
-// export for future use - suppresses unused warning
-export type EditingField = 'startTime' | 'endTime' | null;
-
 function hasTimeChanged(nextTime: Date | null, previousTime: Date | null): boolean {
   if (!nextTime && !previousTime) {
     return false;
