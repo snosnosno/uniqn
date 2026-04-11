@@ -6,6 +6,7 @@
  */
 
 import type { EventQRCode, WorkLog, EventQRDisplayData } from '@/types';
+import { Timestamp } from '@/shared/time';
 
 // Import after mocks
 import {
@@ -157,7 +158,6 @@ jest.mock('@/errors', () => ({
 // ============================================================================
 
 function createMockEventQR(overrides?: Partial<EventQRCode>): EventQRCode {
-  const { Timestamp: MockTimestamp } = jest.requireMock('firebase/firestore');
   const now = Date.now();
   return {
     id: 'qr-1',
@@ -166,15 +166,14 @@ function createMockEventQR(overrides?: Partial<EventQRCode>): EventQRCode {
     action: 'checkIn',
     securityCode: 'test-uuid-1234',
     createdBy: 'owner-1',
-    createdAt: MockTimestamp.fromMillis(now),
-    expiresAt: MockTimestamp.fromMillis(now + 3 * 60 * 1000),
+    createdAt: Timestamp.fromMillis(now),
+    expiresAt: Timestamp.fromMillis(now + 3 * 60 * 1000),
     isActive: true,
     ...overrides,
   };
 }
 
 function createMockWorkLog(overrides?: Partial<WorkLog>): WorkLog {
-  const { Timestamp: MockTimestamp } = jest.requireMock('firebase/firestore');
   return {
     id: 'wl-1',
     staffId: 'staff-123',
@@ -182,8 +181,8 @@ function createMockWorkLog(overrides?: Partial<WorkLog>): WorkLog {
     date: '2025-01-15',
     status: STATUS.WORK_LOG.SCHEDULED,
     role: '딜러',
-    createdAt: MockTimestamp.now(),
-    updatedAt: MockTimestamp.now(),
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
     ...overrides,
   } as WorkLog;
 }
@@ -455,7 +454,6 @@ describe('eventQRService - processEventQRCheckIn', () => {
   });
 
   it('유효한 QR로 퇴근 처리해야 함', async () => {
-    const { Timestamp: MockTS } = jest.requireMock('firebase/firestore');
     const now = Date.now();
     const qrData: EventQRDisplayData = {
       type: 'event',
@@ -472,7 +470,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: MockTS.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
+      checkInTime: Timestamp.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
@@ -703,7 +701,6 @@ describe('eventQRService - processEventQRCheckIn', () => {
   });
 
   it('퇴근 시 근무 시간을 계산해야 함', async () => {
-    const { Timestamp: MockTS } = jest.requireMock('firebase/firestore');
     const now = Date.now();
     const checkInMs = now - 3 * 60 * 60 * 1000; // 3시간 전
 
@@ -722,7 +719,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: MockTS.fromMillis(checkInMs),
+      checkInTime: Timestamp.fromMillis(checkInMs),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(

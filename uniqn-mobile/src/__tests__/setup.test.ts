@@ -5,12 +5,6 @@
  */
 
 describe('Jest Setup', () => {
-  it('should have MockTimestamp available globally', () => {
-    expect(global.MockTimestamp).toBeDefined();
-    expect(typeof global.MockTimestamp.now).toBe('function');
-    expect(typeof global.MockTimestamp.fromDate).toBe('function');
-  });
-
   it('should have access to global test utilities', () => {
     expect(global.testUtils).toBeDefined();
     expect(typeof global.testUtils.createMockUser).toBe('function');

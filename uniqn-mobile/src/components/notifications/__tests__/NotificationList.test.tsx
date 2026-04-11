@@ -2,6 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { NotificationList } from '../NotificationList';
 import { NotificationType } from '@/types/notification';
+import { Timestamp } from '@/shared/time';
 
 jest.mock('@shopify/flash-list', () => ({
   FlashList: ({
@@ -58,7 +59,7 @@ describe('NotificationList', () => {
         title: '기존 알림',
         body: '이미 보던 알림입니다.',
         isRead: false,
-        createdAt: new (global as any).MockTimestamp(0, 0),
+        createdAt: new Timestamp(0, 0),
       },
     ] as any;
 

@@ -2,7 +2,7 @@
  * UNIQN Mobile - Jest Setup
  *
  * @description Global test setup and mocks
- * @version 2.0.0 - Centralized Firebase/Expo mocks
+ * @version 3.0.0 - Supabase/Expo mocks (Firebase removed)
  */
 
 /* eslint-disable no-undef */
@@ -69,12 +69,8 @@ jest.mock('expo-secure-store', () => ({
 jest.mock('expo-constants', () => ({
   expoConfig: {
     extra: {
-      firebaseApiKey: 'test-api-key',
-      firebaseAuthDomain: 'test.firebaseapp.com',
-      firebaseProjectId: 'test-project',
-      firebaseStorageBucket: 'test.appspot.com',
-      firebaseMessagingSenderId: '123456789',
-      firebaseAppId: '1:123456789:web:abc123',
+      supabaseUrl: 'https://test-project.supabase.co',
+      supabaseAnonKey: 'test-anon-key',
     },
   },
 }));
@@ -122,118 +118,47 @@ jest.mock('nativewind', () => ({
   }),
 }));
 
-// Mock Firebase
-jest.mock('firebase/app', () => ({
-  initializeApp: jest.fn(() => ({})),
-  getApps: jest.fn(() => []),
-  getApp: jest.fn(() => ({})),
-}));
-
-jest.mock('firebase/auth', () => ({
-  getAuth: jest.fn(() => ({
-    currentUser: null,
-    onAuthStateChanged: jest.fn((callback) => {
-      callback(null);
-      return jest.fn(); // unsubscribe
-    }),
-  })),
-  signInWithEmailAndPassword: jest.fn(),
-  createUserWithEmailAndPassword: jest.fn(),
-  signOut: jest.fn(),
-  onAuthStateChanged: jest.fn((auth, callback) => {
-    callback(null);
-    return jest.fn();
-  }),
-}));
-
 // ============================================================================
-// Firebase Firestore Mock (with class-based Timestamp for instanceof support)
+// Supabase Mock
 // ============================================================================
-
-const MockTimestamp = require('./src/__tests__/mocks/MockTimestamp');
-global.MockTimestamp = MockTimestamp;
-
-jest.mock('firebase/firestore', () => ({
-  getFirestore: jest.fn(() => ({})),
-  collection: jest.fn((db, path) => ({ path })),
-  collectionGroup: jest.fn((db, collectionId) => ({ collectionId })),
-  doc: jest.fn((db, ...pathSegments) => ({
-    id: pathSegments[pathSegments.length - 1] || 'mock-doc-id',
-    path: pathSegments.join('/'),
-  })),
-  getDoc: jest.fn(),
-  getDocs: jest.fn(),
-  setDoc: jest.fn(),
-  updateDoc: jest.fn(),
-  deleteDoc: jest.fn(),
-  addDoc: jest.fn(),
-  query: jest.fn((collectionRef, ...constraints) => ({ collectionRef, constraints })),
-  where: jest.fn((field, op, value) => ({ type: 'where', field, op, value })),
-  orderBy: jest.fn((field, direction = 'asc') => ({ type: 'orderBy', field, direction })),
-  limit: jest.fn((n) => ({ type: 'limit', n })),
-  limitToLast: jest.fn((n) => ({ type: 'limitToLast', n })),
-  startAt: jest.fn((...values) => ({ type: 'startAt', values })),
-  startAfter: jest.fn((...values) => ({ type: 'startAfter', values })),
-  endAt: jest.fn((...values) => ({ type: 'endAt', values })),
-  endBefore: jest.fn((...values) => ({ type: 'endBefore', values })),
-  onSnapshot: jest.fn((query, callback) => {
-    callback({ docs: [] });
-    return jest.fn();
-  }),
-  runTransaction: jest.fn(),
-  writeBatch: jest.fn(() => ({
-    set: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    commit: jest.fn(() => Promise.resolve()),
-  })),
-  serverTimestamp: jest.fn(() => ({ _serverTimestamp: true })),
-  increment: jest.fn((n) => ({ _increment: n })),
-  arrayUnion: jest.fn((...elements) => ({ _arrayUnion: elements })),
-  arrayRemove: jest.fn((...elements) => ({ _arrayRemove: elements })),
-  deleteField: jest.fn(() => ({ _deleteField: true })),
-  Timestamp: MockTimestamp,
-}));
-
-jest.mock('firebase/storage', () => ({
-  getStorage: jest.fn(() => ({})),
-  ref: jest.fn((storage, path) => ({ path })),
-  uploadBytes: jest.fn(() => Promise.resolve({ ref: { fullPath: 'mock-path' } })),
-  uploadBytesResumable: jest.fn(() => ({
-    on: jest.fn(),
-    snapshot: { ref: { fullPath: 'mock-path' } },
-  })),
-  getDownloadURL: jest.fn(() => Promise.resolve('https://mock-download-url.com/file')),
-  deleteObject: jest.fn(() => Promise.resolve()),
-  listAll: jest.fn(() => Promise.resolve({ items: [], prefixes: [] })),
-}));
-
-jest.mock('firebase/functions', () => ({
-  getFunctions: jest.fn(() => ({})),
-  httpsCallable: jest.fn((_functions, _name) => jest.fn(() => Promise.resolve({ data: {} }))),
-  connectFunctionsEmulator: jest.fn(),
-}));
-
-// ============================================================================
-// @/lib/firebase Mock (Internal Firebase Library)
-// ============================================================================
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: {},
-  storage: {},
-  functions: {},
-  getFirebaseDb: jest.fn(() => ({})),
-  getFirebaseAuth: jest.fn(() => ({
-    currentUser: null,
-    onAuthStateChanged: jest.fn((callback) => {
-      callback(null);
-      return jest.fn();
-    }),
-  })),
-  getFirebaseStorage: jest.fn(() => ({})),
-  getFirebaseFunctions: jest.fn(() => ({})),
-  initializeFirebase: jest.fn(() => Promise.resolve()),
-  isFirebaseInitialized: jest.fn(() => true),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+      signInWithPassword: jest.fn(),
+      signUp: jest.fn(),
+      signOut: jest.fn(),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      upsert: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      neq: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      then: jest.fn().mockResolvedValue({ data: [], error: null }),
+    })),
+    rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+    functions: { invoke: jest.fn().mockResolvedValue({ data: null, error: null }) },
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: jest.fn((cb) => {
+        cb?.('SUBSCRIBED');
+        return {};
+      }),
+    })),
+    removeChannel: jest.fn(),
+  },
 }));
 
 // Mock @tanstack/react-query
