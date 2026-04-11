@@ -166,8 +166,8 @@ function createMockEventQR(overrides?: Partial<EventQRCode>): EventQRCode {
     action: 'checkIn',
     securityCode: 'test-uuid-1234',
     createdBy: 'owner-1',
-    createdAt: Timestamp.fromMillis(now),
-    expiresAt: Timestamp.fromMillis(now + 3 * 60 * 1000),
+    createdAt: new Date(now),
+    expiresAt: new Date(now + 3 * 60 * 1000),
     isActive: true,
     ...overrides,
   };
