@@ -520,44 +520,27 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   // 실시간 구독 (Realtime)
   // ==========================================================================
 
+  /** @deprecated polling으로 전환됨. getByDate + refetchInterval 사용 */
   subscribeByDate(
     staffId: string,
     date: string,
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
   ): UnsubscribeFn {
-    logger.info('날짜별 근무 기록 구독 시작', { staffId, date });
-
-    return createRealtimeSubscription(
-      TABLE,
-      `staff_id=eq.${staffId}&date=eq.${date}`,
-      (_payload) => {
-        try {
-          // Realtime은 변경 이벤트만 전달하므로 전체 목록을 다시 조회
-          void this.getByDate(staffId, date).then(onData).catch(onError);
-        } catch (error) {
-          logger.error('날짜별 근무 기록 구독 처리 에러', toError(error), { staffId, date });
-          onError(toError(error));
-        }
-      }
-    );
+    logger.info('날짜별 근무 기록 초기 조회 (polling 전환)', { staffId, date });
+    void this.getByDate(staffId, date).then(onData).catch(onError);
+    return () => {};
   }
 
+  /** @deprecated polling으로 전환됨. getByStaffId + refetchInterval 사용 */
   subscribeByStaffId(
     staffId: string,
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
   ): UnsubscribeFn {
-    logger.info('스태프별 근무 기록 실시간 구독 시작', { staffId });
-
-    return createRealtimeSubscription(TABLE, `staff_id=eq.${staffId}`, (_payload) => {
-      try {
-        void this.getByStaffId(staffId, DEFAULT_PAGE_SIZE).then(onData).catch(onError);
-      } catch (error) {
-        logger.error('스태프별 근무 기록 구독 에러', toError(error), { staffId });
-        onError(toError(error));
-      }
-    });
+    logger.info('스태프별 근무 기록 초기 조회 (polling 전환)', { staffId });
+    void this.getByStaffId(staffId, DEFAULT_PAGE_SIZE).then(onData).catch(onError);
+    return () => {};
   }
 
   subscribeById(
@@ -589,32 +572,27 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     });
   }
 
+  /** @deprecated polling으로 전환됨. getByStaffIdWithFilters + refetchInterval 사용 */
   subscribeByStaffIdWithFilters(
     staffId: string,
     options: { dateRange?: { start: string; end: string }; pageSize?: number },
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
   ): UnsubscribeFn {
-    logger.info('필터를 포함한 스태프별 근무 기록 구독 시작', {
+    logger.info('필터를 포함한 스태프별 근무 기록 초기 조회 (polling 전환)', {
       staffId,
       dateRange: options.dateRange,
     });
-
-    return createRealtimeSubscription(TABLE, `staff_id=eq.${staffId}`, (_payload) => {
-      try {
-        void this.getByStaffIdWithFilters(staffId, {
-          dateRange: options.dateRange,
-          pageSize: options.pageSize,
-        })
-          .then(onData)
-          .catch(onError);
-      } catch (error) {
-        logger.error('필터를 포함한 스태프별 근무 기록 구독 에러', toError(error), { staffId });
-        onError(toError(error));
-      }
-    });
+    void this.getByStaffIdWithFilters(staffId, {
+      dateRange: options.dateRange,
+      pageSize: options.pageSize,
+    })
+      .then(onData)
+      .catch(onError);
+    return () => {};
   }
 
+  /** @deprecated polling으로 전환됨. 직접 조회 + refetchInterval 사용 */
   subscribeTodayActive(
     staffId: string,
     date: string,
@@ -622,45 +600,34 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     onData: (workLog: WorkLog | null) => void,
     onError: (error: Error) => void
   ): UnsubscribeFn {
-    logger.info('오늘 활성 근무 기록 구독 시작', { staffId, date, statuses });
+    logger.info('오늘 활성 근무 기록 초기 조회 (polling 전환)', { staffId, date, statuses });
 
-    return createRealtimeSubscription(
-      TABLE,
-      `staff_id=eq.${staffId}&date=eq.${date}`,
-      (_payload) => {
-        try {
-          // 변경 이벤트 발생 시 전체 조회 후 statuses 필터링
-          void supabase
-            .from(TABLE)
-            .select('*')
-            .eq('staff_id', staffId)
-            .eq('date', date)
-            .in('status', statuses)
-            .then(({ data, error: queryError }) => {
-              if (queryError) {
-                onError(new Error(queryError.message));
-                return;
-              }
-
-              if (!data || data.length === 0) {
-                onData(null);
-                return;
-              }
-
-              const workLogs = (data as Record<string, unknown>[])
-                .map((row) => toWorkLog(row))
-                .filter((wl): wl is WorkLog => wl !== null);
-
-              const checkedIn =
-                workLogs.find((wl) => wl.status === STATUS.WORK_LOG.CHECKED_IN) ?? null;
-              onData(checkedIn ?? workLogs[0] ?? null);
-            });
-        } catch (error) {
-          logger.error('오늘 활성 근무 기록 구독 에러', toError(error), { staffId, date });
-          onError(toError(error));
+    void supabase
+      .from(TABLE)
+      .select('*')
+      .eq('staff_id', staffId)
+      .eq('date', date)
+      .in('status', statuses)
+      .then(({ data, error: queryError }) => {
+        if (queryError) {
+          onError(new Error(queryError.message));
+          return;
         }
-      }
-    );
+
+        if (!data || data.length === 0) {
+          onData(null);
+          return;
+        }
+
+        const workLogs = (data as Record<string, unknown>[])
+          .map((row) => toWorkLog(row))
+          .filter((wl): wl is WorkLog => wl !== null);
+
+        const checkedIn = workLogs.find((wl) => wl.status === STATUS.WORK_LOG.CHECKED_IN) ?? null;
+        onData(checkedIn ?? workLogs[0] ?? null);
+      });
+
+    return () => {};
   }
 
   // ==========================================================================

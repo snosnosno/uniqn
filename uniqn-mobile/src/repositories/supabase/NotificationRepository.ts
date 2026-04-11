@@ -580,42 +580,51 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     onError?: (error: Error) => void
   ): () => void {
     try {
-      // 초기 데이터 로드
-      supabase
-        .from(TABLES.NOTIFICATIONS)
-        .select('*')
-        .eq('recipient_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(NOTIFICATION_REALTIME_LIMIT)
-        .then(({ data, error }) => {
-          if (error) {
-            onError?.(new Error(error.message));
-            return;
-          }
-          const notifications = ((data ?? []) as Record<string, unknown>[]).map(toNotification);
-          onNotifications(notifications);
-        });
+      let currentNotifications: NotificationData[] = [];
 
-      // Realtime 구독으로 변경사항 감지
+      const fullReload = (): void => {
+        supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('recipient_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(NOTIFICATION_REALTIME_LIMIT)
+          .then(({ data, error }) => {
+            if (error) {
+              onError?.(new Error(error.message));
+              return;
+            }
+            currentNotifications = ((data ?? []) as Record<string, unknown>[]).map(toNotification);
+            onNotifications(currentNotifications);
+          });
+      };
+
+      // 초기 데이터 로드
+      fullReload();
+
+      // Realtime 구독으로 변경사항 증분 처리
       const unsubscribe = createRealtimeSubscription(
         TABLES.NOTIFICATIONS,
         `recipient_id=eq.${userId}`,
-        () => {
-          // 변경 시 전체 재조회 (Firestore onSnapshot 동작과 동일)
-          supabase
-            .from(TABLES.NOTIFICATIONS)
-            .select('*')
-            .eq('recipient_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(NOTIFICATION_REALTIME_LIMIT)
-            .then(({ data, error }) => {
-              if (error) {
-                onError?.(new Error(error.message));
-                return;
-              }
-              const notifications = ((data ?? []) as Record<string, unknown>[]).map(toNotification);
-              onNotifications(notifications);
-            });
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newNotification = toNotification(payload.new as Record<string, unknown>);
+            currentNotifications = [newNotification, ...currentNotifications];
+            onNotifications(currentNotifications);
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = toNotification(payload.new as Record<string, unknown>);
+            currentNotifications = currentNotifications.map((n) =>
+              n.id === updated.id ? updated : n
+            );
+            onNotifications(currentNotifications);
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = (payload.old as Record<string, unknown>).id as string;
+            currentNotifications = currentNotifications.filter((n) => n.id !== deletedId);
+            onNotifications(currentNotifications);
+          } else {
+            // 알 수 없는 이벤트 타입 — 안전하게 전체 재조회
+            fullReload();
+          }
         }
       );
 

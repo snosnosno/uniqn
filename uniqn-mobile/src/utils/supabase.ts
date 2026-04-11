@@ -379,7 +379,8 @@ export async function batchUpdate<T extends Record<string, unknown>>(
 export function createRealtimeSubscription(
   table: string,
   filter: string | undefined,
-  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void,
+  onError?: (status: string) => void
 ): UnsubscribeFn {
   const channelName = `realtime:${table}:${filter ?? 'all'}`;
 
@@ -400,6 +401,14 @@ export function createRealtimeSubscription(
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         logger.info('Realtime 구독 시작', { table, filter });
+      } else if (status === 'CHANNEL_ERROR') {
+        logger.error('Realtime 채널 에러', new Error(`CHANNEL_ERROR: ${table}`), { table, filter });
+        onError?.('CHANNEL_ERROR');
+      } else if (status === 'TIMED_OUT') {
+        logger.warn('Realtime 구독 타임아웃', { table, filter });
+        onError?.('TIMED_OUT');
+      } else if (status === 'CLOSED') {
+        logger.info('Realtime 채널 종료', { table, filter });
       }
     });
 
