@@ -240,7 +240,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
     return (
       <View className="mt-2">
         <Text className="text-xs text-gray-500 dark:text-gray-400">
-          📅 {getAssignmentsSummary(assignments)}
+          {getAssignmentsSummary(assignments)}
         </Text>
       </View>
     );
@@ -284,7 +284,7 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
   if (compact) {
     return (
       <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        📝 사전질문 {answers.length}개 답변
+        사전질문 {answers.length}개 답변
       </Text>
     );
   }
@@ -418,7 +418,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
       {/* 연락처 (컴팩트 아닐 때만) */}
       {!compact && application.applicantPhone && (
         <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          📞 {application.applicantPhone}
+          {application.applicantPhone}
         </Text>
       )}
 
@@ -482,7 +482,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="탭하면 지원자 상세 정보를 볼 수 있습니다"
         className={`
-          bg-white dark:bg-surface rounded-xl
+          bg-white dark:bg-surface rounded-md
           ${compact ? 'p-3' : 'p-4'}
           border border-gray-100 dark:border-surface-overlay
           active:opacity-80
@@ -498,7 +498,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
   return (
     <View
       className={`
-        bg-white dark:bg-surface rounded-xl
+        bg-white dark:bg-surface rounded-md
         ${compact ? 'p-3' : 'p-4'}
         border border-gray-100 dark:border-surface-overlay
         ${className}

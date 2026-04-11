@@ -92,7 +92,7 @@ const RoleCard = React.memo(function RoleCard({
   return (
     <View className="flex-row items-center py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
       {/* 역할 아이콘 및 이름 */}
-      <View className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center mr-2">
+      <View className="w-8 h-8 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center mr-2">
         <Text className="text-base">{icon}</Text>
       </View>
 
@@ -329,7 +329,7 @@ export function TimeSlotCard({
             시간대 {index + 1}
             {timeSlot.isTimeToBeAnnounced ? ' (시간 미정)' : ` (${timeSlot.startTime || '미설정'})`}
           </Text>
-          <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+          <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-sm">
             <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
               {totalHeadcount}명
             </Text>
@@ -340,7 +340,7 @@ export function TimeSlotCard({
         {canRemove && (
           <Pressable
             onPress={() => onRemove(index)}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="p-2 rounded-sm hover:bg-gray-200 dark:hover:bg-gray-600"
             accessibilityRole="button"
             accessibilityLabel="시간대 삭제"
           >
@@ -358,7 +358,7 @@ export function TimeSlotCard({
             <Switch
               value={timeSlot.isTimeToBeAnnounced}
               onValueChange={handleTimeToBeAnnouncedToggle}
-              trackColor={{ false: '#D1D5DB', true: '#A855F7' }}
+              trackColor={{ false: '#D1D5DB', true: '#D4AF37' }}
               thumbColor="#FFFFFF"
             />
           </View>

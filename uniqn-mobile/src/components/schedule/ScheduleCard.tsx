@@ -133,7 +133,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </Badge>
 
             {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
-              <View className={`ml-2 rounded-full px-2 py-0.5 ${attendance.bgColor}`}>
+              <View className={`ml-2 rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>
                 <Text className={`text-xs font-medium ${attendance.textColor}`}>
                   {attendance.label}
                 </Text>

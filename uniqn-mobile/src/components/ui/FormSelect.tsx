@@ -64,7 +64,7 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
         >
           {item.label}
         </Text>
-        {isSelected && <Text className="text-primary-600 dark:text-primary-400">✓</Text>}
+        {isSelected && <Text className="text-primary-600 dark:text-primary-400">{''}</Text>}
       </View>
     </Pressable>
   );
@@ -199,7 +199,7 @@ export function FormSelect<T = string>({
       {/* 에러 메시지 */}
       {errorMessage && (
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-red-600 mr-1">⚠</Text>
+          <Text className="text-red-600 mr-1">{''}</Text>
           <Text className="text-red-600 text-sm flex-1">{errorMessage}</Text>
         </View>
       )}

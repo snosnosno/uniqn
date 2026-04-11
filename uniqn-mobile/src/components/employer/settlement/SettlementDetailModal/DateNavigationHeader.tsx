@@ -59,7 +59,7 @@ export function DateNavigationHeader({
       <Pressable
         onPress={onPrevDate}
         disabled={!canGoPrev}
-        className={`p-2 rounded-full min-w-[44px] min-h-[44px] items-center justify-center ${
+        className={`p-2 rounded-sm min-w-[44px] min-h-[44px] items-center justify-center ${
           !canGoPrev ? 'opacity-30' : 'active:bg-gray-200 dark:active:bg-gray-700'
         }`}
         accessibilityLabel="이전 날짜"
@@ -79,7 +79,7 @@ export function DateNavigationHeader({
       <Pressable
         onPress={onNextDate}
         disabled={!canGoNext}
-        className={`p-2 rounded-full min-w-[44px] min-h-[44px] items-center justify-center ${
+        className={`p-2 rounded-sm min-w-[44px] min-h-[44px] items-center justify-center ${
           !canGoNext ? 'opacity-30' : 'active:bg-gray-200 dark:active:bg-gray-700'
         }`}
         accessibilityLabel="다음 날짜"

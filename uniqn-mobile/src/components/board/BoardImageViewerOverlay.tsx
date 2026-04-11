@@ -57,7 +57,7 @@ export function BoardImageViewerOverlay({
               </View>
               <Pressable
                 onPress={onClose}
-                className="rounded-full bg-white/10 p-2 active:bg-white/20"
+                className="rounded-sm bg-white/10 p-2 active:bg-white/20"
                 accessibilityRole="button"
                 accessibilityLabel="이미지 닫기"
               >
@@ -69,7 +69,7 @@ export function BoardImageViewerOverlay({
               {hasPrevious ? (
                 <Pressable
                   onPress={() => onChangeIndex(currentIndex - 1)}
-                  className="h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20"
+                  className="h-12 w-12 items-center justify-center rounded-sm bg-white/10 active:bg-white/20"
                   accessibilityRole="button"
                   accessibilityLabel="이전 이미지"
                 >
@@ -80,7 +80,7 @@ export function BoardImageViewerOverlay({
               )}
 
               <View
-                className="mx-2 flex-1 items-center justify-center overflow-hidden rounded-2xl"
+                className="mx-2 flex-1 items-center justify-center overflow-hidden rounded-lg"
                 pointerEvents="none"
               >
                 <Image
@@ -94,7 +94,7 @@ export function BoardImageViewerOverlay({
               {hasNext ? (
                 <Pressable
                   onPress={() => onChangeIndex(currentIndex + 1)}
-                  className="h-12 w-12 items-center justify-center rounded-full bg-white/10 active:bg-white/20"
+                  className="h-12 w-12 items-center justify-center rounded-sm bg-white/10 active:bg-white/20"
                   accessibilityRole="button"
                   accessibilityLabel="다음 이미지"
                 >

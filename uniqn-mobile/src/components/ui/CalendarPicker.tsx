@@ -187,7 +187,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
 
   // 스타일 결정
   const getContainerStyle = () => {
-    const base = 'w-10 h-10 items-center justify-center rounded-full mx-auto';
+    const base = 'w-10 h-10 items-center justify-center rounded-sm mx-auto';
 
     // 이미 추가된 날짜
     if (day.isAlreadyAdded) {
@@ -370,7 +370,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoPrevYear}
               accessibilityRole="button"
               accessibilityLabel="이전 연도"
-              className={`h-9 rounded-full bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center mr-2 ${
+              className={`h-9 rounded-sm bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center mr-2 ${
                 !canGoPrevYear ? 'opacity-30' : ''
               }`}
             >
@@ -381,7 +381,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoPrev}
               accessibilityRole="button"
               accessibilityLabel="이전 달"
-              className={`h-9 w-9 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center ${
+              className={`h-9 w-9 rounded-sm bg-gray-100 dark:bg-surface-elevated items-center justify-center ${
                 !canGoPrev ? 'opacity-30' : ''
               }`}
             >
@@ -399,7 +399,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoNext}
               accessibilityRole="button"
               accessibilityLabel="다음 달"
-              className={`h-9 w-9 rounded-full bg-gray-100 dark:bg-surface-elevated items-center justify-center mr-2 ${
+              className={`h-9 w-9 rounded-sm bg-gray-100 dark:bg-surface-elevated items-center justify-center mr-2 ${
                 !canGoNext ? 'opacity-30' : ''
               }`}
             >
@@ -410,7 +410,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoNextYear}
               accessibilityRole="button"
               accessibilityLabel="다음 연도"
-              className={`h-9 rounded-full bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center ${
+              className={`h-9 rounded-sm bg-gray-100 dark:bg-surface-elevated px-3 items-center justify-center ${
                 !canGoNextYear ? 'opacity-30' : ''
               }`}
             >
@@ -454,7 +454,7 @@ export const CalendarPicker = memo(function CalendarPicker({
       {(minimumDate || maximumDate) && (
         <View className="mt-4 px-2">
           <View className="flex-row items-center">
-            <View className="w-3 h-3 rounded-full bg-indigo-500 mr-2" />
+            <View className="w-3 h-3 rounded-sm bg-indigo-500 mr-2" />
             <Text className="text-xs text-gray-500 dark:text-gray-400">
               선택 가능: {minimumDate && format(minimumDate, 'M/d', { locale: ko })}
               {minimumDate && maximumDate && ' ~ '}

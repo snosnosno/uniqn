@@ -24,7 +24,7 @@ const SPLASH_REDIRECT_DELAY_MS = 500;
 const PROFILE_RETRY_DELAY_MS = 500;
 
 const SPINNER_COLOR = {
-  light: '#A855F7',
+  light: '#D4AF37',
   dark: '#C084FC',
 } as const;
 

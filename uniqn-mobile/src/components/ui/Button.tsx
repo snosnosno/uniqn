@@ -73,7 +73,7 @@ const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
   outline: { light: '#6B7280', dark: '#D1D5DB' },
   ghost: { light: '#6B7280', dark: '#D1D5DB' },
   danger: { light: '#ffffff', dark: '#ffffff' },
-  accent: { light: '#0D0B14', dark: '#0D0B14' }, // 다크 텍스트
+  accent: { light: '#050506', dark: '#050506' }, // 다크 텍스트
 };
 
 /**

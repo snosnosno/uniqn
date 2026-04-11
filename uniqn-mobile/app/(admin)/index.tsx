@@ -29,7 +29,7 @@ function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Link href={href as never} asChild>
-      <Pressable className="rounded-xl border border-gray-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
+      <Pressable className="rounded-md border border-gray-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
         <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
           <Icon size={24} color={iconColor} />
         </View>
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       title: '사용자 관리',
       description: '회원 정보와 권한을 확인합니다.',
       icon: PeopleOutlineIcon,
-      iconColor: '#9333EA',
+      iconColor: '#B8962E',
       href: '/(admin)/users',
       bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     },

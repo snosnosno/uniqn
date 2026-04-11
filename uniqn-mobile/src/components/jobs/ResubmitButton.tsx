@@ -93,7 +93,7 @@ export function ResubmitButton({
         onPress={handlePress}
         disabled={resubmit.isPending}
         className={`
-          flex-row items-center justify-center rounded-xl
+          flex-row items-center justify-center rounded-md
           bg-primary-600 dark:bg-primary-500
           active:bg-primary-700 dark:active:bg-primary-600
           ${paddingClass}

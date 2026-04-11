@@ -138,8 +138,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <View className={containerClass}>
         <View className="flex-1 items-center justify-center p-6">
           {/* 에러 아이콘 */}
-          <View className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
-            <Text className="text-4xl">💥</Text>
+          <View className="w-20 h-20 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
+            <Text className="text-4xl">{''}</Text>
           </View>
 
           {/* 제목 */}
@@ -157,7 +157,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           {/* 개발 모드 상세 정보 */}
           {showDetails && error && (
             <ScrollView
-              className="max-h-40 w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6"
+              className="max-h-40 w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6"
               showsVerticalScrollIndicator={true}
             >
               <Text className="text-xs text-red-600 dark:text-red-400 font-mono mb-2">
@@ -176,7 +176,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <View className="flex-row gap-3">
             <Pressable
               onPress={this.handleReset}
-              className="bg-primary-600 px-6 py-3 rounded-xl active:bg-primary-700"
+              className="bg-primary-600 px-6 py-3 rounded-md active:bg-primary-700"
               accessibilityRole="button"
               accessibilityLabel="다시 시도"
             >
@@ -189,7 +189,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   // 앱 재시작을 유도하는 UI (실제 재시작은 네이티브에서 처리)
                   this.handleReset();
                 }}
-                className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
+                className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-md active:bg-gray-300 dark:active:bg-gray-600"
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >

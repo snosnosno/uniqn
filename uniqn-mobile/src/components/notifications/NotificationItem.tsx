@@ -81,9 +81,7 @@ export const NotificationItem = memo(function NotificationItem({
 
           <View className="flex-1">
             <View className="flex-row items-center">
-              {!notification.isRead && (
-                <View className="mr-2 h-2 w-2 rounded-full bg-primary-500" />
-              )}
+              {!notification.isRead && <View className="mr-2 h-2 w-2 rounded-sm bg-primary-500" />}
               <Text
                 numberOfLines={1}
                 className={`flex-1 text-base ${
@@ -119,7 +117,7 @@ export const NotificationItem = memo(function NotificationItem({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="알림 삭제"
-          className="absolute right-2 top-3 rounded-full p-2 active:bg-gray-100 dark:active:bg-gray-800"
+          className="absolute right-2 top-3 rounded-sm p-2 active:bg-gray-100 dark:active:bg-gray-800"
         >
           <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
         </Pressable>
@@ -149,7 +147,7 @@ export function NotificationItemSkeleton() {
       accessibilityElementsHidden={true}
     >
       <View className="flex-row items-start">
-        <View className="mr-3 h-10 w-10 animate-pulse rounded-full bg-gray-200 dark:bg-surface" />
+        <View className="mr-3 h-10 w-10 animate-pulse rounded-sm bg-gray-200 dark:bg-surface" />
 
         <View className="flex-1">
           <View className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-surface" />

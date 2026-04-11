@@ -222,21 +222,21 @@ const AllowanceItem = memo(function AllowanceItem({
               disabled={disabled}
               accessibilityRole="radio"
               accessibilityState={{ selected: status === 'provided', disabled }}
-              className={`flex-row items-center px-3 py-1.5 rounded-full ${
+              className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'provided'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
                   : 'bg-gray-100 dark:bg-surface'
               }`}
             >
               <View
-                className={`h-4 w-4 rounded-full border-2 mr-2 items-center justify-center ${
+                className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'provided'
                     ? 'border-indigo-600 dark:border-indigo-400'
                     : 'border-gray-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'provided' && (
-                  <View className="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                  <View className="h-2 w-2 rounded-sm bg-indigo-600 dark:bg-indigo-400" />
                 )}
               </View>
               <Text
@@ -256,21 +256,21 @@ const AllowanceItem = memo(function AllowanceItem({
               disabled={disabled}
               accessibilityRole="radio"
               accessibilityState={{ selected: status === 'amount', disabled }}
-              className={`flex-row items-center px-3 py-1.5 rounded-full ${
+              className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'amount'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
                   : 'bg-gray-100 dark:bg-surface'
               }`}
             >
               <View
-                className={`h-4 w-4 rounded-full border-2 mr-2 items-center justify-center ${
+                className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'amount'
                     ? 'border-indigo-600 dark:border-indigo-400'
                     : 'border-gray-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'amount' && (
-                  <View className="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                  <View className="h-2 w-2 rounded-sm bg-indigo-600 dark:bg-indigo-400" />
                 )}
               </View>
               <Text

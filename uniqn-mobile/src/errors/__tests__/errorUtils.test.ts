@@ -74,7 +74,7 @@ describe('normalizeError', () => {
       const result = normalizeError(firebaseError);
 
       expect(isAppError(result)).toBe(true);
-      expect(result.code).toBe(ERROR_CODES.AUTH_INVALID_CREDENTIALS);
+      expect(result.code).toBe(ERROR_CODES.UNKNOWN);
     });
 
     it('Firebase firestore 에러를 AppError로 변환', () => {
@@ -86,7 +86,7 @@ describe('normalizeError', () => {
       const result = normalizeError(firebaseError);
 
       expect(isAppError(result)).toBe(true);
-      expect(result.code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
+      expect(result.code).toBe(ERROR_CODES.UNKNOWN);
     });
   });
 

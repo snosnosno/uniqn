@@ -151,7 +151,7 @@ export function JobPostingScrollForm({
         </View>
 
         {isTournament && (
-          <View className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+          <View className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
             <Text className="mb-1 text-sm font-medium text-amber-800 dark:text-amber-200">
               대회공고 안내
             </Text>

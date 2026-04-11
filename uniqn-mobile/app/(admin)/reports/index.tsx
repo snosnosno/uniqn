@@ -177,7 +177,7 @@ export default function AdminReportsPage() {
               hitSlop={8}
               accessibilityLabel="필터 토글"
             >
-              <FilterIcon size={20} color={showFilters ? '#A855F7' : '#9CA3AF'} />
+              <FilterIcon size={20} color={showFilters ? '#D4AF37' : '#9CA3AF'} />
             </Pressable>
           </View>
         </View>
@@ -194,7 +194,7 @@ export default function AdminReportsPage() {
               <Pressable
                 key={option.value}
                 onPress={() => handleStatusFilter(option.value)}
-                className={`px-4 py-2 rounded-full ${
+                className={`px-4 py-2 rounded-sm ${
                   filters.status === option.value ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'
                 }`}
               >
@@ -224,7 +224,7 @@ export default function AdminReportsPage() {
                 <Pressable
                   key={option.value}
                   onPress={() => handleSeverityFilter(option.value)}
-                  className={`px-3 py-1.5 rounded-full ${
+                  className={`px-3 py-1.5 rounded-sm ${
                     filters.severity === option.value
                       ? 'bg-primary-600'
                       : 'bg-gray-200 dark:bg-surface'
@@ -256,7 +256,7 @@ export default function AdminReportsPage() {
                 <Pressable
                   key={option.value}
                   onPress={() => handleReporterTypeFilter(option.value)}
-                  className={`px-3 py-1.5 rounded-full ${
+                  className={`px-3 py-1.5 rounded-sm ${
                     filters.reporterType === option.value
                       ? 'bg-primary-600'
                       : 'bg-gray-200 dark:bg-surface'

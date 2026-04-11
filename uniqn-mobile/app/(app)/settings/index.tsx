@@ -38,7 +38,7 @@ import { logger } from '@/utils/logger';
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-    <Text style={{ fontSize: size * 0.7, color }}>☀️</Text>
+    <Text style={{ fontSize: size * 0.7, color }}>{''}</Text>
   </View>
 );
 
@@ -247,7 +247,7 @@ export default function SettingsScreen() {
                 onValueChange={handlePushToggle}
                 disabled={isSaving || !isAuthenticated}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={notificationSettings?.pushEnabled ? '#A855F7' : '#f4f3f4'}
+                thumbColor={notificationSettings?.pushEnabled ? '#D4AF37' : '#f4f3f4'}
               />
             }
           />
@@ -274,7 +274,7 @@ export default function SettingsScreen() {
                     disabled={isAutoLoginLoading}
                     testID="settings-auto-login-switch"
                     trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={autoLoginEnabled ? '#A855F7' : '#f4f3f4'}
+                    thumbColor={autoLoginEnabled ? '#D4AF37' : '#f4f3f4'}
                   />
                 }
               />
@@ -295,7 +295,7 @@ export default function SettingsScreen() {
                           isBiometricLoading || isBiometricAuthenticating || !autoLoginEnabled
                         }
                         trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                        thumbColor={isBiometricEnabled ? '#A855F7' : '#f4f3f4'}
+                        thumbColor={isBiometricEnabled ? '#D4AF37' : '#f4f3f4'}
                       />
                     }
                   />
@@ -316,7 +316,7 @@ export default function SettingsScreen() {
                 value={isDarkMode}
                 onValueChange={handleDarkModeToggle}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={isDarkMode ? '#A855F7' : '#f4f3f4'}
+                thumbColor={isDarkMode ? '#D4AF37' : '#f4f3f4'}
               />
             }
           />
@@ -381,7 +381,7 @@ export default function SettingsScreen() {
                     onValueChange={handleMarketingConsentChange}
                     disabled={isMarketingUpdating}
                     trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={profile?.marketingAgreed ? '#A855F7' : '#f4f3f4'}
+                    thumbColor={profile?.marketingAgreed ? '#D4AF37' : '#f4f3f4'}
                   />
                 }
               />

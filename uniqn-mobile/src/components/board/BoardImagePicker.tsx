@@ -87,14 +87,14 @@ export function BoardImagePicker({
             />
             <Pressable
               onPress={() => onRemoveImage(image.id)}
-              className="absolute right-1 top-1 rounded-full bg-black/70 p-1.5 active:bg-black/85"
+              className="absolute right-1 top-1 rounded-sm bg-black/70 p-1.5 active:bg-black/85"
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel={`첨부 이미지 ${index + 1} 삭제`}
             >
               <XMarkIcon size={14} color="#FFFFFF" />
             </Pressable>
-            <View className="absolute bottom-1 left-1 rounded-full bg-black/60 px-2 py-0.5">
+            <View className="absolute bottom-1 left-1 rounded-sm bg-black/60 px-2 py-0.5">
               <Text className="text-xs font-medium text-white">{index + 1}</Text>
             </View>
           </View>
@@ -105,7 +105,7 @@ export function BoardImagePicker({
             onPress={onAddImages}
             disabled={!canAddMore}
             style={getTileStyle(images.length, tileSize)}
-            className={`items-center justify-center rounded-2xl border border-dashed ${
+            className={`items-center justify-center rounded-lg border border-dashed ${
               canAddMore
                 ? 'border-gray-300 bg-gray-50 active:bg-gray-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
                 : 'border-gray-300 bg-gray-100 dark:border-surface-overlay dark:bg-surface'
@@ -125,7 +125,7 @@ export function BoardImagePicker({
               </View>
             ) : (
               <View className="items-center px-2">
-                <View className="mb-2 rounded-full bg-gray-200 p-3 dark:bg-surface-elevated">
+                <View className="mb-2 rounded-sm bg-gray-200 p-3 dark:bg-surface-elevated">
                   <ImagesOutlineIcon size={20} color="#9CA3AF" />
                 </View>
                 <AddIcon size={18} color="#6B7280" />

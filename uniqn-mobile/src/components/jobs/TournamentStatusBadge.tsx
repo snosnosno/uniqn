@@ -235,7 +235,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
     </>
   );
 
-  const badgeClassName = `flex-row items-center rounded-full border ${config.bgClass} ${config.borderClass} ${sizeConfig.paddingClass} ${className}`;
+  const badgeClassName = `flex-row items-center rounded-sm border ${config.bgClass} ${config.borderClass} ${sizeConfig.paddingClass} ${className}`;
 
   return (
     <>
@@ -286,7 +286,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}
-                  className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center active:opacity-70"
+                  className="flex-1 mr-2 py-3 rounded-md border border-primary-600 dark:border-primary-500 items-center justify-center active:opacity-70"
                 >
                   <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
                     수정하기
@@ -295,7 +295,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                 <Pressable
                   onPress={handleResubmitPress}
                   disabled={resubmit.isPending}
-                  className="flex-1 ml-2 py-3 rounded-xl bg-primary-600 dark:bg-primary-500 flex-row items-center justify-center active:opacity-80"
+                  className="flex-1 ml-2 py-3 rounded-md bg-primary-600 dark:bg-primary-500 flex-row items-center justify-center active:opacity-80"
                 >
                   {resubmit.isPending ? (
                     <ActivityIndicator size="small" color="#ffffff" />

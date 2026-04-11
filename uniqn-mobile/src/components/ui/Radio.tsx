@@ -133,7 +133,7 @@ const RadioItem = memo(function RadioItem({
       {/* Radio Circle */}
       <View
         className={`
-          rounded-full border-2 items-center justify-center
+          rounded-sm border-2 items-center justify-center
           ${config.outer}
           ${getOuterStyle()}
         `}
@@ -141,7 +141,7 @@ const RadioItem = memo(function RadioItem({
         {selected && (
           <View
             className={`
-              rounded-full
+              rounded-sm
               ${config.inner}
               ${getInnerStyle()}
             `}

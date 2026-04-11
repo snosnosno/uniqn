@@ -75,7 +75,7 @@ export function InquiryResponseForm({
   const isValid = response.trim().length > 0;
 
   return (
-    <View className="rounded-xl bg-white p-4 dark:bg-surface">
+    <View className="rounded-md bg-white p-4 dark:bg-surface">
       <Text className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">답변 작성</Text>
 
       {/* 답변 내용 */}

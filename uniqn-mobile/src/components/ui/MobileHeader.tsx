@@ -196,7 +196,7 @@ export function MobileHeader({
               {searchQuery.length > 0 ? (
                 <Pressable
                   onPress={() => handleSearchChange('')}
-                  className={`rounded-full p-1 ${HEADER_CLASSES.actionPressed}`}
+                  className={`rounded-sm p-1 ${HEADER_CLASSES.actionPressed}`}
                   accessibilityRole="button"
                   accessibilityLabel="검색어 지우기"
                 >
@@ -220,7 +220,7 @@ export function MobileHeader({
                 onBack ? (
                   <Pressable
                     onPress={handleBack}
-                    className={`-ml-2 rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+                    className={`-ml-2 rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
                     accessibilityRole="button"
                     accessibilityLabel="뒤로 가기"
                   >
@@ -264,7 +264,7 @@ export function MobileHeader({
               {showSearchButton && onSearch ? (
                 <Pressable
                   onPress={toggleSearchMode}
-                  className={`rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+                  className={`rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
                   accessibilityRole="button"
                   accessibilityLabel="검색"
                 >
@@ -293,7 +293,7 @@ export function HeaderAction({ icon, onPress, label, disabled = false, badge }: 
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className={`relative rounded-full p-2 ${
+      className={`relative rounded-sm p-2 ${
         disabled ? 'opacity-50' : HEADER_CLASSES.actionPressed
       }`}
       accessibilityRole="button"
@@ -301,7 +301,7 @@ export function HeaderAction({ icon, onPress, label, disabled = false, badge }: 
     >
       <Text className="text-xl text-gray-700 dark:text-gray-300">{icon}</Text>
       {badge !== undefined && badge > 0 ? (
-        <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1">
+        <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-red-500 px-1">
           <Text className="text-xs font-bold text-white">{badge > 99 ? '99+' : badge}</Text>
         </View>
       ) : null}

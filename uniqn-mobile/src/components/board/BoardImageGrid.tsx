@@ -71,7 +71,7 @@ function ImageCell({
         transition={200}
       />
       {totalCount > 1 ? (
-        <View className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5">
+        <View className="absolute bottom-2 right-2 rounded-sm bg-black/60 px-2 py-0.5">
           <Text className="text-[10px] font-semibold text-white">
             {index + 1}/{totalCount}
           </Text>

@@ -313,7 +313,7 @@ export function AnnouncementForm({
           <Switch
             value={isPinned}
             onValueChange={setIsPinned}
-            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
             thumbColor={isPinned ? '#ffffff' : '#f4f4f5'}
           />
         </View>

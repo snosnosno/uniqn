@@ -59,7 +59,7 @@ export function JobDetailHeader({
         <Pressable
           onPress={onShare}
           disabled={isSharing}
-          className={`-mr-2 ml-2 rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+          className={`-mr-2 ml-2 rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="공고 공유하기"
           accessibilityRole="button"

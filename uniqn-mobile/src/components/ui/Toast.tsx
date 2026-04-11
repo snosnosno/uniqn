@@ -108,7 +108,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     <Animated.View style={animatedStyle} className="mb-2">
       <Pressable
         onPress={handleDismiss}
-        className={`flex-row items-center px-4 py-3 rounded-xl shadow-lg ${style.container}`}
+        className={`flex-row items-center px-4 py-3 rounded-md shadow-lg ${style.container}`}
         accessibilityRole="alert"
         accessibilityLabel={`${toast.type}: ${toast.message}`}
       >

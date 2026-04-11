@@ -197,9 +197,9 @@ export default function ApplyScreen() {
     headerShown: true,
     title: '지원하기',
     headerStyle: {
-      backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+      backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
     },
-    headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+    headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
   } as const;
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {

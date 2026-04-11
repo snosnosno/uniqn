@@ -48,7 +48,7 @@ function FixedRoleSelector({
             key={option.key}
             onPress={() => !isDisabled && onSelect(option.key)}
             disabled={isDisabled}
-            className={`rounded-xl border p-4 ${
+            className={`rounded-md border p-4 ${
               isSelected
                 ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                 : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'

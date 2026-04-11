@@ -51,8 +51,8 @@ const mockRepo = inquiryRepository as jest.Mocked<typeof inquiryRepository>;
 describe('inquiryService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' } as never);
-    mockRequireMatchingCurrentUser.mockReturnValue({ uid: 'user-1' } as never);
+    mockRequireAdminUser.mockResolvedValue({ id: 'admin-1' } as never);
+    mockRequireMatchingCurrentUser.mockReturnValue({ id: 'user-1' } as never);
   });
 
   it('fetches inquiries for the current user', async () => {

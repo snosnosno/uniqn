@@ -95,7 +95,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
               {status.label}
             </Badge>
 
-            <View className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
+            <View className="ml-2 rounded-sm bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
               <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
                 {group.dateRange.totalDays}일
               </Text>
@@ -103,7 +103,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
             {attendanceSummary && (
               <View
-                className={`ml-2 rounded-full px-2 py-0.5 ${
+                className={`ml-2 rounded-sm px-2 py-0.5 ${
                   ATTENDANCE_STATUS[attendanceSummary.status].bgColor
                 }`}
               >
@@ -218,7 +218,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                   <Text className="text-sm text-gray-700 dark:text-gray-300">
                     {dateStatus.formattedDate}
                   </Text>
-                  <View className={`rounded-full px-2 py-0.5 ${attendance.bgColor}`}>
+                  <View className={`rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>
                     <Text className={`text-xs font-medium ${attendance.textColor}`}>
                       {attendance.label}
                     </Text>

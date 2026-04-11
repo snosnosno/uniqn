@@ -69,13 +69,13 @@ const SelectOption = memo(function SelectOption({
     >
       <View className="flex-row items-center">
         <View
-          className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+          className={`w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ${
             isSelected
               ? 'border-primary-500 bg-primary-500'
               : 'border-gray-300 dark:border-surface-overlay'
           }`}
         >
-          {isSelected && <View className="w-2 h-2 rounded-full bg-white" />}
+          {isSelected && <View className="w-2 h-2 rounded-sm bg-white" />}
         </View>
         <Text
           className={`text-sm ${
@@ -236,7 +236,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
   ).length;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4">
+    <View className="bg-white dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-lg font-semibold text-gray-900 dark:text-white">사전질문</Text>

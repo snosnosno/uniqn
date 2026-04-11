@@ -57,7 +57,7 @@ export default function AdminInquiriesScreen() {
     if (!hasMore) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#A855F7" />
+        <ActivityIndicator size="small" color="#D4AF37" />
       </View>
     );
   }, [hasMore]);
@@ -66,7 +66,6 @@ export default function AdminInquiriesScreen() {
     () => (
       <View className="flex-1 items-center justify-center px-4 py-12">
         <EmptyState
-          icon="📭"
           title="문의가 없습니다"
           description={
             statusFilter === 'all'
@@ -104,7 +103,7 @@ export default function AdminInquiriesScreen() {
               <Pressable
                 key={filter.key}
                 onPress={() => setStatusFilter(filter.key)}
-                className={`rounded-full px-4 py-2 ${
+                className={`rounded-sm px-4 py-2 ${
                   isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
                 }`}
               >
@@ -124,7 +123,7 @@ export default function AdminInquiriesScreen() {
       {/* 문의 목록 */}
       {isLoading && inquiries.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#A855F7" />
+          <ActivityIndicator size="large" color="#D4AF37" />
         </View>
       ) : (
         <FlashList
@@ -139,7 +138,7 @@ export default function AdminInquiriesScreen() {
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#A855F7" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#D4AF37" />
           }
         />
       )}

@@ -173,7 +173,7 @@ const GroupItem = memo(function GroupItem({
         {!isSingleDay && (
           <Pressable
             onPress={toggleExpand}
-            className="ml-2 rounded-full p-1.5 active:bg-gray-100 dark:active:bg-gray-700"
+            className="ml-2 rounded-sm p-1.5 active:bg-gray-100 dark:active:bg-gray-700"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel={isExpanded ? '날짜 상세 접기' : '날짜 상세 펼치기'}
           >

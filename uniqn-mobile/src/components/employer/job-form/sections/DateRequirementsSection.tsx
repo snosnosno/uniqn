@@ -265,7 +265,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         accessibilityHint={canAddDate ? '새 날짜를 추가합니다.' : '더 이상 추가할 수 없습니다.'}
       >
         <View className="mr-2">
-          <PlusIcon size={20} color={canAddDate ? '#A855F7' : '#9CA3AF'} />
+          <PlusIcon size={20} color={canAddDate ? '#D4AF37' : '#9CA3AF'} />
         </View>
         <Text
           className={`font-medium ${

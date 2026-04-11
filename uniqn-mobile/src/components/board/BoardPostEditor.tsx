@@ -189,7 +189,7 @@ export function BoardPostEditorLoading({
 
         <Card className="mb-4">
           <Skeleton width={96} height={20} className="mb-3" />
-          <View className="rounded-2xl border border-dashed border-gray-200 p-5 dark:border-surface-overlay">
+          <View className="rounded-lg border border-dashed border-gray-200 p-5 dark:border-surface-overlay">
             <Skeleton width={52} height={52} borderRadius={26} className="mb-3" />
             <SkeletonText lines={2} lineHeight={14} lastLineWidth="55%" />
           </View>

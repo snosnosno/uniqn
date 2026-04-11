@@ -167,7 +167,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       {pushPermission && !pushPermission.granted && !pushPermission.canAskAgain && (
         <Pressable
           onPress={onOpenSettings}
-          className="mb-4 p-4 bg-error-100 dark:bg-error-900/30 rounded-xl flex-row items-center"
+          className="mb-4 p-4 bg-error-100 dark:bg-error-900/30 rounded-md flex-row items-center"
         >
           <BellSlashIcon size={24} color="#dc2626" />
           <View className="flex-1 ml-3">
@@ -186,7 +186,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       {pushPermission && !pushPermission.granted && pushPermission.canAskAgain && (
         <Pressable
           onPress={onRequestPermission}
-          className="mb-4 p-4 bg-warning-100 dark:bg-warning-900/30 rounded-xl flex-row items-center"
+          className="mb-4 p-4 bg-warning-100 dark:bg-warning-900/30 rounded-md flex-row items-center"
         >
           <DevicePhoneMobileIcon size={24} color="#d97706" />
           <View className="flex-1 ml-3">
@@ -205,7 +205,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             {settings.enabled ? (
-              <BellIcon size={24} color="#A855F7" />
+              <BellIcon size={24} color="#D4AF37" />
             ) : (
               <BellSlashIcon size={24} color="#9ca3af" />
             )}
@@ -219,7 +219,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.enabled}
             onValueChange={handleMasterToggle}
-            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
             thumbColor="#ffffff"
             disabled={isSaving}
           />
@@ -243,7 +243,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.quietHours?.enabled || false}
             onValueChange={handleQuietHoursToggle}
-            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
             thumbColor="#ffffff"
             disabled={isSaving || !settings.enabled}
           />
@@ -267,7 +267,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.grouping?.enabled ?? true}
             onValueChange={handleGroupingToggle}
-            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
             thumbColor="#ffffff"
             disabled={isSaving || !settings.enabled}
           />
@@ -292,7 +292,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
             >
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center flex-1">
-                  <View className={`w-3 h-3 rounded-full ${info.color} mr-2`} />
+                  <View className={`w-3 h-3 rounded-sm ${info.color} mr-2`} />
                   <Text className="text-base font-medium text-gray-900 dark:text-white">
                     {NOTIFICATION_CATEGORY_LABELS[category]}
                   </Text>
@@ -300,7 +300,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                 <Switch
                   value={categorySettings?.enabled ?? true}
                   onValueChange={(enabled) => handleCategoryToggle(category, enabled)}
-                  trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+                  trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
                   thumbColor="#ffffff"
                   disabled={isSaving || !settings.enabled}
                 />
@@ -317,7 +317,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
-                    trackColor={{ false: '#d1d5db', true: '#A855F7' }}
+                    trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
                     thumbColor="#ffffff"
                     disabled={isSaving || !settings.enabled}
                   />

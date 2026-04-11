@@ -157,7 +157,7 @@ export function ApplicantConfirmModal({
     <Modal visible={visible} onClose={handleClose} title={config.title} position="center">
       <View>
         {/* 지원자 정보 */}
-        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-xl mb-3">
+        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-md mb-3">
           <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -196,7 +196,7 @@ export function ApplicantConfirmModal({
                       : 'bg-primary-50 border border-primary-200'
                   }`}
                 >
-                  <CalendarIcon size={16} color={isDark ? '#93C5FD' : '#9333EA'} />
+                  <CalendarIcon size={16} color={isDark ? '#93C5FD' : '#B8962E'} />
                   <Text
                     className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
                   >
@@ -240,7 +240,7 @@ export function ApplicantConfirmModal({
 
         {/* 설명 */}
         <View className="flex-row items-center mb-3">
-          <AlertCircleIcon size={20} color={action === 'reject' ? '#EF4444' : '#9333EA'} />
+          <AlertCircleIcon size={20} color={action === 'reject' ? '#EF4444' : '#B8962E'} />
           <Text className="ml-2 text-sm text-gray-600 dark:text-gray-300">
             {config.description}
           </Text>

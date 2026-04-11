@@ -6,43 +6,17 @@ import {
   signUp,
 } from '../authCoreService';
 import { Platform } from 'react-native';
-import { ERROR_CODES } from '@/errors';
 
 import { userRepository } from '@/repositories';
 
-const mockWebAuth = {
-  currentUser: null as null | {
-    uid: string;
-    email?: string | null;
-    getIdToken: jest.Mock<Promise<string>, [boolean?]>;
-    getIdTokenResult: jest.Mock<Promise<{ claims: Record<string, unknown> }>, []>;
-  },
-  authStateReady: jest.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: jest.fn(),
-};
+const mockSignInWithPassword = jest.fn();
+const mockSignUp = jest.fn();
+const mockSignOut = jest.fn();
+const mockGetUser = jest.fn();
 
-const mockNativeAuth = {
-  currentUser: null as null | {
-    uid: string;
-    providerData: { providerId: string }[];
-  },
-};
-
-const mockFunctions = {};
-
-const mockSignInWithEmailAndPassword = jest.fn();
-const mockSendPasswordResetEmail = jest.fn();
-
-const mockNativeSignInWithEmailAndPassword = jest.fn();
-const mockNativeLinkWithCredential = jest.fn();
-const mockNativeDeleteUser = jest.fn();
-
-const mockSyncToWebAuth = jest.fn();
-const mockSyncSignOut = jest.fn();
 const mockProtectAuthFlow = jest.fn();
 const mockClearProtectedAuthFlow = jest.fn();
 
-const mockHttpsCallable = jest.fn();
 const mockTrackLogin = jest.fn();
 const mockTrackSignup = jest.fn();
 const mockTrackLogout = jest.fn();
@@ -52,15 +26,15 @@ const mockSetUserProperties = jest.fn();
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      signInWithPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
-      signUp: jest.fn(),
-      signOut: (...args: unknown[]) => mockSyncSignOut(...args),
-      resetPasswordForEmail: (...args: unknown[]) => mockSendPasswordResetEmail(...args),
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
+      signUp: (...args: unknown[]) => mockSignUp(...args),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      resetPasswordForEmail: jest.fn().mockResolvedValue({ error: null }),
+      getUser: (...args: unknown[]) => mockGetUser(...args),
       getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     },
     functions: {
-      invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
   },
 }));
@@ -128,27 +102,36 @@ jest.mock('@/services/observability/sessionService', () => ({
   resetLoginAttempts: jest.fn(async () => undefined),
 }));
 
+jest.mock('../portOneIdentityService', () => ({
+  callVerifyAndSavePortOneProfile: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../userProfileService', () => ({
+  getUserProfile: jest.fn(),
+}));
+
 const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
+const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfileService') as {
+  getUserProfile: jest.Mock;
+};
+const { callVerifyAndSavePortOneProfile: mockCallVerify } = jest.requireMock(
+  '../portOneIdentityService'
+) as { callVerifyAndSavePortOneProfile: jest.Mock };
 
 describe('authCoreService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockWebAuth.currentUser = null;
-    mockWebAuth.authStateReady.mockResolvedValue(undefined);
-    mockWebAuth.onAuthStateChanged.mockImplementation(() => () => undefined);
-    mockNativeAuth.currentUser = null;
-    mockSyncToWebAuth.mockResolvedValue(undefined);
-    mockSyncSignOut.mockResolvedValue(undefined);
-    mockNativeDeleteUser.mockResolvedValue(undefined);
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSignOut.mockResolvedValue({ error: null });
     mockUserRepository.markAsOrphan.mockResolvedValue(undefined);
   });
 
-  it('logs in with native and web auth on native platforms', async () => {
-    const webUser = {
-      uid: 'user-1',
+  it('logs in with Supabase signInWithPassword', async () => {
+    const supabaseUser = {
+      id: 'user-1',
       email: 'test@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+      user_metadata: { name: 'User' },
+      app_metadata: { providers: ['email'] },
     };
     const profile = {
       uid: 'user-1',
@@ -160,118 +143,38 @@ describe('authCoreService', () => {
       updatedAt: new Date() as never,
     };
 
-    mockNativeAuth.currentUser = { uid: 'user-1', providerData: [] };
-    mockWebAuth.currentUser = webUser;
-    mockNativeSignInWithEmailAndPassword.mockResolvedValue({ user: { uid: 'user-1' } });
-    mockSignInWithEmailAndPassword.mockResolvedValue({ user: webUser });
-    mockUserRepository.getById.mockResolvedValue(profile as never);
-
-    await expect(login({ email: 'test@example.com', password: 'Password123!' })).resolves.toEqual({
-      user: webUser,
-      profile,
+    mockSignInWithPassword.mockResolvedValue({
+      data: { user: supabaseUser, session: { access_token: 'token' } },
+      error: null,
     });
-    expect(mockNativeSignInWithEmailAndPassword).toHaveBeenCalled();
-    expect(mockSignInWithEmailAndPassword).toHaveBeenCalled();
-    expect(webUser.getIdToken).toHaveBeenCalledWith(true);
+    mockFetchUserProfile.mockResolvedValue(profile);
+
+    const result = await login({ email: 'test@example.com', password: 'Password123!' });
+
+    expect(result).toEqual({ user: supabaseUser, profile });
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'Password123!',
+    });
     expect(mockTrackLogin).toHaveBeenCalledWith('email');
   });
 
-  it('keeps the web login session when the immediate forced token refresh fails', async () => {
-    const originalPlatform = Platform.OS;
-    const webUser = {
-      uid: 'user-web',
-      email: 'web@example.com',
-      getIdToken: jest.fn().mockRejectedValue(new Error('auth/network-request-failed')),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: {} }),
-    };
-    const profile = {
-      uid: 'user-web',
-      email: 'web@example.com',
-      name: 'Web User',
-      role: 'staff',
-      phoneVerified: true,
-      createdAt: new Date() as never,
-      updatedAt: new Date() as never,
-    };
+  it('throws AuthError when signInWithPassword fails', async () => {
+    mockSignInWithPassword.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: 'Invalid credentials' },
+    });
 
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
-
-    try {
-      mockWebAuth.currentUser = webUser;
-      mockSignInWithEmailAndPassword.mockResolvedValue({ user: webUser });
-      mockUserRepository.getById.mockResolvedValue(profile as never);
-
-      await expect(login({ email: 'web@example.com', password: 'Password123!' })).resolves.toEqual({
-        user: webUser,
-        profile,
-      });
-
-      expect(webUser.getIdTokenResult).toHaveBeenCalledTimes(1);
-      expect(webUser.getIdToken).toHaveBeenCalledWith(true);
-      expect(mockSyncSignOut).not.toHaveBeenCalled();
-      expect(mockTrackLogin).toHaveBeenCalledWith('email');
-    } finally {
-      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
-    }
+    await expect(login({ email: 'test@example.com', password: 'wrong' })).rejects.toThrow();
   });
 
-  it('waits for the web auth session before loading the profile after login', async () => {
-    const originalPlatform = Platform.OS;
-    const webUser = {
-      uid: 'user-wait',
-      email: 'wait@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
-    };
-    const profile = {
-      uid: 'user-wait',
-      email: 'wait@example.com',
-      name: 'Wait User',
-      role: 'staff',
-      phoneVerified: true,
-      createdAt: new Date() as never,
-      updatedAt: new Date() as never,
-    };
-
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
-
-    try {
-      mockWebAuth.currentUser = null;
-      mockSignInWithEmailAndPassword.mockResolvedValue({ user: webUser });
-      mockWebAuth.authStateReady.mockImplementation(async () => {
-        mockWebAuth.currentUser = webUser;
-      });
-      mockWebAuth.onAuthStateChanged.mockImplementation(
-        (callback: (user: typeof webUser) => void) => {
-          callback(webUser);
-          return () => undefined;
-        }
-      );
-      mockUserRepository.getById.mockResolvedValue(profile as never);
-
-      await expect(login({ email: 'wait@example.com', password: 'Password123!' })).resolves.toEqual(
-        {
-          user: webUser,
-          profile,
-        }
-      );
-
-      expect(mockWebAuth.authStateReady).toHaveBeenCalledTimes(1);
-      expect(mockUserRepository.getById).toHaveBeenCalledWith('user-wait');
-    } finally {
-      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
-    }
-  });
-
-  it('signs up a phone-verified native user through verifyAndSaveProfile', async () => {
-    const nativeUser = { uid: 'user-1', providerData: [] };
-    const webUser = {
-      uid: 'user-1',
+  it('signs up with Supabase auth and edge function', async () => {
+    const supabaseUser = {
+      id: 'user-1',
       email: 'new@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+      user_metadata: { name: 'User' },
+      app_metadata: { providers: ['email'] },
     };
-    const callable = jest.fn().mockResolvedValue({ data: { success: true, uid: 'user-1' } });
     const profile = {
       uid: 'user-1',
       email: 'new@example.com',
@@ -282,221 +185,87 @@ describe('authCoreService', () => {
       updatedAt: new Date() as never,
     };
 
-    mockNativeAuth.currentUser = nativeUser;
-    mockWebAuth.currentUser = webUser;
-    mockNativeLinkWithCredential.mockResolvedValue(undefined);
-    mockHttpsCallable.mockReturnValue(callable);
-    mockUserRepository.getById.mockResolvedValue(profile as never);
-
-    await expect(
-      signUp({
-        email: 'new@example.com',
-        password: 'Password123!',
-        name: 'User',
-        birthDate: '19900101',
-        gender: 'male',
-        verifiedPhone: '01012345678',
-        termsAgreed: true,
-        privacyAgreed: true,
-        marketingAgreed: false,
-      } as never)
-    ).resolves.toEqual({
-      user: webUser,
-      profile,
+    mockSignUp.mockResolvedValue({
+      data: { user: supabaseUser, session: { access_token: 'token' } },
+      error: null,
     });
+    mockCallVerify.mockResolvedValue(undefined);
+    mockFetchUserProfile.mockResolvedValue(profile);
 
-    expect(mockNativeLinkWithCredential).toHaveBeenCalled();
-    expect(mockSyncToWebAuth).toHaveBeenCalledWith('new@example.com', 'Password123!');
-    expect(mockHttpsCallable).toHaveBeenCalledWith(mockFunctions, 'verifyAndSaveProfile');
-    expect(callable).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'new@example.com',
-        name: 'User',
-        mode: 'signup',
-      })
-    );
-    expect(webUser.getIdToken).toHaveBeenCalledWith(true);
+    const result = await signUp({
+      email: 'new@example.com',
+      password: 'Password123!',
+      name: 'User',
+      identityVerificationId: 'imp_123',
+      termsAgreed: true,
+      privacyAgreed: true,
+      marketingAgreed: false,
+    } as never);
+
+    expect(result).toEqual({ user: supabaseUser, profile });
+    expect(mockSignUp).toHaveBeenCalled();
+    expect(mockCallVerify).toHaveBeenCalled();
     expect(mockTrackSignup).toHaveBeenCalledWith('email');
   });
 
-  it('re-syncs the Web SDK session when it disappears after verifyAndSaveProfile', async () => {
-    const nativeUser = { uid: 'user-1', providerData: [] };
-    const webUser = {
-      uid: 'user-1',
+  it('cleans up on signup failure', async () => {
+    const supabaseUser = {
+      id: 'user-1',
       email: 'new@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
-    };
-    const callable = jest.fn().mockImplementation(async () => {
-      mockWebAuth.currentUser = null;
-      return { data: { success: true, uid: 'user-1' } };
-    });
-    const profile = {
-      uid: 'user-1',
-      email: 'new@example.com',
-      name: 'User',
-      role: 'staff',
-      phoneVerified: true,
-      createdAt: new Date() as never,
-      updatedAt: new Date() as never,
+      user_metadata: { name: 'User' },
+      app_metadata: { providers: ['email'] },
     };
 
-    mockNativeAuth.currentUser = nativeUser;
-    mockNativeLinkWithCredential.mockResolvedValue(undefined);
-    mockSyncToWebAuth.mockImplementation(async () => {
-      mockWebAuth.currentUser = webUser;
+    mockSignUp.mockResolvedValue({
+      data: { user: supabaseUser, session: { access_token: 'token' } },
+      error: null,
     });
-    mockHttpsCallable.mockReturnValue(callable);
-    mockUserRepository.getById.mockResolvedValue(profile as never);
+    mockCallVerify.mockRejectedValue(new Error('edge function failed'));
 
     await expect(
       signUp({
         email: 'new@example.com',
         password: 'Password123!',
         name: 'User',
-        birthDate: '19900101',
-        gender: 'male',
-        verifiedPhone: '01012345678',
-        termsAgreed: true,
-        privacyAgreed: true,
-        marketingAgreed: false,
-      } as never)
-    ).resolves.toEqual({
-      user: webUser,
-      profile,
-    });
-
-    expect(mockSyncToWebAuth).toHaveBeenCalledTimes(2);
-    expect(webUser.getIdToken).toHaveBeenCalledWith(true);
-  });
-
-  it('does not roll back the account when session restore fails after verifyAndSaveProfile succeeds', async () => {
-    const nativeUser = { uid: 'user-1', providerData: [] };
-    const webUser = {
-      uid: 'user-1',
-      email: 'new@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
-    };
-    const callable = jest.fn().mockImplementation(async () => {
-      mockWebAuth.currentUser = null;
-      return { data: { success: true, uid: 'user-1' } };
-    });
-
-    mockNativeAuth.currentUser = nativeUser;
-    mockNativeLinkWithCredential.mockResolvedValue(undefined);
-    mockSyncToWebAuth
-      .mockImplementationOnce(async () => {
-        mockWebAuth.currentUser = webUser;
-      })
-      .mockRejectedValueOnce(new Error('web session restore failed'));
-    mockHttpsCallable.mockReturnValue(callable);
-
-    await expect(
-      signUp({
-        email: 'new@example.com',
-        password: 'Password123!',
-        name: 'User',
-        birthDate: '19900101',
-        gender: 'male',
-        verifiedPhone: '01012345678',
-        termsAgreed: true,
-        privacyAgreed: true,
-        marketingAgreed: false,
-      } as never)
-    ).rejects.toMatchObject({
-      code: ERROR_CODES.AUTH_SESSION_EXPIRED,
-    });
-
-    expect(mockNativeDeleteUser).not.toHaveBeenCalled();
-    expect(mockUserRepository.markAsOrphan).not.toHaveBeenCalled();
-    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
-  });
-
-  it('rolls back the phone-only account when verifyAndSaveProfile fails', async () => {
-    const nativeUser = { uid: 'user-1', providerData: [] };
-    const webUser = {
-      uid: 'user-1',
-      email: 'new@example.com',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
-    };
-    const callable = jest.fn().mockRejectedValue(new Error('cf failed'));
-
-    mockNativeAuth.currentUser = nativeUser;
-    mockNativeLinkWithCredential.mockResolvedValue(undefined);
-    mockSyncToWebAuth.mockImplementation(async () => {
-      mockWebAuth.currentUser = webUser;
-    });
-    mockHttpsCallable.mockReturnValue(callable);
-
-    await expect(
-      signUp({
-        email: 'new@example.com',
-        password: 'Password123!',
-        name: 'User',
-        birthDate: '19900101',
-        gender: 'male',
-        verifiedPhone: '01012345678',
+        identityVerificationId: 'imp_123',
         termsAgreed: true,
         privacyAgreed: true,
         marketingAgreed: false,
       } as never)
     ).rejects.toThrow();
 
-    expect(mockNativeDeleteUser).toHaveBeenCalledWith(nativeUser);
-    expect(mockSyncSignOut).toHaveBeenCalled();
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
-  it('restores the Web SDK session before marking an orphan account during rollback', async () => {
-    mockNativeAuth.currentUser = {
-      uid: 'user-rollback',
-      providerData: [{ providerId: 'password' }],
-    };
-    mockNativeDeleteUser.mockRejectedValue(new Error('native delete failed'));
-    mockWebAuth.currentUser = null;
-    mockSyncToWebAuth.mockImplementation(async () => {
-      mockWebAuth.currentUser = {
-        uid: 'user-rollback',
-        providerData: [{ providerId: 'password' }],
-      } as never;
-    });
-
+  it('rollback marks orphan and signs out without throwing', async () => {
     await expect(
       rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
     ).resolves.toBeUndefined();
 
-    expect(mockSyncToWebAuth).toHaveBeenCalledWith('rollback@example.com', 'Password123!');
     expect(mockUserRepository.markAsOrphan).toHaveBeenCalledWith(
       'user-rollback',
       'native_signup_rollback_failed',
       '01012345678',
       Platform.OS
     );
-    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
-  it('fails rollback when it cannot delete or mark the account', async () => {
-    mockNativeAuth.currentUser = {
-      uid: 'user-rollback',
-      providerData: [{ providerId: 'password' }],
-    };
-    mockNativeDeleteUser.mockRejectedValue(new Error('native delete failed'));
-    mockWebAuth.currentUser = null;
+  it('rollback does not throw when markAsOrphan fails', async () => {
+    mockUserRepository.markAsOrphan.mockRejectedValue(new Error('mark failed'));
 
     await expect(
       rollbackPhoneOnlyAccount('user-rollback', 'native_signup_rollback_failed', '01012345678')
-    ).rejects.toMatchObject({
-      code: ERROR_CODES.UNKNOWN,
-    });
+    ).resolves.toBeUndefined();
 
-    expect(mockUserRepository.markAsOrphan).not.toHaveBeenCalled();
-    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it('signs out and clears session side effects', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
     await expect(signOut()).resolves.toBeUndefined();
-    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalled();
     expect(mockTrackLogout).toHaveBeenCalledTimes(1);
     expect(mockSetUserId).toHaveBeenCalledWith(null);
   });
@@ -510,9 +279,9 @@ describe('authCoreService', () => {
       createdAt: new Date() as never,
       updatedAt: new Date() as never,
     };
-    mockUserRepository.getById.mockResolvedValue(profile as never);
+    mockFetchUserProfile.mockResolvedValue(profile);
 
     await expect(getUserProfile('user-1')).resolves.toEqual(profile);
-    expect(mockUserRepository.getById).toHaveBeenCalledWith('user-1');
+    expect(mockFetchUserProfile).toHaveBeenCalledWith('user-1');
   });
 });

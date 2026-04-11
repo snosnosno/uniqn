@@ -207,7 +207,7 @@ export default function CancellationRequestsScreen() {
           onPress={handleCancelApprove}
         >
           <Pressable
-            className="w-full max-w-sm rounded-2xl bg-white p-5 dark:bg-surface"
+            className="w-full max-w-sm rounded-lg bg-white p-5 dark:bg-surface"
             onPress={(e) => e.stopPropagation()}
           >
             <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">

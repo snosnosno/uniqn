@@ -112,7 +112,7 @@ function CommentNodeView({
                   key={reactionType}
                   onPress={() => onToggleReaction(comment, reactionType)}
                   disabled={!canInteract}
-                  className={`rounded-full px-2 py-1 ${
+                  className={`rounded-sm px-2 py-1 ${
                     isActive
                       ? 'bg-primary-100 dark:bg-primary-900/30'
                       : 'bg-gray-100 dark:bg-surface-elevated'

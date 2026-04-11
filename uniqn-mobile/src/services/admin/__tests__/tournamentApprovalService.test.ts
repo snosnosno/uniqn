@@ -106,7 +106,9 @@ describe('TournamentApprovalService', () => {
       const result = await approveTournamentPosting({ postingId });
 
       expect(result).toEqual(mockResponse);
-      expect(mockHttpsCallable).toHaveBeenCalledWith({ postingId });
+      expect(mockHttpsCallable).toHaveBeenCalledWith('approve-job-posting', {
+        body: { postingId },
+      });
     });
 
     it('실패: 권한 없음 (unauthenticated)', async () => {
@@ -183,7 +185,9 @@ describe('TournamentApprovalService', () => {
       const result = await rejectTournamentPosting({ postingId, reason });
 
       expect(result).toEqual(mockResponse);
-      expect(mockHttpsCallable).toHaveBeenCalledWith({ postingId, reason });
+      expect(mockHttpsCallable).toHaveBeenCalledWith('reject-job-posting', {
+        body: { postingId, reason },
+      });
     });
 
     it('성공: 긴 거부 사유', async () => {
@@ -264,7 +268,9 @@ describe('TournamentApprovalService', () => {
       const result = await resubmitTournamentPosting({ postingId });
 
       expect(result).toEqual(mockResponse);
-      expect(mockHttpsCallable).toHaveBeenCalledWith({ postingId });
+      expect(mockHttpsCallable).toHaveBeenCalledWith('resubmit-job-posting', {
+        body: { postingId },
+      });
     });
 
     it('실패: 로그인 필요', async () => {

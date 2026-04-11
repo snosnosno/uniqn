@@ -33,7 +33,7 @@ export function TutorialPage({ page, width, iconBgClass }: TutorialPageProps) {
     <View style={{ width }} className="flex-1 justify-center items-center px-8">
       {/* 아이콘 */}
       <Animated.View entering={FadeInUp.delay(200).duration(500)}>
-        <View className={`w-24 h-24 rounded-full items-center justify-center ${iconBgClass}`}>
+        <View className={`w-24 h-24 rounded-sm items-center justify-center ${iconBgClass}`}>
           <IconComponent size={48} color={page.iconColor} />
         </View>
       </Animated.View>

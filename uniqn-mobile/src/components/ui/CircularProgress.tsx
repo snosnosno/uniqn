@@ -38,7 +38,7 @@ const DANGER_THRESHOLD = 10; // 10초 이하
 // 색상 정의
 const COLORS = {
   normal: {
-    stroke: '#A855F7', // primary-500
+    stroke: '#D4AF37', // primary-500
     background: '#DBEAFE', // primary-100
   },
   warning: {

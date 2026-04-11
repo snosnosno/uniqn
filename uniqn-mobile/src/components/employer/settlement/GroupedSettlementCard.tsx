@@ -163,7 +163,7 @@ const DateStatusRow = memo(function DateStatusRow({
           <Text className="text-xs font-medium text-white">정산</Text>
         </Pressable>
       ) : (
-        <View className={`px-2 py-0.5 rounded-full ${payrollConfig.bgColor}`}>
+        <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
           <Text className={`text-xs font-medium ${payrollConfig.textColor}`}>
             {status.hasValidTimes ? payrollConfig.label : '출퇴근 미완료'}
           </Text>

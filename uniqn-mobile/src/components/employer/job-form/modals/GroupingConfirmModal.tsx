@@ -89,7 +89,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
 
         <Pressable
           onPress={() => handleOptionSelect('group')}
-          className={`mb-3 rounded-xl border-2 p-4 ${
+          className={`mb-3 rounded-md border-2 p-4 ${
             selectedOption === 'group'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
               : 'border-gray-200 bg-gray-50 dark:border-surface-overlay dark:bg-surface-dark'
@@ -99,13 +99,13 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
         >
           <View className="mb-2 flex-row items-center">
             <View
-              className={`mr-3 h-5 w-5 items-center justify-center rounded-full border-2 ${
+              className={`mr-3 h-5 w-5 items-center justify-center rounded-sm border-2 ${
                 selectedOption === 'group'
                   ? 'border-primary-500 bg-primary-500'
                   : 'border-gray-400 dark:border-surface-overlay'
               }`}
             >
-              {selectedOption === 'group' && <View className="h-2 w-2 rounded-full bg-white" />}
+              {selectedOption === 'group' && <View className="h-2 w-2 rounded-sm bg-white" />}
             </View>
             <Text
               className={`text-base font-semibold ${
@@ -116,7 +116,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             >
               그룹으로 묶기
             </Text>
-            <View className="ml-2 rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-800">
+            <View className="ml-2 rounded-sm bg-primary-100 px-2 py-0.5 dark:bg-primary-800">
               <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
                 권장
               </Text>
@@ -129,7 +129,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
 
         <Pressable
           onPress={() => handleOptionSelect('individual')}
-          className={`rounded-xl border-2 p-4 ${
+          className={`rounded-md border-2 p-4 ${
             selectedOption === 'individual'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
               : 'border-gray-200 bg-gray-50 dark:border-surface-overlay dark:bg-surface-dark'
@@ -139,15 +139,13 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
         >
           <View className="mb-2 flex-row items-center">
             <View
-              className={`mr-3 h-5 w-5 items-center justify-center rounded-full border-2 ${
+              className={`mr-3 h-5 w-5 items-center justify-center rounded-sm border-2 ${
                 selectedOption === 'individual'
                   ? 'border-primary-500 bg-primary-500'
                   : 'border-gray-400 dark:border-surface-overlay'
               }`}
             >
-              {selectedOption === 'individual' && (
-                <View className="h-2 w-2 rounded-full bg-white" />
-              )}
+              {selectedOption === 'individual' && <View className="h-2 w-2 rounded-sm bg-white" />}
             </View>
             <Text
               className={`text-base font-semibold ${
@@ -167,7 +165,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
         <View className="mt-4 flex-row gap-3">
           <Pressable
             onPress={handleClose}
-            className="flex-1 rounded-xl bg-gray-200 py-3 active:opacity-80 dark:bg-surface"
+            className="flex-1 rounded-md bg-gray-200 py-3 active:opacity-80 dark:bg-surface"
             accessibilityRole="button"
             accessibilityLabel="취소"
           >
@@ -177,7 +175,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           </Pressable>
           <Pressable
             onPress={handleConfirm}
-            className="flex-1 rounded-xl bg-primary-600 py-3 active:opacity-80 dark:bg-primary-500"
+            className="flex-1 rounded-md bg-primary-600 py-3 active:opacity-80 dark:bg-primary-500"
             accessibilityRole="button"
             accessibilityLabel="확인"
           >

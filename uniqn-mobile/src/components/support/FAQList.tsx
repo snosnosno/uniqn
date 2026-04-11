@@ -77,7 +77,7 @@ export function FAQList({
             <Text className="mb-2 px-4 text-sm font-semibold text-gray-500 dark:text-gray-400">
               {INQUIRY_CATEGORY_LABELS[category as InquiryCategory] || category}
             </Text>
-            <View className="rounded-xl bg-white dark:bg-surface">
+            <View className="rounded-md bg-white dark:bg-surface">
               {categoryItems.map((item, index) => (
                 <View key={item.id}>
                   <View className="px-4">
@@ -105,7 +105,7 @@ export function FAQList({
 
   // 특정 카테고리일 때 단순 리스트
   return (
-    <View className={`rounded-xl bg-white dark:bg-surface ${className}`}>
+    <View className={`rounded-md bg-white dark:bg-surface ${className}`}>
       {filteredItems.map((item, index) => (
         <View key={item.id}>
           <View className="px-4">

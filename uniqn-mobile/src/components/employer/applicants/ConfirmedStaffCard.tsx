@@ -129,7 +129,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                   {displayName}
                 </Text>
                 {staff.isRead === false ? (
-                  <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
+                  <View className="ml-2 h-2 w-2 rounded-sm bg-primary-500" />
                 ) : null}
               </View>
               <View className="mt-0.5 flex-row items-center">

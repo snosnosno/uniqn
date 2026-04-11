@@ -3,29 +3,31 @@
 import { Platform } from 'react-native';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { STATUS } from '@/constants';
-import type { FirestoreUserProfile } from '@/types';
+import type { UserProfile } from '@/types';
 import type { DeletionRequest, UserDataExport } from '@/repositories';
 
-const mockGetFirebaseAuth = jest.fn();
-const mockGetFirebaseFunctions = jest.fn();
-const mockReauthenticateWithCredential = jest.fn();
+const mockGetUser = jest.fn();
+const mockSignInWithPassword = jest.fn();
+const mockSignInWithIdToken = jest.fn();
+const mockSignOut = jest.fn();
 const mockRequestDeletion = jest.fn();
 const mockCancelDeletion = jest.fn();
 const mockGetById = jest.fn();
 const mockGetExportData = jest.fn();
 const mockGetDeletionStatus = jest.fn();
 const mockRequestAppleAuthorization = jest.fn();
-const mockHttpsCallable = jest.fn();
-const mockRevokeAppleToken = jest.fn();
+const mockFunctionsInvoke = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-      signOut: jest.fn().mockResolvedValue({ error: null }),
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
+      signInWithIdToken: (...args: unknown[]) => mockSignInWithIdToken(...args),
     },
     functions: {
-      invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+      invoke: (...args: unknown[]) => mockFunctionsInvoke(...args),
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -58,6 +60,16 @@ jest.mock('../appleAuthService', () => ({
   requestAppleAuthorization: (...args: unknown[]) => mockRequestAppleAuthorization(...args),
 }));
 
+jest.mock('@/utils/date', () => ({
+  toDate: jest.fn((d: unknown) => d),
+}));
+
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) =>
+    error instanceof Error ? error : new Error(String(error))
+  ),
+}));
+
 const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
 
 function setPlatformOS(os: 'ios' | 'android') {
@@ -68,18 +80,12 @@ function setPlatformOS(os: 'ios' | 'android') {
 }
 
 const mockCurrentUser = {
-  uid: 'user-123',
+  id: 'user-123',
   email: 'tester@example.com',
-  providerData: [{ providerId: 'password' }],
+  app_metadata: { providers: ['email'] },
 };
 
-const mockAuth = {
-  currentUser: mockCurrentUser,
-};
-
-const mockFunctions = { name: 'functions' };
-
-const mockProfile: FirestoreUserProfile = {
+const mockProfile: UserProfile = {
   uid: 'user-123',
   email: 'tester@example.com',
   role: 'staff',
@@ -124,12 +130,10 @@ describe('accountDeletionService', () => {
     jest.clearAllMocks();
     setPlatformOS('ios');
 
-    mockCurrentUser.providerData = [{ providerId: 'password' }];
-    mockCurrentUser.email = 'tester@example.com';
-
-    mockGetFirebaseAuth.mockReturnValue(mockAuth as unknown);
-    mockGetFirebaseFunctions.mockReturnValue(mockFunctions as unknown);
-    mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
+    mockGetUser.mockResolvedValue({ data: { user: { ...mockCurrentUser } }, error: null });
+    mockSignInWithPassword.mockResolvedValue({ data: {}, error: null });
+    mockSignInWithIdToken.mockResolvedValue({ data: {}, error: null });
+    mockSignOut.mockResolvedValue({ error: null });
     mockRequestDeletion.mockResolvedValue(undefined);
     mockCancelDeletion.mockResolvedValue(undefined);
     mockGetById.mockResolvedValue(mockProfile);
@@ -142,8 +146,7 @@ describe('accountDeletionService', () => {
         authorizationCode: 'authorization-code',
       },
     });
-    mockHttpsCallable.mockReturnValue(mockRevokeAppleToken);
-    mockRevokeAppleToken.mockResolvedValue({ data: { success: true } });
+    mockFunctionsInvoke.mockResolvedValue({ data: { success: true }, error: null });
   });
 
   afterAll(() => {
@@ -154,17 +157,14 @@ describe('accountDeletionService', () => {
 
   it('keeps the configured deletion reasons', () => {
     const { DELETION_REASONS } = loadModule();
-
     expect(DELETION_REASONS.no_longer_needed).toBeTruthy();
     expect(DELETION_REASONS.other).toBeTruthy();
   });
 
   it('handles password-based deletion requests', async () => {
     const { requestAccountDeletion } = loadModule();
-
     const result = await requestAccountDeletion('no_longer_needed', 'password123');
-
-    expect(mockReauthenticateWithCredential).toHaveBeenCalledTimes(1);
+    expect(mockSignInWithPassword).toHaveBeenCalledTimes(1);
     expect(mockRequestDeletion).toHaveBeenCalledWith(
       'user-123',
       expect.objectContaining({
@@ -178,11 +178,7 @@ describe('accountDeletionService', () => {
 
   it('rejects deletion when no authenticated user exists', async () => {
     const { requestAccountDeletion } = loadModule();
-
-    mockGetFirebaseAuth.mockReturnValue({
-      currentUser: null,
-    } as unknown);
-
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toMatchObject({
       name: 'AuthError',
       code: ERROR_CODES.AUTH_SESSION_EXPIRED,
@@ -191,11 +187,10 @@ describe('accountDeletionService', () => {
 
   it('maps wrong-password reauth failures to an auth error', async () => {
     const { requestAccountDeletion } = loadModule();
-
-    const wrongPasswordError = new Error('Wrong password');
-    (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
-    mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
-
+    mockSignInWithPassword.mockResolvedValue({
+      data: {},
+      error: { message: 'Invalid credentials' },
+    });
     await expect(requestAccountDeletion('no_longer_needed', 'bad-password')).rejects.toMatchObject({
       name: 'AuthError',
       code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
@@ -204,36 +199,28 @@ describe('accountDeletionService', () => {
 
   it('uses Apple reauthentication and revokes the Apple token on iOS', async () => {
     const { requestAccountDeletion } = loadModule();
-
-    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
-
+    const appleUser = { ...mockCurrentUser, app_metadata: { providers: ['apple'] } };
+    mockGetUser.mockResolvedValue({ data: { user: appleUser }, error: null });
     const result = await requestAccountDeletion('privacy_concerns');
-
     expect(mockRequestAppleAuthorization).toHaveBeenCalledWith({
       requestedScopes: [],
       operation: 'reauth',
     });
-    expect(mockReauthenticateWithCredential).toHaveBeenCalledWith(
-      mockCurrentUser,
-      expect.objectContaining({
-        providerId: 'apple.com',
-        idToken: 'identity-token',
-        rawNonce: 'raw-nonce',
-      })
-    );
+    expect(mockSignInWithIdToken).toHaveBeenCalledWith({
+      provider: 'apple',
+      token: 'identity-token',
+      nonce: 'raw-nonce',
+    });
     expect(result.appleTokenRevoked).toBe(true);
   });
 
   it('rethrows Apple reauth cancellation without creating a deletion request', async () => {
     const { requestAccountDeletion } = loadModule();
-
-    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
+    const appleUser = { ...mockCurrentUser, app_metadata: { providers: ['apple'] } };
+    mockGetUser.mockResolvedValue({ data: { user: appleUser }, error: null });
     mockRequestAppleAuthorization.mockRejectedValue(
-      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '',
-      })
+      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, { userMessage: '' })
     );
-
     await expect(requestAccountDeletion('privacy_concerns')).rejects.toMatchObject({
       userMessage: '',
     });
@@ -242,10 +229,9 @@ describe('accountDeletionService', () => {
 
   it('blocks Apple account deletion on non-iOS devices', async () => {
     const { requestAccountDeletion } = loadModule();
-
     setPlatformOS('android');
-    mockCurrentUser.providerData = [{ providerId: 'apple.com' }];
-
+    const appleUser = { ...mockCurrentUser, app_metadata: { providers: ['apple'] } };
+    mockGetUser.mockResolvedValue({ data: { user: appleUser }, error: null });
     await expect(requestAccountDeletion('privacy_concerns')).rejects.toMatchObject({
       name: 'AuthError',
       code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
@@ -255,9 +241,7 @@ describe('accountDeletionService', () => {
 
   it('retries Apple token revocation through the shared helper', async () => {
     const { retryAppleTokenRevocation } = loadModule();
-
     const result = await retryAppleTokenRevocation();
-
     expect(mockRequestAppleAuthorization).toHaveBeenCalledWith({
       requestedScopes: [],
       operation: 'revocation',
@@ -267,76 +251,46 @@ describe('accountDeletionService', () => {
 
   it('keeps an Apple revocation cancel event untouched', async () => {
     const { retryAppleTokenRevocation } = loadModule();
-
     mockRequestAppleAuthorization.mockRejectedValue(
-      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '',
-      })
+      new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, { userMessage: '' })
     );
-
-    await expect(retryAppleTokenRevocation()).rejects.toMatchObject({
-      userMessage: '',
-    });
+    await expect(retryAppleTokenRevocation()).rejects.toMatchObject({ userMessage: '' });
   });
 
   it('returns false when Apple revocation does not provide an authorization code', async () => {
     const { retryAppleTokenRevocation } = loadModule();
-
     mockRequestAppleAuthorization.mockResolvedValue({
       rawNonce: 'raw-nonce',
-      credential: {
-        identityToken: 'identity-token',
-        authorizationCode: undefined,
-      },
+      credential: { identityToken: 'identity-token', authorizationCode: undefined },
     });
-
     await expect(retryAppleTokenRevocation()).resolves.toBe(false);
-    expect(mockRevokeAppleToken).not.toHaveBeenCalled();
+    expect(mockFunctionsInvoke).not.toHaveBeenCalled();
   });
 
   it('returns false when Apple revocation is requested without a current user', async () => {
     const { retryAppleTokenRevocation } = loadModule();
-
-    mockGetFirebaseAuth.mockReturnValue({
-      currentUser: null,
-    } as unknown);
-
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     await expect(retryAppleTokenRevocation()).resolves.toBe(false);
     expect(mockRequestAppleAuthorization).not.toHaveBeenCalled();
   });
 
-  it('delegates cancelAccountDeletion to the repository', async () => {
+  it('cancels a pending deletion request', async () => {
     const { cancelAccountDeletion } = loadModule();
-
     await cancelAccountDeletion('user-123');
-
     expect(mockCancelDeletion).toHaveBeenCalledWith('user-123');
   });
 
-  it('delegates getMyData to the repository', async () => {
-    const { getMyData } = loadModule();
-
-    const result = await getMyData('user-123');
-
-    expect(mockGetById).toHaveBeenCalledWith('user-123');
-    expect(result).toEqual(mockProfile);
-  });
-
-  it('delegates exportMyData to the repository', async () => {
+  it('exports user data', async () => {
     const { exportMyData } = loadModule();
-
     const result = await exportMyData('user-123');
-
-    expect(mockGetExportData).toHaveBeenCalledWith('user-123');
     expect(result).toEqual(mockExportData);
+    expect(mockGetExportData).toHaveBeenCalledWith('user-123');
   });
 
-  it('delegates getDeletionStatus to the repository', async () => {
+  it('gets deletion status', async () => {
     const { getDeletionStatus } = loadModule();
-
     const result = await getDeletionStatus('user-123');
-
-    expect(mockGetDeletionStatus).toHaveBeenCalledWith('user-123');
     expect(result).toEqual(mockDeletionRequest);
+    expect(mockGetDeletionStatus).toHaveBeenCalledWith('user-123');
   });
 });

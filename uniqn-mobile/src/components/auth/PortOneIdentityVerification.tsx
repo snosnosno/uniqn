@@ -166,7 +166,7 @@ export function PortOneIdentityVerification({
   return (
     <View className="w-full">
       {verifiedIdentity ? (
-        <View className="rounded-xl border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
+        <View className="rounded-md border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
           <View className="mb-3 flex-row items-center">
             <CheckCircleIcon size={20} color="#22c55e" />
             <Text className="ml-2 font-semibold text-success-700 dark:text-success-400">
@@ -212,7 +212,7 @@ export function PortOneIdentityVerification({
           </Button>
         </View>
       ) : (
-        <View className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
+        <View className="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
             <ShieldCheckIcon size={20} color="#4f46e5" />
             <Text className="ml-2 font-semibold text-gray-900 dark:text-white">

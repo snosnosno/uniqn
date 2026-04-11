@@ -41,7 +41,7 @@ export default function AdminInquiryDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
       </SafeAreaView>
     );
   }
@@ -117,7 +117,7 @@ export default function AdminInquiryDetailScreen() {
           <Card className="mb-4">
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
-                <View className="mr-2 h-2 w-2 rounded-full bg-green-500" />
+                <View className="mr-2 h-2 w-2 rounded-sm bg-green-500" />
                 <Text className="font-medium text-gray-900 dark:text-gray-100">답변 완료</Text>
               </View>
               <Text className="text-sm text-gray-400 dark:text-gray-500">

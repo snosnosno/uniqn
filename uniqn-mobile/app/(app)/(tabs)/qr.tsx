@@ -89,7 +89,7 @@ export default function QRScreen() {
         >
           <View className="flex-row items-center">
             <View
-              className={`w-12 h-12 rounded-full items-center justify-center ${
+              className={`w-12 h-12 rounded-sm items-center justify-center ${
                 isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-surface'
               }`}
             >
@@ -112,7 +112,7 @@ export default function QRScreen() {
               </Text>
             </View>
             <View
-              className={`px-3 py-1.5 rounded-full ${
+              className={`px-3 py-1.5 rounded-sm ${
                 isWorking
                   ? 'bg-green-100 dark:bg-green-900/30'
                   : 'bg-primary-100 dark:bg-primary-900/30'
@@ -133,7 +133,7 @@ export default function QRScreen() {
 
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
-          <View className="mb-8 h-56 w-56 items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface">
+          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface">
             <ScanIcon size={80} color="#9CA3AF" />
           </View>
 

@@ -2,17 +2,8 @@ import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 
-jest.mock('@/hooks/auth/useRecaptcha', () => ({
-  useRecaptcha: jest.fn(() => ({
-    recaptchaKey: 0,
-    getOrCreateVerifier: jest.fn(),
-    cleanupOnError: jest.fn(),
-  })),
-}));
-
-jest.mock('@/hooks/auth/usePhoneSMS', () => ({
-  usePhoneSMS: jest.fn(),
-}));
+// useRecaptcha and usePhoneSMS are now inline stubs in PhoneVerification.tsx
+// No external module mock needed
 
 jest.mock('@/hooks/auth/useOTPVerification', () => ({
   useOTPVerification: jest.fn(),

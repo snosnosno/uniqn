@@ -10,8 +10,8 @@ interface InstallPromptContentProps {
 export function InstallPromptContent({ description, onLogin }: InstallPromptContentProps) {
   return (
     <View className="items-center py-2">
-      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
-        <DevicePhoneMobileIcon size={32} color="#A855F7" />
+      <View className="mb-4 h-16 w-16 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
+        <DevicePhoneMobileIcon size={32} color="#D4AF37" />
       </View>
 
       <Text className="text-center text-base font-semibold text-gray-900 dark:text-white">

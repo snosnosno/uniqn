@@ -73,10 +73,10 @@ function formatDate(dateString: string): string {
 
 function WorkLogSkeleton() {
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between mb-3">
         <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-5 w-16 rounded-full" />
+        <Skeleton className="h-5 w-16 rounded-sm" />
       </View>
       <Skeleton className="h-4 w-3/4 mb-2" />
       <View className="flex-row gap-4 mb-3">
@@ -114,7 +114,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${formatDate(workLog.date)} ${roleLabel} 근무 기록`}
     >
@@ -162,7 +162,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
         {workLog.payrollAmount && workLog.payrollAmount > 0 && (
           <View className="flex-row items-center">
             {payrollConfig && (
-              <View className={`px-2 py-0.5 rounded-full mr-2 ${payrollConfig.bgColor}`}>
+              <View className={`px-2 py-0.5 rounded-sm mr-2 ${payrollConfig.bgColor}`}>
                 <Text className={`text-xs ${payrollConfig.color}`}>{payrollConfig.label}</Text>
               </View>
             )}
@@ -179,7 +179,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       {workLog.notes && (
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={2}>
-            📝 {workLog.notes}
+            {workLog.notes}
           </Text>
         </View>
       )}
@@ -252,7 +252,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
       return (
         <View className="flex-1 px-4 pt-4">
           {ListHeaderComponent}
-          <EmptyState title="근무 기록 없음" description={emptyMessage} icon="📋" />
+          <EmptyState title="근무 기록 없음" description={emptyMessage} />
         </View>
       );
     }
@@ -277,7 +277,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
           <>
             {ListHeaderComponent}
             {workLogs.length > 0 && (
-              <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-4">
+              <View className="bg-primary-50 dark:bg-primary-900/20 rounded-md p-4 mb-4">
                 <View className="flex-row justify-around">
                   <View className="items-center">
                     <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
@@ -298,9 +298,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
           </>
         }
         ListFooterComponent={renderFooter}
-        ListEmptyComponent={
-          <EmptyState title="근무 기록 없음" description={emptyMessage} icon="📋" />
-        }
+        ListEmptyComponent={<EmptyState title="근무 기록 없음" description={emptyMessage} />}
       />
     );
   }

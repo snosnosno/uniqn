@@ -84,7 +84,7 @@ export function Card({
 
   const cardContent = (
     <View
-      className={`rounded-xl ${variantStyles[variant]} ${paddingStyles[padding]} ${className}`}
+      className={`rounded-md ${variantStyles[variant]} ${paddingStyles[padding]} ${className}`}
       {...props}
     >
       {safeChildren}

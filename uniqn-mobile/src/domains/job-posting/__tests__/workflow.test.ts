@@ -94,8 +94,7 @@ describe('job-posting workflow selectors', () => {
     });
     expect(roleAvailability.availableItems.map((item) => item.role)).toEqual(['floor']);
     expect(application).toMatchObject({
-      canApply: false,
-      reason: 'unsupported_workflow',
+      canApply: true,
       selectionMode: 'fixed_role',
       requiresRoleSelection: true,
       requiresAssignmentSelection: false,

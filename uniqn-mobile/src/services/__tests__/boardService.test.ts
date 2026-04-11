@@ -1,6 +1,7 @@
 import { announcementRepository, boardRepository } from '@/repositories';
 import { deleteMultipleBoardImages } from '@/services/auth';
 import { logger } from '@/utils/logger';
+import { PermissionError, ERROR_CODES } from '@/errors';
 import type { BoardComment, BoardImageAttachment, BoardMembership, BoardPost } from '@/types/board';
 import {
   fetchBoardPosts,
@@ -283,9 +284,7 @@ describe('boardService.fetchBoardPosts', () => {
         return visiblePost as never;
       }
 
-      throw Object.assign(new Error('denied'), {
-        code: 'permission-denied',
-      });
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, { userMessage: 'denied' });
     });
 
     const result = await fetchBoardPosts({
@@ -343,7 +342,7 @@ describe('boardService.getBoardHomeData', () => {
     ];
 
     mockAnnouncementRepository.getPublished.mockRejectedValue(
-      Object.assign(new Error('denied'), { code: 'permission-denied' })
+      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, { userMessage: 'denied' })
     );
     mockBoardRepository.getPosts
       .mockResolvedValueOnce(schedulePosts as never)
@@ -363,7 +362,9 @@ describe('boardService.getBoardHomeData', () => {
   });
 
   it('returns empty sections instead of failing the full home when all sections are permission denied', async () => {
-    const deniedError = Object.assign(new Error('denied'), { code: 'permission-denied' });
+    const deniedError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: 'denied',
+    });
 
     mockAnnouncementRepository.getPublished.mockRejectedValue(deniedError);
     mockBoardRepository.getPosts.mockRejectedValue(deniedError);
@@ -406,10 +407,14 @@ describe('boardService.getBoardPostDetail', () => {
     mockBoardRepository.getPostById.mockResolvedValue(post as never);
     mockBoardRepository.getComments.mockResolvedValue(comments as never);
     mockBoardRepository.getPostVote.mockRejectedValue(
-      Object.assign(new Error('vote denied'), { code: 'permission-denied' }) as never
+      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: 'vote denied',
+      }) as never
     );
     mockBoardRepository.getCommentReactionsByUser.mockRejectedValue(
-      Object.assign(new Error('reaction denied'), { code: 'permission-denied' }) as never
+      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: 'reaction denied',
+      }) as never
     );
 
     const result = await getBoardPostDetail('free-post-1', {
@@ -438,7 +443,9 @@ describe('boardService.getBoardPostDetail', () => {
 
     mockBoardRepository.getPostById.mockResolvedValue(post as never);
     mockBoardRepository.getComments.mockRejectedValue(
-      Object.assign(new Error('comments denied'), { code: 'permission-denied' }) as never
+      new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: 'comments denied',
+      }) as never
     );
     mockBoardRepository.getPostVote.mockResolvedValue(null as never);
     mockBoardRepository.getCommentReactionsByUser.mockResolvedValue({} as never);

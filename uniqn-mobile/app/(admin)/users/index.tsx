@@ -32,7 +32,7 @@ interface RoleChipProps {
 }
 
 function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
-  const baseClass = 'px-4 py-2 rounded-full mr-2';
+  const baseClass = 'px-4 py-2 rounded-sm mr-2';
   const selectedClass = isSelected
     ? 'bg-primary-600 dark:bg-primary-500'
     : 'bg-gray-200 dark:bg-surface';
@@ -84,7 +84,7 @@ function UserCard({ user, onPress }: UserCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md p-4 mb-3 flex-row items-center active:opacity-80"
       style={{
         boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
         elevation: 2,
@@ -94,7 +94,7 @@ function UserCard({ user, onPress }: UserCardProps) {
         {user.photoURL ? (
           <Avatar source={user.photoURL} name={user.name} size="lg" />
         ) : (
-          <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-surface items-center justify-center">
+          <View className="w-12 h-12 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center">
             <UserIcon size={24} color="#9CA3AF" />
           </View>
         )}
@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
   if (isLoading && !data) {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 목록을 불러오는 중...</Text>
       </View>
     );
@@ -196,7 +196,6 @@ export default function AdminUsersPage() {
         <EmptyState
           title="오류 발생"
           description="사용자 목록을 불러오는 데 실패했습니다."
-          icon="❌"
           actionLabel="다시 시도"
           onAction={() => refetch()}
         />
@@ -250,7 +249,7 @@ export default function AdminUsersPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#A855F7"
+            tintColor="#D4AF37"
           />
         }
         onScrollEndDrag={({ nativeEvent }) => {
@@ -261,11 +260,7 @@ export default function AdminUsersPage() {
         }}
       >
         {users.length === 0 ? (
-          <EmptyState
-            title="검색 결과 없음"
-            description="검색 조건에 맞는 사용자가 없습니다."
-            icon="🔍"
-          />
+          <EmptyState title="검색 결과 없음" description="검색 조건에 맞는 사용자가 없습니다." />
         ) : (
           <>
             {users.map((user) => (

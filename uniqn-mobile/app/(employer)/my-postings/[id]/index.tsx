@@ -76,7 +76,7 @@ function ActionCard({
       accessibilityLabel={`${resolvedTitle}, ${resolvedDescription}`}
     >
       <Card variant="elevated" padding="md" className="flex-row items-center">
-        <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
+        <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-50 dark:bg-primary-900/30">
           {icon}
         </View>
         <View className="flex-1">
@@ -278,7 +278,7 @@ export default function JobPostingDetailScreen() {
             {isInfoExpanded ? (
               <>
                 <View className="mb-3 flex-row items-center">
-                  <MapPinIcon size={18} color="#9333EA" />
+                  <MapPinIcon size={18} color="#B8962E" />
                   <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                     {locationLabel}
                   </Text>
@@ -286,7 +286,7 @@ export default function JobPostingDetailScreen() {
 
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
-                    <ClockIcon size={18} color="#9333EA" />
+                    <ClockIcon size={18} color="#B8962E" />
                     <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                       근무 일정
                     </Text>
@@ -309,7 +309,7 @@ export default function JobPostingDetailScreen() {
 
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color="#9333EA" />
+                    <CurrencyDollarIcon size={18} color="#B8962E" />
                     <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                       급여
                     </Text>
@@ -342,7 +342,7 @@ export default function JobPostingDetailScreen() {
 
                 {managementView.taxLabel ? (
                   <View className="mb-4 flex-row items-center">
-                    <CurrencyDollarIcon size={18} color="#9333EA" />
+                    <CurrencyDollarIcon size={18} color="#B8962E" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                       {managementView.taxLabel}
                     </Text>
@@ -351,7 +351,7 @@ export default function JobPostingDetailScreen() {
 
                 {questionCount > 0 ? (
                   <View className="mb-4 flex-row items-center">
-                    <DocumentIcon size={18} color="#9333EA" />
+                    <DocumentIcon size={18} color="#B8962E" />
                     <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                       사전질문 {questionCount}개 설정됨
                     </Text>
@@ -404,7 +404,7 @@ export default function JobPostingDetailScreen() {
 
           <View className="gap-3">
             <ActionCard
-              icon={<UsersIcon size={24} color="#9333EA" />}
+              icon={<UsersIcon size={24} color="#B8962E" />}
               title="지원자 관리"
               description={`${pendingApplicants}명의 지원자가 대기중입니다.`}
               badge={
@@ -519,7 +519,7 @@ export default function JobPostingDetailScreen() {
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}
-                  className="mr-2 flex-1 items-center justify-center rounded-xl border border-primary-600 py-3 dark:border-primary-500"
+                  className="mr-2 flex-1 items-center justify-center rounded-md border border-primary-600 py-3 dark:border-primary-500"
                 >
                   <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
                     수정하기
@@ -542,7 +542,7 @@ export default function JobPostingDetailScreen() {
           <Pressable
             onPress={handleDeletePress}
             disabled={isDeleting}
-            className="flex-row items-center justify-center rounded-xl bg-red-50 py-4 active:bg-red-100 dark:bg-red-900/20 dark:active:bg-red-900/30"
+            className="flex-row items-center justify-center rounded-md bg-red-50 py-4 active:bg-red-100 dark:bg-red-900/20 dark:active:bg-red-900/30"
             accessibilityRole="button"
             accessibilityLabel="공고 삭제"
             accessibilityState={{ disabled: isDeleting }}

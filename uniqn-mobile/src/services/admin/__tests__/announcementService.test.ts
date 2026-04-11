@@ -31,7 +31,7 @@ jest.mock('@/repositories', () => ({
 }));
 
 jest.mock('@/services/auth', () => ({
-  requireAdminUser: jest.fn(async () => ({ uid: 'admin-1' })),
+  requireAdminUser: jest.fn(async () => ({ id: 'admin-1' })),
 }));
 
 jest.mock('@/errors/serviceErrorHandler', () => ({
@@ -55,7 +55,7 @@ const mockRequireAdminUser = requireAdminUser as jest.MockedFunction<typeof requ
 describe('announcementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' } as never);
+    mockRequireAdminUser.mockResolvedValue({ id: 'admin-1' } as never);
   });
 
   it('fetches published announcements', async () => {

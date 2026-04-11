@@ -115,7 +115,7 @@ interface ScoreSummaryData {
 
 function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
   return (
-    <View className="mx-4 mt-3 mb-2 rounded-xl bg-white p-4 dark:bg-gray-800">
+    <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-gray-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
           <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">

@@ -158,7 +158,7 @@ export const NotificationList = memo(function NotificationList({
       )}
 
       {showInlineError ? (
-        <View className="mx-4 mb-3 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/20">
+        <View className="mx-4 mb-3 mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-900/20">
           <Text className="text-sm text-amber-800 dark:text-amber-200">
             새 알림을 가져오지 못했어요. 보고 있던 목록은 그대로 유지했습니다.
           </Text>
@@ -182,7 +182,7 @@ export const NotificationList = memo(function NotificationList({
         onEndReachedThreshold={0.5}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#A855F7" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#D4AF37" />
           ) : undefined
         }
         ListEmptyComponent={ListEmptyComponent || defaultEmptyComponent}

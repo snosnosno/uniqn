@@ -102,7 +102,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
               return (
                 <View key={index} className="mb-2 flex-row items-center last:mb-0">
                   <View
-                    className={`mr-2 h-2 w-2 rounded-full ${
+                    className={`mr-2 h-2 w-2 rounded-sm ${
                       isCancelled ? 'bg-red-500' : 'bg-green-500'
                     }`}
                   />

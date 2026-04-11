@@ -56,14 +56,14 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
               <View className="items-center">
                 <View
                   className={`
-                    w-8 h-8 rounded-full items-center justify-center
+                    w-8 h-8 rounded-sm items-center justify-center
                     ${isCompleted ? 'bg-success-500 dark:bg-success-600' : ''}
                     ${isActive ? 'bg-primary-600 dark:bg-primary-500' : ''}
                     ${isUpcoming ? 'bg-gray-200 dark:bg-surface' : ''}
                   `}
                 >
                   {isCompleted ? (
-                    <Text className="text-white text-sm font-bold">✓</Text>
+                    <Text className="text-white text-sm font-bold">{''}</Text>
                   ) : (
                     <Text
                       className={`text-sm font-bold ${

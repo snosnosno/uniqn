@@ -44,7 +44,7 @@ export function FAQCategoryTabs({
             <Pressable
               key={option.key}
               onPress={() => onSelectCategory(option.key)}
-              className={`rounded-full px-4 py-2 ${
+              className={`rounded-sm px-4 py-2 ${
                 isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
               }`}
               accessibilityRole="button"

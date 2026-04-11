@@ -34,7 +34,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
       <View className="flex-row gap-3">
         <Pressable
           onPress={onShowQR}
-          className="flex-1 flex-row items-center justify-center rounded-xl bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
+          className="flex-1 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
         >
           <QRCodeIcon size={24} color="#FFFFFF" />
           <Text className="ml-2 text-base font-semibold text-white">이벤트 QR 열기</Text>
@@ -43,7 +43,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
         <Pressable
           onPress={onRefresh}
           disabled={isRefreshing}
-          className={`rounded-xl bg-gray-100 p-4 active:opacity-80 dark:bg-surface ${
+          className={`rounded-md bg-gray-100 p-4 active:opacity-80 dark:bg-surface ${
             isRefreshing ? 'opacity-50' : ''
           }`}
         >

@@ -24,10 +24,10 @@ interface ChipItemProps {
 }
 
 const CHIPS: ChipConfig[] = [
-  { id: 'urgent', label: '긴급', icon: '⚡', value: 'urgent' },
-  { id: 'tournament', label: '대회', icon: '🏆', value: 'tournament' },
-  { id: 'regular', label: '일반', icon: '🎲', value: 'regular' },
-  { id: 'fixed', label: '고정', icon: '📌', value: 'fixed' },
+  { id: 'urgent', label: '긴급', icon: '', value: 'urgent' },
+  { id: 'tournament', label: '대회', icon: '', value: 'tournament' },
+  { id: 'regular', label: '일반', icon: '', value: 'regular' },
+  { id: 'fixed', label: '고정', icon: '', value: 'fixed' },
 ];
 
 function formatCount(count: number): string {
@@ -46,7 +46,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected }}
-      className={`flex-row items-center rounded-full px-4 py-2 ${
+      className={`flex-row items-center rounded-sm px-4 py-2 ${
         isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
       }`}
     >
@@ -58,7 +58,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       </Text>
       {showCount ? (
         <View
-          className={`ml-2 rounded-full px-2 py-0.5 ${
+          className={`ml-2 rounded-sm px-2 py-0.5 ${
             isSelected ? 'bg-white/20 dark:bg-white/20' : 'bg-white dark:bg-surface-elevated'
           }`}
         >

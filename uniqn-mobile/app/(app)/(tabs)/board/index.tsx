@@ -113,7 +113,7 @@ export default function BoardHomeScreen() {
             <BoardEntryCard
               title="자유게시판"
               description="일반 이야기와 소식을 자유롭게 나눠요."
-              icon={<MessageIcon size={28} color="#7C3AED" />}
+              icon={<MessageIcon size={28} color="#8A7228" />}
               boardType="free"
             />
             <BoardEntryCard

@@ -54,8 +54,8 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
   if (isSubmitted) {
     return (
       <View className="w-full items-center">
-        <View className="w-16 h-16 rounded-full bg-success-100 dark:bg-success-900 items-center justify-center mb-4">
-          <Text className="text-3xl">✉️</Text>
+        <View className="w-16 h-16 rounded-sm bg-success-100 dark:bg-success-900 items-center justify-center mb-4">
+          <Text className="text-3xl">{''}</Text>
         </View>
 
         <Text className="text-lg font-bold text-gray-900 dark:text-white text-center mb-2">

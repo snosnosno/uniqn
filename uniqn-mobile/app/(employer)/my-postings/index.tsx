@@ -83,7 +83,7 @@ const FilterTab = memo(function FilterTab({
   return (
     <Pressable
       onPress={onPress}
-      className="px-4 py-2 rounded-full mr-2 flex-row items-center"
+      className="px-4 py-2 rounded-sm mr-2 flex-row items-center"
       testID={testID}
       accessible
       role="tab"
@@ -91,7 +91,7 @@ const FilterTab = memo(function FilterTab({
       accessibilityState={{ selected: isSelected }}
       accessibilityLabel={`${label} 공고 ${count ?? 0}개`}
       style={{
-        backgroundColor: isSelected ? '#9333EA' : isDarkMode ? '#3D3350' : '#E5E7EB',
+        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#E5E7EB',
       }}
     >
       <Text
@@ -104,7 +104,7 @@ const FilterTab = memo(function FilterTab({
       </Text>
       {typeof count === 'number' && count > 0 && (
         <View
-          className="ml-1.5 px-1.5 py-0.5 rounded-full"
+          className="ml-1.5 px-1.5 py-0.5 rounded-sm"
           style={{
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#9CA3AF',
           }}
@@ -152,7 +152,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-xl mb-3 p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md mb-3 p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${posting.title} 상세 보기`}
     >
@@ -273,7 +273,7 @@ export default function MyPostingsPage() {
   if (isLoading && !postings) {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 목록을 불러오는 중...</Text>
       </View>
     );
@@ -286,7 +286,6 @@ export default function MyPostingsPage() {
         <EmptyState
           title="오류 발생"
           description="공고 목록을 불러오는 데 실패했습니다."
-          icon="❌"
           actionLabel="다시 시도"
           onAction={() => refetch()}
         />
@@ -366,7 +365,7 @@ export default function MyPostingsPage() {
                 ? '새 공고를 작성해보세요'
                 : '다른 탭에서 공고를 확인해보세요'
             }
-            icon={selectedFilter === 'all' ? '📝' : '📋'}
+            icon={undefined}
             actionLabel={selectedFilter === 'all' ? '새 공고 작성' : undefined}
             onAction={selectedFilter === 'all' ? handleCreatePress : undefined}
           />
@@ -385,7 +384,7 @@ export default function MyPostingsPage() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => refetch()}
-              tintColor="#A855F7"
+              tintColor="#D4AF37"
             />
           }
           showsVerticalScrollIndicator={false}

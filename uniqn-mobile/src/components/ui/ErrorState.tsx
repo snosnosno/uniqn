@@ -65,8 +65,8 @@ export function ErrorState({
 
   if (compact) {
     return (
-      <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-xl">
-        <Text className="text-red-600 dark:text-red-400 text-lg mr-3">⚠</Text>
+      <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-md">
+        <Text className="text-red-600 dark:text-red-400 text-lg mr-3">{''}</Text>
         <Text className="text-red-700 dark:text-red-300 text-sm flex-1">{errorMessage}</Text>
         {canRetry && (
           <Pressable
@@ -85,8 +85,8 @@ export function ErrorState({
   return (
     <View className="flex-1 items-center justify-center p-8">
       {/* 에러 아이콘 */}
-      <View className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl">⚠️</Text>
+      <View className="w-20 h-20 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
+        <Text className="text-4xl">{''}</Text>
       </View>
 
       {/* 제목 */}

@@ -59,7 +59,7 @@ export function TemplateModal({
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor="#9CA3AF"
-          className={`bg-gray-50 dark:bg-surface border rounded-xl px-4 py-3 text-gray-900 dark:text-white ${
+          className={`bg-gray-50 dark:bg-surface border rounded-md px-4 py-3 text-gray-900 dark:text-white ${
             isTooShort
               ? 'border-red-400 dark:border-red-500'
               : 'border-gray-200 dark:border-surface-overlay'
@@ -82,7 +82,7 @@ export function TemplateModal({
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor="#9CA3AF"
-          className="bg-gray-50 dark:bg-surface border border-gray-200 dark:border-surface-overlay rounded-xl px-4 py-3 text-gray-900 dark:text-white"
+          className="bg-gray-50 dark:bg-surface border border-gray-200 dark:border-surface-overlay rounded-md px-4 py-3 text-gray-900 dark:text-white"
           maxLength={100}
           editable={!isSaving}
           multiline
@@ -91,7 +91,7 @@ export function TemplateModal({
       </View>
 
       {/* 안내 문구 */}
-      <View className="bg-primary-50 dark:bg-primary-900/30 rounded-xl p-4 mb-6">
+      <View className="bg-primary-50 dark:bg-primary-900/30 rounded-md p-4 mb-6">
         <Text className="text-primary-800 dark:text-primary-200 text-sm font-medium mb-2">
           저장되는 내용
         </Text>
@@ -117,7 +117,7 @@ export function TemplateModal({
         <Pressable
           onPress={onClose}
           disabled={isSaving}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
@@ -127,7 +127,7 @@ export function TemplateModal({
         <Pressable
           onPress={handleSave}
           disabled={!isValid || isSaving}
-          className={`flex-1 py-3 rounded-xl ${
+          className={`flex-1 py-3 rounded-md ${
             isValid && !isSaving ? 'bg-primary-600' : 'bg-gray-400'
           }`}
           accessibilityRole="button"

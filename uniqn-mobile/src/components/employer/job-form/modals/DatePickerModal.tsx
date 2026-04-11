@@ -148,7 +148,7 @@ export function DatePickerModal({
           </Text>
         )}
         <Text className="text-xs text-primary-600 dark:text-primary-400 mt-2">
-          💡 캘린더에서 여러 날짜를 탭하여 선택/해제할 수 있습니다
+          캘린더에서 여러 날짜를 탭하여 선택/해제할 수 있습니다
         </Text>
       </View>
 
@@ -172,7 +172,7 @@ export function DatePickerModal({
             {sortedSelectedDates.map((date) => (
               <View
                 key={date.toISOString()}
-                className="flex-row items-center bg-indigo-100 dark:bg-indigo-900/50 rounded-full px-3 py-1.5 mr-2"
+                className="flex-row items-center bg-indigo-100 dark:bg-indigo-900/50 rounded-sm px-3 py-1.5 mr-2"
               >
                 <Text className="text-sm text-indigo-700 dark:text-indigo-300 mr-1">
                   {format(date, 'M/d (EEE)', { locale: ko })}
@@ -220,7 +220,7 @@ export function DatePickerModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={handleClose}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           accessibilityLabel="취소"
           testID="job-posting-date-cancel-button"
@@ -230,7 +230,7 @@ export function DatePickerModal({
         <Pressable
           onPress={handleConfirm}
           disabled={!canAddMore || selectedDates.length === 0}
-          className={`flex-1 py-3 rounded-xl ${
+          className={`flex-1 py-3 rounded-md ${
             canAddMore && selectedDates.length > 0
               ? 'bg-primary-600'
               : 'bg-gray-300 dark:bg-surface-elevated opacity-50'

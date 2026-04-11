@@ -48,7 +48,7 @@ const SentimentButton = React.memo(function SentimentButton({
   return (
     <Pressable
       onPress={handlePress}
-      className={`flex-1 items-center rounded-xl border-2 px-3 py-4 ${
+      className={`flex-1 items-center rounded-md border-2 px-3 py-4 ${
         isSelected
           ? `${colors.bg} ${colors.border} ${colors.darkBg}`
           : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'

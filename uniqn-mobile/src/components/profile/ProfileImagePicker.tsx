@@ -153,7 +153,7 @@ export function ProfileImagePicker({
 
         {/* 카메라 아이콘 오버레이 */}
         <View
-          className={`absolute bottom-0 right-0 items-center justify-center rounded-full p-2 ${
+          className={`absolute bottom-0 right-0 items-center justify-center rounded-sm p-2 ${
             disabled ? 'bg-gray-400' : 'bg-primary-600'
           }`}
         >

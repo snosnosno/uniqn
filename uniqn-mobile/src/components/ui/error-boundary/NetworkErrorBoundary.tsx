@@ -39,8 +39,8 @@ function NetworkErrorFallback({
 }: NetworkErrorFallbackProps): React.ReactElement {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
-      <View className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl">{isOffline ? '📡' : '🌐'}</Text>
+      <View className="w-20 h-20 rounded-sm bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-6">
+        <Text className="text-4xl">{isOffline ? '' : ''}</Text>
       </View>
 
       <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
@@ -54,7 +54,7 @@ function NetworkErrorFallback({
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6">
+        <View className="w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6">
           <Text className="text-xs text-orange-600 dark:text-orange-400 font-mono">
             {error.message}
           </Text>
@@ -63,7 +63,7 @@ function NetworkErrorFallback({
 
       <Pressable
         onPress={onRetry}
-        className="bg-orange-600 px-6 py-3 rounded-xl active:bg-orange-700"
+        className="bg-orange-600 px-6 py-3 rounded-md active:bg-orange-700"
         accessibilityRole="button"
         accessibilityLabel="다시 시도"
       >

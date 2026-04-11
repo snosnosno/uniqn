@@ -51,10 +51,10 @@ const RoleCard = memo(function RoleCard({
   const isCustom = role.isCustom;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-md border border-gray-200 dark:border-surface-overlay mb-3">
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
-        <View className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
+        <View className="w-10 h-10 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
           <Text className="text-xl">{icon}</Text>
         </View>
 
@@ -214,7 +214,7 @@ export const RolesSection = memo(function RolesSection({
       {/* 역할 추가 버튼 */}
       <Pressable
         onPress={() => setShowModal(true)}
-        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-xl"
+        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-md"
         accessibilityRole="button"
         accessibilityLabel="역할 추가"
       >
@@ -228,7 +228,7 @@ export const RolesSection = memo(function RolesSection({
       {/* 총 인원 표시 */}
       {totalCount > 0 && (
         <View className="mt-4 flex-row items-center justify-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-          <BriefcaseIcon size={18} color="#9333EA" />
+          <BriefcaseIcon size={18} color="#B8962E" />
           <Text className="ml-2 text-base font-bold text-primary-600 dark:text-primary-400">
             총 {totalCount}명 모집
           </Text>

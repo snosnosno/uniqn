@@ -118,7 +118,7 @@ function getPostFallbackHref(boardType?: string | null) {
 
 function MetaPill({ icon, label }: { icon?: ReactNode; label: string }) {
   return (
-    <View className="flex-row items-center rounded-full bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated">
+    <View className="flex-row items-center rounded-sm bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated">
       {icon ? <View>{icon}</View> : null}
       <Text
         className={`${icon ? 'ml-1.5' : ''} text-xs font-medium text-gray-600 dark:text-gray-300`}
@@ -164,7 +164,7 @@ function ActionChip({
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={onPress}
       disabled={disabled}
-      className={`rounded-full px-3 py-2 ${containerClass} ${
+      className={`rounded-sm px-3 py-2 ${containerClass} ${
         disabled ? 'opacity-50' : 'active:opacity-70'
       }`}
     >
@@ -259,7 +259,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
         {item.title} {item.count ?? 0}
       </Text>
       {item.isLocked ? (
-        <View className="flex-row items-center gap-1 rounded-full bg-error-50 px-2 py-1 dark:bg-error-900/20">
+        <View className="flex-row items-center gap-1 rounded-sm bg-error-50 px-2 py-1 dark:bg-error-900/20">
           <LockIcon size={14} color="#DC2626" />
           <Text className="text-xs text-error-600 dark:text-error-400">잠금 상태</Text>
         </View>
@@ -910,7 +910,7 @@ export default function BoardPostDetailScreen() {
             </Text>
             {postCreatedAtLabel ? (
               <>
-                <View className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                <View className="h-1 w-1 rounded-sm bg-gray-300 dark:bg-gray-600" />
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
                   {postCreatedAtLabel}
                 </Text>
@@ -918,7 +918,7 @@ export default function BoardPostDetailScreen() {
             ) : null}
             {postLastActivityLabel ? (
               <>
-                <View className="h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                <View className="h-1 w-1 rounded-sm bg-gray-300 dark:bg-gray-600" />
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
                   최근 활동 {postLastActivityLabel}
                 </Text>
@@ -936,7 +936,7 @@ export default function BoardPostDetailScreen() {
           />
 
           {post.jobSummary ? (
-            <View className="mt-5 rounded-2xl border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
+            <View className="mt-5 rounded-lg border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
               <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 일정 요약
               </Text>
@@ -974,7 +974,7 @@ export default function BoardPostDetailScreen() {
           </View>
 
           {post.boardType !== 'notice' ? (
-            <View className="mt-5 rounded-2xl bg-gray-50 p-4 dark:bg-surface-elevated">
+            <View className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-surface-elevated">
               <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-gray-500 dark:text-gray-400">
                 반응
               </Text>
@@ -1009,7 +1009,7 @@ export default function BoardPostDetailScreen() {
           ) : null}
 
           {showActionBar ? (
-            <View className="mt-5 rounded-2xl bg-gray-50 p-4 dark:bg-surface-elevated">
+            <View className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-surface-elevated">
               <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-gray-500 dark:text-gray-400">
                 게시글 작업
               </Text>

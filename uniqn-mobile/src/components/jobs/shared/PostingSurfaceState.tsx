@@ -50,7 +50,7 @@ export function PostingSurfaceState({
 
   if (mode === 'partial') {
     return (
-      <View className="mx-4 mb-3 rounded-xl bg-amber-50 px-4 py-3 dark:bg-amber-900/20">
+      <View className="mx-4 mb-3 rounded-md bg-amber-50 px-4 py-3 dark:bg-amber-900/20">
         <Text className="text-sm font-medium text-amber-800 dark:text-amber-300">
           {title || '일부 정보만 불러왔습니다'}
         </Text>

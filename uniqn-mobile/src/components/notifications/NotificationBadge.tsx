@@ -53,7 +53,7 @@ export const NotificationBadge = memo(function NotificationBadge({
       style={{ position: 'absolute', top: -4, right: -4 }}
       accessibilityLabel={`읽지 않은 알림 ${count}개`}
       className={`
-        bg-error-500 rounded-full
+        bg-error-500 rounded-sm
         items-center justify-center
         ${styles.container}
         ${className}
@@ -82,7 +82,7 @@ export const NotificationBadgeInline = memo(function NotificationBadgeInline({
     <View
       accessibilityLabel={`읽지 않은 알림 ${count}개`}
       className={`
-        bg-error-500 rounded-full
+        bg-error-500 rounded-sm
         items-center justify-center
         ${styles.container}
         ${className}

@@ -49,7 +49,7 @@ export default function MyInquiriesScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#A855F7" />
+        <ActivityIndicator size="small" color="#D4AF37" />
       </View>
     );
   }, [isFetchingNextPage]);
@@ -57,11 +57,7 @@ export default function MyInquiriesScreen() {
   const renderEmpty = useCallback(
     () => (
       <View className="flex-1 items-center justify-center px-4 py-12">
-        <EmptyState
-          icon="📭"
-          title="문의 내역이 없습니다"
-          description="아직 문의하신 내역이 없습니다"
-        />
+        <EmptyState title="문의 내역이 없습니다" description="아직 문의하신 내역이 없습니다" />
         <Button onPress={handleCreateInquiry} className="mt-4">
           1:1 문의하기
         </Button>
@@ -73,7 +69,7 @@ export default function MyInquiriesScreen() {
   if (isLoading && inquiries.length === 0) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
       </SafeAreaView>
     );
   }
@@ -92,7 +88,7 @@ export default function MyInquiriesScreen() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#A855F7" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#D4AF37" />
         }
       />
     </SafeAreaView>

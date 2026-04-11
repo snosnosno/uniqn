@@ -355,7 +355,7 @@ export function WorkTimeEditor({
               label="출근 시간"
               value={startTimeStr}
               originalTime={originalStartTime}
-              iconColor="#9333EA"
+              iconColor="#B8962E"
               isUndefined={isStartTimeUndefined}
               onUndefinedChange={handleStartTimeUndefinedChange}
               onOpenPicker={() => setActivePicker('start')}
@@ -423,7 +423,7 @@ export function WorkTimeEditor({
 
           {/* 안내 메시지 */}
           <View className="flex-row items-start p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-4">
-            <AlertCircleIcon size={16} color="#9333EA" />
+            <AlertCircleIcon size={16} color="#B8962E" />
             <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1">
               시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
             </Text>

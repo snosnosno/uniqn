@@ -91,7 +91,7 @@ export function ActionSheet({
             onPress={() => !option.disabled && handleSelect(option.value)}
             disabled={option.disabled}
             className={`
-              flex-row items-center justify-center py-4 rounded-xl
+              flex-row items-center justify-center py-4 rounded-md
               ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
             `}
             accessibilityRole="button"
@@ -119,7 +119,7 @@ export function ActionSheet({
       <View className="mt-4 pt-4 border-t border-gray-200 dark:border-surface-overlay">
         <Pressable
           onPress={onClose}
-          className="items-center justify-center py-4 rounded-xl bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+          className="items-center justify-center py-4 rounded-md bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
           accessibilityRole="button"
           accessibilityLabel={cancelText}
         >

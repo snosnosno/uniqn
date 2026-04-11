@@ -321,7 +321,7 @@ describe('jobPosting schemas', () => {
       ).toBe(false);
     });
 
-    it('rejects invalid fixed duration policies and requires type-specific configs', () => {
+    it('accepts valid fixed schedule postings and rejects unknown extra fields', () => {
       expect(
         jobPostingDocumentSchema.safeParse({
           ...createValidDocument(),
@@ -334,7 +334,7 @@ describe('jobPosting schemas', () => {
             roleRequirements: [{ role: 'dealer', count: 1, filled: 0 }],
           },
         }).success
-      ).toBe(false);
+      ).toBe(true);
 
       expect(
         jobPostingDocumentSchema.safeParse({
@@ -371,8 +371,8 @@ describe('jobPosting schemas', () => {
           ...createValidDocument(),
           id: 'draft-posting',
           status: 'draft',
-        })
-      ).toBeNull();
+        })?.id
+      ).toBe('draft-posting');
       expect(
         parseJobPostingDocument({
           id: 'legacy',

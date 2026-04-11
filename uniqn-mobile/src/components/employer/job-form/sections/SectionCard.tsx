@@ -71,7 +71,7 @@ export const SectionCard = memo(function SectionCard({
 
       {/* 에러 배지 */}
       {hasError && errorCount > 0 && (
-        <View className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded-full mr-2">
+        <View className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded-sm mr-2">
           <Text className="text-xs text-red-600 dark:text-red-400">{errorCount}개 오류</Text>
         </View>
       )}
@@ -93,7 +93,7 @@ export const SectionCard = memo(function SectionCard({
     <View
       className={`
         bg-white dark:bg-surface
-        rounded-xl border ${borderColor}
+        rounded-md border ${borderColor}
         mb-4 overflow-hidden
         ${className}
       `}

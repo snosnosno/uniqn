@@ -14,7 +14,7 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const LOADING_COLORS = {
-  light: '#A855F7', // primary-500
+  light: '#D4AF37', // primary-500
   dark: '#C084FC', // primary-400 (다크모드에서 더 밝게)
 } as const;
 

@@ -73,7 +73,7 @@ export const CardHeader = React.memo(function CardHeader({
             </Text>
             {!isRead && (
               <View
-                className="ml-2 h-2 w-2 rounded-full bg-primary-500"
+                className="ml-2 h-2 w-2 rounded-sm bg-primary-500"
                 accessibilityLabel="새 지원자"
               />
             )}
@@ -90,7 +90,7 @@ export const CardHeader = React.memo(function CardHeader({
         accessibilityRole="button"
         accessibilityLabel={isExpanded ? '지원 상세 접기' : '지원 상세 열기'}
         accessibilityState={{ expanded: isExpanded }}
-        className="ml-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-surface active:opacity-60 flex-row items-center"
+        className="ml-2 px-3 py-1 rounded-sm bg-gray-100 dark:bg-surface active:opacity-60 flex-row items-center"
         hitSlop={8}
       >
         <Text className="text-xs font-medium text-gray-600 dark:text-gray-300">

@@ -42,7 +42,7 @@ export const AllowanceInput = memo(function AllowanceInput({
         <View className="pb-3 mb-3 border-b border-gray-100 dark:border-surface-overlay">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
-              <Text className="text-xl mr-2">⏰</Text>
+              <Text className="text-xl mr-2">{''}</Text>
               <Text className="text-sm text-gray-900 dark:text-white">보장시간</Text>
             </View>
             <View className="flex-row items-center">

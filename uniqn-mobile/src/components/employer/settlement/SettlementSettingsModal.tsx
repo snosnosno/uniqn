@@ -140,7 +140,7 @@ function RoleSalaryItem({
         {showApplyButton && (
           <Pressable
             onPress={onApplyToAll}
-            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-full active:opacity-70"
+            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-sm active:opacity-70"
           >
             <Text className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
               모든 역할에 적용
@@ -261,7 +261,7 @@ export function SettlementSettingsModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-4 rounded-xl bg-gray-100 dark:bg-surface ${
+        className={`flex-1 py-4 rounded-md bg-gray-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
@@ -272,7 +272,7 @@ export function SettlementSettingsModal({
       <Pressable
         onPress={handleSave}
         disabled={isSaving}
-        className={`flex-1 py-4 rounded-xl bg-primary-500 ${
+        className={`flex-1 py-4 rounded-md bg-primary-500 ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >

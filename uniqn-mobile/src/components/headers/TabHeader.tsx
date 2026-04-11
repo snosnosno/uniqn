@@ -43,7 +43,7 @@ export function TabHeader({
         {showQR ? (
           <Pressable
             onPress={() => router.push('/(app)/(tabs)/qr')}
-            className={`rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+            className={`rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="QR 코드"
@@ -55,7 +55,7 @@ export function TabHeader({
         {showNotification ? (
           <Pressable
             onPress={() => router.push('/(app)/notifications')}
-            className={`relative rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+            className={`relative rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`알림${unreadCount > 0 ? `, ${unreadCount}개의 읽지 않은 알림` : ''}`}
@@ -68,7 +68,7 @@ export function TabHeader({
         {showSettings ? (
           <Pressable
             onPress={() => router.push('/(app)/settings')}
-            className={`rounded-full p-2 ${HEADER_CLASSES.actionPressed}`}
+            className={`rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="설정"

@@ -90,7 +90,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
       <View className="py-6 items-center">
-        <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 w-full">
+        <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-md p-4 w-full">
           <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
             지원이 확정되면 근무 정보를 확인할 수 있습니다.
           </Text>
@@ -103,7 +103,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-6 items-center">
-        <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 w-full">
+        <View className="bg-red-50 dark:bg-red-900/20 rounded-md p-4 w-full">
           <Text className="text-sm text-red-600 dark:text-red-400 text-center">
             취소된 스케줄입니다.
           </Text>
@@ -115,7 +115,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   return (
     <View className="py-2">
       {hasPendingCancellation && (
-        <View className="mb-5 rounded-xl bg-warning-50 p-4 dark:bg-warning-900/20">
+        <View className="mb-5 rounded-md bg-warning-50 p-4 dark:bg-warning-900/20">
           <View className="mb-2">
             <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
           </View>
@@ -154,7 +154,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
               {formatPhoneNumber(schedule.ownerPhone)}
             </Text>
             <View className="ml-auto flex-row items-center">
-              <PhoneIcon size={16} color="#9333EA" />
+              <PhoneIcon size={16} color="#B8962E" />
               <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">전화하기</Text>
             </View>
           </Pressable>

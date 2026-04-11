@@ -77,7 +77,7 @@ function MonthNavigator({
     <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
       <Pressable
         onPress={onPrev}
-        className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700"
+        className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700"
         accessibilityLabel="이전 달"
         accessibilityRole="button"
         testID="schedule-prev-month-button"
@@ -97,7 +97,7 @@ function MonthNavigator({
       <View className="flex-row items-center">
         <Pressable
           onPress={onToday}
-          className="rounded-full px-3 py-1.5 active:bg-gray-100 dark:active:bg-gray-700 mr-1"
+          className="rounded-sm px-3 py-1.5 active:bg-gray-100 dark:active:bg-gray-700 mr-1"
           accessibilityLabel="오늘로 이동"
           accessibilityRole="button"
           testID="schedule-today-button"
@@ -106,7 +106,7 @@ function MonthNavigator({
         </Pressable>
         <Pressable
           onPress={onToggleView}
-          className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700 mr-1"
+          className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700 mr-1"
           accessibilityLabel={viewMode === 'list' ? '캘린더 보기' : '목록 보기'}
           accessibilityRole="button"
           testID="schedule-view-toggle-button"
@@ -119,7 +119,7 @@ function MonthNavigator({
         </Pressable>
         <Pressable
           onPress={onNext}
-          className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700"
+          className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700"
           accessibilityLabel="다음 달"
           accessibilityRole="button"
           testID="schedule-next-month-button"

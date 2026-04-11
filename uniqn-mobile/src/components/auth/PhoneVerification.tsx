@@ -227,7 +227,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {/* 헤더 */}
         {!compact && (
           <View className="items-center mb-6">
-            <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full items-center justify-center mb-3">
+            <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-sm items-center justify-center mb-3">
               <ShieldCheckIcon size={32} color="#6366f1" />
             </View>
             <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증</Text>
@@ -331,7 +331,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {__DEV__ && (
           <View className="items-center mt-4 gap-1">
             <View className="flex-row items-center justify-center">
-              <View className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
+              <View className="w-2 h-2 bg-yellow-500 rounded-sm mr-2" />
               <Text className="text-xs text-gray-400 dark:text-gray-500">
                 개발 모드: Firebase Console 테스트 번호를 사용하세요
               </Text>

@@ -31,7 +31,7 @@ export function HeaderBackButton({
     <Pressable
       onPress={handleBack}
       hitSlop={8}
-      className={`-ml-2 rounded-full p-2 ${HEADER_CLASSES.actionPressed} ${className ?? ''}`.trim()}
+      className={`-ml-2 rounded-sm p-2 ${HEADER_CLASSES.actionPressed} ${className ?? ''}`.trim()}
       accessibilityRole="button"
       accessibilityLabel="뒤로 가기"
     >

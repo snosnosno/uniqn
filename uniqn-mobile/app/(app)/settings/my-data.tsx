@@ -179,9 +179,9 @@ export default function MyDataScreen() {
             headerShown: true,
             title: '내 정보',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <View className="flex-1 items-center justify-center">
@@ -199,9 +199,9 @@ export default function MyDataScreen() {
           headerShown: true,
           title: '내 정보',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+            backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+          headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
         }}
       />
 
@@ -213,7 +213,7 @@ export default function MyDataScreen() {
         {/* 안내 카드 */}
         <Card className="mb-6 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
           <View className="flex-row items-start">
-            <Text className="text-2xl mr-3">ℹ️</Text>
+            <Text className="text-2xl mr-3">{''}</Text>
             <View className="flex-1">
               <Text className="text-primary-800 dark:text-primary-200 font-semibold mb-1">
                 개인정보 처리방침
@@ -294,7 +294,7 @@ export default function MyDataScreen() {
                 <Text className="ml-2 text-primary-600 dark:text-primary-400">내보내는 중...</Text>
               </View>
             ) : (
-              <Text className="text-primary-600 dark:text-primary-400">📥 내 데이터 내보내기</Text>
+              <Text className="text-primary-600 dark:text-primary-400">내 데이터 내보내기</Text>
             )}
           </Button>
         </Card>

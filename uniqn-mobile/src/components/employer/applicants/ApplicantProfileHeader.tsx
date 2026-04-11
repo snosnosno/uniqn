@@ -43,7 +43,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   return (
     <View className="items-center bg-gray-50 py-4 dark:bg-surface">
       {isProfileLoading ? (
-        <View className="mb-2 h-16 w-16 items-center justify-center rounded-full bg-gray-200 dark:bg-surface">
+        <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-gray-200 dark:bg-surface">
           <ActivityIndicator size="small" color="#6B7280" />
         </View>
       ) : (

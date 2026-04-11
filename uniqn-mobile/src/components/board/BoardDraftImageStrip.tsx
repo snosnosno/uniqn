@@ -41,7 +41,7 @@ export function BoardDraftImageStrip({ images, onRemoveImage }: BoardDraftImageS
             />
             <Pressable
               onPress={() => onRemoveImage(image.id)}
-              className="absolute -right-2 -top-2 rounded-full bg-black/70 p-1"
+              className="absolute -right-2 -top-2 rounded-sm bg-black/70 p-1"
               accessibilityRole="button"
               accessibilityLabel={getRemoveImageAccessibilityLabel(index, images.length)}
               accessibilityHint={getRemoveImageAccessibilityHint(index, images.length)}

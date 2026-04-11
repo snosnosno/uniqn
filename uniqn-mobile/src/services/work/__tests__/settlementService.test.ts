@@ -229,6 +229,7 @@ jest.mock('@/shared/id', () => ({
 }));
 
 jest.mock('@/shared/time', () => ({
+  ...jest.requireActual('@/shared/time'),
   TimeNormalizer: {
     parseTime: jest.fn(() => new Date()),
   },

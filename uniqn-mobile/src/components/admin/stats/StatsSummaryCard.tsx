@@ -38,7 +38,7 @@ export function StatsSummaryCard({
   const Icon = icon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
@@ -107,7 +107,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
         : XCircleIcon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">시스템 상태</Text>
@@ -117,7 +117,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
             <Text className={`text-xl font-bold ${config.color}`}>{config.label}</Text>
           )}
         </View>
-        <View className={`w-10 h-10 rounded-full items-center justify-center ${config.bgColor}`}>
+        <View className={`w-10 h-10 rounded-sm items-center justify-center ${config.bgColor}`}>
           <StatusIcon size={24} color={config.iconColor} />
         </View>
       </View>

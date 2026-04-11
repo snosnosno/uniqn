@@ -44,7 +44,7 @@ const FaceIdIcon = ({ size = 24, color = '#000' }: { size?: number; color?: stri
       justifyContent: 'center',
     }}
   >
-    <Text style={{ fontSize: size * 0.8, color }}>🔐</Text>
+    <Text style={{ fontSize: size * 0.8, color }}>{''}</Text>
   </View>
 );
 
@@ -60,7 +60,7 @@ const FingerprintIcon = ({ size = 24, color = '#000' }: { size?: number; color?:
       justifyContent: 'center',
     }}
   >
-    <Text style={{ fontSize: size * 0.8, color }}>👆</Text>
+    <Text style={{ fontSize: size * 0.8, color }}>{''}</Text>
   </View>
 );
 

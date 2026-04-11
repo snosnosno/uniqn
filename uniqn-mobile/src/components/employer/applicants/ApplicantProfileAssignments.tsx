@@ -73,7 +73,7 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
         {groupedByDate.map((item, index) => (
           <View key={index} className="mb-2 last:mb-0">
             <View className="mb-1 flex-row items-center">
-              <CalendarIcon size={14} color="#9333EA" />
+              <CalendarIcon size={14} color="#B8962E" />
               <Text className="ml-2 text-sm font-medium text-primary-700 dark:text-primary-300">
                 {item.formattedDate}
               </Text>

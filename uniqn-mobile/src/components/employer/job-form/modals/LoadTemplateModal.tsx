@@ -64,7 +64,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
     : null;
 
   return (
-    <View className="mb-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+    <View className="mb-3 rounded-md border border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
       <View className="mb-2 flex-row items-start justify-between">
         <View className="mr-2 flex-1">
           <Text className="text-base font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
@@ -204,7 +204,7 @@ export function LoadTemplateModal({
       <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
         {templatesLoading ? (
           <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#A855F7" />
+            <ActivityIndicator size="large" color="#D4AF37" />
             <Text className="mt-3 text-gray-500 dark:text-gray-400">템플릿을 불러오는 중...</Text>
           </View>
         ) : null}

@@ -116,7 +116,7 @@ export function DateRequirementCard({
         {canRemove && (
           <Pressable
             onPress={() => onRemove(index)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700"
             accessibilityRole="button"
             accessibilityLabel="날짜 삭제"
           >
@@ -152,7 +152,7 @@ export function DateRequirementCard({
         accessibilityLabel="시간대 추가"
       >
         <View className="mr-2">
-          <PlusIcon size={16} color={canAddTimeSlot ? '#A855F7' : '#9CA3AF'} />
+          <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#9CA3AF'} />
         </View>
         <Text
           className={`text-sm font-medium ${

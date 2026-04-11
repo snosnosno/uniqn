@@ -36,7 +36,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="mb-3 rounded-xl border border-gray-200 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface"
+      className="mb-3 rounded-md border border-gray-200 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface"
       accessibilityLabel={`${item.jobPostingTitle} 평가하기`}
       accessibilityRole="button"
     >
@@ -58,7 +58,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
           </View>
         </View>
         <View
-          className={`rounded-full px-2.5 py-1 ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}
+          className={`rounded-sm px-2.5 py-1 ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}
         >
           <Text
             className={`text-xs font-medium ${isUrgent ? 'text-red-700 dark:text-red-300' : 'text-yellow-700 dark:text-yellow-300'}`}
@@ -103,7 +103,7 @@ export default function PendingReviewsScreen() {
         {isLoading ? (
           <View>
             {[1, 2, 3].map((i) => (
-              <View key={i} className="mb-3 rounded-xl bg-white p-4 dark:bg-surface">
+              <View key={i} className="mb-3 rounded-md bg-white p-4 dark:bg-surface">
                 <Skeleton width="60%" height={20} />
                 <Skeleton width="80%" height={16} className="mt-2" />
                 <Skeleton width="40%" height={14} className="mt-3" />

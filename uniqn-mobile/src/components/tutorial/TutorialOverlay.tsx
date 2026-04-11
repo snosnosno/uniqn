@@ -273,7 +273,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
           onPress={handleNext}
           accessibilityLabel={isLastPage ? ctaText : '다음'}
           accessibilityRole="button"
-          className={`py-4 rounded-xl items-center ${buttonClass}`}
+          className={`py-4 rounded-md items-center ${buttonClass}`}
         >
           {/* L14: CTA 텍스트 크로스페이드 */}
           <Animated.Text

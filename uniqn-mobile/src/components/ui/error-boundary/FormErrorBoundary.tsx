@@ -35,9 +35,9 @@ function FormErrorFallback({
     error?.message.includes('validation') || error?.message.includes('검증');
 
   return (
-    <View className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+    <View className="p-4 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
       <View className="flex-row items-center mb-3">
-        <Text className="text-2xl mr-3">⚠️</Text>
+        <Text className="text-2xl mr-3">{''}</Text>
         <Text className="text-base font-semibold text-red-800 dark:text-red-200 flex-1">
           {isValidationError ? '입력값을 확인해주세요' : '폼 처리 중 오류 발생'}
         </Text>

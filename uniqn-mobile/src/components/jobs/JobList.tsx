@@ -73,13 +73,7 @@ export function JobList({
 
   if (!isLoading && jobs.length === 0) {
     return (
-      <PostingSurfaceState
-        mode="empty"
-        scope="list"
-        title="공고 없음"
-        message={emptyMessage}
-        icon="📋"
-      />
+      <PostingSurfaceState mode="empty" scope="list" title="공고 없음" message={emptyMessage} />
     );
   }
 

@@ -91,7 +91,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           <View className="flex-1">
             {/* 제목 (그룹 카운트 포함) */}
             <View className="flex-row items-center">
-              {hasUnread && <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />}
+              {hasUnread && <View className="w-2 h-2 rounded-sm bg-primary-500 mr-2" />}
               <Text
                 className={`text-base flex-1 ${
                   hasUnread
@@ -104,7 +104,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               </Text>
               {/* 읽지 않은 수 배지 */}
               {group.unreadCount > 0 && (
-                <View className="ml-2 min-w-[20px] h-5 px-1.5 bg-error-500 rounded-full items-center justify-center">
+                <View className="ml-2 min-w-[20px] h-5 px-1.5 bg-error-500 rounded-sm items-center justify-center">
                   <Text className="text-xs font-bold text-white">
                     {group.unreadCount > 99 ? '99+' : group.unreadCount}
                   </Text>

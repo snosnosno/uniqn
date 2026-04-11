@@ -84,7 +84,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
       accessibilityLabel={`${typeInfo.label} - ${typeInfo.description}`}
       accessibilityHint={`심각도: ${severityLabel}`}
       className={`
-        p-4 rounded-xl mb-2
+        p-4 rounded-md mb-2
         ${
           isSelected
             ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20'
@@ -121,7 +121,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
         </View>
 
         {isSelected && (
-          <View className="h-6 w-6 rounded-full bg-red-500 items-center justify-center">
+          <View className="h-6 w-6 rounded-sm bg-red-500 items-center justify-center">
             <CheckIcon size={14} color="#FFFFFF" />
           </View>
         )}
@@ -281,7 +281,7 @@ export function ReportModal({
         {/* 신고 대상 정보 */}
         <Card variant="filled" padding="sm" className="mb-3 bg-red-50 dark:bg-red-900/20">
           <View className="flex-row items-center">
-            <View className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center">
+            <View className="h-12 w-12 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center">
               {mode === 'employee' ? (
                 <BriefcaseIcon size={24} color="#EF4444" />
               ) : (

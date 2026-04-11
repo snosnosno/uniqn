@@ -32,7 +32,7 @@ jest.mock('@/repositories', () => ({
 }));
 
 jest.mock('@/services/auth', () => ({
-  requireCurrentUser: jest.fn(() => ({ uid: 'owner-1' })),
+  requireCurrentUser: jest.fn(() => ({ id: 'owner-1' })),
 }));
 
 jest.mock('@/services/jobs/applicationHistoryService', () => ({

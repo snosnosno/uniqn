@@ -75,11 +75,11 @@ const calendarTheme = {
   selectedDayBackgroundColor: PRIMARY_COLORS[600],
   selectedDayTextColor: '#FFFFFF',
   todayTextColor: ACCENT_COLORS[600],
-  dayTextColor: '#1A1625',
+  dayTextColor: '#09090B',
   textDisabledColor: '#D1D5DB',
   dotColor: PRIMARY_COLORS[500],
   selectedDotColor: '#FFFFFF',
-  monthTextColor: '#1A1625',
+  monthTextColor: '#09090B',
   indicatorColor: PRIMARY_COLORS[500],
   arrowColor: '#6B7280',
   textDayFontSize: 14,
@@ -163,7 +163,7 @@ function CalendarLegend({ types }: LegendProps) {
       {types.map((type) => (
         <View key={type} className="flex-row items-center">
           <View
-            className="mr-1.5 h-2.5 w-2.5 rounded-full"
+            className="mr-1.5 h-2.5 w-2.5 rounded-sm"
             style={{ backgroundColor: SCHEDULE_DOT_COLORS[type] }}
           />
           <Text className="text-xs text-gray-600 dark:text-gray-400">{labels[type]}</Text>
@@ -230,7 +230,7 @@ export function CalendarView({
   const currentMonthString = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`;
 
   return (
-    <View className="mx-4 overflow-hidden rounded-xl bg-white dark:bg-surface">
+    <View className="mx-4 overflow-hidden rounded-md bg-white dark:bg-surface">
       <Calendar
         key={`${currentMonthString}-${mode}`}
         current={currentMonthString}

@@ -68,19 +68,19 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
     >
       <View className="mb-2 flex-row items-center justify-between gap-3">
         <View className="flex-1 flex-row flex-wrap items-center gap-2">
-          <View className="rounded-full bg-red-100 px-2.5 py-1 dark:bg-red-900/30">
+          <View className="rounded-sm bg-red-100 px-2.5 py-1 dark:bg-red-900/30">
             <Text className="text-xs font-medium text-red-700 dark:text-red-300">
               {getTargetLabel(record)}
             </Text>
           </View>
           {record.post ? (
-            <View className="rounded-full bg-primary-100 px-2.5 py-1 dark:bg-primary-900/30">
+            <View className="rounded-sm bg-primary-100 px-2.5 py-1 dark:bg-primary-900/30">
               <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
                 {BOARD_TYPE_LABELS[record.post.boardType]}
               </Text>
             </View>
           ) : null}
-          <View className={`rounded-full px-2.5 py-1 ${getStatusClassName(record.report.status)}`}>
+          <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(record.report.status)}`}>
             <Text className="text-xs font-medium">{getStatusLabel(record.report.status)}</Text>
           </View>
         </View>
@@ -197,7 +197,7 @@ export default function AdminBoardReportsPage() {
                 <Pressable
                   key={option.value}
                   onPress={() => setStatus(option.value)}
-                  className={`rounded-full px-4 py-2 ${
+                  className={`rounded-sm px-4 py-2 ${
                     isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface-elevated'
                   }`}
                 >

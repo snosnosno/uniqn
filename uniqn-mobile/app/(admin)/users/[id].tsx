@@ -149,7 +149,7 @@ export default function AdminUserDetailPage() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 정보를 불러오는 중...</Text>
       </View>
     );
@@ -161,7 +161,6 @@ export default function AdminUserDetailPage() {
         <EmptyState
           title="사용자를 찾을 수 없음"
           description="요청하신 사용자 정보를 찾을 수 없습니다."
-          icon="❌"
           actionLabel="목록으로"
           onAction={() => router.back()}
         />
@@ -173,7 +172,7 @@ export default function AdminUserDetailPage() {
     <ScrollView
       className="flex-1 bg-gray-50 dark:bg-surface-dark"
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#A855F7" />
+        <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#D4AF37" />
       }
     >
       {/* Profile Header */}
@@ -181,7 +180,7 @@ export default function AdminUserDetailPage() {
         {user.photoURL ? (
           <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
         ) : (
-          <View className="w-20 h-20 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-3">
+          <View className="w-20 h-20 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center mb-3">
             <UserIcon size={40} color="#9CA3AF" />
           </View>
         )}
@@ -266,14 +265,14 @@ export default function AdminUserDetailPage() {
           >
             <View
               className={
-                'w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ' +
+                'w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ' +
                 ((selectedRole ?? user.role) === option.role
                   ? 'border-primary-500'
                   : 'border-gray-300 dark:border-surface-overlay')
               }
             >
               {(selectedRole ?? user.role) === option.role && (
-                <View className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+                <View className="w-2.5 h-2.5 rounded-sm bg-primary-500" />
               )}
             </View>
             <View className="flex-1">

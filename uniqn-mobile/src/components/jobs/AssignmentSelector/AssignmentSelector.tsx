@@ -165,7 +165,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
   if (isFixed) {
     return (
-      <View className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
+      <View className="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/30">
         <Text className="text-sm font-medium text-amber-800 dark:text-amber-200">
           고정 공고 지원은 현재 비활성화되어 있습니다.
         </Text>
@@ -178,7 +178,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   }
 
   return (
-    <View className="rounded-xl bg-white p-4 dark:bg-surface">
+    <View className="rounded-md bg-white p-4 dark:bg-surface">
       <View className="mb-3">
         <Text className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
           날짜 및 역할 선택 <Text className="text-error-500">*</Text>

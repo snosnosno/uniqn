@@ -126,7 +126,7 @@ export const OptimizedImage = memo(function OptimizedImage({
   const displaySource = hasError && fallbackSource ? fallbackSource : source;
 
   // 스타일 클래스 조합
-  const roundedClass = rounded ? 'rounded-full overflow-hidden' : '';
+  const roundedClass = rounded ? 'rounded-sm overflow-hidden' : '';
   const combinedClassName = `${roundedClass} ${className}`.trim();
 
   return (

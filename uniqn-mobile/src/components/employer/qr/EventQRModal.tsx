@@ -66,7 +66,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
 
   return (
     <View
-      className="flex-row rounded-2xl bg-gray-100 p-1.5 dark:bg-surface"
+      className="flex-row rounded-lg bg-gray-100 p-1.5 dark:bg-surface"
       accessibilityRole="tablist"
       accessibilityLabel="QR 모드"
     >
@@ -111,7 +111,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
           justifyContent: 'center',
           paddingVertical: 14,
           borderRadius: 12,
-          backgroundColor: checkOutActive ? '#9333EA' : 'transparent',
+          backgroundColor: checkOutActive ? '#B8962E' : 'transparent',
           opacity: disabled ? 0.5 : 1,
           minHeight: 48,
         }}
@@ -157,7 +157,7 @@ function ScopeSelectionPanel({
               key={scope.key}
               onPress={() => onSelect(scope.key)}
               disabled={disabled}
-              className={`rounded-2xl border px-4 py-3 ${
+              className={`rounded-lg border px-4 py-3 ${
                 isSelected
                   ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
                   : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -227,10 +227,10 @@ function QRRefreshOverlay({ visible }: { visible: boolean }) {
   return (
     <Animated.View
       style={{ opacity: fadeAnim }}
-      className="absolute inset-0 z-10 items-center justify-center rounded-2xl bg-white/80 dark:bg-surface/80"
+      className="absolute inset-0 z-10 items-center justify-center rounded-lg bg-white/80 dark:bg-surface/80"
     >
       <Animated.View style={{ transform: [{ rotate }] }}>
-        <RefreshIcon size={32} color="#A855F7" />
+        <RefreshIcon size={32} color="#D4AF37" />
       </Animated.View>
       <Text className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">
         QR 새로고침 중...
@@ -421,7 +421,7 @@ export function EventQRModal({
     setSelectedScopeKey(key);
   }, []);
 
-  const modeColor = mode === 'checkIn' ? '#16A34A' : '#9333EA';
+  const modeColor = mode === 'checkIn' ? '#16A34A' : '#B8962E';
   const modeLabel = mode === 'checkIn' ? '출근' : '퇴근';
   const scopeErrorMessage =
     jobError?.message && /[가-힣]/.test(jobError.message)
@@ -443,7 +443,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#EF4444" />
         <Text className="mt-3 text-center text-sm font-medium text-red-500">
@@ -456,7 +456,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
         <Text className="mt-3 text-center text-sm font-medium text-gray-800">
@@ -468,7 +468,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
         <Text className="mt-3 text-center text-sm font-medium text-gray-800">
@@ -480,7 +480,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#F59E0B" />
         <Text className="mt-3 text-center text-sm font-medium text-gray-800">
@@ -492,7 +492,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 px-4 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 px-4 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#6366F1" />
         <Text className="mt-3 text-center text-sm font-medium text-gray-800">
@@ -511,7 +511,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50 dark:bg-gray-100"
+        className="items-center justify-center rounded-md bg-gray-50 dark:bg-gray-100"
       >
         <AlertCircleIcon size={48} color="#EF4444" />
         <Text className="mb-4 mt-3 text-center font-medium text-red-500">
@@ -540,7 +540,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-xl bg-gray-50"
+        className="items-center justify-center rounded-md bg-gray-50"
       >
         <ActivityIndicator size="large" color={modeColor} />
       </View>
@@ -553,7 +553,7 @@ export function EventQRModal({
         <View className="mb-2 flex-row justify-end">
           <Pressable
             onPress={onClose}
-            className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-surface"
+            className="h-9 w-9 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface"
             accessibilityRole="button"
             accessibilityLabel="닫기"
           >
@@ -609,7 +609,7 @@ export function EventQRModal({
             />
           </View>
 
-          <View className="relative mb-4 rounded-2xl bg-white p-5 shadow-lg">
+          <View className="relative mb-4 rounded-lg bg-white p-5 shadow-lg">
             <QRRefreshOverlay visible={isRefreshing} />
             {qrPanelContent}
           </View>
@@ -627,7 +627,7 @@ export function EventQRModal({
               <Pressable
                 onPress={handleRefresh}
                 disabled={isLoading || isRefreshing || !selectedScope}
-                className={`flex-row items-center rounded-xl bg-gray-100 px-4 py-2.5 dark:bg-surface ${
+                className={`flex-row items-center rounded-md bg-gray-100 px-4 py-2.5 dark:bg-surface ${
                   isRefreshing ? 'opacity-50' : 'active:opacity-70'
                 }`}
               >
@@ -645,7 +645,7 @@ export function EventQRModal({
             className="w-full bg-primary-50 dark:bg-primary-900/20"
           >
             <View className="mb-2 flex-row items-start">
-              <CheckCircleIcon size={16} color="#9333EA" />
+              <CheckCircleIcon size={16} color="#B8962E" />
               <Text className="ml-2 text-sm font-medium text-primary-800 dark:text-primary-300">
                 {modeLabel} QR 사용 방법
               </Text>

@@ -65,7 +65,7 @@ const getBackgroundColor = (name?: string): string => {
     'bg-primary-500',
     'bg-green-500',
     'bg-yellow-500',
-    'bg-purple-500',
+    'bg-primary-500',
     'bg-pink-500',
     'bg-indigo-500',
     'bg-red-500',
@@ -131,7 +131,7 @@ export const Avatar = memo(function Avatar({
   if (source && !hasImageError) {
     return (
       <View
-        className={`overflow-hidden rounded-full ${className}`}
+        className={`overflow-hidden rounded-sm ${className}`}
         style={{ width: imageSize, height: imageSize }}
       >
         <Image
@@ -153,7 +153,7 @@ export const Avatar = memo(function Avatar({
   return (
     <View
       className={`
-        items-center justify-center rounded-full
+        items-center justify-center rounded-sm
         ${sizeStyles[size]}
         ${getBackgroundColor(name)}
         ${className}

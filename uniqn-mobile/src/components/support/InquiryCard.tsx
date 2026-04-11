@@ -64,7 +64,7 @@ export function InquiryCard({
 
             {inquiry.status === STATUS.INQUIRY.CLOSED && inquiry.response && (
               <View className="mt-2 flex-row items-center">
-                <View className="mr-1 h-2 w-2 rounded-full bg-green-500" />
+                <View className="mr-1 h-2 w-2 rounded-sm bg-green-500" />
                 <Text className="text-xs text-green-600 dark:text-green-400">응답 완료</Text>
               </View>
             )}

@@ -170,10 +170,10 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
   if (compact) {
     return (
       <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
-        <Text className="text-sm text-gray-700 dark:text-gray-300 mb-0.5">📅 {daysText} 출근</Text>
-        <Text className="text-sm text-gray-700 dark:text-gray-300">🕐 출근시간 {timeText}</Text>
+        <Text className="text-sm text-gray-700 dark:text-gray-300 mb-0.5">{daysText} 출근</Text>
+        <Text className="text-sm text-gray-700 dark:text-gray-300">출근시간 {timeText}</Text>
         {showRoles && rolesText && (
-          <Text className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">👥 {rolesText}</Text>
+          <Text className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">{rolesText}</Text>
         )}
       </View>
     );
@@ -184,12 +184,12 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
       {/* 주 출근일수 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-gray-900 dark:text-white">📅 {daysText}</Text>
+        <Text className="text-sm font-medium text-gray-900 dark:text-white">{daysText}</Text>
       </View>
 
       {/* 출근 시간 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">🕐 {timeText}</Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{timeText}</Text>
       </View>
 
       {/* 역할별 인원 */}
@@ -197,7 +197,7 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
         <View className="mt-1">
           <View className="flex-row items-center mb-1">
             <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
-              👥 모집 인원
+              모집 인원
             </Text>
             {showFilledCount && (
               <Badge

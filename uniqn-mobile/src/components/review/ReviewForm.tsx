@@ -187,7 +187,7 @@ export default function ReviewForm({
       <Pressable
         onPress={handleSubmit(handleFormSubmit)}
         disabled={!isFormReady || isSubmitting}
-        className={`items-center rounded-xl py-4 ${
+        className={`items-center rounded-md py-4 ${
           isFormReady && !isSubmitting
             ? 'bg-primary-500 active:bg-primary-600'
             : 'bg-gray-300 dark:bg-gray-700'

@@ -37,8 +37,8 @@ function AuthErrorFallback({
 
   return (
     <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
-      <View className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl">🔐</Text>
+      <View className="w-20 h-20 rounded-sm bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mb-6">
+        <Text className="text-4xl">{''}</Text>
       </View>
 
       <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
@@ -52,7 +52,7 @@ function AuthErrorFallback({
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6">
+        <View className="w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6">
           <Text className="text-xs text-yellow-600 dark:text-yellow-400 font-mono">
             {error.message}
           </Text>
@@ -62,7 +62,7 @@ function AuthErrorFallback({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onLogin}
-          className="bg-indigo-600 px-6 py-3 rounded-xl active:bg-indigo-700"
+          className="bg-indigo-600 px-6 py-3 rounded-md active:bg-indigo-700"
           accessibilityRole="button"
           accessibilityLabel="로그인"
         >
@@ -71,7 +71,7 @@ function AuthErrorFallback({
 
         <Pressable
           onPress={onRetry}
-          className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
+          className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-md active:bg-gray-300 dark:active:bg-gray-600"
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >

@@ -118,7 +118,7 @@ export function AnnouncementImagePicker({
             marginBottom: IMAGE_GAP,
           }}
         >
-          <View className="w-full h-full rounded-xl overflow-hidden border-2 border-gray-200 dark:border-surface-overlay">
+          <View className="w-full h-full rounded-md overflow-hidden border-2 border-gray-200 dark:border-surface-overlay">
             {/* 이미지 */}
             <Image
               source={{ uri: item.url }}
@@ -141,7 +141,7 @@ export function AnnouncementImagePicker({
                 <Pressable
                   onPress={() => handleMoveUp(index)}
                   disabled={isFirst}
-                  className={`rounded-full p-1 mr-0.5 ${
+                  className={`rounded-sm p-1 mr-0.5 ${
                     isFirst ? 'bg-black/30' : 'bg-black/60 active:bg-black/80'
                   }`}
                   hitSlop={4}
@@ -152,7 +152,7 @@ export function AnnouncementImagePicker({
                 <Pressable
                   onPress={() => handleMoveDown(index)}
                   disabled={isLast}
-                  className={`rounded-full p-1 ${
+                  className={`rounded-sm p-1 ${
                     isLast ? 'bg-black/30' : 'bg-black/60 active:bg-black/80'
                   }`}
                   hitSlop={4}
@@ -167,7 +167,7 @@ export function AnnouncementImagePicker({
             {!disabled && !isCurrentlyUploading && (
               <Pressable
                 onPress={() => onRemoveImage(item.id)}
-                className="absolute top-1 right-1 bg-black/60 rounded-full p-1 active:bg-black/80"
+                className="absolute top-1 right-1 bg-black/60 rounded-sm p-1 active:bg-black/80"
                 hitSlop={8}
                 accessibilityLabel="이미지 삭제"
               >
@@ -176,7 +176,7 @@ export function AnnouncementImagePicker({
             )}
 
             {/* 순서 표시 (좌하단) */}
-            <View className="absolute bottom-1 left-1 bg-black/60 rounded-full px-2 py-0.5">
+            <View className="absolute bottom-1 left-1 bg-black/60 rounded-sm px-2 py-0.5">
               <Text className="text-white text-xs font-medium">{item.order + 1}</Text>
             </View>
           </View>
@@ -206,7 +206,7 @@ export function AnnouncementImagePicker({
             height: imageSize,
             marginBottom: IMAGE_GAP,
           }}
-          className="rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
+          className="rounded-md border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
           accessibilityLabel="이미지 추가"
         >
           <AddIcon size={32} color="#9CA3AF" />
@@ -246,7 +246,7 @@ export function AnnouncementImagePicker({
             onPress={onAddImages}
             disabled={disabled || isUploading}
             className={`
-            w-full h-40 rounded-xl border-2 border-dashed
+            w-full h-40 rounded-md border-2 border-dashed
             items-center justify-center
             ${
               disabled || isUploading
@@ -258,14 +258,14 @@ export function AnnouncementImagePicker({
           >
             {isUploading ? (
               <View className="items-center">
-                <ActivityIndicator size="large" color="#A855F7" />
+                <ActivityIndicator size="large" color="#D4AF37" />
                 <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   업로드 중... {uploadProgress}%
                 </Text>
               </View>
             ) : (
               <View className="items-center">
-                <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
+                <View className="w-14 h-14 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center mb-2">
                   <ImagesOutlineIcon size={28} color="#9CA3AF" />
                 </View>
                 <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -283,9 +283,9 @@ export function AnnouncementImagePicker({
       {/* 업로드 진행률 바 */}
       {isUploading && uploadProgress > 0 && (
         <View className="mt-2">
-          <View className="h-1.5 bg-gray-200 dark:bg-surface rounded-full overflow-hidden">
+          <View className="h-1.5 bg-gray-200 dark:bg-surface rounded-sm overflow-hidden">
             <View
-              className="h-full bg-primary-600 rounded-full"
+              className="h-full bg-primary-600 rounded-sm"
               style={{ width: `${uploadProgress}%` }}
             />
           </View>

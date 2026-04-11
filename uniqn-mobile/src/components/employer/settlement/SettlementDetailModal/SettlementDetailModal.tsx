@@ -218,7 +218,7 @@ export function SettlementDetailModal({
                 accessibilityRole="button"
               >
                 <Text className="text-sm font-medium text-primary-700 dark:text-primary-300">
-                  📝 평가 남기기
+                  평가 남기기
                 </Text>
               </Pressable>
             </View>

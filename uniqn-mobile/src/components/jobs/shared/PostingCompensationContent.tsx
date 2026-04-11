@@ -30,7 +30,7 @@ export function PostingCompensationContent({
     return (
       <View className="py-1">
         <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
-          💰 {compensation.primaryText}
+          {compensation.primaryText}
         </Text>
       </View>
     );
@@ -41,12 +41,12 @@ export function PostingCompensationContent({
       {!compensation.useSameSalary && compensation.rows.length > 0 ? (
         compensation.rows.map((row) => (
           <Text key={row.key} className="text-sm text-gray-900 dark:text-white">
-            💰 {row.roleLabel}: {row.text}
+            {row.roleLabel}: {row.text}
           </Text>
         ))
       ) : (
         <Text className="text-sm font-medium text-gray-900 dark:text-white">
-          💰 {compensation.primaryText}
+          {compensation.primaryText}
         </Text>
       )}
 
@@ -62,7 +62,7 @@ export function PostingCompensationContent({
 
       {compensation.taxLabel ? (
         <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-          💸 {compensation.taxLabel}
+          {compensation.taxLabel}
         </Text>
       ) : null}
 

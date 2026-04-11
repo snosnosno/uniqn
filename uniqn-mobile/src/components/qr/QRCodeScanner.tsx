@@ -151,7 +151,7 @@ export function QRCodeScanner({
         <View className="flex-row items-center justify-between px-4 py-3 bg-black/50 z-10">
           <Pressable
             onPress={onClose}
-            className="w-10 h-10 items-center justify-center rounded-full"
+            className="w-10 h-10 items-center justify-center rounded-sm"
             accessibilityLabel="닫기"
           >
             <XMarkIcon size={24} color="#FFFFFF" />
@@ -159,11 +159,11 @@ export function QRCodeScanner({
           <Text className="text-white text-lg font-semibold">{title}</Text>
           <Pressable
             onPress={handleToggleFlash}
-            className="w-10 h-10 items-center justify-center rounded-full"
+            className="w-10 h-10 items-center justify-center rounded-sm"
             accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
           >
             <Text className={flashEnabled ? 'text-yellow-400' : 'text-white'}>
-              {flashEnabled ? '🔦' : '💡'}
+              {flashEnabled ? '' : ''}
             </Text>
           </Pressable>
         </View>
@@ -195,26 +195,26 @@ export function QRCodeScanner({
               {/* 코너 장식 */}
               <View
                 className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
               />
               <View
                 className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#D4AF37' }}
               />
             </View>
 
             {/* 안내 문구 / 에러 표시 */}
             {scanError ? (
               <View className="mt-6 px-8 items-center">
-                <View className="bg-red-900/80 rounded-xl p-4 w-full">
+                <View className="bg-red-900/80 rounded-md p-4 w-full">
                   <Text className="text-red-300 text-center font-semibold mb-1">스캔 실패</Text>
                   <Text className="text-white text-center text-sm">{scanError.message}</Text>
                   {scanError.isRetryable && (

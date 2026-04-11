@@ -133,12 +133,12 @@ export default function ReviewDetailScreen() {
           ) : canNavigateToWrite ? (
             <Pressable
               onPress={openWriteScreen}
-              className="items-center rounded-xl border border-dashed border-gray-300 bg-white py-8 active:opacity-80 dark:border-gray-600 dark:bg-gray-800"
+              className="items-center rounded-md border border-dashed border-gray-300 bg-white py-8 active:opacity-80 dark:border-gray-600 dark:bg-gray-800"
             >
               <Text className="text-sm text-primary-500 dark:text-primary-400">리뷰 작성하기</Text>
             </Pressable>
           ) : (
-            <View className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <View className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
               <Text className="text-sm text-gray-600 dark:text-gray-300">
                 리뷰 작성에 필요한 정보를 확인할 수 없어요.
               </Text>

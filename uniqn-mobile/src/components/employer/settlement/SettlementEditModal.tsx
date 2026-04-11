@@ -189,7 +189,7 @@ export function SettlementEditModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-surface ${
+        className={`flex-1 py-3.5 rounded-md bg-gray-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
@@ -200,7 +200,7 @@ export function SettlementEditModal({
       <Pressable
         onPress={handleSave}
         disabled={isSaving}
-        className={`flex-1 py-3.5 rounded-xl bg-primary-500 ${
+        className={`flex-1 py-3.5 rounded-md bg-primary-500 ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >

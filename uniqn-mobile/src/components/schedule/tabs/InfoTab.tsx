@@ -139,7 +139,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-2 opacity-70">
-        <View className="mb-4 rounded-xl bg-red-50 p-4 dark:bg-red-900/20">
+        <View className="mb-4 rounded-md bg-red-50 p-4 dark:bg-red-900/20">
           <Text className="text-center text-sm font-medium text-red-600 dark:text-red-400">
             취소된 일정입니다
           </Text>
@@ -208,7 +208,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
               <View className="flex-row items-center">
-                <ClockIcon size={14} color="#9333EA" />
+                <ClockIcon size={14} color="#B8962E" />
                 <Text className="ml-1.5 text-sm font-medium text-primary-600 dark:text-primary-400">
                   실제: {getActualTimeDisplay(schedule)}
                 </Text>
@@ -248,7 +248,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 {formatPhoneNumber(schedule.ownerPhone)}
               </Text>
               <View className="ml-auto flex-row items-center">
-                <PhoneIcon size={16} color="#9333EA" />
+                <PhoneIcon size={16} color="#B8962E" />
                 <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">
                   전화하기
                 </Text>

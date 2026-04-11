@@ -60,7 +60,7 @@ function isDateToday(dateString: string): boolean {
 // Component
 // ============================================================================
 
-export function TrendChart({ title, data, color = '#9333EA', suffix = '' }: TrendChartProps) {
+export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: TrendChartProps) {
   const { isDarkMode } = useThemeStore();
 
   // 통계 계산
@@ -90,7 +90,7 @@ export function TrendChart({ title, data, color = '#9333EA', suffix = '' }: Tren
   // 데이터가 없는 경우
   if (!data || data.length === 0) {
     return (
-      <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+      <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
         <View className="h-[120px] items-center justify-center">
           <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
@@ -100,11 +100,11 @@ export function TrendChart({ title, data, color = '#9333EA', suffix = '' }: Tren
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
-        <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: `${color}20` }}>
+        <View className="px-2.5 py-1 rounded-sm" style={{ backgroundColor: `${color}20` }}>
           <Text style={{ color }} className="text-sm font-bold">
             총 {stats.total.toLocaleString()}
             {suffix}
@@ -173,9 +173,9 @@ export function TrendChart({ title, data, color = '#9333EA', suffix = '' }: Tren
 
               {/* 바 그래프 */}
               <View className="flex-1 mx-3">
-                <View className="h-2 bg-gray-100 dark:bg-surface-overlay rounded-full overflow-hidden">
+                <View className="h-2 bg-gray-100 dark:bg-surface-overlay rounded-sm overflow-hidden">
                   <View
-                    className="h-full rounded-full"
+                    className="h-full rounded-sm"
                     style={{
                       width: `${barWidth}%`,
                       backgroundColor: isToday ? color : isDarkMode ? '#6b7280' : '#9ca3af',

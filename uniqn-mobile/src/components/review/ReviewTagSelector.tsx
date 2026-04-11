@@ -99,7 +99,7 @@ const TagGroup = React.memo(function TagGroup({
             <Pressable
               key={tag.key}
               onPress={() => onToggle(tag.key)}
-              className={`rounded-full border px-3 py-1.5 ${
+              className={`rounded-sm border px-3 py-1.5 ${
                 isSelected
                   ? `${colors.bg} ${colors.border} ${colors.darkBg}`
                   : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'

@@ -77,7 +77,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
   const hasDepthIndicator = depth > 0;
 
   const actionChipClass =
-    'rounded-full bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
+    'rounded-sm bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
   const mutedActionTextClass = 'text-xs font-medium text-gray-600 dark:text-gray-300';
 
   return (
@@ -145,7 +145,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                     onPress={() => onToggleReaction(comment, reactionType)}
                     disabled={!canInteract}
                     style={{ marginRight: index === REACTION_TYPES.length - 1 ? 0 : 8 }}
-                    className={`rounded-full px-3 py-1.5 ${
+                    className={`rounded-sm px-3 py-1.5 ${
                       isActive
                         ? 'bg-primary-100 dark:bg-primary-900/30'
                         : 'bg-gray-100 dark:bg-surface-elevated'
@@ -164,7 +164,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
             {canInteract && !contentDisabled ? (
               <Pressable
                 onPress={() => onReply(comment)}
-                className="rounded-full bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 active:opacity-70"
+                className="rounded-sm bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 active:opacity-70"
               >
                 <Text className="text-xs font-semibold text-primary-700 dark:text-primary-300">
                   답글
@@ -195,7 +195,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
             {isAdmin && !contentDisabled ? (
               <Pressable
                 onPress={() => onHide(comment)}
-                className="rounded-full bg-error-50 px-3 py-1.5 dark:bg-error-900/20 active:opacity-70"
+                className="rounded-sm bg-error-50 px-3 py-1.5 dark:bg-error-900/20 active:opacity-70"
               >
                 <Text className="text-xs font-medium text-error-600 dark:text-error-400">숨김</Text>
               </Pressable>

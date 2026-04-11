@@ -311,7 +311,7 @@ export function SignupStepProfile({
       {/* 안내 문구 */}
       <View className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
         <Text className="text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">
-          💼 구인자로 활동하고 싶으신가요?
+          구인자로 활동하고 싶으신가요?
         </Text>
         <Text className="text-xs text-primary-600 dark:text-primary-400">
           회원가입 후 &apos;내 공고&apos; 탭에서 구인자로 등록할 수 있습니다.

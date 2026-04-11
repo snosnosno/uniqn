@@ -21,7 +21,7 @@ export default React.memo(function BubbleScoreBadge({ score, size = 'sm' }: Bubb
 
   return (
     <View
-      className={`flex-row items-center gap-1 rounded-full ${sizeClasses} ${colorRange.bg} ${colorRange.darkBg}`}
+      className={`flex-row items-center gap-1 rounded-sm ${sizeClasses} ${colorRange.bg} ${colorRange.darkBg}`}
     >
       <Text className={`font-semibold ${textClasses} ${colorRange.text}`}>{score.toFixed(1)}</Text>
     </View>

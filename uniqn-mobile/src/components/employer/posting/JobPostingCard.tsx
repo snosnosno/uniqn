@@ -40,7 +40,7 @@ export const JobPostingCard = memo(function JobPostingCard({
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-gray-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
-              <UsersIcon size={14} color="#9333EA" />
+              <UsersIcon size={14} color="#B8962E" />
               <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
                 지원자 {posting.stats?.totalApplicants ?? 0}
               </Text>
@@ -53,7 +53,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                 accessibilityLabel="현장 QR 표시"
                 accessibilityRole="button"
               >
-                <QrCodeIcon size={18} color="#9333EA" />
+                <QrCodeIcon size={18} color="#B8962E" />
               </Pressable>
 
               {card.workflow.isTournament && posting.tournamentConfig?.approvalStatus ? (

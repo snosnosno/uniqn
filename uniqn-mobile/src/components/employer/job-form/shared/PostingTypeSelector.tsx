@@ -31,7 +31,7 @@ const TypeCard = memo(function TypeCard({
       onPress={onPress}
       disabled={disabled}
       className={`
-        flex-1 rounded-xl border p-3
+        flex-1 rounded-md border p-3
         ${
           isSelected
             ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
@@ -63,7 +63,7 @@ const TypeCard = memo(function TypeCard({
             {info.description}
           </Text>
         </View>
-        {isSelected && <CheckCircleIcon size={16} color="#A855F7" />}
+        {isSelected && <CheckCircleIcon size={16} color="#D4AF37" />}
       </View>
     </Pressable>
   );

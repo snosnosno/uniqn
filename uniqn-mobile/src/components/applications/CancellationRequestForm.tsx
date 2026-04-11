@@ -114,12 +114,11 @@ export function CancellationRequestForm({
           </Text>
           <View className="flex-row items-center mb-1">
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              📅 {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
+              {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
             </Text>
           </View>
           <View className="flex-row items-center">
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              👤{' '}
               {getRoleDisplayName(
                 application.assignments[0]?.roleIds?.[0] || 'other',
                 application.customRole

@@ -109,11 +109,11 @@ export function JobDetail({ job }: JobDetailProps) {
           근무 정보
         </Text>
 
-        <InfoRow icon="📍" label="근무지" value={detail.locationLabel || '위치 정보 없음'} />
+        <InfoRow icon="" label="근무지" value={detail.locationLabel || '위치 정보 없음'} />
 
         <View className="border-b border-gray-100 py-3 dark:border-surface-overlay">
           <View className="flex-row items-start">
-            <Text className="mr-3 text-lg">📅</Text>
+            <Text className="mr-3 text-lg">{''}</Text>
             <View className="flex-1">
               <Text className="mb-2 text-xs text-gray-500 dark:text-gray-400">근무 일정</Text>
               <PostingScheduleContent
@@ -134,14 +134,14 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {detail.contactPhone ? (
           <Pressable onPress={handleCall}>
-            <InfoRow icon="📞" label="연락처" value={detail.contactPhone} />
+            <InfoRow icon="" label="연락처" value={detail.contactPhone} />
           </Pressable>
         ) : null}
 
         {detail.allowanceLabels.length > 0 ? (
           <View className="border-b border-gray-100 py-3 dark:border-surface-overlay">
             <View className="flex-row items-start">
-              <Text className="mr-3 text-lg">💰</Text>
+              <Text className="mr-3 text-lg">{''}</Text>
               <View className="flex-1">
                 <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">추가 수당</Text>
                 <View className="flex-row flex-wrap">
@@ -159,7 +159,7 @@ export function JobDetail({ job }: JobDetailProps) {
           </View>
         ) : null}
 
-        {detail.taxLabel ? <InfoRow icon="💸" label="세금" value={detail.taxLabel} /> : null}
+        {detail.taxLabel ? <InfoRow icon="" label="세금" value={detail.taxLabel} /> : null}
       </View>
 
       {detail.questions.length > 0 ? (
@@ -188,7 +188,7 @@ export function JobDetail({ job }: JobDetailProps) {
       {detail.ownerName || ownerProfile?.bubbleScore ? (
         <View className="border-t border-gray-100 p-4 dark:border-surface-overlay">
           <View className="flex-row items-center">
-            <Text className="mr-3 text-lg">🏢</Text>
+            <Text className="mr-3 text-lg">{''}</Text>
             <View className="flex-1">
               <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">구인처</Text>
               <View className="flex-row items-center gap-2">

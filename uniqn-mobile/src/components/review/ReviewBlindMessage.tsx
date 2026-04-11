@@ -15,8 +15,8 @@ export default React.memo(function ReviewBlindMessage({ hasMyReview }: ReviewBli
   if (hasMyReview) {
     // 내 리뷰는 작성했지만 상대방이 아직 미작성
     return (
-      <View className="items-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 dark:border-gray-700 dark:bg-gray-800">
-        <Text className="mb-2 text-2xl">📝</Text>
+      <View className="items-center rounded-md border border-gray-200 bg-gray-50 px-4 py-6 dark:border-gray-700 dark:bg-gray-800">
+        <Text className="mb-2 text-2xl">{''}</Text>
         <Text className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
           상대방이 아직 평가를 작성하지 않았습니다
         </Text>
@@ -28,8 +28,8 @@ export default React.memo(function ReviewBlindMessage({ hasMyReview }: ReviewBli
   }
 
   return (
-    <View className="items-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 dark:border-gray-700 dark:bg-gray-800">
-      <Text className="mb-2 text-2xl">🔒</Text>
+    <View className="items-center rounded-md border border-gray-200 bg-gray-50 px-4 py-6 dark:border-gray-700 dark:bg-gray-800">
+      <Text className="mb-2 text-2xl">{''}</Text>
       <Text className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
         상대방의 평가는 블라인드 상태입니다
       </Text>

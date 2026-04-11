@@ -42,7 +42,7 @@ export default function BoardListScreen() {
           isWritable ? (
             <Pressable
               onPress={() => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)}
-              className="rounded-full p-2 active:bg-gray-100 dark:active:bg-surface"
+              className="rounded-sm p-2 active:bg-gray-100 dark:active:bg-surface"
               accessibilityRole="button"
               accessibilityLabel="글쓰기"
             >

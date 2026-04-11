@@ -243,7 +243,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     e.stopPropagation();
                     toggleExpand(group.groupId);
                   }}
-                  className="p-1.5 rounded-full active:bg-gray-200 dark:active:bg-gray-600"
+                  className="p-1.5 rounded-sm active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
                 >
                   {isExpanded ? (

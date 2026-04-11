@@ -139,7 +139,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         accessibilityLabel="스태프 관리"
         accessibilityState={{ selected: activeTab === 'staff' }}
       >
-        <UsersIcon size={20} color={activeTab === 'staff' ? '#9333EA' : inactiveColor} />
+        <UsersIcon size={20} color={activeTab === 'staff' ? '#B8962E' : inactiveColor} />
         <Text
           className="ml-2 text-base font-medium"
           style={{
@@ -150,7 +150,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         </Text>
         {staffCount > 0 && (
           <View
-            className="ml-2 px-2 py-0.5 rounded-full"
+            className="ml-2 px-2 py-0.5 rounded-sm"
             style={{
               backgroundColor: activeTab === 'staff' ? activeBadgeBg : inactiveBadgeBg,
             }}
@@ -178,7 +178,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         accessibilityLabel="정산"
         accessibilityState={{ selected: activeTab === 'settlement' }}
       >
-        <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#9333EA' : inactiveColor} />
+        <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#B8962E' : inactiveColor} />
         <Text
           className="ml-2 text-base font-medium"
           style={{
@@ -189,7 +189,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         </Text>
         {settlementCount > 0 && (
           <View
-            className="ml-2 px-2 py-0.5 rounded-full"
+            className="ml-2 px-2 py-0.5 rounded-sm"
             style={{
               backgroundColor: activeTab === 'settlement' ? activeBadgeBg : inactiveBadgeBg,
             }}

@@ -34,7 +34,7 @@ import { Modal } from './Modal';
 /** BottomSheet 배경색 (Tailwind gray-800 / white 대응) */
 const BACKGROUND_COLORS = {
   light: '#ffffff',
-  dark: '#1A1625', // gray-800
+  dark: '#09090B', // gray-800
 } as const;
 
 // ============================================================================
@@ -128,7 +128,7 @@ const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         {/* Handle bar (시각적 요소만) */}
         {showHandle && (
           <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
-            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
+            <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
           </View>
         )}
 
@@ -239,7 +239,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       if (!showHandle) return null;
       return (
         <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
+          <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
         </View>
       );
     }, [showHandle]);
@@ -274,7 +274,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
               {showCloseButton && (
                 <Pressable
                   onPress={onClose}
-                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -380,7 +380,7 @@ export function SelectBottomSheet({
             onPress={() => !option.disabled && handleSelect(option.value)}
             disabled={option.disabled}
             className={`
-              flex-row items-center py-4 px-2 rounded-xl
+              flex-row items-center py-4 px-2 rounded-md
               ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
             `}
             accessibilityRole="button"

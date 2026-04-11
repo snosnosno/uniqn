@@ -55,13 +55,13 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
         >
           <View className="flex-row items-center">
             <View
-              className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+              className={`w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ${
                 selectedReason === key
                   ? 'border-primary-500 bg-primary-500'
                   : 'border-gray-300 dark:border-surface-overlay'
               }`}
             >
-              {selectedReason === key && <View className="w-2 h-2 rounded-full bg-white" />}
+              {selectedReason === key && <View className="w-2 h-2 rounded-sm bg-white" />}
             </View>
             <Text
               className={`flex-1 ${
@@ -222,9 +222,9 @@ export default function DeleteAccountScreen() {
           headerShown: true,
           title: '회원탈퇴',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+            backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+          headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
         }}
       />
 
@@ -236,7 +236,7 @@ export default function DeleteAccountScreen() {
         {/* 경고 카드 */}
         <Card className="mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
           <View className="flex-row items-start">
-            <Text className="text-2xl mr-3">⚠️</Text>
+            <Text className="text-2xl mr-3">{''}</Text>
             <View className="flex-1">
               <Text className="text-red-800 dark:text-red-200 font-semibold mb-1">
                 회원탈퇴 안내

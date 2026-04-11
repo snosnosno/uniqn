@@ -74,7 +74,7 @@ export function PostingCardSurface({
           {titleAccessory}
         </View>
 
-        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">📍 {card.location}</Text>
+        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">{card.location}</Text>
 
         <View className="flex-row">
           <View className="flex-1 pr-3">

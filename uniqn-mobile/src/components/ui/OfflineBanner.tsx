@@ -104,8 +104,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
         >
-          <View className="bg-white dark:bg-surface rounded-2xl p-8 items-center shadow-2xl max-w-sm w-full">
-            <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full items-center justify-center mb-4">
+          <View className="bg-white dark:bg-surface rounded-lg p-8 items-center shadow-2xl max-w-sm w-full">
+            <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-sm items-center justify-center mb-4">
               <WifiOff size={40} color="#ef4444" />
             </View>
 
@@ -119,7 +119,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               <Pressable
                 onPress={handleRetry}
                 disabled={isRetrying || isChecking}
-                className="w-full bg-primary-600 dark:bg-primary-700 py-3 px-6 rounded-xl flex-row items-center justify-center active:opacity-80"
+                className="w-full bg-primary-600 dark:bg-primary-700 py-3 px-6 rounded-md flex-row items-center justify-center active:opacity-80"
                 accessibilityRole="button"
                 accessibilityLabel="네트워크 재연결 시도"
                 accessibilityState={{ disabled: isRetrying || isChecking }}
@@ -156,7 +156,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
             <Pressable
               onPress={handleRetry}
               disabled={isRetrying || isChecking}
-              className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full active:opacity-80"
+              className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-sm active:opacity-80"
               accessibilityRole="button"
               accessibilityLabel="네트워크 재연결 시도"
               accessibilityState={{ disabled: isRetrying || isChecking }}

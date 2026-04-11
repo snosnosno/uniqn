@@ -118,12 +118,12 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
   const canAddTimeSlot = group.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="mb-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay overflow-hidden shadow-sm">
+    <View className="mb-4 bg-white dark:bg-surface rounded-md border border-gray-200 dark:border-surface-overlay overflow-hidden shadow-sm">
       {/* 헤더 - 날짜 범위 표시 */}
       <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
-            <View className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center mr-3">
+            <View className="w-10 h-10 rounded-sm bg-amber-100 dark:bg-amber-900/30 items-center justify-center mr-3">
               <CalendarIcon size={20} color="#F59E0B" />
             </View>
             <View className="flex-1">
@@ -132,7 +132,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
               </Text>
               <View className="flex-row items-center mt-0.5">
                 {!isSingle && (
-                  <View className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full mr-2">
+                  <View className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-sm mr-2">
                     <Text className="text-xs font-medium text-amber-700 dark:text-amber-300">
                       {dayCount}일간
                     </Text>
@@ -149,7 +149,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
           {canRemove && (
             <Pressable
               onPress={() => onRemove(index)}
-              className="p-2 rounded-full bg-red-50 dark:bg-red-900/20"
+              className="p-2 rounded-sm bg-red-50 dark:bg-red-900/20"
               accessibilityRole="button"
               accessibilityLabel="일정 삭제"
             >
@@ -187,7 +187,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
           accessibilityLabel="시간대 추가"
         >
           <View className="mr-2">
-            <PlusIcon size={16} color={canAddTimeSlot ? '#A855F7' : '#9CA3AF'} />
+            <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#9CA3AF'} />
           </View>
           <Text
             className={`text-sm font-medium ${

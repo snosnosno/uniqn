@@ -32,7 +32,7 @@ function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
       <Text className="w-28 text-sm text-gray-500 dark:text-gray-400">{label}</Text>
       <Text
         className={`flex-1 text-sm ${
-          isLink ? 'text-purple-600 dark:text-purple-400' : 'text-gray-900 dark:text-gray-100'
+          isLink ? 'text-primary-600 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'
         }`}
       >
         {value}

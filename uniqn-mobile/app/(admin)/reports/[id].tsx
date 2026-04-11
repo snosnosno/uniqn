@@ -103,15 +103,15 @@ function ReportInfoSection({ report }: { report: Report }) {
   const typeLabel = getReportTypeLabel(report);
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       {/* 상태 및 심각도 배지 */}
       <View className="flex-row items-center gap-2 mb-4">
-        <View className={`px-3 py-1 rounded-full ${severityColor.bg}`}>
+        <View className={`px-3 py-1 rounded-sm ${severityColor.bg}`}>
           <Text className={`text-xs font-semibold ${severityColor.text}`}>
             {SEVERITY_LABELS[report.severity]}
           </Text>
         </View>
-        <View className={`px-3 py-1 rounded-full ${statusColor.bg}`}>
+        <View className={`px-3 py-1 rounded-sm ${statusColor.bg}`}>
           <Text className={`text-xs font-semibold ${statusColor.text}`}>
             {REPORT_STATUS_LABELS[report.status]}
           </Text>
@@ -152,9 +152,9 @@ function ReportInfoSection({ report }: { report: Report }) {
  */
 function ReportContentSection({ report }: { report: Report }) {
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
-        <DocumentIcon size={18} color="#A855F7" />
+        <DocumentIcon size={18} color="#D4AF37" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
           신고 내용
         </Text>
@@ -208,7 +208,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
   if (report.status === STATUS.REPORT.PENDING) return null;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color="#10B981" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
@@ -267,7 +267,7 @@ function ReviewFormSection({
   };
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color="#F59E0B" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">

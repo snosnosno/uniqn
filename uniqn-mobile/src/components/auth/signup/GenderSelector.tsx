@@ -18,7 +18,7 @@ export function GenderSelector({ value, onChange, disabled }: GenderSelectorProp
     <View className="flex-row gap-3">
       <Pressable
         onPress={() => !disabled && onChange('male')}
-        className={`flex-1 py-3 rounded-xl items-center border ${
+        className={`flex-1 py-3 rounded-md items-center border ${
           value === 'male'
             ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
             : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'
@@ -39,7 +39,7 @@ export function GenderSelector({ value, onChange, disabled }: GenderSelectorProp
       </Pressable>
       <Pressable
         onPress={() => !disabled && onChange('female')}
-        className={`flex-1 py-3 rounded-xl items-center border ${
+        className={`flex-1 py-3 rounded-md items-center border ${
           value === 'female'
             ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
             : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'

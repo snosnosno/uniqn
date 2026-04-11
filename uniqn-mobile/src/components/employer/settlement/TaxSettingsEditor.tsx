@@ -273,7 +273,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                   }}
                   disabled={disabled}
                   className={`
-                    px-3 py-1.5 rounded-full
+                    px-3 py-1.5 rounded-sm
                     ${
                       isSelected
                         ? 'bg-indigo-100 dark:bg-indigo-900/30'

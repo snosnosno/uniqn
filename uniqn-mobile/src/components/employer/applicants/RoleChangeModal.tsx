@@ -67,7 +67,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         disabled: isCurrentRole,
       }}
       className={`
-        flex-row items-center justify-between p-4 rounded-xl mb-2
+        flex-row items-center justify-between p-4 rounded-md mb-2
         ${
           isCurrentRole
             ? 'bg-gray-100 dark:bg-surface opacity-50'
@@ -80,7 +80,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
       <View className="flex-row items-center">
         <View
           className={`
-            h-10 w-10 rounded-full items-center justify-center
+            h-10 w-10 rounded-sm items-center justify-center
             ${isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'}
           `}
         >
@@ -106,7 +106,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
       </View>
 
       {isSelected && !isCurrentRole && (
-        <View className="h-6 w-6 rounded-full bg-primary-600 items-center justify-center">
+        <View className="h-6 w-6 rounded-sm bg-primary-600 items-center justify-center">
           <CheckIcon size={14} color="#FFFFFF" />
         </View>
       )}
@@ -199,7 +199,7 @@ export function RoleChangeModal({
         {/* 스태프 정보 */}
         <Card variant="filled" padding="sm" className="mb-3">
           <View className="flex-row items-center">
-            <View className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
+            <View className="h-12 w-12 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
               <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                 {staff.staffName.charAt(0)}
               </Text>

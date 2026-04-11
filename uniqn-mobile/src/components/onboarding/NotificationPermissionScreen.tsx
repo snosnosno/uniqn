@@ -127,7 +127,7 @@ export function NotificationPermissionScreen({
             entering={FadeInUp.delay(100).duration(500)}
             className="mb-8 items-center pt-4"
           >
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+            <View className="mb-4 h-20 w-20 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
               <BadgeIcon size={40} color={PRIMARY_COLORS[500]} />
             </View>
             <Text className="text-center text-2xl font-bold text-gray-900 dark:text-white">
@@ -146,9 +146,9 @@ export function NotificationPermissionScreen({
                 <Animated.View
                   key={item.title}
                   entering={FadeInUp.delay(200 + index * 100).duration(500)}
-                  className="mb-3 flex-row items-center rounded-xl bg-gray-50 px-4 py-4 dark:bg-surface"
+                  className="mb-3 flex-row items-center rounded-md bg-gray-50 px-4 py-4 dark:bg-surface"
                 >
-                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30">
+                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
                   </View>
                   <View className="flex-1">
@@ -171,7 +171,7 @@ export function NotificationPermissionScreen({
               accessibilityRole="button"
               accessibilityState={{ disabled: loading }}
               accessibilityLabel={content.primaryLabel}
-              className={`mb-3 items-center rounded-xl py-4 ${
+              className={`mb-3 items-center rounded-md py-4 ${
                 loading
                   ? 'bg-primary-400 dark:bg-primary-800'
                   : 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700 dark:active:bg-primary-600'
@@ -188,7 +188,7 @@ export function NotificationPermissionScreen({
               accessibilityRole="button"
               accessibilityState={{ disabled: loading }}
               accessibilityLabel={content.secondaryLabel}
-              className="items-center rounded-xl py-4"
+              className="items-center rounded-md py-4"
             >
               <Text className="text-base text-gray-500 dark:text-gray-400">
                 {content.secondaryLabel}

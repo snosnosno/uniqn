@@ -146,7 +146,7 @@ export default function AnnouncementDetailPage() {
           headerBackTitle: '목록',
           headerRight: () => (
             <Pressable onPress={handleEdit} className="mr-2">
-              <CreateOutlineIcon size={24} color="#9333EA" />
+              <CreateOutlineIcon size={24} color="#B8962E" />
             </Pressable>
           ),
         }}
@@ -155,7 +155,7 @@ export default function AnnouncementDetailPage() {
       <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <View className="p-4">
           {/* Header Card */}
-          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             {/* Badges */}
             <View className="flex-row flex-wrap gap-2 mb-3">
               {/* Status */}
@@ -213,7 +213,7 @@ export default function AnnouncementDetailPage() {
           </View>
 
           {/* Content Card */}
-          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">내용</Text>
             <Text className="text-base text-gray-900 dark:text-white leading-6">
               {announcement.content}
@@ -226,7 +226,7 @@ export default function AnnouncementDetailPage() {
             if (images.length === 0) return null;
 
             return (
-              <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
+              <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
                 <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   첨부 이미지 ({images.length}장)
                 </Text>
@@ -260,7 +260,7 @@ export default function AnnouncementDetailPage() {
                             contentFit="cover"
                             transition={200}
                           />
-                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-0.5">
+                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-sm px-2 py-0.5">
                             <Text className="text-white text-xs font-medium">{index + 1}</Text>
                           </View>
                         </View>
@@ -273,7 +273,7 @@ export default function AnnouncementDetailPage() {
           })()}
 
           {/* Info Card */}
-          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">정보</Text>
 
             {/* Target Audience */}

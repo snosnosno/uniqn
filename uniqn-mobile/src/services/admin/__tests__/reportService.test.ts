@@ -27,7 +27,7 @@ import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 // Mocks
 // ============================================================================
 
-const mockCurrentUser = { uid: 'user-1', email: 'test@test.com' };
+const mockCurrentUser = { id: 'user-1', email: 'test@test.com' };
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -126,7 +126,7 @@ describe('reportService', () => {
       }
       return user;
     });
-    mockRequireAdminUser.mockResolvedValue({ uid: 'admin-1' });
+    mockRequireAdminUser.mockResolvedValue({ id: 'admin-1' });
   });
 
   // --------------------------------------------------------------------------

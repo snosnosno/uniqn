@@ -62,7 +62,7 @@ export function AmountModificationHistory({
           <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
             금액 수정 이력
           </Text>
-          <View className="ml-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+          <View className="ml-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-sm">
             <Text className="text-xs text-indigo-700 dark:text-indigo-300">
               {settlementModificationHistory.length}회
             </Text>
@@ -84,7 +84,7 @@ export function AmountModificationHistory({
                 key={idx}
                 className="flex-row items-start py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0"
               >
-                <View className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 items-center justify-center mr-2">
+                <View className="w-6 h-6 rounded-sm bg-indigo-100 dark:bg-indigo-900/30 items-center justify-center mr-2">
                   <Text className="text-xs text-indigo-600 dark:text-indigo-400">{idx + 1}</Text>
                 </View>
                 <View className="flex-1">

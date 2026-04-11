@@ -39,7 +39,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
     >
       {/* Header: Title + Badges */}
       <View className="flex-row items-start justify-between mb-2">

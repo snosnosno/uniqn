@@ -21,7 +21,7 @@ export default function InquiryDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#A855F7" />
+        <ActivityIndicator size="large" color="#D4AF37" />
       </SafeAreaView>
     );
   }
@@ -86,7 +86,7 @@ export default function InquiryDetailScreen() {
         {inquiry.response && (
           <Card>
             <View className="mb-3 flex-row items-center">
-              <View className="mr-2 h-2 w-2 rounded-full bg-green-500" />
+              <View className="mr-2 h-2 w-2 rounded-sm bg-green-500" />
               <Text className="font-medium text-gray-900 dark:text-gray-100">관리자 답변</Text>
             </View>
 
@@ -106,8 +106,8 @@ export default function InquiryDetailScreen() {
         {/* 답변 대기 중 */}
         {!inquiry.response && (
           <Card className="items-center">
-            <View className="mb-2 h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-              <Text className="text-2xl">⏳</Text>
+            <View className="mb-2 h-12 w-12 items-center justify-center rounded-sm bg-amber-100 dark:bg-amber-900/30">
+              <Text className="text-2xl">{''}</Text>
             </View>
             <Text className="mb-1 font-medium text-gray-900 dark:text-gray-100">답변 대기 중</Text>
             <Text className="text-center text-sm text-gray-500 dark:text-gray-400">

@@ -100,7 +100,7 @@ export default function AdminStatsScreen() {
         </View>
 
         {error ? (
-          <View className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <View className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
             <Text className="text-sm font-medium text-amber-800 dark:text-amber-300">
               일부 통계만 표시 중입니다
             </Text>
@@ -185,7 +185,7 @@ export default function AdminStatsScreen() {
           <TrendChart title="일별 지원 수" data={metrics?.dailyApplications ?? []} suffix="건" />
         </View>
 
-        <View className="rounded-xl border border-gray-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+        <View className="rounded-md border border-gray-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">최근 가입자</Text>
             <Text className="text-xs text-gray-500 dark:text-gray-400">

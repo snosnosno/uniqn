@@ -5,7 +5,7 @@
 /*
  * UNIQN Mobile - Global Styles
  * NativeWind 4.x + Tailwind CSS
- * v2.0 - 프리미엄 퍼플/골드 브랜딩
+ * v3.0 - Black & Gold
  */
 
 /* 커스텀 유틸리티 */
@@ -29,8 +29,8 @@
 
   /* 터치 타겟 최소 크기 (WCAG) */
   .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 40px;
+    min-width: 40px;
   }
 }
 
@@ -38,45 +38,45 @@
 @layer components {
   /* 버튼 기본 스타일 */
   .btn {
-    @apply flex items-center justify-center rounded-lg px-4 py-3 touch-target;
+    @apply flex items-center justify-center rounded px-4 py-3 touch-target;
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 active:bg-primary-700;
+    @apply btn bg-primary-500 active:bg-primary-600;
   }
 
   .btn-secondary {
-    @apply btn bg-secondary-200 dark:bg-secondary-700 active:bg-secondary-300 dark:active:bg-secondary-600;
+    @apply btn bg-secondary-200 dark:bg-surface-overlay active:bg-secondary-300 dark:active:bg-secondary-700;
   }
 
   .btn-outline {
-    @apply btn border border-primary-600 bg-transparent active:bg-primary-50 dark:active:bg-primary-900/20;
+    @apply btn border border-primary-500 bg-transparent active:bg-primary-50 dark:active:bg-primary-900/20;
   }
 
   /* 골드 악센트 버튼 (프리미엄 CTA) */
   .btn-accent {
-    @apply btn bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500;
+    @apply btn bg-accent-500 active:bg-accent-600;
   }
 
   /* 카드 스타일 */
   .card {
-    @apply bg-white dark:bg-surface rounded-lg shadow-sm;
+    @apply bg-white dark:bg-surface-elevated rounded-md border border-secondary-200 dark:border-surface-overlay;
   }
 
   .card-bordered {
-    @apply card border border-gray-200 dark:border-surface-overlay;
+    @apply card;
   }
 
   .card-elevated {
-    @apply bg-white dark:bg-surface-elevated rounded-lg shadow-md;
+    @apply bg-white dark:bg-surface-elevated rounded-md border border-secondary-200 dark:border-surface-overlay shadow-sm;
   }
 
   /* 입력 필드 스타일 */
   .input {
-    @apply w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-surface-overlay
+    @apply w-full px-4 py-3 rounded border border-secondary-200 dark:border-surface-overlay
            bg-white dark:bg-surface
-           text-gray-900 dark:text-gray-100
-           placeholder:text-gray-400 dark:placeholder:text-gray-500
+           text-secondary-900 dark:text-secondary-50
+           placeholder:text-secondary-400 dark:placeholder:text-secondary-500
            focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
   }
 
@@ -86,31 +86,43 @@
 
   /* 텍스트 스타일 */
   .text-primary {
-    @apply text-gray-900 dark:text-gray-100;
+    @apply text-secondary-900 dark:text-secondary-50;
   }
 
   .text-secondary {
-    @apply text-gray-600 dark:text-gray-400;
+    @apply text-secondary-700 dark:text-secondary-300;
   }
 
   .text-muted {
-    @apply text-gray-400 dark:text-gray-500;
+    @apply text-secondary-600 dark:text-secondary-500;
   }
 
-  /* 배지 스타일 */
+  /* 배지 스타일 — rounded-sm, 이모지 없이 텍스트+컬러 */
   .badge {
-    @apply px-2 py-1 rounded-full text-xs font-medium;
+    @apply px-2 py-0.5 rounded-sm text-xs font-semibold;
   }
 
   .badge-success {
-    @apply badge bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-500;
+    @apply badge bg-success-50 text-success-600 dark:bg-success-50 dark:text-success-500;
   }
 
   .badge-warning {
-    @apply badge bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-500;
+    @apply badge bg-warning-50 text-warning-600 dark:bg-warning-50 dark:text-warning-500;
   }
 
   .badge-error {
-    @apply badge bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-500;
+    @apply badge bg-error-50 text-error-600 dark:bg-error-50 dark:text-error-500;
+  }
+
+  .badge-info {
+    @apply badge bg-info-50 text-info-600 dark:bg-info-50 dark:text-info-500;
+  }
+
+  .badge-gold {
+    @apply badge bg-primary-50 text-primary-500 dark:bg-primary-50 dark:text-primary-300;
+  }
+
+  .badge-neutral {
+    @apply badge bg-surface-overlay text-secondary-400;
   }
 }

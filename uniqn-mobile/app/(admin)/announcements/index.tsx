@@ -92,7 +92,7 @@ export default function AdminAnnouncementsPage() {
           headerBackTitle: '뒤로',
           headerRight: () => (
             <Pressable onPress={handleCreate} className="mr-2">
-              <AddCircleOutlineIcon size={24} color="#9333EA" />
+              <AddCircleOutlineIcon size={24} color="#B8962E" />
             </Pressable>
           ),
         }}

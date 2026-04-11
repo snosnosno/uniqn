@@ -130,7 +130,7 @@ function WebModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-surface rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
+      ? `bg-white dark:bg-surface rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
       : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
@@ -195,7 +195,7 @@ function WebModal({
                 {showCloseButton && (
                   <Pressable
                     onPress={onClose}
-                    className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                    className="w-10 h-10 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -337,7 +337,7 @@ function NativeModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-surface rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
+      ? `bg-white dark:bg-surface rounded-lg overflow-hidden ${MODAL_SIZES[size]}`
       : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
@@ -384,7 +384,7 @@ function NativeModal({
                     {showCloseButton && (
                       <Pressable
                         onPress={onClose}
-                        className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                        className="w-10 h-10 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                         accessibilityRole="button"
                         accessibilityLabel="닫기"
                         hitSlop={8}
@@ -448,7 +448,7 @@ export function AlertModal({
       <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</Text>
       <Pressable
         onPress={onClose}
-        className="bg-primary-600 py-3 rounded-xl"
+        className="bg-primary-600 py-3 rounded-md"
         accessibilityRole="button"
       >
         <Text className="text-white text-center font-semibold">{confirmText}</Text>
@@ -488,7 +488,7 @@ export function ConfirmModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           testID={cancelTestID}
         >
@@ -501,7 +501,7 @@ export function ConfirmModal({
             onConfirm();
             onClose();
           }}
-          className={`flex-1 py-3 rounded-xl ${isDestructive ? 'bg-red-600' : 'bg-primary-600'}`}
+          className={`flex-1 py-3 rounded-md ${isDestructive ? 'bg-red-600' : 'bg-primary-600'}`}
           accessibilityRole="button"
           testID={confirmTestID}
         >

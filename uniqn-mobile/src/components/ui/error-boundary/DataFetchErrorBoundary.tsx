@@ -39,8 +39,8 @@ function DataFetchErrorFallback({
 }: DataFetchErrorFallbackProps): React.ReactElement {
   return (
     <View className="flex-1 items-center justify-center p-6">
-      <View className="w-16 h-16 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mb-4">
-        <Text className="text-3xl">📭</Text>
+      <View className="w-16 h-16 rounded-sm bg-gray-100 dark:bg-surface items-center justify-center mb-4">
+        <Text className="text-3xl">{''}</Text>
       </View>
 
       <Text className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">

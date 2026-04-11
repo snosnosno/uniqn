@@ -39,7 +39,7 @@ const ROLE_CONFIG = [
   {
     key: 'employer' as const,
     label: '구인자',
-    color: '#9333EA',
+    color: '#B8962E',
     bgColor: 'bg-primary-600',
     lightBg: 'bg-primary-50 dark:bg-primary-900/20',
     textColor: 'text-primary-700 dark:text-primary-300',
@@ -85,7 +85,7 @@ export function RoleDistributionChart({
   // 데이터가 없는 경우
   if (total === 0) {
     return (
-      <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+      <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
         <View className="h-[120px] items-center justify-center">
           <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
@@ -95,11 +95,11 @@ export function RoleDistributionChart({
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
-        <View className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-surface-elevated">
+        <View className="px-2.5 py-1 rounded-sm bg-gray-100 dark:bg-surface-elevated">
           <Text className="text-sm font-bold text-gray-700 dark:text-gray-300">
             총 {total.toLocaleString()}명
           </Text>
@@ -107,7 +107,7 @@ export function RoleDistributionChart({
       </View>
 
       {/* 가로 막대형 분포 표시 */}
-      <View className="h-6 flex-row rounded-full overflow-hidden mb-4">
+      <View className="h-6 flex-row rounded-sm overflow-hidden mb-4">
         {sortedRoles.map((role) =>
           role.count > 0 ? (
             <View key={role.key} className={role.bgColor} style={{ flex: role.count }} />
@@ -123,7 +123,7 @@ export function RoleDistributionChart({
             className={`flex-row items-center justify-between p-3 rounded-lg ${role.lightBg}`}
           >
             <View className="flex-row items-center">
-              <View className={`w-3 h-3 rounded-full ${role.bgColor} mr-3`} />
+              <View className={`w-3 h-3 rounded-sm ${role.bgColor} mr-3`} />
               <Text className={`text-sm font-medium ${role.textColor}`}>{role.label}</Text>
             </View>
             <View className="flex-row items-center">
@@ -145,7 +145,7 @@ export function RoleDistributionChart({
         {ROLE_CONFIG.map((role, index) => (
           <View key={role.key} className="flex-row items-center">
             {index > 0 && <Text className="text-gray-300 dark:text-gray-600 mx-2">·</Text>}
-            <View className={`w-2 h-2 rounded-full ${role.bgColor} mr-1`} />
+            <View className={`w-2 h-2 rounded-sm ${role.bgColor} mr-1`} />
             <Text className="text-xs text-gray-500 dark:text-gray-400">
               {role.label} {getPercent(data[role.key])}%
             </Text>

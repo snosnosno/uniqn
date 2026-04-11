@@ -151,7 +151,7 @@ const typeEmojis: Partial<Record<NotificationType, string>> = {
 const categoryColors: Record<NotificationCategory, { bg: string; icon: string }> = {
   [NotificationCategory.APPLICATION]: {
     bg: 'bg-primary-100 dark:bg-primary-900/30',
-    icon: '#A855F7', // primary-500
+    icon: '#D4AF37', // primary-500
   },
   [NotificationCategory.ATTENDANCE]: {
     bg: 'bg-success-100 dark:bg-success-900/30',
@@ -163,7 +163,7 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
   },
   [NotificationCategory.JOB]: {
     bg: 'bg-primary-100 dark:bg-primary-900/30',
-    icon: '#A855F7', // primary-500
+    icon: '#D4AF37', // primary-500
   },
   [NotificationCategory.SYSTEM]: {
     bg: 'bg-gray-100 dark:bg-surface',
@@ -194,7 +194,7 @@ export const NotificationIcon = memo(function NotificationIcon({
       <View
         importantForAccessibility="no-hide-descendants"
         className={`
-          w-10 h-10 rounded-full items-center justify-center
+          w-10 h-10 rounded-sm items-center justify-center
           ${colors.bg}
           ${className}
         `}
@@ -210,7 +210,7 @@ export const NotificationIcon = memo(function NotificationIcon({
     <View
       importantForAccessibility="no-hide-descendants"
       className={`
-        w-10 h-10 rounded-full items-center justify-center
+        w-10 h-10 rounded-sm items-center justify-center
         ${colors.bg}
         ${className}
       `}

@@ -321,7 +321,7 @@ export function SettlementList({
             onPress={toggleSelectionMode}
             className="flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface"
           >
-            <CheckIcon size={16} color={selectionMode ? '#9333EA' : '#6B7280'} />
+            <CheckIcon size={16} color={selectionMode ? '#B8962E' : '#6B7280'} />
             <Text
               className={`
               ml-2 text-sm font-medium

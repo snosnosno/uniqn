@@ -21,13 +21,13 @@ export default React.memo(function ReviewPromptBanner({
   return (
     <Pressable
       onPress={onPress}
-      className="mx-4 flex-row items-center justify-between rounded-xl bg-primary-50 px-4 py-3 active:opacity-80 dark:bg-primary-900/20"
+      className="mx-4 flex-row items-center justify-between rounded-md bg-primary-50 px-4 py-3 active:opacity-80 dark:bg-primary-900/20"
       accessibilityLabel={`미작성 평가 ${pendingCount}건`}
       accessibilityRole="button"
       accessibilityHint="탭하면 평가 목록으로 이동합니다"
     >
       <View className="flex-1 flex-row items-center gap-2">
-        <Text className="text-lg">📝</Text>
+        <Text className="text-lg">{''}</Text>
         <View>
           <Text className="text-sm font-semibold text-primary-700 dark:text-primary-300">
             작성할 평가가 {pendingCount}건 있어요

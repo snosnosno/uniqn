@@ -18,7 +18,7 @@ export function NonEmployerView() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-gray-100 dark:bg-surface">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface">
           <BriefcaseIcon size={48} color="#9CA3AF" />
         </View>
         <Text className="mb-2 text-center text-xl font-bold text-gray-900 dark:text-white">

@@ -45,7 +45,7 @@ export default function FAQScreen() {
             emptyMessage="해당 카테고리에 FAQ가 없습니다."
           />
         ) : (
-          <EmptyState icon="📭" title="FAQ가 없습니다" description="아직 등록된 FAQ가 없습니다." />
+          <EmptyState title="FAQ가 없습니다" description="아직 등록된 FAQ가 없습니다." />
         )}
 
         {/* 문의하기 CTA */}

@@ -37,6 +37,10 @@ const mockAuthStoreState = {
   checkAuthState: jest.fn().mockResolvedValue(undefined),
 };
 
+jest.mock('@/lib/authBridge', () => ({
+  syncSignOut: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {

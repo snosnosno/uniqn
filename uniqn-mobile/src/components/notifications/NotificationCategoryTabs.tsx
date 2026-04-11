@@ -86,7 +86,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
             <Pressable
               key={option.key}
               onPress={() => handleSelect(option.key)}
-              className={`flex-row items-center rounded-full px-4 py-2 ${
+              className={`flex-row items-center rounded-sm px-4 py-2 ${
                 isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
               }`}
               accessibilityRole="button"
@@ -105,7 +105,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
               {/* 읽지 않은 알림 수 배지 */}
               {unreadCount !== undefined && unreadCount > 0 && (
                 <View
-                  className={`ml-1.5 min-w-[18px] items-center justify-center rounded-full px-1.5 ${
+                  className={`ml-1.5 min-w-[18px] items-center justify-center rounded-sm px-1.5 ${
                     isSelected ? 'bg-white/20' : 'bg-error-500'
                   }`}
                 >

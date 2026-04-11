@@ -34,7 +34,7 @@ function HeaderTitle({
 }) {
   return (
     <View className="flex-1 flex-row items-center">
-      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#1A1625' }}>
+      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#09090B' }}>
         {screenTitle}
       </Text>
       {jobTitle && (

@@ -44,7 +44,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         </View>
         <View className="flex-row items-center">
           {badge !== undefined && badge > 0 ? (
-            <View className="mr-2 min-w-[20px] items-center justify-center rounded-full bg-primary-500 px-2 py-0.5">
+            <View className="mr-2 min-w-[20px] items-center justify-center rounded-sm bg-primary-500 px-2 py-0.5">
               <Text className="text-xs font-bold text-white">{badge}</Text>
             </View>
           ) : null}
@@ -66,7 +66,7 @@ export default function SupportScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
-        <View className="mb-4 rounded-xl bg-primary-50 p-4 dark:bg-primary-900/20">
+        <View className="mb-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="text-sm text-primary-700 dark:text-primary-300">
             궁금한 점이 있으신가요?
             {'\n'}
@@ -78,7 +78,7 @@ export default function SupportScreen() {
 
         <Card>
           <MenuItem
-            icon={<InformationCircleIcon size={24} color="#A855F7" />}
+            icon={<InformationCircleIcon size={24} color="#D4AF37" />}
             label="자주 묻는 질문"
             description="FAQ에서 빠르게 답을 찾아보세요"
             onPress={() => router.push('/(app)/support/faq')}

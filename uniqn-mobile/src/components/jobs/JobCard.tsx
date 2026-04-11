@@ -90,7 +90,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           </View>
         ) : undefined
       }
-      containerClassName="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-surface-overlay dark:bg-surface"
+      containerClassName="mb-3 overflow-hidden rounded-md border border-gray-100 bg-white dark:border-surface-overlay dark:bg-surface"
       pressableClassName="p-4 active:opacity-80"
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
     />

@@ -112,7 +112,7 @@ const QuestionCard = memo(function QuestionCard({
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
-          <View className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
+          <View className="w-8 h-8 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
             <Text className="text-primary-700 dark:text-primary-300 font-bold text-sm">
               {index + 1}
             </Text>
@@ -184,7 +184,7 @@ const QuestionCard = memo(function QuestionCard({
           <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">선택지</Text>
           {question.options?.map((option, optionIndex) => (
             <View key={optionIndex} className="flex-row items-center mb-2">
-              <View className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-surface-overlay mr-2" />
+              <View className="w-6 h-6 rounded-sm border-2 border-gray-300 dark:border-surface-overlay mr-2" />
               <TextInput
                 value={option}
                 onChangeText={(v) => handleOptionChange(optionIndex, v)}
@@ -292,7 +292,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
     <View>
       {/* 안내 문구 */}
       <View className="flex-row items-start mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-        <InformationCircleIcon size={20} color="#9333EA" />
+        <InformationCircleIcon size={20} color="#B8962E" />
         <View className="ml-2 flex-1">
           <Text className="text-sm font-medium text-primary-800 dark:text-primary-200">
             사전질문 안내
@@ -342,7 +342,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
           {data.preQuestions.length < 10 && (
             <Pressable
               onPress={handleAddQuestion}
-              className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-xl"
+              className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-md"
               accessibilityRole="button"
               accessibilityLabel="질문 추가"
             >

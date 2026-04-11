@@ -49,7 +49,7 @@ export function TimeModificationHistory({
           <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
             시간 수정 이력
           </Text>
-          <View className="ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+          <View className="ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-sm">
             <Text className="text-xs text-yellow-700 dark:text-yellow-300">
               {modificationHistory.length}회
             </Text>

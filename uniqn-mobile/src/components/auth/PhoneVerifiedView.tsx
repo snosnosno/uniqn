@@ -25,7 +25,7 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
       <View className="w-full">
         {!compact && (
           <View className="items-center mb-6">
-            <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-full items-center justify-center mb-3">
+            <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-sm items-center justify-center mb-3">
               <CheckCircleIcon size={32} color="#22c55e" />
             </View>
             <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증 완료</Text>
@@ -33,7 +33,7 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
         )}
 
         <View
-          className="rounded-xl p-4 border"
+          className="rounded-md p-4 border"
           style={{
             backgroundColor: isDark ? '#1f2937' : '#f0fdf4',
             borderColor: isDark ? '#166534' : '#bbf7d0',

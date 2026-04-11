@@ -64,7 +64,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       >
         {showHandle ? (
           <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
-            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
+            <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
           </View>
         ) : null}
 
@@ -132,7 +132,7 @@ export function SelectBottomSheet({
             }}
             disabled={option.disabled}
             className={`
-              flex-row items-center py-4 px-2 rounded-xl
+              flex-row items-center py-4 px-2 rounded-md
               ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
             `}
             accessibilityRole="button"

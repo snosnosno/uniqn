@@ -38,7 +38,7 @@ function LoadingState() {
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
-      <Text className="text-4xl mb-4">😢</Text>
+      <Text className="text-4xl mb-4">{''}</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
       </Text>
@@ -57,7 +57,7 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
 function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => void }) {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
-      <Text className="text-4xl mb-4">⚠️</Text>
+      <Text className="text-4xl mb-4">{''}</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         취소 요청 불가
       </Text>
@@ -76,7 +76,7 @@ function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => v
 function SuccessState() {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
-      <Text className="text-6xl mb-4">📨</Text>
+      <Text className="text-6xl mb-4">{''}</Text>
       <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">취소 요청 완료</Text>
       <Text className="text-gray-500 dark:text-gray-400 text-center">
         구인자가 검토 후 승인/거절합니다.{'\n'}
@@ -214,9 +214,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <LoadingState />
@@ -233,9 +233,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <ErrorState message={loadError} onBack={handleClose} />
@@ -252,9 +252,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <ErrorState message="지원서를 찾을 수 없습니다" onBack={handleClose} />
@@ -271,9 +271,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <CannotCancelState reason={canRequestCancel.reason} onBack={handleClose} />
@@ -290,9 +290,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청 완료',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
+            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
           }}
         />
         <SuccessState />

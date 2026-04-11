@@ -111,7 +111,7 @@ export function QRCodeDisplay({
       <View className="items-center px-4 py-6">
         {/* 제목 */}
         <View className="flex-row items-center mb-2">
-          <CheckCircleIcon size={24} color="#A855F7" />
+          <CheckCircleIcon size={24} color="#D4AF37" />
           <Text className="text-xl font-bold text-gray-900 dark:text-gray-100 ml-2">
             {actionLabel} QR 코드
           </Text>
@@ -122,19 +122,19 @@ export function QRCodeDisplay({
         </Text>
 
         {/* QR 코드 영역 - 다크모드에서도 QR 가독성을 위해 흰색 배경 유지 */}
-        <View className="bg-white dark:bg-gray-100 rounded-2xl p-6 shadow-lg dark:shadow-gray-800/50">
+        <View className="bg-white dark:bg-gray-100 rounded-lg p-6 shadow-lg dark:shadow-gray-800/50">
           {isLoading ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
               className="items-center justify-center"
             >
-              <ActivityIndicator size="large" color="#A855F7" />
+              <ActivityIndicator size="large" color="#D4AF37" />
               <Text className="text-gray-500 mt-4">QR 코드 생성 중...</Text>
             </View>
           ) : isExpired || !displayData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
-              className="items-center justify-center bg-gray-100 dark:bg-surface rounded-xl"
+              className="items-center justify-center bg-gray-100 dark:bg-surface rounded-md"
             >
               <Text className="text-gray-400 dark:text-gray-500 text-center mb-4">
                 {isExpired ? 'QR 코드가 만료되었습니다' : 'QR 코드를 생성해주세요'}
@@ -170,7 +170,7 @@ export function QRCodeDisplay({
         )}
 
         {/* 안내 문구 */}
-        <View className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 w-full">
+        <View className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-md p-4 w-full">
           <Text className="text-sm text-primary-700 dark:text-primary-300 text-center">
             • QR 코드는 3분간 유효합니다{'\n'}• 만료 시 새로고침하여 재생성해주세요{'\n'}• 스태프가
             스캔하면 자동으로 출퇴근 처리

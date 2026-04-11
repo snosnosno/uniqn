@@ -8,7 +8,6 @@
  * - Assignment 개수 계산
  */
 
-import { Timestamp } from '@/shared/time';
 import { WorkLogCreator } from '../WorkLogCreator';
 
 describe('WorkLogCreator', () => {
@@ -73,7 +72,7 @@ describe('WorkLogCreator', () => {
   describe('createTimestampFromDateTime', () => {
     it('유효한 날짜/시간 → Timestamp 생성', () => {
       const result = WorkLogCreator.createTimestampFromDateTime('2026-02-11', '09:00');
-      expect(result).toBeInstanceOf(Timestamp);
+      expect(result).toBeInstanceOf(Date);
       expect(result).not.toBeNull();
     });
 
