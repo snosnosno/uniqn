@@ -62,8 +62,8 @@ jest.mock('@/errors', () => {
     BusinessError,
     PermissionError,
     ERROR_CODES: {
-      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-      FIREBASE_PERMISSION_DENIED: 'E4001',
+      INFRA_NOT_FOUND: 'E4002',
+      INFRA_PERMISSION_DENIED: 'E4001',
       BUSINESS_INVALID_STATE: 'E6010',
     },
     toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),

@@ -46,7 +46,7 @@ export async function calculateSettlement(
     // 1. 근무 기록 조회 (Repository 패턴)
     const parsedWorkLog = await workLogRepository.getById(input.workLogId);
     if (!parsedWorkLog) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '근무 기록을 찾을 수 없습니다',
       });
     }
@@ -56,13 +56,13 @@ export async function calculateSettlement(
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
     const jobPosting = await jobPostingRepository.getById(normalizedJobId);
     if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고를 찾을 수 없습니다',
       });
     }
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 공고에 대한 정산만 계산할 수 있습니다',
       });
     }

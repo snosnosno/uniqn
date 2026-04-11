@@ -433,8 +433,8 @@ export const errorHandlerPresets = {
       context: extraContext,
       showAlert,
       customMessages: {
-        [ERROR_CODES.FIREBASE_PERMISSION_DENIED]: '공고 수정 권한이 없습니다.',
-        [ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND]: '공고를 찾을 수 없습니다.',
+        [ERROR_CODES.INFRA_PERMISSION_DENIED]: '공고 수정 권한이 없습니다.',
+        [ERROR_CODES.INFRA_NOT_FOUND]: '공고를 찾을 수 없습니다.',
       },
     }),
 

@@ -14,7 +14,7 @@ import {
 jest.mock('@/errors', () => ({
   isAppError: jest.fn(),
   ERROR_CODES: {
-    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+    INFRA_NOT_FOUND: 'E4002',
   },
 }));
 
@@ -152,12 +152,12 @@ describe('ErrorBoundary helpers', () => {
   });
 
   describe('isDataFetchRelatedError', () => {
-    it('AppError category=firebase면 true', () => {
-      expect(isDataFetchRelatedError(makeAppError('firebase'))).toBe(true);
+    it('AppError category=infrastructure면 true', () => {
+      expect(isDataFetchRelatedError(makeAppError('infrastructure'))).toBe(true);
     });
 
-    it('AppError code가 FIREBASE_DOCUMENT_NOT_FOUND면 true', () => {
-      const err = makeAppError('business', ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND);
+    it('AppError code가 INFRA_NOT_FOUND면 true', () => {
+      const err = makeAppError('business', ERROR_CODES.INFRA_NOT_FOUND);
       expect(isDataFetchRelatedError(err)).toBe(true);
     });
 

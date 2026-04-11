@@ -144,8 +144,8 @@ jest.mock('@/errors', () => {
       error instanceof ValidationError ||
       error instanceof AlreadySettledError,
     ERROR_CODES: {
-      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-      FIREBASE_PERMISSION_DENIED: 'E4001',
+      INFRA_NOT_FOUND: 'E4002',
+      INFRA_PERMISSION_DENIED: 'E4001',
       BUSINESS_INVALID_STATE: 'E6042',
       VALIDATION_FORMAT: 'E3002',
     },
@@ -673,7 +673,7 @@ describe('settlementService', () => {
     it('should throw error for unauthorized owner', async () => {
       const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
       mockUpdatePayrollStatusWithTransaction.mockRejectedValue(
-        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인의 공고에 대한 정산만 처리할 수 있습니다',
         })
       );

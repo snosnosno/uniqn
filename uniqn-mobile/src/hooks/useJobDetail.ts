@@ -43,8 +43,8 @@ function shouldDiscardCachedJobDetail(error: unknown): boolean {
 
   if (isAppError(error)) {
     const discardableErrorCodes: string[] = [
-      ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
-      ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+      ERROR_CODES.INFRA_NOT_FOUND,
+      ERROR_CODES.INFRA_PERMISSION_DENIED,
       ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS,
     ];
 

@@ -74,11 +74,11 @@ function mapFirebaseFunctionError(error: unknown): Error {
         userMessage: '로그인이 필요합니다',
       });
     case 'permission-denied':
-      return new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '권한이 없습니다',
       });
     case 'not-found':
-      return new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고를 찾을 수 없습니다',
       });
     case 'failed-precondition':

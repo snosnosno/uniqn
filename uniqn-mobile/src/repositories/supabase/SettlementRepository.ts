@@ -561,14 +561,14 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       });
 
     if (!wlData) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '근무 기록을 찾을 수 없습니다',
       });
     }
 
     const workLog = toWorkLog(wlData as Record<string, unknown>);
     if (!workLog) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
       });
     }
@@ -588,20 +588,20 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       });
 
     if (!jpData) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고를 찾을 수 없습니다',
       });
     }
 
     const jobPosting = toJobPosting(jpData as Record<string, unknown>);
     if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고 데이터를 파싱할 수 없습니다',
       });
     }
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: `본인의 공고에 대한 근무 기록만 ${operationMessage}할 수 있습니다`,
       });
     }

@@ -23,7 +23,7 @@ export type ErrorCategory =
   | 'auth'
   | 'validation'
   | 'permission'
-  | 'firebase'
+  | 'infrastructure'
   | 'security'
   | 'business'
   | 'unknown';
@@ -111,13 +111,13 @@ export const ERROR_CODES = {
   VALIDATION_MAX_LENGTH: 'E3004',
   VALIDATION_SCHEMA: 'E3005',
 
-  // Firebase 에러 (E4xxx)
-  FIREBASE_PERMISSION_DENIED: 'E4001',
-  FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-  FIREBASE_QUOTA_EXCEEDED: 'E4003',
-  FIREBASE_UNAVAILABLE: 'E4004',
-  FIREBASE_ABORTED: 'E4005',
-  FIREBASE_SYNC_FAILED: 'E4006',
+  // 인프라 에러 (E4xxx)
+  INFRA_PERMISSION_DENIED: 'E4001',
+  INFRA_NOT_FOUND: 'E4002',
+  INFRA_QUOTA_EXCEEDED: 'E4003',
+  INFRA_UNAVAILABLE: 'E4004',
+  INFRA_ABORTED: 'E4005',
+  INFRA_SYNC_FAILED: 'E4006',
 
   // 보안 에러 (E5xxx)
   SECURITY_XSS_DETECTED: 'E5001',
@@ -205,13 +205,13 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.VALIDATION_MAX_LENGTH]: '입력값이 너무 깁니다',
   [ERROR_CODES.VALIDATION_SCHEMA]: '입력값을 확인해주세요',
 
-  // Firebase
-  [ERROR_CODES.FIREBASE_PERMISSION_DENIED]: '권한이 없습니다',
-  [ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND]: '데이터를 찾을 수 없습니다',
-  [ERROR_CODES.FIREBASE_QUOTA_EXCEEDED]: '요청 한도를 초과했습니다',
-  [ERROR_CODES.FIREBASE_UNAVAILABLE]: '서비스를 일시적으로 사용할 수 없습니다',
-  [ERROR_CODES.FIREBASE_ABORTED]: '작업이 중단되었습니다',
-  [ERROR_CODES.FIREBASE_SYNC_FAILED]: '데이터 동기화에 실패했습니다. 앱을 재시작해주세요',
+  // 인프라
+  [ERROR_CODES.INFRA_PERMISSION_DENIED]: '권한이 없습니다',
+  [ERROR_CODES.INFRA_NOT_FOUND]: '데이터를 찾을 수 없습니다',
+  [ERROR_CODES.INFRA_QUOTA_EXCEEDED]: '요청 한도를 초과했습니다',
+  [ERROR_CODES.INFRA_UNAVAILABLE]: '서비스를 일시적으로 사용할 수 없습니다',
+  [ERROR_CODES.INFRA_ABORTED]: '작업이 중단되었습니다',
+  [ERROR_CODES.INFRA_SYNC_FAILED]: '데이터 동기화에 실패했습니다. 앱을 재시작해주세요',
 
   // 보안
   [ERROR_CODES.SECURITY_XSS_DETECTED]: '잘못된 입력이 감지되었습니다',
@@ -405,7 +405,7 @@ export class ValidationError extends AppError {
  */
 export class PermissionError extends AppError {
   constructor(
-    code: string = ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+    code: string = ERROR_CODES.INFRA_PERMISSION_DENIED,
     options?: Partial<ConstructorParameters<typeof AppError>[0]>
   ) {
     super({
@@ -489,7 +489,12 @@ const RECOVERABLE_BUSINESS_CATEGORIES: readonly ErrorCategory[] = [
   'business',
 ];
 
-const INFRA_CATEGORIES: readonly ErrorCategory[] = ['network', 'firebase', 'security', 'unknown'];
+const INFRA_CATEGORIES: readonly ErrorCategory[] = [
+  'network',
+  'infrastructure',
+  'security',
+  'unknown',
+];
 
 /**
  * AppError가 복구 가능한 비즈니스/UX 에러인지 판별

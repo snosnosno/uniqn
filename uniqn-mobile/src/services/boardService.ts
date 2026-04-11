@@ -371,8 +371,8 @@ function isActiveSchedulePostStatus(
 function isSkippableScheduleMembershipPostError(error: unknown): boolean {
   if (isAppError(error)) {
     return (
-      error.code === ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND ||
-      error.code === ERROR_CODES.FIREBASE_PERMISSION_DENIED ||
+      error.code === ERROR_CODES.INFRA_NOT_FOUND ||
+      error.code === ERROR_CODES.INFRA_PERMISSION_DENIED ||
       error.code === ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS
     );
   }
@@ -388,7 +388,7 @@ function isSkippableScheduleMembershipPostError(error: unknown): boolean {
 function isSkippableBoardHomeSectionError(error: unknown): boolean {
   if (isAppError(error)) {
     return (
-      error.code === ERROR_CODES.FIREBASE_PERMISSION_DENIED ||
+      error.code === ERROR_CODES.INFRA_PERMISSION_DENIED ||
       error.code === ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS
     );
   }
@@ -837,7 +837,7 @@ export async function getBoardPostDetail(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -923,7 +923,7 @@ export async function getBoardMentionCandidates(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1055,7 +1055,7 @@ export async function updateBoardPost(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1102,7 +1102,7 @@ export async function setBoardPostLock(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1123,7 +1123,7 @@ export async function hideBoardPost(postId: string, adminUserId: string): Promis
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1157,7 +1157,7 @@ export async function createBoardComment(
   try {
     const post = await getBoardPostInternal(input.postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1167,7 +1167,7 @@ export async function createBoardComment(
     if (input.parentCommentId) {
       const parentComment = await boardRepository.getCommentById(post.id, input.parentCommentId);
       if (!parentComment || parentComment.status !== 'active') {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '답글을 작성할 댓글을 찾을 수 없습니다.',
         });
       }
@@ -1243,7 +1243,7 @@ export async function updateBoardComment(
 
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '댓글을 찾을 수 없습니다.',
       });
     }
@@ -1300,7 +1300,7 @@ export async function setBoardCommentStatus(
     const detail = await getBoardPostDetail(postId, viewer);
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '댓글을 찾을 수 없습니다.',
       });
     }
@@ -1365,7 +1365,7 @@ export async function setBoardCommentPinned(
     const detail = await getBoardPostDetail(postId, viewer);
     const targetComment = detail.comments.find((comment) => comment.id === commentId);
     if (!targetComment) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '댓글을 찾을 수 없습니다.',
       });
     }
@@ -1412,7 +1412,7 @@ export async function toggleBoardPostVote(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1438,7 +1438,7 @@ export async function toggleBoardCommentReaction(
   try {
     const post = await getBoardPostInternal(postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시글을 찾을 수 없습니다.',
       });
     }
@@ -1472,7 +1472,7 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
   try {
     const post = await getBoardPostInternal(input.postId);
     if (!post) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '신고 대상을 찾을 수 없습니다.',
       });
     }
@@ -1498,7 +1498,7 @@ export async function createBoardReport(input: CreateBoardReportInput): Promise<
 
       const targetComment = await boardRepository.getCommentById(input.postId, input.targetId);
       if (!targetComment) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '신고할 댓글을 찾을 수 없습니다.',
         });
       }
@@ -1561,7 +1561,7 @@ export async function getBoardReportDetailForAdmin(
   try {
     const report = await boardRepository.getReportById(reportId);
     if (!report) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시판 신고를 찾을 수 없습니다.',
       });
     }
@@ -1586,7 +1586,7 @@ export async function reviewBoardReport(
   try {
     const report = await boardRepository.getReportById(reportId);
     if (!report) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '게시판 신고를 찾을 수 없습니다.',
       });
     }

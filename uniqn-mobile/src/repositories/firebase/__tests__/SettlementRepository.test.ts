@@ -112,8 +112,8 @@ jest.mock('@/errors', () => {
     AlreadySettledError,
     ERROR_CODES: {
       BUSINESS_INVALID_STATE: 'BUSINESS_INVALID_STATE',
-      FIREBASE_DOCUMENT_NOT_FOUND: 'FIREBASE_DOCUMENT_NOT_FOUND',
-      FIREBASE_PERMISSION_DENIED: 'FIREBASE_PERMISSION_DENIED',
+      INFRA_NOT_FOUND: 'INFRA_NOT_FOUND',
+      INFRA_PERMISSION_DENIED: 'INFRA_PERMISSION_DENIED',
     },
     isAppError: (error: unknown) =>
       error instanceof AppError ||

@@ -141,7 +141,7 @@ async function loadApplication(applicationId: string): Promise<Application> {
 
   if (error) handleSupabaseError(error, { operation: '지원서 조회', table: TABLES.APPLICATIONS });
   if (!data) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '지원 내역을 찾을 수 없습니다.',
     });
   }
@@ -164,7 +164,7 @@ async function loadJobPosting(jobPostingId: string): Promise<JobPosting> {
 
   if (error) handleSupabaseError(error, { operation: '공고 조회', table: TABLES.JOB_POSTINGS });
   if (!data) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '공고를 찾을 수 없습니다.',
     });
   }
@@ -185,7 +185,7 @@ async function loadAndVerifyJobPostingOwner(
 ): Promise<JobPosting> {
   const jobData = await loadJobPosting(jobPostingId);
   if (jobData.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage: `본인 공고만 관리할 수 있습니다: ${operation}`,
     });
   }
@@ -683,7 +683,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       const applicationData = await loadApplication(applicationId);
 
       if (applicationData.applicantId !== applicantId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인 지원만 취소할 수 있습니다.',
         });
       }
@@ -735,7 +735,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       const jobData = await loadJobPosting(applicationData.jobPostingId);
 
       if (applicationData.applicantId !== applicantId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인 지원만 취소 요청할 수 있습니다.',
         });
       }

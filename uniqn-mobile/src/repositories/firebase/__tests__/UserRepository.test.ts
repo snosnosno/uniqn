@@ -66,7 +66,7 @@ jest.mock('@/errors', () => ({
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
   BusinessError: class BusinessError extends Error {},
   ERROR_CODES: {
-    FIREBASE_DOCUMENT_NOT_FOUND: 'FIREBASE_DOCUMENT_NOT_FOUND',
+    INFRA_NOT_FOUND: 'INFRA_NOT_FOUND',
     BUSINESS_INVALID_STATE: 'BUSINESS_INVALID_STATE',
   },
   isAppError: () => false,

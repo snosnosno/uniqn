@@ -375,7 +375,7 @@ async function loadJobPostingForTransaction(transaction: Transaction, jobPosting
   const jobDoc = await transaction.get(jobRef);
 
   if (!jobDoc.exists()) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: 'Job posting does not exist.',
     });
   }
@@ -396,7 +396,7 @@ async function loadJobPostingForTransaction(transaction: Transaction, jobPosting
 
 function assertJobPostingOwner(jobPosting: JobPosting, ownerId: string, userMessage: string) {
   if (jobPosting.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage,
     });
   }

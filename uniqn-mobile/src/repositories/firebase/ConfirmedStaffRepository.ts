@@ -115,7 +115,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const workLogDoc = await transaction.get(workLogRef);
 
         if (!workLogDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '근무 기록을 찾을 수 없습니다.',
           });
         }
@@ -179,7 +179,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const workLogDoc = await transaction.get(workLogRef);
 
         if (!workLogDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '근무 기록을 찾을 수 없습니다.',
           });
         }
@@ -251,7 +251,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '근무 기록을 찾을 수 없습니다.',
           });
         }
@@ -277,7 +277,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공고를 찾을 수 없습니다.',
           });
         }
@@ -331,7 +331,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '근무 기록을 찾을 수 없습니다.',
           });
         }
@@ -347,7 +347,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공고를 찾을 수 없습니다.',
           });
         }
@@ -388,7 +388,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
         const workLogDoc = await transaction.get(workLogRef);
         if (!workLogDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '근무 기록을 찾을 수 없습니다.',
           });
         }
@@ -404,7 +404,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobPostingDoc = await transaction.get(jobPostingRef);
         if (!jobPostingDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공고를 찾을 수 없습니다.',
           });
         }

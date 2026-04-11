@@ -61,7 +61,7 @@ async function getEmployerJobPosting(
   const jobDoc = await getDoc(jobRef);
 
   if (!jobDoc.exists()) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '존재하지 않는 공고입니다.',
     });
   }
@@ -74,7 +74,7 @@ async function getEmployerJobPosting(
   }
 
   if (verifyOwnership && jobData.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage: '본인 공고만 조회할 수 있습니다.',
     });
   }

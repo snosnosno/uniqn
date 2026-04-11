@@ -263,10 +263,10 @@ describe('ValidationError', () => {
 });
 
 describe('PermissionError', () => {
-  it('기본 코드가 FIREBASE_PERMISSION_DENIED이어야 한다', () => {
+  it('기본 코드가 INFRA_PERMISSION_DENIED이어야 한다', () => {
     const error = new PermissionError();
 
-    expect(error.code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
+    expect(error.code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
   });
 
   it('category가 permission이어야 한다', () => {
@@ -501,7 +501,7 @@ describe('ERROR_CODES', () => {
   });
 
   it('Firebase 에러 코드가 E4xxx 형식이어야 한다', () => {
-    expect(ERROR_CODES.FIREBASE_PERMISSION_DENIED).toMatch(/^E4\d{3}$/);
+    expect(ERROR_CODES.INFRA_PERMISSION_DENIED).toMatch(/^E4\d{3}$/);
   });
 
   it('보안 에러 코드가 E5xxx 형식이어야 한다', () => {

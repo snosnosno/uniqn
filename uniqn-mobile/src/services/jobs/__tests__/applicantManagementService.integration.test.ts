@@ -160,8 +160,8 @@ jest.mock('@/errors', () => {
       error instanceof ValidationError ||
       error instanceof MaxCapacityReachedError,
     ERROR_CODES: {
-      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-      FIREBASE_PERMISSION_DENIED: 'E4001',
+      INFRA_NOT_FOUND: 'E4002',
+      INFRA_PERMISSION_DENIED: 'E4001',
       BUSINESS_INVALID_STATE: 'E6042',
     },
     BusinessError,
@@ -258,7 +258,7 @@ describe('applicantManagementService', () => {
     it('should throw error for non-existent job posting', async () => {
       const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
       mockFindByJobPostingWithStats.mockRejectedValue(
-        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '존재하지 않는 공고입니다',
         })
       );
@@ -271,7 +271,7 @@ describe('applicantManagementService', () => {
     it('should throw error for unauthorized owner', async () => {
       const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
       mockFindByJobPostingWithStats.mockRejectedValue(
-        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인의 공고만 조회할 수 있습니다',
         })
       );
@@ -531,7 +531,7 @@ describe('applicantManagementService', () => {
     it('should throw error for non-existent application', async () => {
       const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
       mockMarkAsRead.mockRejectedValue(
-        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '존재하지 않는 지원입니다',
         })
       );

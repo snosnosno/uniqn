@@ -49,7 +49,7 @@ jest.mock('@/errors', () => {
   return {
     AppError: MockAppError,
     ERROR_CODES: {
-      FIREBASE_SYNC_FAILED: 'E4006',
+      INFRA_SYNC_FAILED: 'E4006',
     },
   };
 });
@@ -127,7 +127,7 @@ describe('withAuthFirestoreSync', () => {
     expect(mockUpdateProfile).toHaveBeenCalledTimes(2);
   });
 
-  it('Firestore 실패 + Auth 롤백도 실패 시 FIREBASE_SYNC_FAILED AppError throw', async () => {
+  it('Firestore 실패 + Auth 롤백도 실패 시 INFRA_SYNC_FAILED AppError throw', async () => {
     const firestoreError = new Error('Firestore 실패');
     const mockFirestoreUpdate = jest.fn().mockRejectedValue(firestoreError);
 

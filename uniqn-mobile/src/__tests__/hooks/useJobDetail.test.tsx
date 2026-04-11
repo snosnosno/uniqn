@@ -118,7 +118,7 @@ describe('useJobDetail', () => {
       isRefetching: false,
       error: {
         __isAppError: true,
-        code: ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+        code: ERROR_CODES.INFRA_PERMISSION_DENIED,
         category: 'permission',
       },
       refetch: mockRefetch,

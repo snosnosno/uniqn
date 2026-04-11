@@ -342,7 +342,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
         const userDoc = await transaction.get(userRef);
 
         if (!userDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '사용자를 찾을 수 없습니다',
             metadata: { userId },
           });
@@ -391,7 +391,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
         const userDoc = await transaction.get(userRef);
 
         if (!userDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '사용자를 찾을 수 없습니다',
             metadata: { userId },
           });

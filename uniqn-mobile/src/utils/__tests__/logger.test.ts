@@ -52,7 +52,7 @@ jest.mock('@/errors/AppError', () => {
 
     if (
       error.severity === 'high' ||
-      ['network', 'firebase', 'security', 'unknown'].includes(error.category ?? '')
+      ['network', 'infrastructure', 'security', 'unknown'].includes(error.category ?? '')
     ) {
       return {
         kind: 'infra',

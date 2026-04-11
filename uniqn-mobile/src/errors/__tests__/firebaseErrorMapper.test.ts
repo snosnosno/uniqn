@@ -195,14 +195,14 @@ describe('mapFirebaseAuthError', () => {
 describe('mapFirebaseFirestoreError', () => {
   describe('기본 Firestore 에러 매핑', () => {
     const firestoreErrorCases = [
-      { firebaseCode: 'permission-denied', expectedCode: ERROR_CODES.FIREBASE_PERMISSION_DENIED },
-      { firebaseCode: 'not-found', expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
+      { firebaseCode: 'permission-denied', expectedCode: ERROR_CODES.INFRA_PERMISSION_DENIED },
+      { firebaseCode: 'not-found', expectedCode: ERROR_CODES.INFRA_NOT_FOUND },
       { firebaseCode: 'already-exists', expectedCode: ERROR_CODES.VALIDATION_SCHEMA },
-      { firebaseCode: 'resource-exhausted', expectedCode: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED },
-      { firebaseCode: 'aborted', expectedCode: ERROR_CODES.FIREBASE_ABORTED },
-      { firebaseCode: 'unavailable', expectedCode: ERROR_CODES.FIREBASE_UNAVAILABLE },
+      { firebaseCode: 'resource-exhausted', expectedCode: ERROR_CODES.INFRA_QUOTA_EXCEEDED },
+      { firebaseCode: 'aborted', expectedCode: ERROR_CODES.INFRA_ABORTED },
+      { firebaseCode: 'unavailable', expectedCode: ERROR_CODES.INFRA_UNAVAILABLE },
       { firebaseCode: 'unauthenticated', expectedCode: ERROR_CODES.AUTH_SESSION_EXPIRED },
-      { firebaseCode: 'cancelled', expectedCode: ERROR_CODES.FIREBASE_ABORTED },
+      { firebaseCode: 'cancelled', expectedCode: ERROR_CODES.INFRA_ABORTED },
       { firebaseCode: 'deadline-exceeded', expectedCode: ERROR_CODES.NETWORK_TIMEOUT },
     ];
 
@@ -223,7 +223,7 @@ describe('mapFirebaseFirestoreError', () => {
       const error = { code: 'firestore/permission-denied', message: 'Denied' };
       const result = mapFirebaseFirestoreError(error);
 
-      expect(result.code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
+      expect(result.code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
     });
   });
 
@@ -289,7 +289,7 @@ describe('mapFirebaseFirestoreError', () => {
       const result = mapFirebaseFirestoreError(error);
 
       expect(result.code).toBe(ERROR_CODES.UNKNOWN);
-      expect(result.category).toBe('firebase');
+      expect(result.category).toBe('infrastructure');
     });
   });
 
@@ -300,7 +300,7 @@ describe('mapFirebaseFirestoreError', () => {
 
       expect(isAppError(result)).toBe(true);
       expect(result.code).toBe(ERROR_CODES.UNKNOWN);
-      expect(result.category).toBe('firebase');
+      expect(result.category).toBe('infrastructure');
     });
   });
 });
@@ -315,27 +315,27 @@ describe('mapFirebaseStorageError', () => {
       { firebaseCode: 'storage/unknown', expectedCode: ERROR_CODES.UNKNOWN },
       {
         firebaseCode: 'storage/object-not-found',
-        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+        expectedCode: ERROR_CODES.INFRA_NOT_FOUND,
       },
       {
         firebaseCode: 'storage/bucket-not-found',
-        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+        expectedCode: ERROR_CODES.INFRA_NOT_FOUND,
       },
       {
         firebaseCode: 'storage/project-not-found',
-        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+        expectedCode: ERROR_CODES.INFRA_NOT_FOUND,
       },
-      { firebaseCode: 'storage/quota-exceeded', expectedCode: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED },
+      { firebaseCode: 'storage/quota-exceeded', expectedCode: ERROR_CODES.INFRA_QUOTA_EXCEEDED },
       { firebaseCode: 'storage/unauthenticated', expectedCode: ERROR_CODES.AUTH_SESSION_EXPIRED },
       {
         firebaseCode: 'storage/unauthorized',
-        expectedCode: ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+        expectedCode: ERROR_CODES.INFRA_PERMISSION_DENIED,
       },
       {
         firebaseCode: 'storage/retry-limit-exceeded',
         expectedCode: ERROR_CODES.NETWORK_REQUEST_FAILED,
       },
-      { firebaseCode: 'storage/canceled', expectedCode: ERROR_CODES.FIREBASE_ABORTED },
+      { firebaseCode: 'storage/canceled', expectedCode: ERROR_CODES.INFRA_ABORTED },
       { firebaseCode: 'storage/invalid-url', expectedCode: ERROR_CODES.VALIDATION_FORMAT },
     ];
 
@@ -405,7 +405,7 @@ describe('mapFirebaseStorageError', () => {
       const result = mapFirebaseStorageError(error);
 
       expect(result.code).toBe(ERROR_CODES.UNKNOWN);
-      expect(result.category).toBe('firebase');
+      expect(result.category).toBe('infrastructure');
     });
   });
 
@@ -437,14 +437,14 @@ describe('mapFirebaseError', () => {
       const error = { code: 'storage/object-not-found', message: 'Not found' };
       const result = mapFirebaseError(error);
 
-      expect(result.code).toBe(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND);
+      expect(result.code).toBe(ERROR_CODES.INFRA_NOT_FOUND);
     });
 
     it('접두사 없는 코드는 mapFirebaseFirestoreError 호출', () => {
       const error = { code: 'permission-denied', message: 'Denied' };
       const result = mapFirebaseError(error);
 
-      expect(result.code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
+      expect(result.code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
     });
   });
 
@@ -499,8 +499,8 @@ describe('mapFirebaseError', () => {
 
       expect(results.every(isAppError)).toBe(true);
       expect(results[0].code).toBe(ERROR_CODES.AUTH_INVALID_CREDENTIALS);
-      expect(results[1].code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
-      expect(results[2].code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
+      expect(results[1].code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
+      expect(results[2].code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
     });
 
     it('Error 인스턴스를 originalError로 보존', () => {

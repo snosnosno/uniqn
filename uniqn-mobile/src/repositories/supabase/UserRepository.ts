@@ -313,7 +313,7 @@ export class SupabaseUserRepository implements IUserRepository {
       }
 
       if (!data) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '사용자를 찾을 수 없습니다',
         });
       }
@@ -408,7 +408,7 @@ export class SupabaseUserRepository implements IUserRepository {
       }
 
       if (!userData) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '사용자 정보를 찾을 수 없습니다',
         });
       }
@@ -490,7 +490,7 @@ export class SupabaseUserRepository implements IUserRepository {
       // 1. 프로필 조회
       const profile = await this.getById(userId);
       if (!profile) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '사용자를 찾을 수 없습니다',
         });
       }

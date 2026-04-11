@@ -47,10 +47,10 @@ export interface SupabaseErrorContext {
  */
 const POSTGREST_ERROR_MAP: Record<string, { code: string; category: string }> = {
   // 인증/권한
-  '42501': { code: ERROR_CODES.FIREBASE_PERMISSION_DENIED, category: 'permission' },
+  '42501': { code: ERROR_CODES.INFRA_PERMISSION_DENIED, category: 'permission' },
   PGRST301: { code: ERROR_CODES.AUTH_SESSION_EXPIRED, category: 'auth' },
   // 데이터 미존재
-  PGRST116: { code: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, category: 'firebase' },
+  PGRST116: { code: ERROR_CODES.INFRA_NOT_FOUND, category: 'infrastructure' },
   // 중복 키 (unique violation)
   '23505': { code: ERROR_CODES.VALIDATION_SCHEMA, category: 'validation' },
   // 외래 키 위반
@@ -62,7 +62,7 @@ const POSTGREST_ERROR_MAP: Record<string, { code: string; category: string }> = 
   // 함수 미존재
   '42883': { code: ERROR_CODES.UNKNOWN, category: 'unknown' },
   // rate limit (Supabase 자체)
-  '54000': { code: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED, category: 'firebase' },
+  '54000': { code: ERROR_CODES.INFRA_QUOTA_EXCEEDED, category: 'infrastructure' },
 };
 
 /**
@@ -120,7 +120,7 @@ export function handleSupabaseError(error: unknown, context: SupabaseErrorContex
     // 매핑 없는 PostgrestError
     throw new AppError({
       code: ERROR_CODES.UNKNOWN,
-      category: 'firebase', // Supabase도 infra 분류 사용
+      category: 'infrastructure',
       message: error.message,
       originalError: new Error(error.message),
       metadata,

@@ -134,7 +134,7 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 템플릿입니다',
       });
     }
@@ -170,7 +170,7 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 템플릿입니다',
       });
     }
@@ -179,7 +179,7 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
 
     // 본인 확인
     if (template.createdBy !== userId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 템플릿만 삭제할 수 있습니다',
       });
     }
@@ -212,7 +212,7 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 템플릿입니다',
       });
     }
@@ -221,7 +221,7 @@ export class FirebaseTemplateRepository implements ITemplateRepository {
 
     // 본인 확인
     if (template.createdBy !== userId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 템플릿만 수정할 수 있습니다',
       });
     }

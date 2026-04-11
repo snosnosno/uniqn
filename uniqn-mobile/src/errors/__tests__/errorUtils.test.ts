@@ -86,7 +86,7 @@ describe('normalizeError', () => {
       const result = normalizeError(firebaseError);
 
       expect(isAppError(result)).toBe(true);
-      expect(result.code).toBe(ERROR_CODES.FIREBASE_PERMISSION_DENIED);
+      expect(result.code).toBe(ERROR_CODES.INFRA_PERMISSION_DENIED);
     });
   });
 
@@ -381,7 +381,7 @@ describe('getErrorMessage', () => {
     const codes = [
       ERROR_CODES.AUTH_INVALID_CREDENTIALS,
       ERROR_CODES.VALIDATION_REQUIRED,
-      ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+      ERROR_CODES.INFRA_PERMISSION_DENIED,
     ];
 
     codes.forEach((code) => {
@@ -465,7 +465,7 @@ describe('isRetryableError', () => {
       ERROR_CODES.NETWORK_OFFLINE,
       ERROR_CODES.NETWORK_TIMEOUT,
       ERROR_CODES.NETWORK_SERVER_UNREACHABLE,
-      ERROR_CODES.FIREBASE_UNAVAILABLE,
+      ERROR_CODES.INFRA_UNAVAILABLE,
       ERROR_CODES.AUTH_TOO_MANY_REQUESTS,
     ];
 

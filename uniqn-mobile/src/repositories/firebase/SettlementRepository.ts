@@ -647,7 +647,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
     const workLogDoc = await transaction.get(workLogRef);
 
     if (!workLogDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '근무 기록을 찾을 수 없습니다',
       });
     }
@@ -657,7 +657,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       ...(workLogDoc.data() as Record<string, unknown>),
     });
     if (!workLog) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
       });
     }
@@ -668,7 +668,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
     const jobDoc = await transaction.get(jobRef);
 
     if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고를 찾을 수 없습니다',
       });
     }
@@ -678,13 +678,13 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       ...(jobDoc.data() as Record<string, unknown>),
     });
     if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고 데이터를 파싱할 수 없습니다',
       });
     }
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: `본인의 공고에 대한 근무 기록만 ${operationMessage}할 수 있습니다`,
       });
     }

@@ -311,7 +311,7 @@ export class FirebaseUserRepository implements IUserRepository {
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '사용자를 찾을 수 없습니다',
         });
       }
@@ -435,7 +435,7 @@ export class FirebaseUserRepository implements IUserRepository {
         const userDoc = await transaction.get(userRef);
 
         if (!userDoc.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '사용자 정보를 찾을 수 없습니다',
           });
         }
@@ -527,7 +527,7 @@ export class FirebaseUserRepository implements IUserRepository {
       // 1. 프로필 정보
       const profile = await this.getById(userId);
       if (!profile) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '사용자를 찾을 수 없습니다',
         });
       }

@@ -335,7 +335,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         const docSnap = await transaction.get(docRef);
 
         if (!docSnap.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공지사항을 찾을 수 없습니다',
             metadata: { announcementId },
           });
@@ -393,7 +393,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         const docSnap = await transaction.get(docRef);
 
         if (!docSnap.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공지사항을 찾을 수 없습니다',
             metadata: { announcementId },
           });
@@ -444,7 +444,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         const docSnap = await transaction.get(docRef);
 
         if (!docSnap.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공지사항을 찾을 수 없습니다',
             metadata: { announcementId },
           });
@@ -511,7 +511,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         const docSnap = await transaction.get(docRef);
 
         if (!docSnap.exists()) {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '공지사항을 찾을 수 없습니다',
             metadata: { announcementId },
           });

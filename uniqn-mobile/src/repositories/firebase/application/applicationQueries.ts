@@ -394,7 +394,7 @@ export async function getCancellationRequests(
     // 공고 소유자 확인
     const jobDoc = await getDoc(doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId));
     if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '공고를 찾을 수 없습니다',
       });
     }
@@ -406,7 +406,7 @@ export async function getCancellationRequests(
       });
     }
     if (jobData.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
       });
     }

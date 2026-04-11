@@ -58,7 +58,7 @@ async function loadApplicationForTransaction(transaction: Transaction, applicati
   const applicationDoc = await transaction.get(applicationRef);
 
   if (!applicationDoc.exists()) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '지원 내역을 찾을 수 없습니다.',
     });
   }
@@ -89,7 +89,7 @@ async function loadJobPostingForTransaction(
   const jobDoc = await transaction.get(jobRef);
 
   if (!jobDoc.exists()) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: options?.notFoundMessage ?? '공고를 찾을 수 없습니다.',
     });
   }
@@ -131,7 +131,7 @@ function assertApplicationApplicant(
   userMessage: string
 ) {
   if (applicationData.applicantId !== applicantId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage,
     });
   }
@@ -139,7 +139,7 @@ function assertApplicationApplicant(
 
 function assertJobPostingOwner(jobData: JobPosting, ownerId: string, userMessage: string) {
   if (jobData.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage,
     });
   }

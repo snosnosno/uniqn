@@ -54,13 +54,13 @@ export async function getWorkLogsByJobPosting(
     const jobPosting = await jobPostingRepository.getById(jobPostingId);
 
     if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 공고입니다',
       });
     }
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
       });
     }
@@ -156,13 +156,13 @@ export async function getJobPostingSettlementSummary(
     const jobPosting = await jobPostingRepository.getById(jobPostingId);
 
     if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 공고입니다',
       });
     }
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
       });
     }

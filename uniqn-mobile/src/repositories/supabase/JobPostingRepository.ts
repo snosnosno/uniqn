@@ -89,7 +89,7 @@ async function loadAndVerifyOwner(
 
   if (error) handleSupabaseError(error, { operation, table: TABLE });
   if (!data) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: 'Job posting does not exist.',
     });
   }
@@ -102,7 +102,7 @@ async function loadAndVerifyOwner(
   }
 
   if (jobPosting.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage: `Only the owner can perform this action: ${operation}`,
     });
   }

@@ -70,7 +70,7 @@ async function loadWorkLog(workLogId: string, operation: string): Promise<WorkLo
   if (error) handleSupabaseError(error, { operation, table: TABLE });
 
   if (!data) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '근무 기록을 찾을 수 없습니다.',
     });
   }
@@ -102,7 +102,7 @@ async function verifyJobPostingOwnership(
   if (jobError) handleSupabaseError(jobError, { operation, table: 'job_postings' });
 
   if (!jobData) {
-    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+    throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
       userMessage: '공고를 찾을 수 없습니다.',
     });
   }

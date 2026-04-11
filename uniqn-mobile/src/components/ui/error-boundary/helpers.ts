@@ -72,7 +72,7 @@ export function isFormRelatedError(error: Error): boolean {
  */
 export function isDataFetchRelatedError(error: Error): boolean {
   if (isAppError(error)) {
-    return error.category === 'firebase' || error.code === ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND;
+    return error.category === 'infrastructure' || error.code === ERROR_CODES.INFRA_NOT_FOUND;
   }
   const patterns = ['fetch', 'data', 'load', 'not found', '404', '500'];
   const lowerMessage = error.message.toLowerCase();

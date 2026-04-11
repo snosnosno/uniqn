@@ -53,18 +53,18 @@ const FIREBASE_AUTH_ERROR_MAP: Record<string, { code: string; message?: string }
 // ============================================================================
 
 const FIREBASE_FIRESTORE_ERROR_MAP: Record<string, { code: string; message?: string }> = {
-  'permission-denied': { code: ERROR_CODES.FIREBASE_PERMISSION_DENIED },
-  'not-found': { code: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
+  'permission-denied': { code: ERROR_CODES.INFRA_PERMISSION_DENIED },
+  'not-found': { code: ERROR_CODES.INFRA_NOT_FOUND },
   'already-exists': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '이미 존재하는 데이터입니다',
   },
-  'resource-exhausted': { code: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED },
+  'resource-exhausted': { code: ERROR_CODES.INFRA_QUOTA_EXCEEDED },
   'failed-precondition': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '요청 조건이 충족되지 않았습니다',
   },
-  aborted: { code: ERROR_CODES.FIREBASE_ABORTED },
+  aborted: { code: ERROR_CODES.INFRA_ABORTED },
   'out-of-range': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '요청 값이 범위를 벗어났습니다',
@@ -74,10 +74,10 @@ const FIREBASE_FIRESTORE_ERROR_MAP: Record<string, { code: string; message?: str
     message: '지원되지 않는 기능입니다',
   },
   internal: { code: ERROR_CODES.UNKNOWN },
-  unavailable: { code: ERROR_CODES.FIREBASE_UNAVAILABLE },
+  unavailable: { code: ERROR_CODES.INFRA_UNAVAILABLE },
   'data-loss': { code: ERROR_CODES.UNKNOWN, message: '데이터 손실이 발생했습니다' },
   unauthenticated: { code: ERROR_CODES.AUTH_SESSION_EXPIRED },
-  cancelled: { code: ERROR_CODES.FIREBASE_ABORTED },
+  cancelled: { code: ERROR_CODES.INFRA_ABORTED },
   'deadline-exceeded': { code: ERROR_CODES.NETWORK_TIMEOUT },
 };
 
@@ -88,20 +88,20 @@ const FIREBASE_FIRESTORE_ERROR_MAP: Record<string, { code: string; message?: str
 const FIREBASE_STORAGE_ERROR_MAP: Record<string, { code: string; message?: string }> = {
   'storage/unknown': { code: ERROR_CODES.UNKNOWN },
   'storage/object-not-found': {
-    code: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+    code: ERROR_CODES.INFRA_NOT_FOUND,
     message: '파일을 찾을 수 없습니다',
   },
-  'storage/bucket-not-found': { code: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
-  'storage/project-not-found': { code: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
-  'storage/quota-exceeded': { code: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED },
+  'storage/bucket-not-found': { code: ERROR_CODES.INFRA_NOT_FOUND },
+  'storage/project-not-found': { code: ERROR_CODES.INFRA_NOT_FOUND },
+  'storage/quota-exceeded': { code: ERROR_CODES.INFRA_QUOTA_EXCEEDED },
   'storage/unauthenticated': { code: ERROR_CODES.AUTH_SESSION_EXPIRED },
-  'storage/unauthorized': { code: ERROR_CODES.FIREBASE_PERMISSION_DENIED },
+  'storage/unauthorized': { code: ERROR_CODES.INFRA_PERMISSION_DENIED },
   'storage/retry-limit-exceeded': { code: ERROR_CODES.NETWORK_REQUEST_FAILED },
   'storage/invalid-checksum': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '파일이 손상되었습니다',
   },
-  'storage/canceled': { code: ERROR_CODES.FIREBASE_ABORTED },
+  'storage/canceled': { code: ERROR_CODES.INFRA_ABORTED },
   'storage/invalid-url': { code: ERROR_CODES.VALIDATION_FORMAT },
   'storage/server-file-wrong-size': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
@@ -171,7 +171,7 @@ export function mapFirebaseFirestoreError(error: unknown): AppError {
   if (!isFirebaseError(error)) {
     return new AppError({
       code: ERROR_CODES.UNKNOWN,
-      category: 'firebase',
+      category: 'infrastructure',
       originalError: error instanceof Error ? error : undefined,
     });
   }
@@ -203,7 +203,7 @@ export function mapFirebaseFirestoreError(error: unknown): AppError {
 
     return new AppError({
       code: mapping.code,
-      category: 'firebase',
+      category: 'infrastructure',
       message: error.message,
       userMessage: mapping.message,
       originalError: error instanceof Error ? error : undefined,
@@ -213,7 +213,7 @@ export function mapFirebaseFirestoreError(error: unknown): AppError {
 
   return new AppError({
     code: ERROR_CODES.UNKNOWN,
-    category: 'firebase',
+    category: 'infrastructure',
     message: error.message,
     originalError: error instanceof Error ? error : undefined,
     metadata: { firebaseCode: error.code },
@@ -227,7 +227,7 @@ export function mapFirebaseStorageError(error: unknown): AppError {
   if (!isFirebaseError(error)) {
     return new AppError({
       code: ERROR_CODES.UNKNOWN,
-      category: 'firebase',
+      category: 'infrastructure',
       originalError: error instanceof Error ? error : undefined,
     });
   }
@@ -257,7 +257,7 @@ export function mapFirebaseStorageError(error: unknown): AppError {
 
     return new AppError({
       code: mapping.code,
-      category: 'firebase',
+      category: 'infrastructure',
       message: error.message,
       userMessage: mapping.message,
       originalError: error instanceof Error ? error : undefined,
@@ -267,7 +267,7 @@ export function mapFirebaseStorageError(error: unknown): AppError {
 
   return new AppError({
     code: ERROR_CODES.UNKNOWN,
-    category: 'firebase',
+    category: 'infrastructure',
     message: error.message,
     originalError: error instanceof Error ? error : undefined,
     metadata: { firebaseCode: error.code },

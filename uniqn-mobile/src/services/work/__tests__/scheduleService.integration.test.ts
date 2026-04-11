@@ -86,8 +86,8 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
   ERROR_CODES: {
-    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-    FIREBASE_PERMISSION_DENIED: 'E4001',
+    INFRA_NOT_FOUND: 'E4002',
+    INFRA_PERMISSION_DENIED: 'E4001',
     BUSINESS_INVALID_STATE: 'E6042',
   },
   BusinessError: class BusinessError extends Error {

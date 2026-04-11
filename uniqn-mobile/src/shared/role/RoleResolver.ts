@@ -99,7 +99,7 @@ export class RoleResolver {
    */
   static requireAdmin(userRole: UserRole | string | null | undefined): void {
     if (!this.hasPermission(userRole, 'admin')) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: '관리자 권한이 필요합니다',
       });
     }
@@ -121,7 +121,7 @@ export class RoleResolver {
   static requireRole(userRole: UserRole | string | null | undefined, requiredRole: UserRole): void {
     if (!this.hasPermission(userRole, requiredRole)) {
       const roleName = USER_ROLE_DISPLAY_NAMES[requiredRole] ?? requiredRole;
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
         userMessage: `${roleName} 이상 권한이 필요합니다`,
       });
     }

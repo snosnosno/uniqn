@@ -110,8 +110,8 @@ jest.mock('@/errors', () => {
     isAppError: (error: unknown) =>
       error instanceof BusinessError || error instanceof PermissionError,
     ERROR_CODES: {
-      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-      FIREBASE_PERMISSION_DENIED: 'E4001',
+      INFRA_NOT_FOUND: 'E4002',
+      INFRA_PERMISSION_DENIED: 'E4001',
       BUSINESS_ALREADY_APPLIED: 'E6001',
       BUSINESS_MAX_CAPACITY_REACHED: 'E6003',
     },
@@ -258,7 +258,7 @@ describe('applicantManagementService', () => {
     it('Repository 에러를 전파해야 함', async () => {
       const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
       mockFindByJobPostingWithStats.mockRejectedValue(
-        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '권한이 없습니다',
         })
       );
@@ -460,7 +460,7 @@ describe('applicantManagementService', () => {
       };
 
       mockRejectWithTransaction.mockRejectedValue(
-        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
         })
       );
@@ -478,7 +478,7 @@ describe('applicantManagementService', () => {
       };
 
       mockRejectWithTransaction.mockRejectedValue(
-        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '존재하지 않는 지원입니다',
         })
       );
@@ -526,7 +526,7 @@ describe('applicantManagementService', () => {
 
       mockConfirmApplicationWithHistory.mockImplementation(async (id: string) => {
         if (id === 'app-2') {
-          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
             userMessage: '존재하지 않는 지원입니다',
           });
         }
@@ -551,7 +551,7 @@ describe('applicantManagementService', () => {
 
       mockGetById.mockResolvedValue(null);
       mockConfirmApplicationWithHistory.mockRejectedValue(
-        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '존재하지 않는 지원입니다',
         })
       );
@@ -588,7 +588,7 @@ describe('applicantManagementService', () => {
     it('권한이 없으면 에러를 발생시켜야 함', async () => {
       const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
       mockMarkAsRead.mockRejectedValue(
-        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
         })
       );
@@ -601,7 +601,7 @@ describe('applicantManagementService', () => {
     it('존재하지 않는 지원서는 에러를 발생시켜야 함', async () => {
       const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
       mockMarkAsRead.mockRejectedValue(
-        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
           userMessage: '존재하지 않는 지원입니다',
         })
       );

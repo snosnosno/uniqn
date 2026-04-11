@@ -93,7 +93,7 @@ export async function confirmApplication(
     const applicationData = await applicationRepository.getById(input.applicationId);
 
     if (!applicationData) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
         userMessage: '존재하지 않는 지원자입니다.',
       });
     }
@@ -359,7 +359,7 @@ export async function subscribeToApplicantsAsync(
   const isOwner = await verifyJobPostingOwnership(jobPostingId, ownerId);
 
   if (!isOwner) {
-    const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+    const error = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
       userMessage: '해당 공고의 소유자가 아닙니다.',
     });
 

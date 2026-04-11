@@ -43,7 +43,7 @@ export interface AuthFirestoreSyncOptions {
  * Firestore 실패 시 Auth를 이전 상태로 롤백.
  *
  * @throws firestoreError - Firestore 실패 + Auth 롤백 성공 시 원본 에러 전파
- * @throws AppError(FIREBASE_SYNC_FAILED) - Firestore 실패 + Auth 롤백도 실패 시
+ * @throws AppError(INFRA_SYNC_FAILED) - Firestore 실패 + Auth 롤백도 실패 시
  */
 export async function withAuthFirestoreSync(options: AuthFirestoreSyncOptions): Promise<void> {
   const { user, authUpdates, firestoreUpdate, errorMessage, uid, operationName } = options;
@@ -84,8 +84,8 @@ export async function withAuthFirestoreSync(options: AuthFirestoreSyncOptions): 
         });
 
         throw new AppError({
-          code: ERROR_CODES.FIREBASE_SYNC_FAILED,
-          category: 'firebase',
+          code: ERROR_CODES.INFRA_SYNC_FAILED,
+          category: 'infrastructure',
           severity: 'high',
           userMessage: errorMessage,
           originalError:
