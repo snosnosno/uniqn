@@ -39,14 +39,18 @@ jest.mock('@/repositories', () => ({
 
 const mockHttpsCallable = jest.fn();
 
-jest.mock('firebase/functions', () => ({
-  httpsCallable: jest.fn(() => mockHttpsCallable),
-}));
-
-const mockGetFirebaseFunctions = jest.fn(() => ({}) as unknown);
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseFunctions: () => mockGetFirebaseFunctions(),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    functions: {
+      invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({

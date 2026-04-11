@@ -41,10 +41,15 @@ jest.mock('@/services/auth', () => ({
   deleteMultipleBoardImages: jest.fn(),
 }));
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(() => ({
-    currentUser: { uid: 'viewer-1' },
-  })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: { id: 'viewer-1' } },
+        error: null,
+      }),
+    },
+  },
 }));
 
 jest.mock('@/errors/serviceErrorHandler', () => {

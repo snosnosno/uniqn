@@ -91,13 +91,15 @@ jest.mock('@/lib/env', () => ({
   validateEnv: jest.fn(),
 }));
 
-jest.mock('@/lib/firebase', () => ({
-  tryInitializeFirebase: jest.fn(),
-  getFirebaseAuth: jest.fn(() => mockFirebaseAuth),
-}));
-
-jest.mock('@/lib/authBridge', () => ({
-  ensureDualSdkSync: jest.fn(),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+    },
+  },
 }));
 
 const mockIsCurrentAutoLoginSession = jest.fn((_: string) => false);
@@ -406,9 +408,6 @@ describe('useAppInitialize', () => {
     const { validateEnv } = jest.requireMock('@/lib/env') as {
       validateEnv: jest.Mock;
     };
-    const { tryInitializeFirebase } = jest.requireMock('@/lib/firebase') as {
-      tryInitializeFirebase: jest.Mock;
-    };
     const { checkForceUpdate } = jest.requireMock('@/services/versionService') as {
       checkForceUpdate: jest.Mock;
     };
@@ -421,7 +420,6 @@ describe('useAppInitialize', () => {
     };
 
     validateEnv.mockReturnValue({ success: true });
-    tryInitializeFirebase.mockReturnValue({ success: true });
     checkForceUpdate.mockResolvedValue({
       isMaintenanceMode: false,
       mustUpdate: false,

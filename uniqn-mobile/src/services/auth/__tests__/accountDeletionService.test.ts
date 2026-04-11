@@ -1,20 +1,14 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import { Platform } from 'react-native';
-import { reauthenticateWithCredential } from 'firebase/auth';
-import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { STATUS } from '@/constants';
 import type { FirestoreUserProfile } from '@/types';
 import type { DeletionRequest, UserDataExport } from '@/repositories';
-const mockGetFirebaseAuth = getFirebaseAuth as jest.MockedFunction<typeof getFirebaseAuth>;
-const mockGetFirebaseFunctions = getFirebaseFunctions as jest.MockedFunction<
-  typeof getFirebaseFunctions
->;
-const mockReauthenticateWithCredential = reauthenticateWithCredential as jest.MockedFunction<
-  typeof reauthenticateWithCredential
->;
 
+const mockGetFirebaseAuth = jest.fn();
+const mockGetFirebaseFunctions = jest.fn();
+const mockReauthenticateWithCredential = jest.fn();
 const mockRequestDeletion = jest.fn();
 const mockCancelDeletion = jest.fn();
 const mockGetById = jest.fn();
@@ -24,27 +18,22 @@ const mockRequestAppleAuthorization = jest.fn();
 const mockHttpsCallable = jest.fn();
 const mockRevokeAppleToken = jest.fn();
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(),
-  getFirebaseFunctions: jest.fn(),
-}));
-
-jest.mock('firebase/auth', () => ({
-  reauthenticateWithCredential: jest.fn(),
-  EmailAuthProvider: {
-    credential: jest.fn((email: string, password: string) => ({ email, password })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+    },
+    functions: {
+      invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
   },
-  OAuthProvider: jest.fn().mockImplementation((providerId: string) => ({
-    credential: ({ idToken, rawNonce }: { idToken: string; rawNonce: string }) => ({
-      providerId,
-      idToken,
-      rawNonce,
-    }),
-  })),
-}));
-
-jest.mock('firebase/functions', () => ({
-  httpsCallable: (...args: unknown[]) => mockHttpsCallable(...args),
 }));
 
 jest.mock('@/repositories', () => ({
@@ -138,10 +127,8 @@ describe('accountDeletionService', () => {
     mockCurrentUser.providerData = [{ providerId: 'password' }];
     mockCurrentUser.email = 'tester@example.com';
 
-    mockGetFirebaseAuth.mockReturnValue(mockAuth as ReturnType<typeof getFirebaseAuth>);
-    mockGetFirebaseFunctions.mockReturnValue(
-      mockFunctions as unknown as ReturnType<typeof getFirebaseFunctions>
-    );
+    mockGetFirebaseAuth.mockReturnValue(mockAuth as unknown);
+    mockGetFirebaseFunctions.mockReturnValue(mockFunctions as unknown);
     mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
     mockRequestDeletion.mockResolvedValue(undefined);
     mockCancelDeletion.mockResolvedValue(undefined);
@@ -194,7 +181,7 @@ describe('accountDeletionService', () => {
 
     mockGetFirebaseAuth.mockReturnValue({
       currentUser: null,
-    } as ReturnType<typeof getFirebaseAuth>);
+    } as unknown);
 
     await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toMatchObject({
       name: 'AuthError',
@@ -312,7 +299,7 @@ describe('accountDeletionService', () => {
 
     mockGetFirebaseAuth.mockReturnValue({
       currentUser: null,
-    } as ReturnType<typeof getFirebaseAuth>);
+    } as unknown);
 
     await expect(retryAppleTokenRevocation()).resolves.toBe(false);
     expect(mockRequestAppleAuthorization).not.toHaveBeenCalled();

@@ -1,19 +1,18 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useOTPVerification } from '@/hooks/auth/useOTPVerification';
 import { checkPhoneExists } from '@/services/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 
 jest.mock('@/services/auth', () => ({
   checkPhoneExists: jest.fn(),
 }));
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(),
-}));
-
-jest.mock('@/lib/nativeAuth', () => ({
-  getNativeAuth: jest.fn(() => ({ currentUser: null })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+  },
 }));
 
 const mockMemoryStorage = new Map<string, string>();
@@ -40,16 +39,12 @@ jest.mock('@/utils/logger', () => ({
 
 describe('useOTPVerification', () => {
   const mockCheckPhoneExists = checkPhoneExists as jest.MockedFunction<typeof checkPhoneExists>;
-  const mockGetFirebaseAuth = getFirebaseAuth as jest.MockedFunction<typeof getFirebaseAuth>;
   const mockLoggerError = logger.error as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockMemoryStorage.clear();
     mockCheckPhoneExists.mockResolvedValue(false);
-    mockGetFirebaseAuth.mockReturnValue({
-      currentUser: null,
-    } as ReturnType<typeof getFirebaseAuth>);
   });
 
   it('treats an expired code as a resend flow instead of a failed attempt', async () => {

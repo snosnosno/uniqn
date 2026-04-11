@@ -45,27 +45,17 @@ jest.mock('expo-apple-authentication', () => ({
   },
 }));
 
-jest.mock('firebase/auth', () => ({
-  signInWithCredential: (...args: unknown[]) => mockSignInWithCredential(...args),
-  signInWithEmailAndPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
-  createUserWithEmailAndPassword: (...args: unknown[]) =>
-    mockCreateUserWithEmailAndPassword(...args),
-  updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
-  OAuthProvider: jest.fn().mockImplementation((providerId: string) => ({
-    credential: ({ idToken, rawNonce }: { idToken: string; rawNonce: string }) => ({
-      providerId,
-      idToken,
-      rawNonce,
-    }),
-  })),
-}));
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: (...args: unknown[]) => mockGetFirebaseAuth(...args),
-}));
-
-jest.mock('@/lib/authBridge', () => ({
-  syncSignOut: (...args: unknown[]) => mockSyncSignOut(...args),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithIdToken: (...args: unknown[]) => mockSignInWithCredential(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
+      signUp: (...args: unknown[]) => mockCreateUserWithEmailAndPassword(...args),
+      signOut: (...args: unknown[]) => mockSyncSignOut(...args),
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      updateUser: (...args: unknown[]) => mockUpdateProfile(...args),
+    },
+  },
 }));
 
 jest.mock('@/shared/auth/protectedAuthFlow', () => ({

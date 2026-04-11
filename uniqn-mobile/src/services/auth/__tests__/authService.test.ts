@@ -32,15 +32,10 @@ const mockFunctions = {};
 
 const mockSignInWithEmailAndPassword = jest.fn();
 const mockSendPasswordResetEmail = jest.fn();
-const mockLinkWithCredential = jest.fn();
-const mockReauthenticateWithCredential = jest.fn();
-const mockWebDeleteUser = jest.fn();
-const mockWebUnlink = jest.fn();
 
 const mockNativeSignInWithEmailAndPassword = jest.fn();
 const mockNativeLinkWithCredential = jest.fn();
 const mockNativeDeleteUser = jest.fn();
-const mockNativeUnlink = jest.fn();
 
 const mockSyncToWebAuth = jest.fn();
 const mockSyncSignOut = jest.fn();
@@ -54,42 +49,20 @@ const mockTrackLogout = jest.fn();
 const mockSetUserId = jest.fn();
 const mockSetUserProperties = jest.fn();
 
-jest.mock('firebase/auth', () => ({
-  signInWithEmailAndPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
-  sendPasswordResetEmail: (...args: unknown[]) => mockSendPasswordResetEmail(...args),
-  EmailAuthProvider: {
-    credential: jest.fn((email: string, password: string) => ({ email, password })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: (...args: unknown[]) => mockSignInWithEmailAndPassword(...args),
+      signUp: jest.fn(),
+      signOut: (...args: unknown[]) => mockSyncSignOut(...args),
+      resetPasswordForEmail: (...args: unknown[]) => mockSendPasswordResetEmail(...args),
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
+    functions: {
+      invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+    },
   },
-  linkWithCredential: (...args: unknown[]) => mockLinkWithCredential(...args),
-  reauthenticateWithCredential: (...args: unknown[]) => mockReauthenticateWithCredential(...args),
-  deleteUser: (...args: unknown[]) => mockWebDeleteUser(...args),
-  unlink: (...args: unknown[]) => mockWebUnlink(...args),
-}));
-
-jest.mock('firebase/functions', () => ({
-  httpsCallable: (...args: unknown[]) => mockHttpsCallable(...args),
-}));
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(() => mockWebAuth),
-  getFirebaseFunctions: jest.fn(() => mockFunctions),
-}));
-
-jest.mock('@/lib/nativeAuth', () => ({
-  getNativeAuth: jest.fn(() => mockNativeAuth),
-  nativeSignInWithEmailAndPassword: (...args: unknown[]) =>
-    mockNativeSignInWithEmailAndPassword(...args),
-  nativeLinkWithCredential: (...args: unknown[]) => mockNativeLinkWithCredential(...args),
-  nativeDeleteUser: (...args: unknown[]) => mockNativeDeleteUser(...args),
-  NativeEmailAuthProvider: {
-    credential: jest.fn((email: string, password: string) => ({ email, password })),
-  },
-  nativeUnlink: (...args: unknown[]) => mockNativeUnlink(...args),
-}));
-
-jest.mock('@/lib/authBridge', () => ({
-  syncToWebAuth: (...args: unknown[]) => mockSyncToWebAuth(...args),
-  syncSignOut: (...args: unknown[]) => mockSyncSignOut(...args),
 }));
 
 jest.mock('@/shared/auth/protectedAuthFlow', () => ({

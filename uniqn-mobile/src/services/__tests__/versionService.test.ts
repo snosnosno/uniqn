@@ -6,13 +6,14 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'web' },
 }));
 
-jest.mock('firebase/firestore', () => ({
-  doc: jest.fn(),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
-}));
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseDb: jest.fn(() => ({ name: 'db' })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: (...args: unknown[]) => mockGetDoc(...args),
+    })),
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({

@@ -61,38 +61,19 @@ jest.mock('@/repositories', () => ({
 // Mock Dependencies
 // ============================================================================
 
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  getFirebaseDb: () => ({}),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+  },
 }));
-
-jest.mock('firebase/firestore', () => {
-  class MockTimestampClass {
-    private _date: Date;
-    constructor(seconds: number, nanoseconds: number = 0) {
-      this._date = new Date(seconds * 1000 + nanoseconds / 1000000);
-    }
-    toDate(): Date {
-      return this._date;
-    }
-    toMillis(): number {
-      return this._date.getTime();
-    }
-    static now(): MockTimestampClass {
-      return new MockTimestampClass(Date.now() / 1000);
-    }
-    static fromDate(date: Date): MockTimestampClass {
-      return new MockTimestampClass(date.getTime() / 1000);
-    }
-    static fromMillis(ms: number): MockTimestampClass {
-      return new MockTimestampClass(ms / 1000);
-    }
-  }
-  return {
-    Timestamp: MockTimestampClass,
-    serverTimestamp: () => ({ _serverTimestamp: true }),
-  };
-});
 
 jest.mock('@/utils/logger', () => ({
   logger: {

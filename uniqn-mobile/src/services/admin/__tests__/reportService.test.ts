@@ -20,7 +20,6 @@ import {
 // Import mocked modules
 // ============================================================================
 
-import { auth } from '@/lib/firebase';
 import { reportRepository, userRepository } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 
@@ -28,15 +27,22 @@ import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 // Mocks
 // ============================================================================
 
-jest.mock('@/lib/firebase');
-
 const mockCurrentUser = { uid: 'user-1', email: 'test@test.com' };
 
-// Override auth mock to provide currentUser
-jest.mock('@/lib/firebase', () => ({
-  ...jest.requireActual('@/lib/firebase'),
-  auth: { currentUser: null },
-  getFirebaseDb: jest.fn(() => ({})),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+  },
 }));
 
 jest.mock('@/repositories', () => ({
@@ -86,6 +92,7 @@ jest.mock('@/errors', () => ({
   }),
 }));
 
+const mockAuth = { currentUser: null as Record<string, unknown> | null };
 const mockRequireCurrentUser = jest.fn();
 const mockRequireAdminUser = jest.fn();
 
@@ -94,7 +101,6 @@ jest.mock('@/services/auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
 }));
 
-const mockAuth = auth as jest.Mocked<typeof auth>;
 const mockReportRepo = reportRepository as jest.Mocked<typeof reportRepository>;
 const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;
 const mockCreateReportSchema = createReportInputSchema as jest.Mocked<

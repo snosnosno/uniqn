@@ -29,13 +29,7 @@ const mockUploadBytes = jest.fn();
 const mockGetDownloadURL = jest.fn();
 const mockDeleteObject = jest.fn();
 const mockRef = jest.fn();
-
-jest.mock('firebase/storage', () => ({
-  ref: (...args: unknown[]) => mockRef(...args),
-  uploadBytes: (...args: unknown[]) => mockUploadBytes(...args),
-  getDownloadURL: (...args: unknown[]) => mockGetDownloadURL(...args),
-  deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
-}));
+const mockGetFirebaseStorage = jest.fn();
 
 const mockManipulateAsync = jest.fn();
 
@@ -46,10 +40,19 @@ jest.mock('expo-image-manipulator', () => ({
   },
 }));
 
-const mockGetFirebaseStorage = jest.fn();
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseStorage: () => mockGetFirebaseStorage(),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    storage: {
+      from: jest.fn(() => ({
+        upload: (...args: unknown[]) => mockUploadBytes(...args),
+        getPublicUrl: (...args: unknown[]) => mockGetDownloadURL(...args),
+        remove: (...args: unknown[]) => mockDeleteObject(...args),
+        createSignedUrl: jest
+          .fn()
+          .mockResolvedValue({ data: { signedUrl: 'https://test.com/signed' }, error: null }),
+      })),
+    },
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({

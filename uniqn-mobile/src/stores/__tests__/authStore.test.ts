@@ -35,12 +35,14 @@ const mockSyncSignOut = jest.fn();
 const mockTrackLogout = jest.fn();
 const mockSetUserId = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(() => mockFirebaseAuth),
-}));
-
-jest.mock('@/lib/authBridge', () => ({
-  syncSignOut: () => mockSyncSignOut(),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: () => mockSyncSignOut(),
+      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+    },
+  },
 }));
 
 jest.mock('@/lib/secureStorage', () => ({

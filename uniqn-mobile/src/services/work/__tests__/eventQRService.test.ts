@@ -58,44 +58,18 @@ jest.mock('@/repositories', () => ({
 const mockGetDocs = jest.fn();
 const mockRunTransaction = jest.fn();
 
-jest.mock('firebase/firestore', () => {
-  // MockTimestamp를 팩토리 내부에 정의하여 호이스팅 문제 방지
-  class MockTimestampImpl {
-    private _milliseconds: number;
-    constructor(milliseconds: number) {
-      this._milliseconds = milliseconds;
-    }
-    static now() {
-      return new MockTimestampImpl(Date.now());
-    }
-    static fromMillis(ms: number) {
-      return new MockTimestampImpl(ms);
-    }
-    static fromDate(date: Date) {
-      return new MockTimestampImpl(date.getTime());
-    }
-    toMillis() {
-      return this._milliseconds;
-    }
-    toDate() {
-      return new Date(this._milliseconds);
-    }
-  }
-  return {
-    collection: jest.fn(() => ({ path: 'workLogs' })),
-    doc: jest.fn(() => ({ id: 'test-doc' })),
-    getDocs: (...args: unknown[]) => mockGetDocs(...args),
-    query: jest.fn((...args) => args),
-    where: jest.fn((field, op, value) => ({ field, op, value })),
-    limit: jest.fn((n) => ({ limit: n })),
-    Timestamp: MockTimestampImpl,
-    serverTimestamp: () => ({ _methodName: 'serverTimestamp' }),
-    runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
-  };
-});
-
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseDb: jest.fn(() => ({ type: 'firestore' })),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    rpc: (...args: unknown[]) => mockRunTransaction(...args),
+  },
 }));
 
 jest.mock('@/utils/logger', () => ({

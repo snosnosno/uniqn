@@ -40,32 +40,21 @@ const mockWhere = jest.fn();
 const mockOrderBy = jest.fn();
 const mockLimit = jest.fn();
 
-jest.mock('firebase/firestore', () => ({
-  doc: (...args: unknown[]) => mockDoc(...args),
-  collection: (...args: unknown[]) => mockCollection(...args),
-  query: (...args: unknown[]) => mockQuery(...args),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
-  getDocs: (...args: unknown[]) => mockGetDocs(...args),
-  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
-  where: (...args: unknown[]) => mockWhere(...args),
-  orderBy: (...args: unknown[]) => mockOrderBy(...args),
-  limit: (...args: unknown[]) => mockLimit(...args),
-  Timestamp: {
-    now: () => ({
-      toMillis: () => Date.now(),
-      toDate: () => new Date(),
-    }),
-    fromMillis: (ms: number) => ({
-      toMillis: () => ms,
-      toDate: () => new Date(ms),
-    }),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: (...args: unknown[]) => mockGetDocs(...args),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: (...args: unknown[]) => mockGetDoc(...args),
+    })),
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: (...args: unknown[]) => mockOnSnapshot(...args),
+    })),
   },
-}));
-
-const mockDb = {};
-jest.mock('@/lib/firebase', () => ({
-  db: mockDb,
-  getFirebaseDb: () => mockDb,
 }));
 
 jest.mock('@/utils/logger', () => ({

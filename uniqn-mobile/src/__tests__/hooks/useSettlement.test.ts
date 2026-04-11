@@ -33,11 +33,20 @@ import {
 // NOTE: Dynamic imports removed due to Jest compatibility issues
 // import { createMockJobPosting } from '../mocks/factories';
 
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: {},
-  storage: {},
-  functions: {},
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+  },
 }));
 
 // ============================================================================

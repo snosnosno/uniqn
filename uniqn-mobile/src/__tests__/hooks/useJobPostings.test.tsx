@@ -17,12 +17,23 @@ import type { JobPostingCard } from '@/types';
 import { useJobPostings } from '@/hooks/useJobPostings';
 
 // ============================================================================
-// Firebase Mock
+// Supabase Mock
 // ============================================================================
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseDb: jest.fn(),
-  getFirebaseAuth: jest.fn(),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+  },
 }));
 
 // ============================================================================

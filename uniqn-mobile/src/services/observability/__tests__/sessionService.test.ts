@@ -37,12 +37,14 @@ const mockAuthStoreState = {
   checkAuthState: jest.fn().mockResolvedValue(undefined),
 };
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: jest.fn(() => mockAuth),
-}));
-
-jest.mock('@/lib/authBridge', () => ({
-  syncSignOut: jest.fn().mockResolvedValue(undefined),
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+    },
+  },
 }));
 
 jest.mock('@/lib/secureStorage', () => ({
