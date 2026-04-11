@@ -26,7 +26,15 @@ export type { PostingType } from './postingConfig';
 export const JOB_POSTING_SCHEMA_VERSION = 3 as const;
 export type JobPostingSchemaVersion = typeof JOB_POSTING_SCHEMA_VERSION;
 
-export type JobPostingStatus = 'active' | 'closed' | 'cancelled';
+export type JobPostingStatus =
+  | 'draft'
+  | 'pending'
+  | 'approved'
+  | 'active'
+  | 'closed'
+  | 'cancelled'
+  | 'expired'
+  | 'rejected';
 export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date';
 export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 

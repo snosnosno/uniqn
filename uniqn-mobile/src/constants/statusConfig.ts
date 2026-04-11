@@ -224,9 +224,38 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
   },
 };
 
-export type JobPostingStatusType = 'active' | 'closed' | 'cancelled';
+export type JobPostingStatusType =
+  | 'draft'
+  | 'pending'
+  | 'approved'
+  | 'active'
+  | 'closed'
+  | 'cancelled'
+  | 'expired'
+  | 'rejected';
 
 export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
+  draft: {
+    label: '임시저장',
+    variant: 'secondary',
+    textColor: 'text-gray-500 dark:text-gray-400',
+    bgColor: 'bg-gray-50 dark:bg-surface',
+    hexColor: '#9CA3AF',
+  },
+  pending: {
+    label: '승인대기',
+    variant: 'warning',
+    textColor: 'text-yellow-600 dark:text-yellow-400',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    hexColor: '#EAB308',
+  },
+  approved: {
+    label: '승인완료',
+    variant: 'primary',
+    textColor: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    hexColor: '#3B82F6',
+  },
   active: {
     label: '모집중',
     variant: 'success',
@@ -243,6 +272,20 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
   },
   cancelled: {
     label: '취소됨',
+    variant: 'error',
+    textColor: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-red-100 dark:bg-red-900/30',
+    hexColor: '#EF4444',
+  },
+  expired: {
+    label: '만료됨',
+    variant: 'default',
+    textColor: 'text-gray-600 dark:text-gray-400',
+    bgColor: 'bg-gray-100 dark:bg-surface',
+    hexColor: '#6B7280',
+  },
+  rejected: {
+    label: '거절됨',
     variant: 'error',
     textColor: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-100 dark:bg-red-900/30',

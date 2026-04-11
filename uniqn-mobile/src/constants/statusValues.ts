@@ -35,9 +35,14 @@ export const WORK_LOG_STATUS_VALUES = {
 } as const satisfies Record<string, WorkLogStatus>;
 
 export const JOB_POSTING_STATUS_VALUES = {
+  DRAFT: 'draft',
+  PENDING: 'pending',
+  APPROVED: 'approved',
   ACTIVE: 'active',
   CLOSED: 'closed',
   CANCELLED: 'cancelled',
+  EXPIRED: 'expired',
+  REJECTED: 'rejected',
 } as const satisfies Record<string, JobPostingStatusType>;
 
 export const INQUIRY_STATUS_VALUES = {

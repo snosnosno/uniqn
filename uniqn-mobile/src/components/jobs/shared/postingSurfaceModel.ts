@@ -59,7 +59,7 @@ export interface PostingCompensationSource {
 
 export interface PostingStatusMeta {
   label: string;
-  variant: 'success' | 'default' | 'error';
+  variant: 'success' | 'default' | 'error' | 'warning' | 'primary' | 'secondary';
 }
 
 export interface PostingRoleDisplayModel {
@@ -124,10 +124,18 @@ export interface PostingCompensationModel {
 
 export function getPostingStatusMeta(status: JobPostingStatus): PostingStatusMeta {
   switch (status) {
+    case 'draft':
+      return { label: '임시저장', variant: 'secondary' };
+    case 'pending':
+      return { label: '승인대기', variant: 'warning' };
+    case 'approved':
+      return { label: '승인완료', variant: 'primary' };
     case 'closed':
-      return { label: '마감', variant: 'default' };
+    case 'expired':
+      return { label: status === 'closed' ? '마감' : '만료됨', variant: 'default' };
     case 'cancelled':
-      return { label: '취소됨', variant: 'error' };
+    case 'rejected':
+      return { label: status === 'cancelled' ? '취소됨' : '거절됨', variant: 'error' };
     case 'active':
     default:
       return { label: '모집중', variant: 'success' };

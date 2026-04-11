@@ -103,7 +103,9 @@ export const dateTimeSchema = z.object({
 export type DateTimeData = z.infer<typeof dateTimeSchema>;
 
 export const jobFilterSchema = z.object({
-  status: z.enum(['active', 'closed', 'cancelled']).optional(),
+  status: z
+    .enum(['draft', 'pending', 'approved', 'active', 'closed', 'cancelled', 'expired', 'rejected'])
+    .optional(),
   roles: z.array(roleSchema).optional(),
   district: z.string().optional(),
   dateRange: z
@@ -448,7 +450,16 @@ export const jobPostingDocumentSchema = z
     schemaVersion: z.literal(JOB_POSTING_SCHEMA_VERSION),
     title: z.string(),
     description: z.string().optional(),
-    status: z.enum(['active', 'closed', 'cancelled']),
+    status: z.enum([
+      'draft',
+      'pending',
+      'approved',
+      'active',
+      'closed',
+      'cancelled',
+      'expired',
+      'rejected',
+    ]),
     ownerId: z.string(),
     ownerName: z.string().optional(),
     postingType: postingTypeSchema.optional().default('regular'),
