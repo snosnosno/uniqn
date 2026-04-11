@@ -26,7 +26,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { TutorialPage } from '@/components/tutorial/TutorialPage';
 import { TutorialIndicator } from '@/components/tutorial/TutorialIndicator';
-import { PRIMARY_COLORS, ACCENT_COLORS, STATUS_COLORS } from '@/constants/colors';
+import { PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
 import {
   trackTutorialStart,
   trackTutorialComplete,
@@ -63,12 +63,11 @@ const COUNTDOWN_THRESHOLD_SEC = 10;
  */
 function getIconBgClass(accentColor: string): string {
   const colorMap: Record<string, string> = {
-    [PRIMARY_COLORS[500]]: 'bg-primary-100 dark:bg-primary-900/30',
-    [PRIMARY_COLORS[700]]: 'bg-primary-200 dark:bg-primary-800/30',
-    [ACCENT_COLORS[500]]: 'bg-accent-100 dark:bg-accent-700/30',
-    [STATUS_COLORS.success]: 'bg-success-100 dark:bg-success-700/30',
+    [PRIMARY_COLORS[500]]: 'bg-primary-50 dark:bg-primary-50',
+    [PRIMARY_COLORS[700]]: 'bg-primary-100 dark:bg-primary-100',
+    [STATUS_COLORS.success]: 'bg-success-50 dark:bg-success-50',
   };
-  return colorMap[accentColor] ?? 'bg-primary-100 dark:bg-primary-900/30';
+  return colorMap[accentColor] ?? 'bg-primary-50 dark:bg-primary-50';
 }
 
 /**
@@ -76,12 +75,11 @@ function getIconBgClass(accentColor: string): string {
  */
 function getButtonClass(accentColor: string): string {
   const colorMap: Record<string, string> = {
-    [PRIMARY_COLORS[500]]: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700',
-    [PRIMARY_COLORS[700]]: 'bg-primary-700 active:bg-primary-800 dark:bg-primary-600',
-    [ACCENT_COLORS[500]]: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-600',
-    [STATUS_COLORS.success]: 'bg-success-600 active:bg-success-700 dark:bg-success-700',
+    [PRIMARY_COLORS[500]]: 'bg-primary-500 active:bg-primary-600',
+    [PRIMARY_COLORS[700]]: 'bg-primary-700 active:bg-primary-800',
+    [STATUS_COLORS.success]: 'bg-success-600 active:bg-success-700',
   };
-  return colorMap[accentColor] ?? 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700';
+  return colorMap[accentColor] ?? 'bg-primary-500 active:bg-primary-600';
 }
 
 // ============================================================================

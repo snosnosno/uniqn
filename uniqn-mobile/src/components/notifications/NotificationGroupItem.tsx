@@ -85,7 +85,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       >
         <View className="flex-row items-start">
           {/* 아이콘 */}
-          <NotificationIcon type={group.type} useEmoji className="mr-3" />
+          <NotificationIcon type={group.type} className="mr-3" />
 
           {/* 컨텐츠 */}
           <View className="flex-1">
@@ -153,7 +153,6 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
                 onDelete={onDeleteNotification}
                 showDelete={showDelete}
                 animated={false}
-                useEmoji={false}
               />
             </View>
           ))}

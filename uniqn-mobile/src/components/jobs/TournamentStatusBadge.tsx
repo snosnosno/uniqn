@@ -60,7 +60,6 @@ type TournamentStatusBadgeProps = (
 
 interface StatusConfig {
   label: string;
-  emoji: string;
   bgClass: string;
   textClass: string;
   borderClass: string;
@@ -73,24 +72,21 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<ApprovalStatus, StatusConfig> = {
   pending: {
     label: '승인 대기',
-    emoji: '⏳',
-    bgClass: 'bg-yellow-100 dark:bg-yellow-900/30',
-    textClass: 'text-yellow-800 dark:text-yellow-300',
-    borderClass: 'border-yellow-200 dark:border-yellow-700',
+    bgClass: 'bg-warning-50 dark:bg-warning-50',
+    textClass: 'text-warning-600 dark:text-warning-500',
+    borderClass: 'border-warning-600/20 dark:border-warning-500/20',
   },
   approved: {
     label: '승인 완료',
-    emoji: '✅',
-    bgClass: 'bg-green-100 dark:bg-green-900/30',
-    textClass: 'text-green-800 dark:text-green-300',
-    borderClass: 'border-green-200 dark:border-green-700',
+    bgClass: 'bg-success-50 dark:bg-success-50',
+    textClass: 'text-success-600 dark:text-success-500',
+    borderClass: 'border-success-600/20 dark:border-success-500/20',
   },
   rejected: {
     label: '승인 거부',
-    emoji: '❌',
-    bgClass: 'bg-red-100 dark:bg-red-900/30',
-    textClass: 'text-red-800 dark:text-red-300',
-    borderClass: 'border-red-200 dark:border-red-700',
+    bgClass: 'bg-error-50 dark:bg-error-50',
+    textClass: 'text-error-600 dark:text-error-500',
+    borderClass: 'border-error-600/20 dark:border-error-500/20',
   },
 };
 
@@ -224,13 +220,11 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   // 배지 내용 (공통)
   const badgeContent = (
     <>
-      <Text className="mr-1">{config.emoji}</Text>
-      <Text className={`font-medium ${config.textClass} ${sizeConfig.textClass}`}>
+      <Text className={`font-semibold ${config.textClass} ${sizeConfig.textClass}`}>
         {config.label}
       </Text>
-      {/* 재제출 표시 */}
       {isResubmitted && approvalStatus === STATUS.TOURNAMENT.PENDING && (
-        <Text className="ml-1 text-primary-600 dark:text-primary-400">🔄</Text>
+        <RefreshIcon size={12} color="#D4AF37" />
       )}
     </>
   );

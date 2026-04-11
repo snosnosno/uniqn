@@ -20,7 +20,6 @@ export interface NotificationItemProps {
   onDelete?: (notificationId: string) => void;
   showDelete?: boolean;
   animated?: boolean;
-  useEmoji?: boolean;
 }
 
 export const NotificationItem = memo(function NotificationItem({
@@ -29,7 +28,6 @@ export const NotificationItem = memo(function NotificationItem({
   onDelete,
   showDelete = false,
   animated = true,
-  useEmoji = true,
 }: NotificationItemProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
@@ -77,7 +75,7 @@ export const NotificationItem = memo(function NotificationItem({
         className="px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
       >
         <View className="flex-row items-start">
-          <NotificationIcon type={notification.type} useEmoji={useEmoji} className="mr-3" />
+          <NotificationIcon type={notification.type} className="mr-3" />
 
           <View className="flex-1">
             <View className="flex-row items-center">

@@ -6,7 +6,7 @@
  */
 
 import React, { memo } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import {
   UserPlusIcon,
   UserMinusIcon,
@@ -35,8 +35,6 @@ export interface NotificationIconProps {
   type: NotificationType;
   /** 아이콘 크기 (기본: 20) */
   size?: number;
-  /** 이모지 사용 여부 (기본: false) */
-  useEmoji?: boolean;
   /** 커스텀 스타일 */
   className?: string;
 }
@@ -97,113 +95,45 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.REVIEW_REMINDER]: ClockIcon,
 };
 
-// 타입별 이모지 매핑
-const typeEmojis: Partial<Record<NotificationType, string>> = {
-  // 지원 관련
-  [NotificationType.NEW_APPLICATION]: '👤',
-  [NotificationType.APPLICATION_CANCELLED]: '❌',
-  [NotificationType.APPLICATION_CONFIRMED]: '✅',
-  [NotificationType.CONFIRMATION_CANCELLED]: '🚫',
-  [NotificationType.APPLICATION_REJECTED]: '❌',
-  [NotificationType.CANCELLATION_APPROVED]: '✅',
-  [NotificationType.CANCELLATION_REJECTED]: '❌',
-
-  // 출퇴근 관련
-  [NotificationType.STAFF_CHECKED_IN]: '🟢',
-  [NotificationType.STAFF_CHECKED_OUT]: '🔴',
-  [NotificationType.CHECK_IN_CONFIRMED]: '✅',
-  [NotificationType.CHECK_OUT_CONFIRMED]: '✅',
-  [NotificationType.CHECKIN_REMINDER]: '⏰',
-  [NotificationType.NO_SHOW_ALERT]: '⚠️',
-  [NotificationType.SCHEDULE_CHANGE]: '📅',
-  [NotificationType.SCHEDULE_CREATED]: '📆',
-  [NotificationType.SCHEDULE_CANCELLED]: '🚫',
-
-  // 정산 관련
-  [NotificationType.SETTLEMENT_COMPLETED]: '💰',
-  [NotificationType.SETTLEMENT_REQUESTED]: '📝',
-  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: '⚠️',
-
-  // 공고 관련
-  [NotificationType.JOB_UPDATED]: '📋',
-  [NotificationType.JOB_CANCELLED]: '❌',
-  [NotificationType.JOB_CLOSED]: '📋',
-
-  // 시스템
-  [NotificationType.ANNOUNCEMENT]: '📢',
-  [NotificationType.MAINTENANCE]: '🔧',
-  [NotificationType.APP_UPDATE]: '🆕',
-
-  // 관리자
-  [NotificationType.INQUIRY_ANSWERED]: '💬',
-  [NotificationType.REPORT_RESOLVED]: '✅',
-  [NotificationType.NEW_REPORT]: '🚨',
-  [NotificationType.NEW_INQUIRY]: '💬',
-  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '🏆',
-
-  // 리뷰/평가 관련
-  [NotificationType.REVIEW_REQUEST]: '📝',
-  [NotificationType.REVIEW_RECEIVED]: '⭐',
-  [NotificationType.REVIEW_REMINDER]: '⏰',
-};
-
-// 카테고리별 색상
+// 카테고리별 색상 (Black & Gold v3.0)
 const categoryColors: Record<NotificationCategory, { bg: string; icon: string }> = {
   [NotificationCategory.APPLICATION]: {
-    bg: 'bg-primary-100 dark:bg-primary-900/30',
-    icon: '#D4AF37', // primary-500
+    bg: 'bg-primary-50 dark:bg-primary-50',
+    icon: '#D4AF37',
   },
   [NotificationCategory.ATTENDANCE]: {
-    bg: 'bg-success-100 dark:bg-success-900/30',
-    icon: '#22c55e', // success-500
+    bg: 'bg-success-50 dark:bg-success-50',
+    icon: '#22C55E',
   },
   [NotificationCategory.SETTLEMENT]: {
-    bg: 'bg-warning-100 dark:bg-warning-900/30',
-    icon: '#f59e0b', // warning-500
+    bg: 'bg-warning-50 dark:bg-warning-50',
+    icon: '#D4A017',
   },
   [NotificationCategory.JOB]: {
-    bg: 'bg-primary-100 dark:bg-primary-900/30',
-    icon: '#D4AF37', // primary-500
+    bg: 'bg-primary-50 dark:bg-primary-50',
+    icon: '#D4AF37',
   },
   [NotificationCategory.SYSTEM]: {
-    bg: 'bg-gray-100 dark:bg-surface',
-    icon: '#6b7280', // gray-500
+    bg: 'bg-secondary-100 dark:bg-surface-overlay',
+    icon: '#9A9078',
   },
   [NotificationCategory.ADMIN]: {
-    bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-    icon: '#6366f1', // indigo-500
+    bg: 'bg-info-50 dark:bg-info-50',
+    icon: '#2563EB',
   },
   [NotificationCategory.REVIEW]: {
-    bg: 'bg-amber-100 dark:bg-amber-900/30',
-    icon: '#f59e0b', // amber-500
+    bg: 'bg-warning-50 dark:bg-warning-50',
+    icon: '#D4A017',
   },
 };
 
 export const NotificationIcon = memo(function NotificationIcon({
   type,
   size = 20,
-  useEmoji = false,
   className = '',
 }: NotificationIconProps) {
   const category = getNotificationCategory(type);
   const colors = categoryColors[category] || categoryColors[NotificationCategory.SYSTEM];
-
-  if (useEmoji) {
-    const emoji = typeEmojis[type] || '🔔';
-    return (
-      <View
-        importantForAccessibility="no-hide-descendants"
-        className={`
-          w-10 h-10 rounded-sm items-center justify-center
-          ${colors.bg}
-          ${className}
-        `}
-      >
-        <Text className="text-lg">{emoji}</Text>
-      </View>
-    );
-  }
-
   const IconComponent = typeIcons[type] || BellIcon;
 
   return (
