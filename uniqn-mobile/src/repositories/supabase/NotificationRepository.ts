@@ -48,6 +48,8 @@ const TABLES = {
 
 const PAGE_SIZE = 20;
 const NOTIFICATION_REALTIME_LIMIT = 50;
+const NOTIFICATION_COLUMNS =
+  'id,body,category,created_at,data,is_read,link,priority,read_at,recipient_id,title,type' as const;
 
 // ============================================================================
 // Helpers
@@ -91,7 +93,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.NOTIFICATIONS)
-        .select('*')
+        .select(NOTIFICATION_COLUMNS)
         .eq('id', notificationId)
         .maybeSingle();
 
@@ -433,7 +435,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.NOTIFICATION_SETTINGS)
-        .select('*')
+        .select(NOTIFICATION_COLUMNS)
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -585,7 +587,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
       const fullReload = (): void => {
         supabase
           .from(TABLES.NOTIFICATIONS)
-          .select('*')
+          .select(NOTIFICATION_COLUMNS)
           .eq('recipient_id', userId)
           .order('created_at', { ascending: false })
           .limit(NOTIFICATION_REALTIME_LIMIT)

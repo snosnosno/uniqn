@@ -12,16 +12,16 @@
  * Note: Firebase 서브컬렉션(comments, votes, reactions) → 별도 PostgreSQL 테이블로 매핑
  */
 
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { toError, isAppError } from '@/errors';
-import { handleSupabaseError, runRpc } from '@/utils/supabase';
+import { handleSupabaseError, runRpc, safeParseJson } from '@/utils/supabase';
 import { buildScheduleBoardPostId } from '@/shared/board/boardIds';
 import type {
   BoardAuthorRole,
   BoardComment,
   BoardCommentReaction,
-  BoardImageAttachment,
   BoardMembership,
   BoardPost,
   BoardPostStatus,
@@ -57,6 +57,43 @@ const TABLES = {
   BOARD_REPORTS: 'board_reports',
 } as const;
 
+const POST_COLUMNS =
+  'id,announcement_category,author_id,author_name,author_role,board_type,body,comment_count,created_at,dislike_count,image_attachments,is_auto_created,is_locked,is_pinned,job_summary,last_activity_at,like_count,linked_job_posting_id,locked_at,locked_by,source,status,title,updated_at,view_count,visibility' as const;
+const COMMENT_COLUMNS =
+  'id,author_id,author_name,author_role,body,created_at,image_attachments,is_pinned,mentioned_user_ids,parent_comment_id,pinned_at,pinned_by,post_id,reaction_counts,status,updated_at' as const;
+const MEMBERSHIP_COLUMNS =
+  'id,author_id,board_type,can_comment,can_read,created_at,display_name,job_posting_id,last_activity_at,post_id,role,title,updated_at,user_id,work_date' as const;
+const REPORT_COLUMNS =
+  'id,created_at,details,post_id,reason,reporter_id,resolved_at,resolved_by,status,target_id,target_type,updated_at' as const;
+const VOTE_COLUMNS = 'id,created_at,post_id,type,user_id' as const;
+
+// ============================================================================
+// Json Field Zod Schemas
+// ============================================================================
+
+const boardImageAttachmentSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  storagePath: z.string(),
+  order: z.number(),
+});
+
+const boardImageAttachmentsSchema = z.array(boardImageAttachmentSchema);
+
+const reactionCountsSchema = z.record(z.string(), z.number());
+
+const boardJobSummarySchema = z.object({
+  jobPostingId: z.string(),
+  title: z.string(),
+  workDate: z.string(),
+  workDates: z.array(z.string()).optional(),
+  locationName: z.string().optional(),
+  totalPositions: z.number().optional(),
+  filledPositions: z.number().optional(),
+  compensationLabel: z.string().optional(),
+  jobPostingStatus: z.string().optional(),
+});
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -82,11 +119,23 @@ function toBoardPost(row: Record<string, unknown>): BoardPost {
     dislikeCount: (row.dislike_count as number) ?? 0,
     commentCount: (row.comment_count as number) ?? 0,
     viewCount: (row.view_count as number) ?? 0,
-    imageAttachments: (row.image_attachments as BoardImageAttachment[]) ?? [],
+    imageAttachments: safeParseJson(
+      boardImageAttachmentsSchema,
+      row.image_attachments,
+      [],
+      'board_post.image_attachments'
+    ),
     lastActivityAt: row.last_activity_at ? new Date(row.last_activity_at as string) : null,
     announcementCategory: row.announcement_category as BoardPost['announcementCategory'],
     isPinned: (row.is_pinned as boolean) ?? false,
-    jobSummary: row.job_summary as BoardPost['jobSummary'],
+    jobSummary: row.job_summary
+      ? (safeParseJson(
+          boardJobSummarySchema,
+          row.job_summary,
+          undefined,
+          'board_post.job_summary'
+        ) as BoardPost['jobSummary'])
+      : undefined,
     createdAt: row.created_at ? new Date(row.created_at as string) : undefined,
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
   };
@@ -102,12 +151,22 @@ function toBoardComment(row: Record<string, unknown>): BoardComment {
     authorName: row.author_name as string,
     authorRole: row.author_role as BoardAuthorRole,
     mentionedUserIds: (row.mentioned_user_ids as string[]) ?? [],
-    reactionCounts: (row.reaction_counts as Record<string, number>) ?? {},
+    reactionCounts: safeParseJson(
+      reactionCountsSchema,
+      row.reaction_counts,
+      {},
+      'board_comment.reaction_counts'
+    ),
     isPinned: (row.is_pinned as boolean) ?? false,
     pinnedAt: row.pinned_at ? new Date(row.pinned_at as string) : null,
     pinnedBy: (row.pinned_by as string) ?? null,
     status: (row.status as BoardComment['status']) ?? 'active',
-    imageAttachments: (row.image_attachments as BoardImageAttachment[]) ?? [],
+    imageAttachments: safeParseJson(
+      boardImageAttachmentsSchema,
+      row.image_attachments,
+      [],
+      'board_comment.image_attachments'
+    ),
     createdAt: row.created_at ? new Date(row.created_at as string) : undefined,
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
   };
@@ -167,7 +226,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_POSTS)
-        .select('*')
+        .select(POST_COLUMNS)
         .eq('id', postId)
         .maybeSingle();
 
@@ -186,7 +245,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
   async getPosts(options: FetchBoardRepositoryPostsOptions = {}): Promise<BoardPost[]> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLES.BOARD_POSTS).select('*');
+      let query: any = supabase.from(TABLES.BOARD_POSTS).select(POST_COLUMNS);
 
       if (options.boardTypes?.length === 1) {
         query = query.eq('board_type', options.boardTypes[0]);
@@ -240,7 +299,10 @@ export class SupabaseBoardRepository implements IBoardRepository {
     if (postIds.length === 0) return [];
 
     try {
-      const { data, error } = await supabase.from(TABLES.BOARD_POSTS).select('*').in('id', postIds);
+      const { data, error } = await supabase
+        .from(TABLES.BOARD_POSTS)
+        .select(POST_COLUMNS)
+        .in('id', postIds);
 
       if (error) {
         handleSupabaseError(error, { operation: '게시글 배치 조회', table: TABLES.BOARD_POSTS });
@@ -405,7 +467,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_COMMENTS)
-        .select('*')
+        .select(COMMENT_COLUMNS)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
 
@@ -425,7 +487,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_COMMENTS)
-        .select('*')
+        .select(COMMENT_COLUMNS)
         .eq('id', commentId)
         .eq('post_id', postId)
         .maybeSingle();
@@ -770,7 +832,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_VOTES)
-        .select('*')
+        .select(VOTE_COLUMNS)
         .eq('post_id', postId)
         .eq('user_id', userId)
         .maybeSingle();
@@ -930,7 +992,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_COMMENT_REACTIONS)
-        .select('*')
+        .select(POST_COLUMNS)
         .eq('post_id', postId)
         .eq('comment_id', commentId)
         .eq('user_id', userId)
@@ -1014,7 +1076,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = supabase
         .from(TABLES.BOARD_MEMBERSHIPS)
-        .select('*')
+        .select(MEMBERSHIP_COLUMNS)
         .eq('user_id', userId)
         .eq('board_type', 'schedule');
 
@@ -1053,7 +1115,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_MEMBERSHIPS)
-        .select('*')
+        .select(MEMBERSHIP_COLUMNS)
         .eq('post_id', postId)
         .eq('board_type', 'schedule');
 
@@ -1079,7 +1141,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_MEMBERSHIPS)
-        .select('*')
+        .select(MEMBERSHIP_COLUMNS)
         .eq('id', getMembershipId(postId, userId))
         .maybeSingle();
 
@@ -1295,7 +1357,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_REPORTS)
-        .select('*')
+        .select(REPORT_COLUMNS)
         .eq('id', reportId)
         .maybeSingle();
 
@@ -1316,7 +1378,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = supabase
         .from(TABLES.BOARD_REPORTS)
-        .select('*')
+        .select(REPORT_COLUMNS)
         .order('created_at', { ascending: false });
 
       if (options.status && options.status !== 'all') {
@@ -1345,7 +1407,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.BOARD_REPORTS)
-        .select('*')
+        .select(REPORT_COLUMNS)
         .eq('post_id', postId);
 
       if (error) {

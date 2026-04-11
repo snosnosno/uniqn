@@ -33,6 +33,8 @@ const TABLES = {
   APPLICATIONS: 'applications',
   REPORTS: 'reports',
 } as const;
+const USER_COLUMNS =
+  'id,name,email,role,phone,photo_url,created_at,updated_at,is_active,phone_verified' as const;
 
 // ============================================================================
 // Helpers
@@ -149,7 +151,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
       const { data, error } = await supabase
         .from(TABLES.USERS)
-        .select('*')
+        .select(USER_COLUMNS)
         .order('created_at', { ascending: false })
         .limit(limitCount);
 
@@ -181,7 +183,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
       logger.info('사용자 목록 조회', { filters, page, pageSize });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLES.USERS).select('*', { count: 'exact' });
+      let query: any = supabase.from(TABLES.USERS).select(USER_COLUMNS, { count: 'exact' });
 
       if (filters.role && filters.role !== 'all') {
         query = query.eq('role', filters.role);
@@ -249,7 +251,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
       const { data, error } = await supabase
         .from(TABLES.USERS)
-        .select('*')
+        .select(USER_COLUMNS)
         .eq('id', userId)
         .maybeSingle();
 

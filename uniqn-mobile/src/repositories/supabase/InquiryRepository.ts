@@ -31,6 +31,8 @@ const TABLES = {
 } as const;
 
 const COMPONENT = 'SupabaseInquiryRepository';
+const TABLE_COLUMNS =
+  'id,attachments,category,created_at,message,responded_at,responder_id,responder_name,response,status,subject,updated_at,user_email,user_id,user_name' as const;
 
 // ============================================================================
 // Helpers
@@ -53,7 +55,7 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.INQUIRIES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', inquiryId)
         .maybeSingle();
 

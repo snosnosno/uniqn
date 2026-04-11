@@ -34,6 +34,8 @@ const TABLES = {
   WORK_LOGS: 'work_logs',
   USERS: 'users',
 } as const;
+const TABLE_COLUMNS =
+  'id,bubble_score_change,comment,created_at,job_posting_id,job_posting_title,reviewee_id,reviewee_name,reviewer_id,reviewer_name,reviewer_type,sentiment,tags,work_date,work_log_id' as const;
 
 // ============================================================================
 // Helpers
@@ -59,7 +61,7 @@ export class SupabaseReviewRepository implements IReviewRepository {
       const reviewId = `${workLogId}_${reviewerType}`;
       const { data, error } = await supabase
         .from(TABLES.REVIEWS)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', reviewId)
         .maybeSingle();
 
@@ -90,8 +92,12 @@ export class SupabaseReviewRepository implements IReviewRepository {
 
       // 내 리뷰 + 상대 리뷰 병렬 조회
       const [myResult, opponentResult] = await Promise.all([
-        supabase.from(TABLES.REVIEWS).select('*').eq('id', myReviewId).maybeSingle(),
-        supabase.from(TABLES.REVIEWS).select('*').eq('id', opponentReviewId).maybeSingle(),
+        supabase.from(TABLES.REVIEWS).select(TABLE_COLUMNS).eq('id', myReviewId).maybeSingle(),
+        supabase
+          .from(TABLES.REVIEWS)
+          .select(TABLE_COLUMNS)
+          .eq('id', opponentReviewId)
+          .maybeSingle(),
       ]);
 
       if (myResult.error) {

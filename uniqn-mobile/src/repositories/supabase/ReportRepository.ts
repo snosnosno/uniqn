@@ -31,6 +31,8 @@ import type { Report, CreateReportInput, ReviewReportInput } from '@/types/repor
 const TABLES = {
   REPORTS: 'reports',
 } as const;
+const TABLE_COLUMNS =
+  'id,created_at,description,evidence_urls,job_posting_id,job_posting_title,reporter_id,reporter_name,reporter_type,reviewed_at,reviewer_id,reviewer_notes,severity,status,target_id,target_name,type,updated_at,work_date,work_log_id' as const;
 
 // ============================================================================
 // Helpers
@@ -55,7 +57,7 @@ export class SupabaseReportRepository implements IReportRepository {
 
       const { data, error } = await supabase
         .from(TABLES.REPORTS)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', reportId)
         .maybeSingle();
 
@@ -240,7 +242,7 @@ export class SupabaseReportRepository implements IReportRepository {
 
       const { data, error } = await supabase
         .from(TABLES.REPORTS)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq(field, value)
         .order('created_at', { ascending: false });
 

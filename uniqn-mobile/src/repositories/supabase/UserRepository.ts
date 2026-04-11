@@ -36,6 +36,8 @@ const TABLES = {
   ORPHAN_ACCOUNTS: 'orphan_accounts',
   CONSENTS: 'consents',
 } as const;
+const USER_COLUMNS =
+  'id,birth_date,bubble_score,career,created_at,deletion_requested_at,deletion_scheduled_for,email,employer_agreements,employer_registered_at,experience_years,fcm_tokens,gender,identity,identity_provider,identity_verified,identity_verified_at,is_active,is_orphan,marketing_agreed,name,nickname,note,phone,phone_verified,photo_url,privacy_agreed,profile_completed,region,role,social_provider,status,terms_agreed,updated_at' as const;
 
 // ============================================================================
 // Helpers
@@ -72,7 +74,7 @@ export class SupabaseUserRepository implements IUserRepository {
 
       const { data, error } = await supabase
         .from(TABLES.USERS)
-        .select('*')
+        .select(USER_COLUMNS)
         .eq('id', userId)
         .maybeSingle();
 
@@ -109,7 +111,10 @@ export class SupabaseUserRepository implements IUserRepository {
 
       const uniqueIds = [...new Set(userIds)];
 
-      const { data, error } = await supabase.from(TABLES.USERS).select('*').in('id', uniqueIds);
+      const { data, error } = await supabase
+        .from(TABLES.USERS)
+        .select(USER_COLUMNS)
+        .in('id', uniqueIds);
 
       if (error) {
         handleSupabaseError(error, { operation: '사용자 배치 조회', table: TABLES.USERS });
@@ -399,7 +404,7 @@ export class SupabaseUserRepository implements IUserRepository {
       // 1. 현재 프로필 조회
       const { data: userData, error: fetchError } = await supabase
         .from(TABLES.USERS)
-        .select('*')
+        .select(USER_COLUMNS)
         .eq('id', userId)
         .maybeSingle();
 
@@ -449,7 +454,7 @@ export class SupabaseUserRepository implements IUserRepository {
         })
         .eq('id', userId)
         .eq('role', currentRole) // 낙관적 잠금: 조회 시 role과 동일해야 업데이트
-        .select('*')
+        .select(USER_COLUMNS)
         .single();
 
       if (updateError) {

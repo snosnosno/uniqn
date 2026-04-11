@@ -40,6 +40,9 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   archived: ['published'],
 };
 
+const TABLE_COLUMNS =
+  'id,author_id,author_name,category,content,created_at,image_storage_path,image_url,images,is_pinned,priority,published_at,status,target_audience,title,updated_at,view_count' as const;
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -85,7 +88,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', announcementId)
         .maybeSingle();
 
@@ -112,7 +115,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('status', 'published')
         .order('is_pinned', { ascending: false })
         .order('priority', { ascending: false })
@@ -123,7 +126,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
         // 커서 기반 페이지네이션: published_at 기준
         query = supabase
           .from(TABLE)
-          .select('*')
+          .select(TABLE_COLUMNS)
           .eq('status', 'published')
           .lt('published_at', lastDoc as string)
           .order('is_pinned', { ascending: false })

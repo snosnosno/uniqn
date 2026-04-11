@@ -15,14 +15,13 @@ import {
   paginatedQuery,
   createRealtimeSubscription,
 } from '@/utils/supabase';
-import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
+import { parseJobPostingDocument } from '@/schemas';
 import {
   createInitialPostingStats,
   mergeJobPostingInput,
   serializeJobPostingV3,
 } from '@/domains/job-posting';
 import { removeUndefined } from '@/utils/firestore/removeUndefined';
-import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';
@@ -48,6 +47,8 @@ import type {
 
 const TABLE = 'job_postings';
 const DEFAULT_PAGE_SIZE = 20;
+const TABLE_COLUMNS =
+  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,is_featured,last_work_date,location,og_image_url,owner_id,owner_name,posting_type,questions,rejection_reason,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ async function loadAndVerifyOwner(
 ): Promise<JobPosting> {
   const { data, error } = await supabase
     .from(TABLE)
-    .select('*')
+    .select(TABLE_COLUMNS)
     .eq('id', jobPostingId)
     .maybeSingle();
 
@@ -180,7 +181,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 상세 조회', { jobPostingId });
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', jobPostingId)
         .maybeSingle();
       if (error) handleSupabaseError(error, { operation: '공고 상세 조회', table: TABLE });
@@ -201,7 +202,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       if (jobPostingIds.length === 0) return [];
       logger.info('공고 배치 조회', { count: jobPostingIds.length });
       const uniqueIds = [...new Set(jobPostingIds)];
-      const { data, error } = await supabase.from(TABLE).select('*').in('id', uniqueIds);
+      const { data, error } = await supabase.from(TABLE).select(TABLE_COLUMNS).in('id', uniqueIds);
       if (error) handleSupabaseError(error, { operation: '공고 배치 조회', table: TABLE });
       const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
       logger.info('공고 배치 조회 완료', { requested: jobPostingIds.length, found: items.length });
@@ -261,7 +262,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('소유자별 공고 조회', { ownerId, status });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLE).select('*').eq('owner_id', ownerId);
+      let query: any = supabase.from(TABLE).select(TABLE_COLUMNS).eq('owner_id', ownerId);
       if (status) query = query.eq('status', status);
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
@@ -528,32 +529,18 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getStatsByOwnerId(ownerId: string): Promise<JobPostingStats> {
     try {
       logger.info('소유자 공고 통계 조회', { ownerId });
-      const { data, error } = await supabase.from(TABLE).select('*').eq('owner_id', ownerId);
+      const { data, error } = await supabase.rpc('get_job_posting_stats', { p_owner_id: ownerId });
       if (error) handleSupabaseError(error, { operation: '소유자 공고 통계 조회', table: TABLE });
 
-      const jobPostings = parseJobPostingDocuments(
-        ((data ?? []) as Record<string, unknown>[]).map((row) => ({
-          ...toCamelCase<Record<string, unknown>>(row),
-          id: row.id,
-        }))
-      );
-
+      const row = Array.isArray(data) ? data[0] : data;
       const stats: JobPostingStats = {
-        total: 0,
-        active: 0,
-        closed: 0,
-        cancelled: 0,
-        totalApplications: 0,
-        totalViews: 0,
+        total: Number(row?.total ?? 0),
+        active: Number(row?.active ?? 0),
+        closed: Number(row?.closed ?? 0),
+        cancelled: Number(row?.cancelled ?? 0),
+        totalApplications: Number(row?.total_applications ?? 0),
+        totalViews: Number(row?.total_views ?? 0),
       };
-      for (const p of jobPostings.filter(isEmployerManageablePosting)) {
-        stats.total++;
-        stats.totalApplications += p.stats?.totalApplicants ?? 0;
-        stats.totalViews += p.viewCount ?? 0;
-        if (p.status === STATUS.JOB_POSTING.ACTIVE) stats.active++;
-        else if (p.status === STATUS.JOB_POSTING.CLOSED) stats.closed++;
-        else if (p.status === STATUS.JOB_POSTING.CANCELLED) stats.cancelled++;
-      }
       logger.info('소유자 공고 통계 조회 완료', { ownerId, stats });
       return stats;
     } catch (error) {
@@ -662,7 +649,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 타입/승인상태별 조회', { postingType, approvalStatus });
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('posting_type', postingType)
         .eq('tournament_config->>approvalStatus', approvalStatus)
         .order('created_at', { ascending: false });
@@ -689,7 +676,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('소유자/공고타입별 조회', { ownerId, postingType, approvalStatuses });
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('posting_type', postingType)
         .eq('owner_id', ownerId)
         .in('tournament_config->>approvalStatus', approvalStatuses)

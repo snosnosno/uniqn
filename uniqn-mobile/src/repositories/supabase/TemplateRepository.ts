@@ -27,6 +27,7 @@ import type { ITemplateRepository } from '../interfaces/ITemplateRepository';
 const TABLES = {
   TEMPLATES: 'job_posting_templates',
 } as const;
+const TABLE_COLUMNS = 'id,created_at,name,template_data,updated_at,user_id' as const;
 
 // ============================================================================
 // Helpers
@@ -47,7 +48,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
 
       const { data, error } = await supabase
         .from(TABLES.TEMPLATES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('created_by', userId)
         .order('created_at', { ascending: false });
 
@@ -116,7 +117,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
 
       const { data, error } = await supabase
         .from(TABLES.TEMPLATES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', templateId)
         .single();
 

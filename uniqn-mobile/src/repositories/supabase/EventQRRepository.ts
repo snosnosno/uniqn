@@ -24,6 +24,8 @@ import type { EventQRCode, QRCodeAction } from '@/types';
 const TABLES = {
   EVENT_QR_CODES: 'event_qr_codes',
 } as const;
+const TABLE_COLUMNS =
+  'id,code,created_at,expires_at,is_active,job_posting_id,type,user_id,work_date' as const;
 
 // ============================================================================
 // Helpers
@@ -70,7 +72,7 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.EVENT_QR_CODES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', qrId)
         .maybeSingle();
 
@@ -97,7 +99,7 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.EVENT_QR_CODES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .eq('date', date)
         .eq('action', action)
@@ -152,7 +154,7 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.EVENT_QR_CODES)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .eq('date', date)
         .eq('action', action)
@@ -236,7 +238,7 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
       if (options?.assignmentGroupId !== undefined || options?.timeSlot !== undefined) {
         const { data, error: fetchError } = await supabase
           .from(TABLES.EVENT_QR_CODES)
-          .select('*')
+          .select(TABLE_COLUMNS)
           .eq('job_posting_id', jobPostingId)
           .eq('date', date)
           .eq('action', action)

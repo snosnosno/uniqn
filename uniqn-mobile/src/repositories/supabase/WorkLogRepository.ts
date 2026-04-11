@@ -39,6 +39,8 @@ import type {
 const TABLE = 'work_logs';
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_STATS_PAGE_SIZE = 1000;
+const TABLE_COLUMNS =
+  'id,application_id,assignment_group_id,check_in_time,check_out_time,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,status,time_slot,updated_at' as const;
 
 // ============================================================================
 // Helpers
@@ -81,7 +83,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', workLogId)
         .maybeSingle();
 
@@ -106,7 +108,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .order('date', { ascending: false })
         .limit(pageSize);
@@ -127,7 +129,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .eq('date', '');
 
@@ -153,7 +155,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       logger.info('필터를 포함한 스태프별 근무 기록 조회', { staffId, options });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLE).select('*').eq('staff_id', staffId);
+      let query: any = supabase.from(TABLE).select(TABLE_COLUMNS).eq('staff_id', staffId);
 
       if (options?.dateRange) {
         query = query.gte('date', options.dateRange.start).lte('date', options.dateRange.end);
@@ -189,7 +191,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .eq('date', date)
         .order('check_in_time', { ascending: false });
@@ -210,7 +212,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .order('date', { ascending: false });
 
@@ -234,7 +236,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query: any = supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('owner_id', ownerId)
         .in('status', [STATUS.WORK_LOG.CHECKED_OUT, STATUS.WORK_LOG.COMPLETED]);
 
@@ -263,7 +265,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('owner_id', ownerId)
         .eq('date', '')
         .in('status', [STATUS.WORK_LOG.CHECKED_OUT, STATUS.WORK_LOG.COMPLETED]);
@@ -289,7 +291,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .eq('date', today)
         .eq('status', STATUS.WORK_LOG.CHECKED_IN)
@@ -378,7 +380,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .gte('date', startDate)
         .lte('date', endDate)
@@ -430,7 +432,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .gte('date', startDate)
         .lte('date', endDate)
@@ -464,7 +466,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .eq('staff_id', staffId)
         .eq('date', date);
@@ -604,7 +606,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
     void supabase
       .from(TABLE)
-      .select('*')
+      .select(TABLE_COLUMNS)
       .eq('staff_id', staffId)
       .eq('date', date)
       .in('status', statuses)
@@ -672,7 +674,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       // 1. 현재 상태 조회
       const { data: current, error: fetchError } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', workLogId)
         .maybeSingle();
 
@@ -757,7 +759,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
       // 1. 현재 상태 조회
       const { data: current, error: fetchError } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('id', workLogId)
         .maybeSingle();
 
@@ -849,7 +851,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
 
       // 1. 근무 기록 + 공고 조회 (병렬)
       const [workLogResult, jobPostingResult] = await Promise.all([
-        supabase.from(TABLE).select('*').eq('id', workLogId).maybeSingle(),
+        supabase.from(TABLE).select(TABLE_COLUMNS).eq('id', workLogId).maybeSingle(),
         supabase
           .from('job_postings')
           .select('id, status, owner_id')

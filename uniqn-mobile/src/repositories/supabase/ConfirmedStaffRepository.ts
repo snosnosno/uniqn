@@ -34,6 +34,8 @@ import type {
 // ============================================================================
 
 const TABLE = 'work_logs';
+const TABLE_COLUMNS =
+  'id,application_id,assignment_group_id,check_in_time,check_out_time,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,status,time_slot,updated_at' as const;
 
 // ============================================================================
 // Helpers
@@ -65,7 +67,11 @@ function rethrowOrHandle(
  * WorkLog 존재 확인 헬퍼
  */
 async function loadWorkLog(workLogId: string, operation: string): Promise<WorkLog> {
-  const { data, error } = await supabase.from(TABLE).select('*').eq('id', workLogId).maybeSingle();
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select(TABLE_COLUMNS)
+    .eq('id', workLogId)
+    .maybeSingle();
 
   if (error) handleSupabaseError(error, { operation, table: TABLE });
 
@@ -129,7 +135,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .order('date', { ascending: true });
 
@@ -150,7 +156,7 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       const { data, error } = await supabase
         .from(TABLE)
-        .select('*')
+        .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .eq('date', date);
 

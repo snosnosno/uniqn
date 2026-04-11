@@ -85,6 +85,10 @@ const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
 ]);
 
 const EMPLOYER_REALTIME_LIMIT = 300;
+const APPLICATION_COLUMNS =
+  'id,applicant_email,applicant_id,applicant_name,applicant_nickname,applicant_phone,applicant_photo_url,applicant_role,assignments,cancellation_request,cancelled_at,confirmation_history,confirmed_at,created_at,custom_role,is_read,job_posting_date,job_posting_id,job_posting_title,message,notes,original_application,pre_question_answers,processed_at,processed_by,recruitment_type,rejection_reason,status,updated_at' as const;
+const JOB_POSTING_COLUMNS =
+  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,is_featured,last_work_date,location,og_image_url,owner_id,owner_name,posting_type,questions,rejection_reason,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
 
 // ============================================================================
 // Helpers
@@ -135,7 +139,7 @@ function rethrowOrHandle(
 async function loadApplication(applicationId: string): Promise<Application> {
   const { data, error } = await supabase
     .from(TABLES.APPLICATIONS)
-    .select('*')
+    .select(APPLICATION_COLUMNS)
     .eq('id', applicationId)
     .maybeSingle();
 
@@ -158,7 +162,7 @@ async function loadApplication(applicationId: string): Promise<Application> {
 async function loadJobPosting(jobPostingId: string): Promise<JobPosting> {
   const { data, error } = await supabase
     .from(TABLES.JOB_POSTINGS)
-    .select('*')
+    .select(JOB_POSTING_COLUMNS)
     .eq('id', jobPostingId)
     .maybeSingle();
 
@@ -272,7 +276,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('id', applicationId)
         .maybeSingle();
 
@@ -289,7 +293,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       // 공고 정보 조인
       const { data: jobData } = await supabase
         .from(TABLES.JOB_POSTINGS)
-        .select('*')
+        .select(JOB_POSTING_COLUMNS)
         .eq('id', application.jobPostingId)
         .maybeSingle();
 
@@ -310,7 +314,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('applicant_id', applicantId)
         .order('created_at', { ascending: false });
 
@@ -324,7 +328,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       const jobPostingIds = [...new Set(applications.map((a) => a.jobPostingId))];
       const { data: jobData } = await supabase
         .from(TABLES.JOB_POSTINGS)
-        .select('*')
+        .select(JOB_POSTING_COLUMNS)
         .in('id', jobPostingIds);
 
       const jobMap = new Map<string, JobPosting>();
@@ -352,7 +356,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('applicant_id', applicantId)
         .in('status', statuses)
         .order('created_at', { ascending: false })
@@ -409,7 +413,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .order('created_at', { ascending: false });
 
@@ -487,7 +491,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING)
         .order('updated_at', { ascending: false });
@@ -652,7 +656,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       const { data: upsertedData, error: upsertError } = await supabase
         .from(TABLES.APPLICATIONS)
         .upsert(applicationData)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .single();
 
       if (upsertError) {
@@ -1398,7 +1402,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
-        .select('*')
+        .select(APPLICATION_COLUMNS)
         .eq('job_posting_id', jobPostingId)
         .order('created_at', { ascending: false });
 
@@ -1447,7 +1451,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
         const { data, error } = await supabase
           .from(TABLES.APPLICATIONS)
-          .select('*')
+          .select(APPLICATION_COLUMNS)
           .eq('job_posting_id', jobPostingId)
           .order('created_at', { ascending: false })
           .limit(EMPLOYER_REALTIME_LIMIT);

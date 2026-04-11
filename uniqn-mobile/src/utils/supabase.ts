@@ -24,6 +24,7 @@ import {
   ERROR_CODES,
   isAppError,
 } from '@/errors';
+import type { ZodType } from 'zod';
 import type { PaginatedResult, UnsubscribeFn } from '@/types/common';
 
 // ============================================================================
@@ -465,4 +466,31 @@ export function toCamelCase<T>(obj: Record<string, unknown>): T {
     result[camelKey] = obj[key];
   }
   return result as T;
+}
+
+// ============================================================================
+// 7. Json Field Validation
+// ============================================================================
+
+/**
+ * Json 필드를 Zod 스키마로 안전하게 파싱
+ *
+ * @description DB의 Json 컬럼 값을 Zod 스키마로 검증하여 타입 안전성 확보.
+ *              파싱 실패 시 fallback 값을 반환하고 경고 로그를 남긴다.
+ * @param schema - Zod 스키마
+ * @param data - 검증 대상 데이터 (DB에서 읽은 Json 값)
+ * @param fallback - 파싱 실패 시 반환할 기본값
+ * @param context - 로그에 포함할 컨텍스트 문자열 (예: 'board_post.image_attachments')
+ * @returns 파싱 성공 시 타입 안전한 값, 실패 시 fallback
+ */
+export function safeParseJson<T>(
+  schema: ZodType<T>,
+  data: unknown,
+  fallback: T,
+  context?: string
+): T {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data;
+  logger.warn('Json 필드 파싱 실패', { context, errors: result.error.issues.slice(0, 3) });
+  return fallback;
 }
