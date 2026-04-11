@@ -84,7 +84,6 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
 }));
 
 jest.mock('@/errors', () => ({
-  mapFirebaseError: (error: Error) => error,
   ERROR_CODES: {
     INFRA_NOT_FOUND: 'E4002',
     INFRA_PERMISSION_DENIED: 'E4001',

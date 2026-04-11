@@ -63,18 +63,6 @@ export {
 } from './AppError';
 
 // ============================================================================
-// Firebase Error Mapping
-// ============================================================================
-
-export {
-  mapFirebaseError,
-  mapFirebaseAuthError,
-  mapFirebaseFirestoreError,
-  mapFirebaseStorageError,
-  isFirebaseError,
-} from './firebaseErrorMapper';
-
-// ============================================================================
 // Error Utilities
 // ============================================================================
 

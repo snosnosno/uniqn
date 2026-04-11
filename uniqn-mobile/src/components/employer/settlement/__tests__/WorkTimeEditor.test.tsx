@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { WorkTimeEditor } from '../WorkTimeEditor';
 import type { WorkLog } from '@/types';
 

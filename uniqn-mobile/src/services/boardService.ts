@@ -5,7 +5,6 @@ import {
   ValidationError,
   handleServiceError,
   isAppError,
-  isFirebaseError,
 } from '@/errors';
 import { handleSilentError } from '@/errors/serviceErrorHandler';
 import { useAuthStore } from '@/stores/authStore';
@@ -377,12 +376,7 @@ function isSkippableScheduleMembershipPostError(error: unknown): boolean {
     );
   }
 
-  if (!isFirebaseError(error)) {
-    return false;
-  }
-
-  const firebaseCode = error.code.replace('firestore/', '');
-  return firebaseCode === 'not-found' || firebaseCode === 'permission-denied';
+  return false;
 }
 
 function isSkippableBoardHomeSectionError(error: unknown): boolean {
@@ -393,11 +387,7 @@ function isSkippableBoardHomeSectionError(error: unknown): boolean {
     );
   }
 
-  if (!isFirebaseError(error)) {
-    return false;
-  }
-
-  return error.code.replace('firestore/', '') === 'permission-denied';
+  return false;
 }
 
 function handleBoardHomeSectionPermissionError(

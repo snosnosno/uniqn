@@ -20,7 +20,7 @@ import {
   type NotificationData,
   type NotificationSettings,
 } from '@/types/notification';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Test Helpers

@@ -6,7 +6,6 @@
  */
 
 import { AppError, NetworkError, ERROR_CODES, ERROR_MESSAGES, isAppError } from './AppError';
-import { mapFirebaseError, isFirebaseError } from './firebaseErrorMapper';
 
 // ============================================================================
 // Error Type Conversion (Lightweight)
@@ -116,11 +115,6 @@ export function normalizeError(error: unknown): AppError {
   // 이미 AppError인 경우
   if (isAppError(error)) {
     return error;
-  }
-
-  // Firebase 에러인 경우
-  if (isFirebaseError(error)) {
-    return mapFirebaseError(error);
   }
 
   // 네트워크 에러 (fetch, axios 등)
@@ -291,11 +285,6 @@ export function getErrorMessage(code: string): string {
 export function extractUserMessage(error: unknown): string {
   if (isAppError(error)) {
     return error.userMessage;
-  }
-
-  if (isFirebaseError(error)) {
-    const appError = mapFirebaseError(error);
-    return appError.userMessage;
   }
 
   if (error instanceof Error) {

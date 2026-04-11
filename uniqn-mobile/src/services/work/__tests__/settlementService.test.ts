@@ -12,7 +12,7 @@ import {
 } from '../../../__tests__/mocks/factories';
 
 // Import after mocks
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 
 import {
   getWorkLogsByJobPosting,
@@ -137,7 +137,6 @@ jest.mock('@/errors', () => {
     }
   }
   return {
-    mapFirebaseError: (error: Error) => error,
     isAppError: (error: unknown) =>
       error instanceof BusinessError ||
       error instanceof PermissionError ||

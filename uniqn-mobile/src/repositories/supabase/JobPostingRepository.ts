@@ -21,7 +21,7 @@ import {
   mergeJobPostingInput,
   serializeJobPostingV3,
 } from '@/domains/job-posting';
-import { removeUndefined } from '@/utils/firestore/removeUndefined';
+import { removeUndefined } from '@/utils/removeUndefined';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn, PaginationCursor } from '@/types/common';
 import type { TaxSettings } from '@/utils/settlement';

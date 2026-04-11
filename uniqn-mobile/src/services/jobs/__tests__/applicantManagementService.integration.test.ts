@@ -153,7 +153,6 @@ jest.mock('@/errors', () => {
   }
 
   return {
-    mapFirebaseError: (error: Error) => error,
     isAppError: (error: unknown) =>
       error instanceof BusinessError ||
       error instanceof PermissionError ||

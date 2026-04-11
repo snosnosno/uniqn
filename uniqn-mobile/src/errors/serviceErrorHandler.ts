@@ -29,7 +29,6 @@
 
 import { logger } from '@/utils/logger';
 import { AppError, getAppErrorTelemetryPolicy, isAppError } from './AppError';
-import { mapFirebaseError, isFirebaseError } from './firebaseErrorMapper';
 import { toError, normalizeError } from './errorUtils';
 
 // ============================================================================
@@ -185,13 +184,8 @@ export function handleServiceError(error: unknown, options: ServiceErrorOptions)
     return error;
   }
 
-  // 3. Firebase 에러인 경우 매핑
-  let appError: AppError;
-  if (isFirebaseError(error)) {
-    appError = mapFirebaseError(error);
-  } else {
-    appError = normalizeError(error);
-  }
+  // 3. 에러 정규화
+  const appError = normalizeError(error);
 
   const telemetryPolicy = getAppErrorTelemetryPolicy(appError);
 
@@ -340,8 +334,6 @@ export {
   isAppError,
   toError,
   normalizeError,
-  mapFirebaseError,
-  isFirebaseError,
 };
 
 // Re-export AppError type

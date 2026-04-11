@@ -5,9 +5,6 @@
  * @version 1.0.0
  */
 
-// Firebase
-export { app, auth, db, storage, functions } from './firebase';
-
 // React Query
 export {
   queryClient,

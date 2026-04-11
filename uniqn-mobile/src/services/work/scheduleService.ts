@@ -11,7 +11,7 @@ import { NetworkError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
 import { formatDateWithDay, toDateString } from '@/utils/date';
-import { timestampToDate } from '@/utils/firestore';
+import { TimeNormalizer } from '@/shared/time';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -186,8 +186,8 @@ export function calculateScheduleStats(schedules: ScheduleEvent[]): ScheduleStat
       }
 
       // 근무 시간 계산
-      const start = timestampToDate(schedule.checkInTime);
-      const end = timestampToDate(schedule.checkOutTime);
+      const start = TimeNormalizer.parseTime(schedule.checkInTime);
+      const end = TimeNormalizer.parseTime(schedule.checkOutTime);
       if (start && end) {
         hoursWorked += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       }
@@ -253,8 +253,8 @@ export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[
         // 시작 시간 순으로 정렬
         if (!a.startTime) return 1;
         if (!b.startTime) return -1;
-        const aTime = timestampToDate(a.startTime)?.getTime() ?? 0;
-        const bTime = timestampToDate(b.startTime)?.getTime() ?? 0;
+        const aTime = TimeNormalizer.parseTime(a.startTime)?.getTime() ?? 0;
+        const bTime = TimeNormalizer.parseTime(b.startTime)?.getTime() ?? 0;
         return aTime - bTime;
       }),
       isToday,

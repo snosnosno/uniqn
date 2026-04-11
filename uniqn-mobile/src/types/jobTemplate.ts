@@ -1,4 +1,4 @@
-import { removeUndefined } from '@/utils/firestore/removeUndefined';
+import { removeUndefined } from '@/utils/removeUndefined';
 import { draftToFormData, formDataToDraft } from '@/utils/job-posting/draftAdapter';
 import type { JobPostingDraft, JobPostingDraftDatedSchedule } from './jobPostingDraft';
 import { INITIAL_JOB_POSTING_DRAFT } from './jobPostingDraft';

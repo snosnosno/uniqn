@@ -21,7 +21,7 @@ import {
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Mock Setup
@@ -183,17 +183,6 @@ jest.mock('@/utils/date', () => ({
     const parsed = new Date(year, month - 1, day);
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     return `${month}월 ${day}일 (${weekdays[parsed.getDay()]})`;
-  },
-}));
-
-jest.mock('@/utils/firestore', () => ({
-  timestampToDate: (timestamp: unknown) => {
-    if (!timestamp) return null;
-    if (timestamp instanceof Date) return timestamp;
-    if (typeof timestamp === 'object' && 'toDate' in timestamp) {
-      return (timestamp as { toDate: () => Date }).toDate();
-    }
-    return null;
   },
 }));
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { CancellationRequestCard } from '../CancellationRequestCard';
 import { STATUS } from '@/constants';
 import type { Application } from '@/types';

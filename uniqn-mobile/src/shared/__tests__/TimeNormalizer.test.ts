@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { TimeNormalizer } from '../time/TimeNormalizer';
 import type { NormalizedWorkTime } from '../time/types';
 

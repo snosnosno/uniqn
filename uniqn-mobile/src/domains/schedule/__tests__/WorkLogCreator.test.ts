@@ -8,7 +8,7 @@
  * - Assignment 개수 계산
  */
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { WorkLogCreator } from '../WorkLogCreator';
 
 describe('WorkLogCreator', () => {

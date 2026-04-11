@@ -9,24 +9,6 @@ import { z } from 'zod';
  * 환경변수 스키마 정의
  */
 const envSchema = z.object({
-  // Firebase 필수 설정
-  EXPO_PUBLIC_FIREBASE_API_KEY: z.string().min(1, 'Firebase API Key가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().min(1, 'Firebase Auth Domain이 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_PROJECT_ID: z.string().min(1, 'Firebase Project ID가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string().min(1, 'Firebase Storage Bucket이 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z
-    .string()
-    .min(1, 'Firebase Messaging Sender ID가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase App ID가 필요합니다'),
-
-  // 플랫폼별 Firebase App ID (설정 시 EXPO_PUBLIC_FIREBASE_APP_ID 대신 사용)
-  EXPO_PUBLIC_FIREBASE_APP_ID_WEB: z.string().optional(),
-  EXPO_PUBLIC_FIREBASE_APP_ID_IOS: z.string().optional(),
-  EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID: z.string().optional(),
-
-  // Firebase Analytics (웹 전용, 선택적)
-  EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
-
   // Supabase 설정
   EXPO_PUBLIC_SUPABASE_URL: z.string().url(),
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
@@ -36,9 +18,6 @@ const envSchema = z.object({
     .enum(['development', 'staging', 'production'])
     .optional()
     .default('development'),
-
-  // Firebase Functions 리전 (선택적, 기본값: asia-northeast3)
-  EXPO_PUBLIC_FIREBASE_REGION: z.string().optional().default('asia-northeast3'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -66,20 +45,9 @@ export function getEnv(): Env {
 
   // 환경변수 수집
   const rawEnv = {
-    EXPO_PUBLIC_FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    EXPO_PUBLIC_FIREBASE_PROJECT_ID: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-    EXPO_PUBLIC_FIREBASE_APP_ID_WEB: process.env.EXPO_PUBLIC_FIREBASE_APP_ID_WEB,
-    EXPO_PUBLIC_FIREBASE_APP_ID_IOS: process.env.EXPO_PUBLIC_FIREBASE_APP_ID_IOS,
-    EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID,
-    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
-    EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
-    EXPO_PUBLIC_FIREBASE_REGION: process.env.EXPO_PUBLIC_FIREBASE_REGION,
     EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
     EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
   };
 
   // 스키마 검증

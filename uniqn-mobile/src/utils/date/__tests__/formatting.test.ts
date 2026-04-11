@@ -4,7 +4,7 @@
  * @description 날짜 포맷팅 유틸리티 함수들의 단위 테스트
  */
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 
 import {
   formatDateKorean,

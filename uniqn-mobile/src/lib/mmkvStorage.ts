@@ -18,7 +18,8 @@ import Constants from 'expo-constants';
 import { StateStorage } from 'zustand/middleware';
 import { getRandomValues } from 'expo-crypto';
 import { logger } from '@/utils/logger';
-import { shouldUseLocalWebAuthStateStorage as shouldUseWebAuthStateStorage } from './emulatorMode';
+/** Firebase emulatorMode 제거됨 — 웹에서는 항상 session storage 사용 */
+const shouldUseWebAuthStateStorage = (): boolean => false;
 
 // 경고 중복 방지 플래그
 let mmkvWarningShown = false;

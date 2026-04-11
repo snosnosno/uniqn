@@ -15,7 +15,8 @@
 
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
-import { isPerformanceAvailable } from '@/lib/firebase';
+/** Firebase Performance 제거됨 — 항상 false 반환 */
+const isPerformanceAvailable = (): boolean => false;
 
 // =============================================================================
 // Types

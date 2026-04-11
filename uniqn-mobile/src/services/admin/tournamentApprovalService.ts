@@ -17,7 +17,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import {
-  mapFirebaseError,
+  normalizeError,
   BusinessError,
   AuthError,
   PermissionError,
@@ -90,7 +90,7 @@ function mapFirebaseFunctionError(error: unknown): Error {
         userMessage: errorMessage || '잘못된 요청입니다',
       });
     default:
-      return mapFirebaseError(error);
+      return normalizeError(error);
   }
 }
 

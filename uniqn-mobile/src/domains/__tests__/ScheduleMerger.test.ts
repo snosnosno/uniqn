@@ -7,7 +7,7 @@
 
 import { ScheduleMerger } from '../schedule/ScheduleMerger';
 import type { ScheduleEvent } from '@/types';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Test Helpers

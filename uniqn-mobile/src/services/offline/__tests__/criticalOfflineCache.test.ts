@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { getMMKVInstance } from '@/lib/mmkvStorage';
 import {
   clearCriticalOfflineCacheForUser,

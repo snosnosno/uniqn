@@ -17,7 +17,6 @@
  */
 
 import { Platform } from 'react-native';
-import { getFirebaseApp } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 
@@ -134,18 +133,10 @@ export interface UserProperties {
   preferred_location?: string;
 }
 
-// Analytics 인스턴스 타입
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnalyticsInstance = any;
-
 // ============================================================================
 // Analytics Instance Management
 // ============================================================================
 
-/**
- * Analytics 인스턴스 (플랫폼별)
- */
-let analyticsInstance: AnalyticsInstance = null;
 let isAnalyticsInitialized = false;
 let isAnalyticsEnabled = true;
 
@@ -157,36 +148,12 @@ let isAnalyticsEnabled = true;
 async function initializeAnalytics(): Promise<boolean> {
   if (isAnalyticsInitialized) return true;
 
-  try {
-    if (Platform.OS === 'web') {
-      // 웹 환경: Firebase Analytics SDK
-      const { getAnalytics, isSupported } = await import('firebase/analytics');
-      const app = getFirebaseApp();
-
-      const supported = await isSupported();
-      if (supported) {
-        analyticsInstance = getAnalytics(app);
-        isAnalyticsInitialized = true;
-        logger.info('Firebase Analytics 초기화 완료 (웹)');
-        return true;
-      } else {
-        logger.warn('Firebase Analytics가 지원되지 않는 환경입니다', {
-          platform: Platform.OS,
-        });
-        return false;
-      }
-    } else {
-      // 네이티브 환경: 로깅만 (추후 네이티브 SDK 추가)
-      logger.info('Analytics: 네이티브 환경 - 로깅 모드', {
-        platform: Platform.OS,
-      });
-      isAnalyticsInitialized = true;
-      return true;
-    }
-  } catch (error) {
-    logger.error('Analytics 초기화 실패', toError(error));
-    return false;
-  }
+  // Firebase Analytics 제거됨 — 로깅 모드로 동작
+  logger.info('Analytics: 로깅 모드 (Firebase 제거됨)', {
+    platform: Platform.OS,
+  });
+  isAnalyticsInitialized = true;
+  return true;
 }
 
 // ============================================================================
@@ -221,18 +188,12 @@ export async function trackEvent(
       ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))
       : {};
 
-    if (Platform.OS === 'web' && analyticsInstance) {
-      // 웹: Firebase Analytics SDK
-      const { logEvent } = await import('firebase/analytics');
-      logEvent(analyticsInstance, eventName, cleanParams);
-    } else {
-      // 네이티브: 로깅만
-      if (__DEV__) {
-        logger.debug('Analytics Event', {
-          event: eventName,
-          params: cleanParams,
-        });
-      }
+    // 로깅 모드 (Firebase Analytics 제거됨)
+    if (__DEV__) {
+      logger.debug('Analytics Event', {
+        event: eventName,
+        params: cleanParams,
+      });
     }
   } catch (error) {
     // Analytics 에러는 앱 동작에 영향을 주지 않도록 조용히 처리
@@ -253,19 +214,11 @@ export async function trackScreenView(screenName: string, screenClass?: string):
       await initializeAnalytics();
     }
 
-    if (Platform.OS === 'web' && analyticsInstance) {
-      const { logEvent } = await import('firebase/analytics');
-      logEvent(analyticsInstance, 'screen_view', {
-        firebase_screen: screenName,
-        firebase_screen_class: screenClass || screenName,
+    if (__DEV__) {
+      logger.debug('Analytics Screen View', {
+        screen: screenName,
+        class: screenClass,
       });
-    } else {
-      if (__DEV__) {
-        logger.debug('Analytics Screen View', {
-          screen: screenName,
-          class: screenClass,
-        });
-      }
     }
   } catch (error) {
     if (__DEV__) {
@@ -285,20 +238,8 @@ export async function setUserProperties(properties: UserProperties): Promise<voi
       await initializeAnalytics();
     }
 
-    if (Platform.OS === 'web' && analyticsInstance) {
-      const { setUserProperties: setProps } = await import('firebase/analytics');
-      // UserProperties를 CustomParams로 변환
-      const customParams: Record<string, string> = {};
-      for (const [key, value] of Object.entries(properties)) {
-        if (value !== undefined) {
-          customParams[key] = String(value);
-        }
-      }
-      setProps(analyticsInstance, customParams);
-    } else {
-      if (__DEV__) {
-        logger.debug('Analytics User Properties', { properties });
-      }
+    if (__DEV__) {
+      logger.debug('Analytics User Properties', { properties });
     }
   } catch (error) {
     if (__DEV__) {
@@ -318,13 +259,8 @@ export async function setUserId(userId: string | null): Promise<void> {
       await initializeAnalytics();
     }
 
-    if (Platform.OS === 'web' && analyticsInstance) {
-      const { setUserId: setId } = await import('firebase/analytics');
-      setId(analyticsInstance, userId);
-    } else {
-      if (__DEV__) {
-        logger.debug('Analytics User ID', { userId: userId || 'null' });
-      }
+    if (__DEV__) {
+      logger.debug('Analytics User ID', { userId: userId || 'null' });
     }
   } catch (error) {
     if (__DEV__) {

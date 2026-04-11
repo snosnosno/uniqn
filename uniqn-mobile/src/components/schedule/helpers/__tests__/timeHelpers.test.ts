@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/shared/time';
 import { formatTime, formatTimeRange, calculateDuration, formatDate } from '../timeHelpers';
 
 // ============================================================================
