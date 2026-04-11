@@ -120,4 +120,52 @@ eas build --platform ios|android
 
 ---
 
-*마지막 업데이트: 2026-03-14*
+## 스킬 사용 가이드
+
+gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬을 조합하여 사용.
+
+### 개발 워크플로우
+
+| 단계 | 스킬 | 설명 |
+|------|------|------|
+| 아이디어 검증 | `/office-hours` | YC식 6가지 강제 질문 |
+| 브레인스토밍 | `superpowers:brainstorming` | 요구사항·의도 탐색 |
+| 계획 수립 | `/autoplan` | 아키텍처 레이어별 구현 계획 |
+| 계획 리뷰 | `/plan-eng-review` | 엔지니어링 관점 검토 |
+| TDD | `superpowers:test-driven-development` | Red→Green→Improve |
+| 코드 리뷰 | `/review` | 5대 전문가 리뷰 + 자동 수정 |
+| 보안 감사 | `/cso` | OWASP + STRIDE + Firebase Rules |
+| 버그 조사 | `/investigate` | 4단계 근본 원인 조사 |
+| 커밋 | `/commit` | 프로젝트 컨벤션 한글 커밋 |
+| PR | `/pr` | PR 생성 자동화 |
+| 배포 | `/deploy` | Firebase/EAS/Cloudflare 배포 |
+| 품질 점수 | `/health` | 0-10점 종합 대시보드 |
+| 위험 확인 | `/guard` | Firebase/결제/권한 변경 경고 |
+| 회고 | `/retro` | 커밋 기반 주간 회고 |
+| 완료 검증 | `superpowers:verification-before-completion` | 증거 기반 완료 확인 |
+
+### 스킬 우선순위
+
+1. **프로젝트 로컬** (`.claude/skills/`) — 프로젝트 규칙 내장, 최우선
+2. **gstack 전역** (`~/.claude/skills/gstack/`) — 프로젝트 오버라이드 없는 것만
+3. **superpowers** — 프로세스/규율 (TDD, 디버깅, 검증, 병렬 에이전트)
+
+### 상황별 선택
+
+| 상황 | 사용 스킬 |
+|------|----------|
+| "이거 리뷰해줘" | `/review` |
+| "에러 났어" / "안돼" | `/investigate` |
+| "보안 검사" | `/cso` |
+| "이 기능 어떻게 만들지" | `/autoplan` |
+| "프로젝트 상태" | `/health` |
+| "이번 주 뭐했지" | `/retro` |
+| "Security Rules 바꿔야 해" | `/guard` 먼저 → 작업 |
+| "테스트 작성해줘" | `/test` |
+| "리팩토링 해줘" | `/refactor` |
+| "배포해줘" | `/deploy` |
+| "타입 에러" | `/type-check` |
+
+---
+
+*마지막 업데이트: 2026-04-11*
