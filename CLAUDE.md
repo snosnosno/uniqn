@@ -168,7 +168,15 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬을 조
 
 ---
 
-*마지막 업데이트: 2026-04-11*
+*마지막 업데이트: 2026-04-12*
+
+## Health Stack
+
+- typecheck: tsc --noEmit
+- lint: eslint . --ext .js,.jsx,.ts,.tsx
+- format: prettier --check "src/**/*.{ts,tsx,js,jsx}" "app/**/*.{ts,tsx,js,jsx}"
+- test: jest
+- deadcode: npx knip
 
 ## Skill routing
 

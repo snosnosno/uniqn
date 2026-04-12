@@ -334,7 +334,10 @@ describe('TournamentApprovalService', () => {
     it('실패: 이미 재제출됨', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Already resubmitted', context: { status: 409 } },
+        error: {
+          message: 'Already resubmitted',
+          context: { status: 409, json: () => Promise.resolve({ message: 'Already resubmitted' }) },
+        },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow();
