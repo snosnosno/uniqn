@@ -12,13 +12,13 @@
 export const ICON_COLORS = {
   /** 기본 아이콘 색상 */
   primary: {
-    light: '#5C5546', // secondary-700
-    dark: '#C4B898', // secondary-300
+    light: '#4A4A52', // secondary-700
+    dark: '#C0C0C8', // secondary-300
   },
   /** 보조 아이콘 색상 */
   secondary: {
-    light: '#5C5546', // secondary-700
-    dark: '#D6D2CA', // secondary-200
+    light: '#4A4A52', // secondary-700
+    dark: '#DCDCE0', // secondary-200
   },
   /** 고대비 아이콘 색상 */
   contrast: {
@@ -27,8 +27,8 @@ export const ICON_COLORS = {
   },
   /** 비활성 아이콘 색상 */
   disabled: {
-    light: '#D6D2CA', // secondary-200
-    dark: '#3A3530', // secondary-800
+    light: '#DCDCE0', // secondary-200
+    dark: '#2A2A30', // secondary-800
   },
 } as const;
 
@@ -86,8 +86,8 @@ export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'
 // ============================================================================
 
 export const BORDER_COLORS = {
-  light: '#D6D2CA', // secondary-200 — 라이트 모드 기본 보더
-  lightSubtle: '#E8E4DC', // 라이트 모드 subtle
+  light: '#DCDCE0', // secondary-200 — 라이트 모드 기본 보더
+  lightSubtle: '#EBEBED', // 라이트 모드 subtle
   dark: '#222228', // surface.hover — 다크 모드 기본 보더
   darkSubtle: '#19191D', // surface.overlay — 다크 모드 subtle
 } as const;
@@ -100,13 +100,13 @@ export const TEXT_COLORS = {
   },
   /** Text Secondary — 보조 정보 */
   secondary: {
-    light: '#5C5546',
-    dark: '#C4B898',
+    light: '#4A4A52',
+    dark: '#C0C0C8',
   },
   /** Text Muted — 플레이스홀더, 캡션 */
   muted: {
-    light: '#8A8272',
-    dark: '#9A9078',
+    light: '#707078',
+    dark: '#9898A0',
   },
   /** Text On Gold — 골드 배경 위 */
   onGold: '#09090B',
@@ -234,7 +234,7 @@ export const CHART_COLORS = {
     dark: '#F0F0F2',
   },
   grid: {
-    light: '#D6D2CA',
+    light: '#DCDCE0',
     dark: '#19191D',
   },
   series: {
@@ -257,8 +257,8 @@ export function getChartColors(isDarkMode: boolean) {
 // ============================================================================
 
 export const PLACEHOLDER_COLORS = {
-  light: '#8A8272', // secondary-600
-  dark: '#A89C84', // secondary-400
+  light: '#707078', // secondary-600
+  dark: '#A8A8B0', // secondary-400
 } as const;
 
 export function getPlaceholderColor(isDarkMode: boolean): string {
@@ -275,8 +275,8 @@ export const LOADING_COLORS = {
     dark: '#D4AF37', // primary-500
   },
   secondary: {
-    light: '#5C5546', // secondary-700
-    dark: '#D6D2CA', // secondary-200
+    light: '#4A4A52', // secondary-700
+    dark: '#DCDCE0', // secondary-200
   },
 } as const;
 
@@ -293,13 +293,13 @@ export function getLoadingColor(
 
 export const LAYOUT_COLORS = {
   header: { light: '#FFFFFF', dark: '#09090B' },
-  content: { light: '#F5F5F2', dark: '#09090B' },
+  content: { light: '#F5F5F7', dark: '#09090B' },
   headerTint: { light: '#09090B', dark: '#F0F0F2' },
-  headerBorder: { light: '#D6D2CA', dark: '#19191D' },
+  headerBorder: { light: '#DCDCE0', dark: '#19191D' },
   tabBarActive: { light: '#8A7228', dark: '#D4AF37' },
-  tabBarInactive: { light: '#8A8272', dark: '#9A9078' },
+  tabBarInactive: { light: '#707078', dark: '#9898A0' },
   tabBarBg: { light: '#FFFFFF', dark: '#09090B' },
-  tabBarBorder: { light: '#D6D2CA', dark: '#111113' },
+  tabBarBorder: { light: '#DCDCE0', dark: '#111113' },
   refreshTint: { light: '#8A7228', dark: '#D4AF37' },
 } as const;
 
