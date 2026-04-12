@@ -40,8 +40,10 @@ export const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
 export const EMPLOYER_REALTIME_LIMIT = 300;
 export const APPLICATION_COLUMNS =
   'id,applicant_email,applicant_id,applicant_name,applicant_nickname,applicant_phone,applicant_photo_url,applicant_role,assignments,cancellation_request,cancelled_at,confirmation_history,confirmed_at,created_at,custom_role,is_read,job_posting_date,job_posting_id,job_posting_title,message,notes,original_application,pre_question_answers,processed_at,processed_by,recruitment_type,rejection_reason,status,updated_at' as const;
+// JobPostingRepository.ts의 TABLE_COLUMNS와 동기화 유지
+// 제거된 컬럼: is_featured, last_work_date, og_image_url, rejection_reason (ISSUE-003)
 export const JOB_POSTING_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,is_featured,last_work_date,location,og_image_url,owner_id,owner_name,posting_type,questions,rejection_reason,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
+  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
 
 // ============================================================================
 // Mapping Functions
