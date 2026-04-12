@@ -632,6 +632,12 @@ export class SupabaseNotificationRepository implements INotificationRepository {
             // 알 수 없는 이벤트 타입 — 안전하게 전체 재조회
             fullReload();
           }
+        },
+        (status) => {
+          // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
+          if (status === 'CHANNEL_ERROR') {
+            onError?.(new Error(`Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`));
+          }
         }
       );
 
@@ -671,6 +677,12 @@ export class SupabaseNotificationRepository implements INotificationRepository {
               logger.error('미읽음 카운트 재조회 실패', toError(error));
               onError?.(toError(error));
             });
+        },
+        (status) => {
+          // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
+          if (status === 'CHANNEL_ERROR') {
+            onError?.(new Error(`Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`));
+          }
         }
       );
 

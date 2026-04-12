@@ -529,7 +529,8 @@ export function createRealtimeSubscription(
           }
         }
       } else if (status === 'TIMED_OUT') {
-        logger.warn('Realtime 구독 타임아웃', { table, filter });
+        // Phoenix rejoinTimer가 자동 재시도하므로 INFO 수준으로 기록
+        logger.info('Realtime 구독 타임아웃 (Phoenix 자동 재시도)', { table, filter });
         const current = realtimeChannelRegistry.get(channelName);
         if (current) {
           for (const handler of current.errorHandlers) {

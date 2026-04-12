@@ -212,6 +212,12 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         } catch (error) {
           onError(toError(error));
         }
+      },
+      (status) => {
+        // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
+        if (status === 'CHANNEL_ERROR') {
+          onError(new Error(`Realtime 채널 에러: ${TABLES.APPLICATIONS}`));
+        }
       }
     );
   }
