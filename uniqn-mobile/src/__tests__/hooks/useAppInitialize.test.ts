@@ -90,7 +90,11 @@ jest.mock('@/lib/supabase', () => ({
     auth: {
       getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
-      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+      onAuthStateChange: jest.fn((callback: (event: string, session: null) => void) => {
+        // Fire immediately with null session so waitForInitialAuthUser resolves quickly
+        setTimeout(() => callback('INITIAL_SESSION', null), 0);
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      }),
       signOut: jest.fn().mockResolvedValue({ error: null }),
     },
   },
