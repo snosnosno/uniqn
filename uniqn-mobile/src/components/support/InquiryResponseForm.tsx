@@ -76,7 +76,7 @@ export function InquiryResponseForm({
 
   return (
     <View className="rounded-md bg-white p-4 dark:bg-surface">
-      <Text className="mb-4 text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-4 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
         답변 작성
       </Text>
 

@@ -180,7 +180,7 @@ export const DatePicker = memo(function DatePicker({
           <View className="bg-white dark:bg-surface rounded-t-2xl">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
                 날짜 선택
               </Text>
               <Pressable

@@ -28,7 +28,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
       <Text className="mb-4 text-4xl">!</Text>
-      <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         오류가 발생했습니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">{message}</Text>
@@ -43,7 +43,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
       <Text className="mb-4 text-4xl">이미</Text>
-      <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         이미 지원한 공고입니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">
@@ -69,7 +69,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
 function UnsupportedPostingState() {
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
-      <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         현재 지원할 수 없는 공고입니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">
@@ -251,7 +251,7 @@ export default function ApplyScreen() {
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="mb-4 text-6xl">완료</Text>
-          <Text className="mb-2 text-center text-xl font-bold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
             지원이 완료되었습니다
           </Text>
           <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400">

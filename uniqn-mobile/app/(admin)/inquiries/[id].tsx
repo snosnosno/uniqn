@@ -89,7 +89,7 @@ export default function AdminInquiryDetailScreen() {
             </Text>
           </View>
 
-          <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
             {inquiry.subject}
           </Text>
 

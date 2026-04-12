@@ -109,7 +109,7 @@ export default function AdminBoardReportDetailPage() {
               ) : null}
             </View>
 
-            <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               {data.post?.title ?? '원본 게시글이 삭제되었거나 접근할 수 없습니다.'}
             </Text>
             <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">

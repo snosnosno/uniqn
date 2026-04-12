@@ -200,7 +200,7 @@ export function RoleChangeModal({
         <Card variant="filled" padding="sm" className="mb-3">
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-              <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+              <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
                 {staff.staffName.charAt(0)}
               </Text>
             </View>

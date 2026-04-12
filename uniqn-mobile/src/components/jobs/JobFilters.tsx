@@ -252,7 +252,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
             >
               {/* 헤더 */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-                <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
+                <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
                   필터
                 </Text>
                 <View className="flex-row items-center gap-4">

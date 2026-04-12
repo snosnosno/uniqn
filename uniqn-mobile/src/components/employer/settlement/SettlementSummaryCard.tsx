@@ -66,7 +66,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
       <View className="flex-row justify-between mb-2">
         <View className="flex-1 items-center">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">미정산</Text>
-          <Text className="text-lg font-bold text-warning-600 dark:text-warning-400">
+          <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
             {pendingCount}건
           </Text>
           <Text className="text-xs text-secondary-500 dark:text-secondary-400">
@@ -76,7 +76,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
         <View className="w-px bg-secondary-200 dark:bg-surface" />
         <View className="flex-1 items-center">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">완료</Text>
-          <Text className="text-lg font-bold text-success-600 dark:text-success-400">
+          <Text className="text-lg font-display text-success-600 dark:text-success-400">
             {completedCount}건
           </Text>
           <Text className="text-xs text-secondary-500 dark:text-secondary-400">
@@ -86,7 +86,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
         <View className="w-px bg-secondary-200 dark:bg-surface" />
         <View className="flex-1 items-center">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">총 금액</Text>
-          <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
+          <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
             {formatCurrency(totalAmount)}
           </Text>
         </View>

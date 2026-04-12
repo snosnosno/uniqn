@@ -242,7 +242,7 @@ function WebTimePicker({
 
         {/* 구분자 */}
         <View className="w-8 items-center justify-center">
-          <Text className="text-2xl font-bold text-secondary-900 dark:text-off-white">:</Text>
+          <Text className="text-2xl font-display text-secondary-900 dark:text-off-white">:</Text>
         </View>
 
         {/* 분 리스트 */}
@@ -459,7 +459,7 @@ function NativeWheelPicker({
         </View>
 
         {/* 구분자 */}
-        <Text className="text-2xl font-bold text-secondary-900 dark:text-off-white mx-2">:</Text>
+        <Text className="text-2xl font-display text-secondary-900 dark:text-off-white mx-2">:</Text>
 
         {/* 분 휠 */}
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>

@@ -270,19 +270,19 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
       {history && history.length > 0 && (
         <View className="flex-row mb-4 pb-4 border-b border-secondary-200 dark:border-surface-overlay">
           <View className="flex-1 items-center">
-            <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
+            <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
               {history.length}
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">총 확정</Text>
           </View>
           <View className="flex-1 items-center">
-            <Text className="text-lg font-bold text-error-600 dark:text-error-400">
+            <Text className="text-lg font-display text-error-600 dark:text-error-400">
               {history.filter((e) => e.cancelledAt).length}
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">취소</Text>
           </View>
           <View className="flex-1 items-center">
-            <Text className="text-lg font-bold text-success-600 dark:text-success-400">
+            <Text className="text-lg font-display text-success-600 dark:text-success-400">
               {history.filter((e) => !e.cancelledAt).length}
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">활성</Text>

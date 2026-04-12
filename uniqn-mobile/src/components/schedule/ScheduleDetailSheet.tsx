@@ -150,7 +150,7 @@ export function ScheduleDetailSheet({
               </View>
             )}
           </View>
-          <Text className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100">
             {schedule.jobPostingName}
           </Text>
         </View>

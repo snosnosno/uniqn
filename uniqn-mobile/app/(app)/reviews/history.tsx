@@ -118,7 +118,7 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
     <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-secondary-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Text className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display text-secondary-900 dark:text-secondary-100">
             {bubbleScore.score.toFixed(1)}
           </Text>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />

@@ -56,7 +56,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
       )}
 
       <View className="mb-1 flex-row items-center gap-2">
-        <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
+        <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
           {displayName}
         </Text>
         <Badge variant={STATUS_BADGE_VARIANT[applicant.status]} size="sm" dot>

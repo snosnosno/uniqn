@@ -130,7 +130,7 @@ export function QRCodeScanner({
         <SafeAreaView className="flex-1 bg-secondary-900" edges={['top', 'bottom']}>
           <View className="flex-1 justify-center items-center p-6">
             <ScanIcon size={64} color="#9A9078" />
-            <Text className="text-white text-xl font-bold mt-4 text-center">
+            <Text className="text-white text-xl font-display mt-4 text-center">
               카메라 권한이 필요합니다
             </Text>
             <Text className="text-secondary-400 text-center mt-2 mb-6">
@@ -156,7 +156,7 @@ export function QRCodeScanner({
           >
             <XMarkIcon size={24} color="#FFFFFF" />
           </Pressable>
-          <Text className="text-white text-lg font-semibold">{title}</Text>
+          <Text className="text-white text-lg font-display-semibold">{title}</Text>
           <Pressable
             onPress={handleToggleFlash}
             className="w-10 h-10 items-center justify-center rounded-sm"

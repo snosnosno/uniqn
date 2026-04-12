@@ -397,7 +397,7 @@ export function WorkTimeEditor({
               <Text className="text-sm text-secondary-600 dark:text-secondary-400">
                 총 근무 시간
               </Text>
-              <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
+              <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
                 {duration}
               </Text>
             </View>

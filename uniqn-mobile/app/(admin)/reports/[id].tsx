@@ -119,7 +119,7 @@ function ReportInfoSection({ report }: { report: Report }) {
       </View>
 
       {/* 신고 유형 */}
-      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-2">
         {typeLabel}
       </Text>
 

@@ -119,7 +119,7 @@ export default function NotificationsScreen() {
         title="알림"
         titleSuffix={
           unreadCount > 0 ? (
-            <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+            <Text className="text-lg font-display-semibold text-primary-600 dark:text-primary-400">
               ({unreadCount})
             </Text>
           ) : null

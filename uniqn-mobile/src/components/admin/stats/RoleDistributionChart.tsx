@@ -131,7 +131,7 @@ export function RoleDistributionChart({
               <Text className={`text-sm font-medium ${role.textColor}`}>{role.label}</Text>
             </View>
             <View className="flex-row items-center">
-              <Text className={`text-lg font-bold ${role.textColor} mr-2`}>
+              <Text className={`text-lg font-display ${role.textColor} mr-2`}>
                 {role.count.toLocaleString()}명
               </Text>
               <View className="bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded">

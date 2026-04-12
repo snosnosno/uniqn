@@ -568,7 +568,7 @@ export function EventQRModal({
         <View className="items-center pb-4">
           <View className="mb-1 flex-row items-center">
             <QrCodeIcon size={26} color={modeColor} />
-            <Text className="ml-2 text-xl font-bold text-secondary-900 dark:text-secondary-100">
+            <Text className="ml-2 text-xl font-display text-secondary-900 dark:text-secondary-100">
               이벤트 {modeLabel} QR
             </Text>
           </View>

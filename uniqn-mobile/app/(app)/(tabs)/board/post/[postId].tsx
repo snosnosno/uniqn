@@ -255,7 +255,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
 
   return (
     <View className="mb-3 mt-3 flex-row items-center justify-between">
-      <Text className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
         {item.title} {item.count ?? 0}
       </Text>
       {item.isLocked ? (
@@ -900,7 +900,7 @@ export default function BoardPostDetailScreen() {
         </View>
 
         <Card className="mb-4 border border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-2xl font-bold leading-9 text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display leading-9 text-secondary-900 dark:text-secondary-100">
             {post.title}
           </Text>
 

@@ -33,7 +33,7 @@ export function PostingCompensationContent({
 
     return (
       <View className="py-1">
-        <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
+        <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
           {compensation.primaryText}
         </Text>
       </View>

@@ -249,7 +249,7 @@ export default function JobPostingDetailScreen() {
 
             <View className="mb-2 flex-row items-start justify-between">
               <Text
-                className="mr-3 flex-1 text-lg font-bold text-secondary-900 dark:text-off-white"
+                className="mr-3 flex-1 text-lg font-display text-secondary-900 dark:text-off-white"
                 numberOfLines={2}
               >
                 {title}
@@ -363,21 +363,21 @@ export default function JobPostingDetailScreen() {
             <View className="rounded-lg bg-secondary-50 px-3 pb-2 pt-3 dark:bg-surface">
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
-                  <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                  <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
                     {totalApplicants}
                   </Text>
                   <Text className="text-xs text-secondary-500 dark:text-secondary-400">지원자</Text>
                 </View>
                 <View className="w-px bg-secondary-200 dark:bg-surface" />
                 <View className="flex-1 items-center">
-                  <Text className="text-xl font-bold text-success-600 dark:text-success-400">
+                  <Text className="text-xl font-display text-success-600 dark:text-success-400">
                     {confirmedApplicants}
                   </Text>
                   <Text className="text-xs text-secondary-500 dark:text-secondary-400">확정</Text>
                 </View>
                 <View className="w-px bg-secondary-200 dark:bg-surface" />
                 <View className="flex-1 items-center">
-                  <Text className="text-xl font-bold text-warning-600 dark:text-warning-400">
+                  <Text className="text-xl font-display text-warning-600 dark:text-warning-400">
                     {pendingApplicants}
                   </Text>
                   <Text className="text-xs text-secondary-500 dark:text-secondary-400">대기중</Text>
@@ -404,7 +404,7 @@ export default function JobPostingDetailScreen() {
         </View>
 
         <View className="px-4 pb-4 pt-3">
-          <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
             관리
           </Text>
 
@@ -480,7 +480,7 @@ export default function JobPostingDetailScreen() {
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">
-            <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               공고 내용
             </Text>
             <Card variant="outlined" padding="md">

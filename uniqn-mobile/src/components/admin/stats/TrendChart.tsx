@@ -120,7 +120,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
       <View className="flex-row mb-4 gap-2">
         <View className="flex-1 bg-secondary-50 dark:bg-surface-elevated rounded-lg p-3">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">일평균</Text>
-          <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
+          <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
             {stats.average.toLocaleString()}
             {suffix}
           </Text>
@@ -129,7 +129,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
           <Text className="text-xs text-success-600 dark:text-success-400 mb-1">
             최고 ({stats.maxDate})
           </Text>
-          <Text className="text-lg font-bold text-success-700 dark:text-success-300">
+          <Text className="text-lg font-display text-success-700 dark:text-success-300">
             {stats.max.toLocaleString()}
             {suffix}
           </Text>
@@ -138,7 +138,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
           <Text className="text-xs text-orange-600 dark:text-orange-400 mb-1">
             최저 ({stats.minDate})
           </Text>
-          <Text className="text-lg font-bold text-orange-700 dark:text-orange-300">
+          <Text className="text-lg font-display text-orange-700 dark:text-orange-300">
             {stats.min.toLocaleString()}
             {suffix}
           </Text>

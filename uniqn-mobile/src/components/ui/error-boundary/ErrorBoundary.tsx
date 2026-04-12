@@ -143,7 +143,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </View>
 
           {/* 제목 */}
-          <Text className="text-xl font-bold text-secondary-900 dark:text-off-white text-center mb-2">
+          <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
             문제가 발생했습니다
           </Text>
 

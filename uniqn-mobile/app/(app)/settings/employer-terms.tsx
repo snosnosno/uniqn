@@ -21,7 +21,7 @@ export default function EmployerTermsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-4 text-lg font-display text-secondary-900 dark:text-secondary-100">
             UNIQN 구인자 이용약관
           </Text>
 

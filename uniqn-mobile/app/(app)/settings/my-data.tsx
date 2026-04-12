@@ -231,7 +231,7 @@ export default function MyDataScreen() {
 
         {/* 기본 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-4">
+          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-4">
             기본 정보
           </Text>
 
@@ -251,7 +251,7 @@ export default function MyDataScreen() {
 
         {/* 본인인증 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-4">
+          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-4">
             본인인증 정보
           </Text>
 
@@ -272,7 +272,7 @@ export default function MyDataScreen() {
 
         {/* 동의 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-4">
+          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-4">
             동의 정보
           </Text>
 
@@ -283,7 +283,7 @@ export default function MyDataScreen() {
 
         {/* 데이터 내보내기 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-2">
+          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-2">
             데이터 내보내기
           </Text>
           <Text className="text-secondary-500 dark:text-secondary-400 text-sm mb-4">

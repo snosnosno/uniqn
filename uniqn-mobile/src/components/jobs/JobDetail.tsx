@@ -80,7 +80,7 @@ export function JobDetail({ job }: JobDetailProps) {
           <PostingStatusBadge status={detail.status} size="sm" />
         </View>
 
-        <Text className="mb-3 text-xl font-bold text-secondary-900 dark:text-off-white">
+        <Text className="mb-3 text-xl font-display text-secondary-900 dark:text-off-white">
           {detail.title || '제목 없음'}
         </Text>
 

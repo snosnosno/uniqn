@@ -45,21 +45,21 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
         <View className="flex-row items-center justify-between p-3 bg-secondary-50 dark:bg-surface rounded-lg">
           <View className="items-center">
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">출근</Text>
-            <Text className="text-lg font-semibold text-success-600 dark:text-success-400">
+            <Text className="text-lg font-display-semibold text-success-600 dark:text-success-400">
               {formatTime(startTime)}
             </Text>
           </View>
           <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
           <View className="items-center">
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">퇴근</Text>
-            <Text className="text-lg font-semibold text-error-600 dark:text-error-400">
+            <Text className="text-lg font-display-semibold text-error-600 dark:text-error-400">
               {formatTime(endTime)}
             </Text>
           </View>
           <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
           <View className="items-center">
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">근무</Text>
-            <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+            <Text className="text-lg font-display-semibold text-primary-600 dark:text-primary-400">
               {hoursWorked !== undefined ? formatDuration(hoursWorked) : '-'}
             </Text>
           </View>

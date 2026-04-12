@@ -331,7 +331,7 @@ export function SettlementEditModal({
                 <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                   {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
                 </Text>
-                <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
                   {formatCurrency(afterTaxAmount)}
                 </Text>
               </View>

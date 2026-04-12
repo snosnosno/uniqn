@@ -160,7 +160,7 @@ export function ApplicantConfirmModal({
         <View className="flex-row items-center p-3 bg-secondary-50 dark:bg-surface rounded-md mb-3">
           <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
-            <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400">

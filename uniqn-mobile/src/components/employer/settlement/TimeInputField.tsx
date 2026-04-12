@@ -97,11 +97,11 @@ export function TimeInputField({
         <View className="flex-row items-center flex-1">
           <ClockIcon size={20} color={isUndefined ? '#A89C84' : iconColor} />
           {isUndefined ? (
-            <Text className="ml-2 text-lg font-semibold text-secondary-400 dark:text-secondary-500">
+            <Text className="ml-2 text-lg font-display-semibold text-secondary-400 dark:text-secondary-500">
               미정
             </Text>
           ) : (
-            <Text className="ml-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="ml-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               {displayText}
             </Text>
           )}

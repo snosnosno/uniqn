@@ -51,7 +51,7 @@ export default function InquiryDetailScreen() {
           </View>
 
           {/* 제목 */}
-          <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
             {inquiry.subject}
           </Text>
 

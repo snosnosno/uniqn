@@ -15,7 +15,7 @@ export default function TermsScreen() {
     <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-4 text-lg font-display text-secondary-900 dark:text-secondary-100">
             UNIQN 이용약관
           </Text>
 

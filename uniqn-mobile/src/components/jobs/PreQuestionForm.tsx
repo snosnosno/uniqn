@@ -239,7 +239,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     <View className="bg-white dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
           사전질문
         </Text>
         {requiredCount > 0 && (

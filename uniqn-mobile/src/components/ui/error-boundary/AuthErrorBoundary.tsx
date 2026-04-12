@@ -41,7 +41,7 @@ function AuthErrorFallback({
         <Text className="text-4xl">{''}</Text>
       </View>
 
-      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white text-center mb-2">
+      <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
         {isSessionExpired ? '세션이 만료되었습니다' : '로그인이 필요합니다'}
       </Text>
 

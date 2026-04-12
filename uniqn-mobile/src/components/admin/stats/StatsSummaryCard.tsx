@@ -46,7 +46,7 @@ export function StatsSummaryCard({
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
             <View className="flex-row items-baseline">
-              <Text className={`text-2xl font-bold ${valueColor}`}>
+              <Text className={`text-2xl font-display ${valueColor}`}>
                 {value?.toLocaleString() ?? '--'}
               </Text>
               {suffix && (
@@ -120,7 +120,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
-            <Text className={`text-xl font-bold ${config.color}`}>{config.label}</Text>
+            <Text className={`text-xl font-display ${config.color}`}>{config.label}</Text>
           )}
         </View>
         <View className={`w-10 h-10 rounded-sm items-center justify-center ${config.bgColor}`}>

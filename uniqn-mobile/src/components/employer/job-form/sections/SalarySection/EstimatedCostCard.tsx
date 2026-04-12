@@ -31,7 +31,7 @@ export const EstimatedCostCard = memo(function EstimatedCostCard({
       <Text className="text-sm text-primary-700 dark:text-primary-300 mb-2">
         예상 총 인건비 (1일 기준)
       </Text>
-      <Text className="text-2xl font-bold text-primary-900 dark:text-primary-100">
+      <Text className="text-2xl font-display text-primary-900 dark:text-primary-100">
         {formatNumber(estimatedCost)}원
       </Text>
       <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1">

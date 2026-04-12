@@ -28,7 +28,7 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
             <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-sm items-center justify-center mb-3">
               <CheckCircleIcon size={32} color="#22c55e" />
             </View>
-            <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
+            <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
               문자인증 완료
             </Text>
           </View>

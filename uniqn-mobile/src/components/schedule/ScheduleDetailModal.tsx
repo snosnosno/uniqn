@@ -360,7 +360,7 @@ export function ScheduleDetailModal({
             )}
           </View>
           <Text
-            className="text-lg font-bold text-secondary-900 dark:text-secondary-100"
+            className="text-lg font-display text-secondary-900 dark:text-secondary-100"
             numberOfLines={2}
           >
             {schedule.jobPostingName}

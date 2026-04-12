@@ -391,7 +391,7 @@ export const CalendarPicker = memo(function CalendarPicker({
             </Pressable>
           </View>
 
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
             {format(currentMonth, 'yyyy년 M월', { locale: ko })}
           </Text>
 

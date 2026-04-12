@@ -329,7 +329,7 @@ export default function AdminTournamentsPage() {
     <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
-        <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-1">
+        <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-1">
           대회공고 승인 관리
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">

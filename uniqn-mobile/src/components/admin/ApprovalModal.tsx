@@ -120,7 +120,7 @@ export const ApprovalModal = memo(function ApprovalModal({
             {/* 헤더 */}
             <View className="flex-row items-center justify-between p-4 border-b border-secondary-200 dark:border-surface-overlay">
               <Text
-                className={`text-lg font-semibold ${
+                className={`text-lg font-display-semibold ${
                   isApprove
                     ? 'text-success-600 dark:text-success-400'
                     : 'text-error-600 dark:text-error-400'

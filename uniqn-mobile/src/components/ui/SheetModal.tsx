@@ -164,7 +164,7 @@ function WebSheetModal({
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
                 {title}
               </Text>
               {showCloseButton && (
@@ -327,7 +327,7 @@ function NativeSheetModal({
             >
               {/* Header */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-                <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+                <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
                   {title}
                 </Text>
                 {showCloseButton && (

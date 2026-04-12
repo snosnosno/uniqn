@@ -289,7 +289,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
               <View className="bg-primary-50 dark:bg-primary-900/20 rounded-md p-4 mb-4">
                 <View className="flex-row justify-around">
                   <View className="items-center">
-                    <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                    <Text className="text-2xl font-display text-primary-600 dark:text-primary-400">
                       {stats.completed}
                     </Text>
                     <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
@@ -298,7 +298,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
                   </View>
                   <View className="w-px bg-primary-200 dark:bg-primary-700" />
                   <View className="items-center">
-                    <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                    <Text className="text-2xl font-display text-primary-600 dark:text-primary-400">
                       {formatCurrency(stats.totalEarnings)}
                     </Text>
                     <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
