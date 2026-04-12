@@ -250,8 +250,8 @@ export default function SettingsScreen() {
                 value={notificationSettings?.pushEnabled ?? true}
                 onValueChange={handlePushToggle}
                 disabled={isSaving || !isAuthenticated}
-                trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={notificationSettings?.pushEnabled ? '#D4AF37' : '#f4f3f4'}
+                trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                thumbColor={notificationSettings?.pushEnabled ? '#FFFFFF' : '#F5F5F2'}
               />
             }
           />
@@ -279,8 +279,8 @@ export default function SettingsScreen() {
                     onValueChange={handleAutoLoginToggle}
                     disabled={isAutoLoginLoading}
                     testID="settings-auto-login-switch"
-                    trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={autoLoginEnabled ? '#D4AF37' : '#f4f3f4'}
+                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                    thumbColor={autoLoginEnabled ? '#FFFFFF' : '#F5F5F2'}
                   />
                 }
               />
@@ -300,8 +300,8 @@ export default function SettingsScreen() {
                         disabled={
                           isBiometricLoading || isBiometricAuthenticating || !autoLoginEnabled
                         }
-                        trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                        thumbColor={isBiometricEnabled ? '#D4AF37' : '#f4f3f4'}
+                        trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                        thumbColor={isBiometricEnabled ? '#FFFFFF' : '#F5F5F2'}
                       />
                     }
                   />
@@ -323,8 +323,8 @@ export default function SettingsScreen() {
               <Switch
                 value={isDarkMode}
                 onValueChange={handleDarkModeToggle}
-                trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={isDarkMode ? '#D4AF37' : '#f4f3f4'}
+                trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                thumbColor={isDarkMode ? '#FFFFFF' : '#F5F5F2'}
               />
             }
           />
@@ -390,8 +390,8 @@ export default function SettingsScreen() {
                     value={profile?.marketingAgreed ?? false}
                     onValueChange={handleMarketingConsentChange}
                     disabled={isMarketingUpdating}
-                    trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={profile?.marketingAgreed ? '#D4AF37' : '#f4f3f4'}
+                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                    thumbColor={profile?.marketingAgreed ? '#FFFFFF' : '#F5F5F2'}
                   />
                 }
               />

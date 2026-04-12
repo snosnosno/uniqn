@@ -91,13 +91,13 @@ const FilterTab = memo(function FilterTab({
       accessibilityState={{ selected: isSelected }}
       accessibilityLabel={`${label} 공고 ${count ?? 0}개`}
       style={{
-        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#E5E7EB',
+        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#EDEBE6',
       }}
     >
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
         }}
       >
         {label}

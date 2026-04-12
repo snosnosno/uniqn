@@ -196,7 +196,7 @@ export function ApplicantConfirmModal({
                       : 'bg-primary-50 border border-primary-200'
                   }`}
                 >
-                  <CalendarIcon size={16} color={isDark ? '#93C5FD' : '#B8962E'} />
+                  <CalendarIcon size={16} color={isDark ? '#E8C84E' : '#B8962E'} />
                   <Text
                     className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                   >

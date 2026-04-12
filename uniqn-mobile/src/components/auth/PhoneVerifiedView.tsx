@@ -49,7 +49,7 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
           </View>
           <View
             className="rounded-lg p-3"
-            style={{ backgroundColor: isDark ? '#374151' : '#ffffff' }}
+            style={{ backgroundColor: isDark ? '#222228' : '#FFFFFF' }}
           >
             <View className="flex-row justify-between">
               <Text className="text-secondary-500 dark:text-secondary-400 text-sm">휴대폰</Text>

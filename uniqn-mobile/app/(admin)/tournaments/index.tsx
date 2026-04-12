@@ -65,13 +65,13 @@ const StatusTab = memo(function StatusTab({
       onPress={onPress}
       className="px-4 py-2 rounded-sm mr-2 flex-row items-center"
       style={{
-        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#E5E7EB',
+        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#EDEBE6',
       }}
     >
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
         }}
       >
         {label}

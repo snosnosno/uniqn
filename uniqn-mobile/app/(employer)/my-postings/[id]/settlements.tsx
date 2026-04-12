@@ -125,7 +125,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
   const inactiveColor = isDarkMode ? '#A89C84' : '#9A9078';
   const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
   const activeBadgeBg = isDarkMode ? '#2A2410' : '#F5EFDC';
-  const inactiveBadgeBg = isDarkMode ? '#374151' : '#F3F4F6';
+  const inactiveBadgeBg = isDarkMode ? '#3A3530' : '#EDEBE6';
 
   return (
     <View className="flex-row bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">

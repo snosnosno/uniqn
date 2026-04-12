@@ -231,7 +231,7 @@ export function ScheduleDetailSheet({
         >
           <QrCodeIcon
             size={20}
-            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#374151') : '#FFFFFF'}
+            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#5C5546') : '#FFFFFF'}
           />
           <Text
             className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}
