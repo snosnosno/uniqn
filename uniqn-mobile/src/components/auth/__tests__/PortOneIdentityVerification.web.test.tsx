@@ -13,13 +13,16 @@ jest.mock('@portone/browser-sdk/v2', () => ({
 const mockBuildRequest = jest.fn();
 const mockSavePending = jest.fn();
 const mockClearPending = jest.fn();
+const mockSaveResult = jest.fn();
 const mockCallVerify = jest.fn();
 
 jest.mock('@/services/auth/portOneIdentityService', () => ({
   buildPortOneInicisIdentityRequest: (...args: unknown[]) => mockBuildRequest(...args),
   savePendingPortOneIdentityRequest: (...args: unknown[]) => mockSavePending(...args),
   clearPendingPortOneIdentityRequest: (...args: unknown[]) => mockClearPending(...args),
+  savePortOneIdentityVerificationResult: (...args: unknown[]) => mockSaveResult(...args),
   callVerifyPortOneIdentity: (...args: unknown[]) => mockCallVerify(...args),
+  getPortOneInicisIdentityConfig: () => ({ isReady: true }),
 }));
 
 // NativeWind mock
