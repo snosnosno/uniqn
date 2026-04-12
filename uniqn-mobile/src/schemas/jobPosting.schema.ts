@@ -463,7 +463,7 @@ export const jobPostingDocumentSchema = z
     ownerId: z.string(),
     ownerName: z.string().optional(),
     postingType: postingTypeSchema.optional().default('regular'),
-    workDate: z.string(),
+    workDate: z.string().optional(), // fixed 공고는 work_date가 없음
     workDates: z.array(z.string()).optional(),
     roleKeys: z.array(z.string()).optional(),
     totalPositions: z.number(),

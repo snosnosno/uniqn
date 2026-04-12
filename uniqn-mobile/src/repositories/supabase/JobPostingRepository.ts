@@ -50,11 +50,31 @@ const DEFAULT_PAGE_SIZE = 20;
 const TABLE_COLUMNS =
   'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
 
+// TABLE_COLUMNS를 camelCase로 변환한 허용 컬럼 Set (Realtime full-row 필터링용)
+const ALLOWED_CAMEL_COLUMNS: Set<string> = new Set(
+  TABLE_COLUMNS.split(',').map((col) => {
+    let c = col.trim().replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
+    if (c.endsWith('Url')) c = c.slice(0, -3) + 'URL';
+    if (c.endsWith('Urls')) c = c.slice(0, -4) + 'URLs';
+    return c;
+  })
+);
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function toJobPosting(row: Record<string, unknown>): JobPosting | null {
   const camel = toCamelCase<Record<string, unknown>>(row);
-  return parseJobPostingDocument({ ...camel, id: row.id });
+  // 1. Realtime은 전체 컬럼을 반환하므로 TABLE_COLUMNS 기준으로 필터링
+  // 2. Supabase는 optional 필드를 null로 반환하지만 Zod .optional()은 undefined만 허용
+  //    → null 값을 제거하여 undefined로 처리되게 함
+  const clean: Record<string, unknown> = { id: row.id };
+  for (const [key, val] of Object.entries(camel)) {
+    if (key === 'id') continue;
+    if (!ALLOWED_CAMEL_COLUMNS.has(key)) continue; // 스키마 미등록 컬럼 제외
+    if (val === null) continue; // null → undefined (Zod .optional() 호환)
+    clean[key] = val;
+  }
+  return parseJobPostingDocument(clean);
 }
 
 function rowsToJobPostings(rows: Record<string, unknown>[]): JobPosting[] {

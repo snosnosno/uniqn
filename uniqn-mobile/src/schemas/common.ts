@@ -103,16 +103,18 @@ function isServerTimestampSentinel(value: unknown): value is { _methodName: 'ser
 }
 
 /**
- * Firebase Timestamp 타입 검증 및 변환
+ * Timestamp 타입 검증 및 변환
  *
- * @description Firestore에서 읽은 Timestamp 또는 JS Date 객체 허용
+ * @description Supabase(ISO string) 및 Firestore Timestamp 모두 허용
+ * - ISO string (Supabase: "2026-04-12T10:38:00+00:00")
  * - Timestamp 인스턴스 (toDate 메서드로 판별)
  * - Date 인스턴스
  * - { seconds: number, nanoseconds: number } 형태 (JSON 직렬화된 Timestamp)
+ * - serverTimestamp() 센티널
  *
  * @note z.instanceof(Timestamp)는 번들러 환경에서 실패할 수 있으므로
  *       toDate() 메서드 존재 여부로 판별
- * @note 모든 유효한 입력은 Timestamp로 변환되어 출력 타입이 일관됨
+ * @note 모든 유효한 입력은 TimestampLike로 변환되어 출력 타입이 일관됨
  *
  * @example
  * const schema = z.object({
@@ -120,18 +122,25 @@ function isServerTimestampSentinel(value: unknown): value is { _methodName: 'ser
  * });
  *
  * // 유효한 입력:
+ * { createdAt: "2026-04-12T10:38:00+00:00" } // Supabase ISO string
  * { createdAt: Timestamp.now() }
  * { createdAt: new Date() }
  * { createdAt: { seconds: 1234567890, nanoseconds: 0 } }
  */
+function isIsoString(val: unknown): val is string {
+  return typeof val === 'string' && !isNaN(Date.parse(val));
+}
+
 export const timestampSchema = z
   .custom<
+    | string
     | { toDate: () => Date }
     | Date
     | { seconds: number; nanoseconds: number }
     | { _methodName: 'serverTimestamp' }
   >(
     (val) =>
+      isIsoString(val) ||
       isTimestampLike(val) ||
       val instanceof Date ||
       isTimestampObject(val) ||
@@ -139,6 +148,10 @@ export const timestampSchema = z
     { message: 'Timestamp 형식이 아닙니다' }
   )
   .transform((val): TimestampLike => {
+    // ISO string (Supabase) → TimestampLike로 변환
+    if (isIsoString(val)) {
+      return createTimestampLike(new Date(val));
+    }
     // 이미 Timestamp-like 객체인 경우 TimestampLike로 래핑
     if (isTimestampLike(val)) {
       const date = val.toDate();
