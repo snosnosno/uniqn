@@ -64,12 +64,20 @@ export type { TournamentApprovalStatus } from '@/types';
 /**
  * Supabase Edge Function 에러를 비즈니스 에러로 매핑
  */
-function mapEdgeFunctionError(error: unknown): Error {
-  // Supabase FunctionsHttpError: response body에 에러 정보
+async function mapEdgeFunctionError(error: unknown): Promise<Error> {
+  // Supabase FunctionsHttpError: context는 fetch Response 객체
   if (error && typeof error === 'object' && 'context' in error) {
-    const context = (error as { context?: { status?: number } }).context;
+    const context = (error as { context?: Response }).context;
     const status = context?.status;
-    const message = (error as { message?: string }).message || '';
+
+    // Response body에서 서버 에러 메시지 추출
+    let serverMessage = '';
+    try {
+      const body = await context?.json();
+      serverMessage = body?.message || body?.error || '';
+    } catch {
+      // body 파싱 실패 시 무시
+    }
 
     switch (status) {
       case 401:
@@ -86,11 +94,11 @@ function mapEdgeFunctionError(error: unknown): Error {
         });
       case 409:
         return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: message || '이미 처리된 공고입니다',
+          userMessage: serverMessage || '이미 처리된 공고입니다',
         });
       case 422:
         return new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: message || '잘못된 요청입니다',
+          userMessage: serverMessage || '잘못된 요청입니다',
         });
       default:
         break;
@@ -132,7 +140,7 @@ export async function approveTournamentPosting(
     logger.error('대회공고 승인 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapEdgeFunctionError(error);
+    throw await mapEdgeFunctionError(error);
   }
 }
 
@@ -169,7 +177,7 @@ export async function rejectTournamentPosting(
     logger.error('대회공고 거부 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapEdgeFunctionError(error);
+    throw await mapEdgeFunctionError(error);
   }
 }
 
@@ -202,7 +210,7 @@ export async function resubmitTournamentPosting(
     logger.error('대회공고 재제출 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapEdgeFunctionError(error);
+    throw await mapEdgeFunctionError(error);
   }
 }
 

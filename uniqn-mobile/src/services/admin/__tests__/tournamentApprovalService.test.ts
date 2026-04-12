@@ -143,7 +143,10 @@ describe('TournamentApprovalService', () => {
     it('실패: 이미 처리된 공고 (409)', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Already processed', context: { status: 409 } },
+        error: {
+          message: 'Already processed',
+          context: { status: 409, json: () => Promise.resolve({ message: 'Already processed' }) },
+        },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow('Already processed');
@@ -152,7 +155,10 @@ describe('TournamentApprovalService', () => {
     it('실패: 잘못된 요청 (422)', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Invalid posting ID', context: { status: 422 } },
+        error: {
+          message: 'Invalid posting ID',
+          context: { status: 422, json: () => Promise.resolve({ message: 'Invalid posting ID' }) },
+        },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow();
@@ -232,7 +238,10 @@ describe('TournamentApprovalService', () => {
     it('실패: 이미 처리된 공고', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Already approved', context: { status: 409 } },
+        error: {
+          message: 'Already approved',
+          context: { status: 409, json: () => Promise.resolve({ message: 'Already approved' }) },
+        },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
@@ -243,7 +252,10 @@ describe('TournamentApprovalService', () => {
     it('실패: 잘못된 거부 사유 (422)', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Reason too short', context: { status: 422 } },
+        error: {
+          message: 'Reason too short',
+          context: { status: 422, json: () => Promise.resolve({ message: 'Reason too short' }) },
+        },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason: 'too short' })).rejects.toThrow();
@@ -305,7 +317,13 @@ describe('TournamentApprovalService', () => {
     it('실패: rejected 상태가 아님', async () => {
       mockHttpsCallable.mockResolvedValue({
         data: null,
-        error: { message: 'Not in rejected status', context: { status: 409 } },
+        error: {
+          message: 'Not in rejected status',
+          context: {
+            status: 409,
+            json: () => Promise.resolve({ message: 'Not in rejected status' }),
+          },
+        },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
