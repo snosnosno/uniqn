@@ -961,7 +961,7 @@ describe('scheduleService - getCalendarMarkedDates', () => {
 
     expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
     expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37');
-    expect(markedDates['2025-01-17'].dotColor).toBe('#8B5CF6');
+    expect(markedDates['2025-01-17'].dotColor).toBe('#22C55E');
     expect(markedDates['2025-01-18'].dotColor).toBe('#EF4444');
   });
 

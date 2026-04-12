@@ -668,7 +668,7 @@ export function getCalendarMarkedDates(
   const colorMap: Record<ScheduleType, string> = {
     applied: '#D4AF37', // primary (gold)
     confirmed: '#22C55E', // success
-    completed: '#8B5CF6', // completed (purple)
+    completed: '#22C55E', // completed (success)
     cancelled: '#EF4444', // error
   };
 
