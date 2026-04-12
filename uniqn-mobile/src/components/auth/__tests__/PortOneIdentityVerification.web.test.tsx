@@ -10,17 +10,16 @@ jest.mock('@portone/browser-sdk/v2', () => ({
 }));
 
 // portOneIdentityService mock
+// savePortOneIdentityVerificationResult는 이 컴포넌트에서 호출하지 않으므로 mock 제외
 const mockBuildRequest = jest.fn();
 const mockSavePending = jest.fn();
 const mockClearPending = jest.fn();
-const mockSaveResult = jest.fn();
 const mockCallVerify = jest.fn();
 
 jest.mock('@/services/auth/portOneIdentityService', () => ({
   buildPortOneInicisIdentityRequest: (...args: unknown[]) => mockBuildRequest(...args),
   savePendingPortOneIdentityRequest: (...args: unknown[]) => mockSavePending(...args),
   clearPendingPortOneIdentityRequest: (...args: unknown[]) => mockClearPending(...args),
-  savePortOneIdentityVerificationResult: (...args: unknown[]) => mockSaveResult(...args),
   callVerifyPortOneIdentity: (...args: unknown[]) => mockCallVerify(...args),
   getPortOneInicisIdentityConfig: () => ({ isReady: true }),
 }));

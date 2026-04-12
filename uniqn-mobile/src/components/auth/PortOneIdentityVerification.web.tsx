@@ -56,9 +56,7 @@ export function PortOneIdentityVerification({
 
   const handleVerificationFailure = useCallback(
     (error: unknown, fallbackMessage?: string) => {
-      clearPendingPortOneIdentityRequest();
-      setIsProcessing(false);
-
+      // cleanup은 startVerification의 finally 블록에서 담당
       const resolvedMessage =
         fallbackMessage ??
         (error instanceof Error ? error.message : extractUserMessage(error)) ??
