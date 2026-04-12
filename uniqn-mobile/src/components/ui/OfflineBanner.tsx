@@ -73,7 +73,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
           <View className="flex-row items-center justify-between bg-error-600 dark:bg-error-700 px-4 py-3 rounded-lg shadow-lg">
             <View className="flex-row items-center flex-1">
               <WifiOff size={18} color="white" />
-              <Text className="text-white text-sm font-medium ml-2 flex-1">{message}</Text>
+              <Text className="text-white text-sm font-sans-medium ml-2 flex-1">{message}</Text>
             </View>
             {showRetry && (
               <Pressable
@@ -113,7 +113,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               연결 끊김
             </Text>
 
-            <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6">
+            <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 font-sans">
               {message}
             </Text>
 
@@ -131,7 +131,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
                 ) : (
                   <>
                     <RefreshCw size={18} color="white" />
-                    <Text className="text-white font-semibold ml-2">다시 연결</Text>
+                    <Text className="text-white font-sans-semibold ml-2">다시 연결</Text>
                   </>
                 )}
               </Pressable>
@@ -151,7 +151,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <WifiOff size={18} color="white" />
-            <Text className="text-white text-sm font-medium ml-2 flex-1">{message}</Text>
+            <Text className="text-white text-sm font-sans-medium ml-2 flex-1">{message}</Text>
           </View>
 
           {showRetry && (
@@ -168,7 +168,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               ) : (
                 <>
                   <RefreshCw size={14} color="white" />
-                  <Text className="text-white text-xs font-medium ml-1">재시도</Text>
+                  <Text className="text-white text-xs font-sans-medium ml-1">재시도</Text>
                 </>
               )}
             </Pressable>

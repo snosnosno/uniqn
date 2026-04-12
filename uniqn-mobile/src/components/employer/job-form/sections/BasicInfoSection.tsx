@@ -130,7 +130,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           testID="job-posting-title-input"
           maxLength={25}
         />
-        <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right">
+        <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right font-sans">
           {data.title.length}/25
         </Text>
       </FormField>
@@ -203,7 +203,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           className="px-4 py-3 bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white min-h-[100px]"
           placeholderTextColor="#A89C84"
         />
-        <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right">
+        <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right font-sans">
           {data.description.length}/500
         </Text>
       </FormField>

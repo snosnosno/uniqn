@@ -95,7 +95,7 @@ const FilterTab = memo(function FilterTab({
       }}
     >
       <Text
-        className="text-sm font-medium"
+        className="text-sm font-sans-medium"
         style={{
           color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
         }}
@@ -109,7 +109,7 @@ const FilterTab = memo(function FilterTab({
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
-          <Text className="text-xs font-medium text-surface-dark">{count}</Text>
+          <Text className="text-xs font-sans-medium text-surface-dark">{count}</Text>
         </View>
       )}
     </Pressable>
@@ -176,7 +176,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 제목 */}
       <Text
-        className="text-base font-semibold text-secondary-900 dark:text-off-white mb-2"
+        className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2"
         numberOfLines={2}
       >
         {posting.title}
@@ -185,7 +185,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 장소 */}
       <View className="flex-row items-center mb-1">
         <LocationOutlineIcon size={14} color="#A89C84" />
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {posting.location?.name || '-'}
         </Text>
       </View>
@@ -193,7 +193,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
         <CalendarOutlineIcon size={14} color="#A89C84" />
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {getDateRange}
         </Text>
       </View>
@@ -201,7 +201,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 모집 현황 */}
       <View className="flex-row items-center">
         <PeopleOutlineIcon size={14} color="#A89C84" />
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {posting.filledPositions ?? 0}/{posting.totalPositions ?? 0}명 충원
         </Text>
       </View>
@@ -209,7 +209,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 지원자 수 */}
       {(posting.stats?.totalApplicants ?? 0) > 0 && (
         <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-primary-600 dark:text-primary-400">
+          <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
             지원자 {posting.stats?.totalApplicants ?? 0}명
           </Text>
         </View>
@@ -276,7 +276,7 @@ export default function MyPostingsPage() {
     return (
       <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           공고 목록을 불러오는 중...
         </Text>
       </View>
@@ -313,10 +313,10 @@ export default function MyPostingsPage() {
             accessibilityLabel="새 공고 작성"
           >
             <AddIcon size={18} color="white" />
-            <Text className="text-surface-dark font-medium ml-1">새 공고</Text>
+            <Text className="text-surface-dark font-sans-medium ml-1">새 공고</Text>
           </Pressable>
         </View>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           총 {postings?.length ?? 0}개의 공고
         </Text>
       </View>
@@ -348,7 +348,7 @@ export default function MyPostingsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {filteredPostings.length}개의 공고
         </Text>
       </View>

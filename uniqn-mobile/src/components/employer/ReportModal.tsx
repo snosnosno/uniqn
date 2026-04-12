@@ -97,14 +97,14 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
           <View className="flex-row items-center">
             <Text
               className={`
-                text-base font-semibold
+                text-base font-sans-semibold
                 ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-secondary-900 dark:text-off-white'}
               `}
             >
               {typeInfo.label}
             </Text>
             <View className={`ml-2 px-2 py-0.5 rounded ${severityColors.bg}`}>
-              <Text className={`text-xs ${severityColors.text}`}>
+              <Text className={`text-xs ${severityColors.text} font-sans`}>
                 {typeInfo.severity === 'critical'
                   ? '심각'
                   : typeInfo.severity === 'high'
@@ -115,7 +115,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
               </Text>
             </View>
           </View>
-          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {typeInfo.description}
           </Text>
         </View>
@@ -158,7 +158,9 @@ function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
   return (
     <View className={`flex-row items-center p-3 rounded-lg ${severityColors.bg}`}>
       <AlertTriangleIcon size={16} color={severityIcons[severity]} />
-      <Text className={`ml-2 text-sm ${severityColors.text}`}>{severityLabels[severity]}</Text>
+      <Text className={`ml-2 text-sm ${severityColors.text} font-sans`}>
+        {severityLabels[severity]}
+      </Text>
     </View>
   );
 }
@@ -289,7 +291,7 @@ export function ReportModal({
               )}
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 {reportTarget.name}
               </Text>
               {mode === 'employer' && staff ? (
@@ -297,12 +299,12 @@ export function ReportModal({
                   <Badge variant="default" size="sm">
                     {getRoleDisplayName(staff.role, staff.customRole)}
                   </Badge>
-                  <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
+                  <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                     {staff.date}
                   </Text>
                 </View>
               ) : (
-                <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {jobPostingTitle || '구인자'}
                 </Text>
               )}
@@ -311,8 +313,8 @@ export function ReportModal({
         </Card>
 
         {/* 신고 유형 선택 */}
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-          신고 유형 선택 <Text className="text-error-500">*</Text>
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          신고 유형 선택 <Text className="text-error-500 font-sans">*</Text>
         </Text>
 
         <ScrollView
@@ -341,8 +343,8 @@ export function ReportModal({
 
         {/* 상세 설명 */}
         <View className="mb-3">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-            상세 설명 <Text className="text-error-500">*</Text>
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            상세 설명 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
             value={description}
@@ -356,7 +358,7 @@ export function ReportModal({
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
             className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[80px]"
           />
-          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             {description.length}/500자 (최소 10자)
           </Text>
         </View>
@@ -365,10 +367,10 @@ export function ReportModal({
         <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
           <AlertCircleIcon size={14} color="#D97706" />
           <View className="ml-2 flex-1">
-            <Text className="text-xs font-medium text-warning-700 dark:text-warning-300 mb-0.5">
+            <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300 mb-0.5">
               신고 시 유의사항
             </Text>
-            <Text className="text-xs text-warning-600 dark:text-warning-400 leading-4">
+            <Text className="text-xs text-warning-600 dark:text-warning-400 leading-4 font-sans">
               • 허위 신고는 제재의 대상이 될 수 있습니다{'\n'}• 신고 내용은 관리자가 검토 후
               처리됩니다
             </Text>

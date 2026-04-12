@@ -40,7 +40,7 @@ function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
 
   return (
     <Pressable onPress={onPress} className={baseClass + ' ' + selectedClass}>
-      <Text className={'text-sm font-medium ' + textClass}>{label}</Text>
+      <Text className={'text-sm font-sans-medium ' + textClass}>{label}</Text>
     </Pressable>
   );
 }
@@ -102,28 +102,30 @@ function UserCard({ user, onPress }: UserCardProps) {
 
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mr-2">
+          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mr-2">
             {user.name}
           </Text>
           <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
             {getRoleLabel(user.role)}
           </Badge>
         </View>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
           {user.email}
         </Text>
         <View className="flex-row items-center">
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             가입일: {formatDate(user.createdAt)}
           </Text>
           {!user.isActive && (
             <View className="ml-2 px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded">
-              <Text className="text-xs text-error-600 dark:text-error-400">비활성</Text>
+              <Text className="text-xs text-error-600 dark:text-error-400 font-sans">비활성</Text>
             </View>
           )}
           {user.isVerified && (
             <View className="ml-2 px-2 py-0.5 bg-success-50 dark:bg-success-900/30 rounded">
-              <Text className="text-xs text-success-600 dark:text-success-400">인증됨</Text>
+              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
+                인증됨
+              </Text>
             </View>
           )}
         </View>
@@ -187,7 +189,7 @@ export default function AdminUsersPage() {
     return (
       <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           사용자 목록을 불러오는 중...
         </Text>
       </View>
@@ -242,7 +244,7 @@ export default function AdminUsersPage() {
       </View>
 
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           총 {total.toLocaleString()}명의 사용자
         </Text>
       </View>
@@ -272,7 +274,7 @@ export default function AdminUsersPage() {
             ))}
             {data && (
               <View className="py-4 items-center">
-                <Text className="text-sm text-secondary-400 dark:text-secondary-500">
+                <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
                   {data.page} / {data.totalPages} 페이지
                 </Text>
                 {data.hasNextPage && (
@@ -280,7 +282,7 @@ export default function AdminUsersPage() {
                     onPress={handleLoadMore}
                     className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
                   >
-                    <Text className="text-surface-dark font-medium">더 보기</Text>
+                    <Text className="text-surface-dark font-sans-medium">더 보기</Text>
                   </Pressable>
                 )}
               </View>

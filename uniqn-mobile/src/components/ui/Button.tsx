@@ -105,7 +105,7 @@ export const Button = memo(function Button({
 
   const buttonClass =
     `flex-row items-center justify-center rounded ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`.trim();
-  const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
+  const textClass = `font-sans-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
   const content =
     typeof children === 'string' || typeof children === 'number' ? (
       <Text className={textClass}>{children}</Text>

@@ -68,10 +68,10 @@ export function BoardImagePicker({
   return (
     <View className="w-full">
       <View className="mb-3 px-1">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {images.length}/{MAX_BOARD_POST_IMAGES}장
         </Text>
-        <Text className="mt-0.5 text-xs text-secondary-400 dark:text-secondary-500">
+        <Text className="mt-0.5 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
           커뮤니티 글에 첨부할 이미지를 선택하세요.
         </Text>
       </View>
@@ -95,7 +95,7 @@ export function BoardImagePicker({
               <XMarkIcon size={14} color="#FFFFFF" />
             </Pressable>
             <View className="absolute bottom-1 left-1 rounded-sm bg-black/60 px-2 py-0.5">
-              <Text className="text-xs font-medium text-white">{index + 1}</Text>
+              <Text className="text-xs font-sans-medium text-white">{index + 1}</Text>
             </View>
           </View>
         ))}
@@ -116,10 +116,10 @@ export function BoardImagePicker({
             {isUploading ? (
               <View className="items-center px-2">
                 <ActivityIndicator size="small" color="#6366F1" />
-                <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   업로드 중
                 </Text>
-                <Text className="mt-0.5 text-center text-xs font-medium text-primary-600 dark:text-primary-400">
+                <Text className="mt-0.5 text-center text-xs font-sans-medium text-primary-600 dark:text-primary-400">
                   {uploadProgress}%
                 </Text>
               </View>
@@ -129,7 +129,7 @@ export function BoardImagePicker({
                   <ImagesOutlineIcon size={20} color="#A89C84" />
                 </View>
                 <AddIcon size={18} color="#9A9078" />
-                <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   추가
                 </Text>
               </View>

@@ -98,7 +98,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
               }`}
             >
               <Text
-                className={`text-sm font-medium ${
+                className={`text-sm font-sans-medium ${
                   isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -112,7 +112,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
                   }`}
                 >
                   <Text
-                    className={`text-xs font-bold ${isSelected ? 'text-surface-dark' : 'text-white'}`}
+                    className={`text-xs font-sans-bold ${isSelected ? 'text-surface-dark' : 'text-white'}`}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Text>

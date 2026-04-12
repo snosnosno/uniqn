@@ -29,7 +29,7 @@ export function SocialLoginButtons({
   if (!isAppleAvailable) {
     return availabilityMessage ? (
       <View className="w-full rounded-lg bg-secondary-100 p-4 dark:bg-surface">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
           {availabilityMessage}
         </Text>
       </View>

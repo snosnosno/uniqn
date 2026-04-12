@@ -140,16 +140,16 @@ export function DatePickerModal({
     <Modal visible={visible} onClose={handleClose} title="날짜 선택" size="lg">
       {/* 제약사항 안내 */}
       <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-        <Text className="text-sm text-primary-700 dark:text-primary-300">
+        <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
           최대 {constraints.maxDates}개 날짜 추가 가능 (현재: {existingDates.length}개, 추가 가능:{' '}
           {remainingSlots}개)
         </Text>
         {postingType === 'urgent' && (
-          <Text className="text-sm text-primary-700 dark:text-primary-300 mt-1">
+          <Text className="text-sm text-primary-700 dark:text-primary-300 mt-1 font-sans">
             긴급 공고는 오늘부터 7일 이내만 선택할 수 있습니다
           </Text>
         )}
-        <Text className="text-xs text-primary-600 dark:text-primary-400 mt-2">
+        <Text className="text-xs text-primary-600 dark:text-primary-400 mt-2 font-sans">
           캘린더에서 여러 날짜를 탭하여 선택/해제할 수 있습니다
         </Text>
       </View>
@@ -157,18 +157,20 @@ export function DatePickerModal({
       {/* 선택된 날짜 목록 */}
       <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-2">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             선택한 날짜 ({selectedDates.length}개)
           </Text>
           {selectedDates.length > 0 && (
             <Pressable onPress={handleClearAll} accessibilityLabel="전체 해제">
-              <Text className="text-xs text-error-500 dark:text-error-400">전체 해제</Text>
+              <Text className="text-xs text-error-500 dark:text-error-400 font-sans">
+                전체 해제
+              </Text>
             </Pressable>
           )}
         </View>
 
         {selectedDates.length === 0 ? (
-          <Text className="text-secondary-400 dark:text-secondary-500">
+          <Text className="text-secondary-400 dark:text-secondary-500 font-sans">
             캘린더에서 날짜를 선택하세요
           </Text>
         ) : (
@@ -178,7 +180,7 @@ export function DatePickerModal({
                 key={date.toISOString()}
                 className="flex-row items-center bg-primary-100 dark:bg-primary-900/50 rounded-sm px-3 py-1.5 mr-2"
               >
-                <Text className="text-sm text-primary-800 dark:text-primary-200 mr-1">
+                <Text className="text-sm text-primary-800 dark:text-primary-200 mr-1 font-sans">
                   {format(date, 'M/d (EEE)', { locale: ko })}
                 </Text>
                 <Pressable
@@ -210,10 +212,10 @@ export function DatePickerModal({
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
         <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
           </Text>
-          <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
             {existingDates.slice(0, 5).join(', ')}
             {existingDates.length > 5 && ` 외 ${existingDates.length - 5}개`}
           </Text>
@@ -229,7 +231,7 @@ export function DatePickerModal({
           accessibilityLabel="취소"
           testID="job-posting-date-cancel-button"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-sans-medium">
             취소
           </Text>
         </Pressable>
@@ -245,7 +247,7 @@ export function DatePickerModal({
           accessibilityLabel="확인"
           testID="job-posting-date-confirm-button"
         >
-          <Text className="text-surface-dark text-center font-semibold">
+          <Text className="text-surface-dark text-center font-sans-semibold">
             {selectedDates.length > 0 ? `${selectedDates.length}개 추가` : '확인'}
           </Text>
         </Pressable>

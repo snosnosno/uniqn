@@ -72,7 +72,7 @@ function ImageCell({
       />
       {totalCount > 1 ? (
         <View className="absolute bottom-2 right-2 rounded-sm bg-black/60 px-2 py-0.5">
-          <Text className="text-[10px] font-semibold text-white">
+          <Text className="text-[10px] font-sans-semibold text-white">
             {index + 1}/{totalCount}
           </Text>
         </View>

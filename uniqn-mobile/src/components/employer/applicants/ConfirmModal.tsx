@@ -163,7 +163,7 @@ export function ApplicantConfirmModal({
             <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {getRoleDisplayName(
                 applicant.assignments[0]?.roleIds?.[0] || 'other',
                 applicant.customRole
@@ -171,7 +171,7 @@ export function ApplicantConfirmModal({
               지원
             </Text>
             {applicant.applicantPhone && (
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
                 {applicant.applicantPhone}
               </Text>
             )}
@@ -182,7 +182,7 @@ export function ApplicantConfirmModal({
         {action === 'confirm' && formattedAssignments.length > 0 && (
           <View className="mb-3">
             <Text
-              className={`text-sm font-medium mb-1.5 ${isDark ? 'text-secondary-300' : 'text-secondary-700'}`}
+              className={`text-sm font-sans-medium mb-1.5 ${isDark ? 'text-secondary-300' : 'text-secondary-700'}`}
             >
               확정할 일정 ({formattedAssignments.length}건)
             </Text>
@@ -198,7 +198,7 @@ export function ApplicantConfirmModal({
                 >
                   <CalendarIcon size={16} color={isDark ? '#E8C84E' : '#B8962E'} />
                   <Text
-                    className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                    className={`ml-2 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                   >
                     {item.date}
                   </Text>
@@ -206,7 +206,7 @@ export function ApplicantConfirmModal({
                     <View className="flex-row items-center ml-3">
                       <ClockIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
                       <Text
-                        className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'}`}
+                        className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'} font-sans`}
                       >
                         {item.timeSlot}
                       </Text>
@@ -216,7 +216,7 @@ export function ApplicantConfirmModal({
                     <View className="flex-row items-center ml-3">
                       <BriefcaseIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
                       <Text
-                        className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'}`}
+                        className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'} font-sans`}
                       >
                         {item.roles}
                       </Text>
@@ -231,10 +231,10 @@ export function ApplicantConfirmModal({
         {/* 지원 메시지 */}
         {applicant.message && (
           <View className="p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-3">
-            <Text className="text-xs text-secondary-600 dark:text-secondary-300 mb-0.5 font-medium">
+            <Text className="text-xs text-secondary-600 dark:text-secondary-300 mb-0.5 font-sans-medium">
               지원 메시지
             </Text>
-            <Text className="text-sm text-secondary-700 dark:text-secondary-200">
+            <Text className="text-sm text-secondary-700 dark:text-secondary-200 font-sans">
               {applicant.message}
             </Text>
           </View>
@@ -243,7 +243,7 @@ export function ApplicantConfirmModal({
         {/* 설명 */}
         <View className="flex-row items-center mb-3">
           <AlertCircleIcon size={20} color={action === 'reject' ? '#DC2626' : '#B8962E'} />
-          <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-300">
+          <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-300 font-sans">
             {config.description}
           </Text>
         </View>
@@ -251,7 +251,7 @@ export function ApplicantConfirmModal({
         {/* 입력 필드 */}
         {config.showTextInput && (
           <View className="mb-3">
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
               {config.inputLabel}
             </Text>
             <TextInput

@@ -71,7 +71,7 @@ const getTotalPositions = (slots: TimeSlot[]): number => {
 const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemProps) {
   if (compact) {
     return (
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
         {formatTimeRange(slot)}
       </Text>
     );
@@ -79,7 +79,7 @@ const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemP
 
   return (
     <View className="ml-4 mb-2">
-      <Text className="text-sm text-secondary-700 dark:text-secondary-300 mb-1">
+      <Text className="text-sm text-secondary-700 dark:text-secondary-300 mb-1 font-sans">
         {formatTimeRange(slot)}
       </Text>
       <View className="flex-row flex-wrap gap-1">
@@ -104,7 +104,7 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
   if (compact) {
     return (
       <View className="flex-row items-center mr-3 mb-1">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mr-1">
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mr-1">
           {formattedDate}
         </Text>
       </View>
@@ -115,11 +115,11 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
     <View className="mb-3 pb-3 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mr-2">
+          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mr-2">
             {formattedDate}
           </Text>
         </View>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {totalPositions}명 모집
         </Text>
       </View>
@@ -167,7 +167,7 @@ export const DateRequirementList = memo(function DateRequirementList({
           <DateItem key={index} requirement={req} compact />
         ))}
         {remainingCount > 0 && (
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             +{remainingCount}일
           </Text>
         )}
@@ -177,7 +177,7 @@ export const DateRequirementList = memo(function DateRequirementList({
 
   return (
     <View className={`bg-secondary-50 dark:bg-surface-dark rounded-lg p-3 ${className}`}>
-      <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white mb-3">
+      <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white mb-3">
         날짜별 모집 정보
       </Text>
 
@@ -186,7 +186,7 @@ export const DateRequirementList = memo(function DateRequirementList({
       ))}
 
       {remainingCount > 0 && (
-        <Text className="text-sm text-center text-secondary-400 dark:text-secondary-500 mt-2">
+        <Text className="text-sm text-center text-secondary-400 dark:text-secondary-500 mt-2 font-sans">
           +{remainingCount}일 더 보기
         </Text>
       )}

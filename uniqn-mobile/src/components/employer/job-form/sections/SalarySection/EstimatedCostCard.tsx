@@ -28,13 +28,13 @@ export const EstimatedCostCard = memo(function EstimatedCostCard({
 
   return (
     <View className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-      <Text className="text-sm text-primary-700 dark:text-primary-300 mb-2">
+      <Text className="text-sm text-primary-700 dark:text-primary-300 mb-2 font-sans">
         예상 총 인건비 (1일 기준)
       </Text>
       <Text className="text-2xl font-display text-primary-900 dark:text-primary-100">
         {formatNumber(estimatedCost)}원
       </Text>
-      <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1">
+      <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1 font-sans">
         {totalCount}명 기준 (시급은 8시간 환산)
       </Text>
     </View>

@@ -184,10 +184,10 @@ export const SalarySection = memo(function SalarySection({
       {roles.length > 1 && (
         <View className="mb-4 flex-row items-center justify-between p-3 bg-secondary-50 dark:bg-surface rounded-lg">
           <View>
-            <Text className="text-secondary-900 dark:text-off-white font-medium">
+            <Text className="text-secondary-900 dark:text-off-white font-sans-medium">
               전체 동일 급여
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               모든 역할에 같은 급여를 적용합니다
             </Text>
           </View>
@@ -202,12 +202,12 @@ export const SalarySection = memo(function SalarySection({
 
       {/* 역할별 급여 입력 */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-          역할별 급여 <Text className="text-error-500">*</Text>
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          역할별 급여 <Text className="text-error-500 font-sans">*</Text>
         </Text>
 
         {errors.roleSalary && (
-          <Text className="text-sm text-error-500 mb-2">{errors.roleSalary}</Text>
+          <Text className="text-sm text-error-500 mb-2 font-sans">{errors.roleSalary}</Text>
         )}
 
         {roles.map((role, index) => (
@@ -224,7 +224,7 @@ export const SalarySection = memo(function SalarySection({
         {/* 역할이 없을 때 */}
         {roles.length === 0 && (
           <View className="p-4 bg-secondary-50 dark:bg-surface rounded-lg">
-            <Text className="text-center text-secondary-500 dark:text-secondary-400 text-sm">
+            <Text className="text-center text-secondary-500 dark:text-secondary-400 text-sm font-sans">
               역할 단계에서 역할을 먼저 추가해주세요
             </Text>
           </View>
@@ -255,7 +255,9 @@ export const SalarySection = memo(function SalarySection({
       )}
 
       {/* 에러 메시지 */}
-      {errors.salary && <Text className="mt-2 text-sm text-error-500">{errors.salary}</Text>}
+      {errors.salary && (
+        <Text className="mt-2 text-sm text-error-500 font-sans">{errors.salary}</Text>
+      )}
     </View>
   );
 });

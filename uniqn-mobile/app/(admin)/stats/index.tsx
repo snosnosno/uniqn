@@ -92,7 +92,7 @@ export default function AdminStatsScreen() {
             <Text className="text-2xl font-display text-secondary-900 dark:text-off-white">
               서비스 통계
             </Text>
-            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               운영 상태와 최근 7일 추이를 한 화면에서 확인합니다.
             </Text>
           </View>
@@ -103,10 +103,10 @@ export default function AdminStatsScreen() {
 
         {error ? (
           <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 px-4 py-3 dark:border-amber-800 dark:bg-warning-900/20">
-            <Text className="text-sm font-medium text-warning-800 dark:text-warning-300">
+            <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-300">
               일부 통계만 표시 중입니다
             </Text>
-            <Text className="mt-1 text-xs text-warning-700 dark:text-warning-400">
+            <Text className="mt-1 text-xs text-warning-700 dark:text-warning-400 font-sans">
               최신 데이터를 모두 불러오지 못했지만 확인 가능한 항목은 유지했습니다.
             </Text>
           </View>
@@ -116,7 +116,7 @@ export default function AdminStatsScreen() {
           <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
             주요 지표
           </Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             마지막 업데이트: {lastUpdatedAt}
           </Text>
         </View>
@@ -196,7 +196,7 @@ export default function AdminStatsScreen() {
             <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               최근 가입자
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               최대 {stats?.recentUsers.length ?? 0}명
             </Text>
           </View>
@@ -209,18 +209,18 @@ export default function AdminStatsScreen() {
                   className="flex-row items-center justify-between rounded-lg bg-secondary-50 px-3 py-3 dark:bg-surface-elevated"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
                       {user.name}
                     </Text>
-                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                       {user.email}
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text className="text-xs font-medium uppercase text-primary-600 dark:text-primary-300">
+                    <Text className="text-xs font-sans-medium uppercase text-primary-600 dark:text-primary-300">
                       {user.role}
                     </Text>
-                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                       {formatDateTime(user.createdAt)}
                     </Text>
                   </View>
@@ -228,7 +228,7 @@ export default function AdminStatsScreen() {
               ))}
             </View>
           ) : (
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               최근 가입자 데이터가 없습니다.
             </Text>
           )}

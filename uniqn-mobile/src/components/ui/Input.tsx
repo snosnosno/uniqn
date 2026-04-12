@@ -67,7 +67,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           {label}
         </Text>
       )}
@@ -116,7 +116,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
           className={`mt-1 text-sm ${
             // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
             error ? 'text-error-500' : 'text-secondary-600 dark:text-secondary-400'
-          }`}
+          } font-sans`}
         >
           {error || hint}
         </Text>

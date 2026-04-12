@@ -63,10 +63,10 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                   `}
                 >
                   {isCompleted ? (
-                    <Text className="text-white text-sm font-bold">{''}</Text>
+                    <Text className="text-white text-sm font-sans-bold">{''}</Text>
                   ) : (
                     <Text
-                      className={`text-sm font-bold ${
+                      className={`text-sm font-sans-bold ${
                         isActive
                           ? 'text-surface-dark'
                           : 'text-secondary-500 dark:text-secondary-400'
@@ -82,7 +82,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                   <Text
                     className={`
                       text-xs mt-1 text-center
-                      ${isActive ? 'font-semibold text-primary-600 dark:text-primary-400' : ''}
+                      ${isActive ? 'font-sans-semibold text-primary-600 dark:text-primary-400' : ''}
                       ${isCompleted ? 'text-success-600 dark:text-success-400' : ''}
                       ${isUpcoming ? 'text-secondary-400 dark:text-secondary-500' : ''}
                     `}
@@ -116,7 +116,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
         <Text className="text-center text-lg font-display text-secondary-900 dark:text-off-white">
           {steps[currentStep - 1]?.label}
         </Text>
-        <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+        <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
           {currentStep}/{steps.length} 단계
         </Text>
       </View>

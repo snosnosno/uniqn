@@ -99,21 +99,21 @@ function Checkbox({
             ${disabled ? 'opacity-50' : ''}
           `}
         >
-          {checked && <Text className="text-sm font-bold text-surface-dark">{''}</Text>}
+          {checked && <Text className="text-sm font-sans-bold text-surface-dark">{''}</Text>}
         </View>
         <View className="flex-row items-center">
           {required ? (
-            <Text className="mr-1 text-error-500">[필수]</Text>
+            <Text className="mr-1 text-error-500 font-sans">[필수]</Text>
           ) : (
-            <Text className="mr-1 text-secondary-400">[선택]</Text>
+            <Text className="mr-1 text-secondary-400 font-sans">[선택]</Text>
           )}
-          <Text className="text-secondary-900 dark:text-off-white">{label}</Text>
+          <Text className="text-secondary-900 dark:text-off-white font-sans">{label}</Text>
         </View>
       </Pressable>
 
       {onViewContent ? (
         <Pressable onPress={onViewContent} className="px-2" testID={viewContentTestID}>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">보기</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">보기</Text>
         </Pressable>
       ) : null}
     </View>
@@ -205,9 +205,11 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
             }
           `}
         >
-          {allChecked && <Text className="text-sm font-bold text-surface-dark">{''}</Text>}
+          {allChecked && <Text className="text-sm font-sans-bold text-surface-dark">{''}</Text>}
         </View>
-        <Text className="font-semibold text-secondary-900 dark:text-off-white">전체 동의하기</Text>
+        <Text className="font-sans-semibold text-secondary-900 dark:text-off-white">
+          전체 동의하기
+        </Text>
       </Pressable>
 
       <View className="h-px bg-secondary-200 dark:bg-surface" />
@@ -237,7 +239,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
 
       {(errors.termsAgreed || errors.privacyAgreed) && (
         <View className="rounded-lg bg-error-50 p-3 dark:bg-error-900/30">
-          <Text className="text-center text-sm text-error-600 dark:text-error-400">
+          <Text className="text-center text-sm text-error-600 dark:text-error-400 font-sans">
             필수 약관에 동의해주세요.
           </Text>
         </View>
@@ -266,12 +268,12 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
       >
         <View className="px-4">
           {isContentLoading ? (
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
+            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
               {TERM_CONTENT_LOADING_MESSAGE}
             </Text>
           ) : contentLoadError ? (
             <View className="gap-3">
-              <Text className="leading-6 text-error-600 dark:text-error-400">
+              <Text className="leading-6 text-error-600 dark:text-error-400 font-sans">
                 {contentLoadError}
               </Text>
               <Button
@@ -288,7 +290,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
               </Button>
             </View>
           ) : (
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
+            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
               {modalText}
             </Text>
           )}

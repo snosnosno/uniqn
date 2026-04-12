@@ -43,7 +43,7 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
         >
           <View className="flex-row items-center mb-3">
             <CheckCircleIcon size={20} color="#22c55e" />
-            <Text className="ml-2 text-success-700 dark:text-success-400 font-semibold">
+            <Text className="ml-2 text-success-700 dark:text-success-400 font-sans-semibold">
               인증 완료
             </Text>
           </View>
@@ -52,8 +52,12 @@ export const PhoneVerifiedView: React.FC<PhoneVerifiedViewProps> = React.memo(
             style={{ backgroundColor: isDark ? '#222228' : '#FFFFFF' }}
           >
             <View className="flex-row justify-between">
-              <Text className="text-secondary-500 dark:text-secondary-400 text-sm">휴대폰</Text>
-              <Text className="text-secondary-900 dark:text-off-white font-medium">{phone}</Text>
+              <Text className="text-secondary-500 dark:text-secondary-400 text-sm font-sans">
+                휴대폰
+              </Text>
+              <Text className="text-secondary-900 dark:text-off-white font-sans-medium">
+                {phone}
+              </Text>
             </View>
           </View>
         </View>

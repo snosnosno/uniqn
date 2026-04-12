@@ -241,7 +241,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
       className="flex-1 py-1"
     >
       <View className={getContainerStyle()}>
-        <Text className={`text-sm ${getTextStyle()}`}>{dayNumber}</Text>
+        <Text className={`text-sm ${getTextStyle()} font-sans`}>{dayNumber}</Text>
       </View>
     </Pressable>
   );
@@ -374,7 +374,7 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoPrevYear ? 'opacity-30' : ''
               }`}
             >
-              <Text className="text-xs font-semibold text-secondary-700 dark:text-secondary-100">
+              <Text className="text-xs font-sans-semibold text-secondary-700 dark:text-secondary-100">
                 1년 전
               </Text>
             </Pressable>
@@ -416,7 +416,7 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoNextYear ? 'opacity-30' : ''
               }`}
             >
-              <Text className="text-xs font-semibold text-secondary-700 dark:text-secondary-100">
+              <Text className="text-xs font-sans-semibold text-secondary-700 dark:text-secondary-100">
                 1년 후
               </Text>
             </Pressable>
@@ -429,7 +429,7 @@ export const CalendarPicker = memo(function CalendarPicker({
         {WEEKDAYS.map((day, index) => (
           <View key={day} className="flex-1 items-center">
             <Text
-              className={`text-xs font-medium ${
+              className={`text-xs font-sans-medium ${
                 index === 0
                   ? 'text-error-500 dark:text-error-400'
                   : index === 6
@@ -459,7 +459,7 @@ export const CalendarPicker = memo(function CalendarPicker({
         <View className="mt-4 px-2">
           <View className="flex-row items-center">
             <View className="w-3 h-3 rounded-sm bg-primary-500 mr-2" />
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               선택 가능: {minimumDate && format(minimumDate, 'M/d', { locale: ko })}
               {minimumDate && maximumDate && ' ~ '}
               {maximumDate && format(maximumDate, 'M/d', { locale: ko })}

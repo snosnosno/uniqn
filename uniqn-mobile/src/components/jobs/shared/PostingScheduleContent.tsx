@@ -19,30 +19,30 @@ export function PostingScheduleContent({
   if (schedule.variant === 'fixed') {
     return display === 'card' ? (
       <View className="py-1">
-        <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
           {schedule.fixed.daysLabel} 출근
         </Text>
-        <Text className="mt-0.5 text-sm text-secondary-700 dark:text-secondary-300">
+        <Text className="mt-0.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
           출근시간 {schedule.fixed.timeLabel}
         </Text>
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
           {schedule.fixed.daysLabel}
         </Text>
-        <Text className="mt-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mt-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           {schedule.fixed.timeLabel}
         </Text>
 
         {schedule.fixed.roles.length > 0 ? (
           <View className="mt-3">
             <View className="mb-1 flex-row items-center">
-              <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                 모집 인원
               </Text>
               {showFilledCount ? (
-                <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {schedule.fixed.filledCount}/{schedule.fixed.totalCount}명
                 </Text>
               ) : null}
@@ -61,19 +61,19 @@ export function PostingScheduleContent({
   if (schedule.variant === 'legacy') {
     return display === 'card' ? (
       <View className="mb-2">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           {schedule.dateLabel}
         </Text>
-        <Text className="ml-5 mt-1 text-sm text-secondary-900 dark:text-secondary-100">
+        <Text className="ml-5 mt-1 text-sm text-secondary-900 dark:text-secondary-100 font-sans">
           {schedule.timeLabel}
         </Text>
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
           {schedule.dateLabel}
         </Text>
-        <Text className="mt-2 text-sm text-secondary-700 dark:text-secondary-300">
+        <Text className="mt-2 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
           {schedule.timeLabel}
         </Text>
       </View>
@@ -83,7 +83,7 @@ export function PostingScheduleContent({
   return (
     <>
       {shouldShowFocusedGroupHint ? (
-        <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400">
+        <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400 font-sans">
           {FOCUSED_GROUP_DATE_HINT}
         </Text>
       ) : null}
@@ -99,7 +99,7 @@ export function PostingScheduleContent({
             className={
               display === 'card'
                 ? 'text-sm font-medium text-secondary-700 dark:text-secondary-300'
-                : 'text-sm font-semibold text-secondary-900 dark:text-off-white'
+                : 'text-sm font-sans-semibold text-secondary-900 dark:text-off-white'
             }
           >
             {section.label}
@@ -115,7 +115,7 @@ export function PostingScheduleContent({
                       role.isFilled
                         ? 'text-secondary-400 line-through dark:text-secondary-500'
                         : 'text-secondary-900 dark:text-secondary-100'
-                    }`}
+                    } font-sans`}
                   >
                     {roleIndex === 0 ? `${slot.timeLabel} ` : '       '}
                     {formatRoleLine(role, showFilledCount)}
@@ -123,7 +123,7 @@ export function PostingScheduleContent({
                 ))
               ) : (
                 <>
-                  <Text className="mb-1 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                  <Text className="mb-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                     {slot.timeLabel}
                   </Text>
                   <View className="ml-4 flex-row flex-wrap">
@@ -162,7 +162,7 @@ function RoleBadge({
           role.isFilled
             ? 'text-secondary-500 line-through dark:text-secondary-400'
             : 'text-primary-700 dark:text-primary-300'
-        }`}
+        } font-sans`}
       >
         {formatRoleLine(role, showFilledCount)}
       </Text>

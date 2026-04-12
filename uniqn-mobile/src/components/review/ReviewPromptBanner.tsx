@@ -27,17 +27,17 @@ export default React.memo(function ReviewPromptBanner({
       accessibilityHint="탭하면 평가 목록으로 이동합니다"
     >
       <View className="flex-1 flex-row items-center gap-2">
-        <Text className="text-lg">{''}</Text>
+        <Text className="text-lg font-sans">{''}</Text>
         <View>
-          <Text className="text-sm font-semibold text-primary-700 dark:text-primary-300">
+          <Text className="text-sm font-sans-semibold text-primary-700 dark:text-primary-300">
             작성할 평가가 {pendingCount}건 있어요
           </Text>
-          <Text className="text-xs text-primary-600 dark:text-primary-400">
+          <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
             근무 완료 후 7일 이내에 평가해주세요
           </Text>
         </View>
       </View>
-      <Text className="text-sm text-primary-500 dark:text-primary-400">{'>'}</Text>
+      <Text className="text-sm text-primary-500 dark:text-primary-400 font-sans">{'>'}</Text>
     </Pressable>
   );
 });

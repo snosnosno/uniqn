@@ -165,7 +165,7 @@ export function CircularProgress({
         {/* 중앙 텍스트 */}
         {showText && (
           <Text
-            className="font-bold"
+            className="font-sans-bold"
             style={{
               fontSize: size * 0.2,
               color: colors.stroke,

@@ -93,7 +93,7 @@ function FilterTabsInner<T extends string = string>({
               accessibilityLabel={`${option.label} 필터${option.count !== undefined ? `, ${option.count}건` : ''}`}
             >
               <Text
-                className={`${LABEL_SIZE_CLASS[labelSize]} font-medium`}
+                className={`${LABEL_SIZE_CLASS[labelSize]} font-sans-medium`}
                 style={{
                   color: isSelected ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
                 }}

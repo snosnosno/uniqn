@@ -68,10 +68,10 @@ export function DateNavigationHeader({
       </Pressable>
 
       <View className="flex-1 items-center">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {formatDate(parseTimestamp(workLogDate) ?? workLogDate)}
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {currentDateIndex + 1} / {totalDays}
         </Text>
       </View>

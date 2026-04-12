@@ -179,7 +179,9 @@ export function InquiryForm({
             style={getInputStyle(!!errors.message)}
             maxLength={2000}
           />
-          <Text className="mt-1 text-right text-xs text-secondary-400">{message.length}/2000</Text>
+          <Text className="mt-1 text-right text-xs text-secondary-400 font-sans">
+            {message.length}/2000
+          </Text>
         </FormField>
 
         {/* 버튼 */}

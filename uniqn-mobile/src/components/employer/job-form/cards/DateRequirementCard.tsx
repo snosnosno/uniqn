@@ -108,7 +108,7 @@ export function DateRequirementCard({
     <View className="p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
           {dateString ? formatDateWithDay(dateString) : '날짜 선택 필요'}
         </Text>
 
@@ -155,7 +155,7 @@ export function DateRequirementCard({
           <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#A89C84'} />
         </View>
         <Text
-          className={`text-sm font-medium ${
+          className={`text-sm font-sans-medium ${
             canAddTimeSlot
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-400 dark:text-secondary-600'

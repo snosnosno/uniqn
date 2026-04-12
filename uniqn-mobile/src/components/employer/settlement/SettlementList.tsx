@@ -272,7 +272,7 @@ export function SettlementList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           정산 목록을 불러오는 중...
         </Text>
       </View>
@@ -328,7 +328,7 @@ export function SettlementList({
             <CheckIcon size={16} color={selectionMode ? '#B8962E' : '#9A9078'} />
             <Text
               className={`
-              ml-2 text-sm font-medium
+              ml-2 text-sm font-sans-medium
               ${
                 selectionMode
                   ? 'text-primary-600 dark:text-primary-400'

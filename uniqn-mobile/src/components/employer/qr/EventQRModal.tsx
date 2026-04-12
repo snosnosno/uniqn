@@ -94,6 +94,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
+            fontFamily: 'PlusJakartaSans_600SemiBold',
             color: checkInActive ? '#FFFFFF' : '#9A9078',
           }}
         >
@@ -125,6 +126,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
+            fontFamily: 'PlusJakartaSans_600SemiBold',
             color: checkOutActive ? '#FFFFFF' : '#9A9078',
           }}
         >
@@ -143,10 +145,10 @@ function ScopeSelectionPanel({
 }: ScopeSelectionPanelProps) {
   return (
     <View className="mb-5 w-full">
-      <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
         일정 선택
       </Text>
-      <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+      <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
         QR을 생성할 날짜와 시간 슬롯을 선택하세요.
       </Text>
 
@@ -167,10 +169,10 @@ function ScopeSelectionPanel({
               accessibilityRole="button"
               accessibilityLabel={`${formatDate(scope.date)} ${scope.timeLabel}`}
             >
-              <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
                 {formatDate(scope.date)} · {scope.timeLabel}
               </Text>
-              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {scope.roleSummary}
               </Text>
             </Pressable>
@@ -234,7 +236,7 @@ function QRRefreshOverlay({ visible }: { visible: boolean }) {
       <Animated.View style={{ transform: [{ rotate }] }}>
         <RefreshIcon size={32} color="#D4AF37" />
       </Animated.View>
-      <Text className="mt-3 text-sm font-medium text-secondary-600 dark:text-secondary-400">
+      <Text className="mt-3 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
         QR 새로고침 중...
       </Text>
     </Animated.View>
@@ -436,7 +438,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View style={{ width: qrSize, height: qrSize }} className="items-center justify-center">
         <ActivityIndicator size="large" color={modeColor} />
-        <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           QR 대상 일정을 불러오는 중...
         </Text>
       </View>
@@ -448,10 +450,12 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
-        <Text className="mt-3 text-center text-sm font-medium text-error-500">
+        <Text className="mt-3 text-center text-sm font-sans-medium text-error-500">
           QR 대상 일정을 불러오지 못했습니다.
         </Text>
-        <Text className="mt-2 text-center text-xs text-secondary-500">{scopeErrorMessage}</Text>
+        <Text className="mt-2 text-center text-xs text-secondary-500 font-sans">
+          {scopeErrorMessage}
+        </Text>
       </View>
     );
   } else if (scopeBlockReason === 'unsupported') {
@@ -461,7 +465,7 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
-        <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
+        <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
           QR은 날짜 지정형 스케줄 공고에서만 사용할 수 있습니다.
         </Text>
       </View>
@@ -473,7 +477,7 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
-        <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
+        <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
           QR을 생성할 수 있는 날짜 지정 슬롯이 없습니다.
         </Text>
       </View>
@@ -485,7 +489,7 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
-        <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
+        <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
           QR 생성을 위한 공고 정보를 불러오지 못했습니다.
         </Text>
       </View>
@@ -497,7 +501,7 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#6366F1" />
-        <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
+        <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
           QR을 생성할 날짜 슬롯을 선택하세요.
         </Text>
       </View>
@@ -506,7 +510,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View style={{ width: qrSize, height: qrSize }} className="items-center justify-center">
         <ActivityIndicator size="large" color={modeColor} />
-        <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           QR 생성 중...
         </Text>
       </View>
@@ -518,7 +522,7 @@ export function EventQRModal({
         className="items-center justify-center rounded-md bg-secondary-50 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
-        <Text className="mb-4 mt-3 text-center font-medium text-error-500">
+        <Text className="mb-4 mt-3 text-center font-sans-medium text-error-500">
           QR 코드가 만료되었습니다.
         </Text>
         <Button
@@ -574,17 +578,17 @@ export function EventQRModal({
           </View>
 
           {jobTitle && (
-            <Text className="mb-0.5 text-base font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="mb-0.5 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
               {jobTitle}
             </Text>
           )}
           {formattedDate ? (
-            <Text className="text-sm text-secondary-400 dark:text-secondary-500">
+            <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
               {formattedDate}
             </Text>
           ) : null}
           {scopeSubtitle ? (
-            <Text className="mb-5 text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               {scopeSubtitle}
             </Text>
           ) : (
@@ -604,10 +608,10 @@ export function EventQRModal({
               padding="sm"
               className="mb-5 w-full bg-secondary-50 dark:bg-surface"
             >
-              <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
                 선택한 슬롯
               </Text>
-              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {formattedDate} · {scopeSubtitle}
               </Text>
             </Card>
@@ -644,7 +648,7 @@ export function EventQRModal({
                 }`}
               >
                 <RefreshIcon size={18} color="#9A9078" />
-                <Text className="ml-2 text-sm font-medium text-secondary-600 dark:text-secondary-400">
+                <Text className="ml-2 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
                   새로고침
                 </Text>
               </Pressable>
@@ -658,19 +662,19 @@ export function EventQRModal({
           >
             <View className="mb-2 flex-row items-start">
               <CheckCircleIcon size={16} color="#B8962E" />
-              <Text className="ml-2 text-sm font-medium text-primary-800 dark:text-primary-300">
+              <Text className="ml-2 text-sm font-sans-medium text-primary-800 dark:text-primary-300">
                 {modeLabel} QR 사용 방법
               </Text>
             </View>
 
             <View className="ml-6 gap-1">
-              <Text className="text-xs text-primary-600 dark:text-primary-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
                 1. 스태프 앱에서 QR 스캐너를 엽니다.
               </Text>
-              <Text className="text-xs text-primary-600 dark:text-primary-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
                 2. 이 화면의 QR 코드를 스캔합니다.
               </Text>
-              <Text className="text-xs text-primary-600 dark:text-primary-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
                 3. 선택한 날짜 슬롯으로 {modeLabel} 처리가 완료됩니다.
               </Text>
             </View>
@@ -678,7 +682,7 @@ export function EventQRModal({
 
           <View className="mt-3 flex-row items-start px-1">
             <AlertCircleIcon size={14} color="#A89C84" />
-            <Text className="ml-1.5 flex-1 text-xs text-secondary-400 dark:text-secondary-500">
+            <Text className="ml-1.5 flex-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
               QR 코드는 3분 동안 유효하며, 이 모달이 열려 있는 동안 자동으로 갱신됩니다.
             </Text>
           </View>

@@ -34,14 +34,14 @@ interface DataRowProps {
 function DataRow({ label, value, editable, onEdit }: DataRowProps) {
   return (
     <View className="flex-row items-center justify-between py-3 border-b border-secondary-100 dark:border-surface-overlay">
-      <Text className="text-secondary-600 dark:text-secondary-400 text-sm">{label}</Text>
+      <Text className="text-secondary-600 dark:text-secondary-400 text-sm font-sans">{label}</Text>
       <View className="flex-row items-center">
-        <Text className="text-secondary-900 dark:text-off-white font-medium mr-2">
+        <Text className="text-secondary-900 dark:text-off-white font-sans-medium mr-2">
           {value || '-'}
         </Text>
         {editable && onEdit && (
           <Pressable onPress={onEdit}>
-            <Text className="text-primary-600 dark:text-primary-400 text-sm">수정</Text>
+            <Text className="text-primary-600 dark:text-primary-400 text-sm font-sans">수정</Text>
           </Pressable>
         )}
       </View>
@@ -188,7 +188,7 @@ export default function MyDataScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             정보를 불러오는 중...
           </Text>
         </View>
@@ -217,12 +217,12 @@ export default function MyDataScreen() {
         {/* 안내 카드 */}
         <Card className="mb-6 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
           <View className="flex-row items-start">
-            <Text className="text-2xl mr-3">{''}</Text>
+            <Text className="text-2xl mr-3 font-sans">{''}</Text>
             <View className="flex-1">
-              <Text className="text-primary-800 dark:text-primary-200 font-semibold mb-1">
+              <Text className="text-primary-800 dark:text-primary-200 font-sans-semibold mb-1">
                 개인정보 처리방침
               </Text>
-              <Text className="text-primary-700 dark:text-primary-300 text-sm">
+              <Text className="text-primary-700 dark:text-primary-300 text-sm font-sans">
                 개인정보보호법에 따라 수집된 개인정보를 열람하고 수정할 수 있습니다.
               </Text>
             </View>
@@ -286,7 +286,7 @@ export default function MyDataScreen() {
           <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-2">
             데이터 내보내기
           </Text>
-          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mb-4">
+          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mb-4 font-sans">
             저장된 모든 개인정보를 JSON 형식으로 내보낼 수 있습니다. 지원 내역, 근무 기록 등이
             포함됩니다.
           </Text>
@@ -295,17 +295,21 @@ export default function MyDataScreen() {
             {isExporting ? (
               <View className="flex-row items-center">
                 <ActivityIndicator size="small" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-                <Text className="ml-2 text-primary-600 dark:text-primary-400">내보내는 중...</Text>
+                <Text className="ml-2 text-primary-600 dark:text-primary-400 font-sans">
+                  내보내는 중...
+                </Text>
               </View>
             ) : (
-              <Text className="text-primary-600 dark:text-primary-400">내 데이터 내보내기</Text>
+              <Text className="text-primary-600 dark:text-primary-400 font-sans">
+                내 데이터 내보내기
+              </Text>
             )}
           </Button>
         </Card>
 
         {/* 개인정보 삭제 안내 */}
         <Card className="bg-secondary-100 dark:bg-surface">
-          <Text className="text-secondary-600 dark:text-secondary-400 text-sm leading-5">
+          <Text className="text-secondary-600 dark:text-secondary-400 text-sm leading-5 font-sans">
             개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요. 탈퇴 시 30일간의 유예 기간이 있으며,
             이 기간 동안 복구가 가능합니다.
           </Text>

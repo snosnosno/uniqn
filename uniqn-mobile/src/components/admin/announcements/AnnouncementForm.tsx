@@ -176,8 +176,8 @@ export function AnnouncementForm({
       >
         {/* Title */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            제목 <Text className="text-error-500">*</Text>
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            제목 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
             value={title}
@@ -193,14 +193,18 @@ export function AnnouncementForm({
             }`}
             maxLength={100}
           />
-          {errors.title && <Text className="text-xs text-error-500 mt-1">{errors.title}</Text>}
-          <Text className="text-xs text-secondary-400 mt-1 text-right">{title.length}/100</Text>
+          {errors.title && (
+            <Text className="text-xs text-error-500 mt-1 font-sans">{errors.title}</Text>
+          )}
+          <Text className="text-xs text-secondary-400 mt-1 text-right font-sans">
+            {title.length}/100
+          </Text>
         </View>
 
         {/* Category */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            카테고리 <Text className="text-error-500">*</Text>
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            카테고리 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {ANNOUNCEMENT_CATEGORIES.map((cat) => (
@@ -216,7 +220,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm ${
                     category === cat.key
-                      ? 'text-surface-dark font-medium'
+                      ? 'text-surface-dark font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -229,8 +233,8 @@ export function AnnouncementForm({
 
         {/* Content */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            내용 <Text className="text-error-500">*</Text>
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            내용 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
             value={content}
@@ -251,15 +255,19 @@ export function AnnouncementForm({
             }`}
             maxLength={5000}
           />
-          {errors.content && <Text className="text-xs text-error-500 mt-1">{errors.content}</Text>}
-          <Text className="text-xs text-secondary-400 mt-1 text-right">{content.length}/5000</Text>
+          {errors.content && (
+            <Text className="text-xs text-error-500 mt-1 font-sans">{errors.content}</Text>
+          )}
+          <Text className="text-xs text-secondary-400 mt-1 text-right font-sans">
+            {content.length}/5000
+          </Text>
         </View>
 
         {/* Image Upload (다중 이미지) */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
             이미지 첨부{' '}
-            <Text className="text-secondary-400 font-normal">
+            <Text className="text-secondary-400 font-normal font-sans">
               (선택, 최대 {MAX_ANNOUNCEMENT_IMAGES}장)
             </Text>
           </Text>
@@ -276,7 +284,7 @@ export function AnnouncementForm({
 
         {/* Priority */}
         <View className="mb-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
             우선순위
           </Text>
           <View className="flex-row gap-2">
@@ -297,7 +305,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm ${
                     priority === p
-                      ? 'text-surface-dark font-medium'
+                      ? 'text-surface-dark font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -311,10 +319,10 @@ export function AnnouncementForm({
         {/* Pinned */}
         <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-surface rounded-lg border border-secondary-300 dark:border-surface-overlay px-4 py-3">
           <View>
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
               상단 고정
             </Text>
-            <Text className="text-xs text-secondary-400">목록 최상단에 고정됩니다</Text>
+            <Text className="text-xs text-secondary-400 font-sans">목록 최상단에 고정됩니다</Text>
           </View>
           <Switch
             value={isPinned}
@@ -326,7 +334,7 @@ export function AnnouncementForm({
 
         {/* Target Audience */}
         <View className="mb-6">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
             대상 설정
           </Text>
 
@@ -343,7 +351,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm ${
                   targetType === 'all'
-                    ? 'text-surface-dark font-medium'
+                    ? 'text-surface-dark font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -361,7 +369,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm ${
                   targetType === 'roles'
-                    ? 'text-surface-dark font-medium'
+                    ? 'text-surface-dark font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -386,7 +394,7 @@ export function AnnouncementForm({
                   <Text
                     className={`text-sm ${
                       targetRoles.includes(role)
-                        ? 'text-surface-dark font-medium'
+                        ? 'text-surface-dark font-sans-medium'
                         : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
@@ -397,7 +405,7 @@ export function AnnouncementForm({
             </View>
           )}
           {targetType === 'roles' && targetRoles.length === 0 && (
-            <Text className="text-xs text-error-500 mt-2">
+            <Text className="text-xs text-error-500 mt-2 font-sans">
               대상 역할을 최소 1개 이상 선택해주세요
             </Text>
           )}
@@ -411,7 +419,9 @@ export function AnnouncementForm({
               disabled={isSubmitting}
               className="flex-1 bg-secondary-200 dark:bg-surface rounded-lg py-3 items-center"
             >
-              <Text className="text-secondary-700 dark:text-secondary-300 font-medium">취소</Text>
+              <Text className="text-secondary-700 dark:text-secondary-300 font-sans-medium">
+                취소
+              </Text>
             </Pressable>
           )}
           <Pressable
@@ -424,7 +434,7 @@ export function AnnouncementForm({
             }`}
           >
             <Text
-              className={`font-medium ${
+              className={`font-sans-medium ${
                 isValid && !isSubmitting
                   ? 'text-surface-dark'
                   : 'text-secondary-500 dark:text-secondary-400'

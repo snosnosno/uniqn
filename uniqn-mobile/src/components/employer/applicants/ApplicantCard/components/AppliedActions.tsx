@@ -59,7 +59,9 @@ export const AppliedActions = React.memo(function AppliedActions({
         className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
       >
         <XMarkIcon size={16} color="#DC2626" />
-        <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">거절</Text>
+        <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
+          거절
+        </Text>
       </Pressable>
 
       {/* 확정 버튼 */}
@@ -75,7 +77,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         }`}
       >
         <CheckIcon size={16} color="#fff" />
-        <Text className="ml-1 text-sm font-medium text-surface-dark">{confirmButtonText}</Text>
+        <Text className="ml-1 text-sm font-sans-medium text-surface-dark">{confirmButtonText}</Text>
       </Pressable>
     </View>
   );

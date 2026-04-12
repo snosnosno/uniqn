@@ -24,7 +24,7 @@ export function NonEmployerView() {
         <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
           구인자 전용 기능입니다
         </Text>
-        <Text className="mb-8 text-center text-base text-secondary-500 dark:text-secondary-400">
+        <Text className="mb-8 text-center text-base text-secondary-500 dark:text-secondary-400 font-sans">
           구인자로 등록하면 공고를 등록하고{'\n'}스태프를 모집할 수 있습니다.
         </Text>
         <Button
@@ -32,7 +32,7 @@ export function NonEmployerView() {
           onPress={() => router.push('/(app)/employer-register')}
           className="min-w-[200px]"
         >
-          <Text className="font-semibold text-surface-dark">구인자로 등록하기</Text>
+          <Text className="font-sans-semibold text-surface-dark">구인자로 등록하기</Text>
         </Button>
       </View>
     </SafeAreaView>

@@ -48,10 +48,12 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
     >
       {/* 역할명 + 인원 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="font-medium text-secondary-900 dark:text-off-white text-sm">
+        <Text className="font-sans-medium text-secondary-900 dark:text-off-white text-sm">
           {displayName}
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{role.count}명</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          {role.count}명
+        </Text>
       </View>
 
       {/* 급여 타입 선택 */}
@@ -74,7 +76,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
               accessibilityState={{ checked: isSelected, disabled: isReadOnly }}
             >
               <Text
-                className={`text-center text-xs font-medium ${
+                className={`text-center text-xs font-sans-medium ${
                   isSelected
                     ? 'text-surface-dark'
                     : isReadOnly
@@ -92,7 +94,9 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
       {/* 금액 입력 (협의가 아닐 때만) */}
       {!isOther && (
         <View className="flex-row items-center justify-end">
-          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2">₩</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2 font-sans">
+            ₩
+          </Text>
           <TextInput
             placeholder="0"
             placeholderTextColor="#A89C84"
@@ -110,20 +114,22 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
                 : 'bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white'
             }`}
           />
-          <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">원</Text>
+          <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm font-sans">
+            원
+          </Text>
         </View>
       )}
 
       {/* 협의 선택 시 안내 */}
       {isOther && (
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center py-2">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center py-2 font-sans">
           급여는 개별 협의로 진행됩니다
         </Text>
       )}
 
       {/* 전체 동일 모드 안내 */}
       {isReadOnly && (
-        <Text className="text-xs text-primary-500 dark:text-primary-400 mt-1">
+        <Text className="text-xs text-primary-500 dark:text-primary-400 mt-1 font-sans">
           첫 번째 역할과 동일하게 적용됩니다
         </Text>
       )}

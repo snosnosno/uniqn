@@ -79,7 +79,7 @@ export default function BoardListScreen() {
           ListEmptyComponent={
             isLoading ? (
               <View className="flex-1 items-center justify-center py-20">
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   게시글을 불러오는 중이에요...
                 </Text>
               </View>

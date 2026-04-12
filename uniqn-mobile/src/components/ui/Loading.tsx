@@ -41,7 +41,9 @@ export function Loading({
     <View className="items-center justify-center">
       <ActivityIndicator size={size} color={resolvedColor} />
       {message && (
-        <Text className="mt-3 text-sm text-secondary-600 dark:text-secondary-400">{message}</Text>
+        <Text className="mt-3 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+          {message}
+        </Text>
       )}
     </View>
   );

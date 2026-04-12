@@ -121,7 +121,7 @@ export default function AdminAnnouncementsPage() {
               >
                 <View className="flex-row items-center">
                   <Text
-                    className={`text-sm font-medium ${
+                    className={`text-sm font-sans-medium ${
                       isActive ? 'text-primary-600' : 'text-secondary-500 dark:text-secondary-400'
                     }`}
                   >
@@ -140,7 +140,7 @@ export default function AdminAnnouncementsPage() {
                           isActive
                             ? 'text-primary-600'
                             : 'text-secondary-500 dark:text-secondary-400'
-                        }`}
+                        } font-sans`}
                       >
                         {count}
                       </Text>
@@ -156,21 +156,21 @@ export default function AdminAnnouncementsPage() {
         {isLoading && !data ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" />
-            <Text className="text-secondary-500 dark:text-secondary-400 mt-4">
+            <Text className="text-secondary-500 dark:text-secondary-400 mt-4 font-sans">
               공지사항을 불러오는 중...
             </Text>
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <DocumentTextOutlineIcon size={64} color="#A89C84" />
-            <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mt-4">
+            <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 mt-4">
               공지사항이 없습니다
             </Text>
-            <Text className="text-secondary-500 dark:text-secondary-400 text-center mt-2">
+            <Text className="text-secondary-500 dark:text-secondary-400 text-center mt-2 font-sans">
               새 공지사항을 작성해보세요
             </Text>
             <Pressable onPress={handleCreate} className="mt-6 bg-primary-600 px-6 py-3 rounded-lg">
-              <Text className="text-surface-dark font-medium">공지사항 작성</Text>
+              <Text className="text-surface-dark font-sans-medium">공지사항 작성</Text>
             </Pressable>
           </View>
         ) : (

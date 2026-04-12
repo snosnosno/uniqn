@@ -42,9 +42,13 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
     <View className="flex-row items-center py-3 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="w-10">{icon}</View>
       <View className="flex-1">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+          {label}
+        </Text>
         {typeof value === 'string' ? (
-          <Text className="text-base text-secondary-900 dark:text-off-white">{value}</Text>
+          <Text className="text-base text-secondary-900 dark:text-off-white font-sans">
+            {value}
+          </Text>
         ) : (
           value
         )}
@@ -150,7 +154,7 @@ export default function AdminUserDetailPage() {
     return (
       <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           사용자 정보를 불러오는 중...
         </Text>
       </View>
@@ -195,12 +199,14 @@ export default function AdminUserDetailPage() {
           </Badge>
           {!user.isActive && (
             <View className="ml-2 px-2 py-1 bg-error-50 dark:bg-error-900/30 rounded">
-              <Text className="text-xs text-error-600 dark:text-error-400">비활성</Text>
+              <Text className="text-xs text-error-600 dark:text-error-400 font-sans">비활성</Text>
             </View>
           )}
           {user.isVerified && (
             <View className="ml-2 px-2 py-1 bg-success-50 dark:bg-success-900/30 rounded">
-              <Text className="text-xs text-success-600 dark:text-success-400">인증됨</Text>
+              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
+                인증됨
+              </Text>
             </View>
           )}
         </View>
@@ -253,7 +259,7 @@ export default function AdminUserDetailPage() {
         <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           역할 관리
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3 font-sans">
           사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
         </Text>
         {ROLE_OPTIONS.map((option) => (
@@ -280,10 +286,10 @@ export default function AdminUserDetailPage() {
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
                 {option.label}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {option.description}
               </Text>
             </View>
@@ -322,15 +328,15 @@ export default function AdminUserDetailPage() {
               <Text
                 className={
                   user.isActive
-                    ? 'text-error-600 dark:text-error-400 font-medium'
-                    : 'text-success-600 dark:text-success-400 font-medium'
+                    ? 'text-error-600 dark:text-error-400 font-sans-medium'
+                    : 'text-success-600 dark:text-success-400 font-sans-medium'
                 }
               >
                 {user.isActive ? '계정 비활성화' : '계정 활성화'}
               </Text>
             )}
           </Pressable>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center font-sans">
             {user.isActive
               ? '비활성화하면 사용자가 로그인할 수 없습니다.'
               : '활성화하면 사용자가 다시 로그인할 수 있습니다.'}

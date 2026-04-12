@@ -54,7 +54,7 @@ export function FAQCategoryTabs({
               accessibilityLabel={`${option.label} 移댄뀒怨좊━`}
             >
               <Text
-                className={`text-sm font-medium ${
+                className={`text-sm font-sans-medium ${
                   isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >

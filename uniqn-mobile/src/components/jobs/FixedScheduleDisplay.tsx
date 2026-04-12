@@ -170,14 +170,14 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
   if (compact) {
     return (
       <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
-        <Text className="text-sm text-secondary-700 dark:text-secondary-300 mb-0.5">
+        <Text className="text-sm text-secondary-700 dark:text-secondary-300 mb-0.5 font-sans">
           {daysText} 출근
         </Text>
-        <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
           출근시간 {timeText}
         </Text>
         {showRoles && rolesText && (
-          <Text className="text-sm text-secondary-700 dark:text-secondary-300 mt-0.5">
+          <Text className="text-sm text-secondary-700 dark:text-secondary-300 mt-0.5 font-sans">
             {rolesText}
           </Text>
         )}
@@ -190,14 +190,14 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
       {/* 주 출근일수 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
           {daysText}
         </Text>
       </View>
 
       {/* 출근 시간 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           {timeText}
         </Text>
       </View>
@@ -206,7 +206,7 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
       {showRoles && roles && roles.length > 0 && (
         <View className="mt-1">
           <View className="flex-row items-center mb-1">
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mr-2">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mr-2">
               모집 인원
             </Text>
             {showFilledCount && (

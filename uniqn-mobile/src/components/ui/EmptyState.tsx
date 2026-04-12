@@ -56,7 +56,7 @@ export function EmptyState({
   const renderIcon = () => {
     if (!icon) return getDefaultIcon();
     if (typeof icon === 'string') {
-      return <Text className="text-5xl">{icon}</Text>;
+      return <Text className="text-5xl font-sans">{icon}</Text>;
     }
     return icon;
   };
@@ -70,7 +70,7 @@ export function EmptyState({
       </Text>
 
       {description && (
-        <Text className="mb-6 text-center text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="mb-6 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {description}
         </Text>
       )}

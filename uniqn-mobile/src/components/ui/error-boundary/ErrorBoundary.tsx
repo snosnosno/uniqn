@@ -139,7 +139,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <View className="flex-1 items-center justify-center p-6">
           {/* 에러 아이콘 */}
           <View className="w-20 h-20 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center mb-6">
-            <Text className="text-4xl">{''}</Text>
+            <Text className="text-4xl font-sans">{''}</Text>
           </View>
 
           {/* 제목 */}
@@ -148,7 +148,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </Text>
 
           {/* 설명 */}
-          <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6">
+          <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6 font-sans">
             {fullScreen
               ? '앱에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
               : '이 기능에 문제가 발생했습니다.'}
@@ -160,12 +160,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               className="max-h-40 w-full bg-secondary-100 dark:bg-surface rounded-md p-4 mb-6"
               showsVerticalScrollIndicator={true}
             >
-              <Text className="text-xs text-error-600 dark:text-error-400 font-mono mb-2">
+              <Text className="text-xs text-error-600 dark:text-error-400 font-mono mb-2 font-sans">
                 {name && `[${name}] `}
                 {error.name}: {error.message}
               </Text>
               {errorInfo?.componentStack && (
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-mono">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-mono font-sans">
                   {errorInfo.componentStack.slice(0, 500)}
                 </Text>
               )}
@@ -180,7 +180,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               accessibilityRole="button"
               accessibilityLabel="다시 시도"
             >
-              <Text className="text-surface-dark font-semibold">다시 시도</Text>
+              <Text className="text-surface-dark font-sans-semibold">다시 시도</Text>
             </Pressable>
 
             {fullScreen && (
@@ -193,7 +193,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >
-                <Text className="text-secondary-700 dark:text-secondary-200 font-semibold">
+                <Text className="text-secondary-700 dark:text-secondary-200 font-sans-semibold">
                   홈으로
                 </Text>
               </Pressable>
@@ -202,7 +202,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* 문의 안내 */}
           {fullScreen && (
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-6 text-center">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-6 text-center font-sans">
               문제가 계속되면 고객센터에 문의해주세요
             </Text>
           )}

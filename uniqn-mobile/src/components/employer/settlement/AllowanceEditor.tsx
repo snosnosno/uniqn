@@ -204,7 +204,7 @@ const AllowanceItem = memo(function AllowanceItem({
         <View className="flex-row items-center flex-1">
           <Icon size={18} color={isEnabled ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#A89C84'} />
           <Text
-            className={`ml-2 text-base font-medium ${
+            className={`ml-2 text-base font-sans-medium ${
               isEnabled
                 ? 'text-secondary-900 dark:text-off-white'
                 : 'text-secondary-500 dark:text-secondary-400'
@@ -246,7 +246,7 @@ const AllowanceItem = memo(function AllowanceItem({
               <Text
                 className={`text-sm ${
                   status === 'provided'
-                    ? 'text-primary-800 dark:text-primary-200 font-medium'
+                    ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
@@ -280,7 +280,7 @@ const AllowanceItem = memo(function AllowanceItem({
               <Text
                 className={`text-sm ${
                   status === 'amount'
-                    ? 'text-primary-800 dark:text-primary-200 font-medium'
+                    ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
@@ -352,7 +352,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-3 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-3 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           수당 설정
         </Text>
       )}
@@ -382,7 +382,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
             }
           />
           <Text
-            className={`ml-2 text-base font-medium ${
+            className={`ml-2 text-base font-sans-medium ${
               allowances.additional && allowances.additional > 0
                 ? 'text-secondary-900 dark:text-off-white'
                 : 'text-secondary-500 dark:text-secondary-400'
@@ -404,7 +404,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           disabled={disabled}
           accessibilityLabel="추가 수당 금액"
         />
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 ml-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 ml-1 font-sans">
           기타 수당 금액을 직접 입력하세요
         </Text>
       </View>
@@ -418,18 +418,20 @@ export const AllowanceEditor = memo(function AllowanceEditor({
       {showTotal && (totalAllowance > 0 || providedCount > 0) && (
         <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
               총 수당
-              {workDays && workDays > 1 && <Text className="text-xs"> ({workDays}일 기준)</Text>}
+              {workDays && workDays > 1 && (
+                <Text className="text-xs font-sans"> ({workDays}일 기준)</Text>
+              )}
             </Text>
             <View className="items-end">
               {totalAllowance > 0 && (
-                <Text className="text-base font-bold text-primary-700 dark:text-primary-300">
+                <Text className="text-base font-sans-bold text-primary-700 dark:text-primary-300">
                   {formatCurrency(totalAllowance * (workDays || 1))}
                 </Text>
               )}
               {providedCount > 0 && (
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   + {providedCount}개 항목 제공
                 </Text>
               )}

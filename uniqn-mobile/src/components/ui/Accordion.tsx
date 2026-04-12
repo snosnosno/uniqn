@@ -85,14 +85,14 @@ export function AccordionItem({
           {icon && <View className="mr-3">{icon}</View>}
           <View className="flex-1">
             <Text
-              className="text-base font-medium text-secondary-900 dark:text-secondary-100"
+              className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100"
               numberOfLines={2}
             >
               {title}
             </Text>
             {subtitle && (
               <Text
-                className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400"
+                className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
                 numberOfLines={1}
               >
                 {subtitle}

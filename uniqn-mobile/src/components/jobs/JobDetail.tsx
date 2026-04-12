@@ -29,11 +29,13 @@ function InfoRow({
 }) {
   return (
     <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
-      <Text className="mr-3 text-lg">{icon}</Text>
+      <Text className="mr-3 text-lg font-sans">{icon}</Text>
       <View className="flex-1">
-        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          {label}
+        </Text>
         {typeof value === 'string' ? (
-          <Text className="text-sm text-secondary-900 dark:text-off-white">{value}</Text>
+          <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">{value}</Text>
         ) : (
           value
         )}
@@ -95,17 +97,17 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.description ? (
         <View className="p-4">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             상세 설명
           </Text>
-          <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300">
+          <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
             {detail.description}
           </Text>
         </View>
       ) : null}
 
       <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-        <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           근무 정보
         </Text>
 
@@ -113,9 +115,9 @@ export function JobDetail({ job }: JobDetailProps) {
 
         <View className="border-b border-secondary-100 py-3 dark:border-surface-overlay">
           <View className="flex-row items-start">
-            <Text className="mr-3 text-lg">{''}</Text>
+            <Text className="mr-3 text-lg font-sans">{''}</Text>
             <View className="flex-1">
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 근무 일정
               </Text>
               <PostingScheduleContent
@@ -143,16 +145,16 @@ export function JobDetail({ job }: JobDetailProps) {
         {detail.allowanceLabels.length > 0 ? (
           <View className="border-b border-secondary-100 py-3 dark:border-surface-overlay">
             <View className="flex-row items-start">
-              <Text className="mr-3 text-lg">{''}</Text>
+              <Text className="mr-3 text-lg font-sans">{''}</Text>
               <View className="flex-1">
-                <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   추가 수당
                 </Text>
                 <View className="flex-row flex-wrap">
                   {detail.allowanceLabels.map((item, index) => (
                     <Text
                       key={`${item}-${index}`}
-                      className="mb-1 mr-3 text-sm text-secondary-900 dark:text-off-white"
+                      className="mb-1 mr-3 text-sm text-secondary-900 dark:text-off-white font-sans"
                     >
                       {item}
                     </Text>
@@ -168,20 +170,20 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.questions.length > 0 ? (
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             사전질문 ({detail.questions.length}개)
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
             {detail.questions.slice(0, 3).map((question, index) => (
               <View key={`${question.id || index}`} className="mb-2">
-                <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+                <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
                   {index + 1}. {question.question}
-                  {question.required ? <Text className="text-error-500"> *</Text> : null}
+                  {question.required ? <Text className="text-error-500 font-sans"> *</Text> : null}
                 </Text>
               </View>
             ))}
             {detail.questions.length > 3 ? (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 외 {detail.questions.length - 3}개 질문
               </Text>
             ) : null}
@@ -192,13 +194,13 @@ export function JobDetail({ job }: JobDetailProps) {
       {detail.ownerName || ownerProfile?.bubbleScore ? (
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
           <View className="flex-row items-center">
-            <Text className="mr-3 text-lg">{''}</Text>
+            <Text className="mr-3 text-lg font-sans">{''}</Text>
             <View className="flex-1">
-              <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 구인처
               </Text>
               <View className="flex-row items-center gap-2">
-                <Text className="text-sm text-secondary-900 dark:text-off-white">
+                <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
                   {detail.ownerName ?? '구인처'}
                 </Text>
                 {ownerProfile?.bubbleScore ? (
@@ -214,12 +216,12 @@ export function JobDetail({ job }: JobDetailProps) {
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
           <View className="flex-row">
             {typeof detail.viewCount === 'number' ? (
-              <Text className="mr-4 text-xs text-secondary-400 dark:text-secondary-500">
+              <Text className="mr-4 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
                 조회 {detail.viewCount}
               </Text>
             ) : null}
             {typeof detail.totalApplicants === 'number' ? (
-              <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+              <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
                 지원 {detail.totalApplicants}
               </Text>
             ) : null}

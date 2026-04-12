@@ -131,7 +131,7 @@ export function AnnouncementImagePicker({
             {isCurrentlyUploading && (
               <View className="absolute inset-0 bg-black/50 items-center justify-center">
                 <ActivityIndicator color="#fff" size="small" />
-                <Text className="text-white text-xs mt-1">{uploadProgress}%</Text>
+                <Text className="text-white text-xs mt-1 font-sans">{uploadProgress}%</Text>
               </View>
             )}
 
@@ -177,7 +177,7 @@ export function AnnouncementImagePicker({
 
             {/* 순서 표시 (좌하단) */}
             <View className="absolute bottom-1 left-1 bg-black/60 rounded-sm px-2 py-0.5">
-              <Text className="text-white text-xs font-medium">{item.order + 1}</Text>
+              <Text className="text-white text-xs font-sans-medium">{item.order + 1}</Text>
             </View>
           </View>
         </View>
@@ -210,7 +210,7 @@ export function AnnouncementImagePicker({
           accessibilityLabel="이미지 추가"
         >
           <AddIcon size={32} color="#A89C84" />
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
             이미지 추가
           </Text>
         </Pressable>
@@ -222,10 +222,10 @@ export function AnnouncementImagePicker({
     <View className="w-full">
       {/* 안내 텍스트 */}
       <View className="mb-3 px-1">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {images.length}/{MAX_ANNOUNCEMENT_IMAGES}장 · 권장 1200x675px (16:9)
         </Text>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5 font-sans">
           자동으로 1200px로 리사이징 · 최대 5MB · ↑↓ 버튼으로 순서 변경
         </Text>
       </View>
@@ -261,7 +261,7 @@ export function AnnouncementImagePicker({
             {isUploading ? (
               <View className="items-center">
                 <ActivityIndicator size="large" color="#D4AF37" />
-                <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
+                <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   업로드 중... {uploadProgress}%
                 </Text>
               </View>
@@ -270,10 +270,10 @@ export function AnnouncementImagePicker({
                 <View className="w-14 h-14 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-2">
                   <ImagesOutlineIcon size={28} color="#A89C84" />
                 </View>
-                <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                   이미지를 선택하세요
                 </Text>
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
                   최대 {MAX_ANNOUNCEMENT_IMAGES}장 · JPG, PNG
                 </Text>
               </View>

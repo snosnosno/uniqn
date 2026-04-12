@@ -201,7 +201,7 @@ export default function AdminReportsPage() {
                 }`}
               >
                 <Text
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-sans-medium ${
                     filters.status === option.value
                       ? 'text-surface-dark'
                       : 'text-secondary-700 dark:text-secondary-300'
@@ -218,7 +218,7 @@ export default function AdminReportsPage() {
         {showFilters && (
           <View className="px-4 py-3 bg-secondary-50 dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
             {/* 심각도 필터 */}
-            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
+            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
               심각도
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-3">
@@ -233,7 +233,7 @@ export default function AdminReportsPage() {
                   }`}
                 >
                   <Text
-                    className={`text-xs font-medium ${
+                    className={`text-xs font-sans-medium ${
                       filters.severity === option.value
                         ? 'text-surface-dark'
                         : 'text-secondary-600 dark:text-secondary-300'
@@ -246,7 +246,7 @@ export default function AdminReportsPage() {
             </View>
 
             {/* 신고자 유형 필터 */}
-            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
+            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
               신고자 유형
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -265,7 +265,7 @@ export default function AdminReportsPage() {
                   }`}
                 >
                   <Text
-                    className={`text-xs font-medium ${
+                    className={`text-xs font-sans-medium ${
                       filters.reporterType === option.value
                         ? 'text-surface-dark'
                         : 'text-secondary-600 dark:text-secondary-300'
@@ -281,7 +281,7 @@ export default function AdminReportsPage() {
 
         {/* 결과 개수 */}
         <View className="px-4 py-2">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             총 {filteredReports.length}건의 신고
           </Text>
         </View>
@@ -297,10 +297,10 @@ export default function AdminReportsPage() {
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
               <AlertTriangleIcon size={48} color="#A89C84" />
-              <Text className="text-lg font-medium text-secondary-900 dark:text-off-white mt-4">
+              <Text className="text-lg font-sans-medium text-secondary-900 dark:text-off-white mt-4">
                 신고 없음
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center font-sans">
                 해당 조건의 신고가 없습니다.
               </Text>
             </View>

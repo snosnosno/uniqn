@@ -34,16 +34,19 @@ function HeaderTitle({
 }) {
   return (
     <View className="flex-1 flex-row items-center">
-      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#09090B' }}>
+      <Text
+        className="text-base font-sans-semibold"
+        style={{ color: isDark ? '#ffffff' : '#09090B' }}
+      >
         {screenTitle}
       </Text>
       {jobTitle && (
         <>
-          <Text className="mx-2" style={{ color: isDark ? '#9A9078' : '#A89C84' }}>
+          <Text className="mx-2 font-sans" style={{ color: isDark ? '#9A9078' : '#A89C84' }}>
             |
           </Text>
           <Text
-            className="flex-1 text-base"
+            className="flex-1 text-base font-sans"
             style={{ color: isDark ? '#A89C84' : '#9A9078' }}
             numberOfLines={1}
           >

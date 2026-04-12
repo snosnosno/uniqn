@@ -37,14 +37,14 @@ function FormErrorFallback({
   return (
     <View className="p-4 bg-error-50 dark:bg-error-900/20 rounded-md border border-error-200 dark:border-error-800">
       <View className="flex-row items-center mb-3">
-        <Text className="text-2xl mr-3">{''}</Text>
-        <Text className="text-base font-semibold text-error-800 dark:text-error-200 flex-1">
+        <Text className="text-2xl mr-3 font-sans">{''}</Text>
+        <Text className="text-base font-sans-semibold text-error-800 dark:text-error-200 flex-1">
           {isValidationError ? '입력값을 확인해주세요' : '폼 처리 중 오류 발생'}
         </Text>
       </View>
 
       {error && (
-        <Text className="text-sm text-error-600 dark:text-error-400 mb-4 leading-5">
+        <Text className="text-sm text-error-600 dark:text-error-400 mb-4 leading-5 font-sans">
           {error.message}
         </Text>
       )}
@@ -56,7 +56,7 @@ function FormErrorFallback({
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >
-          <Text className="text-white font-medium text-center text-sm">다시 시도</Text>
+          <Text className="text-white font-sans-medium text-center text-sm">다시 시도</Text>
         </Pressable>
 
         <Pressable
@@ -65,7 +65,7 @@ function FormErrorFallback({
           accessibilityRole="button"
           accessibilityLabel="초기화"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 font-medium text-center text-sm">
+          <Text className="text-secondary-700 dark:text-secondary-200 font-sans-medium text-center text-sm">
             초기화
           </Text>
         </Pressable>

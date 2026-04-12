@@ -68,7 +68,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       <View className="flex-row items-center">
         <CalendarIcon size={18} color={group.isToday ? '#6366F1' : '#9A9078'} />
         <Text
-          className={`ml-2 text-base font-semibold ${
+          className={`ml-2 text-base font-sans-semibold ${
             group.isToday
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-900 dark:text-off-white'
@@ -81,19 +81,19 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
 
       <View className="flex-row items-center">
         <View className="mr-2 flex-row items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {group.stats.total}
           </Text>
           {group.stats.checkedIn > 0 ? (
             <View className="ml-1 rounded bg-success-50 px-1.5 py-0.5 dark:bg-success-900/30">
-              <Text className="text-xs text-success-600 dark:text-success-400">
+              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
                 {group.stats.checkedIn}
               </Text>
             </View>
           ) : null}
           {group.stats.noShow > 0 ? (
             <View className="ml-1 rounded bg-orange-100 px-1.5 py-0.5 dark:bg-orange-900/30">
-              <Text className="text-xs text-orange-600 dark:text-orange-400">
+              <Text className="text-xs text-orange-600 dark:text-orange-400 font-sans">
                 {group.stats.noShow}
               </Text>
             </View>
@@ -236,7 +236,7 @@ export function ConfirmedStaffList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           확정된 스태프를 불러오는 중입니다...
         </Text>
       </View>

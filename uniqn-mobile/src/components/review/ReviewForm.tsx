@@ -105,7 +105,7 @@ export default function ReviewForm({
   return (
     <View className="gap-6">
       <View>
-        <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
           {revieweeName}와의 근무는 어땠나요?
         </Text>
         <Controller
@@ -114,13 +114,13 @@ export default function ReviewForm({
           render={() => <SentimentSelector value={sentiment} onChange={handleSentimentChange} />}
         />
         {errors.sentiment ? (
-          <Text className="mt-1 text-xs text-error-500">{errors.sentiment.message}</Text>
+          <Text className="mt-1 text-xs text-error-500 font-sans">{errors.sentiment.message}</Text>
         ) : null}
       </View>
 
       {sentiment ? (
         <View>
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
             어떤 점이 그랬나요?
           </Text>
           <Controller
@@ -136,19 +136,19 @@ export default function ReviewForm({
             )}
           />
           {tagPolicyNotice ? (
-            <Text className="mt-2 text-xs text-warning-600 dark:text-warning-400">
+            <Text className="mt-2 text-xs text-warning-600 dark:text-warning-400 font-sans">
               {tagPolicyNotice}
             </Text>
           ) : null}
           {errors.tags ? (
-            <Text className="mt-1 text-xs text-error-500">{errors.tags.message}</Text>
+            <Text className="mt-1 text-xs text-error-500 font-sans">{errors.tags.message}</Text>
           ) : null}
         </View>
       ) : null}
 
       {sentiment ? (
         <View>
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
             추가 코멘트 (선택)
           </Text>
           <Controller
@@ -166,20 +166,20 @@ export default function ReviewForm({
                   className="min-h-[80px] rounded-lg border border-secondary-200 bg-white p-3 text-sm text-secondary-900 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-100"
                   textAlignVertical="top"
                 />
-                <Text className="mt-1 text-right text-xs text-secondary-400">
+                <Text className="mt-1 text-right text-xs text-secondary-400 font-sans">
                   {(comment ?? '').length}/{REVIEW_COMMENT_MAX_LENGTH}
                 </Text>
               </View>
             )}
           />
           {errors.comment ? (
-            <Text className="mt-1 text-xs text-error-500">{errors.comment.message}</Text>
+            <Text className="mt-1 text-xs text-error-500 font-sans">{errors.comment.message}</Text>
           ) : null}
         </View>
       ) : null}
 
       {sentiment ? (
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           리뷰는 제출 후 수정할 수 없어요. 상대방도 리뷰를 완료하면 서로의 리뷰를 확인할 수 있어요.
         </Text>
       ) : null}
@@ -200,7 +200,7 @@ export default function ReviewForm({
           <ActivityIndicator color="white" size="small" />
         ) : (
           <Text
-            className={`text-base font-semibold ${
+            className={`text-base font-sans-semibold ${
               isFormReady ? 'text-surface-dark' : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >

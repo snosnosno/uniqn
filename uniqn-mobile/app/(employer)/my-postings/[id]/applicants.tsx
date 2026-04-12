@@ -132,7 +132,7 @@ export default function ApplicantsScreen() {
       <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             지원자 목록을 불러오는 중...
           </Text>
         </View>

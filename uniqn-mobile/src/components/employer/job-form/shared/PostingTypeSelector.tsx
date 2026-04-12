@@ -44,11 +44,11 @@ const TypeCard = memo(function TypeCard({
       accessibilityLabel={`${info.label} 공고 타입`}
     >
       <View className="flex-row items-center">
-        <Text className="mr-2 text-xl">{info.icon}</Text>
+        <Text className="mr-2 text-xl font-sans">{info.icon}</Text>
         <View className="flex-1">
           <Text
             className={`
-              text-sm font-semibold
+              text-sm font-sans-semibold
               ${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-900 dark:text-secondary-100'}
             `}
           >
@@ -58,7 +58,7 @@ const TypeCard = memo(function TypeCard({
             className={`
               text-xs
               ${isSelected ? 'text-primary-500 dark:text-primary-300' : 'text-secondary-500 dark:text-secondary-400'}
-            `}
+             font-sans`}
           >
             {info.description}
           </Text>
@@ -85,8 +85,8 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
-        공고 타입<Text className="text-error-500">*</Text>
+      <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        공고 타입<Text className="text-error-500 font-sans">*</Text>
       </Text>
 
       <View className="gap-2">
@@ -105,7 +105,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
       {value === 'tournament' && (
         <View className="mt-3 rounded-lg border border-amber-200 bg-warning-50 p-2.5 dark:border-amber-800 dark:bg-warning-900/20">
-          <Text className="text-sm text-warning-700 dark:text-warning-300">
+          <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">
             대회공고는 관리자 승인 후 게시됩니다.
           </Text>
         </View>
@@ -113,7 +113,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
       {value === 'urgent' && (
         <View className="mt-3 rounded-lg border border-error-200 bg-error-50 p-2.5 dark:border-error-800 dark:bg-error-900/20">
-          <Text className="text-sm text-error-700 dark:text-error-300">
+          <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
             긴급 공고는 오늘 기준 7일 이내 날짜만 선택할 수 있습니다.
           </Text>
         </View>
@@ -121,7 +121,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
       {disabled && (
         <View className="mt-2 rounded bg-secondary-100 p-2 dark:bg-surface">
-          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             공고 타입은 수정할 수 없습니다.
           </Text>
         </View>

@@ -24,7 +24,9 @@ export function Divider({ label, spacing = 'md' }: DividerProps) {
     return (
       <View className={`flex-row items-center ${spacingStyles[spacing]}`}>
         <View className="flex-1 h-px bg-secondary-200 dark:bg-surface" />
-        <Text className="mx-4 text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <Text className="mx-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          {label}
+        </Text>
         <View className="flex-1 h-px bg-secondary-200 dark:bg-surface" />
       </View>
     );

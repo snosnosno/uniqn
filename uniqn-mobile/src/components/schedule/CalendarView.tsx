@@ -166,7 +166,9 @@ function CalendarLegend({ types }: LegendProps) {
             className="mr-1.5 h-2.5 w-2.5 rounded-sm"
             style={{ backgroundColor: SCHEDULE_DOT_COLORS[type] }}
           />
-          <Text className="text-xs text-secondary-600 dark:text-secondary-400">{labels[type]}</Text>
+          <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+            {labels[type]}
+          </Text>
         </View>
       ))}
     </View>
@@ -176,8 +178,8 @@ function CalendarLegend({ types }: LegendProps) {
 function CalendarWeekdayHeader() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const weekdayTextClassName = isDarkMode
-    ? 'text-xs font-medium text-secondary-400'
-    : 'text-xs font-medium text-secondary-500';
+    ? 'text-xs font-sans-medium text-secondary-400'
+    : 'text-xs font-sans-medium text-secondary-500';
 
   return (
     <View className="px-4 pb-2 pt-4">

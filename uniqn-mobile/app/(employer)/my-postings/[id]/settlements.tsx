@@ -142,7 +142,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
       >
         <UsersIcon size={20} color={activeTab === 'staff' ? primaryColor : inactiveColor} />
         <Text
-          className="ml-2 text-base font-medium"
+          className="ml-2 text-base font-sans-medium"
           style={{
             color: activeTab === 'staff' ? primaryColor : inactiveColor,
           }}
@@ -157,7 +157,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
             }}
           >
             <Text
-              className="text-xs font-medium"
+              className="text-xs font-sans-medium"
               style={{
                 color: activeTab === 'staff' ? primaryColor : inactiveColor,
               }}
@@ -184,7 +184,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
           color={activeTab === 'settlement' ? primaryColor : inactiveColor}
         />
         <Text
-          className="ml-2 text-base font-medium"
+          className="ml-2 text-base font-sans-medium"
           style={{
             color: activeTab === 'settlement' ? primaryColor : inactiveColor,
           }}
@@ -199,7 +199,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
             }}
           >
             <Text
-              className="text-xs font-medium"
+              className="text-xs font-sans-medium"
               style={{
                 color: activeTab === 'settlement' ? primaryColor : inactiveColor,
               }}
@@ -629,7 +629,7 @@ export default function StaffSettlementsScreen() {
       <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             데이터를 불러오는 중...
           </Text>
         </View>

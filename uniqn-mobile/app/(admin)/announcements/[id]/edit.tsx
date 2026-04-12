@@ -50,14 +50,14 @@ export default function EditAnnouncementPage() {
         <Stack.Screen options={{ title: '공지사항 수정' }} />
         <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#ef4444" />
-          <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mt-4">
+          <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
           <Pressable
             onPress={() => router.back()}
             className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
-            <Text className="text-surface-dark font-medium">돌아가기</Text>
+            <Text className="text-surface-dark font-sans-medium">돌아가기</Text>
           </Pressable>
         </View>
       </>

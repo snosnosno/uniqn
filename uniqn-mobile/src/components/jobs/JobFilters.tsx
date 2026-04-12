@@ -123,7 +123,7 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
     >
       <Text
         className={`
-          text-sm font-medium
+          text-sm font-sans-medium
           ${isActive ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}
         `}
       >
@@ -228,12 +228,12 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
           accessibilityHint="공고 필터링 옵션을 설정합니다"
         >
           <FilterIcon size={18} color={primaryIconColor} />
-          <Text className="ml-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="ml-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             필터
           </Text>
           {showActiveCount && activeFilterCount > 0 && (
             <View className="ml-2 bg-primary-600 rounded-sm px-2 py-0.5 min-w-[20px] items-center">
-              <Text className="text-surface-dark text-xs font-bold">{activeFilterCount}</Text>
+              <Text className="text-surface-dark text-xs font-sans-bold">{activeFilterCount}</Text>
             </View>
           )}
         </Pressable>
@@ -257,7 +257,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 </Text>
                 <View className="flex-row items-center gap-4">
                   <Pressable onPress={handleResetFilters}>
-                    <Text className="text-primary-600 dark:text-primary-400 font-medium">
+                    <Text className="text-primary-600 dark:text-primary-400 font-sans-medium">
                       초기화
                     </Text>
                   </Pressable>
@@ -273,7 +273,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <MapPinIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                       지역
                     </Text>
                   </View>
@@ -297,7 +297,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <CalendarIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                       근무일
                     </Text>
                   </View>
@@ -317,7 +317,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <BriefcaseIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                       역할
                     </Text>
                   </View>
@@ -348,7 +348,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     `}
                   >
                     <View className="flex-row items-center">
-                      <Text className="font-medium text-secondary-900 dark:text-off-white">
+                      <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
                         긴급 공고만 보기
                       </Text>
                     </View>
@@ -362,7 +362,9 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                         }
                       `}
                     >
-                      {tempFilters.isUrgent && <Text className="text-white text-xs">{''}</Text>}
+                      {tempFilters.isUrgent && (
+                        <Text className="text-white text-xs font-sans">{''}</Text>
+                      )}
                     </View>
                   </Pressable>
                 </View>
@@ -377,7 +379,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                   onPress={handleApplyFilters}
                   className="bg-primary-600 dark:bg-primary-700 py-4 rounded-md items-center active:opacity-80"
                 >
-                  <Text className="text-surface-dark font-semibold text-base">필터 적용</Text>
+                  <Text className="text-surface-dark font-sans-semibold text-base">필터 적용</Text>
                 </Pressable>
               </View>
 

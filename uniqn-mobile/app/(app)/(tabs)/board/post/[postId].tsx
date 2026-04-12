@@ -121,7 +121,7 @@ function MetaPill({ icon, label }: { icon?: ReactNode; label: string }) {
     <View className="flex-row items-center rounded-sm bg-secondary-100 px-3 py-1.5 dark:bg-surface-elevated">
       {icon ? <View>{icon}</View> : null}
       <Text
-        className={`${icon ? 'ml-1.5' : ''} text-xs font-medium text-secondary-600 dark:text-secondary-300`}
+        className={`${icon ? 'ml-1.5' : ''} text-xs font-sans-medium text-secondary-600 dark:text-secondary-300`}
       >
         {label}
       </Text>
@@ -168,7 +168,7 @@ function ActionChip({
         disabled ? 'opacity-50' : 'active:opacity-70'
       }`}
     >
-      <Text className={`text-xs font-semibold ${textClass}`}>{label}</Text>
+      <Text className={`text-xs font-sans-semibold ${textClass}`}>{label}</Text>
     </Pressable>
   );
 }
@@ -180,7 +180,7 @@ function BoardPostDetailSkeleton() {
       contentContainerStyle={{ padding: 16, paddingBottom: LAYOUT.TAB_BAR_HEIGHT + 32 }}
       showsVerticalScrollIndicator={false}
     >
-      <Text className="mb-4 text-sm text-secondary-500 dark:text-secondary-400">
+      <Text className="mb-4 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
         게시글을 불러오는 중이에요.
       </Text>
 
@@ -246,7 +246,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
     return (
       <View className="mb-3 mt-3 flex-row items-center gap-2">
         <PinIcon size={16} color="#D4A017" />
-        <Text className="text-sm font-semibold uppercase tracking-[0.8px] text-secondary-700 dark:text-secondary-200">
+        <Text className="text-sm font-sans-semibold uppercase tracking-[0.8px] text-secondary-700 dark:text-secondary-200">
           {item.title}
         </Text>
       </View>
@@ -261,7 +261,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
       {item.isLocked ? (
         <View className="flex-row items-center gap-1 rounded-sm bg-error-50 px-2 py-1 dark:bg-error-900/20">
           <LockIcon size={14} color="#DC2626" />
-          <Text className="text-xs text-error-600 dark:text-error-400">잠금 상태</Text>
+          <Text className="text-xs text-error-600 dark:text-error-400 font-sans">잠금 상태</Text>
         </View>
       ) : null}
     </View>
@@ -905,13 +905,13 @@ export default function BoardPostDetailScreen() {
           </Text>
 
           <View className="mt-3 flex-row flex-wrap items-center gap-2">
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200">
               {post.authorName}
             </Text>
             {postCreatedAtLabel ? (
               <>
                 <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {postCreatedAtLabel}
                 </Text>
               </>
@@ -919,14 +919,14 @@ export default function BoardPostDetailScreen() {
             {postLastActivityLabel ? (
               <>
                 <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   최근 활동 {postLastActivityLabel}
                 </Text>
               </>
             ) : null}
           </View>
 
-          <Text className="mt-5 text-base leading-8 text-secondary-700 dark:text-secondary-300">
+          <Text className="mt-5 text-base leading-8 text-secondary-700 dark:text-secondary-300 font-sans">
             {post.body}
           </Text>
 
@@ -937,21 +937,21 @@ export default function BoardPostDetailScreen() {
 
           {post.jobSummary ? (
             <View className="mt-5 rounded-lg border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-              <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
                 일정 요약
               </Text>
               <View className="mt-3 gap-2">
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
                   날짜: {post.jobSummary.workDates?.join(', ') || post.jobSummary.workDate}
                 </Text>
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
                   장소: {post.jobSummary.locationName || '미정'}
                 </Text>
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
                   인원: {post.jobSummary.filledPositions ?? 0}/{post.jobSummary.totalPositions ?? 0}
                 </Text>
                 {post.jobSummary.compensationLabel ? (
-                  <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
                     급여: {post.jobSummary.compensationLabel}
                   </Text>
                 ) : null}
@@ -975,7 +975,7 @@ export default function BoardPostDetailScreen() {
 
           {post.boardType !== 'notice' ? (
             <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 반응
               </Text>
               <View className="mt-3 flex-row flex-wrap gap-2">
@@ -1010,7 +1010,7 @@ export default function BoardPostDetailScreen() {
 
           {showActionBar ? (
             <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 게시글 작업
               </Text>
               <View className="mt-3 flex-row flex-wrap gap-2">

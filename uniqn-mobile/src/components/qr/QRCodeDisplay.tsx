@@ -117,7 +117,7 @@ export function QRCodeDisplay({
           </Text>
         </View>
 
-        <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">
+        <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6 font-sans">
           QR 코드를 스캔하여 {actionLabel}을 완료하세요
         </Text>
 
@@ -129,14 +129,14 @@ export function QRCodeDisplay({
               className="items-center justify-center"
             >
               <ActivityIndicator size="large" color="#D4AF37" />
-              <Text className="text-secondary-500 mt-4">QR 코드 생성 중...</Text>
+              <Text className="text-secondary-500 mt-4 font-sans">QR 코드 생성 중...</Text>
             </View>
           ) : isExpired || !displayData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
               className="items-center justify-center bg-secondary-100 dark:bg-surface rounded-md"
             >
-              <Text className="text-secondary-400 dark:text-secondary-500 text-center mb-4">
+              <Text className="text-secondary-400 dark:text-secondary-500 text-center mb-4 font-sans">
                 {isExpired ? 'QR 코드가 만료되었습니다' : 'QR 코드를 생성해주세요'}
               </Text>
               {onRefresh && (
@@ -162,7 +162,7 @@ export function QRCodeDisplay({
             <Text
               className={`ml-1 text-sm ${
                 isExpired ? 'text-error-500' : 'text-secondary-500 dark:text-secondary-400'
-              }`}
+              } font-sans`}
             >
               {remainingTime}
             </Text>
@@ -171,7 +171,7 @@ export function QRCodeDisplay({
 
         {/* 안내 문구 */}
         <View className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-md p-4 w-full">
-          <Text className="text-sm text-primary-700 dark:text-primary-300 text-center">
+          <Text className="text-sm text-primary-700 dark:text-primary-300 text-center font-sans">
             • QR 코드는 3분간 유효합니다{'\n'}• 만료 시 새로고침하여 재생성해주세요{'\n'}• 스태프가
             스캔하면 자동으로 출퇴근 처리
           </Text>
@@ -185,7 +185,7 @@ export function QRCodeDisplay({
             accessibilityLabel="QR 코드 새로고침"
           >
             <RefreshIcon size={16} color="#9A9078" />
-            <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               새로고침
             </Text>
           </Pressable>

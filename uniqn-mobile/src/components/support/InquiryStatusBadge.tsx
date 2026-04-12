@@ -40,7 +40,7 @@ export function InquiryStatusBadge({
       className={`rounded-sm ${config.bgColor} ${sizeStyle.container} ${className}`}
       accessibilityLabel={`?곹깭: ${config.label}`}
     >
-      <Text className={`font-medium ${config.color} ${sizeStyle.text}`}>{config.label}</Text>
+      <Text className={`font-sans-medium ${config.color} ${sizeStyle.text}`}>{config.label}</Text>
     </View>
   );
 }

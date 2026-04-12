@@ -123,7 +123,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <CalendarIcon size={16} color="#9A9078" />
-          <Text className="ml-2 text-sm font-medium text-secondary-900 dark:text-off-white">
+          <Text className="ml-2 text-sm font-sans-medium text-secondary-900 dark:text-off-white">
             {formatDate(workLog.date)}
           </Text>
         </View>
@@ -133,13 +133,13 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
           <BriefcaseIcon size={14} color="#A89C84" />
-          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {roleLabel}
           </Text>
         </View>
         <View className="flex-row items-center">
           <ClockIcon size={14} color="#A89C84" />
-          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {timeInfo.effectiveStart} - {timeInfo.effectiveEnd}
           </Text>
         </View>
@@ -157,7 +157,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
               isCompleted
                 ? 'text-success-600 dark:text-success-400'
                 : 'text-secondary-500 dark:text-secondary-400'
-            }`}
+            } font-sans`}
           >
             {isCompleted ? workHours : '진행 중'}
           </Text>
@@ -167,12 +167,14 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           <View className="flex-row items-center">
             {payrollConfig && (
               <View className={`px-2 py-0.5 rounded-sm mr-2 ${payrollConfig.bgColor}`}>
-                <Text className={`text-xs ${payrollConfig.color}`}>{payrollConfig.label}</Text>
+                <Text className={`text-xs ${payrollConfig.color} font-sans`}>
+                  {payrollConfig.label}
+                </Text>
               </View>
             )}
             <View className="flex-row items-center">
               <CurrencyDollarIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1 text-sm font-semibold text-primary-600 dark:text-primary-400">
+              <Text className="ml-1 text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
                 {formatCurrency(workLog.payrollAmount)}
               </Text>
             </View>
@@ -182,7 +184,10 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
 
       {workLog.notes && (
         <View className="mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400" numberOfLines={2}>
+          <Text
+            className="text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+            numberOfLines={2}
+          >
             {workLog.notes}
           </Text>
         </View>
@@ -292,7 +297,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
                     <Text className="text-2xl font-display text-primary-600 dark:text-primary-400">
                       {stats.completed}
                     </Text>
-                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
                       완료 건수
                     </Text>
                   </View>
@@ -301,7 +306,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
                     <Text className="text-2xl font-display text-primary-600 dark:text-primary-400">
                       {formatCurrency(stats.totalEarnings)}
                     </Text>
-                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
                       총 수입
                     </Text>
                   </View>

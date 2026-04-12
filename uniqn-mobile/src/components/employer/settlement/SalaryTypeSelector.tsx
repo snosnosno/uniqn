@@ -113,7 +113,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           급여 유형
         </Text>
       )}
@@ -143,7 +143,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             >
               <Text
                 className={`
-                  text-sm font-medium
+                  text-sm font-sans-medium
                   ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}
                 `}
               >
@@ -156,7 +156,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
 
       {/* 금액 입력 */}
       <View className="mb-2">
-        <Text className="mb-1 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           금액
         </Text>
         <View
@@ -177,26 +177,28 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             className="flex-1 text-base text-secondary-900 dark:text-off-white"
             accessibilityLabel="급여 금액"
           />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
             {unitText}
           </Text>
         </View>
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && <Text className="text-sm text-error-500 mb-2">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="text-sm text-error-500 mb-2 font-sans">{errorMessage}</Text>
+      )}
 
       {/* 예상 급여 미리보기 */}
       {estimatedPay !== null && (
         <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
               예상 급여
               {salaryInfo.type === 'hourly' && hoursWorked && (
-                <Text className="text-xs"> ({hoursWorked.toFixed(1)}시간 기준)</Text>
+                <Text className="text-xs font-sans"> ({hoursWorked.toFixed(1)}시간 기준)</Text>
               )}
             </Text>
-            <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
+            <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(estimatedPay)}
             </Text>
           </View>

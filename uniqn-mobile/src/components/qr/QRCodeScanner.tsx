@@ -119,7 +119,7 @@ export function QRCodeScanner({
       return (
         <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
           <View className="flex-1 justify-center items-center">
-            <Text className="text-white">카메라 권한 확인 중...</Text>
+            <Text className="text-white font-sans">카메라 권한 확인 중...</Text>
           </View>
         </SafeAreaView>
       );
@@ -133,12 +133,12 @@ export function QRCodeScanner({
             <Text className="text-white text-xl font-display mt-4 text-center">
               카메라 권한이 필요합니다
             </Text>
-            <Text className="text-secondary-400 text-center mt-2 mb-6">
+            <Text className="text-secondary-400 text-center mt-2 mb-6 font-sans">
               QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
             </Text>
             <Button onPress={requestPermission}>권한 허용하기</Button>
             <Pressable onPress={onClose} className="mt-4">
-              <Text className="text-secondary-400">닫기</Text>
+              <Text className="text-secondary-400 font-sans">닫기</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -162,7 +162,7 @@ export function QRCodeScanner({
             className="w-10 h-10 items-center justify-center rounded-sm"
             accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
           >
-            <Text className={flashEnabled ? 'text-warning-400' : 'text-white'}>
+            <Text className={flashEnabled ? 'text-warning-400 font-sans' : 'text-white font-sans'}>
               {flashEnabled ? '' : ''}
             </Text>
           </Pressable>
@@ -215,17 +215,21 @@ export function QRCodeScanner({
             {scanError ? (
               <View className="mt-6 px-8 items-center">
                 <View className="bg-error-900/80 rounded-md p-4 w-full">
-                  <Text className="text-error-300 text-center font-semibold mb-1">스캔 실패</Text>
-                  <Text className="text-white text-center text-sm">{scanError.message}</Text>
+                  <Text className="text-error-300 text-center font-sans-semibold mb-1">
+                    스캔 실패
+                  </Text>
+                  <Text className="text-white text-center text-sm font-sans">
+                    {scanError.message}
+                  </Text>
                   {scanError.isRetryable && (
-                    <Text className="text-secondary-400 text-center text-xs mt-2">
+                    <Text className="text-secondary-400 text-center text-xs mt-2 font-sans">
                       다시 스캔하거나 새 QR 코드를 요청하세요
                     </Text>
                   )}
                 </View>
               </View>
             ) : (
-              <Text className="text-white text-center mt-6 px-8">
+              <Text className="text-white text-center mt-6 px-8 font-sans">
                 {scanned
                   ? '스캔 완료!'
                   : expectedAction === 'checkIn'
@@ -249,7 +253,7 @@ export function QRCodeScanner({
               }}
               icon={<RefreshIcon size={20} color="#FFFFFF" />}
             >
-              <Text className="text-white ml-2">다시 스캔하기</Text>
+              <Text className="text-white ml-2 font-sans">다시 스캔하기</Text>
             </Button>
           </View>
         )}

@@ -133,7 +133,7 @@ export function NotificationPermissionScreen({
             <Text className="text-center text-2xl font-display text-secondary-900 dark:text-off-white">
               {content.title}
             </Text>
-            <Text className="mt-2 text-center text-base text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-2 text-center text-base text-secondary-500 dark:text-secondary-400 font-sans">
               {content.description}
             </Text>
           </Animated.View>
@@ -152,10 +152,10 @@ export function NotificationPermissionScreen({
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                       {item.title}
                     </Text>
-                    <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">
+                    <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                       {item.description}
                     </Text>
                   </View>
@@ -177,7 +177,7 @@ export function NotificationPermissionScreen({
                   : 'bg-primary-600 active:bg-primary-700 dark:bg-primary-700 dark:active:bg-primary-600'
               }`}
             >
-              <Text className="text-base font-semibold text-surface-dark">
+              <Text className="text-base font-sans-semibold text-surface-dark">
                 {loading ? '처리 중...' : content.primaryLabel}
               </Text>
             </Pressable>
@@ -190,12 +190,12 @@ export function NotificationPermissionScreen({
               accessibilityLabel={content.secondaryLabel}
               className="items-center rounded-md py-4"
             >
-              <Text className="text-base text-secondary-500 dark:text-secondary-400">
+              <Text className="text-base text-secondary-500 dark:text-secondary-400 font-sans">
                 {content.secondaryLabel}
               </Text>
             </Pressable>
 
-            <Text className="mt-4 text-center text-xs text-secondary-400 dark:text-secondary-500">
+            <Text className="mt-4 text-center text-xs text-secondary-400 dark:text-secondary-500 font-sans">
               {content.helperText}
             </Text>
           </Animated.View>

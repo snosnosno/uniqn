@@ -27,11 +27,13 @@ function LoadingState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
-      <Text className="mb-4 text-4xl">!</Text>
+      <Text className="mb-4 text-4xl font-sans">!</Text>
       <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         오류가 발생했습니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">{message}</Text>
+      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
+        {message}
+      </Text>
       <Button onPress={onRetry} variant="outline">
         다시 시도
       </Button>
@@ -42,11 +44,11 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
-      <Text className="mb-4 text-4xl">이미</Text>
+      <Text className="mb-4 text-4xl font-sans">이미</Text>
       <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         이미 지원한 공고입니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">
+      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
         {isFixed
           ? '지원 현황은 프로필에서 확인할 수 있습니다.'
           : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}
@@ -72,7 +74,7 @@ function UnsupportedPostingState() {
       <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
         현재 지원할 수 없는 공고입니다
       </Text>
-      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400">
+      <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
         이 공고는 현재 앱 내부 지원 범위에 포함되어 있지 않습니다.
       </Text>
       <Button onPress={() => router.back()} variant="outline">
@@ -250,11 +252,11 @@ export default function ApplyScreen() {
           }}
         />
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="mb-4 text-6xl">완료</Text>
+          <Text className="mb-4 text-6xl font-sans">완료</Text>
           <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
             지원이 완료되었습니다
           </Text>
-          <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400 font-sans">
             {isFixed
               ? '지원 결과는 프로필에서 확인할 수 있습니다.'
               : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}

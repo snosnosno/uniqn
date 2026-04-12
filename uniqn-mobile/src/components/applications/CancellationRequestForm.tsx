@@ -101,7 +101,7 @@ export function CancellationRequestForm({
       <View className="px-4">
         {/* 안내 문구 */}
         <View className="bg-warning-50 dark:bg-warning-900/30 rounded-lg p-4 mb-6">
-          <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5">
+          <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5 font-sans">
             확정된 지원을 취소하려면 사유를 입력해주세요.{'\n'}
             구인자가 검토 후 승인/거절합니다.
           </Text>
@@ -109,16 +109,16 @@ export function CancellationRequestForm({
 
         {/* 지원 정보 요약 */}
         <View className="bg-secondary-50 dark:bg-surface rounded-lg p-4 mb-6">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-2">
+          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
           <View className="flex-row items-center mb-1">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
             </Text>
           </View>
           <View className="flex-row items-center">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {getRoleDisplayName(
                 application.assignments[0]?.roleIds?.[0] || 'other',
                 application.customRole
@@ -149,14 +149,14 @@ export function CancellationRequestForm({
               `}
             textAlignVertical="top"
           />
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1 font-sans">
             {reason.length}/500
           </Text>
         </FormField>
 
         {/* 주의사항 */}
         <View className="bg-secondary-50 dark:bg-surface rounded-lg p-4 mt-4">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 leading-5">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 leading-5 font-sans">
             • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}• 구인자가 거절하면 지원은 유지됩니다.
             {'\n'}• 무단 취소는 평판에 영향을 줄 수 있습니다.
           </Text>

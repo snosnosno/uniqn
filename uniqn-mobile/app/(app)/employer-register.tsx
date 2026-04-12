@@ -35,8 +35,8 @@ interface InfoRowProps {
 function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View className="flex-row justify-between py-2">
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
-      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
+      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
         {value || '-'}
       </Text>
     </View>
@@ -77,17 +77,19 @@ function AgreementCheckbox({
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
               {title}
             </Text>
             {onViewDetail && (
               <Pressable onPress={onViewDetail} className="ml-2">
-                <Text className="text-sm text-primary-600 dark:text-primary-400">[보기]</Text>
+                <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
+                  [보기]
+                </Text>
               </Pressable>
             )}
           </View>
           {description && (
-            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {description}
             </Text>
           )}
@@ -206,7 +208,7 @@ export default function EmployerRegisterScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 안내 문구 */}
-        <Text className="mb-6 text-center text-base text-secondary-600 dark:text-secondary-400">
+        <Text className="mb-6 text-center text-base text-secondary-600 dark:text-secondary-400 font-sans">
           구인자로 등록하면 공고를 등록하고{'\n'}스태프를 모집할 수 있습니다.
         </Text>
 
@@ -218,7 +220,7 @@ export default function EmployerRegisterScreen() {
             ) : (
               <ExclamationCircleIcon size={20} color="#DC2626" />
             )}
-            <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               본인인증 정보
             </Text>
           </View>
@@ -228,18 +230,20 @@ export default function EmployerRegisterScreen() {
               <InfoRow label="이름" value={profile?.name} />
               <InfoRow label="연락처" value={profile?.phone} />
               <View className="mt-2 rounded-md bg-success-50 px-3 py-2 dark:bg-success-900/20">
-                <Text className="text-sm text-success-700 dark:text-success-400">
+                <Text className="text-sm text-success-700 dark:text-success-400 font-sans">
                   본인인증이 완료되었습니다
                 </Text>
               </View>
             </>
           ) : (
             <View>
-              <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 구인자 등록을 위해 본인인증이 필요합니다
               </Text>
               <Button variant="outline" size="sm" onPress={handleGoToVerification}>
-                <Text className="text-primary-600 dark:text-primary-400">본인인증 하러가기</Text>
+                <Text className="text-primary-600 dark:text-primary-400 font-sans">
+                  본인인증 하러가기
+                </Text>
               </Button>
             </View>
           )}
@@ -247,7 +251,7 @@ export default function EmployerRegisterScreen() {
 
         {/* 프로필 정보 */}
         <Card variant="outlined" padding="md" className="mb-6">
-          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             프로필 정보
           </Text>
           <InfoRow label="닉네임" value={profile?.nickname} />
@@ -256,7 +260,7 @@ export default function EmployerRegisterScreen() {
 
         {/* 동의 항목 */}
         <View className="mb-6">
-          <Text className="mb-4 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-4 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             필수 동의 항목
           </Text>
 
@@ -286,12 +290,12 @@ export default function EmployerRegisterScreen() {
           {isSubmitting ? (
             <Loading size="small" color="#fff" />
           ) : (
-            <Text className="font-semibold text-surface-dark">구인자로 등록하기</Text>
+            <Text className="font-sans-semibold text-surface-dark">구인자로 등록하기</Text>
           )}
         </Button>
 
         {!isVerified && (
-          <Text className="mt-4 text-center text-sm text-error-500 dark:text-error-400">
+          <Text className="mt-4 text-center text-sm text-error-500 dark:text-error-400 font-sans">
             본인인증을 먼저 완료해주세요
           </Text>
         )}

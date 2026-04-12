@@ -103,7 +103,9 @@ export function InquiryResponseForm({
           }`}
           maxLength={2000}
         />
-        <Text className="mt-1 text-right text-xs text-secondary-400">{response.length}/2000</Text>
+        <Text className="mt-1 text-right text-xs text-secondary-400 font-sans">
+          {response.length}/2000
+        </Text>
       </FormField>
 
       {/* 상태 선택 */}

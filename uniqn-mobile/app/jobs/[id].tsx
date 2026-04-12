@@ -155,7 +155,7 @@ export default function PublicJobDetailAliasRoute() {
             </Button>
           ) : (
             <View>
-              <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 앱에서 지원할 수 있어요
               </Text>
               <Button

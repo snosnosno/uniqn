@@ -28,7 +28,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
   return (
     <View className="mb-3 rounded-lg bg-secondary-50 p-3 dark:bg-surface-dark">
       <View className="mb-3 flex-row flex-wrap items-center">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {group.label}
         </Text>
         {!isSingleDate && (
@@ -45,7 +45,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
           return (
             <View key={slot.id || slotIndex} className="pl-2">
-              <Text className="mb-2 text-sm font-medium text-secondary-600 dark:text-secondary-400">
+              <Text className="mb-2 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
                 {timeDisplay}
               </Text>
               <View className="flex-row flex-wrap pl-4">
@@ -77,7 +77,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
       {!isSingleDate && (
         <View className="mt-3 border-t border-secondary-200 pt-2 dark:border-surface-overlay">
-          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             선택하면 {dayCount}일 모두 같은 역할로 함께 지원됩니다.
           </Text>
         </View>

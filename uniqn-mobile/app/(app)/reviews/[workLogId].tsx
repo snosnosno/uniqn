@@ -125,7 +125,7 @@ export default function ReviewDetailScreen() {
     <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-4">
         <View>
-          <Text className="mb-2 text-sm font-semibold text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
             내 리뷰
           </Text>
           {data?.myReview ? (
@@ -135,11 +135,13 @@ export default function ReviewDetailScreen() {
               onPress={openWriteScreen}
               className="items-center rounded-md border border-dashed border-secondary-300 bg-white py-8 active:opacity-80 dark:border-secondary-600 dark:bg-secondary-800"
             >
-              <Text className="text-sm text-primary-500 dark:text-primary-400">리뷰 작성하기</Text>
+              <Text className="text-sm text-primary-500 dark:text-primary-400 font-sans">
+                리뷰 작성하기
+              </Text>
             </Pressable>
           ) : (
             <View className="rounded-md border border-secondary-200 bg-white p-4 dark:border-secondary-700 dark:bg-secondary-800">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-300">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
                 리뷰 작성에 필요한 정보를 확인할 수 없어요.
               </Text>
               <View className="mt-3">
@@ -152,7 +154,7 @@ export default function ReviewDetailScreen() {
         </View>
 
         <View>
-          <Text className="mb-2 text-sm font-semibold text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
             상대방 리뷰
           </Text>
           {data?.canViewOpponent && data?.opponentReview ? (

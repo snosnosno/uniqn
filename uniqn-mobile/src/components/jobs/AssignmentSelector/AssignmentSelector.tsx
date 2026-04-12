@@ -166,13 +166,15 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   if (isFixed) {
     return (
       <View className="rounded-md border border-amber-200 bg-warning-50 p-4 dark:border-amber-800 dark:bg-warning-900/30">
-        <Text className="text-sm font-medium text-warning-800 dark:text-warning-200">
+        <Text className="text-sm font-sans-medium text-warning-800 dark:text-warning-200">
           고정 공고 지원은 현재 비활성화되어 있습니다.
         </Text>
-        <Text className="mt-2 text-xs leading-5 text-warning-700 dark:text-warning-300">
+        <Text className="mt-2 text-xs leading-5 text-warning-700 dark:text-warning-300 font-sans">
           날짜 기반 모집 공고만 지원할 수 있습니다.
         </Text>
-        {error && <Text className="mt-2 text-sm text-error-500 dark:text-error-400">{error}</Text>}
+        {error && (
+          <Text className="mt-2 text-sm text-error-500 dark:text-error-400 font-sans">{error}</Text>
+        )}
       </View>
     );
   }
@@ -180,10 +182,10 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   return (
     <View className="rounded-md bg-white p-4 dark:bg-surface">
       <View className="mb-3">
-        <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-off-white">
-          날짜 및 역할 선택 <Text className="text-error-500">*</Text>
+        <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          날짜 및 역할 선택 <Text className="text-error-500 font-sans">*</Text>
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           원하는 시간과 역할을 선택해 주세요
           {maxSelections ? ` (최대 ${maxSelections}개)` : ''}
         </Text>
@@ -214,13 +216,15 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
       {selectionSummary ? (
         <View className="mt-4 border-t border-secondary-100 pt-4 dark:border-surface-overlay">
-          <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
+          <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
             선택된 {selectionSummary}
           </Text>
         </View>
       ) : null}
 
-      {error && <Text className="mt-2 text-sm text-error-500 dark:text-error-400">{error}</Text>}
+      {error && (
+        <Text className="mt-2 text-sm text-error-500 dark:text-error-400 font-sans">{error}</Text>
+      )}
     </View>
   );
 });

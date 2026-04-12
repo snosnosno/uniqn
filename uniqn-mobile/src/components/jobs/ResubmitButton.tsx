@@ -107,7 +107,7 @@ export function ResubmitButton({
         ) : (
           <>
             <RefreshIcon size={iconSize} color="#ffffff" />
-            <Text className={`ml-2 font-medium text-surface-dark ${textClass}`}>재제출</Text>
+            <Text className={`ml-2 font-sans-medium text-surface-dark ${textClass}`}>재제출</Text>
           </>
         )}
       </Pressable>

@@ -106,7 +106,9 @@ export const NumericInput = memo(function NumericInput({
         {...textInputProps}
       />
       {suffix ? (
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">{suffix}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
+          {suffix}
+        </Text>
       ) : null}
     </View>
   );

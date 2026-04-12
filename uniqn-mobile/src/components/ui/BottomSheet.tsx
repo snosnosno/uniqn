@@ -388,7 +388,7 @@ export function SelectBottomSheet({
             {option.icon && <View className="mr-3">{option.icon}</View>}
             <Text
               className={`
-                text-base font-medium flex-1
+                text-base font-sans-medium flex-1
                 ${
                   option.destructive
                     ? 'text-error-600 dark:text-error-400'

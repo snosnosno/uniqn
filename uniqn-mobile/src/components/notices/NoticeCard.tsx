@@ -113,7 +113,7 @@ export function NoticeCard({ notice }: NoticeCardProps) {
 
               {/* 제목 */}
               <Text
-                className="text-base font-semibold text-secondary-900 dark:text-secondary-100"
+                className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100"
                 numberOfLines={2}
               >
                 {notice.title}
@@ -121,14 +121,14 @@ export function NoticeCard({ notice }: NoticeCardProps) {
 
               {/* 내용 미리보기 */}
               <Text
-                className="mt-1 text-sm text-secondary-600 dark:text-secondary-400"
+                className="mt-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
                 numberOfLines={2}
               >
                 {notice.content}
               </Text>
 
               {/* 날짜 */}
-              <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-500">
+              <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-500 font-sans">
                 {formattedDate}
               </Text>
             </View>

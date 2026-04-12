@@ -36,7 +36,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <ClockIcon size={18} color="#9A9078" />
-        <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           근무 시간
         </Text>
       </View>
@@ -44,21 +44,27 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
       {hasValidTimes ? (
         <View className="flex-row items-center justify-between p-3 bg-secondary-50 dark:bg-surface rounded-lg">
           <View className="items-center">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">출근</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+              출근
+            </Text>
             <Text className="text-lg font-display-semibold text-success-600 dark:text-success-400">
               {formatTime(startTime)}
             </Text>
           </View>
           <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
           <View className="items-center">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">퇴근</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+              퇴근
+            </Text>
             <Text className="text-lg font-display-semibold text-error-600 dark:text-error-400">
               {formatTime(endTime)}
             </Text>
           </View>
           <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
           <View className="items-center">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">근무</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+              근무
+            </Text>
             <Text className="text-lg font-display-semibold text-primary-600 dark:text-primary-400">
               {hoursWorked !== undefined ? formatDuration(hoursWorked) : '-'}
             </Text>
@@ -66,7 +72,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
         </View>
       ) : (
         <View className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-          <Text className="text-sm text-warning-700 dark:text-warning-300 text-center">
+          <Text className="text-sm text-warning-700 dark:text-warning-300 text-center font-sans">
             출퇴근 기록이 완료되지 않았습니다
           </Text>
         </View>

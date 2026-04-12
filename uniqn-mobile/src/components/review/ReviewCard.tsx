@@ -39,21 +39,26 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
           <View className={`rounded-sm px-2.5 py-1 ${colors.bg} ${colors.darkBg}`}>
-            <Text className={`text-xs font-medium ${colors.text}`}>
+            <Text className={`text-xs font-sans-medium ${colors.text}`}>
               {SENTIMENT_EMOJI[review.sentiment]} {SENTIMENT_LABELS[review.sentiment]}
             </Text>
           </View>
           {showReviewer && (
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               {review.reviewerType === 'employer' ? '구인자' : '스태프'}
             </Text>
           )}
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500">{formattedDate}</Text>
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          {formattedDate}
+        </Text>
       </View>
 
       {/* 공고 정보 */}
-      <Text className="mb-2 text-sm text-secondary-700 dark:text-secondary-300" numberOfLines={1}>
+      <Text
+        className="mb-2 text-sm text-secondary-700 dark:text-secondary-300 font-sans"
+        numberOfLines={1}
+      >
         {review.jobPostingTitle}
       </Text>
 
@@ -64,7 +69,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
             key={tagKey}
             className="rounded-sm bg-secondary-100 px-2.5 py-1 dark:bg-secondary-700"
           >
-            <Text className="text-xs text-secondary-600 dark:text-secondary-300">
+            <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
               {tagMap.get(tagKey) ?? tagKey}
             </Text>
           </View>
@@ -73,7 +78,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
 
       {/* 코멘트 */}
       {review.comment && (
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           {'\u201C'}
           {review.comment}
           {'\u201D'}
@@ -82,7 +87,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
 
       {/* 작성자 (showReviewer가 true일 때) */}
       {showReviewer && (
-        <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500">
+        <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
           {review.reviewerName}님의 평가
         </Text>
       )}

@@ -80,7 +80,7 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
       }`}
     >
       <Text
-        className={`text-sm font-medium ${
+        className={`text-sm font-sans-medium ${
           isSelected
             ? 'text-surface-dark'
             : today
@@ -91,7 +91,7 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
         {label}
       </Text>
       <Text
-        className={`text-xs ${isSelected ? 'text-surface-dark/70' : 'text-secondary-500 dark:text-secondary-400'}`}
+        className={`text-xs ${isSelected ? 'text-surface-dark/70' : 'text-secondary-500 dark:text-secondary-400'} font-sans`}
       >
         {dayLabel}
       </Text>
@@ -116,7 +116,7 @@ const AllChip = memo(function AllChip({ isSelected, onPress }: AllChipProps) {
       }`}
     >
       <Text
-        className={`text-sm font-medium ${
+        className={`text-sm font-sans-medium ${
           isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >

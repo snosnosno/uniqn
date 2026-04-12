@@ -80,7 +80,7 @@ const SelectOption = memo(function SelectOption({
         <Text
           className={`text-sm ${
             isSelected
-              ? 'text-primary-700 dark:text-primary-300 font-medium'
+              ? 'text-primary-700 dark:text-primary-300 font-sans-medium'
               : 'text-secondary-700 dark:text-secondary-300'
           }`}
         >
@@ -123,11 +123,11 @@ const QuestionItem = memo(function QuestionItem({
     <View className="mb-6">
       {/* 질문 헤더 */}
       <View className="flex-row items-start mb-2">
-        <Text className="text-base font-medium text-secondary-900 dark:text-off-white flex-1">
+        <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white flex-1">
           {question.question}
-          {question.required && <Text className="text-error-500"> *</Text>}
+          {question.required && <Text className="text-error-500 font-sans"> *</Text>}
         </Text>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2 font-sans">
           {PRE_QUESTION_TYPE_LABELS[question.type]}
         </Text>
       </View>
@@ -176,14 +176,14 @@ const QuestionItem = memo(function QuestionItem({
 
       {/* 에러 메시지 */}
       {hasError && (
-        <Text className="text-sm text-error-500 dark:text-error-400 mt-1">
+        <Text className="text-sm text-error-500 dark:text-error-400 mt-1 font-sans">
           필수 질문입니다. 답변을 입력해주세요.
         </Text>
       )}
 
       {/* 글자 수 표시 (textarea) */}
       {question.type === 'textarea' && answer.answer.length > 0 && (
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1 font-sans">
           {answer.answer.length}/1000자
         </Text>
       )}
@@ -243,16 +243,16 @@ export const PreQuestionForm = memo(function PreQuestionForm({
           사전질문
         </Text>
         {requiredCount > 0 && (
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             필수 {answeredRequiredCount}/{requiredCount}
           </Text>
         )}
       </View>
 
       {/* 안내 텍스트 */}
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4">
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4 font-sans">
         구인자가 지원자에게 미리 물어보는 질문입니다.
-        <Text className="text-error-500"> *</Text> 표시는 필수 항목입니다.
+        <Text className="text-error-500 font-sans"> *</Text> 표시는 필수 항목입니다.
       </Text>
 
       {/* 질문 목록 */}

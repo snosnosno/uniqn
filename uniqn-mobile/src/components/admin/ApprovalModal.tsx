@@ -141,12 +141,12 @@ export const ApprovalModal = memo(function ApprovalModal({
 
             {/* 본문 */}
             <View className="p-4">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-300 mb-2">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-300 mb-2 font-sans">
                 다음 공고를 {isApprove ? '승인' : '거부'}하시겠습니까?
               </Text>
               <View className="bg-secondary-50 dark:bg-surface rounded-lg p-3 mb-4">
                 <Text
-                  className="text-sm font-medium text-secondary-900 dark:text-secondary-100"
+                  className="text-sm font-sans-medium text-secondary-900 dark:text-secondary-100"
                   numberOfLines={2}
                 >
                   {postingTitle}
@@ -156,8 +156,8 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 거부 사유 입력 */}
               {!isApprove && (
                 <View className="mb-4">
-                  <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200 mb-2">
-                    거부 사유 <Text className="text-error-500">*</Text>
+                  <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200 mb-2">
+                    거부 사유 <Text className="text-error-500 font-sans">*</Text>
                   </Text>
                   <TextInput
                     value={reason}
@@ -178,11 +178,11 @@ export const ApprovalModal = memo(function ApprovalModal({
                         isValidReason
                           ? 'text-success-600 dark:text-success-400'
                           : 'text-secondary-500 dark:text-secondary-400'
-                      }`}
+                      } font-sans`}
                     >
                       {trimmedReason.length}/{MIN_REASON_LENGTH}자 이상
                     </Text>
-                    <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                       {reason.length}/{MAX_REASON_LENGTH}
                     </Text>
                   </View>
@@ -192,7 +192,7 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 승인 안내 */}
               {isApprove && (
                 <View className="bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-700 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-success-800 dark:text-success-300">
+                  <Text className="text-sm text-success-800 dark:text-success-300 font-sans">
                     승인 후 공고가 대회 탭에 즉시 노출됩니다.
                   </Text>
                 </View>
@@ -201,7 +201,9 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 에러 메시지 */}
               {error && (
                 <View className="bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-error-800 dark:text-error-300">{error}</Text>
+                  <Text className="text-sm text-error-800 dark:text-error-300 font-sans">
+                    {error}
+                  </Text>
                 </View>
               )}
             </View>
@@ -224,7 +226,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <Text
-                      className={`font-medium ${isApprove ? 'text-surface-dark' : 'text-white'}`}
+                      className={`font-sans-medium ${isApprove ? 'text-surface-dark' : 'text-white'}`}
                     >
                       {isApprove ? '승인' : '거부'}
                     </Text>

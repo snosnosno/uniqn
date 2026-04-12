@@ -310,11 +310,11 @@ export function ScheduleDetailModal({
           <View className="items-center">
             <View className="flex-row items-center">
               <CalendarIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1.5 text-sm font-semibold text-primary-700 dark:text-primary-300">
+              <Text className="ml-1.5 text-sm font-sans-semibold text-primary-700 dark:text-primary-300">
                 {schedule?.date ? formatSingleDate(schedule.date) : ''}
               </Text>
             </View>
-            <Text className="text-xs text-primary-500 dark:text-primary-400 mt-0.5">
+            <Text className="text-xs text-primary-500 dark:text-primary-400 mt-0.5 font-sans">
               {currentDateIndex + 1} / {groupedSchedule.dateRange.totalDays}일
             </Text>
           </View>
@@ -352,7 +352,7 @@ export function ScheduleDetailModal({
             {/* 그룹 모드 표시 (연속/비연속 구분) */}
             {isGroupMode && (
               <View className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-sm">
-                <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                <Text className="text-xs font-sans-medium text-primary-600 dark:text-primary-400">
                   {groupedSchedule?.dateRange.totalDays}일
                   {groupedSchedule?.dateRange.isConsecutive ? ' 연속' : ''}
                 </Text>
@@ -414,6 +414,7 @@ export function ScheduleDetailModal({
                   marginLeft: 6,
                   fontSize: 14,
                   fontWeight: '500',
+                  fontFamily: 'PlusJakartaSans_500Medium',
                   color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
                 }}
               >
@@ -447,7 +448,7 @@ export function ScheduleDetailModal({
                   onPress={handleCancelApplication}
                   className="border-error-300 dark:border-error-700"
                 >
-                  <Text className="text-error-600 dark:text-error-400 font-semibold">
+                  <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
                     지원 취소
                   </Text>
                 </Button>
@@ -466,7 +467,7 @@ export function ScheduleDetailModal({
                   onPress={handleRequestCancellation}
                   className="border-orange-300 dark:border-orange-700"
                 >
-                  <Text className="text-orange-600 dark:text-orange-400 font-semibold">
+                  <Text className="text-orange-600 dark:text-orange-400 font-sans-semibold">
                     취소 요청
                   </Text>
                 </Button>
@@ -483,7 +484,7 @@ export function ScheduleDetailModal({
                 className="border-secondary-300 dark:border-surface-overlay"
                 icon={<AlertTriangleIcon size={16} color="#9A9078" />}
               >
-                <Text className="text-secondary-600 dark:text-secondary-400">신고</Text>
+                <Text className="text-secondary-600 dark:text-secondary-400 font-sans">신고</Text>
               </Button>
             </View>
           )}

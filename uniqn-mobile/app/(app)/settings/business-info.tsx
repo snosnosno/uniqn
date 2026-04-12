@@ -29,13 +29,15 @@ interface InfoRowProps {
 function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
   const content = (
     <View className="flex-row py-3">
-      <Text className="w-28 text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
+      <Text className="w-28 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        {label}
+      </Text>
       <Text
         className={`flex-1 text-sm ${
           isLink
             ? 'text-primary-600 dark:text-primary-300'
             : 'text-secondary-900 dark:text-secondary-100'
-        }`}
+        } font-sans`}
       >
         {value}
       </Text>
@@ -108,7 +110,7 @@ export default function BusinessInfoScreen() {
           </View>
         </Card>
 
-        <Text className="px-2 text-xs leading-5 text-secondary-400 dark:text-secondary-500">
+        <Text className="px-2 text-xs leading-5 text-secondary-400 dark:text-secondary-500 font-sans">
           사업자정보 확인은 국세청 홈택스(www.hometax.go.kr)에서 가능합니다.
         </Text>
       </ScrollView>

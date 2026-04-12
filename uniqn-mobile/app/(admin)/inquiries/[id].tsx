@@ -49,7 +49,9 @@ export default function AdminInquiryDetailScreen() {
   if (isError || !inquiry) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
-        <Text className="text-secondary-500 dark:text-secondary-400">문의를 찾을 수 없습니다</Text>
+        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+          문의를 찾을 수 없습니다
+        </Text>
       </SafeAreaView>
     );
   }
@@ -62,15 +64,15 @@ export default function AdminInquiryDetailScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
             문의자 정보
           </Text>
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-base font-medium text-secondary-900 dark:text-secondary-100">
+              <Text className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100">
                 {inquiry.userName}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {inquiry.userEmail}
               </Text>
             </View>
@@ -81,10 +83,10 @@ export default function AdminInquiryDetailScreen() {
         {/* 문의 내용 */}
         <Card className="mb-4">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {INQUIRY_CATEGORY_LABELS[inquiry.category]}
             </Text>
-            <Text className="text-sm text-secondary-400 dark:text-secondary-500">
+            <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
               {createdDate ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
             </Text>
           </View>
@@ -94,7 +96,7 @@ export default function AdminInquiryDetailScreen() {
           </Text>
 
           <View className="rounded-lg bg-secondary-50 p-4 dark:bg-surface/50">
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
+            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
               {inquiry.message}
             </Text>
           </View>
@@ -102,7 +104,7 @@ export default function AdminInquiryDetailScreen() {
           {/* 첨부파일 */}
           {inquiry.attachments && inquiry.attachments.length > 0 && (
             <View className="mt-4">
-              <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
                 첨부파일 ({inquiry.attachments.length})
               </Text>
               {inquiry.attachments.map((attachment, index) => (
@@ -110,7 +112,7 @@ export default function AdminInquiryDetailScreen() {
                   key={index}
                   className="mb-1 rounded-lg bg-secondary-100 px-3 py-2 dark:bg-surface"
                 >
-                  <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+                  <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
                     {attachment.name}
                   </Text>
                 </View>
@@ -125,23 +127,23 @@ export default function AdminInquiryDetailScreen() {
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View className="mr-2 h-2 w-2 rounded-sm bg-success-500" />
-                <Text className="font-medium text-secondary-900 dark:text-secondary-100">
+                <Text className="font-sans-medium text-secondary-900 dark:text-secondary-100">
                   답변 완료
                 </Text>
               </View>
-              <Text className="text-sm text-secondary-400 dark:text-secondary-500">
+              <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
                 {respondedDate ? format(respondedDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
               </Text>
             </View>
 
             {inquiry.responderName && (
-              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 답변자: {inquiry.responderName}
               </Text>
             )}
 
             <View className="rounded-lg bg-success-50 p-4 dark:bg-success-900/20">
-              <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
+              <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
                 {inquiry.response}
               </Text>
             </View>

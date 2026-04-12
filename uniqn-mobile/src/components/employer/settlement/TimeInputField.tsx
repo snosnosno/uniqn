@@ -59,7 +59,7 @@ export function TimeInputField({
   return (
     <View className="mb-4">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm font-medium text-secondary-600 dark:text-secondary-400">
+        <Text className="text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
           {label}
         </Text>
         {/* 미정 체크박스 */}
@@ -78,7 +78,9 @@ export function TimeInputField({
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400">미정</Text>
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              미정
+            </Text>
           </Pressable>
         )}
       </View>
@@ -110,7 +112,7 @@ export function TimeInputField({
       </Pressable>
 
       {hasChanged && originalTime && (
-        <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400">
+        <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-sans">
           원래: {formatTime(originalTime)}
         </Text>
       )}

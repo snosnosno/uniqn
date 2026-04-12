@@ -138,14 +138,14 @@ export function SignupStepProfile({
     <View className="w-full flex-col gap-4">
       {/* 필수 항목 */}
       <View>
-        <Text className="mb-3 text-sm font-semibold text-secondary-800 dark:text-secondary-200">
+        <Text className="mb-3 text-sm font-sans-semibold text-secondary-800 dark:text-secondary-200">
           필수 항목
         </Text>
 
         {/* 닉네임 입력 */}
         <View>
-          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
-            닉네임 <Text className="text-error-500">*</Text>
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+            닉네임 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <Controller
             control={control}
@@ -172,14 +172,14 @@ export function SignupStepProfile({
                   )}
                 </View>
                 {nicknameStatus === 'available' && !errors.nickname && (
-                  <Text className="mt-1 text-xs text-success-600 dark:text-success-400">
+                  <Text className="mt-1 text-xs text-success-600 dark:text-success-400 font-sans">
                     사용 가능한 닉네임입니다
                   </Text>
                 )}
               </View>
             )}
           />
-          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             다른 사용자에게 보여지는 이름입니다.
           </Text>
         </View>
@@ -187,16 +187,16 @@ export function SignupStepProfile({
 
       {/* 선택 항목 */}
       <View className="mt-2">
-        <Text className="mb-1 text-sm font-semibold text-secondary-800 dark:text-secondary-200">
+        <Text className="mb-1 text-sm font-sans-semibold text-secondary-800 dark:text-secondary-200">
           선택 항목
         </Text>
-        <Text className="mb-3 text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="mb-3 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           나중에 프로필 설정에서 입력할 수 있습니다.
         </Text>
 
         {/* 지역 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             지역
           </Text>
           <Controller
@@ -219,7 +219,7 @@ export function SignupStepProfile({
 
         {/* 경력 (년) */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             경력 (년)
           </Text>
           <Controller
@@ -245,7 +245,7 @@ export function SignupStepProfile({
 
         {/* 이력 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             이력
           </Text>
           <Controller
@@ -273,13 +273,13 @@ export function SignupStepProfile({
             )}
           />
           {errors.career && (
-            <Text className="mt-1 text-sm text-error-500">{errors.career.message}</Text>
+            <Text className="mt-1 text-sm text-error-500 font-sans">{errors.career.message}</Text>
           )}
         </View>
 
         {/* 기타사항 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             기타사항
           </Text>
           <Controller
@@ -307,17 +307,17 @@ export function SignupStepProfile({
             )}
           />
           {errors.note && (
-            <Text className="mt-1 text-sm text-error-500">{errors.note.message}</Text>
+            <Text className="mt-1 text-sm text-error-500 font-sans">{errors.note.message}</Text>
           )}
         </View>
       </View>
 
       {/* 안내 문구 */}
       <View className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-        <Text className="text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">
+        <Text className="text-sm font-sans-medium text-primary-700 dark:text-primary-300 mb-1">
           구인자로 활동하고 싶으신가요?
         </Text>
-        <Text className="text-xs text-primary-600 dark:text-primary-400">
+        <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
           회원가입 후 &apos;내 공고&apos; 탭에서 구인자로 등록할 수 있습니다.
         </Text>
       </View>

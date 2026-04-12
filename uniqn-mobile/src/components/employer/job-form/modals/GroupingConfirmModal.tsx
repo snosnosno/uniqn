@@ -74,16 +74,16 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
         <View className="mb-4 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
           <View className="mb-1 flex-row items-center">
             <CalendarIcon size={18} color="#D4A017" />
-            <Text className="ml-2 text-xs text-warning-600 dark:text-warning-400">
+            <Text className="ml-2 text-xs text-warning-600 dark:text-warning-400 font-sans">
               {dayCount}일 선택됨
             </Text>
           </View>
-          <Text className="text-sm font-semibold text-warning-700 dark:text-warning-300">
+          <Text className="text-sm font-sans-semibold text-warning-700 dark:text-warning-300">
             {selectedOption === 'group' ? groupedPreview : individualPreview}
           </Text>
         </View>
 
-        <Text className="mb-4 text-sm text-secondary-600 dark:text-secondary-400">
+        <Text className="mb-4 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           날짜별 요구사항을 어떻게 관리할까요?
         </Text>
 
@@ -108,7 +108,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               {selectedOption === 'group' && <View className="h-2 w-2 rounded-sm bg-white" />}
             </View>
             <Text
-              className={`text-base font-semibold ${
+              className={`text-base font-sans-semibold ${
                 selectedOption === 'group'
                   ? 'text-primary-700 dark:text-primary-300'
                   : 'text-secondary-700 dark:text-secondary-300'
@@ -117,12 +117,12 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               그룹으로 묶기
             </Text>
             <View className="ml-2 rounded-sm bg-primary-100 px-2 py-0.5 dark:bg-primary-800">
-              <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
+              <Text className="text-xs font-sans-medium text-primary-700 dark:text-primary-300">
                 권장
               </Text>
             </View>
           </View>
-          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             모든 날짜에 같은 시간대와 인원 설정을 적용합니다.
           </Text>
         </Pressable>
@@ -148,7 +148,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               {selectedOption === 'individual' && <View className="h-2 w-2 rounded-sm bg-white" />}
             </View>
             <Text
-              className={`text-base font-semibold ${
+              className={`text-base font-sans-semibold ${
                 selectedOption === 'individual'
                   ? 'text-primary-700 dark:text-primary-300'
                   : 'text-secondary-700 dark:text-secondary-300'
@@ -157,7 +157,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               개별로 관리
             </Text>
           </View>
-          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             각 날짜마다 다른 시간대와 인원 설정을 둘 수 있습니다.
           </Text>
         </Pressable>
@@ -169,7 +169,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             accessibilityRole="button"
             accessibilityLabel="취소"
           >
-            <Text className="text-center text-base font-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="text-center text-base font-sans-semibold text-secondary-700 dark:text-secondary-300">
               취소
             </Text>
           </Pressable>
@@ -179,7 +179,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             accessibilityRole="button"
             accessibilityLabel="확인"
           >
-            <Text className="text-center text-base font-semibold text-surface-dark">확인</Text>
+            <Text className="text-center text-base font-sans-semibold text-surface-dark">확인</Text>
           </Pressable>
         </View>
       </View>

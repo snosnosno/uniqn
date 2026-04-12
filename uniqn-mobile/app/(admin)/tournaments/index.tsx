@@ -69,7 +69,7 @@ const StatusTab = memo(function StatusTab({
       }}
     >
       <Text
-        className="text-sm font-medium"
+        className="text-sm font-sans-medium"
         style={{
           color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
         }}
@@ -83,7 +83,7 @@ const StatusTab = memo(function StatusTab({
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
-          <Text className="text-xs font-medium text-surface-dark">{count}</Text>
+          <Text className="text-xs font-sans-medium text-surface-dark">{count}</Text>
         </View>
       )}
     </Pressable>
@@ -148,7 +148,7 @@ const TournamentCard = memo(function TournamentCard({
         </View>
 
         <Text
-          className="text-base font-semibold text-secondary-900 dark:text-off-white mb-2"
+          className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2"
           numberOfLines={2}
         >
           {posting.title}
@@ -156,21 +156,21 @@ const TournamentCard = memo(function TournamentCard({
 
         <View className="flex-row items-center mb-1">
           <LocationOutlineIcon size={14} color="#A89C84" />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {posting.location.name}
           </Text>
         </View>
 
         <View className="flex-row items-center mb-1">
           <CalendarOutlineIcon size={14} color="#A89C84" />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {dateRange}
           </Text>
         </View>
 
         <View className="flex-row items-center">
           <PersonOutlineIcon size={14} color="#A89C84" />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {posting.ownerName ?? '구인자'}
           </Text>
         </View>
@@ -191,7 +191,7 @@ const TournamentCard = memo(function TournamentCard({
             ) : (
               <>
                 <CloseCircleOutlineIcon size={18} color="#DC2626" />
-                <Text className="text-error-500 font-medium ml-1">거부</Text>
+                <Text className="text-error-500 font-sans-medium ml-1">거부</Text>
               </>
             )}
           </Pressable>
@@ -207,7 +207,7 @@ const TournamentCard = memo(function TournamentCard({
             ) : (
               <>
                 <CheckmarkCircleOutlineIcon size={18} color="#22C55E" />
-                <Text className="text-success-500 font-medium ml-1">승인</Text>
+                <Text className="text-success-500 font-sans-medium ml-1">승인</Text>
               </>
             )}
           </Pressable>
@@ -302,7 +302,7 @@ export default function AdminTournamentsPage() {
     return (
       <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           대회공고 목록을 불러오는 중...
         </Text>
       </View>
@@ -332,7 +332,7 @@ export default function AdminTournamentsPage() {
         <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-1">
           대회공고 승인 관리
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           대회공고 승인 요청을 검토하고 처리합니다
         </Text>
       </View>
@@ -356,7 +356,7 @@ export default function AdminTournamentsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {displayPostings.length}개의 대회공고
         </Text>
       </View>

@@ -45,7 +45,9 @@ const FaceIdIcon = ({ size = 24, color = '#000' }: { size?: number; color?: stri
       justifyContent: 'center',
     }}
   >
-    <Text style={{ fontSize: size * 0.8, color }}>{''}</Text>
+    <Text className="font-sans" style={{ fontSize: size * 0.8, color }}>
+      {''}
+    </Text>
   </View>
 );
 
@@ -61,7 +63,9 @@ const FingerprintIcon = ({ size = 24, color = '#000' }: { size?: number; color?:
       justifyContent: 'center',
     }}
   >
-    <Text style={{ fontSize: size * 0.8, color }}>{''}</Text>
+    <Text className="font-sans" style={{ fontSize: size * 0.8, color }}>
+      {''}
+    </Text>
   </View>
 );
 
@@ -157,7 +161,7 @@ export const BiometricButton = memo(function BiometricButton({
           )}
           <Text
             className={`
-              ml-2 font-medium
+              ml-2 font-sans-medium
               ${textStyles[variant]}
               ${textSizeStyles[size]}
             `}

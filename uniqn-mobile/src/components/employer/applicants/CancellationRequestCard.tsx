@@ -123,7 +123,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 {displayName}
               </Text>
               <Badge
@@ -140,7 +140,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                 {STATUS_LABELS[cancellationRequest.status]}
               </Badge>
             </View>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {getRoleDisplayName(
                 application.assignments[0]?.roleIds?.[0] || 'other',
                 application.customRole
@@ -154,7 +154,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {application.assignments.length > 0 && (
           <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-3">
             <CalendarIcon size={14} color="#DC2626" />
-            <Text className="ml-2 text-sm text-error-700 dark:text-error-300">
+            <Text className="ml-2 text-sm text-error-700 dark:text-error-300 font-sans">
               취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
               {application.assignments[0]?.timeSlot && ` ${application.assignments[0].timeSlot}`}
             </Text>
@@ -163,10 +163,10 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 공고 정보 */}
         <View className="bg-secondary-50 dark:bg-surface rounded-lg px-3 py-2 mb-3">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
           </Text>
         </View>
@@ -175,12 +175,12 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         <View className="mb-3">
           <View className="flex-row items-center mb-1">
             <MessageIcon size={14} color="#A89C84" />
-            <Text className="ml-1 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+            <Text className="ml-1 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
               취소 사유
             </Text>
           </View>
           <View className="bg-orange-50 dark:bg-orange-900/20 rounded-lg px-3 py-2">
-            <Text className="text-sm text-orange-800 dark:text-orange-200">
+            <Text className="text-sm text-orange-800 dark:text-orange-200 font-sans">
               {cancellationRequest.reason}
             </Text>
           </View>
@@ -189,7 +189,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 요청 시간 */}
         <View className="flex-row items-center mb-3">
           <ClockIcon size={14} color="#A89C84" />
-          <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {requestTimeAgo}
           </Text>
         </View>
@@ -197,7 +197,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 검토 결과 표시 (처리 완료 시) */}
         {!isPending && cancellationRequest.rejectionReason && (
           <View className={`${statusColors.bg} rounded-lg px-3 py-2 mb-3`}>
-            <Text className={`text-sm ${statusColors.text}`}>
+            <Text className={`text-sm ${statusColors.text} font-sans`}>
               거절 사유: {cancellationRequest.rejectionReason}
             </Text>
           </View>
@@ -217,7 +217,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               `}
             >
               <XMarkIcon size={16} color="#DC2626" />
-              <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
+              <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
                 거절
               </Text>
             </Pressable>
@@ -233,7 +233,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               `}
             >
               <CheckIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-medium text-surface-dark">승인</Text>
+              <Text className="ml-1 text-sm font-sans-medium text-surface-dark">승인</Text>
             </Pressable>
           </View>
         )}
@@ -248,7 +248,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         position="center"
       >
         <View className="-mt-2">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4 font-sans">
             거절 사유를 입력해주세요.
           </Text>
 
@@ -264,7 +264,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             className="bg-secondary-50 dark:bg-surface rounded-lg p-3 text-secondary-900 dark:text-off-white text-base min-h-[80px] mb-4"
             textAlignVertical="top"
           />
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mb-4">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mb-4 font-sans">
             {rejectionReason.length}/200
           </Text>
 

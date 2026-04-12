@@ -425,6 +425,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   placeholder: {
     width: 40,
@@ -507,6 +508,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     fontSize: 14,
     lineHeight: 20,
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   centerContent: {
     flex: 1,
@@ -517,11 +519,13 @@ const styles = StyleSheet.create({
   statusText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   permissionTitle: {
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'PlusJakartaSans_700Bold',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -531,6 +535,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
     paddingHorizontal: 32,
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   buttonContainer: {
     marginBottom: 16,
@@ -541,6 +546,7 @@ const styles = StyleSheet.create({
   closeText: {
     color: '#A89C84',
     fontSize: 14,
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   bottomContainer: {
     paddingHorizontal: 24,
@@ -550,6 +556,7 @@ const styles = StyleSheet.create({
   rescanButtonText: {
     color: '#FFFFFF',
     marginLeft: 8,
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
 });
 

@@ -88,7 +88,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         </View>
         <Text
           className={`
-            ml-3 text-base font-medium
+            ml-3 text-base font-sans-medium
             ${
               isSelected
                 ? 'text-primary-600 dark:text-primary-400'
@@ -205,7 +205,7 @@ export function RoleChangeModal({
               </Text>
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 {staff.staffName}
                 {staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
@@ -213,7 +213,7 @@ export function RoleChangeModal({
                 <Badge variant="default" size="sm">
                   {getRoleDisplayName(currentRole, staff?.customRole)}
                 </Badge>
-                <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {staff.date}
                 </Text>
               </View>
@@ -222,7 +222,7 @@ export function RoleChangeModal({
         </Card>
 
         {/* 역할 선택 */}
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
           변경할 역할 선택
         </Text>
 
@@ -240,8 +240,8 @@ export function RoleChangeModal({
 
         {/* 변경 사유 */}
         <View className="mb-3">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
-            변경 사유 <Text className="text-error-500">*</Text>
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            변경 사유 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
             value={reason}
@@ -260,7 +260,7 @@ export function RoleChangeModal({
         {/* 안내 메시지 */}
         <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
           <AlertCircleIcon size={14} color="#D97706" />
-          <Text className="ml-2 text-xs text-warning-700 dark:text-warning-300 flex-1">
+          <Text className="ml-2 text-xs text-warning-700 dark:text-warning-300 flex-1 font-sans">
             역할 변경 시 해당 역할의 시급이 적용되며, 스태프에게 알림이 발송됩니다.
           </Text>
         </View>

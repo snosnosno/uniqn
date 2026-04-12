@@ -86,7 +86,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       bodyFooter={
         job.ownerName ? (
           <View className="mt-2 border-t border-secondary-100 pt-2 dark:border-surface-overlay">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               구인처 {job.ownerName}
             </Text>
           </View>

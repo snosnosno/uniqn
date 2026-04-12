@@ -95,7 +95,7 @@ export default function ChangePasswordScreen() {
         >
           {/* 안내 문구 */}
           <Card className="mb-4">
-            <Text className="text-sm leading-5 text-secondary-600 dark:text-secondary-400">
+            <Text className="text-sm leading-5 text-secondary-600 dark:text-secondary-400 font-sans">
               보안을 위해 비밀번호를 주기적으로 변경해주세요.{'\n'}
               비밀번호는 8자 이상, 대소문자, 숫자, 특수문자를 포함해야 합니다.
             </Text>
@@ -105,7 +105,7 @@ export default function ChangePasswordScreen() {
           <Card className="mb-4">
             {/* 현재 비밀번호 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 현재 비밀번호
               </Text>
               <View className="relative">
@@ -139,7 +139,7 @@ export default function ChangePasswordScreen() {
                 </Pressable>
               </View>
               {errors.currentPassword && (
-                <Text className="mt-1 text-sm text-error-500">
+                <Text className="mt-1 text-sm text-error-500 font-sans">
                   {errors.currentPassword.message}
                 </Text>
               )}
@@ -147,7 +147,7 @@ export default function ChangePasswordScreen() {
 
             {/* 새 비밀번호 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 새 비밀번호
               </Text>
               <View className="relative">
@@ -181,7 +181,9 @@ export default function ChangePasswordScreen() {
                 </Pressable>
               </View>
               {errors.newPassword && (
-                <Text className="mt-1 text-sm text-error-500">{errors.newPassword.message}</Text>
+                <Text className="mt-1 text-sm text-error-500 font-sans">
+                  {errors.newPassword.message}
+                </Text>
               )}
 
               {/* 비밀번호 강도 표시 */}
@@ -194,7 +196,7 @@ export default function ChangePasswordScreen() {
 
             {/* 비밀번호 확인 */}
             <View>
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 새 비밀번호 확인
               </Text>
               <View className="relative">
@@ -228,7 +230,7 @@ export default function ChangePasswordScreen() {
                 </Pressable>
               </View>
               {errors.confirmPassword && (
-                <Text className="mt-1 text-sm text-error-500">
+                <Text className="mt-1 text-sm text-error-500 font-sans">
                   {errors.confirmPassword.message}
                 </Text>
               )}
@@ -237,23 +239,23 @@ export default function ChangePasswordScreen() {
 
           {/* 비밀번호 정책 안내 */}
           <Card className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
               비밀번호 정책
             </Text>
             <View className="flex-col gap-1">
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {'\u2022'} 최소 8자 이상
               </Text>
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {'\u2022'} 대문자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {'\u2022'} 소문자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {'\u2022'} 숫자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {'\u2022'} 특수문자 1개 이상 포함 (!@#$%^&*)
               </Text>
             </View>
@@ -268,7 +270,7 @@ export default function ChangePasswordScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-center text-base font-semibold text-surface-dark">
+              <Text className="text-center text-base font-sans-semibold text-surface-dark">
                 비밀번호 변경
               </Text>
             )}

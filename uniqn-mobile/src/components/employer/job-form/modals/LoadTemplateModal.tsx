@@ -68,14 +68,14 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       <View className="mb-2 flex-row items-start justify-between">
         <View className="mr-2 flex-1">
           <Text
-            className="text-base font-semibold text-secondary-900 dark:text-off-white"
+            className="text-base font-sans-semibold text-secondary-900 dark:text-off-white"
             numberOfLines={1}
           >
             {name}
           </Text>
           {description ? (
             <Text
-              className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400"
+              className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
               numberOfLines={1}
             >
               {description}
@@ -106,17 +106,21 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
 
       <View className="mb-3 flex-row flex-wrap gap-2">
         <View className="rounded-md bg-secondary-100 px-2.5 py-1 dark:bg-surface">
-          <Text className="text-xs text-secondary-600 dark:text-secondary-300">{location}</Text>
+          <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+            {location}
+          </Text>
         </View>
 
         {salaryText ? (
           <View className="rounded-md bg-success-50 px-2.5 py-1 dark:bg-success-900/40">
-            <Text className="text-xs text-success-700 dark:text-success-300">{salaryText}</Text>
+            <Text className="text-xs text-success-700 dark:text-success-300 font-sans">
+              {salaryText}
+            </Text>
           </View>
         ) : null}
 
         <View className="rounded-md bg-primary-100 px-2.5 py-1 dark:bg-primary-900/40">
-          <Text className="text-xs text-primary-700 dark:text-primary-300">
+          <Text className="text-xs text-primary-700 dark:text-primary-300 font-sans">
             {getPostingTypeLabel(template)}
           </Text>
         </View>
@@ -124,14 +128,14 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
 
       {isUnsupported ? (
         <View className="mb-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
-          <Text className="text-xs text-warning-700 dark:text-warning-300">
+          <Text className="text-xs text-warning-700 dark:text-warning-300 font-sans">
             fixed 템플릿은 V3 canonical 전환 동안 불러올 수 없습니다.
           </Text>
         </View>
       ) : null}
 
       <View className="flex-row items-center justify-between border-t border-secondary-100 pt-2 dark:border-surface-overlay">
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
           {formatDate(createdAt)} 생성 {usageCount ? `/ ${usageCount}회 사용` : ''}
         </Text>
         <Pressable
@@ -146,7 +150,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-sm font-medium text-surface-dark">
+            <Text className="text-sm font-sans-medium text-surface-dark">
               {isUnsupported ? '사용 불가' : '불러오기'}
             </Text>
           )}
@@ -159,10 +163,10 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
 function EmptyState() {
   return (
     <View className="items-center justify-center py-12">
-      <Text className="mb-2 text-center text-secondary-500 dark:text-secondary-400">
+      <Text className="mb-2 text-center text-secondary-500 dark:text-secondary-400 font-sans">
         저장한 템플릿이 없습니다
       </Text>
-      <Text className="text-center text-sm text-secondary-400 dark:text-secondary-500">
+      <Text className="text-center text-sm text-secondary-400 dark:text-secondary-500 font-sans">
         공고 작성 후 템플릿으로 저장해 보세요
       </Text>
     </View>
@@ -211,7 +215,7 @@ export function LoadTemplateModal({
         {templatesLoading ? (
           <View className="items-center justify-center py-12">
             <ActivityIndicator size="large" color="#D4AF37" />
-            <Text className="mt-3 text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-3 text-secondary-500 dark:text-secondary-400 font-sans">
               템플릿을 불러오는 중...
             </Text>
           </View>
@@ -238,7 +242,7 @@ export function LoadTemplateModal({
             />
 
             <View className="mt-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
-              <Text className="text-center text-xs text-warning-700 dark:text-warning-300">
+              <Text className="text-center text-xs text-warning-700 dark:text-warning-300 font-sans">
                 템플릿을 불러온 뒤에는 날짜를 다시 설정해 주세요.
               </Text>
             </View>

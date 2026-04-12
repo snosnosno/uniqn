@@ -78,7 +78,7 @@ export default function QRScreen() {
         <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100">
           QR 스캔
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
           구인자의 QR 코드를 스캔하여 출퇴근하세요
         </Text>
       </View>
@@ -104,7 +104,9 @@ export default function QRScreen() {
               )}
             </View>
             <View className="ml-4 flex-1">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">현재 상태</Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                현재 상태
+              </Text>
               <Text
                 className={`text-lg font-display-semibold ${
                   isWorking
@@ -123,7 +125,7 @@ export default function QRScreen() {
               }`}
             >
               <Text
-                className={`text-sm font-medium ${
+                className={`text-sm font-sans-medium ${
                   isWorking
                     ? 'text-success-700 dark:text-success-300'
                     : 'text-primary-700 dark:text-primary-300'
@@ -145,7 +147,7 @@ export default function QRScreen() {
             QR 코드 스캔
           </Text>
 
-          <Text className="mt-3 text-center text-base text-secondary-500 dark:text-secondary-400 px-4 leading-6">
+          <Text className="mt-3 text-center text-base text-secondary-500 dark:text-secondary-400 px-4 leading-6 font-sans">
             구인자가 보여주는 QR 코드를 스캔하여{'\n'}
             {actionLabel}을 완료하세요
           </Text>
@@ -167,7 +169,7 @@ export default function QRScreen() {
 
           {/* 안내 문구 */}
           <View className="mt-6 px-4">
-            <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500">
+            <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 font-sans">
               QR 코드는 구인자가 현장에서 생성합니다.{'\n'}
               스캔 후 자동으로 출퇴근이 처리됩니다.
             </Text>

@@ -86,11 +86,13 @@ export function RoleDistributionChart({
   if (total === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-4">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-4">
           {title}
         </Text>
         <View className="h-[120px] items-center justify-center">
-          <Text className="text-secondary-500 dark:text-secondary-400">데이터가 없습니다</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+            데이터가 없습니다
+          </Text>
         </View>
       </View>
     );
@@ -100,11 +102,11 @@ export function RoleDistributionChart({
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {title}
         </Text>
         <View className="px-2.5 py-1 rounded-sm bg-secondary-100 dark:bg-surface-elevated">
-          <Text className="text-sm font-bold text-secondary-700 dark:text-secondary-300">
+          <Text className="text-sm font-sans-bold text-secondary-700 dark:text-secondary-300">
             총 {total.toLocaleString()}명
           </Text>
         </View>
@@ -128,14 +130,14 @@ export function RoleDistributionChart({
           >
             <View className="flex-row items-center">
               <View className={`w-3 h-3 rounded-sm ${role.bgColor} mr-3`} />
-              <Text className={`text-sm font-medium ${role.textColor}`}>{role.label}</Text>
+              <Text className={`text-sm font-sans-medium ${role.textColor}`}>{role.label}</Text>
             </View>
             <View className="flex-row items-center">
               <Text className={`text-lg font-display ${role.textColor} mr-2`}>
                 {role.count.toLocaleString()}명
               </Text>
               <View className="bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded">
-                <Text className="text-xs font-medium text-secondary-600 dark:text-secondary-400">
+                <Text className="text-xs font-sans-medium text-secondary-600 dark:text-secondary-400">
                   {role.percent}%
                 </Text>
               </View>
@@ -149,10 +151,10 @@ export function RoleDistributionChart({
         {ROLE_CONFIG.map((role, index) => (
           <View key={role.key} className="flex-row items-center">
             {index > 0 && (
-              <Text className="text-secondary-300 dark:text-secondary-600 mx-2">·</Text>
+              <Text className="text-secondary-300 dark:text-secondary-600 mx-2 font-sans">·</Text>
             )}
             <View className={`w-2 h-2 rounded-sm ${role.bgColor} mr-1`} />
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               {role.label} {getPercent(data[role.key])}%
             </Text>
           </View>

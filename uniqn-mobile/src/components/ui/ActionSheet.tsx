@@ -73,12 +73,12 @@ export function ActionSheet({
       {(title || description) && (
         <View className="items-center pb-4 mb-2 border-b border-secondary-200 dark:border-surface-overlay">
           {title && (
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               {title}
             </Text>
           )}
           {description && (
-            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 text-center">
+            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 text-center font-sans">
               {description}
             </Text>
           )}
@@ -102,7 +102,7 @@ export function ActionSheet({
             {option.icon && <View className="mr-2">{option.icon}</View>}
             <Text
               className={`
-                text-base font-medium
+                text-base font-sans-medium
                 ${
                   option.destructive
                     ? 'text-error-600 dark:text-error-400'
@@ -125,7 +125,7 @@ export function ActionSheet({
           accessibilityRole="button"
           accessibilityLabel={cancelText}
         >
-          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             {cancelText}
           </Text>
         </Pressable>

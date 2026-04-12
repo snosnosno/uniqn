@@ -113,11 +113,11 @@ const QuestionCard = memo(function QuestionCard({
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <View className="w-8 h-8 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-            <Text className="text-primary-700 dark:text-primary-300 font-bold text-sm">
+            <Text className="text-primary-700 dark:text-primary-300 font-sans-bold text-sm">
               {index + 1}
             </Text>
           </View>
-          <Text className="ml-2 font-medium text-secondary-900 dark:text-off-white">
+          <Text className="ml-2 font-sans-medium text-secondary-900 dark:text-off-white">
             질문 {index + 1}
           </Text>
         </View>
@@ -149,7 +149,7 @@ const QuestionCard = memo(function QuestionCard({
             onPress={() => setShowTypeSelector(true)}
             className="flex-row items-center justify-between px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg"
           >
-            <Text className="text-secondary-900 dark:text-off-white">
+            <Text className="text-secondary-900 dark:text-off-white font-sans">
               {PRE_QUESTION_TYPE_LABELS[question.type]}
             </Text>
             <ChevronDownIcon size={20} color="#9A9078" />
@@ -170,7 +170,9 @@ const QuestionCard = memo(function QuestionCard({
 
         {/* 필수 여부 */}
         <View className="flex-row items-center">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mr-2">필수</Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mr-2 font-sans">
+            필수
+          </Text>
           <Switch
             value={question.required}
             onValueChange={handleRequiredChange}
@@ -183,7 +185,9 @@ const QuestionCard = memo(function QuestionCard({
       {/* 선택형 옵션 */}
       {question.type === 'select' && (
         <View className="mt-3">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">선택지</Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2 font-sans">
+            선택지
+          </Text>
           {question.options?.map((option, optionIndex) => (
             <View key={optionIndex} className="flex-row items-center mb-2">
               <View className="w-6 h-6 rounded-sm border-2 border-secondary-300 dark:border-surface-overlay mr-2" />
@@ -211,7 +215,7 @@ const QuestionCard = memo(function QuestionCard({
             className="flex-row items-center justify-center py-2 border border-dashed border-secondary-300 dark:border-surface-overlay rounded-lg"
           >
             <PlusIcon size={16} color="#9A9078" />
-            <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+            <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
               선택지 추가
             </Text>
           </Pressable>
@@ -298,10 +302,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       <View className="flex-row items-start mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
         <InformationCircleIcon size={20} color="#B8962E" />
         <View className="ml-2 flex-1">
-          <Text className="text-sm font-medium text-primary-800 dark:text-primary-200">
+          <Text className="text-sm font-sans-medium text-primary-800 dark:text-primary-200">
             사전질문 안내
           </Text>
-          <Text className="text-xs text-primary-700 dark:text-primary-300 mt-1">
+          <Text className="text-xs text-primary-700 dark:text-primary-300 mt-1 font-sans">
             지원자에게 추가로 질문하고 싶은 내용을 설정할 수 있습니다.
           </Text>
         </View>
@@ -310,8 +314,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {/* 사전질문 사용 토글 */}
       <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-4">
         <View>
-          <Text className="text-secondary-900 dark:text-off-white font-medium">사전질문 사용</Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+          <Text className="text-secondary-900 dark:text-off-white font-sans-medium">
+            사전질문 사용
+          </Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
             지원자에게 추가 질문을 할 수 있습니다
           </Text>
         </View>
@@ -327,7 +333,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {hasPreQuestions && (
         <>
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               질문 목록 ({data.preQuestions.length}/10)
             </Text>
           </View>
@@ -351,7 +357,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
               accessibilityLabel="질문 추가"
             >
               <PlusIcon size={20} color="#9A9078" />
-              <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium">
+              <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-sans-medium">
                 질문 추가
               </Text>
             </Pressable>
@@ -361,7 +367,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
 
       {/* 에러 메시지 */}
       {errors.preQuestions && (
-        <Text className="mt-3 text-sm text-error-500">{errors.preQuestions}</Text>
+        <Text className="mt-3 text-sm text-error-500 font-sans">{errors.preQuestions}</Text>
       )}
     </View>
   );

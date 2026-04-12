@@ -55,14 +55,14 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     return (
       <View className="w-full items-center">
         <View className="w-16 h-16 rounded-sm bg-success-100 dark:bg-success-900 items-center justify-center mb-4">
-          <Text className="text-3xl">{''}</Text>
+          <Text className="text-3xl font-sans">{''}</Text>
         </View>
 
         <Text className="text-lg font-display text-secondary-900 dark:text-off-white text-center mb-2">
           이메일이 발송되었습니다
         </Text>
 
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center mb-6">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center mb-6 font-sans">
           {submittedEmail}로 비밀번호 재설정 링크를 발송했습니다.{'\n'}
           이메일을 확인해주세요.
         </Text>
@@ -74,7 +74,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
           <Link href="/login" asChild>
             <Pressable className="py-3">
-              <Text className="text-center text-primary-600 dark:text-primary-400 font-medium">
+              <Text className="text-center text-primary-600 dark:text-primary-400 font-sans-medium">
                 로그인으로 돌아가기
               </Text>
             </Pressable>
@@ -89,7 +89,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     <View className="w-full flex-col gap-4">
       {/* 안내 문구 */}
       <View className="mb-4">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center font-sans">
           가입하신 이메일 주소를 입력하시면{'\n'}
           비밀번호 재설정 링크를 보내드립니다.
         </Text>
@@ -97,7 +97,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           이메일
         </Text>
         <Controller
@@ -125,22 +125,22 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-surface-dark font-medium">발송 중...</Text>
+              <Text className="ml-2 text-surface-dark font-sans-medium">발송 중...</Text>
             </View>
           ) : (
-            <Text className="text-surface-dark font-medium">재설정 링크 발송</Text>
+            <Text className="text-surface-dark font-sans-medium">재설정 링크 발송</Text>
           )}
         </Button>
       </View>
 
       {/* 로그인 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-secondary-600 dark:text-secondary-400">
+        <Text className="text-secondary-600 dark:text-secondary-400 font-sans">
           비밀번호가 기억나셨나요?{' '}
         </Text>
         <Link href="/login" asChild>
           <Pressable>
-            <Text className="font-medium text-primary-600 dark:text-primary-400">로그인</Text>
+            <Text className="font-sans-medium text-primary-600 dark:text-primary-400">로그인</Text>
           </Pressable>
         </Link>
       </View>

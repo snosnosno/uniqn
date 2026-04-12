@@ -115,10 +115,10 @@ export const SettlementCard = React.memo(function SettlementCard({
           <View className="flex-row items-center flex-1">
             <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 {displayName}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {workLog.role
                   ? getRoleDisplayName(
                       workLog.role,
@@ -133,7 +133,7 @@ export const SettlementCard = React.memo(function SettlementCard({
               {statusConfig.label}
             </Badge>
             {hasValidTimes && (
-              <Text className="text-base font-bold text-primary-600 dark:text-primary-400 mt-1">
+              <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400 mt-1">
                 {formatCurrency(
                   settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay
                 )}
@@ -146,7 +146,7 @@ export const SettlementCard = React.memo(function SettlementCard({
       {/* 출퇴근 미완료 표시 */}
       {!hasValidTimes && (
         <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-          <Text className="text-xs text-warning-700 dark:text-warning-300 text-center">
+          <Text className="text-xs text-warning-700 dark:text-warning-300 text-center font-sans">
             출퇴근 기록 미완료
           </Text>
         </View>
@@ -163,7 +163,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
         >
           <ChevronRightIcon size={16} color="#9A9078" />
-          <Text className="ml-1 text-sm font-medium text-secondary-600 dark:text-secondary-400">
+          <Text className="ml-1 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
             상세보기
           </Text>
         </Pressable>
@@ -178,7 +178,7 @@ export const SettlementCard = React.memo(function SettlementCard({
             className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
           >
             <BanknotesIcon size={16} color="#fff" />
-            <Text className="ml-1 text-sm font-medium text-surface-dark">정산하기</Text>
+            <Text className="ml-1 text-sm font-sans-medium text-surface-dark">정산하기</Text>
           </Pressable>
         )}
       </View>

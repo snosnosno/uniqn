@@ -445,13 +445,15 @@ export function AlertModal({
 }: AlertModalProps) {
   return (
     <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
-      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6">{message}</Text>
+      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6 font-sans">
+        {message}
+      </Text>
       <Pressable
         onPress={onClose}
         className="bg-primary-600 py-3 rounded-md"
         accessibilityRole="button"
       >
-        <Text className="text-surface-dark text-center font-semibold">{confirmText}</Text>
+        <Text className="text-surface-dark text-center font-sans-semibold">{confirmText}</Text>
       </Pressable>
     </Modal>
   );
@@ -484,7 +486,9 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return (
     <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
-      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6">{message}</Text>
+      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6 font-sans">
+        {message}
+      </Text>
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
@@ -492,7 +496,7 @@ export function ConfirmModal({
           accessibilityRole="button"
           testID={cancelTestID}
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-sans-medium">
             {cancelText}
           </Text>
         </Pressable>
@@ -506,7 +510,7 @@ export function ConfirmModal({
           testID={confirmTestID}
         >
           <Text
-            className={`text-center font-semibold ${isDestructive ? 'text-white' : 'text-surface-dark'}`}
+            className={`text-center font-sans-semibold ${isDestructive ? 'text-white' : 'text-surface-dark'}`}
           >
             {confirmText}
           </Text>

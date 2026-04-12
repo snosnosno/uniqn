@@ -123,7 +123,7 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
           </Text>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
         </View>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           총 {bubbleScore.totalReviewCount}건
         </Text>
       </View>
@@ -139,11 +139,11 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
 function StatItem({ emoji, count, label }: { emoji: string; count: number; label: string }) {
   return (
     <View className="flex-row items-center gap-1">
-      <Text className="text-sm">{emoji}</Text>
-      <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+      <Text className="text-sm font-sans">{emoji}</Text>
+      <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
         {count}
       </Text>
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
     </View>
   );
 }
@@ -165,7 +165,7 @@ function TabButton({
       accessibilityState={{ selected: isActive }}
     >
       <Text
-        className={`text-sm font-medium ${
+        className={`text-sm font-sans-medium ${
           isActive
             ? 'text-primary-600 dark:text-primary-400'
             : 'text-secondary-500 dark:text-secondary-400'

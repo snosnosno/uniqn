@@ -230,7 +230,9 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
             accessibilityRole="button"
             className="py-2 px-3"
           >
-            <Text className="text-base text-secondary-500 dark:text-secondary-400">건너뛰기</Text>
+            <Text className="text-base text-secondary-500 dark:text-secondary-400 font-sans">
+              건너뛰기
+            </Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -261,7 +263,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
       />
 
       {/* H6: 페이지 번호 */}
-      <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+      <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
         {currentPage + 1} / {totalPages}
       </Text>
 

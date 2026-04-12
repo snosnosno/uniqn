@@ -74,7 +74,7 @@ function AccordionSection({ title, icon, expanded, onToggle, children }: Accordi
       >
         <View className="flex-row items-center">
           {icon}
-          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             {title}
           </Text>
         </View>
@@ -193,7 +193,7 @@ export function SettlementEditModal({
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-base font-medium text-secondary-700 dark:text-secondary-300 text-center">
+        <Text className="text-base font-sans-medium text-secondary-700 dark:text-secondary-300 text-center">
           취소
         </Text>
       </Pressable>
@@ -204,7 +204,7 @@ export function SettlementEditModal({
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-base font-semibold text-surface-dark text-center">
+        <Text className="text-base font-sans-semibold text-surface-dark text-center">
           {isSaving ? '저장 중...' : '저장'}
         </Text>
       </Pressable>
@@ -224,10 +224,10 @@ export function SettlementEditModal({
         <View className="flex-row items-center p-4 bg-secondary-50 dark:bg-surface -mx-5 -mt-5">
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {workLog.role
                 ? getRoleDisplayName(
                     workLog.role,
@@ -280,20 +280,23 @@ export function SettlementEditModal({
         {/* 정산 금액 요약 */}
         {settlement && (
           <View className="px-4 py-4 bg-secondary-50 dark:bg-surface">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-3">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-3">
               정산 금액 요약
             </Text>
 
             <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
               {/* 기본 급여 */}
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   기본급
                   {settlement.hoursWorked > 0 && (
-                    <Text className="text-xs"> ({formatDuration(settlement.hoursWorked)})</Text>
+                    <Text className="text-xs font-sans">
+                      {' '}
+                      ({formatDuration(settlement.hoursWorked)})
+                    </Text>
                   )}
                 </Text>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+                <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
                   {formatCurrency(settlement.basePay)}
                 </Text>
               </View>
@@ -301,8 +304,10 @@ export function SettlementEditModal({
               {/* 수당 */}
               {settlement.allowancePay > 0 && (
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">수당</Text>
-                  <Text className="text-sm font-medium text-success-600 dark:text-success-400">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+                    수당
+                  </Text>
+                  <Text className="text-sm font-sans-medium text-success-600 dark:text-success-400">
                     +{formatCurrency(settlement.allowancePay)}
                   </Text>
                 </View>
@@ -311,13 +316,13 @@ export function SettlementEditModal({
               {/* 세금 */}
               {taxSettings.type !== 'none' && taxAmount > 0 && (
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                     세금
                     {taxSettings.type === 'rate' && (
-                      <Text className="text-xs"> ({taxSettings.value}%)</Text>
+                      <Text className="text-xs font-sans"> ({taxSettings.value}%)</Text>
                     )}
                   </Text>
-                  <Text className="text-sm font-medium text-error-500 dark:text-error-400">
+                  <Text className="text-sm font-sans-medium text-error-500 dark:text-error-400">
                     -{formatCurrency(taxAmount)}
                   </Text>
                 </View>
@@ -328,7 +333,7 @@ export function SettlementEditModal({
 
               {/* 세후 금액 */}
               <View className="flex-row items-center justify-between">
-                <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+                <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                   {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
                 </Text>
                 <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
@@ -341,7 +346,7 @@ export function SettlementEditModal({
 
         {/* 수정 사유 입력 */}
         <View className="px-4 py-4">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
             수정 사유 (선택)
           </Text>
           <TextInput

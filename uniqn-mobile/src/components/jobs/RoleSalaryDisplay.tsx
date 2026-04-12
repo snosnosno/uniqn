@@ -100,12 +100,12 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
   return (
     <View className={`flex-row items-center justify-between ${compact ? 'py-0.5' : 'py-1'}`}>
       <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-600 dark:text-secondary-400`}
+        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-600 dark:text-secondary-400 font-sans`}
       >
         {label}
       </Text>
       <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-secondary-900 dark:text-off-white`}
+        className={`${compact ? 'text-xs' : 'text-sm'} font-sans-medium text-secondary-900 dark:text-off-white`}
       >
         {salaryText}
       </Text>
@@ -151,7 +151,7 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
       return (
         <View className={compact ? '' : 'py-1'}>
           <Text
-            className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-secondary-500 dark:text-secondary-400`}
+            className={`${compact ? 'text-sm' : 'text-lg'} font-sans-bold text-secondary-500 dark:text-secondary-400`}
           >
             급여 미설정
           </Text>
@@ -162,7 +162,7 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
     return (
       <View className={compact ? '' : 'py-1'}>
         <Text
-          className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-primary-600 dark:text-primary-400`}
+          className={`${compact ? 'text-sm' : 'text-lg'} font-sans-bold text-primary-600 dark:text-primary-400`}
         >
           {formatSalary(displaySalary.type, displaySalary.amount)}
         </Text>
@@ -174,7 +174,7 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
   return (
     <View className={compact ? '' : 'py-1'}>
       <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-500 dark:text-secondary-400 mb-1`}
+        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-500 dark:text-secondary-400 mb-1 font-sans`}
       >
         역할별 급여
       </Text>
@@ -225,14 +225,14 @@ export const SalarySummary = memo(function SalarySummary({
   if (useSameSalary || rolesWithSalary.length === 0) {
     if (!displaySalary) {
       return (
-        <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
           급여 미설정
         </Text>
       );
     }
 
     return (
-      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
         {formatSalary(displaySalary.type, displaySalary.amount)}
       </Text>
     );
@@ -244,7 +244,9 @@ export const SalarySummary = memo(function SalarySummary({
     .map((r) => r.salary!.amount);
 
   if (amounts.length === 0) {
-    return <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">협의</Text>;
+    return (
+      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">협의</Text>
+    );
   }
 
   const min = Math.min(...amounts);
@@ -254,14 +256,14 @@ export const SalarySummary = memo(function SalarySummary({
 
   if (min === max) {
     return (
-      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
         {formatSalaryShort(firstType, min)}
       </Text>
     );
   }
 
   return (
-    <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+    <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
       {formatSalaryShort(firstType, min)} ~ {formatSalaryShort(firstType, max)}
     </Text>
   );

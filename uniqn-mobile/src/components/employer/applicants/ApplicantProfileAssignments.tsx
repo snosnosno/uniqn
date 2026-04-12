@@ -69,14 +69,14 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
   return (
     <View className="px-4 pb-4">
       <View className="rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
-        <Text className="mb-2 text-sm font-medium text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-900 dark:text-off-white">
           지원 일정
         </Text>
         {groupedByDate.map((item, index) => (
           <View key={index} className="mb-2 last:mb-0">
             <View className="mb-1 flex-row items-center">
               <CalendarIcon size={14} color="#B8962E" />
-              <Text className="ml-2 text-sm font-medium text-primary-700 dark:text-primary-300">
+              <Text className="ml-2 text-sm font-sans-medium text-primary-700 dark:text-primary-300">
                 {item.formattedDate}
               </Text>
             </View>
@@ -84,13 +84,13 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
             {item.slots.map((slot, slotIndex) => (
               <View key={slotIndex} className="mb-1 ml-6 flex-row items-center">
                 <ClockIcon size={12} color="#9A9078" />
-                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   {slot.timeSlot}
                 </Text>
                 <View className="ml-2">
                   <BriefcaseIcon size={12} color="#9A9078" />
                 </View>
-                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   {slot.roles.join(', ')}
                 </Text>
               </View>

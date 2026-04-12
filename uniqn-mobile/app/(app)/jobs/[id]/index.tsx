@@ -180,7 +180,7 @@ export default function JobDetailScreen() {
         <SafeAreaView edges={['bottom']}>
           {alreadyApplied ? (
             <View className="items-center">
-              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
               <View className="w-full flex-row">
@@ -211,7 +211,7 @@ export default function JobDetailScreen() {
           ) : (
             <View>
               {!sessionUserId ? (
-                <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400">
+                <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}

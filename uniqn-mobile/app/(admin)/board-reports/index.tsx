@@ -69,38 +69,41 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
       <View className="mb-2 flex-row items-center justify-between gap-3">
         <View className="flex-1 flex-row flex-wrap items-center gap-2">
           <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
-            <Text className="text-xs font-medium text-error-700 dark:text-error-300">
+            <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
               {getTargetLabel(record)}
             </Text>
           </View>
           {record.post ? (
             <View className="rounded-sm bg-primary-100 px-2.5 py-1 dark:bg-primary-900/30">
-              <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
+              <Text className="text-xs font-sans-medium text-primary-700 dark:text-primary-300">
                 {BOARD_TYPE_LABELS[record.post.boardType]}
               </Text>
             </View>
           ) : null}
           <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(record.report.status)}`}>
-            <Text className="text-xs font-medium">{getStatusLabel(record.report.status)}</Text>
+            <Text className="text-xs font-sans-medium">{getStatusLabel(record.report.status)}</Text>
           </View>
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
           {formatDateValue(record.report.createdAt)}
         </Text>
       </View>
 
-      <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
         {record.post?.title ?? '원본 게시글을 확인할 수 없습니다.'}
       </Text>
-      <Text className="mb-3 text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
+      <Text
+        className="mb-3 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+        numberOfLines={2}
+      >
         사유: {record.report.reason}
       </Text>
 
       <View className="flex-row flex-wrap items-center gap-3">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           신고자: {record.reporterName}
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           대상 작성자: {record.targetAuthorName ?? '확인 필요'}
         </Text>
       </View>
@@ -202,7 +205,7 @@ export default function AdminBoardReportsPage() {
                   }`}
                 >
                   <Text
-                    className={`text-sm font-medium ${
+                    className={`text-sm font-sans-medium ${
                       isSelected
                         ? 'text-surface-dark'
                         : 'text-secondary-700 dark:text-secondary-300'
@@ -221,7 +224,7 @@ export default function AdminBoardReportsPage() {
           contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
         >
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             총 {filteredReports.length}건
           </Text>
 

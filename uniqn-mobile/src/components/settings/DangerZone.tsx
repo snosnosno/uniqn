@@ -29,13 +29,13 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
       {/* 헤더 */}
       <View className="mb-3 flex-row items-center">
         <ExclamationTriangleIcon size={18} color="#DC2626" />
-        <Text className="ml-2 text-sm font-semibold text-error-700 dark:text-error-300">
+        <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-300">
           위험 영역
         </Text>
       </View>
 
       {/* 설명 */}
-      <Text className="mb-4 text-xs leading-5 text-error-600 dark:text-error-400">
+      <Text className="mb-4 text-xs leading-5 text-error-600 dark:text-error-400 font-sans">
         아래 작업은 되돌릴 수 없습니다. 신중하게 진행해주세요.
       </Text>
 
@@ -50,15 +50,15 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
         <View className="flex-row items-center">
           <TrashIcon size={20} color="#DC2626" />
           <View className="ml-3">
-            <Text className="text-sm font-medium text-error-700 dark:text-error-300">
+            <Text className="text-sm font-sans-medium text-error-700 dark:text-error-300">
               계정 삭제
             </Text>
-            <Text className="text-xs text-error-500 dark:text-error-400">
+            <Text className="text-xs text-error-500 dark:text-error-400 font-sans">
               30일 후 영구 삭제됩니다
             </Text>
           </View>
         </View>
-        <Text className="text-error-400">→</Text>
+        <Text className="text-error-400 font-sans">→</Text>
       </Pressable>
     </Card>
   );

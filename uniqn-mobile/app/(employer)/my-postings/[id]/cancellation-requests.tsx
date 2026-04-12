@@ -33,7 +33,7 @@ function StatsHeader({ pendingCount }: StatsHeaderProps) {
           대기 {pendingCount}
         </Badge>
       </View>
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
         검토 대기 요청만 표시됩니다
       </Text>
     </View>
@@ -121,7 +121,7 @@ export default function CancellationRequestsScreen() {
       <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             공고 정보를 불러오는 중...
           </Text>
         </View>
@@ -145,7 +145,7 @@ export default function CancellationRequestsScreen() {
       <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             취소 요청을 불러오는 중...
           </Text>
         </View>
@@ -219,7 +219,7 @@ export default function CancellationRequestsScreen() {
             <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               취소 요청 승인
             </Text>
-            <Text className="mb-6 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-6 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               이 취소 요청을 승인하시겠습니까?
               {'\n'}
               승인 시 해당 스태프의 확정은 취소됩니다.

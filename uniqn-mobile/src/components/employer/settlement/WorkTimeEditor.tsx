@@ -338,11 +338,11 @@ export function WorkTimeEditor({
             <Avatar source={profilePhotoURL} name={displayName} size="md" />
             <View className="ml-3 flex-1">
               {/* 이름(닉네임) */}
-              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 {workLog.staffName || '이름 없음'}
                 {displayName ? '' : workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {workDate ? formatDate(workDate) : '날짜 없음'}
               </Text>
             </View>
@@ -377,7 +377,7 @@ export function WorkTimeEditor({
               <View className="mt-0.5">
                 <AlertCircleIcon size={16} color="#9A9078" />
               </View>
-              <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">
+              <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
               </Text>
             </View>
@@ -386,7 +386,7 @@ export function WorkTimeEditor({
             {isValidTimeFormat && !isValidTimeOrder && (
               <View className="flex-row items-center p-3 bg-error-50 dark:bg-error-900/20 rounded-lg mb-4">
                 <AlertCircleIcon size={16} color="#DC2626" />
-                <Text className="ml-2 text-sm text-error-600 dark:text-error-400">
+                <Text className="ml-2 text-sm text-error-600 dark:text-error-400 font-sans">
                   퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
                 </Text>
               </View>
@@ -394,7 +394,7 @@ export function WorkTimeEditor({
 
             {/* 근무 시간 */}
             <View className="flex-row items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 총 근무 시간
               </Text>
               <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
@@ -405,7 +405,7 @@ export function WorkTimeEditor({
 
           {/* 수정 사유 (선택) */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
               수정 사유
             </Text>
             <TextInput
@@ -418,7 +418,7 @@ export function WorkTimeEditor({
               textAlignVertical="top"
               className="p-3 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[60px]"
             />
-            <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               예: QR 인식 오류로 실제 출근 시간과 다름
             </Text>
           </View>
@@ -426,7 +426,7 @@ export function WorkTimeEditor({
           {/* 안내 메시지 */}
           <View className="flex-row items-start p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-4">
             <AlertCircleIcon size={16} color="#B8962E" />
-            <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1">
+            <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1 font-sans">
               시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
             </Text>
           </View>

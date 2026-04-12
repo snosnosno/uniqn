@@ -83,7 +83,9 @@ export default function AdminInquiriesScreen() {
       {/* 통계 */}
       <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">미답변 문의</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            미답변 문의
+          </Text>
           <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
             {unansweredCount ?? 0}건
           </Text>
@@ -110,7 +112,7 @@ export default function AdminInquiriesScreen() {
                 }`}
               >
                 <Text
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-sans-medium ${
                     isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >

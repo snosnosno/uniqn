@@ -65,7 +65,9 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
       </View>
 
       {metaText ? (
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">{metaText}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          {metaText}
+        </Text>
       ) : null}
     </View>
   );

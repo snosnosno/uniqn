@@ -65,7 +65,7 @@ export default function ReviewTagSelector({
         />
       ) : null}
 
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
         {selectedTags.length}/{REVIEW_TAG_LIMITS.MAX}개 선택됨 (최소 {REVIEW_TAG_LIMITS.MIN}개)
       </Text>
     </View>
@@ -91,7 +91,7 @@ const TagGroup = React.memo(function TagGroup({
 
   return (
     <View>
-      <Text className="mb-2 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+      <Text className="mb-2 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
         {label}
       </Text>
       <View className="flex-row flex-wrap gap-2">
@@ -113,7 +113,7 @@ const TagGroup = React.memo(function TagGroup({
               <Text
                 className={`text-sm ${
                   isSelected ? colors.text : 'text-secondary-700 dark:text-secondary-300'
-                }`}
+                } font-sans`}
               >
                 {tag.label}
               </Text>

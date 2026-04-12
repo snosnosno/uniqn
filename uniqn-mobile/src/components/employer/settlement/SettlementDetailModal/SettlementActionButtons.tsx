@@ -45,7 +45,7 @@ export function SettlementActionButtons({
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
             <ClockIcon size={18} color="#9A9078" />
-            <Text className="ml-2 text-base font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
               시간 수정
             </Text>
           </Pressable>
@@ -60,7 +60,7 @@ export function SettlementActionButtons({
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
             <EditIcon size={18} color="#9A9078" />
-            <Text className="ml-2 text-base font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
               금액 수정
             </Text>
           </Pressable>
@@ -77,7 +77,7 @@ export function SettlementActionButtons({
           className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
         >
           <BanknotesIcon size={18} color="#fff" />
-          <Text className="ml-2 text-base font-semibold text-surface-dark">정산하기</Text>
+          <Text className="ml-2 text-base font-sans-semibold text-surface-dark">정산하기</Text>
         </Pressable>
       )}
     </View>

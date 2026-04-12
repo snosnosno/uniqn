@@ -159,7 +159,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         {/* 이름 + 상태 */}
         <View className="flex-row items-center mb-1">
           <Text
-            className={`font-semibold text-secondary-900 dark:text-off-white ${
+            className={`font-sans-semibold text-secondary-900 dark:text-off-white ${
               compact ? 'text-base' : 'text-lg'
             }`}
           >
@@ -239,7 +239,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
   if (compact) {
     return (
       <View className="mt-2">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {getAssignmentsSummary(assignments)}
         </Text>
       </View>
@@ -248,24 +248,24 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
 
   return (
     <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
-      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white mb-2">
         지원 일정
       </Text>
       {dateGroups.map(([date, { roles, timeSlots }]) => (
         <View key={date} className="flex-row items-center mb-1.5 last:mb-0">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 w-20">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 w-20 font-sans">
             {formatDate(date)}
           </Text>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 flex-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 flex-1 font-sans">
             {[...roles].map((r) => getRoleLabel(r)).join(', ')}
           </Text>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             {[...timeSlots].join(', ')}
           </Text>
         </View>
       ))}
       {assignments.length > (compact ? 2 : 5) && (
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
           +{assignments.length - (compact ? 2 : 5)}개 더 있음
         </Text>
       )}
@@ -287,7 +287,7 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
 
   if (compact) {
     return (
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
         사전질문 {answers.length}개 답변
       </Text>
     );
@@ -295,18 +295,21 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
 
   return (
     <View className="mt-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
-      <Text className="text-sm font-medium text-primary-900 dark:text-primary-200 mb-2">
+      <Text className="text-sm font-sans-medium text-primary-900 dark:text-primary-200 mb-2">
         사전질문 답변
       </Text>
       {answers.slice(0, 2).map((answer) => (
         <View key={answer.questionId} className="mb-1.5 last:mb-0">
-          <Text className="text-xs text-primary-700 dark:text-primary-300" numberOfLines={2}>
+          <Text
+            className="text-xs text-primary-700 dark:text-primary-300 font-sans"
+            numberOfLines={2}
+          >
             {answer.answer}
           </Text>
         </View>
       ))}
       {answers.length > 2 && (
-        <Text className="text-xs text-primary-400 dark:text-primary-500 mt-1">
+        <Text className="text-xs text-primary-400 dark:text-primary-500 mt-1 font-sans">
           +{answers.length - 2}개 답변 더 있음
         </Text>
       )}
@@ -421,7 +424,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
 
       {/* 연락처 (컴팩트 아닐 때만) */}
       {!compact && application.applicantPhone && (
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
           {application.applicantPhone}
         </Text>
       )}
@@ -435,12 +438,12 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
       {application.message && (
         <View className={`mt-2 ${compact ? '' : 'bg-secondary-50 dark:bg-surface rounded-lg p-3'}`}>
           {!compact && (
-            <Text className="text-sm font-medium text-secondary-900 dark:text-off-white mb-1">
+            <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white mb-1">
               지원 메시지
             </Text>
           )}
           <Text
-            className={`text-secondary-600 dark:text-secondary-400 ${compact ? 'text-xs' : 'text-sm'}`}
+            className={`text-secondary-600 dark:text-secondary-400 ${compact ? 'text-xs' : 'text-sm'} font-sans`}
             numberOfLines={compact ? 2 : undefined}
           >
             {application.message}

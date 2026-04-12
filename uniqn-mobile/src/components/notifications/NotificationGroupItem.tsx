@@ -95,7 +95,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               <Text
                 className={`text-base flex-1 ${
                   hasUnread
-                    ? 'text-secondary-900 dark:text-off-white font-semibold'
+                    ? 'text-secondary-900 dark:text-off-white font-sans-semibold'
                     : 'text-secondary-700 dark:text-secondary-300 font-normal'
                 }`}
                 numberOfLines={1}
@@ -105,7 +105,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               {/* 읽지 않은 수 배지 */}
               {group.unreadCount > 0 && (
                 <View className="ml-2 min-w-[20px] h-5 px-1.5 bg-error-500 rounded-sm items-center justify-center">
-                  <Text className="text-xs font-bold text-white">
+                  <Text className="text-xs font-sans-bold text-white">
                     {group.unreadCount > 99 ? '99+' : group.unreadCount}
                   </Text>
                 </View>
@@ -115,7 +115,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             {/* 컨텍스트 (공고명/이벤트명) */}
             {contextLabel && (
               <Text
-                className="text-sm text-secondary-600 dark:text-secondary-400 mt-0.5"
+                className="text-sm text-secondary-600 dark:text-secondary-400 mt-0.5 font-sans"
                 numberOfLines={1}
               >
                 {contextLabel}
@@ -124,14 +124,14 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 
             {/* 본문 (요약) */}
             <Text
-              className="text-sm text-secondary-500 dark:text-secondary-400 mt-1"
+              className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans"
               numberOfLines={1}
             >
               {group.groupBody}
             </Text>
 
             {/* 시간 */}
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
               {timeAgo}
             </Text>
           </View>

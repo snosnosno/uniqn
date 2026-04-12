@@ -136,7 +136,9 @@ export default function NotificationsScreen() {
               accessibilityLabel="모두 읽음"
               testID="notifications-mark-all-read"
             >
-              <Text className="text-sm text-primary-600 dark:text-primary-400">모두 읽음</Text>
+              <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
+                모두 읽음
+              </Text>
             </Pressable>
           ) : null
         }

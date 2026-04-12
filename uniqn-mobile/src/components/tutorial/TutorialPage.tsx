@@ -47,14 +47,14 @@ export function TutorialPage({ page, width, iconBgClass }: TutorialPageProps) {
 
       {/* 부제 */}
       <Animated.View entering={FadeInUp.delay(450).duration(500)} className="mt-2">
-        <Text className="text-base text-secondary-500 dark:text-secondary-400 text-center">
+        <Text className="text-base text-secondary-500 dark:text-secondary-400 text-center font-sans">
           {page.subtitle}
         </Text>
       </Animated.View>
 
       {/* 설명 */}
       <Animated.View entering={FadeInUp.delay(550).duration(500)} className="mt-6 px-4">
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center leading-relaxed">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center leading-relaxed font-sans">
           {page.description}
         </Text>
       </Animated.View>

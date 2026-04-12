@@ -48,14 +48,14 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
       <Text
         className={`text-sm ${
           isTotal
-            ? 'font-semibold text-secondary-900 dark:text-off-white'
+            ? 'font-sans-semibold text-secondary-900 dark:text-off-white'
             : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >
         {label}
       </Text>
       <Text
-        className={`text-sm font-medium ${
+        className={`text-sm font-sans-medium ${
           isTotal
             ? 'text-lg font-display text-primary-600 dark:text-primary-400'
             : isNegative
@@ -195,14 +195,14 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     return (
       <View className="items-center py-6">
         <View className="w-full rounded-md bg-warning-50 p-4 dark:bg-warning-900/20">
-          <Text className="text-center text-sm text-warning-700 dark:text-warning-300">
+          <Text className="text-center text-sm text-warning-700 dark:text-warning-300 font-sans">
             지원이 확정되면 정산 정보를 확인할 수 있습니다.
           </Text>
         </View>
 
         {settlement && (
           <View className="mt-4 w-full rounded-md bg-secondary-50 p-4 dark:bg-surface/50">
-            <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               예상 급여 (참고용)
             </Text>
             <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
@@ -218,7 +218,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     return (
       <View className="items-center py-6">
         <View className="w-full rounded-md bg-error-50 p-4 dark:bg-error-900/20">
-          <Text className="text-center text-sm text-error-600 dark:text-error-400">
+          <Text className="text-center text-sm text-error-600 dark:text-error-400 font-sans">
             취소된 일정입니다.
           </Text>
         </View>
@@ -231,7 +231,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <BanknotesIcon size={18} color="#9A9078" />
-          <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+          <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
             정산 정보
           </Text>
         </View>
@@ -242,7 +242,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
       {isEstimate && (
         <View className="mb-4 rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
-          <Text className="text-center text-xs text-primary-700 dark:text-primary-300">
+          <Text className="text-center text-xs text-primary-700 dark:text-primary-300 font-sans">
             출퇴근 기록이 없어 예정 시간 기준으로 계산한 예상 금액입니다.
           </Text>
         </View>
@@ -251,15 +251,15 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       {settlement ? (
         <View className="rounded-md bg-secondary-50 p-4 dark:bg-surface/30">
           <View className="mb-4">
-            <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               급여 계산
             </Text>
             <View className="flex-row items-baseline">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
               </Text>
               {salaryInfo.type === 'hourly' && (
-                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-500">
+                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-500 font-sans">
                   × {formatDuration(hoursWorked)}
                 </Text>
               )}
@@ -269,7 +269,9 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
           {allowances && (
             <View className="mb-4 border-t border-secondary-200 pt-3 dark:border-surface-overlay">
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">수당</Text>
+              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                수당
+              </Text>
 
               {allowances.guaranteedHours && allowances.guaranteedHours > 0 && (
                 <Row label="보장시간" value={`${allowances.guaranteedHours}시간`} />
@@ -319,7 +321,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
           {taxSettings.type !== 'none' && settlement.taxAmount > 0 && (
             <View className="mb-4 border-t border-secondary-200 pt-3 dark:border-surface-overlay">
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 세금 ({taxSettings.type === 'rate' ? `${taxSettings.value}%` : '고정'})
               </Text>
               <Row label="공제액" value={`-${formatCurrency(settlement.taxAmount)}`} isNegative />
@@ -338,7 +340,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
       ) : (
         <View className="rounded-md bg-secondary-50 p-4 dark:bg-surface/50">
-          <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             정산 정보를 계산할 수 없습니다.
           </Text>
         </View>
@@ -346,7 +348,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
       {schedule.payrollAmount && schedule.payrollAmount > 0 && (
         <View className="mt-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
-          <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400">
+          <Text className="mb-1 text-xs text-primary-600 dark:text-primary-400 font-sans">
             확정 정산 금액
           </Text>
           <Text className="text-xl font-display text-primary-700 dark:text-primary-300">

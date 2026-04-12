@@ -54,7 +54,7 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             accessibilityState={{ selected: isSelected }}
           >
             <Text
-              className="text-sm font-medium"
+              className="text-sm font-sans-medium"
               style={{
                 color: isSelected
                   ? isDarkMode
@@ -247,7 +247,7 @@ function EmployerView() {
           onPress={handleCreatePosting}
           icon={<PlusIcon size={20} color="#fff" />}
         >
-          <Text className="ml-2 font-semibold text-surface-dark">새 공고 작성</Text>
+          <Text className="ml-2 font-sans-semibold text-surface-dark">새 공고 작성</Text>
         </Button>
       </View>
 

@@ -43,7 +43,7 @@ export const StatusInfo = React.memo(function StatusInfo({
       {/* 거절 사유 */}
       {status === STATUS.APPLICATION.REJECTED && rejectionReason && (
         <View className="bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-2">
-          <Text className="text-sm text-error-700 dark:text-error-300">
+          <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
             거절 사유: {rejectionReason}
           </Text>
         </View>

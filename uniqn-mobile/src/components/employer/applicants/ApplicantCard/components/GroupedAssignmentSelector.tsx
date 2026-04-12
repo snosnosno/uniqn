@@ -122,8 +122,10 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
     <View className="mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">선택된 일정</Text>
-        <Text className="text-xs text-primary-500 dark:text-primary-400 font-medium">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          선택된 일정
+        </Text>
+        <Text className="text-xs text-primary-500 dark:text-primary-400 font-sans-medium">
           {selectedCount}/{totalCount}개 선택
         </Text>
       </View>
@@ -174,7 +176,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   color={isChecked ? iconColors.checked : iconColors.unchecked}
                 />
                 <Text
-                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                  className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                 >
                   {item.formattedDate} {item.timeSlotDisplay}
                 </Text>
@@ -186,7 +188,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   color={isChecked ? iconColors.checked : iconColors.unchecked}
                 />
                 <Text
-                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                  className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                 >
                   {item.roleLabel}
                 </Text>
@@ -220,7 +222,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       color={hasSelection ? iconColors.checked : iconColors.unchecked}
                     />
                     <Text
-                      className={`ml-1.5 text-sm font-semibold ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                      className={`ml-1.5 text-sm font-sans-semibold ${isDark ? 'text-white' : 'text-secondary-900'}`}
                     >
                       {formatDateDisplay(group.dateRange.dates)}
                     </Text>
@@ -229,7 +231,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   <View className="flex-row items-center mt-1">
                     <ClockIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
                     <Text
-                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
+                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'} font-sans`}
                     >
                       {group.timeSlotDisplay}
                     </Text>
@@ -238,7 +240,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     />
                     <BriefcaseIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
                     <Text
-                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
+                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'} font-sans`}
                     >
                       {group.roleLabel}
                     </Text>
@@ -267,7 +269,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                 <View
                   className={`border-t ${isDark ? 'border-secondary-600' : 'border-secondary-200'} px-3 py-2`}
                 >
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2">
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2 font-sans">
                     개별 날짜 선택
                   </Text>
                   <View className="flex-row flex-wrap gap-2">
@@ -304,7 +306,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                             {isChecked && <CheckIcon size={10} color="#fff" />}
                           </View>
                           <Text
-                            className={`text-xs font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                            className={`text-xs font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                           >
                             {item.formattedDate}
                           </Text>

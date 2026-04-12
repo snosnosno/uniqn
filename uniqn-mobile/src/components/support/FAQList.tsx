@@ -63,7 +63,7 @@ export function FAQList({
   if (filteredItems.length === 0) {
     return (
       <View className={`items-center justify-center py-12 ${className}`}>
-        <Text className="text-secondary-500 dark:text-secondary-400">{emptyMessage}</Text>
+        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">{emptyMessage}</Text>
       </View>
     );
   }
@@ -74,7 +74,7 @@ export function FAQList({
       <View className={className}>
         {Object.entries(groupedItems).map(([category, categoryItems]) => (
           <View key={category} className="mb-4">
-            <Text className="mb-2 px-4 text-sm font-semibold text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-2 px-4 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
               {INQUIRY_CATEGORY_LABELS[category as InquiryCategory] || category}
             </Text>
             <View className="rounded-md bg-white dark:bg-surface">
@@ -86,7 +86,7 @@ export function FAQList({
                       expanded={expandedId === item.id}
                       onToggle={() => handleToggle(item.id)}
                     >
-                      <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300">
+                      <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
                         {item.answer}
                       </Text>
                     </AccordionItem>
@@ -114,7 +114,7 @@ export function FAQList({
               expanded={expandedId === item.id}
               onToggle={() => handleToggle(item.id)}
             >
-              <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300">
+              <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
                 {item.answer}
               </Text>
             </AccordionItem>

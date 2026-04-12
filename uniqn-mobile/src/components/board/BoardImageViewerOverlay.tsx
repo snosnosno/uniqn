@@ -51,7 +51,7 @@ export function BoardImageViewerOverlay({
               pointerEvents="box-none"
             >
               <View pointerEvents="none">
-                <Text className="text-sm font-medium text-white">
+                <Text className="text-sm font-sans-medium text-white">
                   이미지 {currentIndex + 1} / {images.length}
                 </Text>
               </View>

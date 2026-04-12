@@ -62,19 +62,23 @@ export const SectionCard = memo(function SectionCard({
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {resolvedTitle}
         </Text>
-        {required && <Text className="ml-1 text-error-500">*</Text>}
+        {required && <Text className="ml-1 text-error-500 font-sans">*</Text>}
         {optional && (
-          <Text className="ml-2 text-xs text-secondary-400 dark:text-secondary-500">(선택)</Text>
+          <Text className="ml-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+            (선택)
+          </Text>
         )}
       </View>
 
       {/* 에러 배지 */}
       {hasError && errorCount > 0 && (
         <View className="px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded-sm mr-2">
-          <Text className="text-xs text-error-600 dark:text-error-400">{errorCount}개 오류</Text>
+          <Text className="text-xs text-error-600 dark:text-error-400 font-sans">
+            {errorCount}개 오류
+          </Text>
         </View>
       )}
 

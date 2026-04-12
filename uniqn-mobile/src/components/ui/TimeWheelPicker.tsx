@@ -118,14 +118,14 @@ function WebTimePicker({
           <Text
             className={`text-lg ${
               isSelected
-                ? 'text-primary-600 dark:text-primary-400 font-bold'
+                ? 'text-primary-600 dark:text-primary-400 font-sans-bold'
                 : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
             {hour.toString().padStart(2, '0')}
           </Text>
           {isNextDayHour && isSelected && (
-            <Text className="text-xs text-orange-500 dark:text-orange-400">다음날</Text>
+            <Text className="text-xs text-orange-500 dark:text-orange-400 font-sans">다음날</Text>
           )}
         </Pressable>
       );
@@ -151,7 +151,7 @@ function WebTimePicker({
           <Text
             className={`text-lg ${
               isSelected
-                ? 'text-primary-600 dark:text-primary-400 font-bold'
+                ? 'text-primary-600 dark:text-primary-400 font-sans-bold'
                 : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
@@ -200,13 +200,15 @@ function WebTimePicker({
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
-          <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-base font-sans">
+            취소
+          </Text>
         </Pressable>
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-sans-semibold">
             확인
           </Text>
         </Pressable>
@@ -215,13 +217,15 @@ function WebTimePicker({
       {/* 라벨 */}
       <View className="flex-row px-4 pt-3">
         <View className="flex-1 items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-medium">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans-medium">
             시간
           </Text>
         </View>
         <View className="w-8" />
         <View className="flex-1 items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-medium">분</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans-medium">
+            분
+          </Text>
         </View>
       </View>
 
@@ -263,7 +267,7 @@ function WebTimePicker({
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
           <AlertCircleIcon size={16} color="#D4A017" />
-          <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
+          <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400 font-sans">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}
           </Text>
@@ -376,13 +380,15 @@ function NativeWheelPicker({
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
-          <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-base font-sans">
+            취소
+          </Text>
         </Pressable>
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-sans-semibold">
             확인
           </Text>
         </Pressable>
@@ -441,14 +447,14 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-secondary-900 dark:text-off-white'
+                        ? 'font-sans-bold text-secondary-900 dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
                     {hour.toString().padStart(2, '0')}
                   </Text>
                   {isNextDayHour && isSelected && (
-                    <Text className="text-xs text-orange-500 dark:text-orange-400 -mt-1">
+                    <Text className="text-xs text-orange-500 dark:text-orange-400 -mt-1 font-sans">
                       다음날
                     </Text>
                   )}
@@ -498,7 +504,7 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-secondary-900 dark:text-off-white'
+                        ? 'font-sans-bold text-secondary-900 dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
@@ -515,7 +521,7 @@ function NativeWheelPicker({
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
           <AlertCircleIcon size={16} color="#D4A017" />
-          <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
+          <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400 font-sans">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}
           </Text>

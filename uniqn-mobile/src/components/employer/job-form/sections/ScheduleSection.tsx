@@ -77,7 +77,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
     <View>
       {isUrgent && (
         <View className="mb-4 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg border border-error-200 dark:border-error-800">
-          <Text className="text-sm text-error-700 dark:text-error-300">
+          <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
             긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
           </Text>
         </View>
@@ -146,7 +146,7 @@ const FixedSchedule = memo(function FixedSchedule({
   return (
     <View>
       <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
-        <Text className="text-sm text-primary-800 dark:text-primary-200">
+        <Text className="text-sm text-primary-800 dark:text-primary-200 font-sans">
           고정 공고는 장기 근무를 위한 공고입니다.{'\n'}
           게시 기간은 7일이며, 만료 후 재등록할 수 있습니다.
         </Text>
@@ -171,7 +171,7 @@ const FixedSchedule = memo(function FixedSchedule({
                 `}
               >
                 <Text
-                  className={`font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-900 dark:text-off-white'}`}
+                  className={`font-sans-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-900 dark:text-off-white'}`}
                 >
                   {option.label}
                 </Text>
@@ -185,10 +185,10 @@ const FixedSchedule = memo(function FixedSchedule({
       <View className="mt-4">
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
               출근 시간
             </Text>
-            {!isNegotiable && <Text className="text-sm text-error-500 ml-1">*</Text>}
+            {!isNegotiable && <Text className="text-sm text-error-500 ml-1 font-sans">*</Text>}
           </View>
           {/* 협의 체크박스 */}
           <Pressable onPress={handleNegotiableToggle} className="flex-row items-center">
@@ -202,13 +202,15 @@ const FixedSchedule = memo(function FixedSchedule({
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400">협의</Text>
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              협의
+            </Text>
           </Pressable>
         </View>
 
         {isNegotiable ? (
           <View className="p-3 bg-secondary-100 dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay">
-            <Text className="text-secondary-500 dark:text-secondary-400 text-center">
+            <Text className="text-secondary-500 dark:text-secondary-400 text-center font-sans">
               출근 시간은 협의 후 결정됩니다
             </Text>
           </View>
@@ -221,7 +223,7 @@ const FixedSchedule = memo(function FixedSchedule({
           />
         )}
         {errors?.startTime && (
-          <Text className="mt-1 text-sm text-error-500">{errors.startTime}</Text>
+          <Text className="mt-1 text-sm text-error-500 font-sans">{errors.startTime}</Text>
         )}
       </View>
     </View>

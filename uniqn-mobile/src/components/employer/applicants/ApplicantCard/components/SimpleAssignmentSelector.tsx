@@ -52,10 +52,10 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
     <View className="mb-3">
       {/* 안내 문구 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           같은 날짜에는 하나의 역할/시간만 선택 가능합니다
         </Text>
-        <Text className="ml-auto text-xs text-primary-500 dark:text-primary-400 font-medium">
+        <Text className="ml-auto text-xs text-primary-500 dark:text-primary-400 font-sans-medium">
           {selectedCount}개 선택
         </Text>
       </View>
@@ -102,7 +102,7 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
                 color={isChecked ? iconColors.checked : iconColors.unchecked}
               />
               <Text
-                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
               >
                 {display.formattedDate} {display.timeSlotDisplay}
               </Text>
@@ -114,7 +114,7 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
                 color={isChecked ? iconColors.checked : iconColors.unchecked}
               />
               <Text
-                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+                className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
               >
                 {display.roleLabel}
               </Text>

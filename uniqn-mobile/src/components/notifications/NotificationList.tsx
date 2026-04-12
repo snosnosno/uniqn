@@ -122,12 +122,12 @@ export const NotificationList = memo(function NotificationList({
         accessibilityRole="alert"
         className={`flex-1 items-center justify-center bg-secondary-50 p-4 dark:bg-surface-dark ${className}`}
       >
-        <Text className="text-center text-error-600 dark:text-error-400">
+        <Text className="text-center text-error-600 dark:text-error-400 font-sans">
           알림을 불러오지 못했습니다.
         </Text>
         {onRefresh ? (
           <Pressable onPress={onRefresh} className="mt-4 rounded-lg bg-primary-500 px-4 py-2">
-            <Text className="font-medium text-surface-dark">다시 시도</Text>
+            <Text className="font-sans-medium text-surface-dark">다시 시도</Text>
           </Pressable>
         ) : null}
       </View>
@@ -146,12 +146,14 @@ export const NotificationList = memo(function NotificationList({
     <View className={`flex-1 bg-secondary-50 dark:bg-surface-dark ${className}`}>
       {showHeader && notifications.length > 0 && (
         <View className="flex-row items-center justify-between border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface dark:bg-surface-dark">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
           {unreadCount > 0 && onMarkAllAsRead ? (
             <Pressable onPress={onMarkAllAsRead} hitSlop={8} className="py-1">
-              <Text className="font-medium text-primary-600 dark:text-primary-400">모두 읽음</Text>
+              <Text className="font-sans-medium text-primary-600 dark:text-primary-400">
+                모두 읽음
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -159,12 +161,12 @@ export const NotificationList = memo(function NotificationList({
 
       {showInlineError ? (
         <View className="mx-4 mb-3 mt-4 rounded-md border border-amber-200 bg-warning-50 px-4 py-3 dark:border-amber-700 dark:bg-warning-900/20">
-          <Text className="text-sm text-warning-800 dark:text-warning-200">
+          <Text className="text-sm text-warning-800 dark:text-warning-200 font-sans">
             새 알림을 가져오지 못했어요. 보고 있던 목록은 그대로 유지했습니다.
           </Text>
           {onRefresh ? (
             <Pressable onPress={onRefresh} hitSlop={8} className="mt-2 self-start">
-              <Text className="text-sm font-medium text-warning-700 dark:text-warning-300">
+              <Text className="text-sm font-sans-medium text-warning-700 dark:text-warning-300">
                 다시 시도
               </Text>
             </Pressable>
@@ -221,7 +223,7 @@ export function SimpleNotificationList({
     return (
       <View className="items-center py-8">
         <BellSlashIcon size={32} color="#D6D2CA" />
-        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {emptyMessage}
         </Text>
       </View>
@@ -244,7 +246,7 @@ export function SimpleNotificationList({
           onPress={onSeeAll}
           className="items-center border-t border-secondary-100 py-3 dark:border-surface"
         >
-          <Text className="font-medium text-primary-600 dark:text-primary-400">
+          <Text className="font-sans-medium text-primary-600 dark:text-primary-400">
             {hasMore ? `${notifications.length - maxItems}개 더 보기` : '전체 보기'}
           </Text>
         </Pressable>

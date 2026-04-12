@@ -77,18 +77,22 @@ export function BoardCommentComposer({
   return (
     <Card>
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
           {title}
         </Text>
         {onCancel ? (
           <Pressable onPress={onCancel} className="active:opacity-70">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">취소</Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              취소
+            </Text>
           </Pressable>
         ) : null}
       </View>
 
       {helperText ? (
-        <Text className="mb-2 text-sm text-primary-600 dark:text-primary-400">{helperText}</Text>
+        <Text className="mb-2 text-sm text-primary-600 dark:text-primary-400 font-sans">
+          {helperText}
+        </Text>
       ) : null}
 
       <Input
@@ -106,7 +110,7 @@ export function BoardCommentComposer({
 
       {canSelectMentions ? (
         <View className="mt-3">
-          <Text className="mb-2 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
             멘션
           </Text>
           <View className="flex-row flex-wrap gap-2">
@@ -123,7 +127,7 @@ export function BoardCommentComposer({
                       : 'bg-secondary-100 dark:bg-surface-elevated'
                   }`}
                 >
-                  <Text className="text-xs text-secondary-700 dark:text-secondary-200">
+                  <Text className="text-xs text-secondary-700 dark:text-secondary-200 font-sans">
                     @{candidate.displayName}
                   </Text>
                 </Pressable>

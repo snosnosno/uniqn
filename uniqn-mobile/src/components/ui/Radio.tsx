@@ -153,7 +153,7 @@ const RadioItem = memo(function RadioItem({
       <View className="ml-3 flex-1">
         <Text
           className={`
-            font-medium
+            font-sans-medium
             ${config.label}
             ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-off-white'}
           `}
@@ -171,7 +171,7 @@ const RadioItem = memo(function RadioItem({
                     'text-secondary-500 dark:text-secondary-500'
                   : 'text-secondary-600 dark:text-secondary-400'
               }
-            `}
+             font-sans`}
           >
             {option.description}
           </Text>
@@ -215,7 +215,9 @@ export const Radio = memo(function Radio({
       testID={testID}
     >
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
+        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+          {label}
+        </Text>
       )}
 
       <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
@@ -232,7 +234,9 @@ export const Radio = memo(function Radio({
         ))}
       </View>
 
-      {error && errorMessage && <Text className="mt-2 text-sm text-error-600">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="mt-2 text-sm text-error-600 font-sans">{errorMessage}</Text>
+      )}
     </View>
   );
 });

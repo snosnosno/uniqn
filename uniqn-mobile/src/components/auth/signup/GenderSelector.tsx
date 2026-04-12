@@ -28,7 +28,7 @@ export function GenderSelector({ value, onChange, disabled }: GenderSelectorProp
         accessibilityLabel="남성"
       >
         <Text
-          className={`text-base font-medium ${
+          className={`text-base font-sans-medium ${
             value === 'male'
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-500 dark:text-secondary-400'
@@ -49,7 +49,7 @@ export function GenderSelector({ value, onChange, disabled }: GenderSelectorProp
         accessibilityLabel="여성"
       >
         <Text
-          className={`text-base font-medium ${
+          className={`text-base font-sans-medium ${
             value === 'female'
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-500 dark:text-secondary-400'

@@ -203,17 +203,17 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   return (
     <View>
       <View className="mb-4">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           최대 {constraints.maxDates}개 날짜 추가 가능
           {hasGroupedRequirements && totalGroupCount > 0 && (
-            <Text className="text-secondary-500 dark:text-secondary-500">
+            <Text className="text-secondary-500 dark:text-secondary-500 font-sans">
               {' '}
               (현재 {totalGroupCount}개 일정, {totalDateCount}일)
             </Text>
           )}
         </Text>
         {supportsGroupedDates && (
-          <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400">
+          <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-sans">
             연속 날짜는 그룹으로 묶을지, 개별 날짜로 관리할지 선택할 수 있습니다.
           </Text>
         )}
@@ -221,7 +221,9 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
 
       {dateRequirements.length === 0 ? (
         <View className="items-center p-8">
-          <Text className="text-secondary-500 dark:text-secondary-400">날짜를 추가해 주세요.</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+            날짜를 추가해 주세요.
+          </Text>
         </View>
       ) : hasGroupedRequirements ? (
         <View className="mb-4">
@@ -268,7 +270,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           <PlusIcon size={20} color={canAddDate ? '#D4AF37' : '#A89C84'} />
         </View>
         <Text
-          className={`font-medium ${
+          className={`font-sans-medium ${
             canAddDate
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-400 dark:text-secondary-600'
@@ -279,7 +281,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       </Pressable>
 
       {errors?.dateSpecificRequirements && (
-        <Text className="mt-2 text-sm text-error-600 dark:text-error-400">
+        <Text className="mt-2 text-sm text-error-600 dark:text-error-400 font-sans">
           {errors.dateSpecificRequirements}
         </Text>
       )}

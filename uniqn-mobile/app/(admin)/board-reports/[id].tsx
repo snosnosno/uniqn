@@ -112,31 +112,31 @@ export default function AdminBoardReportDetailPage() {
             <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
               {data.post?.title ?? '원본 게시글이 삭제되었거나 접근할 수 없습니다.'}
             </Text>
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               신고자: {data.reporterName}
             </Text>
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               대상 작성자: {data.targetAuthorName ?? '확인 필요'}
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               접수 시각: {formatTimestamp(data.report.createdAt)}
             </Text>
           </Card>
 
           <Card className="mb-4">
-            <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               신고 사유
             </Text>
-            <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
+            <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
               {data.report.reason}
             </Text>
 
             {data.report.details ? (
               <>
-                <Text className="mb-2 mt-4 text-base font-semibold text-secondary-900 dark:text-off-white">
+                <Text className="mb-2 mt-4 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                   상세 설명
                 </Text>
-                <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
+                <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
                   {data.report.details}
                 </Text>
               </>
@@ -145,10 +145,10 @@ export default function AdminBoardReportDetailPage() {
 
           {data.post ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 게시글 본문
               </Text>
-              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
+              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
                 {data.post.body}
               </Text>
             </Card>
@@ -156,13 +156,13 @@ export default function AdminBoardReportDetailPage() {
 
           {data.targetComment ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+              <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                 신고 대상 댓글
               </Text>
-              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 작성자: {data.targetComment.authorName}
               </Text>
-              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
+              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
                 {data.targetComment.body}
               </Text>
             </Card>
@@ -188,10 +188,10 @@ export default function AdminBoardReportDetailPage() {
             </View>
           ) : (
             <Card>
-              <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
                 처리 상태: {getStatusLabel(data.report.status)}
               </Text>
-              <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 처리 시각: {formatTimestamp(data.report.resolvedAt)}
               </Text>
             </Card>

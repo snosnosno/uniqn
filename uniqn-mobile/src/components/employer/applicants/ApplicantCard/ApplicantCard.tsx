@@ -130,7 +130,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
       {isExpanded && (
         <View className="mt-3 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
-          <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {getRoleDisplayName(
               applicant.assignments[0]?.roleIds?.[0] || 'other',
               applicant.customRole
@@ -146,7 +146,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
                   : 'border-secondary-200 bg-secondary-50'
               }`}
             >
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 근무 조건
               </Text>
               <FixedScheduleDisplay

@@ -55,7 +55,7 @@ const RoleCard = memo(function RoleCard({
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
         <View className="w-10 h-10 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-          <Text className="text-xl">{icon}</Text>
+          <Text className="text-xl font-sans">{icon}</Text>
         </View>
 
         {/* 역할 정보 */}
@@ -69,7 +69,7 @@ const RoleCard = memo(function RoleCard({
               className="font-medium text-secondary-900 dark:text-off-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
-            <Text className="font-medium text-secondary-900 dark:text-off-white text-base">
+            <Text className="font-sans-medium text-secondary-900 dark:text-off-white text-base">
               {role.name}
             </Text>
           )}
@@ -90,7 +90,9 @@ const RoleCard = memo(function RoleCard({
           </Pressable>
 
           <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay">
-            <Text className="font-bold text-secondary-900 dark:text-off-white">{role.count}</Text>
+            <Text className="font-sans-bold text-secondary-900 dark:text-off-white">
+              {role.count}
+            </Text>
           </View>
 
           <Pressable
@@ -223,19 +225,21 @@ export const RolesSection = memo(function RolesSection({
         accessibilityLabel="역할 추가"
       >
         <PlusIcon size={18} color="#9A9078" />
-        <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium text-sm">
+        <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-sans-medium text-sm">
           역할 추가
         </Text>
       </Pressable>
 
       {/* 에러 메시지 */}
-      {errors.roles && <Text className="mt-2 text-sm text-error-500">{errors.roles}</Text>}
+      {errors.roles && (
+        <Text className="mt-2 text-sm text-error-500 font-sans">{errors.roles}</Text>
+      )}
 
       {/* 총 인원 표시 */}
       {totalCount > 0 && (
         <View className="mt-4 flex-row items-center justify-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
           <BriefcaseIcon size={18} color="#B8962E" />
-          <Text className="ml-2 text-base font-bold text-primary-600 dark:text-primary-400">
+          <Text className="ml-2 text-base font-sans-bold text-primary-600 dark:text-primary-400">
             총 {totalCount}명 모집
           </Text>
         </View>

@@ -57,7 +57,7 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
             danger
               ? 'text-error-600 dark:text-error-400'
               : 'text-secondary-900 dark:text-secondary-100'
-          }`}
+          } font-sans`}
         >
           {label}
         </Text>
@@ -152,12 +152,12 @@ export default function ProfileScreen() {
               <Text className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
                 {currentUserIdentity.displayName}
               </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {profile?.email ?? user?.email ?? '이메일 없음'}
               </Text>
               <View className="mt-1 flex-row items-center gap-2">
                 <View className="rounded-sm bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
-                  <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
+                  <Text className="text-xs font-sans-medium text-primary-700 dark:text-primary-300">
                     {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>

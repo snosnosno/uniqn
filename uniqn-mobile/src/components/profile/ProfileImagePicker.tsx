@@ -173,13 +173,15 @@ export function ProfileImagePicker({
           accessibilityLabel="프로필 사진 삭제"
         >
           <TrashIcon size={14} color="#DC2626" />
-          <Text className="ml-1 text-sm text-error-600 dark:text-error-400">사진 삭제</Text>
+          <Text className="ml-1 text-sm text-error-600 dark:text-error-400 font-sans">
+            사진 삭제
+          </Text>
         </Pressable>
       )}
 
       {/* 업로드 중 안내 */}
       {isUploading && (
-        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           업로드 중...
         </Text>
       )}

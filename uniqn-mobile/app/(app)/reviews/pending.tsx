@@ -43,19 +43,21 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
       <View className="flex-row items-start justify-between">
         <View className="flex-1 mr-3">
           <Text
-            className="text-base font-semibold text-secondary-900 dark:text-off-white"
+            className="text-base font-sans-semibold text-secondary-900 dark:text-off-white"
             numberOfLines={1}
           >
             {item.jobPostingTitle}
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {workDateLabel}
               {item.location ? ` · ${item.location}` : ''}
             </Text>
             {item.reviewerType === 'employer' && (
               <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
-                <Text className="text-xs text-info-700 dark:text-info-300">구인자 평가</Text>
+                <Text className="text-xs text-info-700 dark:text-info-300 font-sans">
+                  구인자 평가
+                </Text>
               </View>
             )}
           </View>
@@ -64,17 +66,17 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
           className={`rounded-sm px-2.5 py-1 ${isUrgent ? 'bg-error-50 dark:bg-error-900/30' : 'bg-warning-100 dark:bg-warning-900/30'}`}
         >
           <Text
-            className={`text-xs font-medium ${isUrgent ? 'text-error-700 dark:text-error-300' : 'text-warning-700 dark:text-warning-300'}`}
+            className={`text-xs font-sans-medium ${isUrgent ? 'text-error-700 dark:text-error-300' : 'text-warning-700 dark:text-warning-300'}`}
           >
             D-{daysRemaining}
           </Text>
         </View>
       </View>
       <View className="mt-3 flex-row items-center justify-between">
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
           근무 완료 후 {REVIEW_DEADLINE_DAYS}일 이내 평가 가능
         </Text>
-        <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
+        <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
           평가하기 →
         </Text>
       </View>
@@ -121,7 +123,7 @@ export default function PendingReviewsScreen() {
           />
         ) : (
           <View>
-            <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               작성 대기 {pendingCount}건
             </Text>
             {pendingReviews.map((item) => (

@@ -139,7 +139,7 @@ export const Checkbox = memo(function Checkbox({
           {label && (
             <Text
               className={`
-                font-medium
+                font-sans-medium
                 ${config.label}
                 ${disabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-off-white'}
               `}
@@ -158,13 +158,15 @@ export const Checkbox = memo(function Checkbox({
                       'text-secondary-500 dark:text-secondary-400'
                     : 'text-secondary-600 dark:text-secondary-400'
                 }
-              `}
+               font-sans`}
             >
               {description}
             </Text>
           )}
           {error && errorMessage && (
-            <Text className={`mt-1 text-error-500 ${config.description}`}>{errorMessage}</Text>
+            <Text className={`mt-1 text-error-500 ${config.description} font-sans`}>
+              {errorMessage}
+            </Text>
           )}
         </View>
       )}
@@ -227,7 +229,9 @@ export const CheckboxGroup = memo(function CheckboxGroup({
   return (
     <View className={className}>
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
+        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+          {label}
+        </Text>
       )}
       <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
         {options.map((option) => (
@@ -243,7 +247,9 @@ export const CheckboxGroup = memo(function CheckboxGroup({
           />
         ))}
       </View>
-      {error && errorMessage && <Text className="mt-2 text-sm text-error-500">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="mt-2 text-sm text-error-500 font-sans">{errorMessage}</Text>
+      )}
     </View>
   );
 });

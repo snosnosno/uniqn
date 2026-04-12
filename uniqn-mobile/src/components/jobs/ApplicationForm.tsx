@@ -38,7 +38,7 @@ function FixedRoleSelector({
 }) {
   return (
     <View className="gap-3">
-      <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
         지원 역할
       </Text>
       {options.map((option) => {
@@ -59,7 +59,7 @@ function FixedRoleSelector({
             <View className="flex-row items-center justify-between">
               <View className="flex-1">
                 <Text
-                  className={`text-base font-semibold ${
+                  className={`text-base font-sans-semibold ${
                     isSelected
                       ? 'text-primary-700 dark:text-primary-300'
                       : 'text-secondary-900 dark:text-off-white'
@@ -67,7 +67,7 @@ function FixedRoleSelector({
                 >
                   {option.roleLabel}
                 </Text>
-                <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
+                <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   모집 {option.count}명 · 남은 자리 {option.remaining}명
                 </Text>
               </View>
@@ -226,10 +226,10 @@ export function ApplicationForm({
             </View>
           )}
 
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             {job.title}
           </Text>
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             위치 {locationName}
           </Text>
 
@@ -284,8 +284,8 @@ export function ApplicationForm({
         )}
 
         <View className="mb-6">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
-            자기소개 <Text className="text-secondary-400">(선택)</Text>
+          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+            자기소개 <Text className="text-secondary-400 font-sans">(선택)</Text>
           </Text>
           <TextInput
             value={message}
@@ -299,13 +299,13 @@ export function ApplicationForm({
             className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base text-secondary-900 dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
-          <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             {message.length}/200
           </Text>
         </View>
 
         <View className="mb-6 rounded-lg bg-secondary-50 p-4 dark:bg-surface">
-          <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400">
+          <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
             지원 후에는 구인자가 지원서를 확인합니다.
             {'\n'}
             채용 결과는 알림으로 안내됩니다.

@@ -74,9 +74,12 @@ export const PostingTypeBadge = memo(function PostingTypeBadge({
     className,
   ].join(' ');
 
-  const textClasses = [sizeStyle.text, 'font-medium', colors.textClass, colors.darkTextClass].join(
-    ' '
-  );
+  const textClasses = [
+    sizeStyle.text,
+    'font-sans-medium',
+    colors.textClass,
+    colors.darkTextClass,
+  ].join(' ');
 
   return (
     <View className={containerClasses}>

@@ -127,18 +127,18 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
               <CalendarIcon size={20} color="#D4A017" />
             </View>
             <View className="flex-1">
-              <Text className="text-base font-bold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-bold text-secondary-900 dark:text-off-white">
                 {dateRangeLabel}
               </Text>
               <View className="flex-row items-center mt-0.5">
                 {!isSingle && (
                   <View className="px-2 py-0.5 bg-warning-100 dark:bg-warning-900/30 rounded-sm mr-2">
-                    <Text className="text-xs font-medium text-warning-700 dark:text-warning-300">
+                    <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300">
                       {dayCount}일간
                     </Text>
                   </View>
                 )}
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {group.timeSlots.length}개 시간대 | 총 {totalHeadcount}명
                 </Text>
               </View>
@@ -190,7 +190,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
             <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#A89C84'} />
           </View>
           <Text
-            className={`text-sm font-medium ${
+            className={`text-sm font-sans-medium ${
               canAddTimeSlot
                 ? 'text-primary-600 dark:text-primary-400'
                 : 'text-secondary-400 dark:text-secondary-600'
@@ -204,7 +204,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
       {/* 하단 정보 - 여러 날짜인 경우 안내 */}
       {!isSingle && (
         <View className="px-4 py-2 bg-secondary-50 dark:bg-surface/50 border-t border-secondary-200 dark:border-surface-overlay">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center font-sans">
             위 시간대와 인원은 {dayCount}일 모든 날짜에 동일하게 적용됩니다
           </Text>
         </View>

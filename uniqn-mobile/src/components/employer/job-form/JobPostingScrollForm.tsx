@@ -152,10 +152,10 @@ export function JobPostingScrollForm({
 
         {isTournament && (
           <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 p-4 dark:border-amber-700 dark:bg-warning-900/20">
-            <Text className="mb-1 text-sm font-medium text-warning-800 dark:text-warning-200">
+            <Text className="mb-1 text-sm font-sans-medium text-warning-800 dark:text-warning-200">
               대회공고 안내
             </Text>
-            <Text className="text-xs text-warning-700 dark:text-warning-300">
+            <Text className="text-xs text-warning-700 dark:text-warning-300 font-sans">
               대회공고는 관리자 승인 후 게시됩니다.
               {'\n'}
               승인까지 1-2 영업일이 소요될 수 있습니다.
@@ -168,13 +168,15 @@ export function JobPostingScrollForm({
         <View className="flex-row items-center gap-2">
           {onLoadTemplate && (
             <Button variant="ghost" size="sm" onPress={onLoadTemplate}>
-              <Text className="text-sm text-primary-600 dark:text-primary-400">불러오기</Text>
+              <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
+                불러오기
+              </Text>
             </Button>
           )}
           {onSaveTemplate && (
             <Button variant="ghost" size="sm" onPress={onSaveTemplate} disabled={isSavingTemplate}>
               <Text
-                className={`text-sm ${isSavingTemplate ? 'text-secondary-400' : 'text-primary-600 dark:text-primary-400'}`}
+                className={`text-sm ${isSavingTemplate ? 'text-secondary-400' : 'text-primary-600 dark:text-primary-400'} font-sans`}
               >
                 {isSavingTemplate ? '저장 중...' : '저장'}
               </Text>
@@ -190,7 +192,7 @@ export function JobPostingScrollForm({
               accessibilityLabel={isTournament ? '승인 요청' : '공고 등록'}
               testID="job-posting-create-submit"
             >
-              <Text className="text-sm font-semibold text-surface-dark">
+              <Text className="text-sm font-sans-semibold text-surface-dark">
                 {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
               </Text>
             </Button>

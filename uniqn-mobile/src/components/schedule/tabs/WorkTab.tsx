@@ -51,9 +51,11 @@ interface TimeBoxProps {
 function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
   return (
     <View className="flex-1 items-center py-3 bg-secondary-50 dark:bg-surface/50 rounded-lg">
-      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+        {label}
+      </Text>
       <Text
-        className={`text-base font-semibold ${
+        className={`text-base font-sans-semibold ${
           isHighlight
             ? 'text-primary-600 dark:text-primary-400'
             : 'text-secondary-900 dark:text-off-white'
@@ -93,7 +95,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
     return (
       <View className="py-6 items-center">
         <View className="bg-warning-50 dark:bg-warning-900/20 rounded-md p-4 w-full">
-          <Text className="text-sm text-warning-700 dark:text-warning-300 text-center">
+          <Text className="text-sm text-warning-700 dark:text-warning-300 text-center font-sans">
             지원이 확정되면 근무 정보를 확인할 수 있습니다.
           </Text>
         </View>
@@ -106,7 +108,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
     return (
       <View className="py-6 items-center">
         <View className="bg-error-50 dark:bg-error-900/20 rounded-md p-4 w-full">
-          <Text className="text-sm text-error-600 dark:text-error-400 text-center">
+          <Text className="text-sm text-error-600 dark:text-error-400 text-center font-sans">
             취소된 스케줄입니다.
           </Text>
         </View>
@@ -121,7 +123,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           <View className="mb-2">
             <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
           </View>
-          <Text className="text-sm text-warning-700 dark:text-warning-400">
+          <Text className="text-sm text-warning-700 dark:text-warning-400 font-sans">
             검토 결과가 나오기 전까지 현재 일정 상태가 유지됩니다.
           </Text>
         </View>
@@ -130,12 +132,12 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       <View className="mb-5">
         <View className="flex-row items-center mb-2">
           <BriefcaseIcon size={18} color="#9A9078" />
-          <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+          <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
             역할
           </Text>
         </View>
         <View className="ml-6">
-          <Text className="text-base text-secondary-900 dark:text-off-white font-medium">
+          <Text className="text-base text-secondary-900 dark:text-off-white font-sans-medium">
             {getRoleDisplayName(schedule.role, schedule.customRole)}
           </Text>
         </View>
@@ -146,7 +148,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
             <PhoneIcon size={18} color="#9A9078" />
-            <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
               구인자 연락처
             </Text>
           </View>
@@ -154,12 +156,14 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
             className="ml-6 flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
           >
-            <Text className="text-base text-primary-600 dark:text-primary-400 font-medium">
+            <Text className="text-base text-primary-600 dark:text-primary-400 font-sans-medium">
               {formatPhoneNumber(schedule.ownerPhone)}
             </Text>
             <View className="ml-auto flex-row items-center">
               <PhoneIcon size={16} color="#B8962E" />
-              <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">전화하기</Text>
+              <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400 font-sans">
+                전화하기
+              </Text>
             </View>
           </Pressable>
         </View>
@@ -170,7 +174,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
             <ClockIcon size={18} color="#9A9078" />
-            <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
               출퇴근 기록
             </Text>
           </View>
@@ -210,7 +214,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             color={isWorking ? (isDarkMode ? '#D6D2CA' : '#5C5546') : '#FFFFFF'}
           />
           <Text
-            className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-surface-dark'}`}
+            className={`ml-2 font-sans-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-surface-dark'}`}
           >
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>

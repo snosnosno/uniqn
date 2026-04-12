@@ -37,7 +37,9 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
           className="flex-1 flex-row items-center justify-center rounded-md bg-primary-600 p-4 active:opacity-80 dark:bg-primary-700"
         >
           <QRCodeIcon size={24} color="#FFFFFF" />
-          <Text className="ml-2 text-base font-semibold text-surface-dark">이벤트 QR 열기</Text>
+          <Text className="ml-2 text-base font-sans-semibold text-surface-dark">
+            이벤트 QR 열기
+          </Text>
         </Pressable>
 
         <Pressable
@@ -233,7 +235,7 @@ export function StaffManagementTab({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           확정된 스태프를 불러오는 중입니다...
         </Text>
       </View>

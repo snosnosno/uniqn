@@ -50,9 +50,9 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
         isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >
-      <Text className="mr-1.5">{chip.icon}</Text>
+      <Text className="mr-1.5 font-sans">{chip.icon}</Text>
       <Text
-        className={`font-medium ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}`}
+        className={`font-sans-medium ${isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}`}
       >
         {chip.label}
       </Text>
@@ -63,7 +63,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
           }`}
         >
           <Text
-            className={`text-xs font-semibold ${
+            className={`text-xs font-sans-semibold ${
               isSelected ? 'text-surface-dark' : 'text-secondary-600 dark:text-secondary-300'
             }`}
           >

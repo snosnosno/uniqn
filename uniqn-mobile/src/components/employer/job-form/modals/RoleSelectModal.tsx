@@ -86,13 +86,13 @@ export const RoleSelectModal = memo(function RoleSelectModal({
           accessibilityLabel={`${item.name} 역할 선택`}
         >
           <View className="flex-row items-center">
-            <Text className="text-xl mr-3">{item.icon}</Text>
+            <Text className="text-xl mr-3 font-sans">{item.icon}</Text>
             <Text
               className={`text-base ${
                 isExisting && !isOther
                   ? 'text-secondary-400 dark:text-secondary-500'
                   : 'text-secondary-900 dark:text-off-white'
-              }`}
+              } font-sans`}
             >
               {item.name}
               {isOther ? ' (직접 입력)' : ''}
@@ -112,7 +112,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
       <View className="-mx-5 -mb-5">
         {showCustomInput ? (
           <View className="p-4">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2 font-sans">
               역할 이름을 입력해 주세요.
             </Text>
             <TextInput
@@ -131,7 +131,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 }}
                 className="flex-1 py-3 rounded-lg bg-secondary-100 dark:bg-surface"
               >
-                <Text className="text-center font-medium text-secondary-700 dark:text-secondary-300">
+                <Text className="text-center font-sans-medium text-secondary-700 dark:text-secondary-300">
                   취소
                 </Text>
               </Pressable>
@@ -145,7 +145,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 }`}
               >
                 <Text
-                  className={`text-center font-medium ${
+                  className={`text-center font-sans-medium ${
                     customRoleName.trim()
                       ? 'text-surface-dark'
                       : 'text-secondary-500 dark:text-secondary-400'

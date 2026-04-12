@@ -54,15 +54,15 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
           >
             {isAllSelected && <CheckIcon size={12} color="#fff" />}
           </View>
-          <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+          <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
             {isAllSelected ? '해제' : '전체'}
           </Text>
         </Pressable>
         <View>
-          <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
+          <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
             {selectedCount}건 선택
           </Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             {formatCurrency(selectedAmount)}
           </Text>
         </View>
@@ -78,7 +78,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
         <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#A89C84'} />
         <Text
           className={`
-          ml-1 text-sm font-medium
+          ml-1 text-sm font-sans-medium
           ${selectedCount > 0 ? 'text-surface-dark' : 'text-secondary-500 dark:text-secondary-400'}
         `}
         >

@@ -36,11 +36,11 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         <View className="flex-1 flex-row items-center">
           <View className="mr-4">{icon}</View>
           <View className="flex-1">
-            <Text className="text-base font-medium text-secondary-900 dark:text-secondary-100">
+            <Text className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100">
               {label}
             </Text>
             {description ? (
-              <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {description}
               </Text>
             ) : null}
@@ -49,7 +49,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         <View className="flex-row items-center">
           {badge !== undefined && badge > 0 ? (
             <View className="mr-2 min-w-[20px] items-center justify-center rounded-sm bg-primary-500 px-2 py-0.5">
-              <Text className="text-xs font-bold text-surface-dark">{badge}</Text>
+              <Text className="text-xs font-sans-bold text-surface-dark">{badge}</Text>
             </View>
           ) : null}
           <ChevronRightIcon size={20} color="#A89C84" />
@@ -71,7 +71,7 @@ export default function SupportScreen() {
     <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <View className="mb-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
-          <Text className="text-sm text-primary-700 dark:text-primary-300">
+          <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
             궁금한 점이 있으신가요?
             {'\n'}
             자주 묻는 질문에서 빠르게 답을 찾거나,
@@ -108,13 +108,13 @@ export default function SupportScreen() {
         </Card>
 
         <View className="mt-6 items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             고객센터 운영시간
           </Text>
-          <Text className="mt-1 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mt-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             평일 09:00 - 18:00 (주말/공휴일 휴무)
           </Text>
-          <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500">
+          <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
             문의 접수 후 영업일 기준 1-2일 내 답변드려요
           </Text>
         </View>

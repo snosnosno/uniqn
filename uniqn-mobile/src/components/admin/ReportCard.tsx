@@ -83,26 +83,31 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
           <View className="flex-row items-center flex-wrap gap-2 mb-1">
             {/* 심각도 배지 */}
             <View className={`px-2 py-0.5 rounded ${severityColor.bg}`}>
-              <Text className={`text-xs font-medium ${severityColor.text}`}>
+              <Text className={`text-xs font-sans-medium ${severityColor.text}`}>
                 {SEVERITY_LABELS[report.severity]}
               </Text>
             </View>
             {/* 상태 배지 */}
             <View className={`px-2 py-0.5 rounded ${statusColor.bg}`}>
-              <Text className={`text-xs font-medium ${statusColor.text}`}>
+              <Text className={`text-xs font-sans-medium ${statusColor.text}`}>
                 {REPORT_STATUS_LABELS[report.status]}
               </Text>
             </View>
           </View>
           {/* 신고 유형 */}
-          <Text className="font-semibold text-secondary-900 dark:text-off-white">{typeLabel}</Text>
+          <Text className="font-sans-semibold text-secondary-900 dark:text-off-white">
+            {typeLabel}
+          </Text>
         </View>
         <ChevronRightIcon size={20} color="#A89C84" />
       </View>
 
       {/* 설명 */}
       <View className="mb-2">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
+        <Text
+          className="text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+          numberOfLines={2}
+        >
           {report.description}
         </Text>
       </View>
@@ -110,19 +115,24 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
       {/* 신고자 → 피신고자 */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
-            <Text className="font-medium">{report.reporterName}</Text>
-            <Text> → </Text>
-            <Text className="font-medium">{report.targetName}</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            <Text className="font-sans-medium">{report.reporterName}</Text>
+            <Text className="font-sans"> → </Text>
+            <Text className="font-sans-medium">{report.targetName}</Text>
           </Text>
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500">{timeAgo}</Text>
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          {timeAgo}
+        </Text>
       </View>
 
       {/* 관련 공고 (있는 경우) */}
       {report.jobPostingTitle && (
         <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500" numberOfLines={1}>
+          <Text
+            className="text-xs text-secondary-400 dark:text-secondary-500 font-sans"
+            numberOfLines={1}
+          >
             공고: {report.jobPostingTitle}
           </Text>
         </View>

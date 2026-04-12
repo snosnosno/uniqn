@@ -102,7 +102,7 @@ function MonthNavigator({
           accessibilityRole="button"
           testID="schedule-today-button"
         >
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200">
             오늘
           </Text>
         </Pressable>
@@ -177,7 +177,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
       <View className="flex-row justify-around">
         {/* 지원 (applied) */}
         <View className="items-center" accessible accessibilityLabel="지원 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">지원</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">지원</Text>
           <Text className="text-2xl font-display text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
@@ -185,7 +185,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
         {/* 확정 (confirmed) */}
         <View className="items-center" accessible accessibilityLabel="확정 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">확정</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">확정</Text>
           <Text className="text-2xl font-display text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
@@ -193,7 +193,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
         {/* 완료 (completed) */}
         <View className="items-center" accessible accessibilityLabel="완료 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400">완료</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">완료</Text>
           <Text className="text-2xl font-display text-secondary-900 dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
@@ -207,7 +207,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         accessible
         accessibilityLabel="수익 통계"
       >
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">수익</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">수익</Text>
         <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
           {formatCurrency(stats.thisMonthEarnings)}
         </Text>
@@ -475,7 +475,7 @@ export default function ScheduleScreen() {
             {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
             {selectedDateSchedules.length > 0 && (
               <View className="mt-4 px-4">
-                <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
                 {selectedDateSchedules.map((item) => {
@@ -534,7 +534,7 @@ export default function ScheduleScreen() {
           ) : (
             // 지원(applicationId)별 그룹화된 스케줄
             <View>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
                 {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
               </Text>
               {groupedByApplication.map((item) => {

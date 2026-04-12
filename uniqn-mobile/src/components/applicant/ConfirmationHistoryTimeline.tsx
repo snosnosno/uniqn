@@ -77,7 +77,7 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
     return (
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-sm bg-primary-500 mr-2" />
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {formattedDate ? `지원 ${formattedDate}` : '지원 내역'}
         </Text>
       </View>
@@ -99,12 +99,14 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
             최초 지원
           </Badge>
           {formattedDate ? (
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2 font-sans">
               {formattedDate}
             </Text>
           ) : null}
         </View>
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400">{summary}</Text>
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+          {summary}
+        </Text>
       </View>
     </View>
   );
@@ -130,7 +132,7 @@ const TimelineItem = memo(function TimelineItem({
         <View
           className={`w-2 h-2 rounded-sm mr-2 ${isCancelled ? 'bg-error-500' : 'bg-success-500'}`}
         />
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {isCancelled ? '취소' : '확정'} {isCancelled ? cancelledDate : confirmedDate}
         </Text>
       </View>
@@ -152,11 +154,13 @@ const TimelineItem = memo(function TimelineItem({
           <Badge variant={isCancelled ? 'default' : 'success'} size="sm">
             {index + 1}차 확정
           </Badge>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2 font-sans">
             {confirmedDate}
           </Text>
         </View>
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-1">{summary}</Text>
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-1 font-sans">
+          {summary}
+        </Text>
 
         {/* 취소 정보 */}
         {isCancelled && (
@@ -165,12 +169,12 @@ const TimelineItem = memo(function TimelineItem({
               <Badge variant="error" size="sm">
                 취소됨
               </Badge>
-              <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2">
+              <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2 font-sans">
                 {cancelledDate}
               </Text>
             </View>
             {entry.cancelReason && (
-              <Text className="text-sm text-error-600 dark:text-error-400">
+              <Text className="text-sm text-error-600 dark:text-error-400 font-sans">
                 사유: {entry.cancelReason}
               </Text>
             )}
@@ -240,7 +244,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
           />
         ))}
         {remainingCount > 0 && (
-          <Text className="text-xs text-secondary-400">+{remainingCount}개 이력</Text>
+          <Text className="text-xs text-secondary-400 font-sans">+{remainingCount}개 이력</Text>
         )}
       </View>
     );
@@ -250,7 +254,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
     <View className={`bg-secondary-50 dark:bg-surface-dark rounded-md p-4 ${className}`}>
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           확정 이력
         </Text>
         <View className="flex-row items-center">
@@ -273,19 +277,25 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
             <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
               {history.length}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">총 확정</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              총 확정
+            </Text>
           </View>
           <View className="flex-1 items-center">
             <Text className="text-lg font-display text-error-600 dark:text-error-400">
               {history.filter((e) => e.cancelledAt).length}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">취소</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              취소
+            </Text>
           </View>
           <View className="flex-1 items-center">
             <Text className="text-lg font-display text-success-600 dark:text-success-400">
               {history.filter((e) => !e.cancelledAt).length}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">활성</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              활성
+            </Text>
           </View>
         </View>
       )}
@@ -304,7 +314,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
         {remainingCount > 0 && (
           <View className="flex-row items-center">
             <View className="w-3 h-3 rounded-sm bg-secondary-300 dark:bg-surface-elevated mr-3" />
-            <Text className="text-sm text-secondary-400 dark:text-secondary-500">
+            <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
               +{remainingCount}개 더보기
             </Text>
           </View>

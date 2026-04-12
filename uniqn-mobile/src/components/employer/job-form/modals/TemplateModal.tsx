@@ -51,8 +51,8 @@ export function TemplateModal({
     <Modal visible={visible} onClose={onClose} title="템플릿으로 저장" size="md">
       {/* 템플릿 이름 */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-          템플릿 이름 <Text className="text-error-500">*</Text>
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          템플릿 이름 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <TextInput
           value={templateName}
@@ -68,13 +68,15 @@ export function TemplateModal({
           editable={!isSaving}
         />
         {isTooShort && (
-          <Text className="text-error-500 text-xs mt-1">템플릿 이름은 2자 이상 입력해주세요</Text>
+          <Text className="text-error-500 text-xs mt-1 font-sans">
+            템플릿 이름은 2자 이상 입력해주세요
+          </Text>
         )}
       </View>
 
       {/* 템플릿 설명 */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
           설명 (선택)
         </Text>
         <TextInput
@@ -92,21 +94,25 @@ export function TemplateModal({
 
       {/* 안내 문구 */}
       <View className="bg-primary-50 dark:bg-primary-900/30 rounded-md p-4 mb-6">
-        <Text className="text-primary-800 dark:text-primary-200 text-sm font-medium mb-2">
+        <Text className="text-primary-800 dark:text-primary-200 text-sm font-sans-medium mb-2">
           저장되는 내용
         </Text>
         <View className="flex-col gap-1">
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
             - 제목, 공고 타입, 지역 정보
           </Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
             - 급여 정보, 복리후생
           </Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">- 사전질문 설정</Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">- 역할/인원 정보</Text>
+          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
+            - 사전질문 설정
+          </Text>
+          <Text className="text-primary-700 dark:text-primary-300 text-xs font-sans">
+            - 역할/인원 정보
+          </Text>
         </View>
         <View className="mt-2 pt-2 border-t border-primary-200 dark:border-primary-700">
-          <Text className="text-primary-600 dark:text-primary-400 text-xs">
+          <Text className="text-primary-600 dark:text-primary-400 text-xs font-sans">
             * 날짜 및 일정은 저장되지 않습니다
           </Text>
         </View>
@@ -121,7 +127,7 @@ export function TemplateModal({
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-sans-medium">
             취소
           </Text>
         </Pressable>
@@ -138,7 +144,7 @@ export function TemplateModal({
           {isSaving ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-surface-dark text-center font-semibold">저장</Text>
+            <Text className="text-surface-dark text-center font-sans-semibold">저장</Text>
           )}
         </Pressable>
       </View>

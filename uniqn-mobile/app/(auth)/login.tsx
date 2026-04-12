@@ -225,8 +225,10 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-10 items-center">
-            <Text className="text-4xl font-bold text-primary-600 dark:text-primary-400">UNIQN</Text>
-            <Text className="mt-2 text-secondary-500 dark:text-secondary-400">
+            <Text className="text-4xl font-sans-bold text-primary-600 dark:text-primary-400">
+              UNIQN
+            </Text>
+            <Text className="mt-2 text-secondary-500 dark:text-secondary-400 font-sans">
               안전한 스태프 채용 플랫폼
             </Text>
           </View>
@@ -241,7 +243,7 @@ export default function LoginScreen() {
                 size="lg"
                 className="w-full"
               />
-              <Text className="mt-2 text-center text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mt-2 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {biometricTypeName}으로 빠르게 로그인하세요
               </Text>
               <Divider label="또는 이메일로" spacing="md" />

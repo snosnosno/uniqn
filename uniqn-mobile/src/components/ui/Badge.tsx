@@ -147,7 +147,7 @@ export function Badge({
   const containerClass =
     `flex-row items-center rounded-sm ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
   const dotClass = `mr-2 h-2 w-2 rounded-sm ${dotStyles[variant]}`;
-  const textClass = `font-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
+  const textClass = `font-sans-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
 
   // children 또는 preset label이 문자열인 경우 자동으로 accessibilityLabel 생성
   const resolvedAccessibilityLabel =

@@ -223,22 +223,24 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               onImageUpdated={handleImageUpdated}
               size="xl"
             />
-            <Text className="mt-3 text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="mt-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               프로필 사진을 탭하여 변경
             </Text>
           </Card>
 
           {/* 기본 정보 (수정 불가) */}
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-3 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
               기본 정보 (수정 불가)
             </Text>
 
             {/* 이름 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">이름</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이름
+              </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {profile.name ?? '-'}
                 </Text>
               </View>
@@ -246,15 +248,15 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 이메일 (읽기 전용) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이메일
               </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {profile.email ?? user?.email ?? '-'}
                 </Text>
                 {(profile.email ?? user?.email ?? '').endsWith('@privaterelay.apple.com') && (
-                  <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+                  <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
                     (Apple 비공개 이메일)
                   </Text>
                 )}
@@ -263,11 +265,11 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 전화번호 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 전화번호
               </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {profile.phone ?? '-'}
                 </Text>
               </View>
@@ -275,11 +277,11 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 생년월일 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
               </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {formatBirthDate(profile.birthDate)}
                 </Text>
               </View>
@@ -287,9 +289,11 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 성별 (읽기 전용 - 회원가입 Step2) */}
             <View>
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">성별</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                성별
+              </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {profile.gender === 'male' ? '남성' : profile.gender === 'female' ? '여성' : '-'}
                 </Text>
               </View>
@@ -298,13 +302,13 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 추가 정보 */}
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            <Text className="mb-3 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
               추가 정보
             </Text>
 
             {/* 닉네임 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 닉네임
               </Text>
               <Controller
@@ -335,10 +339,12 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 )}
               />
               {errors.nickname && (
-                <Text className="mt-1 text-sm text-error-500">{errors.nickname.message}</Text>
+                <Text className="mt-1 text-sm text-error-500 font-sans">
+                  {errors.nickname.message}
+                </Text>
               )}
               {nicknameStatus === 'available' && !errors.nickname && (
-                <Text className="mt-1 text-xs text-success-600 dark:text-success-400">
+                <Text className="mt-1 text-xs text-success-600 dark:text-success-400 font-sans">
                   사용 가능한 닉네임입니다
                 </Text>
               )}
@@ -346,7 +352,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 지역 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">지역</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                지역
+              </Text>
               <Controller
                 control={control}
                 name="region"
@@ -368,13 +376,15 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 )}
               />
               {errors.region && (
-                <Text className="mt-1 text-sm text-error-500">{errors.region.message}</Text>
+                <Text className="mt-1 text-sm text-error-500 font-sans">
+                  {errors.region.message}
+                </Text>
               )}
             </View>
 
             {/* 경력 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 경력 (년)
               </Text>
               <Controller
@@ -401,7 +411,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 )}
               />
               {errors.experienceYears && (
-                <Text className="mt-1 text-sm text-error-500">
+                <Text className="mt-1 text-sm text-error-500 font-sans">
                   {errors.experienceYears.message}
                 </Text>
               )}
@@ -409,7 +419,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 이력 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">이력</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이력
+              </Text>
               <Controller
                 control={control}
                 name="career"
@@ -434,13 +446,15 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 )}
               />
               {errors.career && (
-                <Text className="mt-1 text-sm text-error-500">{errors.career.message}</Text>
+                <Text className="mt-1 text-sm text-error-500 font-sans">
+                  {errors.career.message}
+                </Text>
               )}
             </View>
 
             {/* 기타사항 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 기타사항
               </Text>
               <Controller
@@ -467,15 +481,17 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 )}
               />
               {errors.note && (
-                <Text className="mt-1 text-sm text-error-500">{errors.note.message}</Text>
+                <Text className="mt-1 text-sm text-error-500 font-sans">{errors.note.message}</Text>
               )}
             </View>
 
             {/* 역할 (읽기 전용) */}
             <View>
-              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">역할</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                역할
+              </Text>
               <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300">
+                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
                   {profile.role === 'admin'
                     ? '관리자'
                     : profile.role === 'employer'
@@ -501,7 +517,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             {isSaving ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-center text-base font-semibold text-surface-dark">저장</Text>
+              <Text className="text-center text-base font-sans-semibold text-surface-dark">
+                저장
+              </Text>
             )}
           </Pressable>
         </ScrollView>

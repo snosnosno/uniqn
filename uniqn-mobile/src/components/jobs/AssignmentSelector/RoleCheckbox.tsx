@@ -40,7 +40,7 @@ export const RoleCheckbox = memo(function RoleCheckbox({
           isFilled
             ? 'text-secondary-400 line-through dark:text-secondary-500'
             : isSelected
-              ? 'font-medium text-primary-700 dark:text-primary-300'
+              ? 'font-sans-medium text-primary-700 dark:text-primary-300'
               : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >

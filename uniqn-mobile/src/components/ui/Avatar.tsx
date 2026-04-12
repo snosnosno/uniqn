@@ -160,7 +160,7 @@ export const Avatar = memo(function Avatar({
       `}
       accessibilityLabel={name ? `${name} 아바타` : '사용자 아바타'}
     >
-      <Text className={`font-semibold text-white ${textSizeStyles[size]}`}>
+      <Text className={`font-sans-semibold text-white ${textSizeStyles[size]}`}>
         {getInitials(name)}
       </Text>
     </View>

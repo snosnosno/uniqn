@@ -125,7 +125,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             />
             <View className="flex-1">
               <View className="flex-row items-center">
-                <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+                <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
                   {displayName}
                 </Text>
                 {staff.isRead === false ? (
@@ -134,7 +134,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               </View>
               <View className="mt-0.5 flex-row items-center">
                 <BriefcaseIcon size={12} color="#9A9078" />
-                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
+                <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   {getRoleDisplayName(staff.role, staff.customRole)}
                 </Text>
               </View>
@@ -159,7 +159,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             <View className="ml-2 flex-1 flex-row">
               <View className="flex-1">
                 <View className="flex-row items-center">
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                     {timeInfo.isEffectiveStartActual ? '출근' : '시작'}
                   </Text>
                   {isCheckedIn ? (
@@ -168,26 +168,26 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                     </View>
                   ) : null}
                 </View>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+                <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
                   {timeInfo.effectiveStart}
                 </Text>
               </View>
 
               <View className="flex-1">
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+                <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
                   {timeInfo.effectiveEnd}
                 </Text>
               </View>
 
               {workDuration ? (
                 <View className="flex-1">
-                  <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                     근무 시간
                   </Text>
-                  <Text className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                  <Text className="text-sm font-sans-semibold text-primary-600 dark:text-primary-400">
                     {workDuration}
                   </Text>
                 </View>
@@ -198,7 +198,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
         {staff.notes && !compact ? (
           <View className="mt-2 rounded-lg bg-secondary-50 p-2 dark:bg-surface">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
+            <Text
+              className="text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+              numberOfLines={2}
+            >
               {staff.notes}
             </Text>
           </View>
@@ -213,7 +216,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
             >
               <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
+              <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
                 시간 수정
               </Text>
             </Pressable>
@@ -225,7 +228,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
             >
               <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-              <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
+              <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
                 역할 변경
               </Text>
             </Pressable>
@@ -237,7 +240,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-row items-center justify-center rounded-lg bg-error-50 px-3 py-2 active:opacity-70 dark:bg-error-900/20"
             >
               <ExclamationTriangleIcon size={14} color="#DC2626" />
-              <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
+              <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
                 신고
               </Text>
             </Pressable>

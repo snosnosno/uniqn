@@ -17,10 +17,10 @@ export function PortOneIdentityVerification({
 }: PortOneIdentityVerificationProps) {
   return (
     <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-      <Text className="mb-2 font-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 font-sans-semibold text-secondary-900 dark:text-off-white">
         이니시스 본인인증
       </Text>
-      <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300">
+      <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300 font-sans">
         웹 환경에서는 아직 이니시스 본인인증 SDK를 연결하지 않았습니다. 현재는 모바일 앱에서만
         사용할 수 있습니다.
       </Text>
@@ -28,7 +28,7 @@ export function PortOneIdentityVerification({
         모바일 앱에서 이용 가능
       </Button>
       {!disabled && (
-        <Text className="mt-3 text-xs text-secondary-500 dark:text-secondary-400">
+        <Text className="mt-3 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           웹에서는 기존 문자 인증 fallback이 유지됩니다.
         </Text>
       )}

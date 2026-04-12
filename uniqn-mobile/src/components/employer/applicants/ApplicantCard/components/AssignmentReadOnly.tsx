@@ -54,14 +54,14 @@ export const AssignmentReadOnly = React.memo(function AssignmentReadOnly({
           >
             <CalendarIcon size={16} color={iconColors.unchecked} />
             <Text
-              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+              className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
             >
               {display.formattedDate} {display.timeSlotDisplay}
             </Text>
             <View className={`mx-2 h-4 w-px ${isDark ? 'bg-secondary-500' : 'bg-secondary-300'}`} />
             <BriefcaseIcon size={16} color={iconColors.unchecked} />
             <Text
-              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
+              className={`ml-1.5 text-sm font-sans-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
             >
               {display.roleLabel}
             </Text>

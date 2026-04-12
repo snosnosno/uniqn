@@ -40,19 +40,19 @@ function DataFetchErrorFallback({
   return (
     <View className="flex-1 items-center justify-center p-6">
       <View className="w-16 h-16 rounded-sm bg-secondary-100 dark:bg-surface items-center justify-center mb-4">
-        <Text className="text-3xl">{''}</Text>
+        <Text className="text-3xl font-sans">{''}</Text>
       </View>
 
       <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white text-center mb-2">
         {resourceName}를 불러올 수 없습니다
       </Text>
 
-      <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-4 text-sm">
+      <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-4 text-sm font-sans">
         잠시 후 다시 시도해주세요
       </Text>
 
       {env.isDevelopment && error && (
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-center mb-4 font-mono">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-center mb-4 font-mono font-sans">
           {error.message}
         </Text>
       )}
@@ -63,7 +63,9 @@ function DataFetchErrorFallback({
         accessibilityRole="button"
         accessibilityLabel="새로고침"
       >
-        <Text className="text-secondary-700 dark:text-secondary-200 font-medium">새로고침</Text>
+        <Text className="text-secondary-700 dark:text-secondary-200 font-sans-medium">
+          새로고침
+        </Text>
       </Pressable>
     </View>
   );

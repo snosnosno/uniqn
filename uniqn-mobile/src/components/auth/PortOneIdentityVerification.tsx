@@ -169,35 +169,41 @@ export function PortOneIdentityVerification({
         <View className="rounded-md border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
           <View className="mb-3 flex-row items-center">
             <CheckCircleIcon size={20} color="#22c55e" />
-            <Text className="ml-2 font-semibold text-success-700 dark:text-success-400">
+            <Text className="ml-2 font-sans-semibold text-success-700 dark:text-success-400">
               이니시스 본인인증 완료
             </Text>
           </View>
 
           <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
             <View className="flex-row justify-between">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">이름</Text>
-              <Text className="font-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이름
+              </Text>
+              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
                 {verifiedIdentity.name}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">생년월일</Text>
-              <Text className="font-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                생년월일
+              </Text>
+              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">성별</Text>
-              <Text className="font-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                성별
+              </Text>
+              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
                 {getGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호
               </Text>
-              <Text className="font-medium text-secondary-900 dark:text-off-white">
+              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -217,11 +223,11 @@ export function PortOneIdentityVerification({
         <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
             <ShieldCheckIcon size={20} color="#4f46e5" />
-            <Text className="ml-2 font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="ml-2 font-sans-semibold text-secondary-900 dark:text-off-white">
               이니시스 본인인증
             </Text>
           </View>
-          <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300">
+          <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300 font-sans">
             PASS, 토스, 카카오, 네이버 등 이니시스 통합인증 수단으로 본인인증을 진행합니다. 인증
             완료 후 검증된 이름, 생년월일, 성별, 휴대폰 번호를 자동으로 반영합니다.
           </Text>
@@ -234,7 +240,7 @@ export function PortOneIdentityVerification({
       {errorMessage && (
         <View className="mt-3 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
           <XCircleIcon size={18} color="#DC2626" />
-          <Text className="ml-2 flex-1 text-sm text-error-600 dark:text-error-400">
+          <Text className="ml-2 flex-1 text-sm text-error-600 dark:text-error-400 font-sans">
             {errorMessage}
           </Text>
         </View>

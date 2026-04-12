@@ -57,9 +57,9 @@ const SentimentButton = React.memo(function SentimentButton({
       accessibilityRole="radio"
       accessibilityState={{ selected: isSelected }}
     >
-      <Text className="mb-1 text-2xl">{SENTIMENT_EMOJI[sentiment]}</Text>
+      <Text className="mb-1 text-2xl font-sans">{SENTIMENT_EMOJI[sentiment]}</Text>
       <Text
-        className={`text-sm font-medium ${
+        className={`text-sm font-sans-medium ${
           isSelected ? colors.text : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >

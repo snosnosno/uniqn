@@ -35,16 +35,16 @@ export function JobDetailHeader({
       <HeaderBackButton tintColor={headerTintColor} fallbackHref={fallbackHref} className="mr-2" />
 
       <View className="min-w-0 flex-1 flex-row items-center">
-        <Text className="text-base font-semibold" style={{ color: headerTintColor }}>
+        <Text className="text-base font-sans-semibold" style={{ color: headerTintColor }}>
           공고 상세
         </Text>
         {title ? (
           <>
-            <Text className="mx-2" style={{ color: secondaryTextColor }}>
+            <Text className="mx-2 font-sans" style={{ color: secondaryTextColor }}>
               |
             </Text>
             <Text
-              className="flex-1 text-base"
+              className="flex-1 text-base font-sans"
               style={{ color: secondaryTextColor }}
               numberOfLines={1}
               testID="job-detail-title"

@@ -61,7 +61,7 @@ export function StaffProfileHeader({
           {statusConfig.label}
         </Badge>
       </View>
-      <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
         {role ? getRoleDisplayName(role, customRole) : '역할 없음'} •{' '}
         {workDate ? formatDate(workDate) : '날짜 없음'}
       </Text>

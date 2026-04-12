@@ -109,13 +109,15 @@ export function NumberPickerModal({
           {/* 헤더 */}
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
             <Pressable onPress={onClose} className="py-2 px-3">
-              <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
+              <Text className="text-secondary-500 dark:text-secondary-400 text-base font-sans">
+                취소
+              </Text>
             </Pressable>
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               {title}
             </Text>
             <Pressable onPress={handleConfirm} className="py-2 px-3">
-              <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
+              <Text className="text-primary-600 dark:text-primary-400 text-base font-sans-semibold">
                 확인
               </Text>
             </Pressable>
@@ -170,7 +172,7 @@ export function NumberPickerModal({
                     <Text
                       className={`text-xl ${
                         isSelected
-                          ? 'font-bold text-secondary-900 dark:text-off-white'
+                          ? 'font-sans-bold text-secondary-900 dark:text-off-white'
                           : 'text-secondary-400 dark:text-secondary-500'
                       }`}
                     >

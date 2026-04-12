@@ -58,13 +58,15 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
         <Text
           className={`text-base ${
             isSelected
-              ? 'text-primary-600 dark:text-primary-400 font-medium'
+              ? 'text-primary-600 dark:text-primary-400 font-sans-medium'
               : 'text-secondary-900 dark:text-off-white'
           } ${item.disabled ? 'text-secondary-400' : ''}`}
         >
           {item.label}
         </Text>
-        {isSelected && <Text className="text-primary-600 dark:text-primary-400">{''}</Text>}
+        {isSelected && (
+          <Text className="text-primary-600 dark:text-primary-400 font-sans">{''}</Text>
+        )}
       </View>
     </Pressable>
   );
@@ -169,10 +171,10 @@ export function FormSelect<T = string>({
       {/* 레이블 */}
       {label && (
         <View className="flex-row mb-2">
-          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
             {label}
           </Text>
-          {required && <Text className="text-error-600 ml-0.5">*</Text>}
+          {required && <Text className="text-error-600 ml-0.5 font-sans">*</Text>}
         </View>
       )}
 
@@ -192,17 +194,17 @@ export function FormSelect<T = string>({
         accessibilityHint="탭하여 옵션 선택"
         accessibilityState={{ expanded: isOpen, disabled }}
       >
-        <Text className={`text-base ${getTextStyle()}`}>
+        <Text className={`text-base ${getTextStyle()} font-sans`}>
           {selectedOption?.label || placeholder}
         </Text>
-        <Text className="text-secondary-400 dark:text-secondary-500">▼</Text>
+        <Text className="text-secondary-400 dark:text-secondary-500 font-sans">▼</Text>
       </Pressable>
 
       {/* 에러 메시지 */}
       {errorMessage && (
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-error-600 mr-1">{''}</Text>
-          <Text className="text-error-600 text-sm flex-1">{errorMessage}</Text>
+          <Text className="text-error-600 mr-1 font-sans">{''}</Text>
+          <Text className="text-error-600 text-sm flex-1 font-sans">{errorMessage}</Text>
         </View>
       )}
 
@@ -245,7 +247,7 @@ export function FormSelect<T = string>({
               )}
               ListEmptyComponent={
                 <View className="py-8 items-center">
-                  <Text className="text-secondary-500 dark:text-secondary-400">
+                  <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
                     {searchQuery.trim() ? '검색 결과가 없습니다' : '선택 가능한 옵션이 없습니다'}
                   </Text>
                   {searchQuery.trim() && (
@@ -255,7 +257,9 @@ export function FormSelect<T = string>({
                       accessibilityRole="button"
                       accessibilityLabel="검색어 초기화"
                     >
-                      <Text className="text-primary-600 dark:text-primary-400">검색어 초기화</Text>
+                      <Text className="text-primary-600 dark:text-primary-400 font-sans">
+                        검색어 초기화
+                      </Text>
                     </Pressable>
                   )}
                 </View>

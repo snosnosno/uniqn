@@ -67,7 +67,7 @@ export function PublicBottomTabBar({
               accessibilityState={{ disabled: isActive, selected: isActive }}
             >
               <Icon size={22} color={color} />
-              <Text className="mt-1 text-xs font-semibold" style={{ color }}>
+              <Text className="mt-1 text-xs font-sans-semibold" style={{ color }}>
                 {item.label}
               </Text>
             </Pressable>

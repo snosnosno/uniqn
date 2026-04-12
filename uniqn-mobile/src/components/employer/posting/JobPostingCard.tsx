@@ -41,7 +41,7 @@ export const JobPostingCard = memo(function JobPostingCard({
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
               <UsersIcon size={14} color="#B8962E" />
-              <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
+              <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
                 지원자 {posting.stats?.totalApplicants ?? 0}
               </Text>
             </View>
@@ -77,7 +77,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                   accessibilityState={{ disabled: isClosing }}
                   testID={`employer-close-posting-${posting.id}`}
                 >
-                  <Text className="text-xs font-medium text-secondary-700 dark:text-secondary-300">
+                  <Text className="text-xs font-sans-medium text-secondary-700 dark:text-secondary-300">
                     {isClosing ? '처리중...' : '마감하기'}
                   </Text>
                 </Pressable>
@@ -93,7 +93,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                   accessibilityState={{ disabled: isReopening }}
                   testID={`employer-reopen-posting-${posting.id}`}
                 >
-                  <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                  <Text className="text-xs font-sans-medium text-primary-600 dark:text-primary-400">
                     {isReopening ? '처리중...' : '재오픈'}
                   </Text>
                 </Pressable>

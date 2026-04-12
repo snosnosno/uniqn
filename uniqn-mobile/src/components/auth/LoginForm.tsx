@@ -61,7 +61,7 @@ export function LoginForm({
     <View className="w-full flex-col gap-4">
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           이메일
         </Text>
         <Controller
@@ -85,7 +85,7 @@ export function LoginForm({
 
       {/* 비밀번호 입력 */}
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           비밀번호
         </Text>
         <Controller
@@ -122,7 +122,7 @@ export function LoginForm({
       <View className="items-end">
         <Link href="/forgot-password" asChild>
           <Pressable>
-            <Text className="text-sm text-primary-600 dark:text-primary-400">
+            <Text className="text-sm text-primary-600 dark:text-primary-400 font-sans">
               비밀번호를 잊으셨나요?
             </Text>
           </Pressable>
@@ -135,20 +135,24 @@ export function LoginForm({
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-surface-dark font-medium">로그인 중...</Text>
+              <Text className="ml-2 text-surface-dark font-sans-medium">로그인 중...</Text>
             </View>
           ) : (
-            <Text className="text-surface-dark font-medium">로그인</Text>
+            <Text className="text-surface-dark font-sans-medium">로그인</Text>
           )}
         </Button>
       </View>
 
       {/* 회원가입 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-secondary-600 dark:text-secondary-400">계정이 없으신가요? </Text>
+        <Text className="text-secondary-600 dark:text-secondary-400 font-sans">
+          계정이 없으신가요?{' '}
+        </Text>
         <Link href="/signup" asChild>
           <Pressable>
-            <Text className="font-medium text-primary-600 dark:text-primary-400">회원가입</Text>
+            <Text className="font-sans-medium text-primary-600 dark:text-primary-400">
+              회원가입
+            </Text>
           </Pressable>
         </Link>
       </View>

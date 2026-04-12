@@ -115,7 +115,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         <View className="mr-3">
           <IconComponent size={20} color="#FFFFFF" />
         </View>
-        <Text className="text-white text-sm flex-1 font-medium">{toast.message}</Text>
+        <Text className="text-white text-sm flex-1 font-sans-medium">{toast.message}</Text>
         <View className="ml-2 p-1">
           <XMarkIcon size={14} color="rgba(255, 255, 255, 0.8)" />
         </View>

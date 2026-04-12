@@ -164,7 +164,7 @@ export function SignupStepIdentity({
   return (
     <View className="w-full flex-col gap-5">
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           이름 (실명)
         </Text>
         <Controller
@@ -184,7 +184,7 @@ export function SignupStepIdentity({
         />
         {isAppleUser && !initialData?.name && (
           <View className="mt-2 rounded-lg bg-info-50 p-3 dark:bg-info-900/20">
-            <Text className="text-xs text-info-700 dark:text-info-300">
+            <Text className="text-xs text-info-700 dark:text-info-300 font-sans">
               Apple은 최초 로그인 시에만 이름을 제공합니다. 이전에 이름 공유를 거부했거나 삭제한
               경우 직접 입력해주세요.
             </Text>
@@ -193,7 +193,7 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           생년월일
         </Text>
         <Controller
@@ -208,12 +208,12 @@ export function SignupStepIdentity({
           )}
         />
         {errors.birthDate && (
-          <Text className="mt-1 text-sm text-error-500">{errors.birthDate.message}</Text>
+          <Text className="mt-1 text-sm text-error-500 font-sans">{errors.birthDate.message}</Text>
         )}
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           성별
         </Text>
         <Controller
@@ -228,12 +228,12 @@ export function SignupStepIdentity({
           )}
         />
         {errors.gender && (
-          <Text className="mt-1 text-sm text-error-500">{errors.gender.message}</Text>
+          <Text className="mt-1 text-sm text-error-500 font-sans">{errors.gender.message}</Text>
         )}
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
           {usePortOneIdentity ? '본인인증' : '전화번호 인증'}
         </Text>
         {usePortOneIdentity ? (
@@ -263,7 +263,9 @@ export function SignupStepIdentity({
       </View>
 
       {errors.phoneVerified && !verifiedPhone && (
-        <Text className="-mt-2 text-sm text-error-500">{errors.phoneVerified.message}</Text>
+        <Text className="-mt-2 text-sm text-error-500 font-sans">
+          {errors.phoneVerified.message}
+        </Text>
       )}
 
       <View className="mt-4 flex-col gap-3">

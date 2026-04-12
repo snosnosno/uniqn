@@ -36,7 +36,9 @@ function DashboardCard({
         <Text className="mb-1 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
           {title}
         </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">{description}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          {description}
+        </Text>
       </Pressable>
     </Link>
   );
@@ -109,7 +111,7 @@ export default function AdminDashboard() {
           <Text className="mb-1 text-2xl font-display text-secondary-900 dark:text-off-white">
             관리자
           </Text>
-          <Text className="text-secondary-500 dark:text-secondary-400">
+          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
             주요 운영 화면을 한 곳에서 빠르게 확인합니다.
           </Text>
         </View>

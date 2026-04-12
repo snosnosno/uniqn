@@ -41,7 +41,9 @@ export function StatsSummaryCard({
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+            {label}
+          </Text>
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
@@ -50,14 +52,14 @@ export function StatsSummaryCard({
                 {value?.toLocaleString() ?? '--'}
               </Text>
               {suffix && (
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
                   {suffix}
                 </Text>
               )}
             </View>
           )}
           {description && (
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
               {description}
             </Text>
           )}
@@ -114,7 +116,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             시스템 상태
           </Text>
           {isLoading ? (

@@ -111,7 +111,7 @@ export const DatePicker = memo(function DatePicker({
   if (mode === 'time') {
     return (
       <View className={className} testID={testID}>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           시간 선택은 TimePicker를 사용하세요
         </Text>
       </View>
@@ -122,7 +122,9 @@ export const DatePicker = memo(function DatePicker({
     <View className={className} testID={testID}>
       {/* 레이블 */}
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
+        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+          {label}
+        </Text>
       )}
 
       {/* 트리거 영역 - 버튼 중첩 방지를 위해 flex 구조 변경 */}
@@ -144,7 +146,7 @@ export const DatePicker = memo(function DatePicker({
                 : value
                   ? 'text-secondary-900 dark:text-off-white'
                   : 'text-secondary-400 dark:text-secondary-500'
-            }`}
+            } font-sans`}
           >
             {displayText}
           </Text>
@@ -167,7 +169,9 @@ export const DatePicker = memo(function DatePicker({
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && <Text className="mt-2 text-sm text-error-500">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="mt-2 text-sm text-error-500 font-sans">{errorMessage}</Text>
+      )}
 
       {/* 모달 */}
       <Modal
@@ -281,7 +285,9 @@ export const DateRangePicker = memo(function DateRangePicker({
   return (
     <View className={className} testID={testID}>
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
+        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+          {label}
+        </Text>
       )}
 
       <View className="flex-row items-center gap-2">
@@ -298,7 +304,7 @@ export const DateRangePicker = memo(function DateRangePicker({
           />
         </View>
 
-        <Text className="text-secondary-500 dark:text-secondary-400">~</Text>
+        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">~</Text>
 
         {/* 종료 날짜 */}
         <View className="flex-1">
@@ -315,7 +321,9 @@ export const DateRangePicker = memo(function DateRangePicker({
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && <Text className="mt-2 text-sm text-error-500">{errorMessage}</Text>}
+      {error && errorMessage && (
+        <Text className="mt-2 text-sm text-error-500 font-sans">{errorMessage}</Text>
+      )}
     </View>
   );
 });

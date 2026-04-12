@@ -220,7 +220,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   // 배지 내용 (공통)
   const badgeContent = (
     <>
-      <Text className={`font-semibold ${config.textClass} ${sizeConfig.textClass}`}>
+      <Text className={`font-sans-semibold ${config.textClass} ${sizeConfig.textClass}`}>
         {config.label}
       </Text>
       {isResubmitted && approvalStatus === STATUS.TOURNAMENT.PENDING && (
@@ -260,22 +260,22 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
         >
           <View className="-mt-2">
             {formattedDate && (
-              <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
                 {formattedDate}
               </Text>
             )}
 
             {/* 거부 사유 */}
             <View className="p-3 bg-secondary-50 dark:bg-surface rounded-lg mb-3">
-              <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-1">
+              <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-1">
                 거부 사유
               </Text>
-              <Text className="text-base text-secondary-700 dark:text-secondary-300">
+              <Text className="text-base text-secondary-700 dark:text-secondary-300 font-sans">
                 {rejectionReason}
               </Text>
             </View>
 
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-4 font-sans">
               공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
             </Text>
 
@@ -286,7 +286,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   onPress={handleEdit}
                   className="flex-1 mr-2 py-3 rounded-md border border-primary-600 dark:border-primary-500 items-center justify-center active:opacity-70"
                 >
-                  <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
+                  <Text className="text-base font-sans-medium text-primary-600 dark:text-primary-400">
                     수정하기
                   </Text>
                 </Pressable>
@@ -300,7 +300,9 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   ) : (
                     <>
                       <RefreshIcon size={18} color="#ffffff" />
-                      <Text className="ml-2 text-base font-medium text-surface-dark">재제출</Text>
+                      <Text className="ml-2 text-base font-sans-medium text-surface-dark">
+                        재제출
+                      </Text>
                     </>
                   )}
                 </Pressable>

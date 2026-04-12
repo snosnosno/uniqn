@@ -142,14 +142,16 @@ const DateStatusRow = memo(function DateStatusRow({
 
       {/* 날짜 */}
       <View className="flex-1">
-        <Text className="text-sm font-medium text-secondary-800 dark:text-secondary-200">
+        <Text className="text-sm font-sans-medium text-secondary-800 dark:text-secondary-200">
           {status.formattedDate}
         </Text>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{roleDisplay}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+          {roleDisplay}
+        </Text>
       </View>
 
       {/* 금액 */}
-      <Text className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 mr-3">
+      <Text className="text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300 mr-3">
         {status.hasValidTimes ? formatCurrency(status.amount) : '-'}
       </Text>
 
@@ -160,11 +162,11 @@ const DateStatusRow = memo(function DateStatusRow({
           className="px-2.5 py-1 bg-primary-500 rounded-lg active:opacity-70"
           accessibilityLabel="정산하기"
         >
-          <Text className="text-xs font-medium text-surface-dark">정산</Text>
+          <Text className="text-xs font-sans-medium text-surface-dark">정산</Text>
         </Pressable>
       ) : (
         <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
-          <Text className={`text-xs font-medium ${payrollConfig.textColor}`}>
+          <Text className={`text-xs font-sans-medium ${payrollConfig.textColor}`}>
             {status.hasValidTimes ? payrollConfig.label : '출퇴근 미완료'}
           </Text>
         </View>
@@ -296,20 +298,20 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
           {/* 이름 + 역할 */}
           <View className="flex-1">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {rolesDisplay}
             </Text>
           </View>
 
           {/* 금액/건수 */}
           <View className="items-end">
-            <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
+            <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(group.summary.totalAmount)}
             </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               {group.summary.totalCount}건
             </Text>
           </View>
@@ -319,7 +321,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
         <CalendarIcon size={14} color="#9A9078" />
-        <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
+        <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           {dateDisplay}
         </Text>
       </View>
@@ -329,7 +331,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         {group.summary.pendingCount > 0 && (
           <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
             <ClockIcon size={12} color="#D97706" />
-            <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300">
+            <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300 font-sans">
               미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)})
             </Text>
           </View>
@@ -337,7 +339,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         {group.summary.completedCount > 0 && (
           <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
             <CheckCircleIcon size={12} color="#059669" />
-            <Text className="ml-1 text-xs text-success-700 dark:text-success-300">
+            <Text className="ml-1 text-xs text-success-700 dark:text-success-300 font-sans">
               완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)}
               )
             </Text>
@@ -346,7 +348,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         {group.summary.settlableCount < group.summary.pendingCount && (
           <View className="flex-row items-center px-2 py-1 bg-secondary-50 dark:bg-surface rounded-lg">
             <ExclamationCircleIcon size={12} color="#9A9078" />
-            <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
+            <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
             </Text>
           </View>
@@ -359,7 +361,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         className="flex-row items-center justify-center mt-3 py-2 border-t border-secondary-200 dark:border-surface-overlay"
         accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
       >
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1">날짜별 상세</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1 font-sans">
+          날짜별 상세
+        </Text>
         {isExpanded ? (
           <ChevronUpIcon size={16} color="#9A9078" />
         ) : (
@@ -401,7 +405,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             accessibilityLabel={`${settlableWorkLogs.length}건 일괄 정산`}
           >
             <BanknotesIcon size={18} color="#fff" />
-            <Text className="ml-2 text-sm font-semibold text-surface-dark">
+            <Text className="ml-2 text-sm font-sans-semibold text-surface-dark">
               {settlableWorkLogs.length}건 일괄 정산
             </Text>
           </Pressable>

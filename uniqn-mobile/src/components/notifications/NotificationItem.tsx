@@ -85,7 +85,7 @@ export const NotificationItem = memo(function NotificationItem({
                 className={`flex-1 text-base ${
                   notification.isRead
                     ? 'font-normal text-secondary-700 dark:text-secondary-300'
-                    : 'font-semibold text-secondary-900 dark:text-off-white'
+                    : 'font-sans-semibold text-secondary-900 dark:text-off-white'
                 }`}
               >
                 {notification.title}
@@ -94,12 +94,12 @@ export const NotificationItem = memo(function NotificationItem({
 
             <Text
               numberOfLines={2}
-              className="mt-1 text-sm text-secondary-600 dark:text-secondary-400"
+              className="mt-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
             >
               {notification.body}
             </Text>
 
-            <Text className="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
+            <Text className="mt-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
               {timeAgo}
             </Text>
           </View>

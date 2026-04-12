@@ -29,10 +29,10 @@ function BoardEntryCard({ title, description, icon, boardType }: BoardEntryCardP
       onPress={() => router.push(`/(app)/(tabs)/board/${boardType}`)}
     >
       <View className="mb-3">{icon}</View>
-      <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
         {title}
       </Text>
-      <Text className="text-sm leading-5 text-secondary-500 dark:text-secondary-400">
+      <Text className="text-sm leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
         {description}
       </Text>
     </Card>

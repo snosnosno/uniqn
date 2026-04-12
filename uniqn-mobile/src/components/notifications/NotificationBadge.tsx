@@ -59,7 +59,7 @@ export const NotificationBadge = memo(function NotificationBadge({
         ${className}
       `}
     >
-      <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
+      <Text className={`text-white font-sans-bold ${styles.text}`}>{displayCount}</Text>
     </Animated.View>
   );
 });
@@ -88,7 +88,7 @@ export const NotificationBadgeInline = memo(function NotificationBadgeInline({
         ${className}
       `}
     >
-      <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
+      <Text className={`text-white font-sans-bold ${styles.text}`}>{displayCount}</Text>
     </View>
   );
 });
