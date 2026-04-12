@@ -66,7 +66,7 @@ const RoleCard = memo(function RoleCard({
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
               placeholderTextColor="#A89C84"
-              className="font-medium text-secondary-900 dark:text-off-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
+              className="font-sans-medium text-secondary-900 dark:text-off-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
             <Text className="font-sans-medium text-secondary-900 dark:text-off-white text-base">

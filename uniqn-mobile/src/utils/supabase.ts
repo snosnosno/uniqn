@@ -467,7 +467,9 @@ export function createRealtimeSubscription(
   // (페이지 이동/HMR 등으로 registry는 초기화됐지만 클라이언트 채널은 살아있는 경우)
   const orphanChannel = supabase
     .getChannels()
-    .find((ch) => ch.topic === channelName || ch.topic === `realtime:${channelName}`);
+    // supabase.channel(name)은 topic을 전달한 이름 그대로 저장하므로 첫 번째 조건만 사용.
+    // (realtime:${channelName}은 이중 prefix가 되어 실제로 매칭되지 않음)
+    .find((ch) => ch.topic === channelName);
   if (orphanChannel) {
     logger.warn('Realtime 고아 채널 제거 후 재생성', { channelName });
     supabase.removeChannel(orphanChannel).catch(() => {
@@ -571,7 +573,7 @@ function removeRealtimeSubscriber(
 }
 
 // ============================================================================
-// 6. camelCase ↔ snake_case Conversion
+// 7. camelCase ↔ snake_case Conversion
 // ============================================================================
 
 /**
@@ -636,7 +638,7 @@ export function toCamelCase<T>(obj: Record<string, unknown>): T {
 }
 
 // ============================================================================
-// 7. Json Field Validation
+// 8. Json Field Validation
 // ============================================================================
 
 /**

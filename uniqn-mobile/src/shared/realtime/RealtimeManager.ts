@@ -22,8 +22,6 @@ import { logger } from '@/utils/logger';
 // ============================================================================
 
 interface SubscriptionEntry {
-  /** 실제 구독 해제 함수 */
-  unsubscribe: () => void;
   /** 참조 카운트 */
   refCount: number;
   /** 마지막 업데이트 시간 */
@@ -105,20 +103,7 @@ export class RealtimeManager {
       try {
         const subscriberUnsub = subscribeFn();
         existing.subscriberUnsubscribes.push(subscriberUnsub);
-
-        return () => {
-          // 이 subscriber만 해제
-          const idx = existing.subscriberUnsubscribes.indexOf(subscriberUnsub);
-          if (idx !== -1) {
-            existing.subscriberUnsubscribes.splice(idx, 1);
-          }
-          try {
-            subscriberUnsub();
-          } catch {
-            // 이미 해제된 경우 무시
-          }
-          this.unsubscribe(key);
-        };
+        return () => this.cleanupSubscriberEntry(key, subscriberUnsub);
       } catch (error) {
         existing.refCount--;
         logger.error('RealtimeManager: subscriber 추가 실패', error as Error, { key });
@@ -131,7 +116,6 @@ export class RealtimeManager {
       const subscriberUnsub = subscribeFn();
 
       this.subscriptions.set(key, {
-        unsubscribe: subscriberUnsub,
         refCount: 1,
         lastUpdate: Date.now(),
         status: 'active',
@@ -142,21 +126,7 @@ export class RealtimeManager {
         logger.debug('RealtimeManager: 새 구독 시작', { key });
       }
 
-      return () => {
-        const entry = this.subscriptions.get(key);
-        if (entry) {
-          const idx = entry.subscriberUnsubscribes.indexOf(subscriberUnsub);
-          if (idx !== -1) {
-            entry.subscriberUnsubscribes.splice(idx, 1);
-          }
-          try {
-            subscriberUnsub();
-          } catch {
-            // 이미 해제된 경우 무시
-          }
-        }
-        this.unsubscribe(key);
-      };
+      return () => this.cleanupSubscriberEntry(key, subscriberUnsub);
     } catch (error) {
       logger.error('RealtimeManager: 구독 시작 실패', error as Error, { key });
       throw error;
@@ -164,12 +134,35 @@ export class RealtimeManager {
   }
 
   /**
+   * 특정 subscriber를 해제하고 ref count를 감소시키는 공통 헬퍼
+   *
+   * @description
+   * 첫 번째/이후 subscriber 클로저가 동일한 방식으로 entry를 정리하도록
+   * 단일 경로를 제공한다. entry 조회는 항상 Map에서 최신 참조를 사용한다.
+   */
+  private static cleanupSubscriberEntry(key: string, subscriberUnsub: () => void): void {
+    const entry = this.subscriptions.get(key);
+    if (entry) {
+      const idx = entry.subscriberUnsubscribes.indexOf(subscriberUnsub);
+      if (idx !== -1) {
+        entry.subscriberUnsubscribes.splice(idx, 1);
+      }
+    }
+    try {
+      subscriberUnsub();
+    } catch {
+      // 이미 해제된 경우 무시
+    }
+    this.unsubscribe(key);
+  }
+
+  /**
    * 구독 참조 카운트 감소 및 엔트리 제거
    *
    * @description
    * refCount를 감소시키고, 0이 되면 Map에서 엔트리를 제거한다.
-   * 실제 subscriber unsub 함수 호출은 각 subscriber 클로저에서 담당하므로
-   * 이 메서드는 호출하지 않는다 (이중 호출 방지).
+   * 실제 subscriber unsub 함수 호출은 cleanupSubscriberEntry에서 담당하므로
+   * 이 메서드는 Map 관리만 수행한다 (이중 호출 방지).
    *
    * @param key - 구독 식별 키
    */

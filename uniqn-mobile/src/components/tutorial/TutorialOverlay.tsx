@@ -214,7 +214,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
         {showCountdown ? (
           <Animated.Text
             entering={FadeIn.duration(300)}
-            className="text-xs text-secondary-400 dark:text-secondary-500"
+            className="text-xs text-secondary-400 dark:text-secondary-500 font-sans"
           >
             {remainingSec}초 후 자동으로 닫힙니다
           </Animated.Text>
@@ -279,7 +279,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
           <Animated.Text
             key={isLastPage ? 'cta' : 'next'}
             entering={FadeIn.duration(200)}
-            className="text-surface-dark font-semibold text-base"
+            className="text-surface-dark font-sans-semibold text-base"
           >
             {isLastPage ? ctaText : '다음'}
           </Animated.Text>

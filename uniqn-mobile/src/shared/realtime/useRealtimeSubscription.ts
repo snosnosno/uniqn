@@ -309,8 +309,13 @@ export function useRealtimeSubscription<T>(
 
   /**
    * 자동 재연결 스케줄링 (exponential backoff)
+   *
+   * subscribe를 ref로 래핑하여 타이머 실행 시점에 stale 클로저가 되는 것을 방지한다.
+   * scheduleReconnect의 의존성에서 subscribe를 제거하여 불필요한 재생성을 막는다.
    */
   const reconnectAttemptRef = useRef(0);
+  const subscribeRef = useRef(subscribe);
+  subscribeRef.current = subscribe;
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -329,9 +334,9 @@ export function useRealtimeSubscription<T>(
 
     reconnectTimeoutRef.current = setTimeout(() => {
       unsubscribe();
-      subscribe();
+      subscribeRef.current();
     }, delay);
-  }, [key, subscribe, unsubscribe]);
+  }, [key, unsubscribe]);
 
   /**
    * 수동 재연결
@@ -351,7 +356,9 @@ export function useRealtimeSubscription<T>(
     return unsubscribe;
   }, [subscribe, unsubscribe]);
 
-  // enabled 변경 시 재구독
+  // enabled 변경 시 처리
+  // - false: 즉시 구독 해제 + 데이터 초기화
+  // - true: subscribe가 enabled를 deps로 가지므로 위 useEffect에서 자동 재구독됨
   useEffect(() => {
     if (!enabled) {
       unsubscribe();
