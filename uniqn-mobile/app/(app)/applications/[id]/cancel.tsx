@@ -224,9 +224,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <LoadingState />
@@ -243,9 +243,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <ErrorState message={loadError} onBack={handleClose} />
@@ -262,9 +262,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <ErrorState message="지원서를 찾을 수 없습니다" onBack={handleClose} />
@@ -281,9 +281,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <CannotCancelState reason={canRequestCancel.reason} onBack={handleClose} />
@@ -300,9 +300,9 @@ export default function CancellationRequestScreen() {
             headerShown: true,
             title: '취소 요청 완료',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <SuccessState />

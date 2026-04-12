@@ -294,10 +294,10 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   className="flex-1 ml-2 py-3 rounded-md bg-primary-600 dark:bg-primary-500 flex-row items-center justify-center active:opacity-80"
                 >
                   {resubmit.isPending ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <>
-                      <RefreshIcon size={18} color="#ffffff" />
+                      <RefreshIcon size={18} color="#FFFFFF" />
                       <Text className="ml-2 text-base font-sans-medium text-surface-dark">
                         재제출
                       </Text>

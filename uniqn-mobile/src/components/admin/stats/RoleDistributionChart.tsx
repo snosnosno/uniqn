@@ -31,7 +31,7 @@ const ROLE_CONFIG = [
   {
     key: 'admin' as const,
     label: '관리자',
-    color: '#dc2626',
+    color: '#DC2626',
     bgColor: 'bg-error-600',
     lightBg: 'bg-error-50 dark:bg-error-900/20',
     textColor: 'text-error-700 dark:text-error-300',

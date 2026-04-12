@@ -181,9 +181,9 @@ export default function MyDataScreen() {
             headerShown: true,
             title: '내 정보',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
           }}
         />
         <View className="flex-1 items-center justify-center">
@@ -203,9 +203,9 @@ export default function MyDataScreen() {
           headerShown: true,
           title: '내 정보',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+            backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+          headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
         }}
       />
 
@@ -340,7 +340,7 @@ export default function MyDataScreen() {
             </View>
             <View className="flex-1">
               <Button onPress={handleSave} fullWidth disabled={isSaving}>
-                {isSaving ? <ActivityIndicator size="small" color="#ffffff" /> : '저장'}
+                {isSaving ? <ActivityIndicator size="small" color="#FFFFFF" /> : '저장'}
               </Button>
             </View>
           </View>

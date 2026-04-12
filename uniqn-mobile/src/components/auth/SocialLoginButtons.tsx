@@ -55,7 +55,7 @@ export function SocialLoginButtons({
         />
         {(isButtonDisabled || isButtonLoading) && (
           <View style={[styles.overlay, { pointerEvents: 'none' }]}>
-            {isButtonLoading ? <ActivityIndicator size="small" color="#ffffff" /> : null}
+            {isButtonLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
           </View>
         )}
       </View>

@@ -149,7 +149,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center">
           {isCompleted ? (
-            <CheckCircleIcon size={14} color="#22c55e" />
+            <CheckCircleIcon size={14} color="#22C55E" />
           ) : (
             <PendingIcon size={14} color={SECONDARY_PALETTE[400]} />
           )}

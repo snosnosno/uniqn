@@ -168,7 +168,7 @@ export function PortOneIdentityVerification({
       {verifiedIdentity ? (
         <View className="rounded-md border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
           <View className="mb-3 flex-row items-center">
-            <CheckCircleIcon size={20} color="#22c55e" />
+            <CheckCircleIcon size={20} color="#22C55E" />
             <Text className="ml-2 font-sans-semibold text-success-700 dark:text-success-400">
               이니시스 본인인증 완료
             </Text>

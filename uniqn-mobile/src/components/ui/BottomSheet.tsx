@@ -33,7 +33,7 @@ import { Modal } from './Modal';
 
 /** BottomSheet 배경색 (Tailwind gray-800 / white 대응) */
 const BACKGROUND_COLORS = {
-  light: '#ffffff',
+  light: '#FFFFFF',
   dark: '#09090B', // gray-800
 } as const;
 

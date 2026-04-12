@@ -269,7 +269,7 @@ export default function ChangePasswordScreen() {
             className={`rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text className="text-center text-base font-sans-semibold text-surface-dark">
                 비밀번호 변경

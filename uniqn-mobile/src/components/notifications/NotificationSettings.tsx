@@ -173,7 +173,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           onPress={onOpenSettings}
           className="mb-4 p-4 bg-error-100 dark:bg-error-900/30 rounded-md flex-row items-center"
         >
-          <BellSlashIcon size={24} color="#dc2626" />
+          <BellSlashIcon size={24} color="#DC2626" />
           <View className="flex-1 ml-3">
             <Text className="text-error-800 dark:text-error-200 font-sans-medium">
               알림 권한이 거부되었습니다
@@ -182,7 +182,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               설정에서 알림 권한을 직접 허용해주세요
             </Text>
           </View>
-          <ChevronRightIcon size={20} color="#dc2626" />
+          <ChevronRightIcon size={20} color="#DC2626" />
         </Pressable>
       )}
 
@@ -192,7 +192,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           onPress={onRequestPermission}
           className="mb-4 p-4 bg-warning-100 dark:bg-warning-900/30 rounded-md flex-row items-center"
         >
-          <DevicePhoneMobileIcon size={24} color="#d97706" />
+          <DevicePhoneMobileIcon size={24} color="#D97706" />
           <View className="flex-1 ml-3">
             <Text className="text-warning-800 dark:text-warning-200 font-sans-medium">
               푸시 알림이 꺼져있습니다
@@ -307,7 +307,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                   value={categorySettings?.enabled ?? true}
                   onValueChange={(enabled) => handleCategoryToggle(category, enabled)}
                   trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
-                  thumbColor="#ffffff"
+                  thumbColor="#FFFFFF"
                   disabled={isSaving || !settings.enabled}
                 />
               </View>
@@ -326,7 +326,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
                     trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
-                    thumbColor="#ffffff"
+                    thumbColor="#FFFFFF"
                     disabled={isSaving || !settings.enabled}
                   />
                 </View>

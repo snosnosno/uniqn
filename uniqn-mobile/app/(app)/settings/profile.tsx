@@ -516,7 +516,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             }`}
           >
             {isSaving ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
               <Text className="text-center text-base font-sans-semibold text-surface-dark">
                 저장

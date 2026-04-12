@@ -73,7 +73,7 @@ const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
   secondary: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
   outline: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
   ghost: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
-  danger: { light: '#ffffff', dark: '#ffffff' },
+  danger: { light: '#FFFFFF', dark: '#FFFFFF' },
   accent: { light: '#050506', dark: '#050506' }, // 다크 텍스트
 };
 

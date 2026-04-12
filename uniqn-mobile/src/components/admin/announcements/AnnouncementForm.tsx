@@ -327,7 +327,7 @@ export function AnnouncementForm({
             value={isPinned}
             onValueChange={setIsPinned}
             trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
-            thumbColor={isPinned ? '#ffffff' : '#f4f4f5'}
+            thumbColor={isPinned ? '#FFFFFF' : '#F4F4F5'}
           />
         </View>
 

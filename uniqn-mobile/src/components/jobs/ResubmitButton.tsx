@@ -103,10 +103,10 @@ export function ResubmitButton({
         `}
       >
         {resubmit.isPending ? (
-          <ActivityIndicator size="small" color="#ffffff" />
+          <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
           <>
-            <RefreshIcon size={iconSize} color="#ffffff" />
+            <RefreshIcon size={iconSize} color="#FFFFFF" />
             <Text className={`ml-2 font-sans-medium text-surface-dark ${textClass}`}>재제출</Text>
           </>
         )}

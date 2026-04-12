@@ -128,7 +128,7 @@ export default function AdminStatsScreen() {
               value={stats?.totalUsers}
               isLoading={isLoading && !stats}
               icon={PeopleOutlineIcon}
-              iconColor="#2563eb"
+              iconColor="#2563EB"
               iconBgColor="bg-info-100 dark:bg-info-900/20"
             />
           </View>
@@ -168,7 +168,7 @@ export default function AdminStatsScreen() {
               value={stats?.pendingReports}
               isLoading={isLoading && !stats}
               icon={FlagOutlineIcon}
-              iconColor="#dc2626"
+              iconColor="#DC2626"
               iconBgColor="bg-error-50 dark:bg-error-900/20"
             />
           </View>

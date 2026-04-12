@@ -222,9 +222,9 @@ export default function DeleteAccountScreen() {
           headerShown: true,
           title: '회원탈퇴',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#09090B' : '#ffffff',
+            backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#09090B',
+          headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
         }}
       />
 
@@ -338,7 +338,7 @@ export default function DeleteAccountScreen() {
               className="border-error-500"
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color="#ef4444" />
+                <ActivityIndicator size="small" color="#EF4444" />
               ) : (
                 <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
                   네, 탈퇴하겠습니다
@@ -373,7 +373,7 @@ export default function DeleteAccountScreen() {
 
           <View className="flex-col gap-3">
             <Button onPress={handleRetryRevocation} fullWidth disabled={isRetrying}>
-              {isRetrying ? <ActivityIndicator size="small" color="#ffffff" /> : '재시도'}
+              {isRetrying ? <ActivityIndicator size="small" color="#FFFFFF" /> : '재시도'}
             </Button>
 
             <Button
