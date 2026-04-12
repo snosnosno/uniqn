@@ -30,6 +30,10 @@ jest.mock('@/services/auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
   requireMatchingCurrentUser: (...args: unknown[]) => mockRequireMatchingCurrentUser(...args),
 }));
+jest.mock('@/services/auth/authorizationService', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+  requireMatchingCurrentUser: (...args: unknown[]) => mockRequireMatchingCurrentUser(...args),
+}));
 
 jest.mock('@/errors/serviceErrorHandler', () => ({
   handleServiceError: jest.fn((error: unknown) =>

@@ -12,7 +12,7 @@ import { logger } from '@/utils/logger';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { announcementRepository } from '@/repositories';
-import { requireAdminUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth/authorizationService';
 import { createAnnouncementSchema, updateAnnouncementSchema } from '@/schemas/announcement.schema';
 import type { Announcement, CreateAnnouncementInput, UpdateAnnouncementInput } from '@/types';
 import type { UserRole } from '@/types/role';

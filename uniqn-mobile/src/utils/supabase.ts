@@ -422,13 +422,19 @@ const realtimeChannelRegistry = new Map<string, RealtimeChannelEntry>();
  * @param onError - 채널 에러 핸들러 (선택)
  * @returns 구독 해제 함수 (UnsubscribeFn)
  *
+ * @note Supabase Realtime postgres_changes는 컬럼 필터링을 지원하지 않는다.
+ *       payload.new는 항상 DB 행의 전체 컬럼을 포함한다.
+ *       콜백 내에서 필요한 필드만 사용하는 변환 함수(toX)를 반드시 거쳐야 한다.
+ *       (ISSUE-004: TABLE_COLUMNS 우회 방지)
+ *
  * @example
  * ```typescript
  * const unsubscribe = createRealtimeSubscription(
  *   'notifications',
  *   'user_id=eq.abc123',
  *   (payload) => {
- *     if (payload.eventType === 'INSERT') addNotification(payload.new);
+ *     // payload.new는 전체 컬럼을 포함 — toX() 변환으로 필요 필드만 추출
+ *     if (payload.eventType === 'INSERT') addNotification(toNotification(payload.new));
  *   }
  * );
  * // 정리 시

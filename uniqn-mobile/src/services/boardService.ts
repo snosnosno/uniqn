@@ -16,11 +16,8 @@ import {
   userRepository,
   workLogRepository,
 } from '@/repositories';
-import {
-  deleteMultipleBoardImages,
-  requireAdminUser,
-  requireMatchingCurrentUser,
-} from '@/services/auth';
+import { deleteMultipleBoardImages } from '@/services/auth/storageService';
+import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth/authorizationService';
 import {
   type BoardAdminReportRecord,
   MAX_BOARD_COMMENT_IMAGES,

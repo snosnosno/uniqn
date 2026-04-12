@@ -223,7 +223,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
         )}
 
         {/* H5: Skip 버튼 페이드 아웃 */}
-        <Animated.View style={skipAnimatedStyle} pointerEvents={isLastPage ? 'none' : 'auto'}>
+        <Animated.View style={[skipAnimatedStyle, { pointerEvents: isLastPage ? 'none' : 'auto' }]}>
           <Pressable
             onPress={handleSkip}
             accessibilityLabel="건너뛰기"

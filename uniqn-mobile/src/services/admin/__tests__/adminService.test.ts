@@ -84,6 +84,9 @@ const mockRequireAdminUser = jest.fn();
 jest.mock('@/services/auth', () => ({
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
 }));
+jest.mock('@/services/auth/authorizationService', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+}));
 
 // Get typed mock reference
 const mockRepo = adminRepository as jest.Mocked<typeof adminRepository>;

@@ -17,7 +17,8 @@ import { reportRepository, userRepository } from '@/repositories';
 import type { ReportFilters, FetchReportsResult } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 import { ValidationError, ERROR_CODES, toError } from '@/errors';
-import { requireAdminUser, requireCurrentUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth/authorizationService';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import type { Report, CreateReportInput, ReviewReportInput } from '@/types/report';
 
 // ============================================================================

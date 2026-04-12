@@ -44,13 +44,17 @@ export function BoardImageViewerOverlay({
           accessibilityLabel="이미지 뷰어 닫기"
         />
 
-        <SafeAreaView className="flex-1" edges={['top', 'bottom']} pointerEvents="box-none">
-          <View className="flex-1" pointerEvents="box-none">
+        <SafeAreaView
+          className="flex-1"
+          edges={['top', 'bottom']}
+          style={{ pointerEvents: 'box-none' }}
+        >
+          <View className="flex-1" style={{ pointerEvents: 'box-none' }}>
             <View
               className="flex-row items-center justify-between px-4 py-3"
-              pointerEvents="box-none"
+              style={{ pointerEvents: 'box-none' }}
             >
-              <View pointerEvents="none">
+              <View style={{ pointerEvents: 'none' }}>
                 <Text className="text-sm font-sans-medium text-white">
                   이미지 {currentIndex + 1} / {images.length}
                 </Text>
@@ -65,7 +69,10 @@ export function BoardImageViewerOverlay({
               </Pressable>
             </View>
 
-            <View className="flex-1 flex-row items-center px-2 pb-4" pointerEvents="box-none">
+            <View
+              className="flex-1 flex-row items-center px-2 pb-4"
+              style={{ pointerEvents: 'box-none' }}
+            >
               {hasPrevious ? (
                 <Pressable
                   onPress={() => onChangeIndex(currentIndex - 1)}
@@ -76,12 +83,12 @@ export function BoardImageViewerOverlay({
                   <ChevronLeftIcon size={22} color="#FFFFFF" />
                 </Pressable>
               ) : (
-                <View className="h-12 w-12" pointerEvents="none" />
+                <View className="h-12 w-12" style={{ pointerEvents: 'none' }} />
               )}
 
               <View
                 className="mx-2 flex-1 items-center justify-center overflow-hidden rounded-lg"
-                pointerEvents="none"
+                style={{ pointerEvents: 'none' }}
               >
                 <Image
                   source={{ uri: activeImage.url }}
@@ -101,7 +108,7 @@ export function BoardImageViewerOverlay({
                   <ChevronRightIcon size={22} color="#FFFFFF" />
                 </Pressable>
               ) : (
-                <View className="h-12 w-12" pointerEvents="none" />
+                <View className="h-12 w-12" style={{ pointerEvents: 'none' }} />
               )}
             </View>
           </View>

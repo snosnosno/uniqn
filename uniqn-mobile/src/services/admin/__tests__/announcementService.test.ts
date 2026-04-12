@@ -13,7 +13,7 @@ import {
 
 import { ERROR_CODES } from '@/errors';
 import { announcementRepository } from '@/repositories';
-import { requireAdminUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth/authorizationService';
 
 jest.mock('@/repositories', () => ({
   announcementRepository: {
@@ -31,6 +31,9 @@ jest.mock('@/repositories', () => ({
 }));
 
 jest.mock('@/services/auth', () => ({
+  requireAdminUser: jest.fn(async () => ({ id: 'admin-1' })),
+}));
+jest.mock('@/services/auth/authorizationService', () => ({
   requireAdminUser: jest.fn(async () => ({ id: 'admin-1' })),
 }));
 

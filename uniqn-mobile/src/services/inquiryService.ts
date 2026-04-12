@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { inquiryRepository } from '@/repositories';
-import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth';
+import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth/authorizationService';
 import { createInquirySchema, respondInquirySchema } from '@/schemas';
 import type {
   Inquiry,

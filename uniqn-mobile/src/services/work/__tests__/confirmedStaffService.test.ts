@@ -34,6 +34,9 @@ jest.mock('@/repositories', () => ({
 jest.mock('@/services/auth', () => ({
   requireCurrentUser: jest.fn(() => ({ id: 'owner-1' })),
 }));
+jest.mock('@/services/auth/authCoreService', () => ({
+  requireCurrentUser: jest.fn(() => ({ id: 'owner-1' })),
+}));
 
 jest.mock('@/services/jobs/applicationHistoryService', () => ({
   cancelConfirmation: jest.fn(),

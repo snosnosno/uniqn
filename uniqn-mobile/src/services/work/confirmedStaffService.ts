@@ -2,7 +2,7 @@ import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
-import { requireCurrentUser } from '@/services/auth';
+import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
 import { syncScheduleBoardByJobPostingId } from '@/services/boardService';
 import { workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats } from '@/domains/staff';

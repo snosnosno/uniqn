@@ -1,5 +1,5 @@
 import { announcementRepository, boardRepository } from '@/repositories';
-import { deleteMultipleBoardImages } from '@/services/auth';
+import { deleteMultipleBoardImages } from '@/services/auth/storageService';
 import { logger } from '@/utils/logger';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import type { BoardComment, BoardImageAttachment, BoardMembership, BoardPost } from '@/types/board';
@@ -39,6 +39,13 @@ jest.mock('@/repositories', () => ({
 jest.mock('@/services/auth', () => ({
   requireAdminUser: jest.fn(),
   requireMatchingCurrentUser: jest.fn(),
+  deleteMultipleBoardImages: jest.fn(),
+}));
+jest.mock('@/services/auth/authorizationService', () => ({
+  requireAdminUser: jest.fn(),
+  requireMatchingCurrentUser: jest.fn(),
+}));
+jest.mock('@/services/auth/storageService', () => ({
   deleteMultipleBoardImages: jest.fn(),
 }));
 

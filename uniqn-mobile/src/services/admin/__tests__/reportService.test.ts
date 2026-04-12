@@ -100,6 +100,12 @@ jest.mock('@/services/auth', () => ({
   requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
   requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
 }));
+jest.mock('@/services/auth/authorizationService', () => ({
+  requireAdminUser: (...args: unknown[]) => mockRequireAdminUser(...args),
+}));
+jest.mock('@/services/auth/authCoreService', () => ({
+  requireCurrentUser: (...args: unknown[]) => mockRequireCurrentUser(...args),
+}));
 
 const mockReportRepo = reportRepository as jest.Mocked<typeof reportRepository>;
 const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;

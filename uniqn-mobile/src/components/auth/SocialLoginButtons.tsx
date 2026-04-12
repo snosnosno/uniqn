@@ -39,8 +39,11 @@ export function SocialLoginButtons({
   return (
     <View className="w-full">
       <View
-        pointerEvents={isButtonDisabled ? 'none' : 'auto'}
-        style={[styles.buttonContainer, isButtonDisabled ? styles.buttonDisabled : null]}
+        style={[
+          styles.buttonContainer,
+          isButtonDisabled ? styles.buttonDisabled : null,
+          { pointerEvents: isButtonDisabled ? 'none' : 'auto' },
+        ]}
       >
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
@@ -51,7 +54,7 @@ export function SocialLoginButtons({
           testID="apple-login-button"
         />
         {(isButtonDisabled || isButtonLoading) && (
-          <View pointerEvents="none" style={styles.overlay}>
+          <View style={[styles.overlay, { pointerEvents: 'none' }]}>
             {isButtonLoading ? <ActivityIndicator size="small" color="#ffffff" /> : null}
           </View>
         )}

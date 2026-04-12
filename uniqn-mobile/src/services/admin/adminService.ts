@@ -13,7 +13,7 @@ import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { adminRepository } from '@/repositories';
-import { requireAdminUser } from '@/services/auth';
+import { requireAdminUser } from '@/services/auth/authorizationService';
 import type {
   AdminUser,
   AdminUserFilters,
