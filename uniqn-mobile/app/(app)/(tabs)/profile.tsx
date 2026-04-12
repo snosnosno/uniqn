@@ -206,9 +206,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon={
               isLoggingOut ? (
-                <ActivityIndicator size={22} color="#EF4444" />
+                <ActivityIndicator size={22} color="#DC2626" />
               ) : (
-                <LogOutIcon size={22} color="#EF4444" />
+                <LogOutIcon size={22} color="#DC2626" />
               )
             }
             label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}

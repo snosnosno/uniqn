@@ -8,7 +8,14 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+export type BadgeVariant =
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info';
 export type BadgeSize = 'sm' | 'md';
 
 /**
@@ -86,6 +93,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   success: 'bg-success-100 dark:bg-success-700/30',
   warning: 'bg-warning-100 dark:bg-warning-700/30',
   error: 'bg-error-100 dark:bg-error-700/30',
+  info: 'bg-info-100 dark:bg-info-700/30',
 };
 
 const textStyles: Record<BadgeVariant, string> = {
@@ -95,6 +103,7 @@ const textStyles: Record<BadgeVariant, string> = {
   success: 'text-success-700 dark:text-success-500',
   warning: 'text-warning-700 dark:text-warning-500',
   error: 'text-error-700 dark:text-error-500',
+  info: 'text-info-700 dark:text-info-500',
 };
 
 const dotStyles: Record<BadgeVariant, string> = {
@@ -104,6 +113,7 @@ const dotStyles: Record<BadgeVariant, string> = {
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   error: 'bg-error-500',
+  info: 'bg-info-500',
 };
 
 const sizeStyles: Record<BadgeSize, string> = {

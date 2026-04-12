@@ -187,10 +187,10 @@ const TournamentCard = memo(function TournamentCard({
             accessibilityLabel="거부"
           >
             {isProcessing ? (
-              <ActivityIndicator size="small" color="#EF4444" />
+              <ActivityIndicator size="small" color="#DC2626" />
             ) : (
               <>
-                <CloseCircleOutlineIcon size={18} color="#EF4444" />
+                <CloseCircleOutlineIcon size={18} color="#DC2626" />
                 <Text className="text-error-500 font-medium ml-1">거부</Text>
               </>
             )}

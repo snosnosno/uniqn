@@ -123,7 +123,14 @@ export function getTextColor(
 // Badge 색상 (v3.0)
 // ============================================================================
 
-export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+export type BadgeVariant =
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info';
 
 export const BADGE_CLASSES = {
   container: {
@@ -133,6 +140,7 @@ export const BADGE_CLASSES = {
     success: 'bg-success-50 dark:bg-success-50',
     warning: 'bg-warning-50 dark:bg-warning-50',
     error: 'bg-error-50 dark:bg-error-50',
+    info: 'bg-info-50 dark:bg-info-50',
   },
   text: {
     default: 'text-secondary-700 dark:text-secondary-300',
@@ -141,6 +149,7 @@ export const BADGE_CLASSES = {
     success: 'text-success-700 dark:text-success-500',
     warning: 'text-warning-700 dark:text-warning-500',
     error: 'text-error-700 dark:text-error-500',
+    info: 'text-info-700 dark:text-info-500',
   },
   dot: {
     default: 'bg-secondary-500',
@@ -149,6 +158,7 @@ export const BADGE_CLASSES = {
     success: 'bg-success-500',
     warning: 'bg-warning-500',
     error: 'bg-error-500',
+    info: 'bg-info-500',
   },
 } as const;
 

@@ -216,7 +216,7 @@ export default function EmployerRegisterScreen() {
             {isVerified ? (
               <CheckCircleIcon size={20} color="#22C55E" />
             ) : (
-              <ExclamationCircleIcon size={20} color="#EF4444" />
+              <ExclamationCircleIcon size={20} color="#DC2626" />
             )}
             <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
               본인인증 정보

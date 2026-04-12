@@ -251,7 +251,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
   },
   approved: {
     label: '승인완료',
-    variant: 'primary',
+    variant: 'info',
     textColor: 'text-info-600 dark:text-info-400',
     bgColor: 'bg-info-100 dark:bg-info-900/30',
     hexColor: '#2563EB',

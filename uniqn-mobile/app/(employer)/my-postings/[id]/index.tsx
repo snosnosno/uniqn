@@ -424,7 +424,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<XCircleIcon size={24} color="#EF4444" />}
+                icon={<XCircleIcon size={24} color="#DC2626" />}
                 title="취소 요청 관리"
                 description="스태프의 취소 요청을 검토합니다."
                 badge={
@@ -501,7 +501,7 @@ export default function JobPostingDetailScreen() {
               className="border-error-200 bg-error-50 dark:border-error-800 dark:bg-error-900/20"
             >
               <View className="mb-3 flex-row items-start">
-                <XCircleIcon size={20} color="#EF4444" />
+                <XCircleIcon size={20} color="#DC2626" />
                 <Text className="ml-2 text-base font-semibold text-error-700 dark:text-error-400">
                   승인 반려되었습니다
                 </Text>
@@ -555,10 +555,10 @@ export default function JobPostingDetailScreen() {
             testID="job-posting-delete-button"
           >
             {isDeleting ? (
-              <ActivityIndicator size="small" color="#EF4444" />
+              <ActivityIndicator size="small" color="#DC2626" />
             ) : (
               <>
-                <TrashIcon size={20} color="#EF4444" />
+                <TrashIcon size={20} color="#DC2626" />
                 <Text className="ml-2 text-base font-medium text-error-600 dark:text-error-400">
                   공고 삭제
                 </Text>
