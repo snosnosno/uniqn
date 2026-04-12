@@ -1,18 +1,16 @@
 /**
  * UNIQN Mobile - 회원가입 Step 2: 본인인증
  *
- * @description 이름/생년월일/성별 입력 + 전화번호 인증
- *              포트원 KG이니시스가 설정된 네이티브 환경에서는 이니시스 본인인증을 우선 사용
- * @version 4.2.0
+ * @description 이름/생년월일/성별 입력 + 포트원 KG이니시스 본인인증
+ * @version 4.3.0
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { PortOneIdentityVerification } from '@/components/auth/PortOneIdentityVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
@@ -68,7 +66,7 @@ export function SignupStepIdentity({
   isAppleUser = false,
   submitLabel = '다음',
 }: SignupStepIdentityProps) {
-  const usePortOneIdentity = Platform.OS !== 'web' && isPortOneInicisIdentityConfigured();
+  const usePortOneIdentity = isPortOneInicisIdentityConfigured();
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
@@ -96,22 +94,6 @@ export function SignupStepIdentity({
 
   const watchedName = watch('name');
   const isIdentityLocked = usePortOneIdentity && Boolean(portOneIdentity);
-
-  const handlePhoneVerified = useCallback(
-    (phone: string, otpData?: { verificationId: string; otpCode: string }) => {
-      setVerifiedPhone(phone);
-      setPortOneIdentity(null);
-      setValue('phoneVerified', true, { shouldValidate: true });
-      setValue('verifiedPhone', phone, { shouldValidate: true });
-      setValue('identityVerificationId', undefined);
-
-      if (otpData) {
-        setValue('verificationId', otpData.verificationId);
-        setValue('otpCode', otpData.otpCode);
-      }
-    },
-    [setValue]
-  );
 
   const handlePortOneVerified = useCallback(
     (identity: VerifiedPortOneIdentity) => {
@@ -234,32 +216,19 @@ export function SignupStepIdentity({
 
       <View>
         <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          {usePortOneIdentity ? '본인인증' : '전화번호 인증'}
+          본인인증
         </Text>
-        {usePortOneIdentity ? (
-          <PortOneIdentityVerification
-            onVerified={handlePortOneVerified}
-            onError={(error) =>
-              logger.error('PortOne identity verification error', error, {
-                component: 'SignupStepIdentity',
-              })
-            }
-            initialIdentity={portOneIdentity}
-            disabled={isLoading}
-            customerFullName={watchedName || undefined}
-          />
-        ) : (
-          <PhoneVerification
-            onVerified={handlePhoneVerified}
-            onError={(error) =>
-              logger.error('Phone verification error', { component: 'SignupStepIdentity', error })
-            }
-            initialPhone={verifiedPhone || initialData?.verifiedPhone}
-            disabled={isLoading}
-            compact
-            mode={phoneMode}
-          />
-        )}
+        <PortOneIdentityVerification
+          onVerified={handlePortOneVerified}
+          onError={(error) =>
+            logger.error('PortOne identity verification error', error, {
+              component: 'SignupStepIdentity',
+            })
+          }
+          initialIdentity={portOneIdentity}
+          disabled={isLoading}
+          customerFullName={watchedName || undefined}
+        />
       </View>
 
       {errors.phoneVerified && !verifiedPhone && (
