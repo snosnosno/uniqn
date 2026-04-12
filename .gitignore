@@ -62,26 +62,25 @@ Thumbs.db
 **/.env.*
 
 # ========================================
-# FIREBASE & SECURITY (보안상 중요!)
+# SECURITY & CREDENTIALS (보안상 중요!)
 # ========================================
+# Firebase (레거시, FCM 토큰용으로 일부 유지)
 .firebase/
 firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 pubsub-debug.log*
 database-debug.log*
-
-# Firebase CLI 토큰 갱신 스크립트 (OAuth2 시크릿 포함)
 functions/refresh-token.js
 
-# Firebase Service Account Keys - 절대 커밋하지 말 것!
+# Service Account Keys - 절대 커밋하지 말 것!
 serviceAccountKey*.json
 *-service-account*.json
 *-adminsdk-*.json
 firebase-adminsdk-*.json
 google-services.json
 GoogleService-Info.plist
-# EAS Build를 위해 uniqn-mobile의 Firebase 설정 파일은 허용
+# EAS Build용 Firebase 설정 (FCM push 토큰)
 !uniqn-mobile/google-services.json
 !uniqn-mobile/GoogleService-Info.plist
 
@@ -131,6 +130,7 @@ __pycache__/
 .claude/
 claude_set/
 .cursor/rules/
+.gstack/
 
 # ========================================
 # GENERATED/TEMPORARY FILES
