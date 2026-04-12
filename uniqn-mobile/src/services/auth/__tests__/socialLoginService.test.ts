@@ -243,7 +243,10 @@ describe('socialLoginService signInWithApple', () => {
   });
 
   // 그룹 A: withTimeout 시퀀스 재매핑
+  // sleep() 호출이 포함되어 있으므로 jest.useFakeTimers() + runAllTimersAsync()로 실제 대기 방지
   it('retries profile creation once after a timeout and completes the Apple login flow', async () => {
+    jest.useFakeTimers();
+
     // 신규 유저: profile lookup → null, 1차 createOrMerge 타임아웃, verify 후 없음, 2차 createOrMerge 성공
     const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
       userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
@@ -268,7 +271,11 @@ describe('socialLoginService signInWithApple', () => {
 
     const { signInWithApple } = loadModule();
 
-    const result = await signInWithApple();
+    const signInPromise = signInWithApple();
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.runAllTimersAsync();
+    const result = await signInPromise;
 
     expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
     expect(result.profile.socialProvider).toBe('apple');
@@ -276,6 +283,8 @@ describe('socialLoginService signInWithApple', () => {
   });
 
   it('continues the Apple login flow when the profile becomes visible after a timed out write', async () => {
+    jest.useFakeTimers();
+
     // 신규 유저: 1차 createOrMerge 타임아웃 후 verify에서 프로필 발견 → 재시도 없이 계속
     const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
       userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
@@ -302,7 +311,11 @@ describe('socialLoginService signInWithApple', () => {
 
     const { signInWithApple } = loadModule();
 
-    const result = await signInWithApple();
+    const signInPromise = signInWithApple();
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.runAllTimersAsync();
+    const result = await signInPromise;
 
     // verify에서 프로필을 발견했으므로 createOrMerge는 1번만 시도
     expect(mockCreateOrMerge).toHaveBeenCalledTimes(1);
@@ -311,6 +324,8 @@ describe('socialLoginService signInWithApple', () => {
   });
 
   it('falls back to the social signup flow when profile creation keeps timing out', async () => {
+    jest.useFakeTimers();
+
     // 신규 유저: 1차 타임아웃 → verify 실패 → 2차 타임아웃 → verify 실패 → protectAuthFlow 호출
     const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
       userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
@@ -336,7 +351,11 @@ describe('socialLoginService signInWithApple', () => {
 
     const { signInWithApple } = loadModule();
 
-    const result = await signInWithApple();
+    const signInPromise = signInWithApple();
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.runAllTimersAsync();
+    const result = await signInPromise;
 
     // 2번 createOrMerge 시도, 모두 타임아웃이지만 social_signup 보호 후 최소 프로필 반환
     expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
@@ -384,7 +403,8 @@ describe('socialLoginService signInWithApple', () => {
   });
 
   // 그룹 B: account-conflict 에러
-  it('surfaces account-conflict errors with the dedicated Apple error code', async () => {
+  // Supabase는 별도 에러 코드로 분기하지 않고 AUTH_INVALID_CREDENTIALS로 통일
+  it('maps Supabase user_already_exists error to AUTH_INVALID_CREDENTIALS', async () => {
     // Supabase signInWithIdToken이 error 필드에 account-conflict를 담아 반환
     mockSignInWithCredential.mockResolvedValue({
       data: { user: null, session: null },
