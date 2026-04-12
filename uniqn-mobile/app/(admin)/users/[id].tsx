@@ -153,7 +153,7 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           사용자 정보를 불러오는 중...
@@ -164,7 +164,7 @@ export default function AdminUserDetailPage() {
 
   if (error || !user) {
     return (
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page">
         <EmptyState
           title="사용자를 찾을 수 없음"
           description="요청하신 사용자 정보를 찾을 수 없습니다."
@@ -177,7 +177,7 @@ export default function AdminUserDetailPage() {
 
   return (
     <ScrollView
-      className="flex-1 bg-surface-page dark:bg-surface-dark"
+      className="flex-1 bg-surface-page"
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#D4AF37" />
       }

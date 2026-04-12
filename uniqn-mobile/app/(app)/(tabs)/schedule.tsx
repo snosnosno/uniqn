@@ -408,7 +408,7 @@ export default function ScheduleScreen() {
   // 에러 상태
   if (error && !isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -422,7 +422,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 

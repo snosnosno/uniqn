@@ -16,7 +16,7 @@ import { BriefcaseIcon } from '@/components/icons';
 
 export function NonEmployerView() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
         <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-surface-card dark:bg-surface">

@@ -106,7 +106,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-surface-page dark:bg-surface-dark">
+    <ScrollView className="flex-1 bg-surface-page">
       <View className="p-4">
         <View className="mb-6">
           <Text className="mb-1 text-2xl font-display text-content-primary dark:text-off-white">

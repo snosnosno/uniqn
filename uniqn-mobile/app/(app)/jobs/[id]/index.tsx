@@ -83,7 +83,7 @@ export default function JobDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
@@ -93,7 +93,7 @@ export default function JobDetailScreen() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
@@ -109,7 +109,7 @@ export default function JobDetailScreen() {
 
   if (shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
@@ -119,7 +119,7 @@ export default function JobDetailScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader
           title={job.title}
@@ -144,7 +144,7 @@ export default function JobDetailScreen() {
     !applicationStatus?.cancellationRequest;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <JobDetailHeader
         title={job.title}

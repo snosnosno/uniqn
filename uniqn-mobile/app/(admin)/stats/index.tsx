@@ -52,7 +52,7 @@ export default function AdminStatsScreen() {
 
   if (isLoading && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <Loading variant="layout" message="통계 데이터를 불러오는 중..." />
       </SafeAreaView>
@@ -61,7 +61,7 @@ export default function AdminStatsScreen() {
 
   if (error && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <ErrorState
           error={error}
@@ -74,7 +74,7 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <Stack.Screen options={{ title: '서비스 통계' }} />
       <ScrollView
         className="flex-1"

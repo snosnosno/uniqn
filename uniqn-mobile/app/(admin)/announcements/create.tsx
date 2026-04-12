@@ -36,7 +36,7 @@ export default function CreateAnnouncementPage() {
         }}
       />
 
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page">
         <AnnouncementForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}

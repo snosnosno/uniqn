@@ -80,7 +80,7 @@ export default function BoardHomeScreen() {
       : '확정된 내 일정 게시판만 모아서 확인해요.';
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <TabHeader title="게시판" />
 
       {isLoading ? (

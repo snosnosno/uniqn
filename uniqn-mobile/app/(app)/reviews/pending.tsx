@@ -103,7 +103,7 @@ export default function PendingReviewsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {isLoading ? (
           <View>

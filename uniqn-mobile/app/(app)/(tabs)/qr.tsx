@@ -73,7 +73,7 @@ export default function QRScreen() {
   const actionLabel = selectedAction === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       {/* 헤더 */}
       <View className="bg-white px-4 py-3 dark:bg-surface">
         <Text className="text-xl font-display text-content-primary dark:text-secondary-100">

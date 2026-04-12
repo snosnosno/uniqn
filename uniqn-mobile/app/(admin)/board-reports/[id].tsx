@@ -65,7 +65,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -76,7 +76,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page">
           <EmptyState
             title="게시판 신고를 확인할 수 없습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -92,7 +92,7 @@ export default function AdminBoardReportDetailPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
           <Card className="mb-4">
             <View className="mb-3 flex-row flex-wrap items-center gap-2">

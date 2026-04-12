@@ -183,7 +183,7 @@ export default function JobPostingDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -191,7 +191,7 @@ export default function JobPostingDetailScreen() {
 
   if (error || !posting || !managementView) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -218,7 +218,7 @@ export default function JobPostingDetailScreen() {
   const questionCount = managementView.questions.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}

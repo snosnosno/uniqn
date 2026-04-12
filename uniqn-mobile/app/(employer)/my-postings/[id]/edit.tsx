@@ -184,7 +184,7 @@ export default function EditJobPostingScreen() {
 
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -197,7 +197,7 @@ export default function EditJobPostingScreen() {
 
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
@@ -214,7 +214,7 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

@@ -21,7 +21,7 @@ export default function InquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
         <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
       </SafeAreaView>
     );
@@ -29,7 +29,7 @@ export default function InquiryDetailScreen() {
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
         <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
           문의를 찾을 수 없습니다
         </Text>
@@ -41,7 +41,7 @@ export default function InquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의 정보 */}
         <Card className="mb-4">

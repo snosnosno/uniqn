@@ -219,7 +219,7 @@ function EmployerView() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <TabHeader title="내 공고" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 목록을 불러오는 중..." />
       </SafeAreaView>
@@ -228,7 +228,7 @@ function EmployerView() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <TabHeader title="내 공고" />
         <PostingSurfaceState
           mode="error"
@@ -243,7 +243,7 @@ function EmployerView() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <TabHeader title="내 공고" />
 
       <View className="px-4 py-3">

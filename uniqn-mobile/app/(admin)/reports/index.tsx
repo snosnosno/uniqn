@@ -120,7 +120,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
       </>
@@ -137,7 +137,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page">
           <EmptyState
             title="오류 발생"
             description="신고 목록을 불러오는 데 실패했습니다."
@@ -158,7 +158,7 @@ export default function AdminReportsPage() {
           title: '신고 관리',
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
         {/* 검색바 */}
         <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
           <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">

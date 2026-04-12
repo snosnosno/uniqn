@@ -279,7 +279,7 @@ export default function MyPostingsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           공고 목록을 불러오는 중...
@@ -291,7 +291,7 @@ export default function MyPostingsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page">
         <EmptyState
           title="오류 발생"
           description="공고 목록을 불러오는 데 실패했습니다."
@@ -303,7 +303,7 @@ export default function MyPostingsPage() {
   }
 
   return (
-    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page">
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <View className="flex-row items-center justify-between mb-1">

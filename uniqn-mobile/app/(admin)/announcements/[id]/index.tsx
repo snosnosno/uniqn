@@ -108,7 +108,7 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -119,7 +119,7 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center px-8">
+        <View className="flex-1 bg-surface-page items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#EF4444" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
@@ -153,7 +153,7 @@ export default function AnnouncementDetailPage() {
         }}
       />
 
-      <ScrollView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <ScrollView className="flex-1 bg-surface-page">
         <View className="p-4">
           {/* Header Card */}
           <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">

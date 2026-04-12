@@ -109,7 +109,7 @@ export const NotificationList = memo(function NotificationList({
 
   if (isLoading && notifications.length === 0) {
     return (
-      <View className={`flex-1 bg-surface-page dark:bg-surface-dark ${className}`}>
+      <View className={`flex-1 bg-surface-page ${className}`}>
         {[...Array(SKELETON_COUNT)].map((_, index) => (
           <NotificationItemSkeleton key={`skeleton-${index}`} />
         ))}
@@ -144,7 +144,7 @@ export const NotificationList = memo(function NotificationList({
   );
 
   return (
-    <View className={`flex-1 bg-surface-page dark:bg-surface-dark ${className}`}>
+    <View className={`flex-1 bg-surface-page ${className}`}>
       {showHeader && notifications.length > 0 && (
         <View className="flex-row items-center justify-between border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface dark:bg-surface-dark">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">

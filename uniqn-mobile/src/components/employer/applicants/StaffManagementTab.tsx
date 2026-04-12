@@ -254,7 +254,7 @@ export function StaffManagementTab({
   }
 
   return (
-    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page">
       <QuickActions onShowQR={handleShowQR} onRefresh={refresh} isRefreshing={isRefreshing} />
 
       <View className="flex-1">

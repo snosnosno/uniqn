@@ -12,7 +12,7 @@ import { Card } from '@/components/ui';
 
 export default function EmployerTermsScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <StackHeader title="구인자 이용약관" />
 
       <ScrollView

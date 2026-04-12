@@ -144,7 +144,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -155,7 +155,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page">
           <EmptyState
             title="게시판 신고를 불러오지 못했습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -171,7 +171,7 @@ export default function AdminBoardReportsPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
         <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
           <View className="flex-row items-center rounded-lg bg-surface-card px-3 py-2 dark:bg-surface-elevated">
             <SearchIcon size={18} color={SECONDARY_PALETTE[400]} />

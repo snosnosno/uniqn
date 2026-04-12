@@ -207,7 +207,7 @@ export default function ApplyScreen() {
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen options={stackOptions} />
         <LoadingState />
       </SafeAreaView>
@@ -216,7 +216,7 @@ export default function ApplyScreen() {
 
   if (jobError || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen options={stackOptions} />
         <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
       </SafeAreaView>
@@ -225,7 +225,7 @@ export default function ApplyScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen options={stackOptions} />
         <UnsupportedPostingState />
       </SafeAreaView>
@@ -236,7 +236,7 @@ export default function ApplyScreen() {
 
   if (hasApplied(job.id) || hasAppliedDirect) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen options={stackOptions} />
         <AlreadyAppliedState isFixed={isFixed} />
       </SafeAreaView>
@@ -245,7 +245,7 @@ export default function ApplyScreen() {
 
   if (!showForm) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen
           options={{
             ...stackOptions,
@@ -278,7 +278,7 @@ export default function ApplyScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page">
       <Stack.Screen
         options={{
           headerShown: false,

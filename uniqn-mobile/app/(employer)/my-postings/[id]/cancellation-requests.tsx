@@ -119,7 +119,7 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingPosting) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -132,7 +132,7 @@ export default function CancellationRequestsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 취소 요청 관리를 지원하지 않습니다."
@@ -143,7 +143,7 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -156,7 +156,7 @@ export default function CancellationRequestsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
         <ErrorState
           title="취소 요청을 불러올 수 없습니다"
           message={error.message}
@@ -167,7 +167,7 @@ export default function CancellationRequestsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <StatsHeader pendingCount={pendingCount} />
 
       {cancellationRequests.length === 0 ? (

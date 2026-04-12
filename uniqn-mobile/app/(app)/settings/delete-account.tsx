@@ -217,7 +217,7 @@ export default function DeleteAccountScreen() {
   const canSubmit = selectedReason && (isAppleUser || password.length >= 8);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,

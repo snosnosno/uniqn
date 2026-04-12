@@ -200,7 +200,7 @@ export default function EmployerRegisterScreen() {
   }, [toast]);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <StackHeader title="구인자 등록" />
 
       <ScrollView

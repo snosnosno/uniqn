@@ -399,7 +399,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
       </>
@@ -421,7 +421,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page">
           <EmptyState
             title="신고를 찾을 수 없습니다"
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
@@ -447,7 +447,7 @@ export default function AdminReportDetailPage() {
           ),
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"

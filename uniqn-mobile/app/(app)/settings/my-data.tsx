@@ -176,7 +176,7 @@ export default function MyDataScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -201,7 +201,7 @@ export default function MyDataScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,

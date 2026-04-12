@@ -99,7 +99,7 @@ export default function AdminAnnouncementsPage() {
         }}
       />
 
-      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page">
         {/* Status Tabs */}
         <ScrollView
           horizontal
