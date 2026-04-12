@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --color-content-primary:     #09090B;
+    --color-content-secondary:   #4A4A52;
+    --color-content-muted:       #707078;
+    --color-content-placeholder: #A8A8B0;
+    --color-surface-page:        #F5F5F7;
+    --color-surface-card:        #FFFFFF;
+    --color-divider:             #DCDCE0;
+  }
+
+  .dark {
+    --color-content-primary:     #F0F0F2;
+    --color-content-secondary:   #C0C0C8;
+    --color-content-muted:       #9898A0;
+    --color-content-placeholder: #9898A0;
+    --color-surface-page:        #09090B;
+    --color-surface-card:        #111113;
+    --color-divider:             #19191D;
+  }
+}
+
 /*
  * UNIQN Mobile - Global Styles
  * NativeWind 4.x + Tailwind CSS
@@ -60,7 +82,7 @@
 
   /* 카드 스타일 */
   .card {
-    @apply bg-white dark:bg-surface-elevated rounded-md border border-secondary-200 dark:border-surface-overlay;
+    @apply bg-surface-card rounded-md border border-divider;
   }
 
   .card-bordered {
@@ -68,33 +90,20 @@
   }
 
   .card-elevated {
-    @apply bg-white dark:bg-surface-elevated rounded-md border border-secondary-200 dark:border-surface-overlay shadow-sm;
+    @apply bg-surface-card rounded-md border border-divider shadow-sm;
   }
 
   /* 입력 필드 스타일 */
   .input {
-    @apply w-full px-4 py-3 rounded border border-secondary-200 dark:border-surface-overlay
-           bg-white dark:bg-surface
-           text-secondary-900 dark:text-secondary-50
-           placeholder:text-secondary-400 dark:placeholder:text-secondary-500
+    @apply w-full px-4 py-3 rounded border border-divider
+           bg-surface-card
+           text-content-primary
+           placeholder:text-content-placeholder
            focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
   }
 
   .input-error {
     @apply border-error-500 focus:border-error-500 focus:ring-error-500;
-  }
-
-  /* 텍스트 스타일 */
-  .text-primary {
-    @apply text-secondary-900 dark:text-secondary-50;
-  }
-
-  .text-secondary {
-    @apply text-secondary-700 dark:text-secondary-300;
-  }
-
-  .text-muted {
-    @apply text-secondary-600 dark:text-secondary-500;
   }
 
   /* 배지 스타일 — rounded-sm, 이모지 없이 텍스트+컬러 */
