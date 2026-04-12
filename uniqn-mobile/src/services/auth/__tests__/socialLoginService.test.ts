@@ -6,7 +6,6 @@ const mockSignInWithCredential = jest.fn();
 const mockSignInWithEmailAndPassword = jest.fn();
 const mockCreateUserWithEmailAndPassword = jest.fn();
 const mockUpdateProfile = jest.fn();
-const mockGetFirebaseAuth = jest.fn();
 const mockSyncSignOut = jest.fn();
 const mockCreateOrMerge = jest.fn();
 const mockGetUserProfile = jest.fn();
@@ -27,10 +26,9 @@ const mockMmkv = {
   getString: jest.fn(),
 };
 
-const mockFirebaseAuth = { name: 'firebase-auth' };
 const mockAuthUser = {
-  id: 'firebase-user',
-  uid: 'firebase-user',
+  id: 'mock-user-id',
+  uid: 'mock-user-id',
   email: 'apple@example.com',
   getIdToken: jest.fn<Promise<string>, [boolean?]>(),
 };
@@ -147,7 +145,6 @@ describe('socialLoginService signInWithApple', () => {
 
     (global as typeof global & { __DEV__?: boolean }).__DEV__ = false;
 
-    mockGetFirebaseAuth.mockReturnValue(mockFirebaseAuth);
     mockSyncSignOut.mockResolvedValue(undefined);
     mockWithTimeout.mockImplementation((promise: Promise<unknown>) => promise);
     mockSanitizeInput.mockImplementation((value: string) => value);
@@ -167,7 +164,7 @@ describe('socialLoginService signInWithApple', () => {
       },
     });
     mockGetUserProfile.mockResolvedValue({
-      uid: 'firebase-user',
+      uid: 'mock-user-id',
       email: 'apple@example.com',
       role: 'staff',
       socialProvider: 'apple',
@@ -202,7 +199,7 @@ describe('socialLoginService signInWithApple', () => {
 
   it('returns an incomplete existing profile without recreating it', async () => {
     mockGetUserProfile.mockResolvedValue({
-      uid: 'firebase-user',
+      uid: 'mock-user-id',
       email: 'apple@example.com',
       role: 'staff',
       socialProvider: 'apple',
@@ -227,9 +224,9 @@ describe('socialLoginService signInWithApple', () => {
     const result = await signInWithApple();
 
     expect(mockCreateOrMerge).toHaveBeenCalledWith(
-      'firebase-user',
+      'mock-user-id',
       expect.objectContaining({
-        uid: 'firebase-user',
+        uid: 'mock-user-id',
         email: 'apple@example.com',
         status: 'active',
         socialProvider: 'apple',
@@ -291,7 +288,7 @@ describe('socialLoginService signInWithApple', () => {
     });
 
     const resolvedProfile = {
-      uid: 'firebase-user',
+      uid: 'mock-user-id',
       email: 'apple@example.com',
       role: 'staff' as const,
       socialProvider: 'apple',
@@ -360,7 +357,7 @@ describe('socialLoginService signInWithApple', () => {
     // 2번 createOrMerge 시도, 모두 타임아웃이지만 social_signup 보호 후 최소 프로필 반환
     expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
     expect(mockProtectAuthFlow).toHaveBeenCalledWith(
-      'firebase-user',
+      'mock-user-id',
       'social_signup',
       expect.any(Number)
     );

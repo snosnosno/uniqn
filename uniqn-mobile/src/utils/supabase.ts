@@ -572,6 +572,33 @@ function removeRealtimeSubscriber(
   }
 }
 
+/**
+ * 테스트 격리용 — 채널 레지스트리를 초기화한다.
+ *
+ * @description
+ * `realtimeChannelRegistry`는 모듈 스코프 싱글턴이므로 테스트 간 상태가 누수될 수 있다.
+ * 각 테스트의 `afterEach`에서 이 함수를 호출하여 격리를 보장한다.
+ *
+ * @example
+ * ```ts
+ * import { clearRealtimeRegistry } from '@/utils/supabase';
+ *
+ * afterEach(() => {
+ *   clearRealtimeRegistry();
+ * });
+ * ```
+ */
+export function clearRealtimeRegistry(): void {
+  for (const entry of realtimeChannelRegistry.values()) {
+    try {
+      supabase.removeChannel(entry.channel);
+    } catch {
+      // 이미 제거된 채널 — 무시
+    }
+  }
+  realtimeChannelRegistry.clear();
+}
+
 // ============================================================================
 // 7. camelCase ↔ snake_case Conversion
 // ============================================================================

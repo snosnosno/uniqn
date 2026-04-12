@@ -359,16 +359,20 @@ export function useRealtimeSubscription<T>(
     return unsubscribe;
   }, [subscribe, unsubscribe]);
 
+  // initialData를 ref로 안정화: 호출자가 인라인 배열(initialData={[]})을 전달해도
+  // 렌더마다 아래 useEffect가 재실행되지 않도록 한다.
+  const initialDataRef = useRef(initialData);
+
   // enabled 변경 시 처리
   // - false: 즉시 구독 해제 + 데이터 초기화
   // - true: subscribe가 enabled를 deps로 가지므로 위 useEffect에서 자동 재구독됨
   useEffect(() => {
     if (!enabled) {
       unsubscribe();
-      setData(initialData);
+      setData(initialDataRef.current);
       setIsLoading(false);
     }
-  }, [enabled, unsubscribe, initialData]);
+  }, [enabled, unsubscribe]);
 
   return {
     data,

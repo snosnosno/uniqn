@@ -139,7 +139,9 @@ const { authStorage, deleteItem, getItem, setItem } = jest.requireMock('@/lib/se
   setItem: jest.Mock;
 };
 const { supabase: mockSupabase } = jest.requireMock('@/lib/supabase') as {
-  supabase: { auth: { signOut: jest.Mock; onAuthStateChange: jest.Mock } };
+  supabase: {
+    auth: { signOut: jest.Mock; onAuthStateChange: jest.Mock; getUser: jest.Mock };
+  };
 };
 const syncSignOut = mockSupabase.auth.signOut;
 const { router } = jest.requireMock('expo-router') as {
@@ -190,16 +192,8 @@ describe('sessionService', () => {
     mockToastAddToast.mockReset();
     mockTokenExpiry(30);
     // clearAllMocks는 구현을 지우므로 기본값 명시적 복원
-    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
-      supabase: {
-        auth: {
-          getUser: jest.Mock;
-          onAuthStateChange: jest.Mock;
-        };
-      };
-    };
-    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    mockSupa.auth.onAuthStateChange.mockImplementation(() => ({
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSupabase.auth.onAuthStateChange.mockImplementation(() => ({
       data: { subscription: { unsubscribe: jest.fn() } },
     }));
     mockRefreshSession.mockResolvedValue({
@@ -265,16 +259,8 @@ describe('sessionService', () => {
     });
 
     // getUser()는 null 반환 (아직 복원 중)
-    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
-      supabase: {
-        auth: {
-          getUser: jest.Mock;
-          onAuthStateChange: jest.Mock;
-        };
-      };
-    };
     const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
-    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     // waitForRestoredAuthUser 내 임시 onAuthStateChange가 복원된 user 전달
     let restoreCallback:
@@ -285,7 +271,7 @@ describe('sessionService', () => {
       | undefined;
     const restoreUnsubscribe = jest.fn();
 
-    mockSupa.auth.onAuthStateChange.mockImplementation(
+    mockSupabase.auth.onAuthStateChange.mockImplementation(
       (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
         if (!mainAuthCallback) {
           // 첫 번째 호출 = initialize()의 메인 구독
@@ -323,23 +309,15 @@ describe('sessionService', () => {
       user: null,
     });
 
-    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
-      supabase: {
-        auth: {
-          getUser: jest.Mock;
-          onAuthStateChange: jest.Mock;
-        };
-      };
-    };
     const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
 
     // getUser()가 즉시 복원된 user를 반환 (동기 초기 null 처리)
-    mockSupa.auth.getUser.mockResolvedValue({ data: { user: restoredUser }, error: null });
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: restoredUser }, error: null });
 
     let mainAuthCallback:
       | ((event: string, session: { user: typeof restoredUser } | null) => void)
       | undefined;
-    mockSupa.auth.onAuthStateChange.mockImplementation(
+    mockSupabase.auth.onAuthStateChange.mockImplementation(
       (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
         mainAuthCallback = callback;
         return { data: { subscription: { unsubscribe: jest.fn() } } };
@@ -386,18 +364,10 @@ describe('sessionService', () => {
       user: null,
     });
 
-    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
-      supabase: {
-        auth: {
-          getUser: jest.Mock;
-          onAuthStateChange: jest.Mock;
-        };
-      };
-    };
     const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
 
     // getUser()는 null 반환 — waitForRestoredAuthUser가 임시 onAuthStateChange 구독으로 진입
-    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     let mainAuthCallback:
       | ((event: string, session: { user: typeof restoredUser } | null) => void)
@@ -407,7 +377,7 @@ describe('sessionService', () => {
       | undefined;
     const restoreUnsubscribe = jest.fn();
 
-    mockSupa.auth.onAuthStateChange.mockImplementation(
+    mockSupabase.auth.onAuthStateChange.mockImplementation(
       (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
         if (!mainAuthCallback) {
           mainAuthCallback = callback;
