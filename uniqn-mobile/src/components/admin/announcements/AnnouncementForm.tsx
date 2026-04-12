@@ -187,7 +187,7 @@ export function AnnouncementForm({
             }}
             onBlur={() => validateField('title', title)}
             placeholder="공지사항 제목을 입력해주세요"
-            placeholderTextColor={isDarkMode ? '#6b7280' : '#9ca3af'}
+            placeholderTextColor={isDarkMode ? '#9A9078' : '#A89C84'}
             className={`${inputBaseClass} ${
               errors.title ? 'border-error-500' : 'border-secondary-300 dark:border-surface-overlay'
             }`}
@@ -240,7 +240,7 @@ export function AnnouncementForm({
             }}
             onBlur={() => validateField('content', content)}
             placeholder="공지사항 내용을 입력해주세요"
-            placeholderTextColor={isDarkMode ? '#6b7280' : '#9ca3af'}
+            placeholderTextColor={isDarkMode ? '#9A9078' : '#A89C84'}
             multiline
             numberOfLines={10}
             textAlignVertical="top"
@@ -319,7 +319,7 @@ export function AnnouncementForm({
           <Switch
             value={isPinned}
             onValueChange={setIsPinned}
-            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
+            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
             thumbColor={isPinned ? '#ffffff' : '#f4f4f5'}
           />
         </View>

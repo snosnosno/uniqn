@@ -193,7 +193,7 @@ export const SalarySection = memo(function SalarySection({
             value={data.useSameSalary}
             onValueChange={handleUseSameSalaryToggle}
             trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-            thumbColor={data.useSameSalary ? '#8A7228' : '#F3F4F6'}
+            thumbColor={data.useSameSalary ? '#FFFFFF' : '#F5F5F2'}
           />
         </View>
       )}

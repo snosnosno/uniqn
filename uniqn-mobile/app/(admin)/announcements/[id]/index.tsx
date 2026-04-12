@@ -200,13 +200,13 @@ export default function AnnouncementDetailPage() {
             {/* Meta */}
             <View className="flex-row flex-wrap gap-4">
               <View className="flex-row items-center">
-                <PersonOutlineIcon size={14} color="#9ca3af" />
+                <PersonOutlineIcon size={14} color="#A89C84" />
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
                   {announcement.authorName}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <EyeOutlineIcon size={14} color="#9ca3af" />
+                <EyeOutlineIcon size={14} color="#A89C84" />
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
                   {announcement.viewCount.toLocaleString()}
                 </Text>

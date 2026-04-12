@@ -75,7 +75,7 @@ function ProgressCircle({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E5E7EB"
+          stroke="#D6D2CA"
           strokeWidth={strokeWidth}
           fill="none"
         />

@@ -98,7 +98,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={isProvided}
                     onValueChange={(v) => onAllowanceProvidedToggle(allowance.key, v)}
                     trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                    thumbColor={isProvided ? '#8A7228' : '#F3F4F6'}
+                    thumbColor={isProvided ? '#FFFFFF' : '#F5F5F2'}
                   />
                 </View>
               </View>

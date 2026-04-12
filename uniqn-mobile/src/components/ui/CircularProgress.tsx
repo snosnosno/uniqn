@@ -42,16 +42,16 @@ const COLORS = {
     background: 'rgba(212,175,55,0.08)', // primary subtle
   },
   warning: {
-    stroke: '#D4A017', // amber-500
-    background: '#FEF3C7', // amber-100
+    stroke: '#D4A017', // warning-500
+    background: 'rgba(212,160,23,0.12)', // warning-100
   },
   danger: {
-    stroke: '#EF4444', // red-500
-    background: 'rgba(220,38,38,0.08)', // error subtle
+    stroke: '#DC2626', // error-500
+    background: 'rgba(220,38,38,0.08)', // error-50
   },
   expired: {
-    stroke: '#A89C84', // gray-400
-    background: '#F3F4F6', // gray-100
+    stroke: '#A89C84', // secondary-400
+    background: '#EDEBE6', // secondary-100
   },
 };
 

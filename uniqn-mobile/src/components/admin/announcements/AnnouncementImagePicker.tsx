@@ -147,7 +147,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="위로 이동"
                 >
-                  <ChevronUpIcon size={14} color={isFirst ? '#6b7280' : 'white'} />
+                  <ChevronUpIcon size={14} color={isFirst ? '#9A9078' : '#FFFFFF'} />
                 </Pressable>
                 <Pressable
                   onPress={() => handleMoveDown(index)}
@@ -158,7 +158,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="아래로 이동"
                 >
-                  <ChevronDownIcon size={14} color={isLast ? '#6b7280' : 'white'} />
+                  <ChevronDownIcon size={14} color={isLast ? '#9A9078' : '#FFFFFF'} />
                 </Pressable>
               </View>
             )}

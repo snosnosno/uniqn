@@ -139,9 +139,9 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           {/* 펼침/접힘 아이콘 */}
           <View className="ml-2 items-center justify-center">
             {isExpanded ? (
-              <ChevronUpIcon size={20} color="#9ca3af" />
+              <ChevronUpIcon size={20} color="#A89C84" />
             ) : (
-              <ChevronDownIcon size={20} color="#9ca3af" />
+              <ChevronDownIcon size={20} color="#A89C84" />
             )}
           </View>
         </View>

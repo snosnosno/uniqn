@@ -180,7 +180,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
                     className="h-full rounded-sm"
                     style={{
                       width: `${barWidth}%`,
-                      backgroundColor: isToday ? color : isDarkMode ? '#6b7280' : '#9ca3af',
+                      backgroundColor: isToday ? color : isDarkMode ? '#9A9078' : '#A89C84',
                     }}
                   />
                 </View>

@@ -29,7 +29,7 @@ export function StatsSummaryCard({
   value,
   isLoading = false,
   icon,
-  iconColor = '#6b7280',
+  iconColor = '#9A9078',
   iconBgColor = 'bg-secondary-100 dark:bg-surface',
   valueColor = 'text-secondary-900 dark:text-white',
   suffix = '',

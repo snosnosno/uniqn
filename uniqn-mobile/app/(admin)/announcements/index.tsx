@@ -162,7 +162,7 @@ export default function AdminAnnouncementsPage() {
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
-            <DocumentTextOutlineIcon size={64} color="#9ca3af" />
+            <DocumentTextOutlineIcon size={64} color="#A89C84" />
             <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mt-4">
               공지사항이 없습니다
             </Text>

@@ -175,7 +175,7 @@ const QuestionCard = memo(function QuestionCard({
             value={question.required}
             onValueChange={handleRequiredChange}
             trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-            thumbColor={question.required ? '#8A7228' : '#F3F4F6'}
+            thumbColor={question.required ? '#FFFFFF' : '#F5F5F2'}
           />
         </View>
       </View>
@@ -319,7 +319,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
           value={hasPreQuestions}
           onValueChange={handleUsesPreQuestionsToggle}
           trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-          thumbColor={hasPreQuestions ? '#8A7228' : '#F3F4F6'}
+          thumbColor={hasPreQuestions ? '#FFFFFF' : '#F5F5F2'}
         />
       </View>
 

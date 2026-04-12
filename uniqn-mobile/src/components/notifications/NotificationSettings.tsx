@@ -210,7 +210,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
             {settings.enabled ? (
               <BellIcon size={24} color="#D4AF37" />
             ) : (
-              <BellSlashIcon size={24} color="#9ca3af" />
+              <BellSlashIcon size={24} color="#A89C84" />
             )}
             <View className="ml-3">
               <Text className="text-base font-medium text-secondary-900 dark:text-white">
@@ -224,8 +224,8 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.enabled}
             onValueChange={handleMasterToggle}
-            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
-            thumbColor="#ffffff"
+            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            thumbColor="#FFFFFF"
             disabled={isSaving}
           />
         </View>
@@ -235,7 +235,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       <Card className="mb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <MoonIcon size={24} color="#6b7280" />
+            <MoonIcon size={24} color="#9A9078" />
             <View className="ml-3">
               <Text className="text-base font-medium text-secondary-900 dark:text-white">
                 방해 금지 시간
@@ -248,8 +248,8 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.quietHours?.enabled || false}
             onValueChange={handleQuietHoursToggle}
-            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
-            thumbColor="#ffffff"
+            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            thumbColor="#FFFFFF"
             disabled={isSaving || !settings.enabled}
           />
         </View>
@@ -259,7 +259,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       <Card className="mb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <Squares2X2Icon size={24} color="#6b7280" />
+            <Squares2X2Icon size={24} color="#9A9078" />
             <View className="ml-3">
               <Text className="text-base font-medium text-secondary-900 dark:text-white">
                 알림 그룹화
@@ -272,8 +272,8 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.grouping?.enabled ?? true}
             onValueChange={handleGroupingToggle}
-            trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
-            thumbColor="#ffffff"
+            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            thumbColor="#FFFFFF"
             disabled={isSaving || !settings.enabled}
           />
         </View>
@@ -305,7 +305,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                 <Switch
                   value={categorySettings?.enabled ?? true}
                   onValueChange={(enabled) => handleCategoryToggle(category, enabled)}
-                  trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
+                  trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
                   thumbColor="#ffffff"
                   disabled={isSaving || !settings.enabled}
                 />
@@ -324,7 +324,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
-                    trackColor={{ false: '#d1d5db', true: '#D4AF37' }}
+                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
                     thumbColor="#ffffff"
                     disabled={isSaving || !settings.enabled}
                   />

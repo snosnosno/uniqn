@@ -95,9 +95,9 @@ const darkCalendarTheme = {
   textSectionTitleColor: '#A89C84',
   textSectionTitleDisabledColor: '#9A9078',
   todayTextColor: ACCENT_COLORS[300],
-  dayTextColor: '#F3F4F6',
+  dayTextColor: '#F0F0F2',
   textDisabledColor: '#9A9078',
-  monthTextColor: '#F3F4F6',
+  monthTextColor: '#F0F0F2',
   arrowColor: '#D6D2CA',
 };
 
