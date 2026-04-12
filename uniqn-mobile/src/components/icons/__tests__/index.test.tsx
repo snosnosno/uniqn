@@ -18,7 +18,7 @@ describe('icons', () => {
     render(
       <>
         <SearchIcon testID="search-icon" />
-        <HeartFilledIcon testID="heart-icon" color="#EF4444" />
+        <HeartFilledIcon testID="heart-icon" color="#DC2626" />
         <LoaderIcon testID="loader-icon" />
         <QrCodeIcon testID="qr-code-icon" />
         <ScanIcon testID="scan-icon" />

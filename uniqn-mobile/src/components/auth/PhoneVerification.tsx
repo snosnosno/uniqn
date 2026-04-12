@@ -340,7 +340,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {/* 에러 메시지 */}
         {displayError && (
           <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg p-3 mt-4">
-            <XCircleIcon size={18} color="#ef4444" />
+            <XCircleIcon size={18} color="#DC2626" />
             <Text className="ml-2 text-error-600 dark:text-error-400 text-sm flex-1">
               {displayError}
             </Text>

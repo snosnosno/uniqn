@@ -118,7 +118,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityLabel="역할 삭제"
             accessibilityState={{ disabled: !canDelete }}
           >
-            <TrashIcon size={16} color={canDelete ? '#EF4444' : '#A89C84'} />
+            <TrashIcon size={16} color={canDelete ? '#DC2626' : '#A89C84'} />
           </Pressable>
         </View>
       </View>

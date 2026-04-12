@@ -216,7 +216,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                 ${isProcessing ? 'opacity-50' : ''}
               `}
             >
-              <XMarkIcon size={16} color="#EF4444" />
+              <XMarkIcon size={16} color="#DC2626" />
               <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
                 거절
               </Text>

@@ -58,7 +58,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         accessibilityHint="지원자를 거절합니다"
         className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
       >
-        <XMarkIcon size={16} color="#EF4444" />
+        <XMarkIcon size={16} color="#DC2626" />
         <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">거절</Text>
       </Pressable>
 

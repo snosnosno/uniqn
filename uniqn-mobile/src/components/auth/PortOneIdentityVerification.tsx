@@ -233,7 +233,7 @@ export function PortOneIdentityVerification({
 
       {errorMessage && (
         <View className="mt-3 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
-          <XCircleIcon size={18} color="#ef4444" />
+          <XCircleIcon size={18} color="#DC2626" />
           <Text className="ml-2 flex-1 text-sm text-error-600 dark:text-error-400">
             {errorMessage}
           </Text>

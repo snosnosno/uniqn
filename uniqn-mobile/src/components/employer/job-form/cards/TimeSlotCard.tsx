@@ -158,7 +158,7 @@ const RoleCard = React.memo(function RoleCard({
             accessibilityRole="button"
             accessibilityLabel="역할 삭제"
           >
-            <TrashIcon size={14} color="#EF4444" />
+            <TrashIcon size={14} color="#DC2626" />
           </Pressable>
         )}
       </View>
@@ -348,7 +348,7 @@ export function TimeSlotCard({
             accessibilityRole="button"
             accessibilityLabel="시간대 삭제"
           >
-            <XCircleIcon size={20} color="#EF4444" />
+            <XCircleIcon size={20} color="#DC2626" />
           </Pressable>
         )}
       </View>

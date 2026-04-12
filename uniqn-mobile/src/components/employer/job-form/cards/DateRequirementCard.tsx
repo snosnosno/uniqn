@@ -120,7 +120,7 @@ export function DateRequirementCard({
             accessibilityRole="button"
             accessibilityLabel="날짜 삭제"
           >
-            <TrashIcon size={20} color="#EF4444" />
+            <TrashIcon size={20} color="#DC2626" />
           </Pressable>
         )}
       </View>

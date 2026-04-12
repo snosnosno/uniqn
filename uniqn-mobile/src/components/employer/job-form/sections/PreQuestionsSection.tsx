@@ -127,7 +127,7 @@ const QuestionCard = memo(function QuestionCard({
           accessibilityRole="button"
           accessibilityLabel="질문 삭제"
         >
-          <TrashIcon size={18} color="#EF4444" />
+          <TrashIcon size={18} color="#DC2626" />
         </Pressable>
       </View>
 

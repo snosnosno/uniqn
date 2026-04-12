@@ -236,7 +236,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleReport}
               className="flex-row items-center justify-center rounded-lg bg-error-50 px-3 py-2 active:opacity-70 dark:bg-error-900/20"
             >
-              <ExclamationTriangleIcon size={14} color="#EF4444" />
+              <ExclamationTriangleIcon size={14} color="#DC2626" />
               <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
                 신고
               </Text>

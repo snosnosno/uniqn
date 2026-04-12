@@ -72,7 +72,7 @@ const STATUS_METADATA: Record<ApplicationStatus, StatusMetadata> = {
   rejected: {
     label: '거절',
     labelEn: 'Rejected',
-    color: '#EF4444',
+    color: '#DC2626',
     bgColor: 'rgba(220,38,38,0.08)',
     description: '지원이 거절되었습니다.',
     isFinal: true,

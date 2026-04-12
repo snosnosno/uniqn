@@ -447,7 +447,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#EF4444" />
+        <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mt-3 text-center text-sm font-medium text-error-500">
           QR 대상 일정을 불러오지 못했습니다.
         </Text>
@@ -517,7 +517,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-secondary-50 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#EF4444" />
+        <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mb-4 mt-3 text-center font-medium text-error-500">
           QR 코드가 만료되었습니다.
         </Text>

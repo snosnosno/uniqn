@@ -67,7 +67,7 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
   cancelled: {
     label: APPLICATION_STATUS_LABELS.cancelled,
@@ -78,9 +78,9 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
   },
   completed: {
     label: APPLICATION_STATUS_LABELS.completed,
-    variant: 'default',
-    textColor: 'text-primary-600 dark:text-primary-400',
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    variant: 'success',
+    textColor: 'text-success-600 dark:text-success-400',
+    bgColor: 'bg-success-100 dark:bg-success-900/30',
     hexColor: '#22C55E',
   },
   cancellation_pending: {
@@ -121,7 +121,7 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
 };
 
@@ -204,8 +204,8 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
   completed: {
     label: CONFIRMED_STAFF_STATUS_LABELS.completed,
     variant: 'success',
-    textColor: 'text-primary-600 dark:text-primary-300',
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    textColor: 'text-success-600 dark:text-success-300',
+    bgColor: 'bg-success-100 dark:bg-success-900/30',
     hexColor: '#22C55E',
   },
   cancelled: {
@@ -213,7 +213,7 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-300',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
   no_show: {
     label: CONFIRMED_STAFF_STATUS_LABELS.no_show,
@@ -254,7 +254,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'primary',
     textColor: 'text-info-600 dark:text-info-400',
     bgColor: 'bg-info-100 dark:bg-info-900/30',
-    hexColor: '#3B82F6',
+    hexColor: '#2563EB',
   },
   active: {
     label: '모집중',
@@ -275,7 +275,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
   expired: {
     label: '만료됨',
@@ -289,7 +289,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
 };
 
@@ -327,7 +327,7 @@ export const ANNOUNCEMENT_PRIORITY: Record<AnnouncementPriorityType, StatusConfi
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#EF4444',
+    hexColor: '#DC2626',
   },
   important: {
     label: '중요',

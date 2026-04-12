@@ -67,7 +67,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
       {applicant.status === STATUS.APPLICATION.REJECTED && applicant.rejectionReason ? (
         <View className="px-4 pb-4">
           <View className="flex-row items-start rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
-            <XCircleIcon size={16} color="#EF4444" />
+            <XCircleIcon size={16} color="#DC2626" />
             <View className="ml-2 flex-1">
               <Text className="mb-1 text-xs text-error-500 dark:text-error-400">거절 사유</Text>
               <Text className="text-sm text-error-700 dark:text-error-300">

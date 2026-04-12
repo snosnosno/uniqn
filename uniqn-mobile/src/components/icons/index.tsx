@@ -438,7 +438,7 @@ export const HeartIcon = createOutlineIcon((color, strokeWidth) => (
   <Path d={heartOutlinePath} {...getStrokeProps(color, strokeWidth)} />
 ));
 
-export const HeartFilledIcon = ({ size = DEFAULT_SIZE, color = '#EF4444', ...rest }: IconProps) => (
+export const HeartFilledIcon = ({ size = DEFAULT_SIZE, color = '#DC2626', ...rest }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
     <Path d={heartOutlinePath} fill={color} />
   </Svg>

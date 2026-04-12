@@ -393,7 +393,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-error-500',
     darkBg: 'dark:bg-error-400',
     text: 'text-white',
-    hex: '#EF4444',
+    hex: '#DC2626',
     label: '주의',
   },
   {

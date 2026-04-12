@@ -334,13 +334,13 @@ describe('scheduleService', () => {
       const markedDates = getCalendarMarkedDates(schedules);
 
       expect(markedDates['2025-01-15'].marked).toBe(true);
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E'); // green for confirmed
+      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E'); // success-500 for confirmed
 
-      expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // yellow for applied
+      expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // primary-500 for applied
 
-      expect(markedDates['2025-01-17'].dotColor).toBe('#22C55E'); // success for completed
+      expect(markedDates['2025-01-17'].dotColor).toBe('#9A9078'); // secondary-500 for completed (과거 근무)
 
-      expect(markedDates['2025-01-18'].dotColor).toBe('#EF4444'); // red for cancelled
+      expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626'); // error-500 for cancelled
     });
 
     it('should prioritize confirmed over other types for same date', () => {

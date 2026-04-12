@@ -153,7 +153,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
               accessibilityRole="button"
               accessibilityLabel="일정 삭제"
             >
-              <TrashIcon size={20} color="#EF4444" />
+              <TrashIcon size={20} color="#DC2626" />
             </Pressable>
           )}
         </View>

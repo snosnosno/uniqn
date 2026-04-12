@@ -242,7 +242,7 @@ export function ApplicantConfirmModal({
 
         {/* 설명 */}
         <View className="flex-row items-center mb-3">
-          <AlertCircleIcon size={20} color={action === 'reject' ? '#EF4444' : '#B8962E'} />
+          <AlertCircleIcon size={20} color={action === 'reject' ? '#DC2626' : '#B8962E'} />
           <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-300">
             {config.description}
           </Text>

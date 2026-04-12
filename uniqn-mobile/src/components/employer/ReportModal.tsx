@@ -150,7 +150,7 @@ function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
 
   const severityIcons = {
     critical: '#DC2626',
-    high: '#EF4444',
+    high: '#DC2626',
     medium: '#D4A017',
     low: '#D4A017',
   };
@@ -283,9 +283,9 @@ export function ReportModal({
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center">
               {mode === 'employee' ? (
-                <BriefcaseIcon size={24} color="#EF4444" />
+                <BriefcaseIcon size={24} color="#DC2626" />
               ) : (
-                <UserIcon size={24} color="#EF4444" />
+                <UserIcon size={24} color="#DC2626" />
               )}
             </View>
             <View className="ml-3 flex-1">

@@ -668,8 +668,8 @@ export function getCalendarMarkedDates(
   const colorMap: Record<ScheduleType, string> = {
     applied: '#D4AF37', // primary (gold)
     confirmed: '#22C55E', // success
-    completed: '#22C55E', // completed (success)
-    cancelled: '#EF4444', // error
+    completed: '#9A9078', // secondary (과거 근무 — confirmed와 시각 구분)
+    cancelled: '#DC2626', // error
   };
 
   schedules.forEach((schedule) => {

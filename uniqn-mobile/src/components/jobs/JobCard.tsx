@@ -62,7 +62,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
           >
             {bookmarked ? (
-              <HeartFilledIcon size={22} color="#EF4444" />
+              <HeartFilledIcon size={22} color="#DC2626" />
             ) : (
               <HeartOutlineIcon size={22} />
             )}
@@ -76,7 +76,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityRole="button"
           >
             {bookmarked ? (
-              <HeartFilledIcon size={22} color="#EF4444" />
+              <HeartFilledIcon size={22} color="#DC2626" />
             ) : (
               <HeartOutlineIcon size={22} />
             )}

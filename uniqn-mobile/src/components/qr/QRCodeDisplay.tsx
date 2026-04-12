@@ -158,7 +158,7 @@ export function QRCodeDisplay({
         {/* 남은 시간 */}
         {displayData && !isLoading && (
           <View className="flex-row items-center mt-4">
-            <ClockIcon size={16} color={isExpired ? '#EF4444' : '#9A9078'} />
+            <ClockIcon size={16} color={isExpired ? '#DC2626' : '#9A9078'} />
             <Text
               className={`ml-1 text-sm ${
                 isExpired ? 'text-error-500' : 'text-secondary-500 dark:text-secondary-400'

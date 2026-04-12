@@ -366,7 +366,7 @@ export function WorkTimeEditor({
               label="퇴근 시간"
               value={endTimeStr}
               originalTime={originalEndTime}
-              iconColor="#EF4444"
+              iconColor="#DC2626"
               isUndefined={isEndTimeUndefined}
               onUndefinedChange={handleEndTimeUndefinedChange}
               onOpenPicker={() => setActivePicker('end')}
@@ -385,7 +385,7 @@ export function WorkTimeEditor({
             {/* 시간 순서 경고 */}
             {isValidTimeFormat && !isValidTimeOrder && (
               <View className="flex-row items-center p-3 bg-error-50 dark:bg-error-900/20 rounded-lg mb-4">
-                <AlertCircleIcon size={16} color="#EF4444" />
+                <AlertCircleIcon size={16} color="#DC2626" />
                 <Text className="ml-2 text-sm text-error-600 dark:text-error-400">
                   퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
                 </Text>

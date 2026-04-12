@@ -100,7 +100,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           accessibilityRole="button"
           accessibilityLabel="템플릿 삭제"
         >
-          <TrashIcon size={18} color="#EF4444" />
+          <TrashIcon size={18} color="#DC2626" />
         </TouchableOpacity>
       </View>
 

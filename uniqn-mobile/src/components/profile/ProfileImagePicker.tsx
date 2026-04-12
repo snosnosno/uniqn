@@ -172,7 +172,7 @@ export function ProfileImagePicker({
           className="mt-3 flex-row items-center"
           accessibilityLabel="프로필 사진 삭제"
         >
-          <TrashIcon size={14} color="#EF4444" />
+          <TrashIcon size={14} color="#DC2626" />
           <Text className="ml-1 text-sm text-error-600 dark:text-error-400">사진 삭제</Text>
         </Pressable>
       )}
