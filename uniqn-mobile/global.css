@@ -5,22 +5,22 @@
 @layer base {
   :root {
     --color-content-primary:     #09090B;
-    --color-content-secondary:   #4A4A52;
-    --color-content-muted:       #707078;
+    --color-content-secondary:   #5C5546; /* DESIGN.md light: 골드 틴트 */
+    --color-content-muted:       #8A8272; /* DESIGN.md light: 골드 틴트 */
     --color-content-placeholder: #A8A8B0;
-    --color-surface-page:        #F5F5F7;
+    --color-surface-page:        #F5F5F2; /* DESIGN.md: 웜 틴트 */
     --color-surface-card:        #FFFFFF;
-    --color-divider:             #DCDCE0;
+    --color-divider:             #D6D2CA; /* DESIGN.md light: Card Border (웜 보더) */
   }
 
   .dark {
     --color-content-primary:     #F0F0F2;
-    --color-content-secondary:   #C0C0C8;
-    --color-content-muted:       #9898A0;
-    --color-content-placeholder: #9898A0;
+    --color-content-secondary:   #C4B898; /* DESIGN.md dark: 골드 틴트 */
+    --color-content-muted:       #9A9078; /* DESIGN.md dark: 골드 틴트 */
+    --color-content-placeholder: #9A9078;
     --color-surface-page:        #09090B;
     --color-surface-card:        #111113;
-    --color-divider:             #19191D;
+    --color-divider:             #222228; /* DESIGN.md dark: Border */
   }
 }
 

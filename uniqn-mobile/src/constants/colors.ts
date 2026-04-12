@@ -117,15 +117,15 @@ export const TEXT_COLORS = {
     light: '#09090B',
     dark: '#F0F0F2',
   },
-  /** Text Secondary — 보조 정보 */
+  /** Text Secondary — 보조 정보 (골드 틴트, DESIGN.md) */
   secondary: {
-    light: SECONDARY_PALETTE[700],
-    dark: SECONDARY_PALETTE[300],
+    light: '#5C5546',
+    dark: '#C4B898',
   },
-  /** Text Muted — 플레이스홀더, 캡션 */
+  /** Text Muted — 플레이스홀더, 캡션 (골드 틴트, DESIGN.md) */
   muted: {
-    light: SECONDARY_PALETTE[600],
-    dark: SECONDARY_PALETTE[500],
+    light: '#8A8272',
+    dark: '#9A9078',
   },
   /** Text On Gold — 골드 배경 위 */
   onGold: '#09090B',
