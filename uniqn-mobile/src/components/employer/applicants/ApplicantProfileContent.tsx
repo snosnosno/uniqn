@@ -81,7 +81,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
       {applicant.status === STATUS.APPLICATION.CONFIRMED ? (
         <View className="px-4 pb-4">
           <View className="flex-row items-center rounded-lg bg-success-50 p-3 dark:bg-success-900/20">
-            <CheckCircleIcon size={16} color="#10B981" />
+            <CheckCircleIcon size={16} color="#22C55E" />
             <Text className="ml-2 text-sm text-success-700 dark:text-success-300">
               확정된 지원자입니다.
             </Text>

@@ -8,6 +8,7 @@
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList, Platform } from 'react-native';
 import { XMarkIcon, CheckIcon, ChevronDownIcon } from '@/components/icons';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -91,13 +92,14 @@ const TimeSlotItem = memo(function TimeSlotItem({
   isSelected: boolean;
   onSelect: (value: string) => void;
 }) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return (
     <Pressable
       onPress={() => onSelect(item.value)}
       className={`
         flex-row items-center justify-between px-4 py-4
         border-b border-secondary-100 dark:border-surface-overlay
-        ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''}
+        ${isSelected ? 'bg-primary-50 dark:bg-primary-900/30' : ''}
       `}
       accessibilityRole="button"
       accessibilityState={{ selected: isSelected }}
@@ -106,13 +108,13 @@ const TimeSlotItem = memo(function TimeSlotItem({
       <Text
         className={`text-base ${
           isSelected
-            ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
+            ? 'text-primary-700 dark:text-primary-300 font-semibold'
             : 'text-secondary-900 dark:text-white'
         }`}
       >
         {item.label}
       </Text>
-      {isSelected && <CheckIcon size={20} color="#4F46E5" />}
+      {isSelected && <CheckIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />}
     </Pressable>
   );
 });

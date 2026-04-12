@@ -229,7 +229,9 @@ export function useRealtimeSubscription<T>(
         if (!unsub) {
           setIsLoading(false);
           // subscribeFn이 null을 반환하면 구독 불가 → no-op unsubscribe
-          return () => {};
+          return () => {
+            /* noop */
+          };
         }
 
         return unsub;

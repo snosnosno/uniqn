@@ -278,7 +278,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     px-3 py-1.5 rounded-sm
                     ${
                       isSelected
-                        ? 'bg-indigo-100 dark:bg-indigo-900/30'
+                        ? 'bg-primary-100 dark:bg-primary-900/30'
                         : 'bg-secondary-100 dark:bg-surface'
                     }
                     ${disabled ? 'opacity-50' : 'active:opacity-70'}
@@ -287,7 +287,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                   <Text
                     className={`text-xs ${
                       isSelected
-                        ? 'text-indigo-700 dark:text-indigo-300 font-medium'
+                        ? 'text-primary-800 dark:text-primary-200 font-medium'
                         : 'text-secondary-600 dark:text-secondary-400'
                     }`}
                   >
@@ -347,7 +347,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     flex-row items-center px-3 py-2 rounded-lg border
                     ${
                       isChecked
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700'
+                        ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-700'
                         : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
                     }
                     ${disabled ? 'opacity-50' : 'active:opacity-70'}
@@ -358,7 +358,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                       h-4 w-4 rounded border items-center justify-center mr-2
                       ${
                         isChecked
-                          ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
+                          ? 'bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500'
                           : 'bg-transparent border-secondary-400 dark:border-surface-overlay'
                       }
                     `}
@@ -368,7 +368,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                   <Text
                     className={`text-sm ${
                       isChecked
-                        ? 'text-indigo-700 dark:text-indigo-300 font-medium'
+                        ? 'text-primary-800 dark:text-primary-200 font-medium'
                         : 'text-secondary-600 dark:text-secondary-400'
                     }`}
                   >

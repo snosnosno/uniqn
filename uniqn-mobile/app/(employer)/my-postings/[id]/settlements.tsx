@@ -123,7 +123,8 @@ interface TabHeaderProps {
 function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
   const { isDarkMode } = useThemeStore();
   const inactiveColor = isDarkMode ? '#A89C84' : '#9A9078';
-  const activeBadgeBg = isDarkMode ? '#312E81' : '#EEF2FF';
+  const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
+  const activeBadgeBg = isDarkMode ? '#2A2410' : '#F5EFDC';
   const inactiveBadgeBg = isDarkMode ? '#374151' : '#F3F4F6';
 
   return (
@@ -133,17 +134,17 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         className="flex-1 flex-row items-center justify-center py-4"
         style={{
           borderBottomWidth: activeTab === 'staff' ? 2 : 0,
-          borderBottomColor: '#4F46E5',
+          borderBottomColor: primaryColor,
         }}
         accessibilityRole="tab"
         accessibilityLabel="스태프 관리"
         accessibilityState={{ selected: activeTab === 'staff' }}
       >
-        <UsersIcon size={20} color={activeTab === 'staff' ? '#B8962E' : inactiveColor} />
+        <UsersIcon size={20} color={activeTab === 'staff' ? primaryColor : inactiveColor} />
         <Text
           className="ml-2 text-base font-medium"
           style={{
-            color: activeTab === 'staff' ? '#4F46E5' : inactiveColor,
+            color: activeTab === 'staff' ? primaryColor : inactiveColor,
           }}
         >
           스태프 관리
@@ -158,7 +159,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
             <Text
               className="text-xs font-medium"
               style={{
-                color: activeTab === 'staff' ? '#4F46E5' : inactiveColor,
+                color: activeTab === 'staff' ? primaryColor : inactiveColor,
               }}
             >
               {staffCount}
@@ -172,17 +173,20 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         className="flex-1 flex-row items-center justify-center py-4"
         style={{
           borderBottomWidth: activeTab === 'settlement' ? 2 : 0,
-          borderBottomColor: '#4F46E5',
+          borderBottomColor: primaryColor,
         }}
         accessibilityRole="tab"
         accessibilityLabel="정산"
         accessibilityState={{ selected: activeTab === 'settlement' }}
       >
-        <CurrencyYenIcon size={20} color={activeTab === 'settlement' ? '#B8962E' : inactiveColor} />
+        <CurrencyYenIcon
+          size={20}
+          color={activeTab === 'settlement' ? primaryColor : inactiveColor}
+        />
         <Text
           className="ml-2 text-base font-medium"
           style={{
-            color: activeTab === 'settlement' ? '#4F46E5' : inactiveColor,
+            color: activeTab === 'settlement' ? primaryColor : inactiveColor,
           }}
         >
           정산
@@ -197,7 +201,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
             <Text
               className="text-xs font-medium"
               style={{
-                color: activeTab === 'settlement' ? '#4F46E5' : inactiveColor,
+                color: activeTab === 'settlement' ? primaryColor : inactiveColor,
               }}
             >
               {settlementCount}

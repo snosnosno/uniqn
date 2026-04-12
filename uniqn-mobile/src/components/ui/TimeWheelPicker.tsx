@@ -260,7 +260,7 @@ function WebTimePicker({
       {/* 다음날 안내 */}
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <AlertCircleIcon size={16} color="#F97316" />
+          <AlertCircleIcon size={16} color="#D4A017" />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}
@@ -510,7 +510,7 @@ function NativeWheelPicker({
       {/* 다음날 안내 (24시 이상 선택 시) */}
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <AlertCircleIcon size={16} color="#F97316" />
+          <AlertCircleIcon size={16} color="#D4A017" />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}

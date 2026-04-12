@@ -90,7 +90,7 @@ export default function SupportScreen() {
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<MessageIcon size={24} color="#10B981" />}
+            icon={<MessageIcon size={24} color="#22C55E" />}
             label="1:1 문의하기"
             description="직접 문의를 남겨 주세요"
             onPress={() => router.push('/(app)/support/create-inquiry')}
@@ -98,7 +98,7 @@ export default function SupportScreen() {
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<DocumentTextOutlineIcon size={24} color="#8B5CF6" />}
+            icon={<DocumentTextOutlineIcon size={24} color="#8A7228" />}
             label="문의 내역"
             description="내 문의와 답변을 확인하세요"
             onPress={() => router.push('/(app)/support/my-inquiries')}

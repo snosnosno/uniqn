@@ -566,7 +566,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
       });
 
       return result.result_type as BoardVoteType | null;
-    } catch (rpcError) {
+    } catch {
       // RPC 미존재 시 폴백: 수동 처리
       logger.warn('toggle_board_post_vote RPC 실패, 폴백 처리', { postId, userId });
 
@@ -624,7 +624,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
       });
 
       return result.result_type as CommentReactionType | null;
-    } catch (rpcError) {
+    } catch {
       logger.warn('toggle_comment_reaction RPC 실패, 폴백 처리', { postId, commentId, userId });
       return toggleCommentReactionFallback(postId, commentId, userId, type);
     }

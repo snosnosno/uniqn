@@ -67,7 +67,7 @@ const getBackgroundColor = (name?: string): string => {
     'bg-warning-500',
     'bg-primary-500',
     'bg-pink-500',
-    'bg-indigo-500',
+    'bg-primary-500',
     'bg-error-500',
     'bg-orange-500',
   ];

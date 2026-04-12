@@ -7,11 +7,13 @@ import { EmptyState, ErrorState } from '@/components/ui';
 import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { useBoardPosts } from '@/hooks/useBoard';
+import { useThemeStore } from '@/stores/themeStore';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 
 const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda'];
 
 export default function BoardListScreen() {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const { boardType: rawBoardType } = useLocalSearchParams<{ boardType: string }>();
   const boardType = rawBoardType as BoardType;
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
@@ -46,7 +48,7 @@ export default function BoardListScreen() {
               accessibilityRole="button"
               accessibilityLabel="글쓰기"
             >
-              <AddCircleOutlineIcon size={24} color="#4F46E5" />
+              <AddCircleOutlineIcon size={24} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
             </Pressable>
           ) : null
         }

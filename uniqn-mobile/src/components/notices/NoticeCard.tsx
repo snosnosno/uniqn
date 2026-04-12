@@ -28,7 +28,7 @@ interface NoticeCardProps {
 // 카테고리별 아이콘
 const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
   notice: <MegaphoneIcon size={18} color="#D4AF37" />,
-  update: <ArrowPathIcon size={18} color="#8B5CF6" />,
+  update: <ArrowPathIcon size={18} color="#2563EB" />,
   event: <GiftIcon size={18} color="#D4A017" />,
   maintenance: <WrenchScrewdriverIcon size={18} color="#9A9078" />,
 };

@@ -152,7 +152,7 @@ function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
     critical: '#DC2626',
     high: '#EF4444',
     medium: '#D4A017',
-    low: '#EAB308',
+    low: '#D4A017',
   };
 
   return (

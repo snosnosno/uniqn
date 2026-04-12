@@ -64,7 +64,7 @@ const categoryInfo: Record<NotificationCategory, { description: string; color: s
   },
   [NotificationCategory.ADMIN]: {
     description: '문의 답변, 신고 처리 알림',
-    color: 'bg-indigo-500',
+    color: 'bg-primary-500',
   },
   [NotificationCategory.REVIEW]: {
     description: '근무 평가 요청, 평가 도착 알림',

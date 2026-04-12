@@ -94,7 +94,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 8,
-            backgroundColor: isDeleting ? '#FEE2E2' : '#FEF2F2',
+            backgroundColor: isDeleting ? 'rgba(220,38,38,0.08)' : 'rgba(220,38,38,0.04)',
             opacity: isDeleting ? 0.5 : 1,
           }}
           accessibilityRole="button"

@@ -23,9 +23,10 @@ import type { Application } from '@/types';
 // ============================================================================
 
 function LoadingState() {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return (
     <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
-      <ActivityIndicator size="large" color="#6366f1" />
+      <ActivityIndicator size="large" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
       <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
         지원 정보를 불러오는 중...
       </Text>
@@ -76,6 +77,7 @@ function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => v
 // ============================================================================
 
 function SuccessState() {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return (
     <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-6xl mb-4">{''}</Text>
@@ -86,7 +88,7 @@ function SuccessState() {
         구인자가 검토 후 승인/거절합니다.{'\n'}
         결과는 알림으로 안내해드립니다.
       </Text>
-      <ActivityIndicator className="mt-6" color="#6366f1" />
+      <ActivityIndicator className="mt-6" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
     </View>
   );
 }

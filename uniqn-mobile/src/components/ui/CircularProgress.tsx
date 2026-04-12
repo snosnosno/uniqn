@@ -39,7 +39,7 @@ const DANGER_THRESHOLD = 10; // 10초 이하
 const COLORS = {
   normal: {
     stroke: '#D4AF37', // primary-500
-    background: '#DBEAFE', // primary-100
+    background: 'rgba(212,175,55,0.08)', // primary subtle
   },
   warning: {
     stroke: '#D4A017', // amber-500
@@ -47,7 +47,7 @@ const COLORS = {
   },
   danger: {
     stroke: '#EF4444', // red-500
-    background: '#FEE2E2', // red-100
+    background: 'rgba(220,38,38,0.08)', // error subtle
   },
   expired: {
     stroke: '#A89C84', // gray-400

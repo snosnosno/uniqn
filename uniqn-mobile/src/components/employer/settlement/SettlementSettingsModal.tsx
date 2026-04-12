@@ -144,9 +144,9 @@ function RoleSalaryItem({
         {showApplyButton && (
           <Pressable
             onPress={onApplyToAll}
-            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-sm active:opacity-70"
+            className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 rounded-sm active:opacity-70"
           >
-            <Text className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+            <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
               모든 역할에 적용
             </Text>
           </Pressable>

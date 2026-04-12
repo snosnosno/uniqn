@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
+import { useThemeStore } from '@/stores/themeStore';
 import { WorkTimeDisplay } from '@/shared/time';
 import {
   CalendarIcon,
@@ -97,6 +98,7 @@ interface WorkLogItemProps {
 }
 
 const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLogItemProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const statusConfig = WORK_STATUS_CONFIG[workLog.status];
   const payrollConfig = workLog.payrollStatus ? PAYROLL_STATUS_CONFIG[workLog.payrollStatus] : null;
   const roleLabel = getRoleDisplayName(workLog.role, workLog.customRole);
@@ -169,7 +171,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
               </View>
             )}
             <View className="flex-row items-center">
-              <CurrencyDollarIcon size={14} color="#6366f1" />
+              <CurrencyDollarIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-semibold text-primary-600 dark:text-primary-400">
                 {formatCurrency(workLog.payrollAmount)}
               </Text>
@@ -202,6 +204,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     emptyMessage = '근무 기록이 없습니다',
     ListHeaderComponent,
   }) => {
+    const isDarkMode = useThemeStore((state) => state.isDarkMode);
     const renderItem = useCallback(
       ({ item }: { item: WorkLog }) => (
         <WorkLogItem workLog={item} onPress={() => onItemPress?.(item)} />
@@ -224,10 +227,10 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
 
       return (
         <View className="py-4 items-center">
-          <ActivityIndicator size="small" color="#6366f1" />
+          <ActivityIndicator size="small" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
         </View>
       );
-    }, [isFetchingMore]);
+    }, [isDarkMode, isFetchingMore]);
 
     const stats = useMemo(() => {
       const completed = workLogs.filter(
@@ -270,7 +273,11 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
         showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
+            />
           ) : undefined
         }
         onEndReached={handleEndReached}

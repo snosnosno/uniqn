@@ -104,7 +104,7 @@ export const Checkbox = memo(function Checkbox({
       return checked ? 'bg-error-500 border-error-500' : 'bg-transparent border-error-500';
     }
     return checked
-      ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
+      ? 'bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500'
       : 'bg-transparent border-secondary-300 dark:border-surface-overlay';
   };
 

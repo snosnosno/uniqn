@@ -439,7 +439,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<BanknotesIcon size={24} color="#10B981" />}
+                icon={<BanknotesIcon size={24} color="#22C55E" />}
                 title="스태프 정산 관리"
                 description="확정 스태프 관리와 정산을 진행합니다."
                 badge={

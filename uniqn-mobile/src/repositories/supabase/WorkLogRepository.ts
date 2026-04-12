@@ -501,7 +501,9 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   ): UnsubscribeFn {
     logger.info('날짜별 근무 기록 초기 조회 (polling 전환)', { staffId, date });
     void this.getByDate(staffId, date).then(onData).catch(onError);
-    return () => {};
+    return () => {
+      /* noop */
+    };
   }
 
   /** @deprecated polling으로 전환됨. getByStaffId + refetchInterval 사용 */
@@ -512,7 +514,9 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   ): UnsubscribeFn {
     logger.info('스태프별 근무 기록 초기 조회 (polling 전환)', { staffId });
     void this.getByStaffId(staffId, DEFAULT_PAGE_SIZE).then(onData).catch(onError);
-    return () => {};
+    return () => {
+      /* noop */
+    };
   }
 
   subscribeById(
@@ -561,7 +565,9 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     })
       .then(onData)
       .catch(onError);
-    return () => {};
+    return () => {
+      /* noop */
+    };
   }
 
   /** @deprecated polling으로 전환됨. 직접 조회 + refetchInterval 사용 */
@@ -599,7 +605,9 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         onData(checkedIn ?? workLogs[0] ?? null);
       });
 
-    return () => {};
+    return () => {
+      /* noop */
+    };
   }
 
   // ==========================================================================

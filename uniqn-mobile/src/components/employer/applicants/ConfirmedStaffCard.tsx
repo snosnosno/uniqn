@@ -212,7 +212,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleEditTime}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
             >
-              <EditIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
+              <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
                 시간 수정
               </Text>
@@ -224,7 +224,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleChangeRole}
               className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
             >
-              <BriefcaseIcon size={14} color={isDarkMode ? '#93C5FD' : '#4F46E5'} />
+              <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
                 역할 변경
               </Text>

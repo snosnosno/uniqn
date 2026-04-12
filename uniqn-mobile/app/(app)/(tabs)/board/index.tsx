@@ -107,7 +107,7 @@ export default function BoardHomeScreen() {
             <BoardEntryCard
               title="공지사항"
               description="운영 공지와 업데이트 내용을 확인해요."
-              icon={<DocumentTextOutlineIcon size={28} color="#4F46E5" />}
+              icon={<DocumentTextOutlineIcon size={28} color="#8A7228" />}
               boardType="notice"
             />
             <BoardEntryCard

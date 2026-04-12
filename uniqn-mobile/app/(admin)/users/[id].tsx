@@ -238,9 +238,9 @@ export default function AdminUserDetailPage() {
         <InfoRow
           icon={
             user.isVerified ? (
-              <ShieldCheckIcon size={20} color="#10B981" />
+              <ShieldCheckIcon size={20} color="#22C55E" />
             ) : (
-              <XCircleIcon size={20} color="#EF4444" />
+              <XCircleIcon size={20} color="#DC2626" />
             )
           }
           label="본인인증"
@@ -317,7 +317,7 @@ export default function AdminUserDetailPage() {
             }
           >
             {setActiveMutation.isPending ? (
-              <ActivityIndicator size="small" color={user.isActive ? '#EF4444' : '#10B981'} />
+              <ActivityIndicator size="small" color={user.isActive ? '#DC2626' : '#22C55E'} />
             ) : (
               <Text
                 className={

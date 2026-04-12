@@ -185,7 +185,7 @@ export default function MyDataScreen() {
           }}
         />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6366f1" />
+          <ActivityIndicator size="large" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
             정보를 불러오는 중...
           </Text>
@@ -292,7 +292,7 @@ export default function MyDataScreen() {
           <Button onPress={handleExport} variant="outline" fullWidth disabled={isExporting}>
             {isExporting ? (
               <View className="flex-row items-center">
-                <ActivityIndicator size="small" color="#6366f1" />
+                <ActivityIndicator size="small" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
                 <Text className="ml-2 text-primary-600 dark:text-primary-400">내보내는 중...</Text>
               </View>
             ) : (

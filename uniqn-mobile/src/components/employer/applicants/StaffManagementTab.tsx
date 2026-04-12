@@ -205,7 +205,7 @@ export function StaffManagementTab({
       options.push({
         label: '퇴근 처리',
         value: STATUS.WORK_LOG.CHECKED_OUT,
-        icon: <ClockIcon size={20} color="#4F46E5" />,
+        icon: <ClockIcon size={20} color="#8A7228" />,
       });
     }
 

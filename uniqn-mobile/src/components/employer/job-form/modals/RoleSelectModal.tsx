@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Modal } from '@/components/ui/Modal';
 import { CheckIcon } from '@/components/icons';
+import { useThemeStore } from '@/stores/themeStore';
 import { STAFF_ROLES, type StaffRoleOption } from '@/constants';
 
 export interface RoleSelectModalProps {
@@ -19,6 +20,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
   existingRoleNames,
   title = '역할 선택',
 }: RoleSelectModalProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [customRoleName, setCustomRoleName] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
 
@@ -96,11 +98,13 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               {isOther ? ' (직접 입력)' : ''}
             </Text>
           </View>
-          {isExisting && !isOther ? <CheckIcon size={20} color="#4F46E5" /> : null}
+          {isExisting && !isOther ? (
+            <CheckIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+          ) : null}
         </Pressable>
       );
     },
-    [existingRoleNameSet, handleSelectRole]
+    [existingRoleNameSet, handleSelectRole, isDarkMode]
   );
 
   return (
@@ -136,7 +140,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 disabled={!customRoleName.trim()}
                 className={`flex-1 py-3 rounded-lg ${
                   customRoleName.trim()
-                    ? 'bg-indigo-500'
+                    ? 'bg-primary-500'
                     : 'bg-secondary-300 dark:bg-surface-elevated'
                 }`}
               >

@@ -8,6 +8,7 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useBiometricAuth } from '@/hooks';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -89,7 +90,9 @@ export const BiometricButton = memo(function BiometricButton({
   size = 'md',
   className = '',
 }: BiometricButtonProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const { biometricTypeName, status } = useBiometricAuth();
+  const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
 
   // 생체 인증 타입에 따른 아이콘 선택
   const isFaceId = status?.biometricTypes.includes('facial');
@@ -141,13 +144,16 @@ export const BiometricButton = memo(function BiometricButton({
       `}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={variant === 'default' ? '#fff' : '#6366f1'} />
+        <ActivityIndicator size="small" color={variant === 'default' ? '#fff' : primaryColor} />
       ) : (
         <>
           {isFaceId ? (
-            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#fff' : '#6366f1'} />
+            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#fff' : primaryColor} />
           ) : (
-            <FingerprintIcon size={iconSize} color={variant === 'default' ? '#fff' : '#6366f1'} />
+            <FingerprintIcon
+              size={iconSize}
+              color={variant === 'default' ? '#fff' : primaryColor}
+            />
           )}
           <Text
             className={`

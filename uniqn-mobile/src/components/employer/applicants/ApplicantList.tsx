@@ -15,6 +15,7 @@ import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
 import { FilterIcon } from '../../icons';
 import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
+import { useThemeStore } from '@/stores/themeStore';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
@@ -63,6 +64,7 @@ export function ApplicantList({
   onReject,
   onViewProfile,
 }: ApplicantListProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
 
   // ==========================================================================
@@ -175,7 +177,7 @@ export function ApplicantList({
               <RefreshControl
                 refreshing={isRefreshing ?? false}
                 onRefresh={onRefresh}
-                tintColor="#6366f1"
+                tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
               />
             ) : undefined
           }

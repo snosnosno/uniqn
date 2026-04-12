@@ -145,8 +145,8 @@ const FixedSchedule = memo(function FixedSchedule({
 
   return (
     <View>
-      <View className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-        <Text className="text-sm text-indigo-700 dark:text-indigo-300">
+      <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+        <Text className="text-sm text-primary-800 dark:text-primary-200">
           고정 공고는 장기 근무를 위한 공고입니다.{'\n'}
           게시 기간은 7일이며, 만료 후 재등록할 수 있습니다.
         </Text>
@@ -165,13 +165,13 @@ const FixedSchedule = memo(function FixedSchedule({
                   px-4 py-2 rounded-lg border-2
                   ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
+                      ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
                       : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                   }
                 `}
               >
                 <Text
-                  className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-secondary-900 dark:text-white'}`}
+                  className={`font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-900 dark:text-white'}`}
                 >
                   {option.label}
                 </Text>
@@ -196,7 +196,7 @@ const FixedSchedule = memo(function FixedSchedule({
               className={`w-5 h-5 rounded border items-center justify-center mr-1.5
                 ${
                   isNegotiable
-                    ? 'bg-indigo-600 border-indigo-600'
+                    ? 'bg-primary-600 border-primary-600'
                     : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
                 }`}
             >

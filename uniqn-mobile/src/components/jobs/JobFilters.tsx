@@ -9,6 +9,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { FilterIcon, XMarkIcon, CalendarIcon, MapPinIcon, BriefcaseIcon } from '@/components/icons';
 import { SEOUL_DISTRICTS, STAFF_ROLES } from '@/constants';
+import { useThemeStore } from '@/stores/themeStore';
 import type { JobPostingFilters, StaffRole } from '@/types';
 
 // ============================================================================
@@ -138,6 +139,8 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
 
 export const JobFilters: React.FC<JobFiltersProps> = React.memo(
   ({ filters, onFiltersChange, showActiveCount = true }) => {
+    const isDarkMode = useThemeStore((state) => state.isDarkMode);
+    const primaryIconColor = isDarkMode ? '#D4AF37' : '#8A7228';
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // 임시 필터 상태 (모달 내에서 사용)
@@ -224,7 +227,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
           accessibilityLabel="필터 열기"
           accessibilityHint="공고 필터링 옵션을 설정합니다"
         >
-          <FilterIcon size={18} color="#6366f1" />
+          <FilterIcon size={18} color={primaryIconColor} />
           <Text className="ml-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
             필터
           </Text>
@@ -267,7 +270,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 {/* 지역 필터 */}
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
-                    <MapPinIcon size={18} color="#6366f1" />
+                    <MapPinIcon size={18} color={primaryIconColor} />
                     <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
                       지역
                     </Text>
@@ -291,7 +294,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 {/* 날짜 필터 */}
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
-                    <CalendarIcon size={18} color="#6366f1" />
+                    <CalendarIcon size={18} color={primaryIconColor} />
                     <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
                       근무일
                     </Text>
@@ -311,7 +314,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 {/* 역할 필터 */}
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
-                    <BriefcaseIcon size={18} color="#6366f1" />
+                    <BriefcaseIcon size={18} color={primaryIconColor} />
                     <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
                       역할
                     </Text>

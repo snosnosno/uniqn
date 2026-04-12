@@ -16,6 +16,7 @@ import {
   RestaurantOutlineIcon,
 } from '@/components/icons';
 import { NumericInput } from '@/components/ui';
+import { useThemeStore } from '@/stores/themeStore';
 import { type Allowances, PROVIDED_FLAG, formatCurrency } from '@/utils/settlement';
 
 // ============================================================================
@@ -134,6 +135,7 @@ const AllowanceItem = memo(function AllowanceItem({
   onChange,
   disabled = false,
 }: AllowanceItemProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const status = getAllowanceStatus(value);
   const isEnabled = status !== 'none';
   const Icon = config.icon;
@@ -190,7 +192,7 @@ const AllowanceItem = memo(function AllowanceItem({
             h-5 w-5 rounded border-2 items-center justify-center mr-3
             ${
               isEnabled
-                ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
+                ? 'bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500'
                 : 'bg-transparent border-secondary-300 dark:border-surface-overlay'
             }
           `}
@@ -200,7 +202,7 @@ const AllowanceItem = memo(function AllowanceItem({
 
         {/* 아이콘 + 라벨 */}
         <View className="flex-row items-center flex-1">
-          <Icon size={18} color={isEnabled ? '#4F46E5' : '#A89C84'} />
+          <Icon size={18} color={isEnabled ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#A89C84'} />
           <Text
             className={`ml-2 text-base font-medium ${
               isEnabled
@@ -226,25 +228,25 @@ const AllowanceItem = memo(function AllowanceItem({
               accessibilityState={{ selected: status === 'provided', disabled }}
               className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'provided'
-                  ? 'bg-indigo-100 dark:bg-indigo-900/30'
+                  ? 'bg-primary-100 dark:bg-primary-900/30'
                   : 'bg-secondary-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'provided'
-                    ? 'border-indigo-600 dark:border-indigo-400'
+                    ? 'border-primary-600 dark:border-primary-400'
                     : 'border-secondary-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'provided' && (
-                  <View className="h-2 w-2 rounded-sm bg-indigo-600 dark:bg-indigo-400" />
+                  <View className="h-2 w-2 rounded-sm bg-primary-600 dark:bg-primary-400" />
                 )}
               </View>
               <Text
                 className={`text-sm ${
                   status === 'provided'
-                    ? 'text-indigo-700 dark:text-indigo-300 font-medium'
+                    ? 'text-primary-800 dark:text-primary-200 font-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
@@ -260,25 +262,25 @@ const AllowanceItem = memo(function AllowanceItem({
               accessibilityState={{ selected: status === 'amount', disabled }}
               className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'amount'
-                  ? 'bg-indigo-100 dark:bg-indigo-900/30'
+                  ? 'bg-primary-100 dark:bg-primary-900/30'
                   : 'bg-secondary-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'amount'
-                    ? 'border-indigo-600 dark:border-indigo-400'
+                    ? 'border-primary-600 dark:border-primary-400'
                     : 'border-secondary-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'amount' && (
-                  <View className="h-2 w-2 rounded-sm bg-indigo-600 dark:bg-indigo-400" />
+                  <View className="h-2 w-2 rounded-sm bg-primary-600 dark:bg-primary-400" />
                 )}
               </View>
               <Text
                 className={`text-sm ${
                   status === 'amount'
-                    ? 'text-indigo-700 dark:text-indigo-300 font-medium'
+                    ? 'text-primary-800 dark:text-primary-200 font-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
@@ -317,6 +319,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
   showTotal = true,
   className = '',
 }: AllowanceEditorProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   // 개별 수당 변경 핸들러
   const handleItemChange = useCallback(
     (key: AllowanceType, value: number | undefined) => {
@@ -370,7 +373,13 @@ export const AllowanceEditor = memo(function AllowanceEditor({
         <View className="flex-row items-center mb-2">
           <AddCircleOutlineIcon
             size={18}
-            color={allowances.additional && allowances.additional > 0 ? '#4F46E5' : '#A89C84'}
+            color={
+              allowances.additional && allowances.additional > 0
+                ? isDarkMode
+                  ? '#D4AF37'
+                  : '#8A7228'
+                : '#A89C84'
+            }
           />
           <Text
             className={`ml-2 text-base font-medium ${
@@ -407,7 +416,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
 
       {/* 총 수당 요약 */}
       {showTotal && (totalAllowance > 0 || providedCount > 0) && (
-        <View className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
+        <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-secondary-600 dark:text-secondary-400">
               총 수당
@@ -415,7 +424,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
             </Text>
             <View className="items-end">
               {totalAllowance > 0 && (
-                <Text className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                <Text className="text-base font-bold text-primary-700 dark:text-primary-300">
                   {formatCurrency(totalAllowance * (workDays || 1))}
                 </Text>
               )}

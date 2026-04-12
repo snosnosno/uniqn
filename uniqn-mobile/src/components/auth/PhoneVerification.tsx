@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { cleanPhoneNumber, toE164 } from '@/utils/phone';
 import { PhoneVerifiedView } from './PhoneVerifiedView';
 import { useOTPVerification } from '@/hooks/auth/useOTPVerification';
+import { useThemeStore } from '@/stores/themeStore';
 // useRecaptcha and usePhoneSMS removed - phone SMS auth replaced by PortOne identity verification
 // TODO: This component needs to be updated to use PortOne identity verification flow
 
@@ -26,7 +27,9 @@ function useRecaptcha(_onError?: (msg: string) => void) {
   return {
     recaptchaKey: 0,
     getOrCreateVerifier: () => null,
-    cleanupOnError: () => {},
+    cleanupOnError: () => {
+      /* noop */
+    },
   };
 }
 
@@ -34,18 +37,32 @@ function useRecaptcha(_onError?: (msg: string) => void) {
 function usePhoneSMS(_options: Record<string, unknown>) {
   return {
     phone: '',
-    setPhone: (_v: string) => {},
+    setPhone: (_v: string) => {
+      /* noop */
+    },
     isLoading: false,
     isRequesting: false,
     error: null,
-    setError: (_v: string | null) => {},
+    setError: (_v: string | null) => {
+      /* noop */
+    },
     confirmation: null,
-    sendSMS: async () => {},
-    requestSMS: async (_otpData?: unknown): Promise<string | void> => {},
+    sendSMS: async () => {
+      /* noop */
+    },
+    requestSMS: async (_otpData?: unknown): Promise<string | void> => {
+      /* noop */
+    },
     checkPhoneDuplicate: async () => false,
-    cleanup: () => {},
-    resetState: () => {},
-    handlePhoneChange: (_v: string) => {},
+    cleanup: () => {
+      /* noop */
+    },
+    resetState: () => {
+      /* noop */
+    },
+    handlePhoneChange: (_v: string) => {
+      /* noop */
+    },
     verificationIdRef: { current: null },
     requestedModeRef: { current: 'signIn' as const },
   };
@@ -92,6 +109,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     compact = false,
     mode = 'signIn',
   }) => {
+    const isDarkMode = useThemeStore((state) => state.isDarkMode);
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
     const [timer, setTimer] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -228,7 +246,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {!compact && (
           <View className="items-center mb-6">
             <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-sm items-center justify-center mb-3">
-              <ShieldCheckIcon size={32} color="#6366f1" />
+              <ShieldCheckIcon size={32} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
             </View>
             <Text className="text-xl font-bold text-secondary-900 dark:text-white">문자인증</Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center mt-1">

@@ -640,7 +640,9 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     } catch (error) {
       logger.error('알림 구독 설정 실패', toError(error), { userId });
       onError?.(toError(error));
-      return () => {};
+      return () => {
+        /* noop */
+      };
     }
   }
 
@@ -677,7 +679,9 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     } catch (error) {
       logger.error('미읽음 카운트 구독 설정 실패', toError(error), { userId });
       onError?.(toError(error));
-      return () => {};
+      return () => {
+        /* noop */
+      };
     }
   }
 }

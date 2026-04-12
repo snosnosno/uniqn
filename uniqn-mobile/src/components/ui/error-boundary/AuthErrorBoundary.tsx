@@ -62,7 +62,7 @@ function AuthErrorFallback({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onLogin}
-          className="bg-indigo-600 px-6 py-3 rounded-md active:bg-indigo-700"
+          className="bg-primary-600 px-6 py-3 rounded-md active:bg-primary-700"
           accessibilityRole="button"
           accessibilityLabel="로그인"
         >

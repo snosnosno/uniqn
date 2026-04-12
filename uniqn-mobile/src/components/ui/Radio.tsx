@@ -102,7 +102,7 @@ const RadioItem = memo(function RadioItem({
       return 'border-error-500';
     }
     if (selected) {
-      return 'border-indigo-600 dark:border-indigo-500';
+      return 'border-primary-600 dark:border-primary-500';
     }
     return 'border-secondary-300 dark:border-surface-overlay';
   };
@@ -115,7 +115,7 @@ const RadioItem = memo(function RadioItem({
     if (error) {
       return 'bg-error-500';
     }
-    return 'bg-indigo-600 dark:bg-indigo-500';
+    return 'bg-primary-600 dark:bg-primary-500';
   };
 
   return (

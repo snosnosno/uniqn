@@ -56,7 +56,13 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             <Text
               className="text-sm font-medium"
               style={{
-                color: isSelected ? '#4F46E5' : isDarkMode ? '#A89C84' : '#9A9078',
+                color: isSelected
+                  ? isDarkMode
+                    ? '#D4AF37'
+                    : '#8A7228'
+                  : isDarkMode
+                    ? '#A89C84'
+                    : '#9A9078',
               }}
             >
               {option.label} ({count})

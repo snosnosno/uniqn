@@ -20,6 +20,7 @@ import { ko } from 'date-fns/locale/ko';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { useToastStore } from '@/stores/toastStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { DATE_CONSTRAINTS } from '@/constants';
 import { XMarkIcon } from '@/components/icons';
 import type { PostingType } from '@/types';
@@ -53,6 +54,7 @@ export function DatePickerModal({
   existingDates,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   // 다중 선택을 위한 상태 (Date 배열)
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
 
@@ -174,9 +176,9 @@ export function DatePickerModal({
             {sortedSelectedDates.map((date) => (
               <View
                 key={date.toISOString()}
-                className="flex-row items-center bg-indigo-100 dark:bg-indigo-900/50 rounded-sm px-3 py-1.5 mr-2"
+                className="flex-row items-center bg-primary-100 dark:bg-primary-900/50 rounded-sm px-3 py-1.5 mr-2"
               >
-                <Text className="text-sm text-indigo-700 dark:text-indigo-300 mr-1">
+                <Text className="text-sm text-primary-800 dark:text-primary-200 mr-1">
                   {format(date, 'M/d (EEE)', { locale: ko })}
                 </Text>
                 <Pressable
@@ -184,7 +186,7 @@ export function DatePickerModal({
                   hitSlop={8}
                   accessibilityLabel={`${format(date, 'M월 d일')} 선택 해제`}
                 >
-                  <XMarkIcon size={14} color="#6366f1" />
+                  <XMarkIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
                 </Pressable>
               </View>
             ))}

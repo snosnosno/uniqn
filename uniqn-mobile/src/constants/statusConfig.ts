@@ -81,7 +81,7 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     variant: 'default',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#8B5CF6',
+    hexColor: '#22C55E',
   },
   cancellation_pending: {
     label: APPLICATION_STATUS_LABELS.cancellation_pending,
@@ -206,7 +206,7 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
     variant: 'success',
     textColor: 'text-primary-600 dark:text-primary-300',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#8B5CF6',
+    hexColor: '#22C55E',
   },
   cancelled: {
     label: CONFIRMED_STAFF_STATUS_LABELS.cancelled,
@@ -247,7 +247,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#EAB308',
+    hexColor: '#D4A017',
   },
   approved: {
     label: '승인완료',

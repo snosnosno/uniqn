@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useThemeStore } from '@/stores/themeStore';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
 import { SettlementBulkActions } from './SettlementBulkActions';
@@ -107,6 +108,7 @@ export function SettlementList({
   enableGrouping = true,
   onGroupBulkSettle,
 }: SettlementListProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -365,7 +367,7 @@ export function SettlementList({
             <RefreshControl
               refreshing={isRefreshing ?? false}
               onRefresh={onRefresh}
-              tintColor="#6366f1"
+              tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
             />
           ) : undefined
         }

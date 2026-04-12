@@ -303,13 +303,13 @@ export function ScheduleDetailModal({
             activeOpacity={0.7}
             accessibilityLabel="이전 날짜"
           >
-            <ChevronLeftIcon size={20} color="#4F46E5" />
+            <ChevronLeftIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
           </TouchableOpacity>
 
           {/* 현재 날짜 표시 */}
           <View className="items-center">
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color="#4F46E5" />
+              <CalendarIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1.5 text-sm font-semibold text-primary-700 dark:text-primary-300">
                 {schedule?.date ? formatSingleDate(schedule.date) : ''}
               </Text>
@@ -334,7 +334,7 @@ export function ScheduleDetailModal({
             activeOpacity={0.7}
             accessibilityLabel="다음 날짜"
           >
-            <ChevronRightIcon size={20} color="#4F46E5" />
+            <ChevronRightIcon size={20} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
           </TouchableOpacity>
         </View>
       )}

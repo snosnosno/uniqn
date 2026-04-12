@@ -216,7 +216,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
   return (
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
-        <CheckCircleIcon size={18} color="#10B981" />
+        <CheckCircleIcon size={18} color="#22C55E" />
         <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
           처리 이력
         </Text>

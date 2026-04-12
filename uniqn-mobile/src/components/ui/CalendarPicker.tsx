@@ -194,10 +194,10 @@ const CalendarDayCell = memo(function CalendarDayCell({
       return `${base} bg-secondary-300 dark:bg-surface-elevated`;
     }
     if (day.isSelected) {
-      return `${base} bg-indigo-500`;
+      return `${base} bg-primary-500`;
     }
     if (day.isToday && !day.isSelected) {
-      return `${base} border-2 border-indigo-500`;
+      return `${base} border-2 border-primary-500`;
     }
     return base;
   };
@@ -458,7 +458,7 @@ export const CalendarPicker = memo(function CalendarPicker({
       {(minimumDate || maximumDate) && (
         <View className="mt-4 px-2">
           <View className="flex-row items-center">
-            <View className="w-3 h-3 rounded-sm bg-indigo-500 mr-2" />
+            <View className="w-3 h-3 rounded-sm bg-primary-500 mr-2" />
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">
               선택 가능: {minimumDate && format(minimumDate, 'M/d', { locale: ko })}
               {minimumDate && maximumDate && ' ~ '}
