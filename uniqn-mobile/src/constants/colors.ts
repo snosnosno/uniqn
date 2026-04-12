@@ -74,10 +74,49 @@ export const SURFACE_COLORS = {
   dark: '#050506',
   elevated: '#111113',
   overlay: '#19191D',
+  hover: '#222228',
 } as const;
 
 export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'): string {
   return SURFACE_COLORS[variant];
+}
+
+// ============================================================================
+// 경계선 / 텍스트 토큰 (DESIGN.md 정렬)
+// ============================================================================
+
+export const BORDER_COLORS = {
+  light: '#D6D2CA', // secondary-200 — 라이트 모드 기본 보더
+  lightSubtle: '#E8E4DC', // 라이트 모드 subtle
+  dark: '#222228', // surface.hover — 다크 모드 기본 보더
+  darkSubtle: '#19191D', // surface.overlay — 다크 모드 subtle
+} as const;
+
+export const TEXT_COLORS = {
+  /** Text Primary — 본문 텍스트 */
+  primary: {
+    light: '#09090B',
+    dark: '#F0F0F2',
+  },
+  /** Text Secondary — 보조 정보 */
+  secondary: {
+    light: '#5C5546',
+    dark: '#C4B898',
+  },
+  /** Text Muted — 플레이스홀더, 캡션 */
+  muted: {
+    light: '#8A8272',
+    dark: '#9A9078',
+  },
+  /** Text On Gold — 골드 배경 위 */
+  onGold: '#09090B',
+} as const;
+
+export function getTextColor(
+  isDarkMode: boolean,
+  variant: 'primary' | 'secondary' | 'muted' = 'primary'
+): string {
+  return isDarkMode ? TEXT_COLORS[variant].dark : TEXT_COLORS[variant].light;
 }
 
 // ============================================================================
