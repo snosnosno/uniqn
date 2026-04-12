@@ -61,6 +61,8 @@ const POSTGREST_ERROR_MAP: Record<string, { code: string; category: string }> = 
   '23502': { code: ERROR_CODES.VALIDATION_REQUIRED, category: 'validation' },
   // CHECK 위반
   '23514': { code: ERROR_CODES.VALIDATION_SCHEMA, category: 'validation' },
+  // 잘못된 입력 타입 (예: UUID 형식 아닌 값으로 조회) → 리소스 없음으로 처리
+  '22P02': { code: ERROR_CODES.INFRA_NOT_FOUND, category: 'infrastructure' },
   // 함수 미존재
   '42883': { code: ERROR_CODES.UNKNOWN, category: 'unknown' },
   // rate limit (Supabase 자체)
