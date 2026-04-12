@@ -181,7 +181,39 @@ export function useRealtimeSubscription<T>(
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
+   * subscribeFn을 ref로 안정화한다.
+   *
+   * 호출자가 subscribeFn을 memoize 없이 인라인으로 전달하면 매 렌더마다
+   * 새 함수 참조가 생성되어 subscribe useCallback의 의존성이 바뀌고,
+   * useEffect가 재실행되어 불필요한 unsubscribe/resubscribe가 발생한다.
+   * ref를 통해 항상 최신 함수를 참조하되, 참조 자체는 안정적으로 유지한다.
+   */
+  const subscribeFnRef = useRef<SubscribeFn>(subscribeFn);
+  useEffect(() => {
+    subscribeFnRef.current = subscribeFn;
+  });
+
+  const parserRef = useRef<DocumentParser<T>>(parser);
+  useEffect(() => {
+    parserRef.current = parser;
+  });
+
+  const onErrorRef = useRef<((error: Error) => void) | undefined>(onError);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  });
+
+  const onDataRef = useRef<((data: T[]) => void) | undefined>(onData);
+  useEffect(() => {
+    onDataRef.current = onData;
+  });
+
+  /**
    * 구독 시작
+   *
+   * subscribeFn / parser / onError / onData는 ref를 통해 접근하므로
+   * 의존성 배열에서 제외해도 안전하다. 이로써 인라인 함수를 전달해도
+   * 불필요한 unsubscribe/resubscribe가 발생하지 않는다.
    */
   const subscribe = useCallback(() => {
     if (!enabled) {
@@ -195,14 +227,14 @@ export function useRealtimeSubscription<T>(
         logger.debug('useRealtimeSubscription: 구독 시작', { key });
 
         const handleData = (docs: { id: string; [key: string]: unknown }[]) => {
-          const parsed = parser(docs);
+          const parsed = parserRef.current(docs);
 
           setData(parsed);
           setIsLoading(false);
           setError(null);
           setIsSubscribed(true);
 
-          onData?.(parsed);
+          onDataRef.current?.(parsed);
         };
 
         const handleError = (err: Error) => {
@@ -216,7 +248,7 @@ export function useRealtimeSubscription<T>(
           setIsLoading(false);
           setIsSubscribed(false);
 
-          onError?.(appError);
+          onErrorRef.current?.(appError);
 
           // 자동 재연결 시도
           if (autoReconnect) {
@@ -224,7 +256,7 @@ export function useRealtimeSubscription<T>(
           }
         };
 
-        const unsub = subscribeFn(handleData, handleError);
+        const unsub = subscribeFnRef.current(handleData, handleError);
 
         if (!unsub) {
           setIsLoading(false);
@@ -248,12 +280,15 @@ export function useRealtimeSubscription<T>(
       setError(appError);
       setIsLoading(false);
 
-      onError?.(appError);
+      onErrorRef.current?.(appError);
     }
     // NOTE: scheduleReconnect는 의도적으로 제외 (순환 의존성 방지)
     // subscribe → scheduleReconnect → subscribe 순환을 피하기 위함
+    //
+    // NOTE: subscribeFnRef / parserRef / onErrorRef / onDataRef는 ref이므로
+    // 의존성에서 제외해도 항상 최신값을 참조한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, subscribeFn, parser, enabled, autoReconnect, onError, onData]);
+  }, [key, enabled, autoReconnect]);
 
   /**
    * 구독 해제

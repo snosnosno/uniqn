@@ -30,6 +30,11 @@ interface SubscriptionEntry {
   lastUpdate: number;
   /** 구독 상태 */
   status: 'active' | 'paused' | 'error';
+  /**
+   * 이 키에 등록된 subscriber별 unsubscribe 함수 목록.
+   * 각 subscriber가 독립적으로 해제될 수 있도록 추적한다.
+   */
+  subscriberUnsubscribes: (() => void)[];
 }
 
 interface SubscriptionStats {
@@ -69,46 +74,89 @@ export class RealtimeManager {
   // ==========================================================================
 
   /**
-   * 구독 시작 또는 기존 구독에 참조 추가
+   * 구독 시작 또는 기존 구독에 새 subscriber 추가
+   *
+   * @description
+   * - 첫 번째 호출: subscribeFn을 실행하여 실제 구독을 생성하고 엔트리를 등록
+   * - 이후 호출: subscribeFn을 실행하여 해당 subscriber만의 unsubscribe 함수를 별도 추적
+   *   (이전 구현에서는 refCount만 올리고 subscribeFn을 실행하지 않아
+   *    두 번째 이후 구독자가 데이터를 수신하지 못하는 버그가 있었음)
    *
    * @param key - 구독 식별 키 (Keys 헬퍼 사용 권장)
-   * @param subscribeFn - 구독 함수 (onSnapshot 등)
-   * @returns 구독 해제 함수
+   * @param subscribeFn - 구독 함수 (onSnapshot 등). 각 subscriber마다 실행된다.
+   * @returns 이 subscriber의 구독 해제 함수
    */
   static subscribe(key: string, subscribeFn: () => () => void): () => void {
     const existing = this.subscriptions.get(key);
 
     if (existing) {
-      // 기존 구독에 참조 추가
+      // 기존 구독 엔트리가 있어도 subscribeFn을 실행하여
+      // 이 subscriber 전용 핸들러를 등록한다.
       existing.refCount++;
       existing.lastUpdate = Date.now();
 
       if (this.isDebugMode) {
-        logger.debug('RealtimeManager: 구독 참조 증가', {
+        logger.debug('RealtimeManager: 구독 subscriber 추가', {
           key,
           refCount: existing.refCount,
         });
       }
 
-      return () => this.unsubscribe(key);
+      try {
+        const subscriberUnsub = subscribeFn();
+        existing.subscriberUnsubscribes.push(subscriberUnsub);
+
+        return () => {
+          // 이 subscriber만 해제
+          const idx = existing.subscriberUnsubscribes.indexOf(subscriberUnsub);
+          if (idx !== -1) {
+            existing.subscriberUnsubscribes.splice(idx, 1);
+          }
+          try {
+            subscriberUnsub();
+          } catch {
+            // 이미 해제된 경우 무시
+          }
+          this.unsubscribe(key);
+        };
+      } catch (error) {
+        existing.refCount--;
+        logger.error('RealtimeManager: subscriber 추가 실패', error as Error, { key });
+        throw error;
+      }
     }
 
     // 새 구독 생성
     try {
-      const unsubscribe = subscribeFn();
+      const subscriberUnsub = subscribeFn();
 
       this.subscriptions.set(key, {
-        unsubscribe,
+        unsubscribe: subscriberUnsub,
         refCount: 1,
         lastUpdate: Date.now(),
         status: 'active',
+        subscriberUnsubscribes: [subscriberUnsub],
       });
 
       if (this.isDebugMode) {
         logger.debug('RealtimeManager: 새 구독 시작', { key });
       }
 
-      return () => this.unsubscribe(key);
+      return () => {
+        const entry = this.subscriptions.get(key);
+        if (entry) {
+          const idx = entry.subscriberUnsubscribes.indexOf(subscriberUnsub);
+          if (idx !== -1) {
+            entry.subscriberUnsubscribes.splice(idx, 1);
+          }
+          try {
+            subscriberUnsub();
+          } catch {
+            // 이미 해제된 경우 무시
+          }
+        }
+        this.unsubscribe(key);
+      };
     } catch (error) {
       logger.error('RealtimeManager: 구독 시작 실패', error as Error, { key });
       throw error;
@@ -116,7 +164,12 @@ export class RealtimeManager {
   }
 
   /**
-   * 구독 해제 (참조 카운트 감소)
+   * 구독 참조 카운트 감소 및 엔트리 제거
+   *
+   * @description
+   * refCount를 감소시키고, 0이 되면 Map에서 엔트리를 제거한다.
+   * 실제 subscriber unsub 함수 호출은 각 subscriber 클로저에서 담당하므로
+   * 이 메서드는 호출하지 않는다 (이중 호출 방지).
    *
    * @param key - 구독 식별 키
    */
@@ -127,16 +180,12 @@ export class RealtimeManager {
     entry.refCount--;
 
     if (entry.refCount <= 0) {
-      // 마지막 참조 해제 - 실제 구독 해제
-      try {
-        entry.unsubscribe();
-        this.subscriptions.delete(key);
+      // 마지막 참조 해제 - Map에서 제거만 한다.
+      // subscriber unsub 호출은 각 subscriber 반환 클로저에서 이미 처리함.
+      this.subscriptions.delete(key);
 
-        if (this.isDebugMode) {
-          logger.debug('RealtimeManager: 구독 해제', { key });
-        }
-      } catch (error) {
-        logger.error('RealtimeManager: 구독 해제 실패', error as Error, { key });
+      if (this.isDebugMode) {
+        logger.debug('RealtimeManager: 구독 엔트리 제거', { key });
       }
     } else {
       if (this.isDebugMode) {
@@ -279,10 +328,13 @@ export class RealtimeManager {
     const entry = this.subscriptions.get(key);
     if (!entry) return;
 
-    try {
-      entry.unsubscribe();
-    } catch {
-      // 이미 죽은 구독 - 무시
+    // 모든 subscriber 해제
+    for (const subscriberUnsub of entry.subscriberUnsubscribes) {
+      try {
+        subscriberUnsub();
+      } catch {
+        // 이미 죽은 구독 - 무시
+      }
     }
     this.subscriptions.delete(key);
 
@@ -296,10 +348,13 @@ export class RealtimeManager {
    */
   static unsubscribeAll(): void {
     for (const [key, entry] of this.subscriptions) {
-      try {
-        entry.unsubscribe();
-      } catch (error) {
-        logger.error('RealtimeManager: 전체 해제 중 오류', error as Error, { key });
+      // 각 subscriber 핸들러를 개별 해제
+      for (const subscriberUnsub of entry.subscriberUnsubscribes) {
+        try {
+          subscriberUnsub();
+        } catch (error) {
+          logger.error('RealtimeManager: subscriber 해제 중 오류', error as Error, { key });
+        }
       }
     }
     this.subscriptions.clear();

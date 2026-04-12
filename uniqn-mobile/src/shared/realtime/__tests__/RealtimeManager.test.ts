@@ -43,14 +43,17 @@ describe('RealtimeManager', () => {
       expect(RealtimeManager.isActive('test:key')).toBe(true);
     });
 
-    it('같은 키로 중복 구독 시 subscribeFn이 다시 호출되지 않는다', () => {
+    it('같은 키로 중복 구독 시 각 subscriber의 subscribeFn이 호출된다', () => {
+      // 버그 2 수정: 기존 구현은 두 번째 subscribeFn을 실행하지 않아
+      // 두 번째 subscriber가 데이터를 수신하지 못하는 버그가 있었다.
+      // 올바른 동작: 각 subscriber마다 subscribeFn이 실행되어야 한다.
       const mockUnsubscribe = jest.fn();
       const subscribeFn = jest.fn(() => mockUnsubscribe);
 
       RealtimeManager.subscribe('test:key', subscribeFn);
       RealtimeManager.subscribe('test:key', subscribeFn);
 
-      expect(subscribeFn).toHaveBeenCalledTimes(1);
+      expect(subscribeFn).toHaveBeenCalledTimes(2);
       expect(RealtimeManager.getRefCount('test:key')).toBe(2);
     });
 
@@ -112,20 +115,25 @@ describe('RealtimeManager', () => {
       const unsub = RealtimeManager.subscribe('ref:key', subscribeFn);
       unsub();
 
+      // subscriber unsub(mockUnsubscribe)가 1번 호출된다
       expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
       expect(RealtimeManager.isActive('ref:key')).toBe(false);
     });
 
-    it('중간 해제 시 실제 unsubscribe 호출되지 않음', () => {
-      const mockUnsubscribe = jest.fn();
-      const subscribeFn = jest.fn(() => mockUnsubscribe);
+    it('중간 해제 시 해당 subscriber만 해제되고 나머지는 유지된다', () => {
+      // 버그 2 수정: 각 subscriber가 독립적인 unsub을 가진다.
+      // unsub1 해제 시 unsub1의 subscribeFn이 반환한 함수만 호출되며,
+      // 전체 채널은 유지된다 (refCount 1 남음).
+      const mockUnsub1 = jest.fn();
+      const mockUnsub2 = jest.fn();
 
-      const unsub1 = RealtimeManager.subscribe('ref:key', subscribeFn);
-      RealtimeManager.subscribe('ref:key', subscribeFn);
+      const unsub1 = RealtimeManager.subscribe('ref:key', () => mockUnsub1);
+      RealtimeManager.subscribe('ref:key', () => mockUnsub2);
 
-      unsub1(); // refCount: 2 -> 1
+      unsub1(); // refCount: 2 -> 1, mockUnsub1 호출
 
-      expect(mockUnsubscribe).not.toHaveBeenCalled();
+      expect(mockUnsub1).toHaveBeenCalledTimes(1);
+      expect(mockUnsub2).not.toHaveBeenCalled();
       expect(RealtimeManager.isActive('ref:key')).toBe(true);
     });
   });
@@ -233,14 +241,18 @@ describe('RealtimeManager', () => {
   // forceRemove 테스트
   // ============================================================================
   describe('forceRemove', () => {
-    it('구독 강제 제거', () => {
-      const mockUnsub = jest.fn();
-      RealtimeManager.subscribe('force:key', () => mockUnsub);
-      RealtimeManager.subscribe('force:key', () => mockUnsub); // refCount: 2
+    it('구독 강제 제거 시 모든 subscriber unsub이 호출된다', () => {
+      // 버그 2 수정: forceRemove는 subscriberUnsubscribes 배열의 각 함수를 호출한다.
+      // 두 subscriber가 각각 다른 unsub 함수를 반환하면 2번 호출된다.
+      const mockUnsub1 = jest.fn();
+      const mockUnsub2 = jest.fn();
+      RealtimeManager.subscribe('force:key', () => mockUnsub1);
+      RealtimeManager.subscribe('force:key', () => mockUnsub2); // refCount: 2
 
       RealtimeManager.forceRemove('force:key');
 
-      expect(mockUnsub).toHaveBeenCalledTimes(1);
+      expect(mockUnsub1).toHaveBeenCalledTimes(1);
+      expect(mockUnsub2).toHaveBeenCalledTimes(1);
       expect(RealtimeManager.isActive('force:key')).toBe(false);
       expect(RealtimeManager.getRefCount('force:key')).toBe(0);
     });

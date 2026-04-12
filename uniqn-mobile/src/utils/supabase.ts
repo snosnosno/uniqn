@@ -393,13 +393,31 @@ export function assertUpdated(
 // ============================================================================
 
 /**
- * 테이블의 Realtime 변경사항 구독 생성
+ * 채널별 subscriber 목록 (deduplication용)
+ *
+ * 같은 channelName으로 여러 번 createRealtimeSubscription이 호출되면
+ * Supabase 채널은 하나만 만들고, 콜백만 subscriber 배열에 추가한다.
+ * ref-count가 0이 되면 채널을 완전히 제거한다.
+ */
+interface RealtimeChannelEntry {
+  channel: RealtimeChannel;
+  subscribers: ((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void)[];
+  errorHandlers: ((status: string) => void)[];
+  refCount: number;
+}
+
+const realtimeChannelRegistry = new Map<string, RealtimeChannelEntry>();
+
+/**
+ * 테이블의 Realtime 변경사항 구독 생성 (채널 중복 방지)
  *
  * @description postgres_changes 이벤트를 구독하고, 해제 함수를 반환한다.
- *              RealtimeManager나 hook에서 사용.
+ *              같은 table+filter 조합은 Supabase 채널을 하나만 생성하고
+ *              콜백을 공유한다 (ref-counting). 마지막 구독자가 해제하면 채널도 제거된다.
  * @param table - 구독할 테이블 이름
  * @param filter - PostgREST 필터 (예: 'user_id=eq.abc'). undefined면 전체
  * @param callback - 변경 이벤트 핸들러
+ * @param onError - 채널 에러 핸들러 (선택)
  * @returns 구독 해제 함수 (UnsubscribeFn)
  *
  * @example
@@ -423,6 +441,41 @@ export function createRealtimeSubscription(
 ): UnsubscribeFn {
   const channelName = `realtime:${table}:${filter ?? 'all'}`;
 
+  const existing = realtimeChannelRegistry.get(channelName);
+
+  if (existing) {
+    // 기존 채널에 subscriber만 추가
+    existing.subscribers.push(callback);
+    if (onError) {
+      existing.errorHandlers.push(onError);
+    }
+    existing.refCount++;
+
+    if (__DEV__) {
+      logger.debug('Realtime 채널 재사용 (subscriber 추가)', {
+        channelName,
+        refCount: existing.refCount,
+      });
+    }
+
+    return () => {
+      removeRealtimeSubscriber(channelName, callback, onError);
+    };
+  }
+
+  // registry에 없지만 Supabase client에 동일 이름의 채널이 남아있으면 먼저 제거
+  // (페이지 이동/HMR 등으로 registry는 초기화됐지만 클라이언트 채널은 살아있는 경우)
+  const orphanChannel = supabase
+    .getChannels()
+    .find((ch) => ch.topic === channelName || ch.topic === `realtime:${channelName}`);
+  if (orphanChannel) {
+    logger.warn('Realtime 고아 채널 제거 후 재생성', { channelName });
+    supabase.removeChannel(orphanChannel).catch(() => {
+      /* 무시 */
+    });
+  }
+
+  // 새 채널 생성: 모든 subscriber에게 이벤트를 fan-out하는 단일 핸들러 등록
   const channelConfig = {
     event: '*' as const,
     schema: 'public' as const,
@@ -430,30 +483,91 @@ export function createRealtimeSubscription(
     ...(filter ? { filter } : {}),
   };
 
+  const entry: RealtimeChannelEntry = {
+    channel: null as unknown as RealtimeChannel, // 아래에서 할당
+    subscribers: [callback],
+    errorHandlers: onError ? [onError] : [],
+    refCount: 1,
+  };
+
+  const fanOutCallback = (
+    payload: RealtimePostgresChangesPayload<Record<string, unknown>>
+  ): void => {
+    const current = realtimeChannelRegistry.get(channelName);
+    if (!current) return;
+    for (const sub of current.subscribers) {
+      sub(payload);
+    }
+  };
+
   const channel: RealtimeChannel = supabase
     .channel(channelName)
     .on(
       'postgres_changes',
       channelConfig,
-      callback as (payload: RealtimePostgresChangesPayload<{ [key: string]: string }>) => void
+      fanOutCallback as (payload: RealtimePostgresChangesPayload<{ [key: string]: string }>) => void
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         logger.info('Realtime 구독 시작', { table, filter });
       } else if (status === 'CHANNEL_ERROR') {
         logger.error('Realtime 채널 에러', new Error(`CHANNEL_ERROR: ${table}`), { table, filter });
-        onError?.('CHANNEL_ERROR');
+        const current = realtimeChannelRegistry.get(channelName);
+        if (current) {
+          for (const handler of current.errorHandlers) {
+            handler('CHANNEL_ERROR');
+          }
+        }
       } else if (status === 'TIMED_OUT') {
         logger.warn('Realtime 구독 타임아웃', { table, filter });
-        onError?.('TIMED_OUT');
+        const current = realtimeChannelRegistry.get(channelName);
+        if (current) {
+          for (const handler of current.errorHandlers) {
+            handler('TIMED_OUT');
+          }
+        }
       } else if (status === 'CLOSED') {
         logger.info('Realtime 채널 종료', { table, filter });
       }
     });
 
+  entry.channel = channel;
+  realtimeChannelRegistry.set(channelName, entry);
+
   return () => {
-    supabase.removeChannel(channel);
+    removeRealtimeSubscriber(channelName, callback, onError);
   };
+}
+
+/**
+ * subscriber를 제거하고 마지막 subscriber라면 채널도 해제한다.
+ */
+function removeRealtimeSubscriber(
+  channelName: string,
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void,
+  onError?: (status: string) => void
+): void {
+  const entry = realtimeChannelRegistry.get(channelName);
+  if (!entry) return;
+
+  entry.subscribers = entry.subscribers.filter((s) => s !== callback);
+  if (onError) {
+    entry.errorHandlers = entry.errorHandlers.filter((h) => h !== onError);
+  }
+  entry.refCount--;
+
+  if (__DEV__) {
+    logger.debug('Realtime subscriber 제거', { channelName, refCount: entry.refCount });
+  }
+
+  if (entry.refCount <= 0) {
+    supabase.removeChannel(entry.channel);
+    realtimeChannelRegistry.delete(channelName);
+
+    if (__DEV__) {
+      logger.debug('Realtime 채널 제거 (마지막 subscriber)', { channelName });
+    }
+  }
 }
 
 // ============================================================================
