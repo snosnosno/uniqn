@@ -12,6 +12,7 @@ import { Button } from '@/components/ui';
 import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
 import { WebPortal } from '@/components/ui/WebPortal';
+import { useThemeStore } from '@/stores/themeStore';
 import type { QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
@@ -59,10 +60,17 @@ export function QRCodeScanner({
   title = 'QR 코드 스캔',
 }: QRCodeScannerProps) {
   const { width: windowWidth } = useWindowDimensions();
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [permission, setPermission] = useState<PermissionState>('pending');
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scanAreaSize = Math.min(Math.max(windowWidth * 0.7, 220), 280);
+
+  // DESIGN.md 토큰: 카메라 뷰는 다크 유지(카메라 UI 표준),
+  // 권한 안내 화면만 테마에 반응
+  const infoBg = isDarkMode ? '#09090B' : '#F5F5F2';
+  const infoTextPrimary = isDarkMode ? '#F0F0F2' : '#09090B';
+  const infoTextMuted = isDarkMode ? '#9A9078' : '#8A8272';
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -249,9 +257,11 @@ export function QRCodeScanner({
     // 권한 체크 중
     if (permission === 'pending' && !error) {
       return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: infoBg }]}>
           <View style={styles.centerContent}>
-            <Text style={styles.statusText}>카메라 권한 확인 중...</Text>
+            <Text style={[styles.statusText, { color: infoTextPrimary }]}>
+              카메라 권한 확인 중...
+            </Text>
           </View>
         </SafeAreaView>
       );
@@ -260,26 +270,28 @@ export function QRCodeScanner({
     // 권한 거부 또는 에러
     if (permission === 'denied' || error) {
       return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: infoBg }]}>
           <View style={styles.header}>
             <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel="닫기">
-              <XMarkIcon size={24} color="#FFFFFF" />
+              <XMarkIcon size={24} color={infoTextPrimary} />
             </Pressable>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, { color: infoTextPrimary }]}>{title}</Text>
             <View style={styles.placeholder} />
           </View>
 
           <View style={styles.centerContent}>
-            <ScanIcon size={64} color="#9A9078" />
-            <Text style={styles.permissionTitle}>
+            <ScanIcon size={64} color={infoTextMuted} />
+            <Text style={[styles.permissionTitle, { color: infoTextPrimary }]}>
               {permission === 'denied' ? '카메라 권한이 필요합니다' : '오류 발생'}
             </Text>
-            <Text style={styles.permissionText}>{error || '카메라 접근 권한을 허용해주세요.'}</Text>
+            <Text style={[styles.permissionText, { color: infoTextMuted }]}>
+              {error || '카메라 접근 권한을 허용해주세요.'}
+            </Text>
             <View style={styles.buttonContainer}>
               <Button onPress={handleRetryPermission}>다시 시도</Button>
             </View>
             <Pressable onPress={onClose} style={styles.closeTextButton} accessibilityLabel="닫기">
-              <Text style={styles.closeText}>닫기</Text>
+              <Text style={[styles.closeText, { color: infoTextMuted }]}>닫기</Text>
             </Pressable>
           </View>
         </SafeAreaView>
