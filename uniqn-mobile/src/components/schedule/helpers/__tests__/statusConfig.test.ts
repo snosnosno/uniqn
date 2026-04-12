@@ -73,13 +73,13 @@ describe('attendanceConfig', () => {
   });
 
   it('should have appropriate colors for each status', () => {
-    // not_started: gray
-    expect(attendanceConfig.not_started.bgColor).toContain('gray');
-    expect(attendanceConfig.not_started.textColor).toContain('gray');
+    // not_started: secondary (neutral)
+    expect(attendanceConfig.not_started.bgColor).toContain('secondary');
+    expect(attendanceConfig.not_started.textColor).toContain('secondary');
 
-    // checked_in: green (working)
-    expect(attendanceConfig.checked_in.bgColor).toContain('green');
-    expect(attendanceConfig.checked_in.textColor).toContain('green');
+    // checked_in: success (working)
+    expect(attendanceConfig.checked_in.bgColor).toContain('success');
+    expect(attendanceConfig.checked_in.textColor).toContain('success');
 
     // checked_out: primary (completed)
     expect(attendanceConfig.checked_out.bgColor).toContain('primary');

@@ -143,9 +143,9 @@ describe('StatusConfig', () => {
       expect(color).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
 
-    it('should return gray for invalid status', () => {
+    it('should return fallback color for invalid status', () => {
       const color = getStatusHexColor(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
-      expect(color).toBe('#6B7280');
+      expect(color).toBe('#9A9078');
     });
   });
 

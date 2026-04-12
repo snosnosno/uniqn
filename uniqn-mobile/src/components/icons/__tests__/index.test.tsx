@@ -41,8 +41,8 @@ describe('icons', () => {
   });
 
   it('resolves default colors by theme', () => {
-    expect(getDefaultIconColor('light')).toBe('#6B7280');
-    expect(getDefaultIconColor('dark')).toBe('#9CA3AF');
+    expect(getDefaultIconColor('light')).toBe('#9A9078');
+    expect(getDefaultIconColor('dark')).toBe('#A89C84');
     expect(getDefaultIconColor('dark', '#123456')).toBe('#123456');
   });
 });
