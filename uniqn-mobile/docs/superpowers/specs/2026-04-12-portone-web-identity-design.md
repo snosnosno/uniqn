@@ -87,7 +87,7 @@ const startVerification = async () => {
       storeId: request.storeId,
       channelKey: request.channelKey,
       identityVerificationId: request.identityVerificationId,
-      bypass: request.bypass,    // inicisUnified bypass 그대로 전달
+      bypass: request.bypass, // inicisUnified bypass 그대로 전달
       customData: request.customData,
     });
 
