@@ -87,8 +87,8 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fp = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (!['node_modules', '.git', 'dist', '.expo', '__tests__'].includes(entry.name)) {
-        // __tests__ 제외하지 않음 — 테스트도 상수 참조로 바꿔야 함
+      if (!['node_modules', '.git', 'dist', '.expo'].includes(entry.name)) {
+        // __tests__ 포함 — 테스트도 상수 참조로 바꿔야 함
         results.push(...walk(fp));
       }
     } else if (/\.(ts|tsx)$/.test(entry.name)) {

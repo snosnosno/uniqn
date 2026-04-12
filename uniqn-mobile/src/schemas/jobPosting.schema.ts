@@ -362,7 +362,7 @@ function validateDocumentContract(
   data: {
     postingType?: PostingType;
     schedule: z.infer<typeof postingScheduleSchema>;
-    workDate: string;
+    workDate?: string;
     workDates?: string[];
     fixedConfig?: z.infer<typeof fixedConfigSchema>;
     tournamentConfig?: z.infer<typeof tournamentConfigSchema>;
