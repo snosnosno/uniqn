@@ -174,9 +174,9 @@ export class RealtimeManager {
     const entry = this.subscriptions.get(key);
     if (!entry) return;
 
-    entry.refCount--;
+    const nextRefCount = entry.refCount - 1;
 
-    if (entry.refCount <= 0) {
+    if (nextRefCount <= 0) {
       // 마지막 참조 해제 - Map에서 제거만 한다.
       // subscriber unsub 호출은 각 subscriber 반환 클로저에서 이미 처리함.
       this.subscriptions.delete(key);
@@ -185,10 +185,12 @@ export class RealtimeManager {
         logger.debug('RealtimeManager: 구독 엔트리 제거', { key });
       }
     } else {
+      this.subscriptions.set(key, { ...entry, refCount: nextRefCount });
+
       if (this.isDebugMode) {
         logger.debug('RealtimeManager: 구독 참조 감소', {
           key,
-          refCount: entry.refCount,
+          refCount: nextRefCount,
         });
       }
     }
@@ -225,11 +227,10 @@ export class RealtimeManager {
     this.connectionState = 'connected';
     logger.info('RealtimeManager: 네트워크 재연결');
 
-    // paused 구독을 active로 변경
+    // paused 구독을 active로 변경 (immutable 패턴)
     for (const [key, entry] of this.subscriptions) {
       if (entry.status === 'paused') {
-        entry.status = 'active';
-        entry.lastUpdate = Date.now();
+        this.subscriptions.set(key, { ...entry, status: 'active', lastUpdate: Date.now() });
 
         if (this.isDebugMode) {
           logger.debug('RealtimeManager: 구독 재활성화', { key });
@@ -262,10 +263,10 @@ export class RealtimeManager {
     this.connectionState = 'disconnected';
     logger.info('RealtimeManager: 네트워크 끊김');
 
-    // 모든 active 구독을 paused로 변경
-    for (const entry of this.subscriptions.values()) {
+    // 모든 active 구독을 paused로 변경 (immutable 패턴)
+    for (const [key, entry] of this.subscriptions) {
       if (entry.status === 'active') {
-        entry.status = 'paused';
+        this.subscriptions.set(key, { ...entry, status: 'paused' });
       }
     }
   }

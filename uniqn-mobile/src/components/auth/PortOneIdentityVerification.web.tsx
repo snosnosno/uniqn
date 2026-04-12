@@ -110,9 +110,12 @@ export function PortOneIdentityVerification({
         throw new Error('본인인증 창이 닫혔습니다.');
       }
 
-      // 에러 코드 → 실패/취소
+      // 에러 코드 → 실패/취소 (native와 동일하게 handleVerificationFailure 경유)
       if (result.code) {
-        setErrorMessage(result.message ?? '본인인증이 완료되지 않았습니다.');
+        handleVerificationFailure(
+          new Error(result.message ?? '본인인증이 완료되지 않았습니다.'),
+          result.message ?? '본인인증이 완료되지 않았습니다.'
+        );
         return; // finally가 cleanup 처리
       }
 

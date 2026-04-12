@@ -9,24 +9,6 @@ import {
   sessionService,
 } from '../sessionService';
 
-const mockAuth: {
-  currentUser: {
-    getIdToken: jest.Mock;
-    getIdTokenResult: jest.Mock;
-    uid: string;
-  } | null;
-  authStateReady?: jest.Mock;
-  onAuthStateChanged: jest.Mock;
-} = {
-  currentUser: {
-    getIdToken: jest.fn(),
-    getIdTokenResult: jest.fn(),
-    uid: 'test-user-id',
-  },
-  authStateReady: jest.fn(),
-  onAuthStateChanged: jest.fn(),
-};
-
 const mockAuthStoreSubscribers = new Set<() => void>();
 const mockToastAddToast = jest.fn();
 const mockAuthStoreState = {
@@ -163,26 +145,11 @@ function setAuthStoreState(partial: Partial<typeof mockAuthStoreState>) {
   mockAuthStoreSubscribers.forEach((listener) => listener());
 }
 
-function mockTokenExpiry(minutesFromNow: number) {
-  const expirationTime = new Date(Date.now() + minutesFromNow * 60 * 1000);
-  mockAuth.currentUser?.getIdTokenResult.mockResolvedValue({
-    token: 'test-token',
-    expirationTime: expirationTime.toISOString(),
-  });
-}
-
 describe('sessionService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     mockAuthStoreSubscribers.clear();
-    mockAuth.currentUser = {
-      getIdToken: jest.fn().mockResolvedValue('test-token'),
-      getIdTokenResult: jest.fn(),
-      uid: 'test-user-id',
-    };
-    mockAuth.authStateReady = jest.fn();
-    mockAuth.onAuthStateChanged.mockImplementation(() => jest.fn());
     mockAuthStoreState.status = 'authenticated';
     mockAuthStoreState.bootstrapSource = 'server';
     mockAuthStoreState.suppressedSessionUserId = null;
@@ -190,7 +157,6 @@ describe('sessionService', () => {
     mockAuthStoreState.reset.mockReset();
     mockAuthStoreState.checkAuthState.mockResolvedValue(undefined);
     mockToastAddToast.mockReset();
-    mockTokenExpiry(30);
     // clearAllMocks는 구현을 지우므로 기본값 명시적 복원
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     mockSupabase.auth.onAuthStateChange.mockImplementation(() => ({
