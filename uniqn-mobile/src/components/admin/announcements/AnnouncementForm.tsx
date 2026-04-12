@@ -216,7 +216,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm ${
                     category === cat.key
-                      ? 'text-white font-medium'
+                      ? 'text-surface-dark font-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -297,7 +297,7 @@ export function AnnouncementForm({
                 <Text
                   className={`text-sm ${
                     priority === p
-                      ? 'text-white font-medium'
+                      ? 'text-surface-dark font-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -343,7 +343,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm ${
                   targetType === 'all'
-                    ? 'text-white font-medium'
+                    ? 'text-surface-dark font-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -361,7 +361,7 @@ export function AnnouncementForm({
               <Text
                 className={`text-sm ${
                   targetType === 'roles'
-                    ? 'text-white font-medium'
+                    ? 'text-surface-dark font-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
@@ -386,7 +386,7 @@ export function AnnouncementForm({
                   <Text
                     className={`text-sm ${
                       targetRoles.includes(role)
-                        ? 'text-white font-medium'
+                        ? 'text-surface-dark font-medium'
                         : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
@@ -426,7 +426,7 @@ export function AnnouncementForm({
             <Text
               className={`font-medium ${
                 isValid && !isSubmitting
-                  ? 'text-white'
+                  ? 'text-surface-dark'
                   : 'text-secondary-500 dark:text-secondary-400'
               }`}
             >

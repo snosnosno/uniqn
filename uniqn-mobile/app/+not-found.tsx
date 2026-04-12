@@ -15,7 +15,7 @@ export default function NotFoundScreen() {
         <Text className="mb-2 text-6xl font-bold text-secondary-300 dark:text-secondary-700">
           404
         </Text>
-        <Text className="mb-2 text-xl font-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="mb-2 text-xl font-display-semibold text-secondary-900 dark:text-secondary-100">
           페이지를 찾을 수 없습니다
         </Text>
         <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400">

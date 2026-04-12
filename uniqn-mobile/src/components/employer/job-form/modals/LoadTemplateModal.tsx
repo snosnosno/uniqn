@@ -146,7 +146,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-sm font-medium text-white">
+            <Text className="text-sm font-medium text-surface-dark">
               {isUnsupported ? '사용 불가' : '불러오기'}
             </Text>
           )}

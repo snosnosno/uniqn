@@ -58,7 +58,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           <Text className="text-3xl">{''}</Text>
         </View>
 
-        <Text className="text-lg font-bold text-secondary-900 dark:text-off-white text-center mb-2">
+        <Text className="text-lg font-display text-secondary-900 dark:text-off-white text-center mb-2">
           이메일이 발송되었습니다
         </Text>
 
@@ -125,10 +125,10 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-white font-medium">발송 중...</Text>
+              <Text className="ml-2 text-surface-dark font-medium">발송 중...</Text>
             </View>
           ) : (
-            <Text className="text-white font-medium">재설정 링크 발송</Text>
+            <Text className="text-surface-dark font-medium">재설정 링크 발송</Text>
           )}
         </Button>
       </View>

@@ -99,7 +99,7 @@ function Checkbox({
             ${disabled ? 'opacity-50' : ''}
           `}
         >
-          {checked && <Text className="text-sm font-bold text-white">{''}</Text>}
+          {checked && <Text className="text-sm font-bold text-surface-dark">{''}</Text>}
         </View>
         <View className="flex-row items-center">
           {required ? (
@@ -205,7 +205,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
             }
           `}
         >
-          {allChecked && <Text className="text-sm font-bold text-white">{''}</Text>}
+          {allChecked && <Text className="text-sm font-bold text-surface-dark">{''}</Text>}
         </View>
         <Text className="font-semibold text-secondary-900 dark:text-off-white">전체 동의하기</Text>
       </Pressable>

@@ -83,7 +83,7 @@ const StatusTab = memo(function StatusTab({
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
-          <Text className="text-xs font-medium text-white">{count}</Text>
+          <Text className="text-xs font-medium text-surface-dark">{count}</Text>
         </View>
       )}
     </Pressable>

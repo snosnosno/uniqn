@@ -75,7 +75,7 @@ export default function QRScreen() {
     <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <View className="bg-white px-4 py-3 dark:bg-surface">
-        <Text className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
+        <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100">
           QR 스캔
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
@@ -106,7 +106,7 @@ export default function QRScreen() {
             <View className="ml-4 flex-1">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">현재 상태</Text>
               <Text
-                className={`text-lg font-semibold ${
+                className={`text-lg font-display-semibold ${
                   isWorking
                     ? 'text-success-600 dark:text-success-400'
                     : 'text-secondary-600 dark:text-secondary-300'
@@ -141,7 +141,7 @@ export default function QRScreen() {
             <ScanIcon size={80} color="#A89C84" />
           </View>
 
-          <Text className="text-center text-xl font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="text-center text-xl font-display text-secondary-900 dark:text-secondary-100">
             QR 코드 스캔
           </Text>
 

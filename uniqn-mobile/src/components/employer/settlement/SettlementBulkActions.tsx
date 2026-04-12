@@ -79,7 +79,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
         <Text
           className={`
           ml-1 text-sm font-medium
-          ${selectedCount > 0 ? 'text-white' : 'text-secondary-500 dark:text-secondary-400'}
+          ${selectedCount > 0 ? 'text-surface-dark' : 'text-secondary-500 dark:text-secondary-400'}
         `}
         >
           일괄 정산

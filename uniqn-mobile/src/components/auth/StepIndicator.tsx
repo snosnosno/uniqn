@@ -67,7 +67,9 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                   ) : (
                     <Text
                       className={`text-sm font-bold ${
-                        isActive ? 'text-white' : 'text-secondary-500 dark:text-secondary-400'
+                        isActive
+                          ? 'text-surface-dark'
+                          : 'text-secondary-500 dark:text-secondary-400'
                       }`}
                     >
                       {stepNumber}

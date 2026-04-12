@@ -124,7 +124,7 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
       <Text
         className={`
           text-sm font-medium
-          ${isActive ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'}
+          ${isActive ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'}
         `}
       >
         {label}
@@ -233,7 +233,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
           </Text>
           {showActiveCount && activeFilterCount > 0 && (
             <View className="ml-2 bg-primary-600 rounded-sm px-2 py-0.5 min-w-[20px] items-center">
-              <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
+              <Text className="text-surface-dark text-xs font-bold">{activeFilterCount}</Text>
             </View>
           )}
         </Pressable>
@@ -377,7 +377,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                   onPress={handleApplyFilters}
                   className="bg-primary-600 dark:bg-primary-700 py-4 rounded-md items-center active:opacity-80"
                 >
-                  <Text className="text-white font-semibold text-base">필터 적용</Text>
+                  <Text className="text-surface-dark font-semibold text-base">필터 적용</Text>
                 </Pressable>
               </View>
 

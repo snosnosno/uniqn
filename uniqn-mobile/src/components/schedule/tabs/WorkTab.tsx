@@ -210,7 +210,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             color={isWorking ? (isDarkMode ? '#D6D2CA' : '#5C5546') : '#FFFFFF'}
           />
           <Text
-            className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}
+            className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-surface-dark'}`}
           >
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>

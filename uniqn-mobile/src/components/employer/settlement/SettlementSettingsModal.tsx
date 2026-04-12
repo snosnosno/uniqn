@@ -280,7 +280,7 @@ export function SettlementSettingsModal({
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-lg font-semibold text-white text-center">
+        <Text className="text-lg font-semibold text-surface-dark text-center">
           {isSaving ? '저장 중...' : '저장'}
         </Text>
       </Pressable>

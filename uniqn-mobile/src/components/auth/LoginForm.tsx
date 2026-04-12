@@ -135,10 +135,10 @@ export function LoginForm({
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />
-              <Text className="ml-2 text-white font-medium">로그인 중...</Text>
+              <Text className="ml-2 text-surface-dark font-medium">로그인 중...</Text>
             </View>
           ) : (
-            <Text className="text-white font-medium">로그인</Text>
+            <Text className="text-surface-dark font-medium">로그인</Text>
           )}
         </Button>
       </View>

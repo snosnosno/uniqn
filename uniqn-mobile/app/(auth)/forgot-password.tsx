@@ -53,7 +53,7 @@ export default function ForgotPasswordScreen() {
         <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
           <ChevronLeftIcon size={24} />
         </Pressable>
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
           비밀번호 찾기
         </Text>
         <View className="w-8" />

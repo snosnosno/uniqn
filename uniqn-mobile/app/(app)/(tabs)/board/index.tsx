@@ -48,7 +48,7 @@ interface BoardSectionProps {
 function BoardSection({ title, emptyTitle, posts }: BoardSectionProps) {
   return (
     <View className="mb-6">
-      <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
         {title}
       </Text>
 

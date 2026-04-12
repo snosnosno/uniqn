@@ -203,7 +203,9 @@ export default function AdminBoardReportsPage() {
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
+                      isSelected
+                        ? 'text-surface-dark'
+                        : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
                     {option.label}

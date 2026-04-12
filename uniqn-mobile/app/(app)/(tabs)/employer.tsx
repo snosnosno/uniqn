@@ -247,7 +247,7 @@ function EmployerView() {
           onPress={handleCreatePosting}
           icon={<PlusIcon size={20} color="#fff" />}
         >
-          <Text className="ml-2 font-semibold text-white">새 공고 작성</Text>
+          <Text className="ml-2 font-semibold text-surface-dark">새 공고 작성</Text>
         </Button>
       </View>
 

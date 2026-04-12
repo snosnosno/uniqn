@@ -36,7 +36,7 @@ function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
   const selectedClass = isSelected
     ? 'bg-primary-600 dark:bg-primary-500'
     : 'bg-secondary-200 dark:bg-surface';
-  const textClass = isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300';
+  const textClass = isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300';
 
   return (
     <Pressable onPress={onPress} className={baseClass + ' ' + selectedClass}>
@@ -280,7 +280,7 @@ export default function AdminUsersPage() {
                     onPress={handleLoadMore}
                     className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
                   >
-                    <Text className="text-white font-medium">더 보기</Text>
+                    <Text className="text-surface-dark font-medium">더 보기</Text>
                   </Pressable>
                 )}
               </View>

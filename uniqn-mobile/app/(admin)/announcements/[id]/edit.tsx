@@ -57,7 +57,7 @@ export default function EditAnnouncementPage() {
             onPress={() => router.back()}
             className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
-            <Text className="text-white font-medium">돌아가기</Text>
+            <Text className="text-surface-dark font-medium">돌아가기</Text>
           </Pressable>
         </View>
       </>

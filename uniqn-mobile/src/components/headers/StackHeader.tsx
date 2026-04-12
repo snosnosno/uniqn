@@ -37,7 +37,7 @@ export function StackHeader({
           />
         ) : null}
         <View className="flex-row items-center">
-          <Text className="text-lg font-semibold" style={{ color: headerTintColor }}>
+          <Text className="text-lg font-display-semibold" style={{ color: headerTintColor }}>
             {title}
           </Text>
           {titleSuffix ? <View className="ml-1">{titleSuffix}</View> : null}

@@ -92,7 +92,7 @@ export function ErrorState({
       </View>
 
       {/* 제목 */}
-      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white text-center mb-2">
+      <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
         {title}
       </Text>
 

@@ -127,7 +127,7 @@ export default function AnnouncementDetailPage() {
             onPress={() => router.back()}
             className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
-            <Text className="text-white font-medium">돌아가기</Text>
+            <Text className="text-surface-dark font-medium">돌아가기</Text>
           </Pressable>
         </View>
       </>
@@ -377,7 +377,7 @@ export default function AnnouncementDetailPage() {
               className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
             >
               <CreateOutlineIcon size={18} color="#fff" />
-              <Text className="text-white font-medium ml-2">수정하기</Text>
+              <Text className="text-surface-dark font-medium ml-2">수정하기</Text>
             </Pressable>
 
             {/* Delete */}

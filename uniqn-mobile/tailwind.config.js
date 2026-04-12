@@ -88,6 +88,7 @@ module.exports = {
       },
       // 폰트 패밀리 (Expo Google Fonts)
       fontFamily: {
+        'display-semibold': ['Outfit_600SemiBold'],
         display: ['Outfit_700Bold'],
         'display-bold': ['Outfit_800ExtraBold'],
         sans: ['PlusJakartaSans_400Regular'],

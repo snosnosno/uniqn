@@ -245,7 +245,7 @@ export function DatePickerModal({
           accessibilityLabel="확인"
           testID="job-posting-date-confirm-button"
         >
-          <Text className="text-white text-center font-semibold">
+          <Text className="text-surface-dark text-center font-semibold">
             {selectedDates.length > 0 ? `${selectedDates.length}개 추가` : '확인'}
           </Text>
         </Pressable>

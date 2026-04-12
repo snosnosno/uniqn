@@ -82,7 +82,7 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
       <Text
         className={`text-sm font-medium ${
           isSelected
-            ? 'text-white'
+            ? 'text-surface-dark'
             : today
               ? 'text-primary-600 dark:text-primary-400'
               : 'text-secondary-700 dark:text-secondary-300'
@@ -91,7 +91,7 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
         {label}
       </Text>
       <Text
-        className={`text-xs ${isSelected ? 'text-white/70' : 'text-secondary-500 dark:text-secondary-400'}`}
+        className={`text-xs ${isSelected ? 'text-surface-dark/70' : 'text-secondary-500 dark:text-secondary-400'}`}
       >
         {dayLabel}
       </Text>
@@ -117,7 +117,7 @@ const AllChip = memo(function AllChip({ isSelected, onPress }: AllChipProps) {
     >
       <Text
         className={`text-sm font-medium ${
-          isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
+          isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >
         전체

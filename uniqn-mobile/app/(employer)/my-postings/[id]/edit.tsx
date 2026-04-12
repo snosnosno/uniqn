@@ -206,7 +206,7 @@ export default function EditJobPostingScreen() {
             {jobError?.message || '공고 정보를 찾을 수 없습니다.'}
           </Text>
           <Button variant="primary" onPress={() => router.back()}>
-            <Text className="font-semibold text-white">돌아가기</Text>
+            <Text className="font-semibold text-surface-dark">돌아가기</Text>
           </Button>
         </View>
       </SafeAreaView>
@@ -337,7 +337,7 @@ export default function EditJobPostingScreen() {
             accessibilityLabel="공고 수정"
             testID="job-posting-edit-submit"
           >
-            <Text className="font-semibold text-white">
+            <Text className="font-semibold text-surface-dark">
               {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
             </Text>
           </Button>

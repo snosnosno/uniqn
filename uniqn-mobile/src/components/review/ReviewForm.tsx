@@ -201,7 +201,7 @@ export default function ReviewForm({
         ) : (
           <Text
             className={`text-base font-semibold ${
-              isFormReady ? 'text-white' : 'text-secondary-500 dark:text-secondary-400'
+              isFormReady ? 'text-surface-dark' : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
             리뷰 제출하기

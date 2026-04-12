@@ -127,7 +127,7 @@ export const NotificationList = memo(function NotificationList({
         </Text>
         {onRefresh ? (
           <Pressable onPress={onRefresh} className="mt-4 rounded-lg bg-primary-500 px-4 py-2">
-            <Text className="font-medium text-white">다시 시도</Text>
+            <Text className="font-medium text-surface-dark">다시 시도</Text>
           </Pressable>
         ) : null}
       </View>

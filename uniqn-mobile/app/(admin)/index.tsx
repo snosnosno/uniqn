@@ -33,7 +33,7 @@ function DashboardCard({
         <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
           <Icon size={24} color={iconColor} />
         </View>
-        <Text className="mb-1 text-lg font-semibold text-secondary-900 dark:text-off-white">
+        <Text className="mb-1 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
           {title}
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">{description}</Text>
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
     <ScrollView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <View className="p-4">
         <View className="mb-6">
-          <Text className="mb-1 text-2xl font-bold text-secondary-900 dark:text-off-white">
+          <Text className="mb-1 text-2xl font-display text-secondary-900 dark:text-off-white">
             관리자
           </Text>
           <Text className="text-secondary-500 dark:text-secondary-400">

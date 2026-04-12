@@ -501,7 +501,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             {isSaving ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-center text-base font-semibold text-white">저장</Text>
+              <Text className="text-center text-base font-semibold text-surface-dark">저장</Text>
             )}
           </Pressable>
         </ScrollView>

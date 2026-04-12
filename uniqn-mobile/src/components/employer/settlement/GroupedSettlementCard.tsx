@@ -160,7 +160,7 @@ const DateStatusRow = memo(function DateStatusRow({
           className="px-2.5 py-1 bg-primary-500 rounded-lg active:opacity-70"
           accessibilityLabel="정산하기"
         >
-          <Text className="text-xs font-medium text-white">정산</Text>
+          <Text className="text-xs font-medium text-surface-dark">정산</Text>
         </Pressable>
       ) : (
         <View className={`px-2 py-0.5 rounded-sm ${payrollConfig.bgColor}`}>
@@ -401,7 +401,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             accessibilityLabel={`${settlableWorkLogs.length}건 일괄 정산`}
           >
             <BanknotesIcon size={18} color="#fff" />
-            <Text className="ml-2 text-sm font-semibold text-white">
+            <Text className="ml-2 text-sm font-semibold text-surface-dark">
               {settlableWorkLogs.length}건 일괄 정산
             </Text>
           </Pressable>

@@ -66,7 +66,7 @@ function AuthErrorFallback({
           accessibilityRole="button"
           accessibilityLabel="로그인"
         >
-          <Text className="text-white font-semibold">로그인</Text>
+          <Text className="text-surface-dark font-semibold">로그인</Text>
         </Pressable>
 
         <Pressable

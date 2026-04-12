@@ -428,8 +428,8 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     max: 100,
     bg: 'bg-primary-500',
     darkBg: 'dark:bg-primary-400',
-    text: 'text-white',
-    hex: '#2563EB',
+    text: 'text-surface-dark',
+    hex: '#D4AF37',
     label: '우수',
   },
 ];

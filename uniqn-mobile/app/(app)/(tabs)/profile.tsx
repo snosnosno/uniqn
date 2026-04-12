@@ -149,7 +149,7 @@ export default function ProfileScreen() {
               source={currentUserIdentity.photoURL}
             />
             <View className="ml-4 flex-1">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
                 {currentUserIdentity.displayName}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">

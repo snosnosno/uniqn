@@ -32,7 +32,7 @@ export function NonEmployerView() {
           onPress={() => router.push('/(app)/employer-register')}
           className="min-w-[200px]"
         >
-          <Text className="font-semibold text-white">구인자로 등록하기</Text>
+          <Text className="font-semibold text-surface-dark">구인자로 등록하기</Text>
         </Button>
       </View>
     </SafeAreaView>

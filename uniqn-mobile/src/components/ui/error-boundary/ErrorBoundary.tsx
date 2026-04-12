@@ -180,7 +180,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               accessibilityRole="button"
               accessibilityLabel="다시 시도"
             >
-              <Text className="text-white font-semibold">다시 시도</Text>
+              <Text className="text-surface-dark font-semibold">다시 시도</Text>
             </Pressable>
 
             {fullScreen && (

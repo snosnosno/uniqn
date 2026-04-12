@@ -210,7 +210,7 @@ export function MobileHeader({
               accessibilityRole="button"
               accessibilityLabel="검색 취소"
             >
-              <Text className="font-medium text-primary-600 dark:text-primary-400">취소</Text>
+              <Text className="font-sans-medium text-primary-600 dark:text-primary-400">취소</Text>
             </Pressable>
           </Animated.View>
         ) : (
@@ -240,7 +240,7 @@ export function MobileHeader({
               >
                 {title ? (
                   <Animated.Text
-                    className={`font-semibold ${HEADER_CLASSES.title}`}
+                    className={`font-display-semibold ${HEADER_CLASSES.title}`}
                     numberOfLines={1}
                     style={animatedTitleStyle}
                   >
@@ -251,7 +251,7 @@ export function MobileHeader({
               </View>
               {subtitle ? (
                 <Animated.Text
-                  className={`text-sm ${HEADER_CLASSES.subtitle}`}
+                  className={`text-sm font-sans ${HEADER_CLASSES.subtitle}`}
                   numberOfLines={1}
                   style={animatedSubtitleStyle}
                 >
@@ -302,7 +302,7 @@ export function HeaderAction({ icon, onPress, label, disabled = false, badge }: 
       <Text className="text-xl text-secondary-700 dark:text-secondary-300">{icon}</Text>
       {badge !== undefined && badge > 0 ? (
         <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-error-500 px-1">
-          <Text className="text-xs font-bold text-white">{badge > 99 ? '99+' : badge}</Text>
+          <Text className="text-xs font-sans-bold text-white">{badge > 99 ? '99+' : badge}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -340,9 +340,11 @@ export function LargeHeader({
     >
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className={`text-3xl font-bold ${HEADER_CLASSES.title}`}>{title}</Text>
+          <Text className={`text-3xl font-display-bold ${HEADER_CLASSES.title}`}>{title}</Text>
           {subtitle ? (
-            <Text className={`mt-1 text-base ${HEADER_CLASSES.subtitle}`}>{subtitle}</Text>
+            <Text className={`mt-1 text-base font-sans ${HEADER_CLASSES.subtitle}`}>
+              {subtitle}
+            </Text>
           ) : null}
         </View>
         {rightAction ? <View className="ml-4">{rightAction}</View> : null}

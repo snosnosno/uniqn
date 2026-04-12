@@ -109,7 +109,7 @@ const FilterTab = memo(function FilterTab({
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
-          <Text className="text-xs font-medium text-white">{count}</Text>
+          <Text className="text-xs font-medium text-surface-dark">{count}</Text>
         </View>
       )}
     </Pressable>
@@ -302,7 +302,7 @@ export default function MyPostingsPage() {
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
+          <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
             내 공고 관리
           </Text>
           <Pressable
@@ -313,7 +313,7 @@ export default function MyPostingsPage() {
             accessibilityLabel="새 공고 작성"
           >
             <AddIcon size={18} color="white" />
-            <Text className="text-white font-medium ml-1">새 공고</Text>
+            <Text className="text-surface-dark font-medium ml-1">새 공고</Text>
           </Pressable>
         </View>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">

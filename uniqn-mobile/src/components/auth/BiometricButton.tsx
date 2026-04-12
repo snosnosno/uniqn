@@ -114,7 +114,7 @@ export const BiometricButton = memo(function BiometricButton({
 
   // 텍스트 스타일
   const textStyles = {
-    default: 'text-white',
+    default: 'text-surface-dark',
     outline: 'text-secondary-900 dark:text-secondary-100',
     ghost: 'text-primary-600 dark:text-primary-400',
   };

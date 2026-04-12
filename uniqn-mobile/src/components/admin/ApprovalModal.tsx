@@ -223,7 +223,11 @@ export const ApprovalModal = memo(function ApprovalModal({
                   {isProcessing ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text className="text-white font-medium">{isApprove ? '승인' : '거부'}</Text>
+                    <Text
+                      className={`font-medium ${isApprove ? 'text-surface-dark' : 'text-white'}`}
+                    >
+                      {isApprove ? '승인' : '거부'}
+                    </Text>
                   )}
                 </Button>
               </View>

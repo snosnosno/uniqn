@@ -88,7 +88,7 @@ function MonthNavigator({
       <View className="flex-1 px-3">
         <Text
           testID="schedule-month-title"
-          className="text-lg font-semibold text-secondary-900 dark:text-secondary-100"
+          className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100"
         >
           {formatMonthTitle(year, month)}
         </Text>
@@ -178,7 +178,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         {/* 지원 (applied) */}
         <View className="items-center" accessible accessibilityLabel="지원 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400">지원</Text>
-          <Text className="text-2xl font-bold text-warning-600 dark:text-warning-400">
+          <Text className="text-2xl font-display text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
         </View>
@@ -186,7 +186,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         {/* 확정 (confirmed) */}
         <View className="items-center" accessible accessibilityLabel="확정 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400">확정</Text>
-          <Text className="text-2xl font-bold text-success-600 dark:text-success-400">
+          <Text className="text-2xl font-display text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
         </View>
@@ -194,7 +194,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         {/* 완료 (completed) */}
         <View className="items-center" accessible accessibilityLabel="완료 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400">완료</Text>
-          <Text className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display text-secondary-900 dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
         </View>
@@ -208,7 +208,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         accessibilityLabel="수익 통계"
       >
         <Text className="text-sm text-secondary-500 dark:text-secondary-400">수익</Text>
-        <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+        <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
           {formatCurrency(stats.thisMonthEarnings)}
         </Text>
       </View>

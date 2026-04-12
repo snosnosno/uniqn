@@ -92,7 +92,7 @@ export default function SplashScreen() {
           contentFit="contain"
         />
 
-        <Text className="mt-5 text-lg font-bold tracking-widest text-primary-400">UNIQN</Text>
+        <Text className="mt-5 text-lg font-display tracking-widest text-primary-400">UNIQN</Text>
         <Text className="mt-1 text-sm text-secondary-500">홀덤 스태프 매칭 플랫폼</Text>
 
         <ActivityIndicator

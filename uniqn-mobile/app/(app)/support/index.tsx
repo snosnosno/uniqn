@@ -49,7 +49,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         <View className="flex-row items-center">
           {badge !== undefined && badge > 0 ? (
             <View className="mr-2 min-w-[20px] items-center justify-center rounded-sm bg-primary-500 px-2 py-0.5">
-              <Text className="text-xs font-bold text-white">{badge}</Text>
+              <Text className="text-xs font-bold text-surface-dark">{badge}</Text>
             </View>
           ) : null}
           <ChevronRightIcon size={20} color="#A89C84" />

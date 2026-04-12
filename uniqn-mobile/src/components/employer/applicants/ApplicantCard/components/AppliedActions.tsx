@@ -75,7 +75,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         }`}
       >
         <CheckIcon size={16} color="#fff" />
-        <Text className="ml-1 text-sm font-medium text-white">{confirmButtonText}</Text>
+        <Text className="ml-1 text-sm font-medium text-surface-dark">{confirmButtonText}</Text>
       </Pressable>
     </View>
   );

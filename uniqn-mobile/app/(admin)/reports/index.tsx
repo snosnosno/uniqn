@@ -203,7 +203,7 @@ export default function AdminReportsPage() {
                 <Text
                   className={`text-sm font-medium ${
                     filters.status === option.value
-                      ? 'text-white'
+                      ? 'text-surface-dark'
                       : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
@@ -235,7 +235,7 @@ export default function AdminReportsPage() {
                   <Text
                     className={`text-xs font-medium ${
                       filters.severity === option.value
-                        ? 'text-white'
+                        ? 'text-surface-dark'
                         : 'text-secondary-600 dark:text-secondary-300'
                     }`}
                   >
@@ -267,7 +267,7 @@ export default function AdminReportsPage() {
                   <Text
                     className={`text-xs font-medium ${
                       filters.reporterType === option.value
-                        ? 'text-white'
+                        ? 'text-surface-dark'
                         : 'text-secondary-600 dark:text-secondary-300'
                     }`}
                   >

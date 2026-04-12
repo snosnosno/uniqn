@@ -410,7 +410,7 @@ export function TimeSlotCard({
                   accessibilityLabel="역할 추가"
                 >
                   <PlusIcon size={14} color="#FFFFFF" />
-                  <Text className="ml-1 text-xs font-medium text-white">추가</Text>
+                  <Text className="ml-1 text-xs font-medium text-surface-dark">추가</Text>
                 </Pressable>
               )}
             </View>

@@ -300,7 +300,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   ) : (
                     <>
                       <RefreshIcon size={18} color="#ffffff" />
-                      <Text className="ml-2 text-base font-medium text-white">재제출</Text>
+                      <Text className="ml-2 text-base font-medium text-surface-dark">재제출</Text>
                     </>
                   )}
                 </Pressable>

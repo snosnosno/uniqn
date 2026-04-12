@@ -286,7 +286,7 @@ export default function EmployerRegisterScreen() {
           {isSubmitting ? (
             <Loading size="small" color="#fff" />
           ) : (
-            <Text className="font-semibold text-white">구인자로 등록하기</Text>
+            <Text className="font-semibold text-surface-dark">구인자로 등록하기</Text>
           )}
         </Button>
 

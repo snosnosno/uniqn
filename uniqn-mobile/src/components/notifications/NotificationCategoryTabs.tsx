@@ -99,7 +99,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
             >
               <Text
                 className={`text-sm font-medium ${
-                  isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
+                  isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
                 {option.label}
@@ -111,7 +111,9 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
                     isSelected ? 'bg-white/20' : 'bg-error-500'
                   }`}
                 >
-                  <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-white'}`}>
+                  <Text
+                    className={`text-xs font-bold ${isSelected ? 'text-surface-dark' : 'text-white'}`}
+                  >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Text>
                 </View>

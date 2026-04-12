@@ -190,7 +190,7 @@ export function JobPostingScrollForm({
               accessibilityLabel={isTournament ? '승인 요청' : '공고 등록'}
               testID="job-posting-create-submit"
             >
-              <Text className="text-sm font-semibold text-white">
+              <Text className="text-sm font-semibold text-surface-dark">
                 {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
               </Text>
             </Button>

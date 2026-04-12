@@ -33,7 +33,7 @@ export function TabHeader({
       className="flex-row items-center justify-between px-4 py-3"
       style={{ backgroundColor: headerBackgroundColor }}
     >
-      <Text className="text-xl font-bold" style={{ color: headerTintColor }}>
+      <Text className="text-xl font-display" style={{ color: headerTintColor }}>
         {title}
       </Text>
 
