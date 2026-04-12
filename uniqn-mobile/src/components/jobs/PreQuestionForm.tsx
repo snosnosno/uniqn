@@ -124,11 +124,11 @@ const QuestionItem = memo(function QuestionItem({
     <View className="mb-6">
       {/* 질문 헤더 */}
       <View className="flex-row items-start mb-2">
-        <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white flex-1">
+        <Text className="text-base font-sans-medium text-content-primary dark:text-off-white flex-1">
           {question.question}
           {question.required && <Text className="text-error-500 font-sans"> *</Text>}
         </Text>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2 font-sans">
+        <Text className="text-xs text-content-placeholder ml-2 font-sans">
           {PRE_QUESTION_TYPE_LABELS[question.type]}
         </Text>
       </View>
@@ -142,7 +142,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor={SECONDARY_PALETTE[400]}
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-off-white`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary dark:text-off-white`}
         />
       )}
 
@@ -157,7 +157,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-off-white min-h-[100px]`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary dark:text-off-white min-h-[100px]`}
         />
       )}
 
@@ -184,7 +184,7 @@ const QuestionItem = memo(function QuestionItem({
 
       {/* 글자 수 표시 (textarea) */}
       {question.type === 'textarea' && answer.answer.length > 0 && (
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1 font-sans">
+        <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
           {answer.answer.length}/1000자
         </Text>
       )}
@@ -240,7 +240,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     <View className="bg-white dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
           사전질문
         </Text>
         {requiredCount > 0 && (

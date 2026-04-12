@@ -172,9 +172,7 @@ export function FormSelect<T = string>({
       {/* 레이블 */}
       {label && (
         <View className="flex-row mb-2">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            {label}
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary">{label}</Text>
           {required && <Text className="text-error-600 ml-0.5 font-sans">*</Text>}
         </View>
       )}
@@ -198,7 +196,7 @@ export function FormSelect<T = string>({
         <Text className={`text-base ${getTextStyle()} font-sans`}>
           {selectedOption?.label || placeholder}
         </Text>
-        <Text className="text-secondary-400 dark:text-secondary-500 font-sans">▼</Text>
+        <Text className="text-content-placeholder font-sans">▼</Text>
       </Pressable>
 
       {/* 에러 메시지 */}
@@ -220,13 +218,13 @@ export function FormSelect<T = string>({
         <View className="-mx-5 -mb-5">
           {/* 검색 입력 */}
           {showSearch && (
-            <View className="px-4 py-2 border-b border-secondary-200 dark:border-surface-overlay">
+            <View className="px-4 py-2 border-b border-divider">
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
                 placeholderTextColor={SECONDARY_PALETTE[400]}
-                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base font-sans text-secondary-900 dark:text-off-white"
+                className="px-3 py-2 bg-surface-card dark:bg-surface rounded-lg text-base font-sans text-content-primary dark:text-off-white"
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel="옵션 검색"

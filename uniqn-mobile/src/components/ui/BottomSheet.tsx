@@ -134,8 +134,8 @@ const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
 
         {/* Header */}
         {title && (
-          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-secondary-200 dark:border-surface-overlay">
-            <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white flex-1">
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-divider">
+            <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white flex-1">
               {title}
             </Text>
           </View>
@@ -267,14 +267,14 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         <ContentWrapper style={styles.contentContainer}>
           {/* Header */}
           {(title || showCloseButton) && (
-            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white flex-1">
+            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-divider">
+              <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white flex-1">
                 {title ?? ''}
               </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={onClose}
-                  className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                  className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >

@@ -96,7 +96,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
             </View>
           </View>
           {/* 신고 유형 */}
-          <Text className="font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="font-sans-semibold text-content-primary dark:text-off-white">
             {typeLabel}
           </Text>
         </View>
@@ -106,7 +106,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
       {/* 설명 */}
       <View className="mb-2">
         <Text
-          className="text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+          className="text-sm text-content-muted dark:text-secondary-400 font-sans"
           numberOfLines={2}
         >
           {report.description}
@@ -122,18 +122,13 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
             <Text className="font-sans-medium">{report.targetName}</Text>
           </Text>
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
-          {timeAgo}
-        </Text>
+        <Text className="text-xs text-content-placeholder font-sans">{timeAgo}</Text>
       </View>
 
       {/* 관련 공고 (있는 경우) */}
       {report.jobPostingTitle && (
         <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
-          <Text
-            className="text-xs text-secondary-400 dark:text-secondary-500 font-sans"
-            numberOfLines={1}
-          >
+          <Text className="text-xs text-content-placeholder font-sans" numberOfLines={1}>
             공고: {report.jobPostingTitle}
           </Text>
         </View>

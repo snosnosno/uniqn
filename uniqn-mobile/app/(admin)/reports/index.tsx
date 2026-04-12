@@ -120,7 +120,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
       </>
@@ -137,7 +137,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
           <EmptyState
             title="오류 발생"
             description="신고 목록을 불러오는 데 실패했습니다."
@@ -158,17 +158,17 @@ export default function AdminReportsPage() {
           title: '신고 관리',
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
         {/* 검색바 */}
-        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
-          <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
+        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+          <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
             <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="신고자, 피신고자, 공고명 검색"
               placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="flex-1 ml-2 text-base font-sans text-secondary-900 dark:text-off-white"
+              className="flex-1 ml-2 text-base font-sans text-content-primary dark:text-off-white"
               returnKeyType="search"
               autoCapitalize="none"
               autoCorrect={false}
@@ -184,7 +184,7 @@ export default function AdminReportsPage() {
         </View>
 
         {/* 상태 필터 */}
-        <View className="bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+        <View className="bg-white dark:bg-surface border-b border-divider">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -217,7 +217,7 @@ export default function AdminReportsPage() {
 
         {/* 확장 필터 패널 */}
         {showFilters && (
-          <View className="px-4 py-3 bg-secondary-50 dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+          <View className="px-4 py-3 bg-surface-page border-b border-divider">
             {/* 심각도 필터 */}
             <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
               심각도
@@ -298,7 +298,7 @@ export default function AdminReportsPage() {
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
               <AlertTriangleIcon size={48} color={SECONDARY_PALETTE[400]} />
-              <Text className="text-lg font-sans-medium text-secondary-900 dark:text-off-white mt-4">
+              <Text className="text-lg font-sans-medium text-content-primary dark:text-off-white mt-4">
                 신고 없음
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center font-sans">

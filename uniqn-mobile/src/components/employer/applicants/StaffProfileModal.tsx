@@ -73,7 +73,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
   return (
     <SheetModal visible={visible} onClose={onClose} title="스태프 프로필">
       <View>
-        <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
+        <View className="items-center bg-surface-page py-4 dark:bg-surface">
           {isProfileLoading ? (
             <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
               <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
@@ -88,7 +88,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           )}
 
           <View className="mb-1 flex-row items-center gap-2">
-            <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
+            <Text className="text-xl font-display text-content-primary dark:text-off-white">
               {displayName}
             </Text>
             <Badge variant={CONFIRMED_STAFF_STATUS[staff.status].variant} size="sm" dot>
@@ -102,7 +102,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
         </View>
 
         <View className="border-b border-secondary-100 px-4 py-4 dark:border-surface-overlay">
-          <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-off-white">
             근무 정보
           </Text>
 
@@ -123,7 +123,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
                 근무 시간
               </Text>
               <View className="flex-row items-center">
-                <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+                <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                   {startTimeStr} ~ {endTimeStr}
                 </Text>
                 {isCheckedIn ? (
@@ -147,13 +147,11 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
         {staff.notes ? (
           <View className="px-4 pb-4">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               비고
             </Text>
-            <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
-              <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
-                {staff.notes}
-              </Text>
+            <View className="rounded-lg bg-surface-page p-3 dark:bg-surface">
+              <Text className="text-sm text-content-secondary font-sans">{staff.notes}</Text>
             </View>
           </View>
         ) : null}

@@ -95,7 +95,7 @@ export default function ProfileSetupScreen() {
         <View className="flex-1 p-4">
           {/* 헤더 */}
           <View className="mb-6">
-            <Text className="text-2xl font-display text-secondary-900 dark:text-off-white mb-2">
+            <Text className="text-2xl font-display text-content-primary dark:text-off-white mb-2">
               프로필 설정
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">

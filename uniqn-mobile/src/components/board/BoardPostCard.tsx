@@ -43,11 +43,11 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             {post.isLocked ? <LockIcon size={16} color="#DC2626" /> : null}
           </View>
 
-          <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
             {post.title}
           </Text>
           <Text
-            className="mb-3 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+            className="mb-3 text-sm text-content-muted dark:text-secondary-400 font-sans"
             numberOfLines={2}
           >
             {post.body}

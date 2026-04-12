@@ -40,7 +40,7 @@ interface ReasonSelectProps {
 function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
   return (
     <View className="flex-col gap-2">
-      <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+      <Text className="text-sm font-sans-medium text-content-secondary mb-2">
         탈퇴 사유를 선택해주세요
       </Text>
       {(Object.entries(DELETION_REASONS) as [DeletionReason, string][]).map(([key, label]) => (
@@ -216,7 +216,7 @@ export default function DeleteAccountScreen() {
   const canSubmit = selectedReason && (isAppleUser || password.length >= 8);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -324,7 +324,7 @@ export default function DeleteAccountScreen() {
         title="정말 탈퇴하시겠습니까?"
       >
         <View className="p-4">
-          <Text className="text-secondary-700 dark:text-secondary-300 text-center mb-6 font-sans">
+          <Text className="text-content-secondary text-center mb-6 font-sans">
             회원탈퇴를 요청하면 {DELETION_GRACE_PERIOD_DAYS}일 후{'\n'}
             모든 데이터가 영구 삭제됩니다.
           </Text>
@@ -362,7 +362,7 @@ export default function DeleteAccountScreen() {
         title="Apple 계정 연결 해제"
       >
         <View className="p-4">
-          <Text className="text-secondary-700 dark:text-secondary-300 text-center mb-4 font-sans">
+          <Text className="text-content-secondary text-center mb-4 font-sans">
             Apple 계정 연결 해제에 실패했습니다.{'\n'}
             재시도하시겠습니까?
           </Text>

@@ -65,10 +65,10 @@ export default function BusinessInfoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-4 text-lg font-display text-content-primary dark:text-secondary-100">
             사업자정보
           </Text>
 
@@ -110,7 +110,7 @@ export default function BusinessInfoScreen() {
           </View>
         </Card>
 
-        <Text className="px-2 text-xs leading-5 text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="px-2 text-xs leading-5 text-content-placeholder font-sans">
           사업자정보 확인은 국세청 홈택스(www.hometax.go.kr)에서 가능합니다.
         </Text>
       </ScrollView>

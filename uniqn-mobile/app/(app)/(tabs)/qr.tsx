@@ -73,10 +73,10 @@ export default function QRScreen() {
   const actionLabel = selectedAction === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <View className="bg-white px-4 py-3 dark:bg-surface">
-        <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100">
+        <Text className="text-xl font-display text-content-primary dark:text-secondary-100">
           QR 스캔
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
@@ -140,11 +140,11 @@ export default function QRScreen() {
 
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
-          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface">
+          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-surface-page">
             <ScanIcon size={80} color={SECONDARY_PALETTE[400]} />
           </View>
 
-          <Text className="text-center text-xl font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="text-center text-xl font-display text-content-primary dark:text-secondary-100">
             QR 코드 스캔
           </Text>
 
@@ -170,7 +170,7 @@ export default function QRScreen() {
 
           {/* 안내 문구 */}
           <View className="mt-6 px-4">
-            <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+            <Text className="text-center text-xs text-content-placeholder font-sans">
               QR 코드는 구인자가 현장에서 생성합니다.{'\n'}
               스캔 후 자동으로 출퇴근이 처리됩니다.
             </Text>

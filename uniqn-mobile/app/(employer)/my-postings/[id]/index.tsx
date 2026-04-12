@@ -81,7 +81,7 @@ function ActionCard({
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="mr-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mr-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               {resolvedTitle}
             </Text>
             {badge ? (
@@ -183,7 +183,7 @@ export default function JobPostingDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -191,7 +191,7 @@ export default function JobPostingDetailScreen() {
 
   if (error || !posting || !managementView) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -218,7 +218,7 @@ export default function JobPostingDetailScreen() {
   const questionCount = managementView.questions.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -249,7 +249,7 @@ export default function JobPostingDetailScreen() {
 
             <View className="mb-2 flex-row items-start justify-between">
               <Text
-                className="mr-3 flex-1 text-lg font-display text-secondary-900 dark:text-off-white"
+                className="mr-3 flex-1 text-lg font-display text-content-primary dark:text-off-white"
                 numberOfLines={2}
               >
                 {title}
@@ -279,7 +279,7 @@ export default function JobPostingDetailScreen() {
               <>
                 <View className="mb-3 flex-row items-center">
                   <MapPinIcon size={18} color="#B8962E" />
-                  <Text className="ml-2 text-base text-secondary-700 dark:text-secondary-300 font-sans">
+                  <Text className="ml-2 text-base text-content-secondary font-sans">
                     {locationLabel}
                   </Text>
                 </View>
@@ -287,7 +287,7 @@ export default function JobPostingDetailScreen() {
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
                     <ClockIcon size={18} color="#B8962E" />
-                    <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
+                    <Text className="ml-2 text-base font-sans-medium text-content-secondary">
                       근무 일정
                     </Text>
                   </View>
@@ -310,7 +310,7 @@ export default function JobPostingDetailScreen() {
                 <View className="mb-4">
                   <View className="mb-2 flex-row items-center">
                     <CurrencyDollarIcon size={18} color="#B8962E" />
-                    <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
+                    <Text className="ml-2 text-base font-sans-medium text-content-secondary">
                       급여
                     </Text>
                   </View>
@@ -343,7 +343,7 @@ export default function JobPostingDetailScreen() {
                 {managementView.taxLabel ? (
                   <View className="mb-4 flex-row items-center">
                     <CurrencyDollarIcon size={18} color="#B8962E" />
-                    <Text className="ml-2 text-base text-secondary-700 dark:text-secondary-300 font-sans">
+                    <Text className="ml-2 text-base text-content-secondary font-sans">
                       {managementView.taxLabel}
                     </Text>
                   </View>
@@ -352,7 +352,7 @@ export default function JobPostingDetailScreen() {
                 {questionCount > 0 ? (
                   <View className="mb-4 flex-row items-center">
                     <DocumentIcon size={18} color="#B8962E" />
-                    <Text className="ml-2 text-base text-secondary-700 dark:text-secondary-300 font-sans">
+                    <Text className="ml-2 text-base text-content-secondary font-sans">
                       사전질문 {questionCount}개 설정됨
                     </Text>
                   </View>
@@ -360,7 +360,7 @@ export default function JobPostingDetailScreen() {
               </>
             ) : null}
 
-            <View className="rounded-lg bg-secondary-50 px-3 pb-2 pt-3 dark:bg-surface">
+            <View className="rounded-lg bg-surface-page px-3 pb-2 pt-3 dark:bg-surface">
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-primary-600 dark:text-primary-400">
@@ -394,13 +394,11 @@ export default function JobPostingDetailScreen() {
                 <Text className="mr-1.5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   배정 현황
                 </Text>
-                <Text className="text-base font-sans-bold text-secondary-900 dark:text-off-white">
+                <Text className="text-base font-sans-bold text-content-primary dark:text-off-white">
                   {filledPositions}
                 </Text>
-                <Text className="mx-0.5 text-base text-secondary-400 dark:text-secondary-500 font-sans">
-                  /
-                </Text>
-                <Text className="text-base font-sans-bold text-secondary-600 dark:text-secondary-400">
+                <Text className="mx-0.5 text-base text-content-placeholder font-sans">/</Text>
+                <Text className="text-base font-sans-bold text-content-muted dark:text-secondary-400">
                   {totalPositions}
                 </Text>
                 <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -412,7 +410,7 @@ export default function JobPostingDetailScreen() {
         </View>
 
         <View className="px-4 pb-4 pt-3">
-          <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
             관리
           </Text>
 
@@ -488,11 +486,11 @@ export default function JobPostingDetailScreen() {
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">
-            <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
               공고 내용
             </Text>
             <Card variant="outlined" padding="md">
-              <Text className="text-base leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+              <Text className="text-base leading-6 text-content-secondary font-sans">
                 {String(posting.description)}
               </Text>
             </Card>
@@ -520,13 +518,13 @@ export default function JobPostingDetailScreen() {
                   <Text className="mb-1 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
                     반려 사유
                   </Text>
-                  <Text className="text-base text-secondary-700 dark:text-secondary-300 font-sans">
+                  <Text className="text-base text-content-secondary font-sans">
                     {posting.tournamentConfig.rejectionReason}
                   </Text>
                 </View>
               ) : null}
 
-              <Text className="mb-4 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="mb-4 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 공고 내용을 수정한 뒤 다시 제출하면 재심사가 진행됩니다.
               </Text>
 
@@ -573,7 +571,7 @@ export default function JobPostingDetailScreen() {
               </>
             )}
           </Pressable>
-          <Text className="mt-2 text-center text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="mt-2 text-center text-xs text-content-placeholder font-sans">
             확정된 지원자가 있는 공고는 삭제할 수 없습니다
           </Text>
         </View>

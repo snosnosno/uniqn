@@ -89,7 +89,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
         ${
           isSelected
             ? 'border-2 border-error-500 bg-error-50 dark:bg-error-900/20'
-            : 'border border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface'
+            : 'border border-divider bg-white dark:bg-surface'
         }
       `}
     >
@@ -292,7 +292,7 @@ export function ReportModal({
               )}
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                 {reportTarget.name}
               </Text>
               {mode === 'employer' && staff ? (
@@ -314,7 +314,7 @@ export function ReportModal({
         </Card>
 
         {/* 신고 유형 선택 */}
-        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+        <Text className="text-sm font-sans-medium text-content-secondary mb-2">
           신고 유형 선택 <Text className="text-error-500 font-sans">*</Text>
         </Text>
 
@@ -344,7 +344,7 @@ export function ReportModal({
 
         {/* 상세 설명 */}
         <View className="mb-3">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-1.5">
             상세 설명 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
@@ -357,7 +357,7 @@ export function ReportModal({
             textAlignVertical="top"
             accessibilityLabel="신고 상세 설명"
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
-            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[80px]"
+            className="p-2.5 border border-divider rounded-lg bg-white dark:bg-surface text-content-primary dark:text-off-white min-h-[80px]"
           />
           <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             {description.length}/500자 (최소 10자)

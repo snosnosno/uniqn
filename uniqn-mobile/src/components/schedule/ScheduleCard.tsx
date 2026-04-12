@@ -182,12 +182,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {formatTime(schedule.startTime)}
               </Text>
             </View>
@@ -195,7 +195,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             <View className="mt-2 flex-row flex-wrap items-center">
               <View className="mr-3 flex-row items-center">
                 <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+                <Text className="ml-1.5 text-sm text-content-secondary font-sans">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
               </View>
@@ -203,7 +203,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               {salaryDisplay && (
                 <View className="mr-3 flex-row items-center">
                   <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-                  <Text className="ml-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+                  <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
                     {salaryDisplay}
                   </Text>
                 </View>
@@ -223,12 +223,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {schedule.type === STATUS.SCHEDULE.COMPLETED
                   ? timeDisplayInfo.duration
                   : confirmedTimeDisplay}
@@ -237,7 +237,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
             <View className="mt-2 flex-row items-center">
               <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+              <Text className="ml-1.5 text-sm text-content-secondary font-sans">
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
               </Text>
             </View>

@@ -68,7 +68,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       <View className="mb-2 flex-row items-start justify-between">
         <View className="mr-2 flex-1">
           <Text
-            className="text-base font-sans-semibold text-secondary-900 dark:text-off-white"
+            className="text-base font-sans-semibold text-content-primary dark:text-off-white"
             numberOfLines={1}
           >
             {name}
@@ -105,8 +105,8 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       </View>
 
       <View className="mb-3 flex-row flex-wrap gap-2">
-        <View className="rounded-md bg-secondary-100 px-2.5 py-1 dark:bg-surface">
-          <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+        <View className="rounded-md bg-surface-card px-2.5 py-1 dark:bg-surface">
+          <Text className="text-xs text-content-muted dark:text-secondary-300 font-sans">
             {location}
           </Text>
         </View>
@@ -135,7 +135,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       ) : null}
 
       <View className="flex-row items-center justify-between border-t border-secondary-100 pt-2 dark:border-surface-overlay">
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="text-xs text-content-placeholder font-sans">
           {formatDate(createdAt)} 생성 {usageCount ? `/ ${usageCount}회 사용` : ''}
         </Text>
         <Pressable
@@ -166,7 +166,7 @@ function EmptyState() {
       <Text className="mb-2 text-center text-secondary-500 dark:text-secondary-400 font-sans">
         저장한 템플릿이 없습니다
       </Text>
-      <Text className="text-center text-sm text-secondary-400 dark:text-secondary-500 font-sans">
+      <Text className="text-center text-sm text-content-placeholder font-sans">
         공고 작성 후 템플릿으로 저장해 보세요
       </Text>
     </View>

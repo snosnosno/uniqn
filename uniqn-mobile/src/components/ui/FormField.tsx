@@ -41,9 +41,7 @@ export function FormField({
       {label && (
         <View className="flex-row items-center mb-2">
           {icon && <View className="mr-1.5">{icon}</View>}
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            {label}
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary">{label}</Text>
           {required && <Text className="text-error-600 ml-0.5 font-sans">*</Text>}
         </View>
       )}
@@ -83,7 +81,7 @@ export function FormSection({ title, description, children }: FormSectionProps) 
   return (
     <View className="mb-6">
       {title && (
-        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-1">
+        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-1">
           {title}
         </Text>
       )}

@@ -104,10 +104,10 @@ const RoleCard = React.memo(function RoleCard({
             onChangeText={(text) => onCustomNameChange(roleIndex, text)}
             placeholder="역할명 입력"
             placeholderTextColor={SECONDARY_PALETTE[400]}
-            className="text-sm font-sans text-secondary-900 dark:text-off-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
+            className="text-sm font-sans text-content-primary dark:text-off-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
           />
         ) : (
-          <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+          <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
             {roleName}
           </Text>
         )}
@@ -118,7 +118,7 @@ const RoleCard = React.memo(function RoleCard({
         <Pressable
           onPress={() => onCountChange(roleIndex, -1)}
           disabled={headcount <= 1}
-          className={`w-7 h-7 items-center justify-center bg-secondary-100 dark:bg-surface rounded-l-md ${
+          className={`w-7 h-7 items-center justify-center bg-surface-card dark:bg-surface rounded-l-md ${
             headcount <= 1 ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
@@ -130,11 +130,11 @@ const RoleCard = React.memo(function RoleCard({
         {/* 숫자 탭 → 휠 피커 */}
         <Pressable
           onPress={() => setShowNumberPicker(true)}
-          className="w-12 h-7 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay"
+          className="w-12 h-7 items-center justify-center bg-white dark:bg-surface border-y border-divider"
           accessibilityRole="button"
           accessibilityLabel="인원 선택"
         >
-          <Text className="font-sans-bold text-sm text-secondary-900 dark:text-off-white">
+          <Text className="font-sans-bold text-sm text-content-primary dark:text-off-white">
             {headcount}
           </Text>
         </Pressable>
@@ -142,7 +142,7 @@ const RoleCard = React.memo(function RoleCard({
         <Pressable
           onPress={() => onCountChange(roleIndex, 1)}
           disabled={headcount >= 200}
-          className={`w-7 h-7 items-center justify-center bg-secondary-100 dark:bg-surface rounded-r-md ${
+          className={`w-7 h-7 items-center justify-center bg-surface-card dark:bg-surface rounded-r-md ${
             headcount >= 200 ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
@@ -316,7 +316,7 @@ export function TimeSlotCard({
   const canAddRole = timeSlot.roles.length < MAX_ROLES_PER_SLOT;
 
   return (
-    <View className="p-4 bg-secondary-50 dark:bg-surface/50 rounded-lg border border-secondary-200 dark:border-surface-overlay">
+    <View className="p-4 bg-surface-page dark:bg-surface/50 rounded-lg border border-divider">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-3">
         <Pressable
@@ -330,7 +330,7 @@ export function TimeSlotCard({
           ) : (
             <ChevronDownIcon size={18} color={SECONDARY_PALETTE[500]} />
           )}
-          <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
+          <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">
             시간대 {index + 1}
             {timeSlot.isTimeToBeAnnounced ? ' (시간 미정)' : ` (${timeSlot.startTime || '미설정'})`}
           </Text>
@@ -359,9 +359,7 @@ export function TimeSlotCard({
         <View className="gap-4">
           {/* 시간 미정 토글 */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
-              시간 미정
-            </Text>
+            <Text className="text-sm text-content-secondary font-sans">시간 미정</Text>
             <Switch
               value={timeSlot.isTimeToBeAnnounced}
               onValueChange={handleTimeToBeAnnouncedToggle}
@@ -373,14 +371,14 @@ export function TimeSlotCard({
           {/* 시작시간 입력 또는 미정 설명 */}
           {timeSlot.isTimeToBeAnnounced ? (
             <View>
-              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1">
+              <Text className="text-sm font-sans-medium text-content-secondary mb-1">
                 미정 사유 (선택)
               </Text>
               <TextInput
                 value={timeSlot.tentativeDescription || ''}
                 onChangeText={handleTentativeDescriptionChange}
                 placeholder="예: 토너먼트 진행 상황에 따라 결정"
-                className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white text-sm font-sans"
+                className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-content-primary dark:text-off-white text-sm font-sans"
                 placeholderTextColor={SECONDARY_PALETTE[400]}
                 multiline
                 maxLength={200}
@@ -388,7 +386,7 @@ export function TimeSlotCard({
             </View>
           ) : (
             <View>
-              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1">
+              <Text className="text-sm font-sans-medium text-content-secondary mb-1">
                 시작 시간
               </Text>
               <TimePicker
@@ -400,9 +398,9 @@ export function TimeSlotCard({
           )}
 
           {/* 역할 목록 */}
-          <View className="pt-3 border-t border-secondary-200 dark:border-surface-overlay">
+          <View className="pt-3 border-t border-divider">
             <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+              <Text className="text-sm font-sans-medium text-content-secondary">
                 필요 역할 ({timeSlot.roles.length}/{MAX_ROLES_PER_SLOT})
               </Text>
               {canAddRole && (
@@ -419,7 +417,7 @@ export function TimeSlotCard({
             </View>
 
             {/* 역할 카드 목록 */}
-            <View className="bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay px-3">
+            <View className="bg-white dark:bg-surface rounded-lg border border-divider px-3">
               {timeSlot.roles.map((role, roleIndex) => (
                 <RoleCard
                   key={role.id || roleIndex}

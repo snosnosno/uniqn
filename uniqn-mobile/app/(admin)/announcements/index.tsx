@@ -99,12 +99,12 @@ export default function AdminAnnouncementsPage() {
         }}
       />
 
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
         {/* Status Tabs */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="border-b border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface"
+          className="border-b border-divider bg-white dark:bg-surface"
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
@@ -164,7 +164,7 @@ export default function AdminAnnouncementsPage() {
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <DocumentTextOutlineIcon size={64} color={SECONDARY_PALETTE[400]} />
-            <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 mt-4">
+            <Text className="text-lg font-sans-medium text-content-secondary mt-4">
               공지사항이 없습니다
             </Text>
             <Text className="text-secondary-500 dark:text-secondary-400 text-center mt-2 font-sans">

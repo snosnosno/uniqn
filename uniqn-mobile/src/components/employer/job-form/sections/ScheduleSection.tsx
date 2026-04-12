@@ -186,9 +186,7 @@ const FixedSchedule = memo(function FixedSchedule({
       <View className="mt-4">
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-              출근 시간
-            </Text>
+            <Text className="text-sm font-sans-medium text-content-secondary">출근 시간</Text>
             {!isNegotiable && <Text className="text-sm text-error-500 ml-1 font-sans">*</Text>}
           </View>
           {/* 협의 체크박스 */}
@@ -203,14 +201,14 @@ const FixedSchedule = memo(function FixedSchedule({
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
               협의
             </Text>
           </Pressable>
         </View>
 
         {isNegotiable ? (
-          <View className="p-3 bg-secondary-100 dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay">
+          <View className="p-3 bg-surface-card dark:bg-surface rounded-lg border border-divider">
             <Text className="text-secondary-500 dark:text-secondary-400 text-center font-sans">
               출근 시간은 협의 후 결정됩니다
             </Text>

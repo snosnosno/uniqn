@@ -108,7 +108,7 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -119,9 +119,9 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center px-8">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#ef4444" />
-          <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 mt-4">
+          <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
           <Pressable
@@ -153,7 +153,7 @@ export default function AnnouncementDetailPage() {
         }}
       />
 
-      <ScrollView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <ScrollView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <View className="p-4">
           {/* Header Card */}
           <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
@@ -176,8 +176,8 @@ export default function AnnouncementDetailPage() {
               )}
 
               {/* Category */}
-              <View className="px-2 py-1 rounded bg-secondary-100 dark:bg-surface">
-                <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+              <View className="px-2 py-1 rounded bg-surface-card dark:bg-surface">
+                <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
                   {categoryLabel}
                 </Text>
               </View>
@@ -194,7 +194,7 @@ export default function AnnouncementDetailPage() {
             </View>
 
             {/* Title */}
-            <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-2">
+            <Text className="text-xl font-display text-content-primary dark:text-off-white mb-2">
               {announcement.title}
             </Text>
 
@@ -220,7 +220,7 @@ export default function AnnouncementDetailPage() {
             <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
               내용
             </Text>
-            <Text className="text-base text-secondary-900 dark:text-off-white leading-6 font-sans">
+            <Text className="text-base text-content-primary dark:text-off-white leading-6 font-sans">
               {announcement.content}
             </Text>
           </View>
@@ -288,7 +288,7 @@ export default function AnnouncementDetailPage() {
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 대상
               </Text>
-              <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                 {announcement.targetAudience.type === 'all'
                   ? '전체'
                   : announcement.targetAudience.roles
@@ -313,7 +313,7 @@ export default function AnnouncementDetailPage() {
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 작성일
               </Text>
-              <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                 {formatDate(announcement.createdAt)}
               </Text>
             </View>
@@ -324,7 +324,7 @@ export default function AnnouncementDetailPage() {
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   발행일
                 </Text>
-                <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+                <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                   {formatDate(announcement.publishedAt)}
                 </Text>
               </View>
@@ -335,7 +335,7 @@ export default function AnnouncementDetailPage() {
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 수정일
               </Text>
-              <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                 {formatDate(announcement.updatedAt)}
               </Text>
             </View>

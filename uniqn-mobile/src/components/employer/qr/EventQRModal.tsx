@@ -67,7 +67,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
 
   return (
     <View
-      className="flex-row rounded-lg bg-secondary-100 p-1.5 dark:bg-surface"
+      className="flex-row rounded-lg bg-surface-card p-1.5 dark:bg-surface"
       accessibilityRole="tablist"
       accessibilityLabel="QR 모드"
     >
@@ -146,7 +146,7 @@ function ScopeSelectionPanel({
 }: ScopeSelectionPanelProps) {
   return (
     <View className="mb-5 w-full">
-      <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
         일정 선택
       </Text>
       <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -170,7 +170,7 @@ function ScopeSelectionPanel({
               accessibilityRole="button"
               accessibilityLabel={`${formatDate(scope.date)} ${scope.timeLabel}`}
             >
-              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
                 {formatDate(scope.date)} · {scope.timeLabel}
               </Text>
               <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -237,7 +237,7 @@ function QRRefreshOverlay({ visible }: { visible: boolean }) {
       <Animated.View style={{ transform: [{ rotate }] }}>
         <RefreshIcon size={32} color="#D4AF37" />
       </Animated.View>
-      <Text className="mt-3 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
+      <Text className="mt-3 text-sm font-sans-medium text-content-muted dark:text-secondary-400">
         QR 새로고침 중...
       </Text>
     </Animated.View>
@@ -448,7 +448,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-error-500">
@@ -463,7 +463,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -475,7 +475,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -487,7 +487,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -499,7 +499,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#6366F1" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -520,7 +520,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mb-4 mt-3 text-center font-sans-medium text-error-500">
@@ -549,7 +549,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-secondary-50"
+        className="items-center justify-center rounded-md bg-surface-page"
       >
         <ActivityIndicator size="large" color={modeColor} />
       </View>
@@ -562,7 +562,7 @@ export function EventQRModal({
         <View className="mb-2 flex-row justify-end">
           <Pressable
             onPress={onClose}
-            className="h-10 w-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
+            className="h-10 w-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface"
             accessibilityRole="button"
             accessibilityLabel="닫기"
           >
@@ -573,20 +573,18 @@ export function EventQRModal({
         <View className="items-center pb-4">
           <View className="mb-1 flex-row items-center">
             <QrCodeIcon size={26} color={modeColor} />
-            <Text className="ml-2 text-xl font-display text-secondary-900 dark:text-secondary-100">
+            <Text className="ml-2 text-xl font-display text-content-primary dark:text-secondary-100">
               이벤트 {modeLabel} QR
             </Text>
           </View>
 
           {jobTitle && (
-            <Text className="mb-0.5 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="mb-0.5 text-base font-sans-medium text-content-secondary">
               {jobTitle}
             </Text>
           )}
           {formattedDate ? (
-            <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
-              {formattedDate}
-            </Text>
+            <Text className="text-sm text-content-placeholder font-sans">{formattedDate}</Text>
           ) : null}
           {scopeSubtitle ? (
             <Text className="mb-5 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -604,12 +602,8 @@ export function EventQRModal({
               disabled={isLoading || isRefreshing}
             />
           ) : selectedScope ? (
-            <Card
-              variant="filled"
-              padding="sm"
-              className="mb-5 w-full bg-secondary-50 dark:bg-surface"
-            >
-              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+            <Card variant="filled" padding="sm" className="mb-5 w-full bg-surface-page">
+              <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
                 선택한 슬롯
               </Text>
               <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -644,12 +638,12 @@ export function EventQRModal({
               <Pressable
                 onPress={handleRefresh}
                 disabled={isLoading || isRefreshing || !selectedScope}
-                className={`flex-row items-center rounded-md bg-secondary-100 px-4 py-2.5 dark:bg-surface ${
+                className={`flex-row items-center rounded-md bg-surface-card px-4 py-2.5 dark:bg-surface ${
                   isRefreshing ? 'opacity-50' : 'active:opacity-70'
                 }`}
               >
                 <RefreshIcon size={18} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-2 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
+                <Text className="ml-2 text-sm font-sans-medium text-content-muted dark:text-secondary-400">
                   새로고침
                 </Text>
               </Pressable>
@@ -683,7 +677,7 @@ export function EventQRModal({
 
           <View className="mt-3 flex-row items-start px-1">
             <AlertCircleIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1.5 flex-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+            <Text className="ml-1.5 flex-1 text-xs text-content-placeholder font-sans">
               QR 코드는 3분 동안 유효하며, 이 모달이 열려 있는 동안 자동으로 갱신됩니다.
             </Text>
           </View>

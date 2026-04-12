@@ -92,7 +92,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
   if (!data || data.length === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-4">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-4">
           {title}
         </Text>
         <View className="h-[120px] items-center justify-center">
@@ -108,7 +108,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {title}
         </Text>
         <View className="px-2.5 py-1 rounded-sm" style={{ backgroundColor: `${color}20` }}>
@@ -121,11 +121,11 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
 
       {/* 요약 통계 */}
       <View className="flex-row mb-4 gap-2">
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-elevated rounded-lg p-3">
+        <View className="flex-1 bg-surface-page dark:bg-surface-elevated rounded-lg p-3">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             일평균
           </Text>
-          <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
+          <Text className="text-lg font-display text-content-primary dark:text-off-white">
             {stats.average.toLocaleString()}
             {suffix}
           </Text>
@@ -177,14 +177,14 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
                 >
                   {formatDate(item.date)}
                 </Text>
-                <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+                <Text className="text-xs text-content-placeholder font-sans">
                   ({getDayOfWeek(item.date)})
                 </Text>
               </View>
 
               {/* 바 그래프 */}
               <View className="flex-1 mx-3">
-                <View className="h-2 bg-secondary-100 dark:bg-surface-overlay rounded-sm overflow-hidden">
+                <View className="h-2 bg-surface-card dark:bg-surface-overlay rounded-sm overflow-hidden">
                   <View
                     className="h-full rounded-sm"
                     style={{

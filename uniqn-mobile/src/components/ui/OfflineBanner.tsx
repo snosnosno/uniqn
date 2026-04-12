@@ -109,11 +109,11 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               <WifiOff size={40} color="#DC2626" />
             </View>
 
-            <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
+            <Text className="text-xl font-display text-content-primary dark:text-off-white text-center mb-2">
               연결 끊김
             </Text>
 
-            <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 font-sans">
+            <Text className="text-content-muted dark:text-secondary-400 text-center mb-6 font-sans">
               {message}
             </Text>
 

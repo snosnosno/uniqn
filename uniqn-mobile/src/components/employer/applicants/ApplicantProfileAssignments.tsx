@@ -70,7 +70,7 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
   return (
     <View className="px-4 pb-4">
       <View className="rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 text-sm font-sans-medium text-content-primary dark:text-off-white">
           지원 일정
         </Text>
         {groupedByDate.map((item, index) => (
@@ -85,13 +85,13 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
             {item.slots.map((slot, slotIndex) => (
               <View key={slotIndex} className="mb-1 ml-6 flex-row items-center">
                 <ClockIcon size={12} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+                <Text className="ml-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
                   {slot.timeSlot}
                 </Text>
                 <View className="ml-2">
                   <BriefcaseIcon size={12} color={SECONDARY_PALETTE[500]} />
                 </View>
-                <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+                <Text className="ml-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
                   {slot.roles.join(', ')}
                 </Text>
               </View>

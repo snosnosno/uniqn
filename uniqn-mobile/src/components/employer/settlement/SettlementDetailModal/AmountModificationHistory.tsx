@@ -60,7 +60,7 @@ export function AmountModificationHistory({
       >
         <View className="flex-row items-center">
           <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             금액 수정 이력
           </Text>
           <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-sm">
@@ -77,7 +77,7 @@ export function AmountModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
+        <View className="mt-3 bg-surface-page rounded-lg p-3">
           {settlementModificationHistory.map((mod, idx) => {
             const modifiedAt = parseTimestamp(mod.modifiedAt);
             return (
@@ -91,7 +91,7 @@ export function AmountModificationHistory({
                   </Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+                  <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                     {mod.reason || '금액 수정'}
                   </Text>
                   {modifiedAt && (
@@ -100,20 +100,20 @@ export function AmountModificationHistory({
                     </Text>
                   )}
                   {/* 변경 내용 표시 */}
-                  <View className="mt-1.5 bg-secondary-100 dark:bg-surface rounded px-2 py-1.5">
+                  <View className="mt-1.5 bg-surface-card dark:bg-surface rounded px-2 py-1.5">
                     {mod.newSalaryInfo && (
-                      <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+                      <Text className="text-xs text-content-muted dark:text-secondary-300 font-sans">
                         • 급여: {mod.previousSalaryInfo?.amount?.toLocaleString() || '-'}원 →{' '}
                         {mod.newSalaryInfo.amount.toLocaleString()}원
                       </Text>
                     )}
                     {mod.newAllowances !== null && mod.newAllowances !== undefined && (
-                      <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+                      <Text className="text-xs text-content-muted dark:text-secondary-300 font-sans">
                         • 수당 변경
                       </Text>
                     )}
                     {mod.newTaxSettings && (
-                      <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+                      <Text className="text-xs text-content-muted dark:text-secondary-300 font-sans">
                         • 세금: {mod.previousTaxSettings?.type || 'none'} →{' '}
                         {mod.newTaxSettings.type}
                       </Text>

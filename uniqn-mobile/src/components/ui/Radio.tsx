@@ -96,7 +96,7 @@ const RadioItem = memo(function RadioItem({
   // 외부 원 스타일 결정
   const getOuterStyle = () => {
     if (isDisabled) {
-      return 'border-secondary-300 dark:border-surface-overlay bg-secondary-100 dark:bg-surface';
+      return 'border-secondary-300 dark:border-surface-overlay bg-surface-card dark:bg-surface';
     }
     if (error) {
       return 'border-error-500';
@@ -215,7 +215,7 @@ export const Radio = memo(function Radio({
       testID={testID}
     >
       {label && (
-        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
           {label}
         </Text>
       )}

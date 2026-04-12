@@ -116,7 +116,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           <View className="flex-row items-center flex-1">
             <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                 {displayName}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -161,10 +161,10 @@ export const SettlementCard = React.memo(function SettlementCard({
           accessibilityRole="button"
           accessibilityLabel="정산 상세보기"
           accessibilityHint="정산 내역을 자세히 확인합니다"
-          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
+          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
         >
           <ChevronRightIcon size={16} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-1 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
+          <Text className="ml-1 text-sm font-sans-medium text-content-muted dark:text-secondary-400">
             상세보기
           </Text>
         </Pressable>

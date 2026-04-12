@@ -41,7 +41,7 @@ export const JobPostingCard = memo(function JobPostingCard({
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
               <UsersIcon size={14} color="#B8962E" />
-              <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
                 지원자 {posting.stats?.totalApplicants ?? 0}
               </Text>
             </View>
@@ -71,13 +71,13 @@ export const JobPostingCard = memo(function JobPostingCard({
                 <Pressable
                   onPress={() => onClose(posting.id)}
                   disabled={isClosing}
-                  className="rounded-md bg-secondary-100 px-3 py-1.5 active:opacity-70 dark:bg-surface"
+                  className="rounded-md bg-surface-card px-3 py-1.5 active:opacity-70 dark:bg-surface"
                   accessibilityLabel={`${posting.title} 공고 마감하기`}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: isClosing }}
                   testID={`employer-close-posting-${posting.id}`}
                 >
-                  <Text className="text-xs font-sans-medium text-secondary-700 dark:text-secondary-300">
+                  <Text className="text-xs font-sans-medium text-content-secondary">
                     {isClosing ? '처리중...' : '마감하기'}
                   </Text>
                 </Pressable>

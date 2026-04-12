@@ -101,7 +101,7 @@ function AccordionSection({
         className="flex-row items-center justify-between px-4 py-4 active:bg-secondary-50 dark:active:bg-secondary-800"
       >
         <View className="flex-1">
-          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
             {title}
           </Text>
           {subtitle && (
@@ -139,7 +139,7 @@ function RoleSalaryItem({
   return (
     <View className="mb-4 pb-4 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 last:mb-0 last:pb-0">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
           {getRoleLabel(role)}
         </Text>
         {showApplyButton && (
@@ -266,13 +266,11 @@ export function SettlementSettingsModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-4 rounded-md bg-secondary-100 dark:bg-surface ${
+        className={`flex-1 py-4 rounded-md bg-surface-card dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 text-center">
-          취소
-        </Text>
+        <Text className="text-lg font-sans-medium text-content-secondary text-center">취소</Text>
       </Pressable>
       <Pressable
         onPress={handleSave}

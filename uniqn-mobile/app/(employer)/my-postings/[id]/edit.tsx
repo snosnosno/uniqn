@@ -184,7 +184,7 @@ export default function EditJobPostingScreen() {
 
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -197,9 +197,9 @@ export default function EditJobPostingScreen() {
 
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
-          <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
           </Text>
           <Text className="mb-4 text-center text-secondary-500 dark:text-secondary-400 font-sans">
@@ -214,7 +214,7 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -258,7 +258,7 @@ export default function EditJobPostingScreen() {
               errorCount={getErrorCount(errors.schedule)}
             >
               {hasConfirmedApplicants ? (
-                <View className="rounded-lg bg-secondary-100 p-4 dark:bg-surface">
+                <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
                   <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
                     확정된 지원자가 있어 일정은 수정할 수 없습니다.
                   </Text>
@@ -288,7 +288,7 @@ export default function EditJobPostingScreen() {
                 errorCount={getErrorCount(errors.roles)}
               >
                 {hasConfirmedApplicants ? (
-                  <View className="rounded-lg bg-secondary-100 p-4 dark:bg-surface">
+                  <View className="rounded-lg bg-surface-card p-4 dark:bg-surface">
                     <Text className="text-center text-secondary-500 dark:text-secondary-400 font-sans">
                       확정된 지원자가 있어 역할 정보는 수정할 수 없습니다.
                     </Text>

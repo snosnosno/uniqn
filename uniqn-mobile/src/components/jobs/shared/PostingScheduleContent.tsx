@@ -19,28 +19,26 @@ export function PostingScheduleContent({
   if (schedule.variant === 'fixed') {
     return display === 'card' ? (
       <View className="py-1">
-        <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+        <Text className="text-sm text-content-secondary font-sans">
           {schedule.fixed.daysLabel} 출근
         </Text>
-        <Text className="mt-0.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+        <Text className="mt-0.5 text-sm text-content-secondary font-sans">
           출근시간 {schedule.fixed.timeLabel}
         </Text>
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
           {schedule.fixed.daysLabel}
         </Text>
-        <Text className="mt-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mt-2 text-sm font-sans-medium text-content-secondary">
           {schedule.fixed.timeLabel}
         </Text>
 
         {schedule.fixed.roles.length > 0 ? (
           <View className="mt-3">
             <View className="mb-1 flex-row items-center">
-              <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-                모집 인원
-              </Text>
+              <Text className="text-sm font-sans-medium text-content-secondary">모집 인원</Text>
               {showFilledCount ? (
                 <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {schedule.fixed.filledCount}/{schedule.fixed.totalCount}명
@@ -61,21 +59,19 @@ export function PostingScheduleContent({
   if (schedule.variant === 'legacy') {
     return display === 'card' ? (
       <View className="mb-2">
-        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm font-sans-medium text-content-secondary">
           {schedule.dateLabel}
         </Text>
-        <Text className="ml-5 mt-1 text-sm text-secondary-900 dark:text-secondary-100 font-sans">
+        <Text className="ml-5 mt-1 text-sm text-content-primary dark:text-secondary-100 font-sans">
           {schedule.timeLabel}
         </Text>
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
           {schedule.dateLabel}
         </Text>
-        <Text className="mt-2 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
-          {schedule.timeLabel}
-        </Text>
+        <Text className="mt-2 text-sm text-content-secondary font-sans">{schedule.timeLabel}</Text>
       </View>
     );
   }
@@ -92,14 +88,14 @@ export function PostingScheduleContent({
         <View
           key={section.key}
           className={
-            display === 'card' ? 'mb-2' : 'mb-3 rounded-lg bg-secondary-50 p-3 dark:bg-surface'
+            display === 'card' ? 'mb-2' : 'mb-3 rounded-lg bg-surface-page p-3 dark:bg-surface'
           }
         >
           <Text
             className={
               display === 'card'
-                ? 'text-sm font-sans-medium text-secondary-700 dark:text-secondary-300'
-                : 'text-sm font-sans-semibold text-secondary-900 dark:text-off-white'
+                ? 'text-sm font-sans-medium text-content-secondary dark:text-secondary-300'
+                : 'text-sm font-sans-semibold text-content-primary dark:text-off-white'
             }
           >
             {section.label}
@@ -123,7 +119,7 @@ export function PostingScheduleContent({
                 ))
               ) : (
                 <>
-                  <Text className="mb-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+                  <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
                     {slot.timeLabel}
                   </Text>
                   <View className="ml-4 flex-row flex-wrap">

@@ -39,7 +39,7 @@ function FixedRoleSelector({
 }) {
   return (
     <View className="gap-3">
-      <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+      <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
         지원 역할
       </Text>
       {options.map((option) => {
@@ -220,14 +220,14 @@ export function ApplicationForm({
       fullHeight
     >
       <View className="px-4">
-        <View className="mb-6 rounded-lg bg-secondary-50 p-4 dark:bg-surface">
+        <View className="mb-6 rounded-lg bg-surface-page p-4 dark:bg-surface">
           {job.postingType && job.postingType !== 'regular' && (
             <View className="mb-2">
               <PostingTypeBadge type={job.postingType as PostingType} size="sm" />
             </View>
           )}
 
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             {job.title}
           </Text>
           <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -285,8 +285,8 @@ export function ApplicationForm({
         )}
 
         <View className="mb-6">
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
-            자기소개 <Text className="text-secondary-400 font-sans">(선택)</Text>
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            자기소개 <Text className="text-content-placeholder font-sans">(선택)</Text>
           </Text>
           <TextInput
             value={message}
@@ -297,15 +297,15 @@ export function ApplicationForm({
             numberOfLines={4}
             maxLength={200}
             editable={!isSubmitting}
-            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base font-sans text-secondary-900 dark:bg-surface dark:text-off-white"
+            className="min-h-[120px] rounded-lg bg-surface-page p-4 text-base font-sans text-content-primary dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
-          <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="mt-1 text-right text-xs text-content-placeholder font-sans">
             {message.length}/200
           </Text>
         </View>
 
-        <View className="mb-6 rounded-lg bg-secondary-50 p-4 dark:bg-surface">
+        <View className="mb-6 rounded-lg bg-surface-page p-4 dark:bg-surface">
           <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
             지원 후에는 구인자가 지원서를 확인합니다.
             {'\n'}

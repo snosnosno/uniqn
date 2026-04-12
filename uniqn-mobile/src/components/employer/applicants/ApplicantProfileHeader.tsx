@@ -42,7 +42,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   const metaText = [roleLabel, appliedTimeAgo].filter(Boolean).join(' · ');
 
   return (
-    <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
+    <View className="items-center bg-surface-page py-4 dark:bg-surface">
       {isProfileLoading ? (
         <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
           <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
@@ -57,7 +57,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
       )}
 
       <View className="mb-1 flex-row items-center gap-2">
-        <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
+        <Text className="text-xl font-display text-content-primary dark:text-off-white">
           {displayName}
         </Text>
         <Badge variant={STATUS_BADGE_VARIANT[applicant.status]} size="sm" dot>

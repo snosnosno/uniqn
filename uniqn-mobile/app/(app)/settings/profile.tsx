@@ -37,7 +37,7 @@ export default function ProfileEditScreen() {
   // profile이 로드될 때까지 로딩 표시
   if (isLoading || !profile) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <Loading />
       </SafeAreaView>
     );
@@ -206,7 +206,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -240,8 +240,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이름
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {profile.name ?? '-'}
                 </Text>
               </View>
@@ -252,12 +252,12 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이메일
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {profile.email ?? user?.email ?? '-'}
                 </Text>
                 {(profile.email ?? user?.email ?? '').endsWith('@privaterelay.apple.com') && (
-                  <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
+                  <Text className="text-xs text-content-placeholder mt-1 font-sans">
                     (Apple 비공개 이메일)
                   </Text>
                 )}
@@ -269,8 +269,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 전화번호
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {profile.phone ?? '-'}
                 </Text>
               </View>
@@ -281,8 +281,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {formatBirthDate(profile.birthDate)}
                 </Text>
               </View>
@@ -293,8 +293,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 성별
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {profile.gender === 'male' ? '남성' : profile.gender === 'female' ? '여성' : '-'}
                 </Text>
               </View>
@@ -319,7 +319,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                   <View className="flex-row items-center">
                     <View className="flex-1">
                       <TextInput
-                        className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                        className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                           errors.nickname
                             ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                             : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -361,7 +361,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 name="region"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                    className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                       errors.region
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                         : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -393,7 +393,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 name="experienceYears"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                    className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                       errors.experienceYears
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                         : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -428,7 +428,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 name="career"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                    className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                       errors.career
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                         : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -463,7 +463,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 name="note"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                    className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                       errors.note
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                         : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -491,8 +491,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 역할
               </Text>
-              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-secondary-600 dark:text-secondary-300 font-sans">
+              <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface">
+                <Text className="text-content-muted dark:text-secondary-300 font-sans">
                   {profile.role === 'admin'
                     ? '관리자'
                     : profile.role === 'employer'

@@ -180,7 +180,7 @@ export const TimePicker = memo(function TimePicker({
   const getInputStyle = () => {
     const base = 'flex-row items-center px-4 py-3 rounded-lg border-2';
     if (disabled) {
-      return `${base} bg-secondary-100 dark:bg-surface border-secondary-200 dark:border-surface-overlay`;
+      return `${base} bg-surface-card dark:bg-surface border-secondary-200 dark:border-surface-overlay`;
     }
     if (error) {
       return `${base} bg-white dark:bg-surface border-error-500`;
@@ -213,7 +213,7 @@ export const TimePicker = memo(function TimePicker({
     <View className={className} testID={testID}>
       {/* 레이블 */}
       {label && (
-        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
           {label}
         </Text>
       )}
@@ -272,8 +272,8 @@ export const TimePicker = memo(function TimePicker({
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
           <View className="bg-white dark:bg-surface rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
+              <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
                 출근 시간 선택
               </Text>
               <Pressable

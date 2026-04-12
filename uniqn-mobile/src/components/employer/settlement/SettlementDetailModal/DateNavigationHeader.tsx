@@ -56,7 +56,7 @@ export function DateNavigationHeader({
   isDark,
 }: DateNavigationHeaderProps) {
   return (
-    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-secondary-50 dark:bg-surface rounded-lg">
+    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-surface-page rounded-lg">
       <Pressable
         onPress={onPrevDate}
         disabled={!canGoPrev}
@@ -72,7 +72,7 @@ export function DateNavigationHeader({
       </Pressable>
 
       <View className="flex-1 items-center">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {formatDate(parseTimestamp(workLogDate) ?? workLogDate)}
         </Text>
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">

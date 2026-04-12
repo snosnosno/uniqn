@@ -43,7 +43,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
       <View className="flex-row items-start justify-between">
         <View className="flex-1 mr-3">
           <Text
-            className="text-base font-sans-semibold text-secondary-900 dark:text-off-white"
+            className="text-base font-sans-semibold text-content-primary dark:text-off-white"
             numberOfLines={1}
           >
             {item.jobPostingTitle}
@@ -73,7 +73,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
         </View>
       </View>
       <View className="mt-3 flex-row items-center justify-between">
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="text-xs text-content-placeholder font-sans">
           근무 완료 후 {REVIEW_DEADLINE_DAYS}일 이내 평가 가능
         </Text>
         <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -103,7 +103,7 @@ export default function PendingReviewsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {isLoading ? (
           <View>

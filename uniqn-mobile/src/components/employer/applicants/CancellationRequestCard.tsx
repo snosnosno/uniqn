@@ -124,7 +124,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
-              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                 {displayName}
               </Text>
               <Badge
@@ -163,11 +163,11 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         )}
 
         {/* 공고 정보 */}
-        <View className="bg-secondary-50 dark:bg-surface rounded-lg px-3 py-2 mb-3">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <View className="bg-surface-page rounded-lg px-3 py-2 mb-3">
+          <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="text-xs text-content-placeholder font-sans">
             {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
           </Text>
         </View>
@@ -213,7 +213,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               disabled={isProcessing}
               className={`
                 flex-1 flex-row items-center justify-center py-2 mr-2
-                rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70
+                rounded-lg bg-surface-card dark:bg-surface active:opacity-70
                 ${isProcessing ? 'opacity-50' : ''}
               `}
             >
@@ -262,10 +262,10 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             multiline
             numberOfLines={3}
             maxLength={200}
-            className="bg-secondary-50 dark:bg-surface rounded-lg p-3 text-secondary-900 dark:text-off-white text-base font-sans min-h-[80px] mb-4"
+            className="bg-surface-page rounded-lg p-3 text-content-primary dark:text-off-white text-base font-sans min-h-[80px] mb-4"
             textAlignVertical="top"
           />
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mb-4 font-sans">
+          <Text className="text-xs text-content-placeholder text-right mb-4 font-sans">
             {rejectionReason.length}/200
           </Text>
 

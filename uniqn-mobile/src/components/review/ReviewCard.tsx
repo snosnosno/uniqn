@@ -49,16 +49,11 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
             </Text>
           )}
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
-          {formattedDate}
-        </Text>
+        <Text className="text-xs text-content-placeholder font-sans">{formattedDate}</Text>
       </View>
 
       {/* 공고 정보 */}
-      <Text
-        className="mb-2 text-sm text-secondary-700 dark:text-secondary-300 font-sans"
-        numberOfLines={1}
-      >
+      <Text className="mb-2 text-sm text-content-secondary font-sans" numberOfLines={1}>
         {review.jobPostingTitle}
       </Text>
 
@@ -67,9 +62,9 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
         {review.tags.map((tagKey) => (
           <View
             key={tagKey}
-            className="rounded-sm bg-secondary-100 px-2.5 py-1 dark:bg-secondary-700"
+            className="rounded-sm bg-surface-card px-2.5 py-1 dark:bg-secondary-700"
           >
-            <Text className="text-xs text-secondary-600 dark:text-secondary-300 font-sans">
+            <Text className="text-xs text-content-muted dark:text-secondary-300 font-sans">
               {tagMap.get(tagKey) ?? tagKey}
             </Text>
           </View>
@@ -78,7 +73,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
 
       {/* 코멘트 */}
       {review.comment && (
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
           {'\u201C'}
           {review.comment}
           {'\u201D'}
@@ -87,7 +82,7 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
 
       {/* 작성자 (showReviewer가 true일 때) */}
       {showReviewer && (
-        <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="mt-2 text-xs text-content-placeholder font-sans">
           {review.reviewerName}님의 평가
         </Text>
       )}

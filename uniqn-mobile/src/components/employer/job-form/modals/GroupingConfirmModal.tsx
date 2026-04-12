@@ -83,7 +83,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           </Text>
         </View>
 
-        <Text className="mb-4 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <Text className="mb-4 text-sm text-content-muted dark:text-secondary-400 font-sans">
           날짜별 요구사항을 어떻게 관리할까요?
         </Text>
 
@@ -92,7 +92,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`mb-3 rounded-md border-2 p-4 ${
             selectedOption === 'group'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-secondary-200 bg-secondary-50 dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay dark:bg-surface-dark'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'group' }}
@@ -132,7 +132,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`rounded-md border-2 p-4 ${
             selectedOption === 'individual'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-secondary-200 bg-secondary-50 dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay dark:bg-surface-dark'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'individual' }}
@@ -169,7 +169,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             accessibilityRole="button"
             accessibilityLabel="취소"
           >
-            <Text className="text-center text-base font-sans-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="text-center text-base font-sans-semibold text-content-secondary">
               취소
             </Text>
           </Pressable>

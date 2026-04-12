@@ -40,7 +40,7 @@ export default function AdminInquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
         <ActivityIndicator size="large" color="#D4AF37" />
       </SafeAreaView>
     );
@@ -48,7 +48,7 @@ export default function AdminInquiryDetailScreen() {
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
         <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
           문의를 찾을 수 없습니다
         </Text>
@@ -60,7 +60,7 @@ export default function AdminInquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
@@ -69,7 +69,7 @@ export default function AdminInquiryDetailScreen() {
           </Text>
           <View className="flex-row items-center justify-between">
             <View>
-              <Text className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100">
+              <Text className="text-base font-sans-medium text-content-primary dark:text-secondary-100">
                 {inquiry.userName}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -86,19 +86,17 @@ export default function AdminInquiryDetailScreen() {
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               {INQUIRY_CATEGORY_LABELS[inquiry.category]}
             </Text>
-            <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
+            <Text className="text-sm text-content-placeholder font-sans">
               {createdDate ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
             </Text>
           </View>
 
-          <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-secondary-100">
             {inquiry.subject}
           </Text>
 
-          <View className="rounded-lg bg-secondary-50 p-4 dark:bg-surface/50">
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
-              {inquiry.message}
-            </Text>
+          <View className="rounded-lg bg-surface-page p-4 dark:bg-surface/50">
+            <Text className="leading-6 text-content-secondary font-sans">{inquiry.message}</Text>
           </View>
 
           {/* 첨부파일 */}
@@ -110,9 +108,9 @@ export default function AdminInquiryDetailScreen() {
               {inquiry.attachments.map((attachment, index) => (
                 <View
                   key={index}
-                  className="mb-1 rounded-lg bg-secondary-100 px-3 py-2 dark:bg-surface"
+                  className="mb-1 rounded-lg bg-surface-card px-3 py-2 dark:bg-surface"
                 >
-                  <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+                  <Text className="text-sm text-content-secondary font-sans">
                     {attachment.name}
                   </Text>
                 </View>
@@ -127,11 +125,11 @@ export default function AdminInquiryDetailScreen() {
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View className="mr-2 h-2 w-2 rounded-sm bg-success-500" />
-                <Text className="font-sans-medium text-secondary-900 dark:text-secondary-100">
+                <Text className="font-sans-medium text-content-primary dark:text-secondary-100">
                   답변 완료
                 </Text>
               </View>
-              <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
+              <Text className="text-sm text-content-placeholder font-sans">
                 {respondedDate ? format(respondedDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
               </Text>
             </View>
@@ -143,9 +141,7 @@ export default function AdminInquiryDetailScreen() {
             )}
 
             <View className="rounded-lg bg-success-50 p-4 dark:bg-success-900/20">
-              <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
-                {inquiry.response}
-              </Text>
+              <Text className="leading-6 text-content-secondary font-sans">{inquiry.response}</Text>
             </View>
           </Card>
         )}

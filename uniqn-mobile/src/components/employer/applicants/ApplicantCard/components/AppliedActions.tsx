@@ -56,7 +56,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         accessibilityRole="button"
         accessibilityLabel="지원 거절"
         accessibilityHint="지원자를 거절합니다"
-        className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
+        className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
       >
         <XMarkIcon size={16} color="#DC2626" />
         <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">

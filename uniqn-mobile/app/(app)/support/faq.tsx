@@ -24,7 +24,7 @@ export default function FAQScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       {/* 카테고리 탭 */}
       <FAQCategoryTabs
         selectedCategory={selectedCategory}

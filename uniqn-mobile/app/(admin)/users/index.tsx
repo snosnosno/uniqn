@@ -103,7 +103,7 @@ function UserCard({ user, onPress }: UserCardProps) {
 
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mr-2">
+          <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mr-2">
             {user.name}
           </Text>
           <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
@@ -114,7 +114,7 @@ function UserCard({ user, onPress }: UserCardProps) {
           {user.email}
         </Text>
         <View className="flex-row items-center">
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="text-xs text-content-placeholder font-sans">
             가입일: {formatDate(user.createdAt)}
           </Text>
           {!user.isActive && (
@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
 
   if (isLoading && !data) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           사용자 목록을 불러오는 중...
@@ -199,7 +199,7 @@ export default function AdminUsersPage() {
 
   if (error) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="사용자 목록을 불러오는 데 실패했습니다."
@@ -214,23 +214,23 @@ export default function AdminUsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
-        <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
+    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+        <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
           <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
             placeholderTextColor={SECONDARY_PALETTE[400]}
-            className="flex-1 ml-2 text-base font-sans text-secondary-900 dark:text-off-white"
+            className="flex-1 ml-2 text-base font-sans text-content-primary dark:text-off-white"
             autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
       </View>
 
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {ROLE_OPTIONS.map((option) => (
             <RoleChip
@@ -275,7 +275,7 @@ export default function AdminUsersPage() {
             ))}
             {data && (
               <View className="py-4 items-center">
-                <Text className="text-sm text-secondary-400 dark:text-secondary-500 font-sans">
+                <Text className="text-sm text-content-placeholder font-sans">
                   {data.page} / {data.totalPages} 페이지
                 </Text>
                 {data.hasNextPage && (

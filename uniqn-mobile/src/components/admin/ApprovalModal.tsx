@@ -119,7 +119,7 @@ export const ApprovalModal = memo(function ApprovalModal({
             onPress={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between p-4 border-b border-secondary-200 dark:border-surface-overlay">
+            <View className="flex-row items-center justify-between p-4 border-b border-divider">
               <Text
                 className={`text-lg font-display-semibold ${
                   isApprove
@@ -142,12 +142,12 @@ export const ApprovalModal = memo(function ApprovalModal({
 
             {/* 본문 */}
             <View className="p-4">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-300 mb-2 font-sans">
+              <Text className="text-sm text-content-muted dark:text-secondary-300 mb-2 font-sans">
                 다음 공고를 {isApprove ? '승인' : '거부'}하시겠습니까?
               </Text>
-              <View className="bg-secondary-50 dark:bg-surface rounded-lg p-3 mb-4">
+              <View className="bg-surface-page rounded-lg p-3 mb-4">
                 <Text
-                  className="text-sm font-sans-medium text-secondary-900 dark:text-secondary-100"
+                  className="text-sm font-sans-medium text-content-primary dark:text-secondary-100"
                   numberOfLines={2}
                 >
                   {postingTitle}
@@ -157,7 +157,7 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 거부 사유 입력 */}
               {!isApprove && (
                 <View className="mb-4">
-                  <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200 mb-2">
+                  <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-200 mb-2">
                     거부 사유 <Text className="text-error-500 font-sans">*</Text>
                   </Text>
                   <TextInput
@@ -169,7 +169,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     numberOfLines={4}
                     editable={!isProcessing}
                     textAlignVertical="top"
-                    className="border border-secondary-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-secondary-900 dark:text-secondary-100 min-h-[100px]"
+                    className="border border-secondary-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-content-primary dark:text-secondary-100 min-h-[100px]"
                     accessibilityLabel="거부 사유 입력"
                     accessibilityHint="최소 10자 이상 입력해주세요"
                   />
@@ -210,7 +210,7 @@ export const ApprovalModal = memo(function ApprovalModal({
             </View>
 
             {/* 버튼 */}
-            <View className="flex-row gap-3 p-4 border-t border-secondary-200 dark:border-surface-overlay">
+            <View className="flex-row gap-3 p-4 border-t border-divider">
               <View className="flex-1">
                 <Button variant="outline" onPress={handleCancel} disabled={isProcessing} fullWidth>
                   취소

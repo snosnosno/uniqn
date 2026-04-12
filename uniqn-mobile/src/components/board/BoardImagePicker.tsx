@@ -72,7 +72,7 @@ export function BoardImagePicker({
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {images.length}/{MAX_BOARD_POST_IMAGES}장
         </Text>
-        <Text className="mt-0.5 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="mt-0.5 text-xs text-content-placeholder font-sans">
           커뮤니티 글에 첨부할 이미지를 선택하세요.
         </Text>
       </View>
@@ -108,8 +108,8 @@ export function BoardImagePicker({
             style={getTileStyle(images.length, tileSize)}
             className={`items-center justify-center rounded-lg border border-dashed ${
               canAddMore
-                ? 'border-secondary-300 bg-secondary-50 active:bg-secondary-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
-                : 'border-secondary-300 bg-secondary-100 dark:border-surface-overlay dark:bg-surface'
+                ? 'border-secondary-300 bg-surface-page active:bg-secondary-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
+                : 'border-secondary-300 bg-surface-card dark:border-surface-overlay dark:bg-surface'
             }`}
             accessibilityRole="button"
             accessibilityLabel="게시글 이미지 추가"

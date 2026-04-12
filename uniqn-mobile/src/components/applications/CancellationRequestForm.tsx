@@ -109,8 +109,8 @@ export function CancellationRequestForm({
         </View>
 
         {/* 지원 정보 요약 */}
-        <View className="bg-secondary-50 dark:bg-surface rounded-lg p-4 mb-6">
-          <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2">
+        <View className="bg-surface-page rounded-lg p-4 mb-6">
+          <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-2">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
           <View className="flex-row items-center mb-1">
@@ -144,19 +144,19 @@ export function CancellationRequestForm({
             maxLength={500}
             editable={!isSubmitting}
             className={`
-                bg-secondary-50 dark:bg-surface rounded-lg p-4
-                text-secondary-900 dark:text-off-white text-base font-sans min-h-[140px]
+                bg-surface-page rounded-lg p-4
+                text-content-primary dark:text-off-white text-base font-sans min-h-[140px]
                 ${error ? 'border-2 border-error-500' : 'border border-secondary-200 dark:border-surface-overlay'}
               `}
             textAlignVertical="top"
           />
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1 font-sans">
+          <Text className="text-xs text-content-placeholder text-right mt-1 font-sans">
             {reason.length}/500
           </Text>
         </FormField>
 
         {/* 주의사항 */}
-        <View className="bg-secondary-50 dark:bg-surface rounded-lg p-4 mt-4">
+        <View className="bg-surface-page rounded-lg p-4 mt-4">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 leading-5 font-sans">
             • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}• 구인자가 거절하면 지원은 유지됩니다.
             {'\n'}• 무단 취소는 평판에 영향을 줄 수 있습니다.

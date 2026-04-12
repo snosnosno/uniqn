@@ -266,16 +266,14 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
             )}
 
             {/* 거부 사유 */}
-            <View className="p-3 bg-secondary-50 dark:bg-surface rounded-lg mb-3">
+            <View className="p-3 bg-surface-page rounded-lg mb-3">
               <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-1">
                 거부 사유
               </Text>
-              <Text className="text-base text-secondary-700 dark:text-secondary-300 font-sans">
-                {rejectionReason}
-              </Text>
+              <Text className="text-base text-content-secondary font-sans">{rejectionReason}</Text>
             </View>
 
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-4 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 mb-4 font-sans">
               공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
             </Text>
 

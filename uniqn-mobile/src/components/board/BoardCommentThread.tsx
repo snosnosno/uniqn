@@ -79,7 +79,7 @@ function CommentNodeView({
     <View style={{ marginLeft: indentationDepth * 12 }} className="mb-3">
       <Card className="bg-white dark:bg-surface">
         <View className="mb-2 flex-row flex-wrap items-center gap-2">
-          <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
             {comment.authorName}
           </Text>
           <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
@@ -92,9 +92,7 @@ function CommentNodeView({
           ) : null}
         </View>
 
-        <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
-          {comment.body}
-        </Text>
+        <Text className="text-sm leading-6 text-content-secondary font-sans">{comment.body}</Text>
 
         {!contentDisabled ? (
           <BoardImageGrid
@@ -120,7 +118,7 @@ function CommentNodeView({
                       : 'bg-secondary-100 dark:bg-surface-elevated'
                   } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
                 >
-                  <Text className="text-xs text-secondary-700 dark:text-secondary-200 font-sans">
+                  <Text className="text-xs text-content-secondary dark:text-secondary-200 font-sans">
                     {COMMENT_REACTION_LABELS[reactionType]} {count}
                   </Text>
                 </Pressable>

@@ -26,9 +26,9 @@ export const DateGroupSelection = memo(function DateGroupSelection({
   );
 
   return (
-    <View className="mb-3 rounded-lg bg-secondary-50 p-3 dark:bg-surface-dark">
+    <View className="mb-3 rounded-lg bg-surface-page p-3 dark:bg-surface-dark">
       <View className="mb-3 flex-row flex-wrap items-center">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {group.label}
         </Text>
         {!isSingleDate && (
@@ -45,7 +45,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
           return (
             <View key={slot.id || slotIndex} className="pl-2">
-              <Text className="mb-2 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
+              <Text className="mb-2 text-sm font-sans-medium text-content-muted dark:text-secondary-400">
                 {timeDisplay}
               </Text>
               <View className="flex-row flex-wrap pl-4">

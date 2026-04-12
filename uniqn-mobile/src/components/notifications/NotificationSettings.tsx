@@ -164,7 +164,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
 
   return (
     <ScrollView
-      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
+      className="flex-1 bg-surface-page dark:bg-surface-dark"
       contentContainerClassName="p-4"
     >
       {/* 푸시 알림 권한 영구 거부 배너 */}
@@ -214,7 +214,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <BellSlashIcon size={24} color={SECONDARY_PALETTE[400]} />
             )}
             <View className="ml-3">
-              <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                 알림 받기
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -238,7 +238,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <MoonIcon size={24} color={SECONDARY_PALETTE[500]} />
             <View className="ml-3">
-              <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                 방해 금지 시간
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -262,7 +262,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <Squares2X2Icon size={24} color={SECONDARY_PALETTE[500]} />
             <View className="ml-3">
-              <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                 알림 그룹화
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -299,7 +299,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center flex-1">
                   <View className={`w-3 h-3 rounded-sm ${info.color} mr-2`} />
-                  <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
+                  <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                     {NOTIFICATION_CATEGORY_LABELS[category]}
                   </Text>
                 </View>
@@ -319,7 +319,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               {/* 푸시 알림 토글 (서브 옵션) */}
               {categorySettings?.enabled && (
                 <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-secondary-100 dark:border-surface">
-                  <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+                  <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                     푸시 알림 받기
                   </Text>
                   <Switch
@@ -337,7 +337,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       </Card>
 
       {/* 하단 안내 */}
-      <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-center mt-4 px-4 font-sans">
+      <Text className="text-xs text-content-placeholder text-center mt-4 px-4 font-sans">
         알림 설정은 자동으로 저장됩니다.
         {'\n'}
         푸시 알림을 받으려면 기기 설정에서도 알림을 허용해야 합니다.

@@ -134,12 +134,12 @@ export function QRCodeScanner({
             <Text className="text-white text-xl font-display mt-4 text-center">
               카메라 권한이 필요합니다
             </Text>
-            <Text className="text-secondary-400 text-center mt-2 mb-6 font-sans">
+            <Text className="text-content-placeholder text-center mt-2 mb-6 font-sans">
               QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
             </Text>
             <Button onPress={requestPermission}>권한 허용하기</Button>
             <Pressable onPress={onClose} className="mt-4">
-              <Text className="text-secondary-400 font-sans">닫기</Text>
+              <Text className="text-content-placeholder font-sans">닫기</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -223,7 +223,7 @@ export function QRCodeScanner({
                     {scanError.message}
                   </Text>
                   {scanError.isRetryable && (
-                    <Text className="text-secondary-400 text-center text-xs mt-2 font-sans">
+                    <Text className="text-content-placeholder text-center text-xs mt-2 font-sans">
                       다시 스캔하거나 새 QR 코드를 요청하세요
                     </Text>
                   )}

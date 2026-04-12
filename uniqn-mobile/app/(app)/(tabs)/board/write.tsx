@@ -16,7 +16,7 @@ export default function BoardWriteScreen() {
 
   if (!isWritableBoard) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글쓰기" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
           title="글을 작성할 수 없는 게시판이에요"
@@ -28,7 +28,7 @@ export default function BoardWriteScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <StackHeader
         title={`${BOARD_TYPE_LABELS[boardType]} 글쓰기`}
         fallbackHref={`/(app)/(tabs)/board/${boardType}`}

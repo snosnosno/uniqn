@@ -105,9 +105,9 @@ function Checkbox({
           {required ? (
             <Text className="mr-1 text-error-500 font-sans">[필수]</Text>
           ) : (
-            <Text className="mr-1 text-secondary-400 font-sans">[선택]</Text>
+            <Text className="mr-1 text-content-placeholder font-sans">[선택]</Text>
           )}
-          <Text className="text-secondary-900 dark:text-off-white font-sans">{label}</Text>
+          <Text className="text-content-primary dark:text-off-white font-sans">{label}</Text>
         </View>
       </Pressable>
 
@@ -191,7 +191,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         accessibilityState={{ checked: allChecked, disabled: isLoading }}
         accessibilityLabel="전체 동의하기"
         className={`
-          flex-row items-center rounded-lg bg-secondary-50 p-4 dark:bg-surface
+          flex-row items-center rounded-lg bg-surface-page p-4 dark:bg-surface
           ${isLoading ? 'opacity-50' : ''}
         `}
       >
@@ -207,7 +207,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         >
           {allChecked && <Text className="text-sm font-sans-bold text-surface-dark">{''}</Text>}
         </View>
-        <Text className="font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="font-sans-semibold text-content-primary dark:text-off-white">
           전체 동의하기
         </Text>
       </Pressable>
@@ -268,7 +268,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
       >
         <View className="px-4">
           {isContentLoading ? (
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+            <Text className="leading-6 text-content-secondary font-sans">
               {TERM_CONTENT_LOADING_MESSAGE}
             </Text>
           ) : contentLoadError ? (
@@ -290,9 +290,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
               </Button>
             </View>
           ) : (
-            <Text className="leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
-              {modalText}
-            </Text>
+            <Text className="leading-6 text-content-secondary font-sans">{modalText}</Text>
           )}
         </View>
       </SheetModal>

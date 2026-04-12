@@ -58,11 +58,11 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           <Text className="text-3xl font-sans">{''}</Text>
         </View>
 
-        <Text className="text-lg font-display text-secondary-900 dark:text-off-white text-center mb-2">
+        <Text className="text-lg font-display text-content-primary dark:text-off-white text-center mb-2">
           이메일이 발송되었습니다
         </Text>
 
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center mb-6 font-sans">
+        <Text className="text-sm text-content-muted dark:text-secondary-400 text-center mb-6 font-sans">
           {submittedEmail}로 비밀번호 재설정 링크를 발송했습니다.{'\n'}
           이메일을 확인해주세요.
         </Text>
@@ -89,7 +89,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     <View className="w-full flex-col gap-4">
       {/* 안내 문구 */}
       <View className="mb-4">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center font-sans">
+        <Text className="text-sm text-content-muted dark:text-secondary-400 text-center font-sans">
           가입하신 이메일 주소를 입력하시면{'\n'}
           비밀번호 재설정 링크를 보내드립니다.
         </Text>
@@ -97,9 +97,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          이메일
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">이메일</Text>
         <Controller
           control={control}
           name="email"
@@ -135,7 +133,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 로그인 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-secondary-600 dark:text-secondary-400 font-sans">
+        <Text className="text-content-muted dark:text-secondary-400 font-sans">
           비밀번호가 기억나셨나요?{' '}
         </Text>
         <Link href="/login" asChild>

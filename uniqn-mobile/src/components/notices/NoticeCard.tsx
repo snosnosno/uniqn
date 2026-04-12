@@ -114,7 +114,7 @@ export function NoticeCard({ notice }: NoticeCardProps) {
 
               {/* 제목 */}
               <Text
-                className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100"
+                className="text-base font-sans-semibold text-content-primary dark:text-secondary-100"
                 numberOfLines={2}
               >
                 {notice.title}
@@ -122,7 +122,7 @@ export function NoticeCard({ notice }: NoticeCardProps) {
 
               {/* 내용 미리보기 */}
               <Text
-                className="mt-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+                className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans"
                 numberOfLines={2}
               >
                 {notice.content}

@@ -510,7 +510,7 @@ export const SCHEDULE_COLORS: Record<
  * 異쒖꽍 ?곹깭蹂??됱긽
  */
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  not_started: 'bg-secondary-100 dark:bg-surface text-secondary-600 dark:text-secondary-300',
+  not_started: 'bg-secondary-100 dark:bg-surface text-content-muted dark:text-secondary-300',
   checked_in: 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-300',
   checked_out: 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300',
 };

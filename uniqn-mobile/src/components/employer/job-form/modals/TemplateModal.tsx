@@ -52,7 +52,7 @@ export function TemplateModal({
     <Modal visible={visible} onClose={onClose} title="템플릿으로 저장" size="md">
       {/* 템플릿 이름 */}
       <View className="mb-4">
-        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+        <Text className="text-sm font-sans-medium text-content-secondary mb-2">
           템플릿 이름 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <TextInput
@@ -60,7 +60,7 @@ export function TemplateModal({
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor={SECONDARY_PALETTE[400]}
-          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-secondary-900 dark:text-off-white ${
+          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-content-primary dark:text-off-white ${
             isTooShort
               ? 'border-error-400 dark:border-error-500'
               : 'border-secondary-200 dark:border-surface-overlay'
@@ -77,15 +77,13 @@ export function TemplateModal({
 
       {/* 템플릿 설명 */}
       <View className="mb-4">
-        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-          설명 (선택)
-        </Text>
+        <Text className="text-sm font-sans-medium text-content-secondary mb-2">설명 (선택)</Text>
         <TextInput
           value={templateDescription}
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor={SECONDARY_PALETTE[400]}
-          className="bg-secondary-50 dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-md px-4 py-3 text-secondary-900 dark:text-off-white"
+          className="bg-surface-page border border-divider rounded-md px-4 py-3 text-content-primary dark:text-off-white"
           maxLength={100}
           editable={!isSaving}
           multiline
@@ -128,7 +126,7 @@ export function TemplateModal({
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-sans-medium">
+          <Text className="text-content-secondary dark:text-secondary-200 text-center font-sans-medium">
             취소
           </Text>
         </Pressable>

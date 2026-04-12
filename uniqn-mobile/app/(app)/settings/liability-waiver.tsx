@@ -10,7 +10,7 @@ import { Card } from '@/components/ui';
 
 export default function LiabilityWaiverScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <StackHeader title="서약서" />
 
       <ScrollView
@@ -19,7 +19,7 @@ export default function LiabilityWaiverScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-4 text-lg font-display text-content-primary dark:text-secondary-100">
             UNIQN 구인자 서약서
           </Text>
 
@@ -35,7 +35,7 @@ export default function LiabilityWaiverScreen() {
             <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
               제1조 (책임의 귀속)
             </Text>
-            <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
               UNIQN은 구인자와 스태프 간의 중개 서비스만을 제공하며, 다음 사항에 대한 책임은 구인자
               또는 해당 업체에게 있습니다.{'\n\n'}
               1. 스태프 채용 및 근로 관계에서 발생하는 모든 법적 책임{'\n'}
@@ -49,7 +49,7 @@ export default function LiabilityWaiverScreen() {
             <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
               제2조 (불법행위에 대한 책임)
             </Text>
-            <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
               구인자 또는 업체의 불법적인 행위나 사고에 대한 모든 민형사상 책임은 UNIQN이 아닌 해당
               구인자 또는 업체에게 있습니다.{'\n\n'}
               불법행위의 예시:{'\n'}- 불법 도박장 운영 또는 방조{'\n'}- 스태프에 대한 성희롱, 폭행
@@ -61,7 +61,7 @@ export default function LiabilityWaiverScreen() {
             <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
               제3조 (현장 사고에 대한 책임)
             </Text>
-            <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
               근무 현장에서 발생하는 다음 사항에 대한 책임은 구인자에게 있습니다.{'\n\n'}
               1. 스태프의 안전사고 및 부상{'\n'}
               2. 시설물 파손 및 물적 피해{'\n'}
@@ -74,7 +74,7 @@ export default function LiabilityWaiverScreen() {
             <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
               제4조 (정보 제공의 정확성)
             </Text>
-            <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
               구인자는 공고 등록 시 제공하는 모든 정보(업체 정보, 근무 조건, 급여 등)의 정확성에
               대해 책임지며, 허위 또는 과장된 정보로 인해 발생하는 피해에 대한 책임은 구인자에게
               있습니다.
@@ -85,7 +85,7 @@ export default function LiabilityWaiverScreen() {
             <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
               제5조 (UNIQN의 면책)
             </Text>
-            <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
               UNIQN은 다음 사항에 대해 책임을 지지 않습니다.{'\n\n'}
               1. 구인자와 스태프 간의 분쟁{'\n'}
               2. 구인자의 위법 행위로 인한 피해{'\n'}
@@ -105,7 +105,7 @@ export default function LiabilityWaiverScreen() {
           </View>
 
           <View>
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+            <Text className="text-xs text-content-placeholder font-sans">
               본 서약서는 2024년 1월 1일부터 시행됩니다.{'\n'}
               (실제 서약서 내용은 법무팀 검토 후 업데이트 예정)
             </Text>

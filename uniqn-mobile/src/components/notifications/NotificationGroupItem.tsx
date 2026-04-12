@@ -116,7 +116,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             {/* 컨텍스트 (공고명/이벤트명) */}
             {contextLabel && (
               <Text
-                className="text-sm text-secondary-600 dark:text-secondary-400 mt-0.5 font-sans"
+                className="text-sm text-content-muted dark:text-secondary-400 mt-0.5 font-sans"
                 numberOfLines={1}
               >
                 {contextLabel}
@@ -132,9 +132,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             </Text>
 
             {/* 시간 */}
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
-              {timeAgo}
-            </Text>
+            <Text className="text-xs text-content-placeholder mt-1 font-sans">{timeAgo}</Text>
           </View>
 
           {/* 펼침/접힘 아이콘 */}
@@ -150,7 +148,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 
       {/* 펼침 상태: 개별 알림 목록 */}
       {isExpanded && (
-        <View className="bg-secondary-50 dark:bg-surface/50">
+        <View className="bg-surface-page dark:bg-surface/50">
           {group.notifications.map((notification, index) => (
             <View
               key={notification.id}

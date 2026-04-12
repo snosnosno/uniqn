@@ -126,7 +126,7 @@ export default function JobPostingDetailLayout() {
   }
 
   return (
-    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
       <Stack
         screenOptions={{
           headerShown: true,

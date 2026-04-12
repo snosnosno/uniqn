@@ -83,7 +83,7 @@ export default function ReviewDetailScreen() {
 
   if (!workLogId) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="잘못된 접근입니다"
           message="리뷰 정보를 확인할 수 없습니다."
@@ -100,7 +100,7 @@ export default function ReviewDetailScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1">
           <ErrorState
             title="리뷰를 불러올 수 없습니다"
@@ -122,7 +122,7 @@ export default function ReviewDetailScreen() {
   const hasMyReview = Boolean(data?.myReview);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-4">
         <View>
           <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
@@ -141,7 +141,7 @@ export default function ReviewDetailScreen() {
             </Pressable>
           ) : (
             <View className="rounded-md border border-secondary-200 bg-white p-4 dark:border-secondary-700 dark:bg-secondary-800">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+              <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
                 리뷰 작성에 필요한 정보를 확인할 수 없어요.
               </Text>
               <View className="mt-3">

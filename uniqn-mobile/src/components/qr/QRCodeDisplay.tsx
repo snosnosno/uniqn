@@ -113,7 +113,7 @@ export function QRCodeDisplay({
         {/* 제목 */}
         <View className="flex-row items-center mb-2">
           <CheckCircleIcon size={24} color="#D4AF37" />
-          <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100 ml-2">
+          <Text className="text-xl font-display text-content-primary dark:text-secondary-100 ml-2">
             {actionLabel} QR 코드
           </Text>
         </View>
@@ -135,9 +135,9 @@ export function QRCodeDisplay({
           ) : isExpired || !displayData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
-              className="items-center justify-center bg-secondary-100 dark:bg-surface rounded-md"
+              className="items-center justify-center bg-surface-card dark:bg-surface rounded-md"
             >
-              <Text className="text-secondary-400 dark:text-secondary-500 text-center mb-4 font-sans">
+              <Text className="text-content-placeholder text-center mb-4 font-sans">
                 {isExpired ? 'QR 코드가 만료되었습니다' : 'QR 코드를 생성해주세요'}
               </Text>
               {onRefresh && (

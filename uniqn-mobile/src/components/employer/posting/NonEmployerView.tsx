@@ -16,13 +16,13 @@ import { BriefcaseIcon } from '@/components/icons';
 
 export function NonEmployerView() {
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-surface-card dark:bg-surface">
           <BriefcaseIcon size={48} color={SECONDARY_PALETTE[400]} />
         </View>
-        <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">
           구인자 전용 기능입니다
         </Text>
         <Text className="mb-8 text-center text-base text-secondary-500 dark:text-secondary-400 font-sans">

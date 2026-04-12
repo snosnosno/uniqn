@@ -35,7 +35,9 @@ function InfoRow({
           {label}
         </Text>
         {typeof value === 'string' ? (
-          <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">{value}</Text>
+          <Text className="text-sm text-content-primary dark:text-off-white font-sans">
+            {value}
+          </Text>
         ) : (
           value
         )}
@@ -69,7 +71,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
   return (
     <View className="bg-white dark:bg-surface-dark">
-      <View className="bg-secondary-50 p-4 dark:bg-surface">
+      <View className="bg-surface-page p-4 dark:bg-surface">
         <View className="mb-2 flex-row flex-wrap items-center">
           {detail.postingType && detail.postingType !== 'regular' ? (
             <PostingTypeBadge type={detail.postingType as PostingType} size="sm" className="mr-2" />
@@ -82,7 +84,7 @@ export function JobDetail({ job }: JobDetailProps) {
           <PostingStatusBadge status={detail.status} size="sm" />
         </View>
 
-        <Text className="mb-3 text-xl font-display text-secondary-900 dark:text-off-white">
+        <Text className="mb-3 text-xl font-display text-content-primary dark:text-off-white">
           {detail.title || '제목 없음'}
         </Text>
 
@@ -97,17 +99,17 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.description ? (
         <View className="p-4">
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             상세 설명
           </Text>
-          <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
+          <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
             {detail.description}
           </Text>
         </View>
       ) : null}
 
       <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-        <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
           근무 정보
         </Text>
 
@@ -154,7 +156,7 @@ export function JobDetail({ job }: JobDetailProps) {
                   {detail.allowanceLabels.map((item, index) => (
                     <Text
                       key={`${item}-${index}`}
-                      className="mb-1 mr-3 text-sm text-secondary-900 dark:text-off-white font-sans"
+                      className="mb-1 mr-3 text-sm text-content-primary dark:text-off-white font-sans"
                     >
                       {item}
                     </Text>
@@ -170,13 +172,13 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.questions.length > 0 ? (
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             사전질문 ({detail.questions.length}개)
           </Text>
-          <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
+          <View className="rounded-lg bg-surface-page p-3 dark:bg-surface">
             {detail.questions.slice(0, 3).map((question, index) => (
               <View key={`${question.id || index}`} className="mb-2">
-                <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+                <Text className="text-sm text-content-secondary font-sans">
                   {index + 1}. {question.question}
                   {question.required ? <Text className="text-error-500 font-sans"> *</Text> : null}
                 </Text>
@@ -200,7 +202,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 구인처
               </Text>
               <View className="flex-row items-center gap-2">
-                <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+                <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                   {detail.ownerName ?? '구인처'}
                 </Text>
                 {ownerProfile?.bubbleScore ? (
@@ -216,12 +218,12 @@ export function JobDetail({ job }: JobDetailProps) {
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
           <View className="flex-row">
             {typeof detail.viewCount === 'number' ? (
-              <Text className="mr-4 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+              <Text className="mr-4 text-xs text-content-placeholder font-sans">
                 조회 {detail.viewCount}
               </Text>
             ) : null}
             {typeof detail.totalApplicants === 'number' ? (
-              <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+              <Text className="text-xs text-content-placeholder font-sans">
                 지원 {detail.totalApplicants}
               </Text>
             ) : null}

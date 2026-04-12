@@ -78,7 +78,7 @@ export function BoardCommentComposer({
   return (
     <Card>
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-secondary-100">
           {title}
         </Text>
         {onCancel ? (
@@ -128,7 +128,7 @@ export function BoardCommentComposer({
                       : 'bg-secondary-100 dark:bg-surface-elevated'
                   }`}
                 >
-                  <Text className="text-xs text-secondary-700 dark:text-secondary-200 font-sans">
+                  <Text className="text-xs text-content-secondary dark:text-secondary-200 font-sans">
                     @{candidate.displayName}
                   </Text>
                 </Pressable>

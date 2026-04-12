@@ -224,14 +224,12 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
         {/* 필터 버튼 */}
         <Pressable
           onPress={handleOpenModal}
-          className="flex-row items-center px-4 py-2 bg-white dark:bg-surface rounded-sm border border-secondary-200 dark:border-surface-overlay"
+          className="flex-row items-center px-4 py-2 bg-white dark:bg-surface rounded-sm border border-divider"
           accessibilityLabel="필터 열기"
           accessibilityHint="공고 필터링 옵션을 설정합니다"
         >
           <FilterIcon size={18} color={primaryIconColor} />
-          <Text className="ml-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            필터
-          </Text>
+          <Text className="ml-2 text-sm font-sans-medium text-content-secondary">필터</Text>
           {showActiveCount && activeFilterCount > 0 && (
             <View className="ml-2 bg-primary-600 rounded-sm px-2 py-0.5 min-w-[20px] items-center">
               <Text className="text-surface-dark text-xs font-sans-bold">{activeFilterCount}</Text>
@@ -252,8 +250,8 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
               onPress={(e) => e.stopPropagation()}
             >
               {/* 헤더 */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-                <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
+                <Text className="text-lg font-display text-content-primary dark:text-off-white">
                   필터
                 </Text>
                 <View className="flex-row items-center gap-4">
@@ -274,7 +272,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <MapPinIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                       지역
                     </Text>
                   </View>
@@ -298,7 +296,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <CalendarIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                       근무일
                     </Text>
                   </View>
@@ -318,7 +316,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <BriefcaseIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                       역할
                     </Text>
                   </View>
@@ -349,7 +347,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     `}
                   >
                     <View className="flex-row items-center">
-                      <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+                      <Text className="font-sans-medium text-content-primary dark:text-off-white">
                         긴급 공고만 보기
                       </Text>
                     </View>
@@ -375,7 +373,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
               </ScrollView>
 
               {/* 적용 버튼 */}
-              <View className="px-4 py-4 border-t border-secondary-200 dark:border-surface-overlay">
+              <View className="px-4 py-4 border-t border-divider">
                 <Pressable
                   onPress={handleApplyFilters}
                   className="bg-primary-600 dark:bg-primary-700 py-4 rounded-md items-center active:opacity-80"

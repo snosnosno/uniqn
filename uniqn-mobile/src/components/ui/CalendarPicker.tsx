@@ -371,11 +371,11 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoPrevYear}
               accessibilityRole="button"
               accessibilityLabel="이전 연도"
-              className={`h-9 rounded-sm bg-secondary-100 dark:bg-surface-elevated px-3 items-center justify-center mr-2 ${
+              className={`h-9 rounded-sm bg-surface-card px-3 items-center justify-center mr-2 ${
                 !canGoPrevYear ? 'opacity-30' : ''
               }`}
             >
-              <Text className="text-xs font-sans-semibold text-secondary-700 dark:text-secondary-100">
+              <Text className="text-xs font-sans-semibold text-content-secondary dark:text-secondary-100">
                 1년 전
               </Text>
             </Pressable>
@@ -384,7 +384,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoPrev}
               accessibilityRole="button"
               accessibilityLabel="이전 달"
-              className={`h-9 w-9 rounded-sm bg-secondary-100 dark:bg-surface-elevated items-center justify-center ${
+              className={`h-9 w-9 rounded-sm bg-surface-card items-center justify-center ${
                 !canGoPrev ? 'opacity-30' : ''
               }`}
             >
@@ -395,7 +395,7 @@ export const CalendarPicker = memo(function CalendarPicker({
             </Pressable>
           </View>
 
-          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
             {format(currentMonth, 'yyyy년 M월', { locale: ko })}
           </Text>
 
@@ -405,7 +405,7 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoNext}
               accessibilityRole="button"
               accessibilityLabel="다음 달"
-              className={`h-9 w-9 rounded-sm bg-secondary-100 dark:bg-surface-elevated items-center justify-center mr-2 ${
+              className={`h-9 w-9 rounded-sm bg-surface-card items-center justify-center mr-2 ${
                 !canGoNext ? 'opacity-30' : ''
               }`}
             >
@@ -419,11 +419,11 @@ export const CalendarPicker = memo(function CalendarPicker({
               disabled={!canGoNextYear}
               accessibilityRole="button"
               accessibilityLabel="다음 연도"
-              className={`h-9 rounded-sm bg-secondary-100 dark:bg-surface-elevated px-3 items-center justify-center ${
+              className={`h-9 rounded-sm bg-surface-card px-3 items-center justify-center ${
                 !canGoNextYear ? 'opacity-30' : ''
               }`}
             >
-              <Text className="text-xs font-sans-semibold text-secondary-700 dark:text-secondary-100">
+              <Text className="text-xs font-sans-semibold text-content-secondary dark:text-secondary-100">
                 1년 후
               </Text>
             </Pressable>

@@ -119,10 +119,10 @@ function getPostFallbackHref(boardType?: string | null) {
 
 function MetaPill({ icon, label }: { icon?: ReactNode; label: string }) {
   return (
-    <View className="flex-row items-center rounded-sm bg-secondary-100 px-3 py-1.5 dark:bg-surface-elevated">
+    <View className="flex-row items-center rounded-sm bg-surface-card px-3 py-1.5 dark:bg-surface-elevated">
       {icon ? <View>{icon}</View> : null}
       <Text
-        className={`${icon ? 'ml-1.5' : ''} text-xs font-sans-medium text-secondary-600 dark:text-secondary-300`}
+        className={`${icon ? 'ml-1.5' : ''} text-xs font-sans-medium text-content-muted dark:text-secondary-300`}
       >
         {label}
       </Text>
@@ -247,7 +247,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
     return (
       <View className="mb-3 mt-3 flex-row items-center gap-2">
         <PinIcon size={16} color="#D4A017" />
-        <Text className="text-sm font-sans-semibold uppercase tracking-[0.8px] text-secondary-700 dark:text-secondary-200">
+        <Text className="text-sm font-sans-semibold uppercase tracking-[0.8px] text-content-secondary dark:text-secondary-200">
           {item.title}
         </Text>
       </View>
@@ -256,7 +256,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
 
   return (
     <View className="mb-3 mt-3 flex-row items-center justify-between">
-      <Text className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="text-lg font-display-semibold text-content-primary dark:text-secondary-100">
         {item.title} {item.count ?? 0}
       </Text>
       {item.isLocked ? (
@@ -901,12 +901,12 @@ export default function BoardPostDetailScreen() {
         </View>
 
         <Card className="mb-4 border border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-2xl font-display leading-9 text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display leading-9 text-content-primary dark:text-secondary-100">
             {post.title}
           </Text>
 
           <View className="mt-3 flex-row flex-wrap items-center gap-2">
-            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200">
+            <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-200">
               {post.authorName}
             </Text>
             {postCreatedAtLabel ? (
@@ -927,7 +927,7 @@ export default function BoardPostDetailScreen() {
             ) : null}
           </View>
 
-          <Text className="mt-5 text-base leading-8 text-secondary-700 dark:text-secondary-300 font-sans">
+          <Text className="mt-5 text-base leading-8 text-content-secondary font-sans">
             {post.body}
           </Text>
 
@@ -938,21 +938,21 @@ export default function BoardPostDetailScreen() {
 
           {post.jobSummary ? (
             <View className="mt-5 rounded-lg border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-              <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
                 일정 요약
               </Text>
               <View className="mt-3 gap-2">
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
                   날짜: {post.jobSummary.workDates?.join(', ') || post.jobSummary.workDate}
                 </Text>
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
                   장소: {post.jobSummary.locationName || '미정'}
                 </Text>
-                <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
                   인원: {post.jobSummary.filledPositions ?? 0}/{post.jobSummary.totalPositions ?? 0}
                 </Text>
                 {post.jobSummary.compensationLabel ? (
-                  <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+                  <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
                     급여: {post.jobSummary.compensationLabel}
                   </Text>
                 ) : null}
@@ -975,7 +975,7 @@ export default function BoardPostDetailScreen() {
           </View>
 
           {post.boardType !== 'notice' ? (
-            <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
+            <View className="mt-5 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
               <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 반응
               </Text>
@@ -1010,7 +1010,7 @@ export default function BoardPostDetailScreen() {
           ) : null}
 
           {showActionBar ? (
-            <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
+            <View className="mt-5 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
               <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 게시글 작업
               </Text>
@@ -1140,7 +1140,7 @@ export default function BoardPostDetailScreen() {
 
   if (!postId) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref="/(app)/(tabs)/board" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1155,7 +1155,7 @@ export default function BoardPostDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <BoardPostDetailSkeleton />
       </SafeAreaView>
@@ -1164,7 +1164,7 @@ export default function BoardPostDetailScreen() {
 
   if (error || !post || !data) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1178,7 +1178,7 @@ export default function BoardPostDetailScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <StackHeader title={BOARD_TYPE_LABELS[post.boardType]} fallbackHref={postFallbackHref} />
 
       <KeyboardAvoidingView

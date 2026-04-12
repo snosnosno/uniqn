@@ -52,7 +52,7 @@ export default function ChangePasswordScreen() {
 
   // 입력 필드 스타일
   const getInputClassName = (hasError: boolean) =>
-    `rounded-lg border px-4 py-3 pr-12 text-secondary-900 dark:text-secondary-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'}`;
+    `rounded-lg border px-4 py-3 pr-12 text-content-primary dark:text-secondary-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'}`;
 
   // 비밀번호 변경 핸들러
   const onSubmit = async (data: PasswordChangeData) => {
@@ -84,7 +84,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -96,7 +96,7 @@ export default function ChangePasswordScreen() {
         >
           {/* 안내 문구 */}
           <Card className="mb-4">
-            <Text className="text-sm leading-5 text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-5 text-content-muted dark:text-secondary-400 font-sans">
               보안을 위해 비밀번호를 주기적으로 변경해주세요.{'\n'}
               비밀번호는 8자 이상, 대소문자, 숫자, 특수문자를 포함해야 합니다.
             </Text>
@@ -240,7 +240,7 @@ export default function ChangePasswordScreen() {
 
           {/* 비밀번호 정책 안내 */}
           <Card className="mb-4">
-            <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
               비밀번호 정책
             </Text>
             <View className="flex-col gap-1">

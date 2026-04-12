@@ -114,9 +114,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          급여 유형
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">급여 유형</Text>
       )}
 
       {/* 급여 타입 선택 (수평 라디오) */}
@@ -157,9 +155,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
 
       {/* 금액 입력 */}
       <View className="mb-2">
-        <Text className="mb-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          금액
-        </Text>
+        <Text className="mb-1 text-sm font-sans-medium text-content-secondary">금액</Text>
         <View
           className={`
             flex-row items-center rounded-lg border px-3 h-12
@@ -175,7 +171,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             editable={!disabled}
             placeholder="0"
             placeholderTextColor={SECONDARY_PALETTE[400]}
-            className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
+            className="flex-1 text-base font-sans text-content-primary dark:text-off-white"
             accessibilityLabel="급여 금액"
           />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
@@ -193,7 +189,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
       {estimatedPay !== null && (
         <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
               예상 급여
               {salaryInfo.type === 'hourly' && hoursWorked && (
                 <Text className="text-xs font-sans"> ({hoursWorked.toFixed(1)}시간 기준)</Text>

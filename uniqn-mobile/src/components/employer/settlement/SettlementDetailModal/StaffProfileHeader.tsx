@@ -51,10 +51,10 @@ export function StaffProfileHeader({
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
   return (
-    <View className="items-center py-6 bg-secondary-50 dark:bg-surface">
+    <View className="items-center py-6 bg-surface-page">
       <Avatar source={profilePhotoURL} name={displayName} size="xl" className="mb-3" />
       <View className="flex-row items-center gap-2 mb-1">
-        <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
+        <Text className="text-xl font-display text-content-primary dark:text-off-white">
           {displayName}
         </Text>
         <Badge variant={statusConfig.variant} size="sm" dot>

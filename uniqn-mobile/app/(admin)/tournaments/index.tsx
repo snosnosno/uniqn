@@ -153,7 +153,7 @@ const TournamentCard = memo(function TournamentCard({
         </View>
 
         <Text
-          className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2"
+          className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-2"
           numberOfLines={2}
         >
           {posting.title}
@@ -305,7 +305,7 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           대회공고 목록을 불러오는 중...
@@ -317,7 +317,7 @@ export default function AdminTournamentsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="대회공고 목록을 불러오는 데 실패했습니다."
@@ -331,10 +331,10 @@ export default function AdminTournamentsPage() {
   const displayPostings = postings ?? [];
 
   return (
-    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
-        <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-1">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+        <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
           대회공고 승인 관리
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -343,7 +343,7 @@ export default function AdminTournamentsPage() {
       </View>
 
       {/* 상태 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {STATUS_TABS.map((tab) => (
             <StatusTab

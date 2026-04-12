@@ -120,19 +120,19 @@ function ReportInfoSection({ report }: { report: Report }) {
       </View>
 
       {/* 신고 유형 */}
-      <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-xl font-display text-content-primary dark:text-off-white mb-2">
         {typeLabel}
       </Text>
 
       {/* 신고자 정보 */}
       <View className="flex-row items-center mb-3">
         <UserIcon size={16} color={SECONDARY_PALETTE[500]} />
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 ml-2 font-sans">
-          <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm text-content-muted dark:text-secondary-400 ml-2 font-sans">
+          <Text className="font-sans-medium text-content-primary dark:text-off-white">
             {report.reporterName}
           </Text>
           <Text className="font-sans"> → </Text>
-          <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+          <Text className="font-sans-medium text-content-primary dark:text-off-white">
             {report.targetName}
           </Text>
         </Text>
@@ -146,7 +146,7 @@ function ReportInfoSection({ report }: { report: Report }) {
       {/* 생성 시간 */}
       <View className="flex-row items-center">
         <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-1 font-sans">
+        <Text className="text-xs text-content-placeholder ml-1 font-sans">
           {formatTimestamp(report.createdAt)} ({formatTimeAgo(report.createdAt)})
         </Text>
       </View>
@@ -162,12 +162,12 @@ function ReportContentSection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <DocumentIcon size={18} color="#D4AF37" />
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white ml-2">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white ml-2">
           신고 내용
         </Text>
       </View>
 
-      <Text className="text-sm text-secondary-700 dark:text-secondary-300 leading-relaxed font-sans">
+      <Text className="text-sm text-content-secondary leading-relaxed font-sans">
         {report.description}
       </Text>
 
@@ -177,7 +177,7 @@ function ReportContentSection({ report }: { report: Report }) {
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             관련 공고
           </Text>
-          <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+          <Text className="text-sm text-content-primary dark:text-off-white font-sans">
             {report.jobPostingTitle}
           </Text>
         </View>
@@ -189,7 +189,7 @@ function ReportContentSection({ report }: { report: Report }) {
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             근무 날짜
           </Text>
-          <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+          <Text className="text-sm text-content-primary dark:text-off-white font-sans">
             {report.workDate}
           </Text>
         </View>
@@ -226,7 +226,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color="#22C55E" />
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white ml-2">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white ml-2">
           처리 이력
         </Text>
       </View>
@@ -236,7 +236,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             처리 상태
           </Text>
-          <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+          <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
             {REPORT_STATUS_LABELS[report.status]}
           </Text>
         </View>
@@ -246,7 +246,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
               처리 일시
             </Text>
-            <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+            <Text className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatTimestamp(report.reviewedAt)}
             </Text>
           </View>
@@ -257,9 +257,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
               처리 메모
             </Text>
-            <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
-              {report.reviewerNotes}
-            </Text>
+            <Text className="text-sm text-content-secondary font-sans">{report.reviewerNotes}</Text>
           </View>
         )}
       </View>
@@ -293,15 +291,13 @@ function ReviewFormSection({
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color="#D4A017" />
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white ml-2">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white ml-2">
           신고 처리
         </Text>
       </View>
 
       {/* 상태 선택 */}
-      <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-        처리 결과 선택
-      </Text>
+      <Text className="text-sm font-sans-medium text-content-secondary mb-2">처리 결과 선택</Text>
       <View className="space-y-2 mb-4">
         {REVIEW_STATUS_OPTIONS.map((option) => (
           <Pressable
@@ -330,9 +326,7 @@ function ReviewFormSection({
       </View>
 
       {/* 처리 메모 */}
-      <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-        처리 메모 (선택)
-      </Text>
+      <Text className="text-sm font-sans-medium text-content-secondary mb-2">처리 메모 (선택)</Text>
       <TextInput
         value={notes}
         onChangeText={setNotes}
@@ -340,7 +334,7 @@ function ReviewFormSection({
         placeholderTextColor={SECONDARY_PALETTE[400]}
         multiline
         numberOfLines={4}
-        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm font-sans text-secondary-900 dark:text-off-white mb-4"
+        className="bg-surface-card dark:bg-surface rounded-lg p-3 text-sm font-sans text-content-primary dark:text-off-white mb-4"
         style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 
@@ -405,7 +399,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
       </>
@@ -427,7 +421,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
           <EmptyState
             title="신고를 찾을 수 없습니다"
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
@@ -453,7 +447,7 @@ export default function AdminReportDetailPage() {
           ),
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"

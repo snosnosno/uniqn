@@ -18,7 +18,7 @@ import type { InfoRowProps } from './types';
 export function InfoRow({ label, value, highlight, valueColor }: InfoRowProps) {
   return (
     <View className="flex-row items-center justify-between py-2">
-      <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">{label}</Text>
+      <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">{label}</Text>
       <Text
         className={`text-sm font-sans-medium ${
           highlight

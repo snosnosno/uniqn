@@ -64,7 +64,7 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
     <View className="flex-row items-center justify-between py-3">
       <View className="flex-row items-center">
         <View className="mr-3">{icon}</View>
-        <Text className="text-base text-secondary-900 dark:text-secondary-100 font-sans">
+        <Text className="text-base text-content-primary dark:text-secondary-100 font-sans">
           {label}
         </Text>
       </View>
@@ -225,7 +225,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">

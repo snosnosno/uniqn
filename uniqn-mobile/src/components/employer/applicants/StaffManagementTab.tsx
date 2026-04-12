@@ -46,7 +46,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
         <Pressable
           onPress={onRefresh}
           disabled={isRefreshing}
-          className={`rounded-md bg-secondary-100 p-4 active:opacity-80 dark:bg-surface ${
+          className={`rounded-md bg-surface-card p-4 active:opacity-80 dark:bg-surface ${
             isRefreshing ? 'opacity-50' : ''
           }`}
         >
@@ -254,7 +254,7 @@ export function StaffManagementTab({
   }
 
   return (
-    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
       <QuickActions onShowQR={handleShowQR} onRefresh={refresh} isRefreshing={isRefreshing} />
 
       <View className="flex-1">

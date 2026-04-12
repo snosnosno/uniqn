@@ -47,7 +47,7 @@ export function TimeModificationHistory({
       >
         <View className="flex-row items-center">
           <DocumentIcon size={18} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+          <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             시간 수정 이력
           </Text>
           <View className="ml-2 px-2 py-0.5 bg-warning-100 dark:bg-warning-900/30 rounded-sm">
@@ -64,7 +64,7 @@ export function TimeModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
+        <View className="mt-3 bg-surface-page rounded-lg p-3">
           {modificationHistory.map((mod, idx) => (
             <ModificationHistoryItem key={idx} modification={mod} index={idx} />
           ))}

@@ -74,7 +74,7 @@ function MonthNavigator({
   onToggleView,
 }: MonthNavigatorProps) {
   return (
-    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
+    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-divider">
       <Pressable
         onPress={onPrev}
         className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
@@ -88,7 +88,7 @@ function MonthNavigator({
       <View className="flex-1 px-3">
         <Text
           testID="schedule-month-title"
-          className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100"
+          className="text-lg font-display-semibold text-content-primary dark:text-secondary-100"
         >
           {formatMonthTitle(year, month)}
         </Text>
@@ -102,7 +102,7 @@ function MonthNavigator({
           accessibilityRole="button"
           testID="schedule-today-button"
         >
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-200">
+          <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-200">
             오늘
           </Text>
         </Pressable>
@@ -194,7 +194,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         {/* 완료 (completed) */}
         <View className="items-center" accessible accessibilityLabel="완료 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">완료</Text>
-          <Text className="text-2xl font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display text-content-primary dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
         </View>
@@ -408,7 +408,7 @@ export default function ScheduleScreen() {
   // 에러 상태
   if (error && !isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -422,7 +422,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 
@@ -475,7 +475,7 @@ export default function ScheduleScreen() {
             {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
             {selectedDateSchedules.length > 0 && (
               <View className="mt-4 px-4">
-                <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+                <Text className="text-sm font-sans-medium text-content-secondary mb-2">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
                 {selectedDateSchedules.map((item) => {

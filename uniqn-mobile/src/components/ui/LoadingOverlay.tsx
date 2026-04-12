@@ -96,7 +96,7 @@ function ProgressCircle({
       </Svg>
       {/* 퍼센트 텍스트 */}
       <View className="absolute inset-0 items-center justify-center">
-        <Text className="text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
+        <Text className="text-sm font-sans-semibold text-content-secondary">
           {Math.round(progress)}%
         </Text>
       </View>
@@ -191,7 +191,7 @@ export function LoadingOverlay({
 
           {/* 메시지 */}
           {message && (
-            <Text className="text-secondary-700 dark:text-secondary-300 text-center mt-4 text-base font-sans">
+            <Text className="text-content-secondary text-center mt-4 text-base font-sans">
               {message}
             </Text>
           )}
@@ -250,7 +250,7 @@ export function InlineLoadingOverlay({
           <ActivityIndicator size={size} color={color} />
         )}
         {message && (
-          <Text className="text-secondary-700 dark:text-secondary-300 text-center mt-4 text-base font-sans">
+          <Text className="text-content-secondary text-center mt-4 text-base font-sans">
             {message}
           </Text>
         )}

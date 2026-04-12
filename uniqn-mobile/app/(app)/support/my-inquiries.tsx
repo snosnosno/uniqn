@@ -68,14 +68,14 @@ export default function MyInquiriesScreen() {
 
   if (isLoading && inquiries.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
         <ActivityIndicator size="large" color="#D4AF37" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <FlashList
         data={inquiries}
         renderItem={renderItem}

@@ -102,7 +102,7 @@ export default function SplashScreen() {
         />
       </View>
 
-      <Text className="absolute bottom-12 text-xs text-secondary-600 font-sans">
+      <Text className="absolute bottom-12 text-xs text-content-muted font-sans">
         v{APP_VERSION}
       </Text>
     </View>

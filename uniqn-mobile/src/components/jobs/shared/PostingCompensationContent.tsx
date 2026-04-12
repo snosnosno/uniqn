@@ -19,10 +19,10 @@ export function PostingCompensationContent({
         <View className="py-1">
           {compensation.rows.map((row) => (
             <View key={row.key} className="flex-row items-center justify-between py-1">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {row.roleLabel}
               </Text>
-              <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                 {row.text}
               </Text>
             </View>
@@ -44,12 +44,15 @@ export function PostingCompensationContent({
     <View>
       {!compensation.useSameSalary && compensation.rows.length > 0 ? (
         compensation.rows.map((row) => (
-          <Text key={row.key} className="text-sm text-secondary-900 dark:text-off-white font-sans">
+          <Text
+            key={row.key}
+            className="text-sm text-content-primary dark:text-off-white font-sans"
+          >
             {row.roleLabel}: {row.text}
           </Text>
         ))
       ) : (
-        <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
           {compensation.primaryText}
         </Text>
       )}
@@ -68,13 +71,13 @@ export function PostingCompensationContent({
       ) : null}
 
       {compensation.taxLabel ? (
-        <Text className="mt-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="mt-1 text-xs text-content-placeholder font-sans">
           {compensation.taxLabel}
         </Text>
       ) : null}
 
       {compensation.overflowCount > 0 ? (
-        <Text className="mt-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="mt-1 text-xs text-content-placeholder font-sans">
           +{compensation.overflowCount}개 역할 급여 더 있음
         </Text>
       ) : null}

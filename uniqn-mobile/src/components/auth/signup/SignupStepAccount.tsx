@@ -91,7 +91,7 @@ export function SignupStepAccount({
     <View className="w-full flex-col gap-4">
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
           이메일 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <Controller
@@ -115,7 +115,7 @@ export function SignupStepAccount({
 
       {/* 비밀번호 입력 */}
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
           비밀번호 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <Controller
@@ -139,7 +139,7 @@ export function SignupStepAccount({
 
       {/* 비밀번호 확인 */}
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
           비밀번호 확인 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <Controller

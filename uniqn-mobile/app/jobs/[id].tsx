@@ -55,7 +55,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (!resolvedId) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState
@@ -69,7 +69,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
@@ -79,7 +79,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/jobs" />
         <PostingSurfaceState
@@ -95,7 +95,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (!isCanonicalDatedPosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader
           title={job.title}
@@ -114,7 +114,7 @@ export default function PublicJobDetailAliasRoute() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <JobDetailHeader
         title={job.title}

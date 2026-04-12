@@ -158,10 +158,10 @@ export function ApplicantConfirmModal({
     <Modal visible={visible} onClose={handleClose} title={config.title} position="center">
       <View>
         {/* 지원자 정보 */}
-        <View className="flex-row items-center p-3 bg-secondary-50 dark:bg-surface rounded-md mb-3">
+        <View className="flex-row items-center p-3 bg-surface-page rounded-md mb-3">
           <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
-            <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -238,10 +238,10 @@ export function ApplicantConfirmModal({
         {/* 지원 메시지 */}
         {applicant.message && (
           <View className="p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-3">
-            <Text className="text-xs text-secondary-600 dark:text-secondary-300 mb-0.5 font-sans-medium">
+            <Text className="text-xs text-content-muted dark:text-secondary-300 mb-0.5 font-sans-medium">
               지원 메시지
             </Text>
-            <Text className="text-sm text-secondary-700 dark:text-secondary-200 font-sans">
+            <Text className="text-sm text-content-secondary dark:text-secondary-200 font-sans">
               {applicant.message}
             </Text>
           </View>
@@ -250,7 +250,7 @@ export function ApplicantConfirmModal({
         {/* 설명 */}
         <View className="flex-row items-center mb-3">
           <AlertCircleIcon size={20} color={action === 'reject' ? '#DC2626' : '#B8962E'} />
-          <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+          <Text className="ml-2 text-sm text-content-muted dark:text-secondary-300 font-sans">
             {config.description}
           </Text>
         </View>
@@ -258,7 +258,7 @@ export function ApplicantConfirmModal({
         {/* 입력 필드 */}
         {config.showTextInput && (
           <View className="mb-3">
-            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            <Text className="text-sm font-sans-medium text-content-secondary mb-1.5">
               {config.inputLabel}
             </Text>
             <TextInput
@@ -269,7 +269,7 @@ export function ApplicantConfirmModal({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[60px]"
+              className="p-2.5 border border-divider rounded-lg bg-white dark:bg-surface text-content-primary dark:text-off-white min-h-[60px]"
             />
           </View>
         )}

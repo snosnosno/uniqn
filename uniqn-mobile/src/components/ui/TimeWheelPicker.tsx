@@ -198,13 +198,13 @@ function WebTimePicker({
   return (
     <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-secondary-500 dark:text-secondary-400 text-base font-sans">
             취소
           </Text>
         </Pressable>
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
@@ -246,7 +246,7 @@ function WebTimePicker({
 
         {/* 구분자 */}
         <View className="w-8 items-center justify-center">
-          <Text className="text-2xl font-display text-secondary-900 dark:text-off-white">:</Text>
+          <Text className="text-2xl font-display text-content-primary dark:text-off-white">:</Text>
         </View>
 
         {/* 분 리스트 */}
@@ -378,13 +378,13 @@ function NativeWheelPicker({
   return (
     <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-secondary-500 dark:text-secondary-400 text-base font-sans">
             취소
           </Text>
         </Pressable>
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
@@ -401,7 +401,7 @@ function NativeWheelPicker({
       >
         {/* 선택 영역 하이라이트 */}
         <View
-          className="absolute left-4 right-4 bg-secondary-100 dark:bg-surface rounded-lg"
+          className="absolute left-4 right-4 bg-surface-card dark:bg-surface rounded-lg"
           style={{
             top: ITEM_HEIGHT * 2,
             height: ITEM_HEIGHT,
@@ -447,7 +447,7 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-sans-bold text-secondary-900 dark:text-off-white'
+                        ? 'font-sans-bold text-content-primary dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
@@ -465,7 +465,9 @@ function NativeWheelPicker({
         </View>
 
         {/* 구분자 */}
-        <Text className="text-2xl font-display text-secondary-900 dark:text-off-white mx-2">:</Text>
+        <Text className="text-2xl font-display text-content-primary dark:text-off-white mx-2">
+          :
+        </Text>
 
         {/* 분 휠 */}
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
@@ -504,7 +506,7 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-sans-bold text-secondary-900 dark:text-off-white'
+                        ? 'font-sans-bold text-content-primary dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >

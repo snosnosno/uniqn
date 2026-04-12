@@ -361,7 +361,7 @@ export function ScheduleDetailModal({
             )}
           </View>
           <Text
-            className="text-lg font-display text-secondary-900 dark:text-secondary-100"
+            className="text-lg font-display text-content-primary dark:text-secondary-100"
             numberOfLines={2}
           >
             {schedule.jobPostingName}
@@ -385,7 +385,7 @@ export function ScheduleDetailModal({
       </View>
 
       {/* Tab Navigation */}
-      <View className="flex-row bg-secondary-100 dark:bg-surface p-1 rounded-md mb-4">
+      <View className="flex-row bg-surface-card dark:bg-surface p-1 rounded-md mb-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -436,7 +436,7 @@ export function ScheduleDetailModal({
         </View>
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
-        <View className="pt-4 border-t border-secondary-200 dark:border-surface-overlay flex-row gap-3">
+        <View className="pt-4 border-t border-divider flex-row gap-3">
           {/* 지원 취소 버튼 (지원중 상태) */}
           {schedule.type === STATUS.SCHEDULE.APPLIED &&
             onCancelApplication &&
@@ -485,7 +485,7 @@ export function ScheduleDetailModal({
                 className="border-secondary-300 dark:border-surface-overlay"
                 icon={<AlertTriangleIcon size={16} color={SECONDARY_PALETTE[500]} />}
               >
-                <Text className="text-secondary-600 dark:text-secondary-400 font-sans">신고</Text>
+                <Text className="text-content-muted dark:text-secondary-400 font-sans">신고</Text>
               </Button>
             </View>
           )}

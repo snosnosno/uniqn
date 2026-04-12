@@ -93,7 +93,7 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
       .join(', ');
 
     return (
-      <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+      <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
         {timeDisplay} · {roleLabels || '-'}
       </Text>
     );
@@ -101,9 +101,7 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
 
   return (
     <View className="ml-4 mt-1">
-      <Text className="mb-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-        {timeDisplay}
-      </Text>
+      <Text className="mb-1 text-sm font-sans-medium text-content-secondary">{timeDisplay}</Text>
       <View className="ml-4 flex-row flex-wrap">
         {timeSlot.roles.map((role, idx) => (
           <RoleDisplay key={role.id || idx} role={role} showFilledCount={showFilledCount} />
@@ -139,7 +137,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
     return (
       <View className="py-1">
         <View className="mb-1 flex-row items-center">
-          <Text className="mr-2 text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+          <Text className="mr-2 text-sm font-sans-medium text-content-primary dark:text-off-white">
             {formattedDate}
           </Text>
           {showFilledCount && (
@@ -166,7 +164,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
   return (
     <View className="mb-3">
       <View className="mb-1 flex-row items-center justify-between">
-        <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
           {formattedDate}
         </Text>
         {showFilledCount && (

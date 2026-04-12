@@ -204,7 +204,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   return (
     <View>
       <View className="mb-4">
-        <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
           최대 {constraints.maxDates}개 날짜 추가 가능
           {hasGroupedRequirements && totalGroupCount > 0 && (
             <Text className="text-secondary-500 dark:text-secondary-500 font-sans">
@@ -260,7 +260,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         className={`flex-row items-center justify-center rounded-lg border-2 border-dashed p-4 ${
           canAddDate
             ? 'border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20'
-            : 'border-secondary-300 bg-secondary-50 opacity-50 dark:border-surface-overlay dark:bg-surface'
+            : 'border-secondary-300 bg-surface-page opacity-50 dark:border-surface-overlay dark:bg-surface'
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"

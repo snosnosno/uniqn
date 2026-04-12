@@ -40,7 +40,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           정산 현황
         </Text>
         <View className="flex-row items-center">
@@ -51,12 +51,12 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
             <Pressable
               onPress={onOpenSettings}
               hitSlop={8}
-              className="flex-row items-center px-2 py-1.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
+              className="flex-row items-center px-2 py-1.5 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
               <SettingsIcon size={16} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
                 정산설정
               </Text>
             </Pressable>

@@ -51,7 +51,7 @@ interface TimeBoxProps {
 
 function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
   return (
-    <View className="flex-1 items-center py-3 bg-secondary-50 dark:bg-surface/50 rounded-lg">
+    <View className="flex-1 items-center py-3 bg-surface-page dark:bg-surface/50 rounded-lg">
       <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
         {label}
       </Text>
@@ -133,12 +133,10 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       <View className="mb-5">
         <View className="flex-row items-center mb-2">
           <BriefcaseIcon size={18} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
-            역할
-          </Text>
+          <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">역할</Text>
         </View>
         <View className="ml-6">
-          <Text className="text-base text-secondary-900 dark:text-off-white font-sans-medium">
+          <Text className="text-base text-content-primary dark:text-off-white font-sans-medium">
             {getRoleDisplayName(schedule.role, schedule.customRole)}
           </Text>
         </View>
@@ -149,7 +147,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
             <PhoneIcon size={18} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">
               구인자 연락처
             </Text>
           </View>
@@ -175,7 +173,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
             <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">
               출퇴근 기록
             </Text>
           </View>

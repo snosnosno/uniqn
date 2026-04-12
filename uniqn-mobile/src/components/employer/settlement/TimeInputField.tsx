@@ -60,7 +60,7 @@ export function TimeInputField({
   return (
     <View className="mb-4">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
+        <Text className="text-sm font-sans-medium text-content-muted dark:text-secondary-400">
           {label}
         </Text>
         {/* 미정 체크박스 */}
@@ -79,7 +79,7 @@ export function TimeInputField({
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
               미정
             </Text>
           </Pressable>
@@ -94,17 +94,17 @@ export function TimeInputField({
           ${
             isUndefined
               ? 'bg-secondary-100 dark:bg-surface-dark border-secondary-200 dark:border-surface-overlay'
-              : 'bg-white dark:bg-surface border-secondary-200 dark:border-surface-overlay active:bg-secondary-50 dark:active:bg-secondary-700'
+              : 'bg-white dark:bg-surface border-divider active:bg-secondary-50 dark:active:bg-secondary-700'
           }`}
       >
         <View className="flex-row items-center flex-1">
           <ClockIcon size={20} color={isUndefined ? SECONDARY_PALETTE[400] : iconColor} />
           {isUndefined ? (
-            <Text className="ml-2 text-lg font-display-semibold text-secondary-400 dark:text-secondary-500">
+            <Text className="ml-2 text-lg font-display-semibold text-content-placeholder">
               미정
             </Text>
           ) : (
-            <Text className="ml-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <Text className="ml-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
               {displayText}
             </Text>
           )}

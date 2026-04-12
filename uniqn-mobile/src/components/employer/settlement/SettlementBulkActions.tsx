@@ -55,7 +55,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
           >
             {isAllSelected && <CheckIcon size={12} color="#fff" />}
           </View>
-          <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+          <Text className="text-sm text-content-secondary font-sans">
             {isAllSelected ? '해제' : '전체'}
           </Text>
         </Pressable>

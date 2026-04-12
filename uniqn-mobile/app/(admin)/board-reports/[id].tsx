@@ -65,7 +65,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -76,7 +76,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
           <EmptyState
             title="게시판 신고를 확인할 수 없습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -92,7 +92,7 @@ export default function AdminBoardReportDetailPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
           <Card className="mb-4">
             <View className="mb-3 flex-row flex-wrap items-center gap-2">
@@ -109,7 +109,7 @@ export default function AdminBoardReportDetailPage() {
               ) : null}
             </View>
 
-            <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
               {data.post?.title ?? '원본 게시글이 삭제되었거나 접근할 수 없습니다.'}
             </Text>
             <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -124,19 +124,19 @@ export default function AdminBoardReportDetailPage() {
           </Card>
 
           <Card className="mb-4">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               신고 사유
             </Text>
-            <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+            <Text className="text-sm leading-6 text-content-secondary font-sans">
               {data.report.reason}
             </Text>
 
             {data.report.details ? (
               <>
-                <Text className="mb-2 mt-4 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                <Text className="mb-2 mt-4 text-base font-sans-semibold text-content-primary dark:text-off-white">
                   상세 설명
                 </Text>
-                <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+                <Text className="text-sm leading-6 text-content-secondary font-sans">
                   {data.report.details}
                 </Text>
               </>
@@ -145,10 +145,10 @@ export default function AdminBoardReportDetailPage() {
 
           {data.post ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                 게시글 본문
               </Text>
-              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+              <Text className="text-sm leading-6 text-content-secondary font-sans">
                 {data.post.body}
               </Text>
             </Card>
@@ -156,13 +156,13 @@ export default function AdminBoardReportDetailPage() {
 
           {data.targetComment ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
                 신고 대상 댓글
               </Text>
               <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 작성자: {data.targetComment.authorName}
               </Text>
-              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300 font-sans">
+              <Text className="text-sm leading-6 text-content-secondary font-sans">
                 {data.targetComment.body}
               </Text>
             </Card>
@@ -188,7 +188,7 @@ export default function AdminBoardReportDetailPage() {
             </View>
           ) : (
             <Card>
-              <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                 처리 상태: {getStatusLabel(data.report.status)}
               </Text>
               <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">

@@ -106,10 +106,10 @@ export function DateRequirementCard({
   const canAddTimeSlot = requirement.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-divider mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-secondary-100">
           {dateString ? formatDateWithDay(dateString) : '날짜 선택 필요'}
         </Text>
 
@@ -147,7 +147,7 @@ export function DateRequirementCard({
         className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
           canAddTimeSlot
             ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
-            : 'border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface opacity-50'
+            : 'border-secondary-300 dark:border-surface-overlay bg-surface-page opacity-50'
         }`}
         accessibilityRole="button"
         accessibilityLabel="시간대 추가"

@@ -206,7 +206,7 @@ export function RoleChangeModal({
               </Text>
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                 {staff.staffName}
                 {staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
@@ -223,7 +223,7 @@ export function RoleChangeModal({
         </Card>
 
         {/* 역할 선택 */}
-        <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+        <Text className="text-sm font-sans-medium text-content-secondary mb-2">
           변경할 역할 선택
         </Text>
 
@@ -241,7 +241,7 @@ export function RoleChangeModal({
 
         {/* 변경 사유 */}
         <View className="mb-3">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-1.5">
             변경 사유 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
@@ -254,7 +254,7 @@ export function RoleChangeModal({
             textAlignVertical="top"
             accessibilityLabel="역할 변경 사유 입력"
             accessibilityHint="역할 변경 사유를 입력하세요. 필수 입력 항목입니다."
-            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[48px]"
+            className="p-2.5 border border-divider rounded-lg bg-white dark:bg-surface text-content-primary dark:text-off-white min-h-[48px]"
           />
         </View>
 

@@ -161,7 +161,7 @@ export function AnnouncementForm({
     (targetType === 'all' || targetRoles.length > 0) &&
     !isUploading;
 
-  const inputBaseClass = `rounded-lg border px-4 py-3 text-secondary-900 dark:text-off-white ${
+  const inputBaseClass = `rounded-lg border px-4 py-3 text-content-primary dark:text-off-white ${
     isDarkMode ? 'bg-secondary-800' : 'bg-white'
   }`;
 
@@ -177,7 +177,7 @@ export function AnnouncementForm({
       >
         {/* Title */}
         <View className="mb-4">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">
             제목 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
@@ -197,14 +197,14 @@ export function AnnouncementForm({
           {errors.title && (
             <Text className="text-xs text-error-500 mt-1 font-sans">{errors.title}</Text>
           )}
-          <Text className="text-xs text-secondary-400 mt-1 text-right font-sans">
+          <Text className="text-xs text-content-placeholder mt-1 text-right font-sans">
             {title.length}/100
           </Text>
         </View>
 
         {/* Category */}
         <View className="mb-4">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">
             카테고리 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <View className="flex-row flex-wrap gap-2">
@@ -234,7 +234,7 @@ export function AnnouncementForm({
 
         {/* Content */}
         <View className="mb-4">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">
             내용 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <TextInput
@@ -259,16 +259,16 @@ export function AnnouncementForm({
           {errors.content && (
             <Text className="text-xs text-error-500 mt-1 font-sans">{errors.content}</Text>
           )}
-          <Text className="text-xs text-secondary-400 mt-1 text-right font-sans">
+          <Text className="text-xs text-content-placeholder mt-1 text-right font-sans">
             {content.length}/5000
           </Text>
         </View>
 
         {/* Image Upload (다중 이미지) */}
         <View className="mb-4">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">
             이미지 첨부{' '}
-            <Text className="text-secondary-400 font-normal font-sans">
+            <Text className="text-content-placeholder font-normal font-sans">
               (선택, 최대 {MAX_ANNOUNCEMENT_IMAGES}장)
             </Text>
           </Text>
@@ -285,9 +285,7 @@ export function AnnouncementForm({
 
         {/* Priority */}
         <View className="mb-4">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            우선순위
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">우선순위</Text>
           <View className="flex-row gap-2">
             {([0, 1, 2] as AnnouncementPriority[]).map((p) => (
               <Pressable
@@ -320,10 +318,10 @@ export function AnnouncementForm({
         {/* Pinned */}
         <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-surface rounded-lg border border-secondary-300 dark:border-surface-overlay px-4 py-3">
           <View>
-            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-              상단 고정
+            <Text className="text-sm font-sans-medium text-content-secondary">상단 고정</Text>
+            <Text className="text-xs text-content-placeholder font-sans">
+              목록 최상단에 고정됩니다
             </Text>
-            <Text className="text-xs text-secondary-400 font-sans">목록 최상단에 고정됩니다</Text>
           </View>
           <Switch
             value={isPinned}
@@ -335,9 +333,7 @@ export function AnnouncementForm({
 
         {/* Target Audience */}
         <View className="mb-6">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            대상 설정
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">대상 설정</Text>
 
           {/* Target Type */}
           <View className="flex-row gap-2 mb-3">
@@ -420,9 +416,7 @@ export function AnnouncementForm({
               disabled={isSubmitting}
               className="flex-1 bg-secondary-200 dark:bg-surface rounded-lg py-3 items-center"
             >
-              <Text className="text-secondary-700 dark:text-secondary-300 font-sans-medium">
-                취소
-              </Text>
+              <Text className="text-content-secondary font-sans-medium">취소</Text>
             </Pressable>
           )}
           <Pressable

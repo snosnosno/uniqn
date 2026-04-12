@@ -146,9 +146,7 @@ export function SignupStepIdentity({
   return (
     <View className="w-full flex-col gap-5">
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          이름 (실명)
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">이름 (실명)</Text>
         <Controller
           control={control}
           name="name"
@@ -175,9 +173,7 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          생년월일
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">생년월일</Text>
         <Controller
           control={control}
           name="birthDate"
@@ -195,9 +191,7 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          성별
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">성별</Text>
         <Controller
           control={control}
           name="gender"
@@ -215,9 +209,7 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          본인인증
-        </Text>
+        <Text className="mb-2 text-sm font-sans-medium text-content-secondary">본인인증</Text>
         <PortOneIdentityVerification
           onVerified={handlePortOneVerified}
           onError={(error) =>

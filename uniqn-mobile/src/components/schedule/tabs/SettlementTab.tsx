@@ -49,7 +49,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
       <Text
         className={`text-sm font-sans ${
           isTotal
-            ? 'font-sans-semibold text-secondary-900 dark:text-off-white'
+            ? 'font-sans-semibold text-content-primary dark:text-off-white'
             : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >
@@ -202,11 +202,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
 
         {settlement && (
-          <View className="mt-4 w-full rounded-md bg-secondary-50 p-4 dark:bg-surface/50">
+          <View className="mt-4 w-full rounded-md bg-surface-page p-4 dark:bg-surface/50">
             <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               예상 급여 (참고용)
             </Text>
-            <Text className="text-lg font-display text-secondary-900 dark:text-off-white">
+            <Text className="text-lg font-display text-content-primary dark:text-off-white">
               {formatCurrency(settlement.totalPay)}
             </Text>
           </View>
@@ -232,9 +232,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
-            정산 정보
-          </Text>
+          <Text className="ml-2 text-sm font-sans-semibold text-content-secondary">정산 정보</Text>
         </View>
         <Badge variant={payrollStatusConfig.variant} size="sm">
           {payrollStatusConfig.label}
@@ -250,13 +248,13 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       )}
 
       {settlement ? (
-        <View className="rounded-md bg-secondary-50 p-4 dark:bg-surface/30">
+        <View className="rounded-md bg-surface-page p-4 dark:bg-surface/30">
           <View className="mb-4">
             <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               급여 계산
             </Text>
             <View className="flex-row items-baseline">
-              <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
               </Text>
               {salaryInfo.type === 'hourly' && (
@@ -340,7 +338,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           />
         </View>
       ) : (
-        <View className="rounded-md bg-secondary-50 p-4 dark:bg-surface/50">
+        <View className="rounded-md bg-surface-page p-4 dark:bg-surface/50">
           <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             정산 정보를 계산할 수 없습니다.
           </Text>

@@ -105,7 +105,7 @@ export default function ReviewForm({
   return (
     <View className="gap-6">
       <View>
-        <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+        <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
           {revieweeName}와의 근무는 어땠나요?
         </Text>
         <Controller
@@ -120,7 +120,7 @@ export default function ReviewForm({
 
       {sentiment ? (
         <View>
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
             어떤 점이 그랬나요?
           </Text>
           <Controller
@@ -148,7 +148,7 @@ export default function ReviewForm({
 
       {sentiment ? (
         <View>
-          <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
             추가 코멘트 (선택)
           </Text>
           <Controller
@@ -163,10 +163,10 @@ export default function ReviewForm({
                   placeholderTextColor={placeholderColor}
                   multiline
                   maxLength={REVIEW_COMMENT_MAX_LENGTH}
-                  className="min-h-[80px] rounded-lg border border-secondary-200 bg-white p-3 text-sm font-sans text-secondary-900 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-100"
+                  className="min-h-[80px] rounded-lg border border-secondary-200 bg-white p-3 text-sm font-sans text-content-primary dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-100"
                   textAlignVertical="top"
                 />
-                <Text className="mt-1 text-right text-xs text-secondary-400 font-sans">
+                <Text className="mt-1 text-right text-xs text-content-placeholder font-sans">
                   {(comment ?? '').length}/{REVIEW_COMMENT_MAX_LENGTH}
                 </Text>
               </View>

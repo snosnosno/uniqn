@@ -43,10 +43,10 @@ export function SettlementActionButtons({
             accessibilityRole="button"
             accessibilityLabel="근무 시간 수정"
             accessibilityHint="근무 시간을 수정합니다"
-            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
+            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
             <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-base font-sans-medium text-content-secondary">
               시간 수정
             </Text>
           </Pressable>
@@ -58,10 +58,10 @@ export function SettlementActionButtons({
             accessibilityRole="button"
             accessibilityLabel="정산 금액 수정"
             accessibilityHint="정산 금액을 수정합니다"
-            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
+            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
           >
             <EditIcon size={18} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
+            <Text className="ml-2 text-base font-sans-medium text-content-secondary">
               금액 수정
             </Text>
           </Pressable>

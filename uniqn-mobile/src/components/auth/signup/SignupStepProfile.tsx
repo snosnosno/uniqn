@@ -145,7 +145,7 @@ export function SignupStepProfile({
 
         {/* 닉네임 입력 */}
         <View>
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
             닉네임 <Text className="text-error-500 font-sans">*</Text>
           </Text>
           <Controller
@@ -197,9 +197,7 @@ export function SignupStepProfile({
 
         {/* 지역 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            지역
-          </Text>
+          <Text className="mb-2 text-sm font-sans-medium text-content-secondary">지역</Text>
           <Controller
             control={control}
             name="region"
@@ -220,9 +218,7 @@ export function SignupStepProfile({
 
         {/* 경력 (년) */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            경력 (년)
-          </Text>
+          <Text className="mb-2 text-sm font-sans-medium text-content-secondary">경력 (년)</Text>
           <Controller
             control={control}
             name="experienceYears"
@@ -246,15 +242,13 @@ export function SignupStepProfile({
 
         {/* 이력 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            이력
-          </Text>
+          <Text className="mb-2 text-sm font-sans-medium text-content-secondary">이력</Text>
           <Controller
             control={control}
             name="career"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                   errors.career
                     ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                     : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
@@ -280,15 +274,13 @@ export function SignupStepProfile({
 
         {/* 기타사항 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-            기타사항
-          </Text>
+          <Text className="mb-2 text-sm font-sans-medium text-content-secondary">기타사항</Text>
           <Controller
             control={control}
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
+                className={`rounded-lg border px-4 py-3 text-content-primary dark:text-secondary-100 ${
                   errors.note
                     ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                     : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'

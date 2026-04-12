@@ -85,7 +85,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+      <Text className="mb-2 text-sm font-sans-medium text-content-secondary">
         공고 타입<Text className="text-error-500 font-sans">*</Text>
       </Text>
 
@@ -120,7 +120,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
       )}
 
       {disabled && (
-        <View className="mt-2 rounded bg-secondary-100 p-2 dark:bg-surface">
+        <View className="mt-2 rounded bg-surface-card p-2 dark:bg-surface">
           <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
             공고 타입은 수정할 수 없습니다.
           </Text>

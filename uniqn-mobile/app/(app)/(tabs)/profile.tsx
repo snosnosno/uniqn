@@ -113,7 +113,7 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="프로필" showSettings />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
           <Card className="mb-4">
@@ -133,7 +133,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="프로필" showSettings />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
               source={currentUserIdentity.photoURL}
             />
             <View className="ml-4 flex-1">
-              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
+              <Text className="text-lg font-display-semibold text-content-primary dark:text-secondary-100">
                 {currentUserIdentity.displayName}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">

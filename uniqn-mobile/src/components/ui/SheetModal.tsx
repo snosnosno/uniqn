@@ -163,15 +163,15 @@ function WebSheetModal({
             className={`bg-white dark:bg-surface-dark w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
+              <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
                 {title}
               </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={handleRequestClose}
                   disabled={isLoading}
-                  className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                  className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -192,11 +192,7 @@ function WebSheetModal({
             </ScrollView>
 
             {/* Footer */}
-            {footer && (
-              <View className="px-4 py-4 border-t border-secondary-200 dark:border-surface-overlay pb-8">
-                {footer}
-              </View>
-            )}
+            {footer && <View className="px-4 py-4 border-t border-divider pb-8">{footer}</View>}
           </View>
         </View>
       </View>
@@ -326,15 +322,15 @@ function NativeSheetModal({
               className={`bg-white dark:bg-surface-dark ${fullHeight ? '' : 'rounded-t-3xl'}`}
             >
               {/* Header */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-                <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-divider">
+                <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
                   {title}
                 </Text>
                 {showCloseButton && (
                   <Pressable
                     onPress={handleRequestClose}
                     disabled={isLoading}
-                    className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                    className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -356,11 +352,7 @@ function NativeSheetModal({
               </ScrollView>
 
               {/* Footer */}
-              {footer && (
-                <View className="px-4 py-4 border-t border-secondary-200 dark:border-surface-overlay">
-                  {footer}
-                </View>
-              )}
+              {footer && <View className="px-4 py-4 border-t border-divider">{footer}</View>}
             </SafeAreaView>
           </Animated.View>
         </View>

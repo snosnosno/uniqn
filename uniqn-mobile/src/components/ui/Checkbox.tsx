@@ -229,7 +229,7 @@ export const CheckboxGroup = memo(function CheckboxGroup({
   return (
     <View className={className}>
       {label && (
-        <Text className="mb-2 font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="mb-2 font-sans-medium text-content-primary dark:text-off-white">
           {label}
         </Text>
       )}

@@ -181,7 +181,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 제목 */}
       <Text
-        className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-2"
+        className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-2"
         numberOfLines={2}
       >
         {posting.title}
@@ -279,7 +279,7 @@ export default function MyPostingsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           공고 목록을 불러오는 중...
@@ -291,7 +291,7 @@ export default function MyPostingsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="공고 목록을 불러오는 데 실패했습니다."
@@ -303,11 +303,11 @@ export default function MyPostingsPage() {
   }
 
   return (
-    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-surface-page dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-xl font-display text-secondary-900 dark:text-off-white">
+          <Text className="text-xl font-display text-content-primary dark:text-off-white">
             내 공고 관리
           </Text>
           <Pressable
@@ -327,7 +327,7 @@ export default function MyPostingsPage() {
       </View>
 
       {/* 필터 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

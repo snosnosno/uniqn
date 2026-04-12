@@ -52,7 +52,7 @@ export function SettlementAmountSection({
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
           정산 금액
         </Text>
       </View>

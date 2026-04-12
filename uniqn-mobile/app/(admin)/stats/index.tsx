@@ -52,7 +52,7 @@ export default function AdminStatsScreen() {
 
   if (isLoading && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <Loading variant="layout" message="통계 데이터를 불러오는 중..." />
       </SafeAreaView>
@@ -61,7 +61,7 @@ export default function AdminStatsScreen() {
 
   if (error && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <ErrorState
           error={error}
@@ -74,7 +74,7 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen options={{ title: '서비스 통계' }} />
       <ScrollView
         className="flex-1"
@@ -89,7 +89,7 @@ export default function AdminStatsScreen() {
       >
         <View className="mb-6 flex-row items-start justify-between">
           <View className="flex-1 pr-4">
-            <Text className="text-2xl font-display text-secondary-900 dark:text-off-white">
+            <Text className="text-2xl font-display text-content-primary dark:text-off-white">
               서비스 통계
             </Text>
             <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -113,7 +113,7 @@ export default function AdminStatsScreen() {
         ) : null}
 
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
             주요 지표
           </Text>
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -181,7 +181,7 @@ export default function AdminStatsScreen() {
           <RoleDistributionChart data={stats?.usersByRole ?? { admin: 0, employer: 0, staff: 0 }} />
         </View>
 
-        <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+        <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-off-white">
           7일 트렌드
         </Text>
         <View className="mb-4">
@@ -193,7 +193,7 @@ export default function AdminStatsScreen() {
 
         <View className="rounded-md border border-secondary-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
               최근 가입자
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -206,10 +206,10 @@ export default function AdminStatsScreen() {
               {stats.recentUsers.map((user) => (
                 <View
                   key={user.uid}
-                  className="flex-row items-center justify-between rounded-lg bg-secondary-50 px-3 py-3 dark:bg-surface-elevated"
+                  className="flex-row items-center justify-between rounded-lg bg-surface-page px-3 py-3 dark:bg-surface-elevated"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
                       {user.name}
                     </Text>
                     <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">

@@ -36,7 +36,7 @@ function getStatusClassName(status: BoardAdminReportRecord['report']['status']):
     case 'resolved':
       return 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300';
     case 'dismissed':
-      return 'bg-secondary-100 text-secondary-600 dark:bg-surface-elevated dark:text-secondary-300';
+      return 'bg-secondary-100 text-content-muted dark:bg-surface-elevated dark:text-secondary-300';
     default:
       return 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300';
   }
@@ -85,16 +85,16 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
             <Text className="text-xs font-sans-medium">{getStatusLabel(record.report.status)}</Text>
           </View>
         </View>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+        <Text className="text-xs text-content-placeholder font-sans">
           {formatDateValue(record.report.createdAt)}
         </Text>
       </View>
 
-      <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
         {record.post?.title ?? '원본 게시글을 확인할 수 없습니다.'}
       </Text>
       <Text
-        className="mb-3 text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+        className="mb-3 text-sm text-content-muted dark:text-secondary-400 font-sans"
         numberOfLines={2}
       >
         사유: {record.report.reason}
@@ -144,7 +144,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -155,7 +155,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-surface-page dark:bg-surface-dark">
           <EmptyState
             title="게시판 신고를 불러오지 못했습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -171,16 +171,16 @@ export default function AdminBoardReportsPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page dark:bg-surface-dark">
         <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
-          <View className="flex-row items-center rounded-lg bg-secondary-100 px-3 py-2 dark:bg-surface-elevated">
+          <View className="flex-row items-center rounded-lg bg-surface-card px-3 py-2 dark:bg-surface-elevated">
             <SearchIcon size={18} color={SECONDARY_PALETTE[400]} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="사유, 신고자, 게시글 검색"
               placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="ml-2 flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
+              className="ml-2 flex-1 text-base font-sans text-content-primary dark:text-off-white"
               autoCapitalize="none"
               autoCorrect={false}
             />

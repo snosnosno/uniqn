@@ -50,21 +50,19 @@ export function InquiryCard({
             </View>
 
             <Text
-              className="mb-1 text-base font-sans-medium text-secondary-900 dark:text-secondary-100"
+              className="mb-1 text-base font-sans-medium text-content-primary dark:text-secondary-100"
               numberOfLines={2}
             >
               {inquiry.subject}
             </Text>
 
             {showAuthor && (
-              <Text className="mb-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+              <Text className="mb-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {inquiry.userName} ({inquiry.userEmail})
               </Text>
             )}
 
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
-              {formattedDate}
-            </Text>
+            <Text className="text-xs text-content-placeholder font-sans">{formattedDate}</Text>
 
             {inquiry.status === STATUS.INQUIRY.CLOSED && inquiry.response && (
               <View className="mt-2 flex-row items-center">

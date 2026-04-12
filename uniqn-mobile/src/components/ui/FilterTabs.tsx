@@ -75,7 +75,7 @@ function FilterTabsInner<T extends string = string>({
   return (
     <View className={className ?? 'px-4 mb-4'}>
       <View
-        className="flex-row bg-secondary-100 dark:bg-surface rounded-lg p-1"
+        className="flex-row bg-surface-card dark:bg-surface rounded-lg p-1"
         accessibilityRole="tablist"
       >
         {options.map((option) => {

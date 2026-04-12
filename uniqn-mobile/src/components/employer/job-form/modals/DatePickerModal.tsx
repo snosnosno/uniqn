@@ -155,7 +155,7 @@ export function DatePickerModal({
       </View>
 
       {/* 선택된 날짜 목록 */}
-      <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
+      <View className="mb-4 p-3 bg-surface-page rounded-lg">
         <View className="flex-row justify-between items-center mb-2">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             선택한 날짜 ({selectedDates.length}개)
@@ -170,9 +170,7 @@ export function DatePickerModal({
         </View>
 
         {selectedDates.length === 0 ? (
-          <Text className="text-secondary-400 dark:text-secondary-500 font-sans">
-            캘린더에서 날짜를 선택하세요
-          </Text>
+          <Text className="text-content-placeholder font-sans">캘린더에서 날짜를 선택하세요</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
             {sortedSelectedDates.map((date) => (
@@ -211,11 +209,11 @@ export function DatePickerModal({
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
-        <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
+        <View className="mb-4 p-3 bg-surface-page rounded-lg">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
           </Text>
-          <Text className="text-sm text-secondary-600 dark:text-secondary-300 font-sans">
+          <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
             {existingDates.slice(0, 5).join(', ')}
             {existingDates.length > 5 && ` 외 ${existingDates.length - 5}개`}
           </Text>
@@ -231,7 +229,7 @@ export function DatePickerModal({
           accessibilityLabel="취소"
           testID="job-posting-date-cancel-button"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-sans-medium">
+          <Text className="text-content-secondary dark:text-secondary-200 text-center font-sans-medium">
             취소
           </Text>
         </Pressable>

@@ -26,9 +26,9 @@ function LoadingState() {
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
       <Text className="mb-4 text-4xl font-sans">!</Text>
-      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         오류가 발생했습니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
@@ -43,9 +43,9 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
-    <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
       <Text className="mb-4 text-4xl font-sans">이미</Text>
-      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         이미 지원한 공고입니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
@@ -70,8 +70,8 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
 
 function UnsupportedPostingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-secondary-50 p-6 dark:bg-surface-dark">
-      <Text className="mb-2 text-lg font-display-semibold text-secondary-900 dark:text-off-white">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
+      <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         현재 지원할 수 없는 공고입니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
@@ -206,7 +206,7 @@ export default function ApplyScreen() {
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
         <LoadingState />
       </SafeAreaView>
@@ -215,7 +215,7 @@ export default function ApplyScreen() {
 
   if (jobError || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
         <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
       </SafeAreaView>
@@ -224,7 +224,7 @@ export default function ApplyScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
         <UnsupportedPostingState />
       </SafeAreaView>
@@ -235,7 +235,7 @@ export default function ApplyScreen() {
 
   if (hasApplied(job.id) || hasAppliedDirect) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen options={stackOptions} />
         <AlreadyAppliedState isFixed={isFixed} />
       </SafeAreaView>
@@ -244,7 +244,7 @@ export default function ApplyScreen() {
 
   if (!showForm) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             ...stackOptions,
@@ -253,7 +253,7 @@ export default function ApplyScreen() {
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="mb-4 text-6xl font-sans">완료</Text>
-          <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
+          <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">
             지원이 완료되었습니다
           </Text>
           <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400 font-sans">
@@ -277,7 +277,7 @@ export default function ApplyScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
       <Stack.Screen
         options={{
           headerShown: false,

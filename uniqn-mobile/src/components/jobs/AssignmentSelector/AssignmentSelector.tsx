@@ -182,7 +182,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   return (
     <View className="rounded-md bg-white p-4 dark:bg-surface">
       <View className="mb-3">
-        <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
           날짜 및 역할 선택 <Text className="text-error-500 font-sans">*</Text>
         </Text>
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">

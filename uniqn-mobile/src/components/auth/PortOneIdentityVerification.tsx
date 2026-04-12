@@ -179,7 +179,7 @@ export function PortOneIdentityVerification({
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 이름
               </Text>
-              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="font-sans-medium text-content-primary dark:text-off-white">
                 {verifiedIdentity.name}
               </Text>
             </View>
@@ -187,7 +187,7 @@ export function PortOneIdentityVerification({
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 생년월일
               </Text>
-              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="font-sans-medium text-content-primary dark:text-off-white">
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
@@ -195,7 +195,7 @@ export function PortOneIdentityVerification({
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 성별
               </Text>
-              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="font-sans-medium text-content-primary dark:text-off-white">
                 {getGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
@@ -203,7 +203,7 @@ export function PortOneIdentityVerification({
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 휴대폰 번호
               </Text>
-              <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="font-sans-medium text-content-primary dark:text-off-white">
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -220,14 +220,14 @@ export function PortOneIdentityVerification({
           </Button>
         </View>
       ) : (
-        <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
+        <View className="rounded-md border border-secondary-200 bg-surface-page p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
             <ShieldCheckIcon size={20} color="#4f46e5" />
-            <Text className="ml-2 font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
               이니시스 본인인증
             </Text>
           </View>
-          <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300 font-sans">
+          <Text className="mb-4 text-sm leading-5 text-content-muted dark:text-secondary-300 font-sans">
             PASS, 토스, 카카오, 네이버 등 이니시스 통합인증 수단으로 본인인증을 진행합니다. 인증
             완료 후 검증된 이름, 생년월일, 성별, 휴대폰 번호를 자동으로 반영합니다.
           </Text>

@@ -49,7 +49,7 @@ export default function ReviewHistoryScreen() {
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-secondary-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-secondary-900" edges={['bottom']}>
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}
 
@@ -118,7 +118,7 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
     <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-secondary-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Text className="text-2xl font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="text-2xl font-display text-content-primary dark:text-secondary-100">
             {bubbleScore.score.toFixed(1)}
           </Text>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
@@ -140,9 +140,7 @@ function StatItem({ emoji, count, label }: { emoji: string; count: number; label
   return (
     <View className="flex-row items-center gap-1">
       <Text className="text-sm font-sans">{emoji}</Text>
-      <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-        {count}
-      </Text>
+      <Text className="text-sm font-sans-medium text-content-secondary">{count}</Text>
       <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
     </View>
   );

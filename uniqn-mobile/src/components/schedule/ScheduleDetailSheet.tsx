@@ -81,7 +81,7 @@ function DetailRow({ icon, label, value }: DetailRowProps) {
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {label}
         </Text>
-        <Text className="text-sm text-secondary-900 dark:text-secondary-100 mt-0.5 font-sans">
+        <Text className="text-sm text-content-primary dark:text-secondary-100 mt-0.5 font-sans">
           {value}
         </Text>
       </View>
@@ -157,13 +157,13 @@ export function ScheduleDetailSheet({
               </View>
             )}
           </View>
-          <Text className="text-xl font-display text-secondary-900 dark:text-secondary-100">
+          <Text className="text-xl font-display text-content-primary dark:text-secondary-100">
             {schedule.jobPostingName}
           </Text>
         </View>
         <Pressable
           onPress={onClose}
-          className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
+          className="w-8 h-8 items-center justify-center rounded-sm bg-surface-card dark:bg-surface"
           accessibilityLabel="닫기"
         >
           <XMarkIcon size={18} color={SECONDARY_PALETTE[400]} />
@@ -219,11 +219,9 @@ export function ScheduleDetailSheet({
 
       {/* 메모 */}
       {schedule.notes && (
-        <View className="bg-secondary-50 dark:bg-surface/50 rounded-md p-4 mb-6">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-1">
-            메모
-          </Text>
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <View className="bg-surface-page dark:bg-surface/50 rounded-md p-4 mb-6">
+          <Text className="text-sm font-sans-medium text-content-secondary mb-1">메모</Text>
+          <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
             {schedule.notes}
           </Text>
         </View>

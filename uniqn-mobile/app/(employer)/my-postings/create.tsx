@@ -80,7 +80,7 @@ export default function CreateJobPostingScreen() {
   }, [user, formData.location, formData.postingType, draft, createJobPosting, addToast, router]);
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

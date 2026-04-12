@@ -86,7 +86,7 @@ export function AccordionItem({
           {icon && <View className="mr-3">{icon}</View>}
           <View className="flex-1">
             <Text
-              className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100"
+              className="text-base font-sans-medium text-content-primary dark:text-secondary-100"
               numberOfLines={2}
             >
               {title}

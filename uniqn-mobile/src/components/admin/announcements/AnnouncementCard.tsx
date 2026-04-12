@@ -57,8 +57,8 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           )}
 
           {/* Category Badge */}
-          <View className="px-2 py-0.5 rounded bg-secondary-100 dark:bg-surface">
-            <Text className="text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+          <View className="px-2 py-0.5 rounded bg-surface-card dark:bg-surface">
+            <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
               {categoryLabel}
             </Text>
           </View>
@@ -74,7 +74,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
       {/* Title */}
       <Text
-        className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-1"
+        className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-1"
         numberOfLines={2}
       >
         {announcement.title}
@@ -94,7 +94,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           {/* Author */}
           <View className="flex-row items-center">
             <PersonOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-            <Text className="text-xs text-secondary-400 ml-1 font-sans">
+            <Text className="text-xs text-content-placeholder ml-1 font-sans">
               {announcement.authorName}
             </Text>
           </View>
@@ -102,14 +102,14 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           {/* View Count */}
           <View className="flex-row items-center">
             <EyeOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-            <Text className="text-xs text-secondary-400 ml-1 font-sans">
+            <Text className="text-xs text-content-placeholder ml-1 font-sans">
               {announcement.viewCount.toLocaleString()}
             </Text>
           </View>
         </View>
 
         {/* Date */}
-        <Text className="text-xs text-secondary-400 font-sans">
+        <Text className="text-xs text-content-placeholder font-sans">
           {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && announcement.publishedAt
             ? formatDateKorean(announcement.publishedAt) || '-'
             : announcement.createdAt
@@ -122,7 +122,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
       {announcement.targetAudience.type === 'roles' && (
         <View className="flex-row items-center mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
           <PeopleOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-          <Text className="text-xs text-secondary-400 ml-1 font-sans">
+          <Text className="text-xs text-content-placeholder ml-1 font-sans">
             대상:{' '}
             {announcement.targetAudience.roles
               ?.map((role) => {

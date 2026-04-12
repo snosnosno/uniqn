@@ -68,9 +68,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          {label}
-        </Text>
+        <Text className="mb-1.5 text-sm font-sans-medium text-content-secondary">{label}</Text>
       )}
 
       <View
@@ -95,7 +93,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
             setIsFocused(false);
             props.onBlur?.(e);
           }}
-          className="flex-1 py-3 text-base font-sans text-secondary-900 dark:text-secondary-100"
+          className="flex-1 py-3 text-base font-sans text-content-primary dark:text-secondary-100"
           placeholderTextColor={placeholderColor}
         />
 

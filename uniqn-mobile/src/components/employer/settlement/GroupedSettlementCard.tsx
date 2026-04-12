@@ -152,7 +152,7 @@ const DateStatusRow = memo(function DateStatusRow({
       </View>
 
       {/* 금액 */}
-      <Text className="text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300 mr-3">
+      <Text className="text-sm font-sans-semibold text-content-secondary mr-3">
         {status.hasValidTimes ? formatCurrency(status.amount) : '-'}
       </Text>
 
@@ -299,7 +299,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
           {/* 이름 + 역할 */}
           <View className="flex-1">
-            <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -322,7 +322,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
         <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+        <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
           {dateDisplay}
         </Text>
       </View>
@@ -347,9 +347,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           </View>
         )}
         {group.summary.settlableCount < group.summary.pendingCount && (
-          <View className="flex-row items-center px-2 py-1 bg-secondary-50 dark:bg-surface rounded-lg">
+          <View className="flex-row items-center px-2 py-1 bg-surface-page rounded-lg">
             <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
             </Text>
           </View>
@@ -359,7 +359,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 펼침/접힘 버튼 */}
       <Pressable
         onPress={toggleExpanded}
-        className="flex-row items-center justify-center mt-3 py-2 border-t border-secondary-200 dark:border-surface-overlay"
+        className="flex-row items-center justify-center mt-3 py-2 border-t border-divider"
         accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
       >
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1 font-sans">
@@ -399,7 +399,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
       {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
-        <View className="mt-3 pt-3 border-t border-secondary-200 dark:border-surface-overlay">
+        <View className="mt-3 pt-3 border-t border-divider">
           <Pressable
             onPress={handleBulkSettle}
             className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"

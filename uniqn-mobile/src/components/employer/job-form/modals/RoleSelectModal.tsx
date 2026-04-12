@@ -113,7 +113,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
       <View className="-mx-5 -mb-5">
         {showCustomInput ? (
           <View className="p-4">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 mb-2 font-sans">
               역할 이름을 입력해 주세요.
             </Text>
             <TextInput
@@ -122,7 +122,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               placeholder="예: 플로어 매니저"
               placeholderTextColor={SECONDARY_PALETTE[400]}
               autoFocus
-              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-secondary-900 dark:text-off-white bg-white dark:bg-surface"
+              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-content-primary dark:text-off-white bg-white dark:bg-surface"
             />
             <View className="flex-row gap-3 mt-4">
               <Pressable
@@ -130,11 +130,9 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                   setShowCustomInput(false);
                   setCustomRoleName('');
                 }}
-                className="flex-1 py-3 rounded-lg bg-secondary-100 dark:bg-surface"
+                className="flex-1 py-3 rounded-lg bg-surface-card dark:bg-surface"
               >
-                <Text className="text-center font-sans-medium text-secondary-700 dark:text-secondary-300">
-                  취소
-                </Text>
+                <Text className="text-center font-sans-medium text-content-secondary">취소</Text>
               </Pressable>
               <Pressable
                 onPress={handleAddCustomRole}

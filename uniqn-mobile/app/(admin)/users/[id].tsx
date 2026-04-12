@@ -47,7 +47,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
           {label}
         </Text>
         {typeof value === 'string' ? (
-          <Text className="text-base text-secondary-900 dark:text-off-white font-sans">
+          <Text className="text-base text-content-primary dark:text-off-white font-sans">
             {value}
           </Text>
         ) : (
@@ -153,7 +153,7 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
           사용자 정보를 불러오는 중...
@@ -164,7 +164,7 @@ export default function AdminUserDetailPage() {
 
   if (error || !user) {
     return (
-      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-surface-page dark:bg-surface-dark">
         <EmptyState
           title="사용자를 찾을 수 없음"
           description="요청하신 사용자 정보를 찾을 수 없습니다."
@@ -177,13 +177,13 @@ export default function AdminUserDetailPage() {
 
   return (
     <ScrollView
-      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
+      className="flex-1 bg-surface-page dark:bg-surface-dark"
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#D4AF37" />
       }
     >
       {/* Profile Header */}
-      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-secondary-200 dark:border-surface-overlay">
+      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
         {user.photoURL ? (
           <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
         ) : (
@@ -191,7 +191,7 @@ export default function AdminUserDetailPage() {
             <UserIcon size={40} color={SECONDARY_PALETTE[400]} />
           </View>
         )}
-        <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-1">
+        <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
           {user.name}
         </Text>
         <View className="flex-row items-center">
@@ -215,7 +215,7 @@ export default function AdminUserDetailPage() {
 
       {/* Basic Info */}
       <View className="bg-white dark:bg-surface mt-3 px-4">
-        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           기본 정보
         </Text>
         <InfoRow
@@ -257,7 +257,7 @@ export default function AdminUserDetailPage() {
 
       {/* Role Management */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
-        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           역할 관리
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3 font-sans">
@@ -287,7 +287,7 @@ export default function AdminUserDetailPage() {
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
+              <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
                 {option.label}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -309,7 +309,7 @@ export default function AdminUserDetailPage() {
 
       {/* Account Actions */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
-        <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           계정 관리
         </Text>
         <View className="mt-4">

@@ -69,8 +69,8 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         ) : null}
 
         {title ? (
-          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-secondary-200 dark:border-surface-overlay">
-            <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white flex-1">
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-divider">
+            <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white flex-1">
               {title}
             </Text>
           </View>

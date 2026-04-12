@@ -65,7 +65,7 @@ function FormErrorFallback({
           accessibilityRole="button"
           accessibilityLabel="초기화"
         >
-          <Text className="text-secondary-700 dark:text-secondary-200 font-sans-medium text-center text-sm">
+          <Text className="text-content-secondary dark:text-secondary-200 font-sans-medium text-center text-sm">
             초기화
           </Text>
         </Pressable>

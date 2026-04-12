@@ -191,9 +191,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-3 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-          세금 설정
-        </Text>
+        <Text className="mb-3 text-sm font-sans-medium text-content-secondary">세금 설정</Text>
       )}
 
       {/* 세금 타입 선택 (수평 라디오) */}
@@ -249,7 +247,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="3.3"
               placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
+              className="flex-1 text-base font-sans text-content-primary dark:text-off-white"
               accessibilityLabel="세율"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
@@ -321,7 +319,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="10,000"
               placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
+              className="flex-1 text-base font-sans text-content-primary dark:text-off-white"
               accessibilityLabel="고정 세금 금액"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
@@ -334,9 +332,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
       {/* 적용 대상 (세금 타입이 none이 아닐 때만) */}
       {taxSettings.type !== 'none' && (
         <View className="mb-3">
-          <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300 mb-2">
-            적용 대상
-          </Text>
+          <Text className="text-sm font-sans-medium text-content-secondary mb-2">적용 대상</Text>
           <View className="flex-row flex-wrap gap-2">
             {TAXABLE_ITEM_OPTIONS.map(({ key, label }) => {
               const isChecked = currentTaxableItems[key] !== false;
@@ -383,7 +379,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               );
             })}
           </View>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-2 font-sans">
+          <Text className="text-xs text-content-placeholder mt-2 font-sans">
             체크된 항목에만 세금이 적용됩니다
           </Text>
         </View>
@@ -393,7 +389,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
       {showPreview && totalAmount && totalAmount > 0 && taxSettings.type !== 'none' && (
         <View className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
               세금
               {taxSettings.type === 'rate' && (
                 <Text className="text-xs font-sans"> ({taxSettings.value}%)</Text>
@@ -404,9 +400,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
             </Text>
           </View>
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
-              세후 금액
-            </Text>
+            <Text className="text-sm font-sans-medium text-content-secondary">세후 금액</Text>
             <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(afterTaxAmount)}
             </Text>

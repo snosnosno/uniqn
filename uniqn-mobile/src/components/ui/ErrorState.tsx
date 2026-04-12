@@ -94,12 +94,12 @@ export function ErrorState({
       </View>
 
       {/* 제목 */}
-      <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
+      <Text className="text-xl font-display text-content-primary dark:text-off-white text-center mb-2">
         {title}
       </Text>
 
       {/* 메시지 */}
-      <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6 font-sans">
+      <Text className="text-content-muted dark:text-secondary-400 text-center mb-6 leading-6 font-sans">
         {errorMessage}
       </Text>
 

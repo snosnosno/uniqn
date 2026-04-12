@@ -25,7 +25,7 @@ import type { Application } from '@/types';
 function LoadingState() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return (
-    <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
       <ActivityIndicator size="large" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
       <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
         지원 정보를 불러오는 중...
@@ -40,9 +40,9 @@ function LoadingState() {
 
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-surface-page dark:bg-surface-dark">
       <Text className="text-4xl mb-4 font-sans">{''}</Text>
-      <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-2">
         오류가 발생했습니다
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6 font-sans">
@@ -61,9 +61,9 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
 
 function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-surface-page dark:bg-surface-dark">
       <Text className="text-4xl mb-4 font-sans">{''}</Text>
-      <Text className="text-lg font-display-semibold text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-2">
         취소 요청 불가
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6 font-sans">
@@ -83,9 +83,9 @@ function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => v
 function SuccessState() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-surface-page dark:bg-surface-dark">
       <Text className="text-6xl mb-4 font-sans">{''}</Text>
-      <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-2">
+      <Text className="text-xl font-display text-content-primary dark:text-off-white mb-2">
         취소 요청 완료
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center font-sans">
@@ -218,7 +218,7 @@ export default function CancellationRequestScreen() {
   // 로딩 상태
   if (isLoadingApplication) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -237,7 +237,7 @@ export default function CancellationRequestScreen() {
   // 조회 에러
   if (loadError) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -256,7 +256,7 @@ export default function CancellationRequestScreen() {
   // 지원서를 찾을 수 없는 경우
   if (!application) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -275,7 +275,7 @@ export default function CancellationRequestScreen() {
   // 취소 요청 불가능한 경우
   if (!canRequestCancel.allowed) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -294,7 +294,7 @@ export default function CancellationRequestScreen() {
   // 성공 상태
   if (isSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -312,7 +312,7 @@ export default function CancellationRequestScreen() {
 
   // 폼 표시
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark">
       <Stack.Screen
         options={{
           headerShown: false,

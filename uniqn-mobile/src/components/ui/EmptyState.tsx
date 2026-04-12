@@ -66,7 +66,7 @@ export function EmptyState({
     <View className="flex-1 items-center justify-center px-6 py-12">
       <View className="mb-4">{renderIcon()}</View>
 
-      <Text className="mb-2 text-center text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-secondary-100">
         {title}
       </Text>
 

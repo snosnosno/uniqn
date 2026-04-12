@@ -37,13 +37,13 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
           근무 시간
         </Text>
       </View>
 
       {hasValidTimes ? (
-        <View className="flex-row items-center justify-between p-3 bg-secondary-50 dark:bg-surface rounded-lg">
+        <View className="flex-row items-center justify-between p-3 bg-surface-page rounded-lg">
           <View className="items-center">
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
               출근

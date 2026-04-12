@@ -29,7 +29,7 @@ function BoardEntryCard({ title, description, icon, boardType }: BoardEntryCardP
       onPress={() => router.push(`/(app)/(tabs)/board/${boardType}`)}
     >
       <View className="mb-3">{icon}</View>
-      <Text className="mb-1 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
         {title}
       </Text>
       <Text className="text-sm leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -48,7 +48,7 @@ interface BoardSectionProps {
 function BoardSection({ title, emptyTitle, posts }: BoardSectionProps) {
   return (
     <View className="mb-6">
-      <Text className="mb-3 text-lg font-display-semibold text-secondary-900 dark:text-secondary-100">
+      <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-secondary-100">
         {title}
       </Text>
 
@@ -80,7 +80,7 @@ export default function BoardHomeScreen() {
       : '확정된 내 일정 게시판만 모아서 확인해요.';
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="게시판" />
 
       {isLoading ? (

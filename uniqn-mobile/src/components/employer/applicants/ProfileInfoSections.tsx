@@ -55,7 +55,7 @@ export function InfoRow({ icon, label, value }: InfoRowProps) {
         <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {label}
         </Text>
-        <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">{value}</Text>
+        <Text className="text-sm text-content-primary dark:text-off-white font-sans">{value}</Text>
       </View>
     </View>
   );
@@ -69,15 +69,15 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center rounded-lg bg-secondary-50 p-3 dark:bg-surface">
-      <View className="mr-2 h-8 w-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
+    <View className="flex-row items-center rounded-lg bg-surface-page p-3 dark:bg-surface">
+      <View className="mr-2 h-8 w-8 items-center justify-center rounded-sm bg-surface-card dark:bg-surface">
         {icon}
       </View>
       <View className="flex-1">
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           {label}
         </Text>
-        <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+        <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
           {value}
         </Text>
       </View>
@@ -96,7 +96,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
 
   return (
     <View className="border-b border-secondary-100 px-4 py-4 dark:border-surface-overlay">
-      <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-off-white">
         프로필 정보
       </Text>
 
@@ -177,7 +177,7 @@ export function ContactInfoSection({
 
   return (
     <View className="px-4 py-4">
-      <Text className="mb-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+      <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
         연락처 정보
       </Text>
 

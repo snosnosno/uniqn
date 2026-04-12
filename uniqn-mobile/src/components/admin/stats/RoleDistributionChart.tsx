@@ -86,7 +86,7 @@ export function RoleDistributionChart({
   if (total === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white mb-4">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-4">
           {title}
         </Text>
         <View className="h-[120px] items-center justify-center">
@@ -102,11 +102,11 @@ export function RoleDistributionChart({
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {title}
         </Text>
-        <View className="px-2.5 py-1 rounded-sm bg-secondary-100 dark:bg-surface-elevated">
-          <Text className="text-sm font-sans-bold text-secondary-700 dark:text-secondary-300">
+        <View className="px-2.5 py-1 rounded-sm bg-surface-card">
+          <Text className="text-sm font-sans-bold text-content-secondary">
             총 {total.toLocaleString()}명
           </Text>
         </View>
@@ -137,7 +137,7 @@ export function RoleDistributionChart({
                 {role.count.toLocaleString()}명
               </Text>
               <View className="bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded">
-                <Text className="text-xs font-sans-medium text-secondary-600 dark:text-secondary-400">
+                <Text className="text-xs font-sans-medium text-content-muted dark:text-secondary-400">
                   {role.percent}%
                 </Text>
               </View>

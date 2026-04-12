@@ -60,9 +60,7 @@ export function StatsSummaryCard({
             </View>
           )}
           {description && (
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
-              {description}
-            </Text>
+            <Text className="text-xs text-content-placeholder mt-1 font-sans">{description}</Text>
           )}
         </View>
         {Icon && (

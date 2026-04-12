@@ -77,9 +77,9 @@ export const BoardCommentItem = memo(function BoardCommentItem({
   const hasDepthIndicator = depth > 0;
 
   const actionChipClass =
-    'rounded-sm bg-secondary-100 px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
+    'rounded-sm bg-surface-card px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
   const mutedActionTextClass =
-    'text-xs font-sans-medium text-secondary-600 dark:text-secondary-300';
+    'text-xs font-sans-medium text-content-muted dark:text-secondary-300';
 
   return (
     <View style={{ marginLeft: indentationOffset }} className="mb-3">
@@ -92,7 +92,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
           <View className="mb-3 flex-row items-start justify-between gap-3">
             <View className="flex-1">
               <View className="flex-row flex-wrap items-center gap-2">
-                <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-secondary-100">
+                <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
                   {comment.authorName}
                 </Text>
                 <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
@@ -105,7 +105,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                 ) : null}
               </View>
               {createdAtLabel ? (
-                <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+                <Text className="mt-2 text-xs text-content-placeholder font-sans">
                   {createdAtLabel}
                 </Text>
               ) : null}
@@ -115,7 +115,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
           <Text
             className={`text-sm font-sans leading-6 ${
               contentDisabled
-                ? 'italic text-secondary-400 dark:text-secondary-500'
+                ? 'italic text-content-placeholder dark:text-secondary-500'
                 : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
@@ -152,7 +152,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                         : 'bg-secondary-100 dark:bg-surface-elevated'
                     } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
                   >
-                    <Text className="text-xs font-sans-medium text-secondary-700 dark:text-secondary-200">
+                    <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-200">
                       {COMMENT_REACTION_LABELS[reactionType]} {count}
                     </Text>
                   </Pressable>

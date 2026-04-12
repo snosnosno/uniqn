@@ -71,7 +71,7 @@ export function BoardPostEditor({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
+      className="flex-1 bg-surface-page dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -114,7 +114,7 @@ export function BoardPostEditor({
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-3 text-base font-sans-semibold text-secondary-900 dark:text-secondary-100">
+          <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
             이미지 첨부
           </Text>
           <BoardImagePicker
@@ -160,7 +160,7 @@ export function BoardPostEditorLoading({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
+      className="flex-1 bg-surface-page dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}

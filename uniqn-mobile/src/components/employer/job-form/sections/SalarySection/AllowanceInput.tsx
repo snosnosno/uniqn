@@ -35,7 +35,7 @@ export const AllowanceInput = memo(function AllowanceInput({
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-2 font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
           추가 수당 (선택)
         </Text>
       </View>
@@ -46,7 +46,7 @@ export const AllowanceInput = memo(function AllowanceInput({
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
               <Text className="text-xl mr-2 font-sans">{''}</Text>
-              <Text className="text-sm text-secondary-900 dark:text-off-white font-sans">
+              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
                 보장시간
               </Text>
             </View>
@@ -57,9 +57,9 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm font-sans rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
+                className="w-16 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page text-content-primary dark:text-off-white"
               />
-              <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm font-sans">
+              <Text className="text-content-muted dark:text-secondary-400 ml-2 text-sm font-sans">
                 시간
               </Text>
             </View>
@@ -120,9 +120,9 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm font-sans rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
+                    className="w-32 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page text-content-primary dark:text-off-white"
                   />
-                  <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm font-sans">
+                  <Text className="text-content-muted dark:text-secondary-400 ml-2 text-sm font-sans">
                     원
                   </Text>
                 </View>

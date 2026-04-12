@@ -126,7 +126,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             />
             <View className="flex-1">
               <View className="flex-row items-center">
-                <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                   {displayName}
                 </Text>
                 {staff.isRead === false ? (
@@ -169,7 +169,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                     </View>
                   ) : null}
                 </View>
-                <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+                <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                   {timeInfo.effectiveStart}
                 </Text>
               </View>
@@ -178,7 +178,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
-                <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white">
+                <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                   {timeInfo.effectiveEnd}
                 </Text>
               </View>
@@ -198,9 +198,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
         )}
 
         {staff.notes && !compact ? (
-          <View className="mt-2 rounded-lg bg-secondary-50 p-2 dark:bg-surface">
+          <View className="mt-2 rounded-lg bg-surface-page p-2 dark:bg-surface">
             <Text
-              className="text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+              className="text-sm text-content-muted dark:text-secondary-400 font-sans"
               numberOfLines={2}
             >
               {staff.notes}
@@ -214,7 +214,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           {onEditTime && canEditTime ? (
             <Pressable
               onPress={handleEditTime}
-              className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
+              className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
             >
               <EditIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -226,7 +226,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           {onChangeRole && canEditTime ? (
             <Pressable
               onPress={handleChangeRole}
-              className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
+              className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
             >
               <BriefcaseIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
               <Text className="ml-1 text-sm font-sans-medium text-primary-600 dark:text-primary-400">
@@ -250,7 +250,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           {onDelete && canDelete ? (
             <Pressable
               onPress={handleDelete}
-              className="flex-row items-center justify-center rounded-lg bg-secondary-100 px-3 py-2 active:opacity-70 dark:bg-surface"
+              className="flex-row items-center justify-center rounded-lg bg-surface-card px-3 py-2 active:opacity-70 dark:bg-surface"
             >
               <TrashIcon size={14} color={SECONDARY_PALETTE[500]} />
             </Pressable>

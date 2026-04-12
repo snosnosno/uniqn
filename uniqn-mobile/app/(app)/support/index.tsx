@@ -37,7 +37,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         <View className="flex-1 flex-row items-center">
           <View className="mr-4">{icon}</View>
           <View className="flex-1">
-            <Text className="text-base font-sans-medium text-secondary-900 dark:text-secondary-100">
+            <Text className="text-base font-sans-medium text-content-primary dark:text-secondary-100">
               {label}
             </Text>
             {description ? (
@@ -69,7 +69,7 @@ export default function SupportScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <View className="mb-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
@@ -112,10 +112,10 @@ export default function SupportScreen() {
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             고객센터 운영시간
           </Text>
-          <Text className="mt-1 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+          <Text className="mt-1 text-sm font-sans-medium text-content-secondary">
             평일 09:00 - 18:00 (주말/공휴일 휴무)
           </Text>
-          <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="mt-2 text-xs text-content-placeholder font-sans">
             문의 접수 후 영업일 기준 1-2일 내 답변드려요
           </Text>
         </View>

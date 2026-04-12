@@ -159,7 +159,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         {/* 이름 + 상태 */}
         <View className="flex-row items-center mb-1">
           <Text
-            className={`font-sans-semibold text-secondary-900 dark:text-off-white ${
+            className={`font-sans-semibold text-content-primary dark:text-off-white ${
               compact ? 'text-base font-sans' : 'text-lg'
             }`}
           >
@@ -247,25 +247,25 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
   }
 
   return (
-    <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
-      <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white mb-2">
+    <View className="mt-3 bg-surface-page rounded-lg p-3">
+      <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white mb-2">
         지원 일정
       </Text>
       {dateGroups.map(([date, { roles, timeSlots }]) => (
         <View key={date} className="flex-row items-center mb-1.5 last:mb-0">
-          <Text className="text-sm text-secondary-600 dark:text-secondary-400 w-20 font-sans">
+          <Text className="text-sm text-content-muted dark:text-secondary-400 w-20 font-sans">
             {formatDate(date)}
           </Text>
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 flex-1 font-sans">
             {[...roles].map((r) => getRoleLabel(r)).join(', ')}
           </Text>
-          <Text className="text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+          <Text className="text-xs text-content-placeholder font-sans">
             {[...timeSlots].join(', ')}
           </Text>
         </View>
       ))}
       {assignments.length > (compact ? 2 : 5) && (
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
+        <Text className="text-xs text-content-placeholder mt-1 font-sans">
           +{assignments.length - (compact ? 2 : 5)}개 더 있음
         </Text>
       )}
@@ -337,7 +337,7 @@ const ActionButtons = memo(function ActionButtons({
   if (!canProcess) return null;
 
   return (
-    <View className="flex-row gap-2 mt-4 pt-4 border-t border-secondary-200 dark:border-surface-overlay">
+    <View className="flex-row gap-2 mt-4 pt-4 border-t border-divider">
       {onConfirm && (
         <Button
           variant="primary"
@@ -438,7 +438,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
       {application.message && (
         <View className={`mt-2 ${compact ? '' : 'bg-secondary-50 dark:bg-surface rounded-lg p-3'}`}>
           {!compact && (
-            <Text className="text-sm font-sans-medium text-secondary-900 dark:text-off-white mb-1">
+            <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white mb-1">
               지원 메시지
             </Text>
           )}

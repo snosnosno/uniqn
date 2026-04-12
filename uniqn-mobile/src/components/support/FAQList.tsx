@@ -86,13 +86,13 @@ export function FAQList({
                       expanded={expandedId === item.id}
                       onToggle={() => handleToggle(item.id)}
                     >
-                      <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
+                      <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
                         {item.answer}
                       </Text>
                     </AccordionItem>
                   </View>
                   {index < categoryItems.length - 1 && (
-                    <View className="mx-4 h-px bg-secondary-100 dark:bg-surface" />
+                    <View className="mx-4 h-px bg-surface-card dark:bg-surface" />
                   )}
                 </View>
               ))}
@@ -114,13 +114,13 @@ export function FAQList({
               expanded={expandedId === item.id}
               onToggle={() => handleToggle(item.id)}
             >
-              <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300 font-sans">
+              <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
                 {item.answer}
               </Text>
             </AccordionItem>
           </View>
           {index < filteredItems.length - 1 && (
-            <View className="mx-4 h-px bg-secondary-100 dark:bg-surface" />
+            <View className="mx-4 h-px bg-surface-card dark:bg-surface" />
           )}
         </View>
       ))}

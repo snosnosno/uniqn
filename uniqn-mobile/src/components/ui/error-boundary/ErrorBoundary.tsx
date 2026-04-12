@@ -143,12 +143,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </View>
 
           {/* 제목 */}
-          <Text className="text-xl font-display text-secondary-900 dark:text-off-white text-center mb-2">
+          <Text className="text-xl font-display text-content-primary dark:text-off-white text-center mb-2">
             문제가 발생했습니다
           </Text>
 
           {/* 설명 */}
-          <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6 font-sans">
+          <Text className="text-content-muted dark:text-secondary-400 text-center mb-6 leading-6 font-sans">
             {fullScreen
               ? '앱에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
               : '이 기능에 문제가 발생했습니다.'}
@@ -157,7 +157,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           {/* 개발 모드 상세 정보 */}
           {showDetails && error && (
             <ScrollView
-              className="max-h-40 w-full bg-secondary-100 dark:bg-surface rounded-md p-4 mb-6"
+              className="max-h-40 w-full bg-surface-card dark:bg-surface rounded-md p-4 mb-6"
               showsVerticalScrollIndicator={true}
             >
               <Text className="text-xs text-error-600 dark:text-error-400 font-mono mb-2 font-sans">
@@ -193,7 +193,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >
-                <Text className="text-secondary-700 dark:text-secondary-200 font-sans-semibold">
+                <Text className="text-content-secondary dark:text-secondary-200 font-sans-semibold">
                   홈으로
                 </Text>
               </Pressable>
@@ -202,7 +202,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
           {/* 문의 안내 */}
           {fullScreen && (
-            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-6 text-center font-sans">
+            <Text className="text-xs text-content-placeholder mt-6 text-center font-sans">
               문제가 계속되면 고객센터에 문의해주세요
             </Text>
           )}

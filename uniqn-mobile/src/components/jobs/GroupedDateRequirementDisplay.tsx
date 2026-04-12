@@ -137,7 +137,7 @@ const GroupItem = memo(function GroupItem({
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <View className="mb-1 flex-row items-center">
-            <Text className="text-sm font-sans-semibold text-secondary-900 dark:text-off-white">
+            <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
               {isSingleDay ? formatSingleDate(group.startDate) : dateDisplay}
             </Text>
           </View>
@@ -151,7 +151,7 @@ const GroupItem = memo(function GroupItem({
               return (
                 <Text
                   key={getGroupTimeSlotKey(`${group.startDate}-${group.endDate}`, slot, slotIdx)}
-                  className="text-sm text-secondary-600 dark:text-secondary-400 font-sans"
+                  className="text-sm text-content-muted dark:text-secondary-400 font-sans"
                 >
                   {formatTimeSlotLabel(slot)} {rolesDisplay || '-'}
                 </Text>
@@ -195,7 +195,7 @@ const GroupItem = memo(function GroupItem({
 
             return (
               <View key={idx} className="flex-row items-center justify-between py-1.5">
-                <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+                <Text className="text-sm text-content-secondary font-sans">
                   {formatSingleDate(dateStr)}
                 </Text>
                 {showFilledCount && (

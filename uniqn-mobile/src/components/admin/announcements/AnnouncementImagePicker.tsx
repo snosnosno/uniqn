@@ -119,7 +119,7 @@ export function AnnouncementImagePicker({
             marginBottom: IMAGE_GAP,
           }}
         >
-          <View className="w-full h-full rounded-md overflow-hidden border-2 border-secondary-200 dark:border-surface-overlay">
+          <View className="w-full h-full rounded-md overflow-hidden border-2 border-divider">
             {/* 이미지 */}
             <Image
               source={{ uri: item.url }}
@@ -207,7 +207,7 @@ export function AnnouncementImagePicker({
             height: imageSize,
             marginBottom: IMAGE_GAP,
           }}
-          className="rounded-md border-2 border-dashed border-secondary-300 dark:border-surface-overlay items-center justify-center bg-secondary-50 dark:bg-surface/50 active:bg-secondary-100 dark:active:bg-secondary-700"
+          className="rounded-md border-2 border-dashed border-secondary-300 dark:border-surface-overlay items-center justify-center bg-surface-page dark:bg-surface/50 active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="이미지 추가"
         >
           <AddIcon size={32} color={SECONDARY_PALETTE[400]} />
@@ -226,7 +226,7 @@ export function AnnouncementImagePicker({
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
           {images.length}/{MAX_ANNOUNCEMENT_IMAGES}장 · 권장 1200x675px (16:9)
         </Text>
-        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5 font-sans">
+        <Text className="text-xs text-content-placeholder mt-0.5 font-sans">
           자동으로 1200px로 리사이징 · 최대 5MB · ↑↓ 버튼으로 순서 변경
         </Text>
       </View>
@@ -271,7 +271,7 @@ export function AnnouncementImagePicker({
                 <View className="w-14 h-14 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-2">
                   <ImagesOutlineIcon size={28} color={SECONDARY_PALETTE[400]} />
                 </View>
-                <Text className="text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+                <Text className="text-sm font-sans-medium text-content-secondary">
                   이미지를 선택하세요
                 </Text>
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">

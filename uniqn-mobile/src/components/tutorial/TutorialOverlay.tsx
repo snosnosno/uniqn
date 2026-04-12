@@ -214,7 +214,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
         {showCountdown ? (
           <Animated.Text
             entering={FadeIn.duration(300)}
-            className="text-xs text-secondary-400 dark:text-secondary-500 font-sans"
+            className="text-xs text-content-placeholder font-sans"
           >
             {remainingSec}초 후 자동으로 닫힙니다
           </Animated.Text>
@@ -263,7 +263,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
       />
 
       {/* H6: 페이지 번호 */}
-      <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 mt-1 font-sans">
+      <Text className="text-center text-xs text-content-placeholder mt-1 font-sans">
         {currentPage + 1} / {totalPages}
       </Text>
 

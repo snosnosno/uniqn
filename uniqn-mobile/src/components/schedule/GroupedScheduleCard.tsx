@@ -151,7 +151,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         <View className="mb-2 flex-row items-center">
           <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-          <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+          <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
             {dateDisplay}
           </Text>
         </View>
@@ -159,7 +159,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         {group.timeSlot && (
           <View className="mb-2 flex-row items-center">
             <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
+            <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
               {group.timeSlot}
             </Text>
           </View>
@@ -168,15 +168,13 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         <View className="flex-row flex-wrap items-center">
           <View className="mr-3 flex-row items-center">
             <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
-              {rolesDisplay}
-            </Text>
+            <Text className="ml-1.5 text-sm text-content-secondary font-sans">{rolesDisplay}</Text>
           </View>
 
           {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
             <View className="mr-3 flex-row items-center">
               <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
+              <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
                 {salaryDisplay}
               </Text>
             </View>
@@ -224,7 +222,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                   }`}
                   accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}`}
                 >
-                  <Text className="text-sm text-secondary-700 dark:text-secondary-300 font-sans">
+                  <Text className="text-sm text-content-secondary font-sans">
                     {dateStatus.formattedDate}
                   </Text>
                   <View className={`rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>

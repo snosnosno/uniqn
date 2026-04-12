@@ -63,14 +63,12 @@ export const SectionCard = memo(function SectionCard({
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+        <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {resolvedTitle}
         </Text>
         {required && <Text className="ml-1 text-error-500 font-sans">*</Text>}
         {optional && (
-          <Text className="ml-2 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
-            (선택)
-          </Text>
+          <Text className="ml-2 text-xs text-content-placeholder font-sans">(선택)</Text>
         )}
       </View>
 
@@ -109,14 +107,14 @@ export const SectionCard = memo(function SectionCard({
       {collapsible ? (
         <Pressable
           onPress={onToggle}
-          className="px-4 py-3 bg-secondary-50 dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay"
+          className="px-4 py-3 bg-surface-page dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay"
           accessibilityRole="button"
           accessibilityLabel={`${resolvedTitle} 섹션 ${collapsed ? '펼치기' : '접기'}`}
         >
           {HeaderContent}
         </Pressable>
       ) : (
-        <View className="px-4 py-3 bg-secondary-50 dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay">
+        <View className="px-4 py-3 bg-surface-page dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay">
           {HeaderContent}
         </View>
       )}

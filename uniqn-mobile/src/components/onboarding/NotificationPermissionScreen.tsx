@@ -130,7 +130,7 @@ export function NotificationPermissionScreen({
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
               <BadgeIcon size={40} color={PRIMARY_COLORS[500]} />
             </View>
-            <Text className="text-center text-2xl font-display text-secondary-900 dark:text-off-white">
+            <Text className="text-center text-2xl font-display text-content-primary dark:text-off-white">
               {content.title}
             </Text>
             <Text className="mt-2 text-center text-base text-secondary-500 dark:text-secondary-400 font-sans">
@@ -146,13 +146,13 @@ export function NotificationPermissionScreen({
                 <Animated.View
                   key={item.title}
                   entering={FadeInUp.delay(200 + index * 100).duration(500)}
-                  className="mb-3 flex-row items-center rounded-md bg-secondary-50 px-4 py-4 dark:bg-surface"
+                  className="mb-3 flex-row items-center rounded-md bg-surface-page px-4 py-4 dark:bg-surface"
                 >
                   <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-sans-semibold text-secondary-900 dark:text-off-white">
+                    <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                       {item.title}
                     </Text>
                     <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
@@ -195,7 +195,7 @@ export function NotificationPermissionScreen({
               </Text>
             </Pressable>
 
-            <Text className="mt-4 text-center text-xs text-secondary-400 dark:text-secondary-500 font-sans">
+            <Text className="mt-4 text-center text-xs text-content-placeholder font-sans">
               {content.helperText}
             </Text>
           </Animated.View>
