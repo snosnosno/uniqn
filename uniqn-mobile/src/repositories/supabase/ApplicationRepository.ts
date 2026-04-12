@@ -243,11 +243,11 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
 
   async hasApplied(jobPostingId: string, applicantId: string): Promise<boolean> {
     try {
-      const applicationId = `${jobPostingId}_${applicantId}`;
       const { data, error } = await supabase
         .from(TABLES.APPLICATIONS)
         .select('id, status')
-        .eq('id', applicationId)
+        .eq('job_posting_id', jobPostingId)
+        .eq('applicant_id', applicantId)
         .maybeSingle();
 
       if (error || !data) return false;
@@ -418,12 +418,15 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       }
 
       // 3. 중복 지원 확인 (낙관적 잠금 대신 사전 확인)
-      const applicationId = `${input.jobPostingId}_${context.applicantId}`;
       const { data: existingData } = await supabase
         .from(TABLES.APPLICATIONS)
         .select('id, status')
-        .eq('id', applicationId)
+        .eq('job_posting_id', input.jobPostingId)
+        .eq('applicant_id', context.applicantId)
         .maybeSingle();
+      const applicationId = (existingData as Record<string, unknown> | null)?.id as
+        | string
+        | undefined;
 
       const existingStatus = existingData
         ? ((existingData as Record<string, unknown>).status as ApplicationStatus)
