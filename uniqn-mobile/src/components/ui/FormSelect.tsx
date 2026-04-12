@@ -9,6 +9,7 @@
  * - 검색 기능 (옵션이 많을 경우)
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, Pressable, TextInput, type ViewProps } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -224,7 +225,7 @@ export function FormSelect<T = string>({
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
-                placeholderTextColor="#A89C84"
+                placeholderTextColor={SECONDARY_PALETTE[400]}
                 className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base font-sans text-secondary-900 dark:text-off-white"
                 autoCapitalize="none"
                 autoCorrect={false}

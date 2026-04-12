@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
@@ -79,9 +80,9 @@ function AccordionSection({ title, icon, expanded, onToggle, children }: Accordi
           </Text>
         </View>
         {expanded ? (
-          <ChevronUpIcon size={20} color="#9A9078" />
+          <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
         ) : (
-          <ChevronDownIcon size={20} color="#9A9078" />
+          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
         )}
       </Pressable>
       {expanded && <View className="px-4 pb-4">{children}</View>}
@@ -353,7 +354,7 @@ export function SettlementEditModal({
             value={reason}
             onChangeText={setReason}
             placeholder="예: 역할 변경으로 인한 조정"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={2}
             className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-secondary-900 dark:text-off-white"

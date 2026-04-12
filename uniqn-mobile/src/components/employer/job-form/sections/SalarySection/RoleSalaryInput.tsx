@@ -4,6 +4,7 @@
  * @description 개별 역할의 급여 타입/금액 입력 UI
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { RoleResolver } from '@/shared/role';
@@ -99,7 +100,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
           </Text>
           <TextInput
             placeholder="0"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             value={
               roleSalary?.amount && roleSalary.amount > 0 ? formatNumber(roleSalary.amount) : ''
             }

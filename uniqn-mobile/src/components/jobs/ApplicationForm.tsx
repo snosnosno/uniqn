@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
@@ -291,7 +292,7 @@ export function ApplicationForm({
             value={message}
             onChangeText={setMessage}
             placeholder="간단한 자기소개나 경력을 입력해 주세요"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={4}
             maxLength={200}

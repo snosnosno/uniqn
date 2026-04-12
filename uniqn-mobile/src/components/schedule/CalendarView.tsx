@@ -6,7 +6,12 @@ import React, { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
-import { ACCENT_COLORS, PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
+import {
+  ACCENT_COLORS,
+  PRIMARY_COLORS,
+  STATUS_COLORS,
+  SECONDARY_PALETTE,
+} from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent, ScheduleType } from '@/types';
 
@@ -70,18 +75,18 @@ const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as c
 const calendarTheme = {
   backgroundColor: 'transparent',
   calendarBackground: 'transparent',
-  textSectionTitleColor: '#9A9078',
-  textSectionTitleDisabledColor: '#A89C84',
+  textSectionTitleColor: SECONDARY_PALETTE[500],
+  textSectionTitleDisabledColor: SECONDARY_PALETTE[400],
   selectedDayBackgroundColor: PRIMARY_COLORS[600],
   selectedDayTextColor: '#FFFFFF',
   todayTextColor: ACCENT_COLORS[600],
   dayTextColor: '#09090B',
-  textDisabledColor: '#D6D2CA',
+  textDisabledColor: SECONDARY_PALETTE[200],
   dotColor: PRIMARY_COLORS[500],
   selectedDotColor: '#FFFFFF',
   monthTextColor: '#09090B',
   indicatorColor: PRIMARY_COLORS[500],
-  arrowColor: '#9A9078',
+  arrowColor: SECONDARY_PALETTE[500],
   textDayFontSize: 14,
   textMonthFontSize: 16,
   textDayHeaderFontSize: 12,
@@ -92,13 +97,13 @@ const calendarTheme = {
 
 const darkCalendarTheme = {
   ...calendarTheme,
-  textSectionTitleColor: '#A89C84',
-  textSectionTitleDisabledColor: '#9A9078',
+  textSectionTitleColor: SECONDARY_PALETTE[400],
+  textSectionTitleDisabledColor: SECONDARY_PALETTE[500],
   todayTextColor: ACCENT_COLORS[300],
   dayTextColor: '#F0F0F2',
-  textDisabledColor: '#9A9078',
+  textDisabledColor: SECONDARY_PALETTE[500],
   monthTextColor: '#F0F0F2',
-  arrowColor: '#D6D2CA',
+  arrowColor: SECONDARY_PALETTE[200],
 };
 
 function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {

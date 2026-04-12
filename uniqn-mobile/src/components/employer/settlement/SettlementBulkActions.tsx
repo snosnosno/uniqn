@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { BanknotesIcon, CheckIcon } from '../../icons';
@@ -75,7 +76,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
           ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-secondary-300 dark:bg-surface'}
         `}
       >
-        <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#A89C84'} />
+        <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : SECONDARY_PALETTE[400]} />
         <Text
           className={`
           ml-1 text-sm font-sans-medium

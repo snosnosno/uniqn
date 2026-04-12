@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -187,7 +188,7 @@ export default function AdminUserDetailPage() {
           <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
         ) : (
           <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
-            <UserIcon size={40} color="#A89C84" />
+            <UserIcon size={40} color={SECONDARY_PALETTE[400]} />
           </View>
         )}
         <Text className="text-xl font-display text-secondary-900 dark:text-off-white mb-1">
@@ -218,25 +219,25 @@ export default function AdminUserDetailPage() {
           기본 정보
         </Text>
         <InfoRow
-          icon={<EnvelopeIcon size={20} color="#9A9078" />}
+          icon={<EnvelopeIcon size={20} color={SECONDARY_PALETTE[500]} />}
           label="이메일"
           value={user.email}
         />
         {user.phone && (
           <InfoRow
-            icon={<PhoneIcon size={20} color="#9A9078" />}
+            icon={<PhoneIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="전화번호"
             value={user.phone}
           />
         )}
         <InfoRow
-          icon={<CalendarIcon size={20} color="#9A9078" />}
+          icon={<CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />}
           label="가입일"
           value={formatDate(user.createdAt)}
         />
         {user.lastLoginAt && (
           <InfoRow
-            icon={<CalendarIcon size={20} color="#9A9078" />}
+            icon={<CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />}
             label="최근 로그인"
             value={formatDate(user.lastLoginAt)}
           />

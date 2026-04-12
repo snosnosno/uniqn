@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
@@ -86,9 +87,9 @@ export const SectionCard = memo(function SectionCard({
       {collapsible && (
         <View className="p-1">
           {collapsed ? (
-            <ChevronDownIcon size={20} color="#A89C84" />
+            <ChevronDownIcon size={20} color={SECONDARY_PALETTE[400]} />
           ) : (
-            <ChevronUpIcon size={20} color="#A89C84" />
+            <ChevronUpIcon size={20} color={SECONDARY_PALETTE[400]} />
           )}
         </View>
       )}

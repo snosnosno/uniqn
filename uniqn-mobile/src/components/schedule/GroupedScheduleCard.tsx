@@ -2,6 +2,7 @@
  * UNIQN Mobile - GroupedScheduleCard component
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Card, Badge } from '@/components/ui';
@@ -138,7 +139,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         {group.location && (
           <View className="mb-2 flex-row items-center">
-            <MapIcon size={14} color="#9A9078" />
+            <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
             <Text
               className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
               numberOfLines={1}
@@ -149,7 +150,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         )}
 
         <View className="mb-2 flex-row items-center">
-          <CalendarIcon size={14} color="#9A9078" />
+          <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {dateDisplay}
           </Text>
@@ -157,7 +158,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         {group.timeSlot && (
           <View className="mb-2 flex-row items-center">
-            <ClockIcon size={14} color="#9A9078" />
+            <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
               {group.timeSlot}
             </Text>
@@ -166,7 +167,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         <View className="flex-row flex-wrap items-center">
           <View className="mr-3 flex-row items-center">
-            <BriefcaseIcon size={14} color="#9A9078" />
+            <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
               {rolesDisplay}
             </Text>
@@ -174,7 +175,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
           {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
             <View className="mr-3 flex-row items-center">
-              <BanknotesIcon size={14} color="#9A9078" />
+              <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                 {salaryDisplay}
               </Text>
@@ -183,7 +184,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
           {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
             <View className="flex-row items-center">
-              <UserIcon size={14} color="#A89C84" />
+              <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
               <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {ownerName}
               </Text>
@@ -201,9 +202,9 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
               날짜별 상세
             </Text>
             {isExpanded ? (
-              <ChevronUpIcon size={16} color="#9A9078" />
+              <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
             ) : (
-              <ChevronDownIcon size={16} color="#9A9078" />
+              <ChevronDownIcon size={16} color={SECONDARY_PALETTE[500]} />
             )}
           </Pressable>
         )}

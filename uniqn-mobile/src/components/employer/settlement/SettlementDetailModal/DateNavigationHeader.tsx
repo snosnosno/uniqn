@@ -4,6 +4,7 @@
  * @description 그룹 모드에서 날짜 이동 UI 표시
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../../icons';
@@ -64,7 +65,10 @@ export function DateNavigationHeader({
         }`}
         accessibilityLabel="이전 날짜"
       >
-        <ChevronLeftIcon size={24} color={isDark ? '#A89C84' : '#9A9078'} />
+        <ChevronLeftIcon
+          size={24}
+          color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+        />
       </Pressable>
 
       <View className="flex-1 items-center">
@@ -84,7 +88,10 @@ export function DateNavigationHeader({
         }`}
         accessibilityLabel="다음 날짜"
       >
-        <ChevronRightIcon size={24} color={isDark ? '#A89C84' : '#9A9078'} />
+        <ChevronRightIcon
+          size={24}
+          color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+        />
       </Pressable>
     </View>
   );

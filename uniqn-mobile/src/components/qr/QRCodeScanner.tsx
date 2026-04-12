@@ -5,6 +5,7 @@
  * @version 2.1.0 - Event QR 시스템 전용 + 웹 호환성
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -129,7 +130,7 @@ export function QRCodeScanner({
       return (
         <SafeAreaView className="flex-1 bg-secondary-900" edges={['top', 'bottom']}>
           <View className="flex-1 justify-center items-center p-6">
-            <ScanIcon size={64} color="#9A9078" />
+            <ScanIcon size={64} color={SECONDARY_PALETTE[500]} />
             <Text className="text-white text-xl font-display mt-4 text-center">
               카메라 권한이 필요합니다
             </Text>

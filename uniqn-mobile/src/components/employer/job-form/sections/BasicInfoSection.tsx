@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Input, FormField } from '@/components';
@@ -144,7 +145,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           accessibilityLabel="근무 장소명"
           testID="job-posting-location-name-input"
           maxLength={50}
-          leftIcon={<MapPinIcon size={20} color="#9A9078" />}
+          leftIcon={<MapPinIcon size={20} color={SECONDARY_PALETTE[500]} />}
         />
       </FormField>
 
@@ -184,7 +185,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           testID="job-posting-contact-phone-input"
           keyboardType="phone-pad"
           maxLength={25}
-          leftIcon={<PhoneIcon size={20} color="#9A9078" />}
+          leftIcon={<PhoneIcon size={20} color={SECONDARY_PALETTE[500]} />}
         />
       </FormField>
 
@@ -201,7 +202,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           maxLength={500}
           textAlignVertical="top"
           className="px-4 py-3 bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white min-h-[100px]"
-          placeholderTextColor="#A89C84"
+          placeholderTextColor={SECONDARY_PALETTE[400]}
         />
         <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right font-sans">
           {data.description.length}/500

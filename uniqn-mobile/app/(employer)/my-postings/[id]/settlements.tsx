@@ -6,6 +6,7 @@
  * @version 2.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -122,10 +123,10 @@ interface TabHeaderProps {
 
 function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
   const { isDarkMode } = useThemeStore();
-  const inactiveColor = isDarkMode ? '#A89C84' : '#9A9078';
+  const inactiveColor = isDarkMode ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500];
   const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
   const activeBadgeBg = isDarkMode ? '#2A2410' : '#F5EFDC';
-  const inactiveBadgeBg = isDarkMode ? '#3A3530' : '#EDEBE6';
+  const inactiveBadgeBg = isDarkMode ? SECONDARY_PALETTE[800] : SECONDARY_PALETTE[100];
 
   return (
     <View className="flex-row bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">

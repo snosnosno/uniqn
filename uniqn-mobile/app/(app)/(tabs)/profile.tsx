@@ -3,6 +3,7 @@
  * 프로필 화면
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   View,
   Text,
@@ -62,7 +63,7 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
           {label}
         </Text>
       </View>
-      <ChevronRightIcon size={20} color="#A89C84" />
+      <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
     </Pressable>
   );
 }
@@ -168,25 +169,25 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-            <EditIcon size={20} color="#A89C84" />
+            <EditIcon size={20} color={SECONDARY_PALETTE[400]} />
           </Pressable>
         </Card>
 
         <Card className="mb-4">
           <MenuItem
-            icon={<MegaphoneIcon size={22} color="#9A9078" />}
+            icon={<MegaphoneIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="공지사항"
             onPress={() => router.push('/(app)/(tabs)/board/notice')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<SettingsIcon size={22} color="#9A9078" />}
+            icon={<SettingsIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="설정센터"
             onPress={() => router.push('/(app)/settings')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<MessageIcon size={22} color="#9A9078" />}
+            icon={<MessageIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="고객센터"
             onPress={() => router.push('/(app)/support')}
           />

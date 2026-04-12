@@ -11,6 +11,7 @@
  * - 상태 변경 및 메모 입력
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import {
   View,
@@ -125,7 +126,7 @@ function ReportInfoSection({ report }: { report: Report }) {
 
       {/* 신고자 정보 */}
       <View className="flex-row items-center mb-3">
-        <UserIcon size={16} color="#9A9078" />
+        <UserIcon size={16} color={SECONDARY_PALETTE[500]} />
         <Text className="text-sm text-secondary-600 dark:text-secondary-400 ml-2 font-sans">
           <Text className="font-sans-medium text-secondary-900 dark:text-off-white">
             {report.reporterName}
@@ -144,7 +145,7 @@ function ReportInfoSection({ report }: { report: Report }) {
 
       {/* 생성 시간 */}
       <View className="flex-row items-center">
-        <ClockIcon size={14} color="#A89C84" />
+        <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
         <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-1 font-sans">
           {formatTimestamp(report.createdAt)} ({formatTimeAgo(report.createdAt)})
         </Text>
@@ -336,7 +337,7 @@ function ReviewFormSection({
         value={notes}
         onChangeText={setNotes}
         placeholder="처리에 대한 메모를 입력하세요"
-        placeholderTextColor="#A89C84"
+        placeholderTextColor={SECONDARY_PALETTE[400]}
         multiline
         numberOfLines={4}
         className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm font-sans text-secondary-900 dark:text-off-white mb-4"

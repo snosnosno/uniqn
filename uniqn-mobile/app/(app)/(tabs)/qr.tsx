@@ -7,6 +7,7 @@
  * @note 구인자의 QR 생성은 EventQRModal을 통해 이루어집니다.
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -100,7 +101,7 @@ export default function QRScreen() {
               {isWorking ? (
                 <ClockIcon size={24} color="#22C55E" />
               ) : (
-                <CheckCircleIcon size={24} color="#A89C84" />
+                <CheckCircleIcon size={24} color={SECONDARY_PALETTE[400]} />
               )}
             </View>
             <View className="ml-4 flex-1">
@@ -140,7 +141,7 @@ export default function QRScreen() {
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
           <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface">
-            <ScanIcon size={80} color="#A89C84" />
+            <ScanIcon size={80} color={SECONDARY_PALETTE[400]} />
           </View>
 
           <Text className="text-center text-xl font-display text-secondary-900 dark:text-secondary-100">

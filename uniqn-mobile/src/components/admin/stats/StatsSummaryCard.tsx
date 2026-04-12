@@ -4,6 +4,7 @@
  * @description 개별 통계 수치를 카드 형태로 표시
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { View, Text, ActivityIndicator } from 'react-native';
 import {
   type IconComponent,
@@ -29,7 +30,7 @@ export function StatsSummaryCard({
   value,
   isLoading = false,
   icon,
-  iconColor = '#9A9078',
+  iconColor = SECONDARY_PALETTE[500],
   iconBgColor = 'bg-secondary-100 dark:bg-surface',
   valueColor = 'text-secondary-900 dark:text-off-white',
   suffix = '',

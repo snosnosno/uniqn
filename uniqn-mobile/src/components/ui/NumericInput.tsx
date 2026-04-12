@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, type TextInputProps } from 'react-native';
 
@@ -100,7 +101,7 @@ export const NumericInput = memo(function NumericInput({
         keyboardType="numeric"
         editable={!disabled}
         placeholder={placeholder}
-        placeholderTextColor="#A89C84"
+        placeholderTextColor={SECONDARY_PALETTE[400]}
         className={`flex-1 text-base font-sans text-secondary-900 dark:text-off-white ${inputClassName}`}
         accessibilityLabel={accessibilityLabel}
         {...textInputProps}

@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { FilterIcon, XMarkIcon, CalendarIcon, MapPinIcon, BriefcaseIcon } from '@/components/icons';
@@ -262,7 +263,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     </Text>
                   </Pressable>
                   <Pressable onPress={handleCloseModal} className="p-1" accessibilityLabel="닫기">
-                    <XMarkIcon size={24} color="#9A9078" />
+                    <XMarkIcon size={24} color={SECONDARY_PALETTE[500]} />
                   </Pressable>
                 </View>
               </View>

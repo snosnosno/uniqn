@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -75,7 +76,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
         <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
           {isProfileLoading ? (
             <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
-              <ActivityIndicator size="small" color="#9A9078" />
+              <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
             </View>
           ) : (
             <Avatar
@@ -107,7 +108,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
           {staff.date ? (
             <InfoRow
-              icon={<CalendarIcon size={16} color="#9A9078" />}
+              icon={<CalendarIcon size={16} color={SECONDARY_PALETTE[500]} />}
               label="근무 날짜"
               value={formatProfileDate(staff.date)}
             />
@@ -115,7 +116,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
           <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
             <View className="mt-0.5 w-6">
-              <ClockIcon size={16} color="#9A9078" />
+              <ClockIcon size={16} color={SECONDARY_PALETTE[500]} />
             </View>
             <View className="ml-2 flex-1">
               <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
@@ -135,7 +136,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </View>
 
           <InfoRow
-            icon={<BriefcaseIcon size={16} color="#9A9078" />}
+            icon={<BriefcaseIcon size={16} color={SECONDARY_PALETTE[500]} />}
             label="역할"
             value={getRoleDisplayName(staff.role, staff.customRole)}
           />

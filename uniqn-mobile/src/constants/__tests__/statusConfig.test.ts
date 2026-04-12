@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   ANNOUNCEMENT_PRIORITY,
   APPLICATION_STATUS,
@@ -145,7 +146,7 @@ describe('StatusConfig', () => {
 
     it('should return fallback color for invalid status', () => {
       const color = getStatusHexColor(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
-      expect(color).toBe('#9A9078');
+      expect(color).toBe(SECONDARY_PALETTE[500]);
     });
   });
 

@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
@@ -137,7 +138,7 @@ export function CancellationRequestForm({
               if (error) setError(null);
             }}
             placeholder="취소하려는 이유를 상세히 입력해주세요"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={5}
             maxLength={500}

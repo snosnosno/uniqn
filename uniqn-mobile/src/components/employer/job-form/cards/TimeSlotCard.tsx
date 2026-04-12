@@ -10,6 +10,7 @@
  * - 역할 추가/삭제/인원 조절
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, Pressable, TextInput, Switch } from 'react-native';
 import {
@@ -102,7 +103,7 @@ const RoleCard = React.memo(function RoleCard({
             value={role.customRole || ''}
             onChangeText={(text) => onCustomNameChange(roleIndex, text)}
             placeholder="역할명 입력"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             className="text-sm font-sans text-secondary-900 dark:text-off-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
           />
         ) : (
@@ -123,7 +124,7 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 감소"
         >
-          <MinusIcon size={14} color="#9A9078" />
+          <MinusIcon size={14} color={SECONDARY_PALETTE[500]} />
         </Pressable>
 
         {/* 숫자 탭 → 휠 피커 */}
@@ -147,7 +148,7 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 증가"
         >
-          <PlusIcon size={14} color="#9A9078" />
+          <PlusIcon size={14} color={SECONDARY_PALETTE[500]} />
         </Pressable>
 
         {/* 삭제 버튼 */}
@@ -325,9 +326,9 @@ export function TimeSlotCard({
           accessibilityLabel={isExpanded ? '접기' : '펼치기'}
         >
           {isExpanded ? (
-            <ChevronUpIcon size={18} color="#9A9078" />
+            <ChevronUpIcon size={18} color={SECONDARY_PALETTE[500]} />
           ) : (
-            <ChevronDownIcon size={18} color="#9A9078" />
+            <ChevronDownIcon size={18} color={SECONDARY_PALETTE[500]} />
           )}
           <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
             시간대 {index + 1}
@@ -364,7 +365,7 @@ export function TimeSlotCard({
             <Switch
               value={timeSlot.isTimeToBeAnnounced}
               onValueChange={handleTimeToBeAnnouncedToggle}
-              trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+              trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -380,7 +381,7 @@ export function TimeSlotCard({
                 onChangeText={handleTentativeDescriptionChange}
                 placeholder="예: 토너먼트 진행 상황에 따라 결정"
                 className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white text-sm font-sans"
-                placeholderTextColor="#A89C84"
+                placeholderTextColor={SECONDARY_PALETTE[400]}
                 multiline
                 maxLength={200}
               />

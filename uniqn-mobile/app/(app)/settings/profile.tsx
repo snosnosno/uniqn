@@ -3,6 +3,7 @@
  * 프로필 수정 화면
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -327,7 +328,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                         onChangeText={(text) => handleNicknameChange(onChange, text)}
                         onBlur={() => handleNicknameBlur(onBlur)}
                         placeholder="닉네임을 입력해주세요 (2-15자)"
-                        placeholderTextColor="#A89C84"
+                        placeholderTextColor={SECONDARY_PALETTE[400]}
                         autoCapitalize="none"
                         maxLength={15}
                       />
@@ -369,7 +370,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="예: 서울 강남구"
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     autoCapitalize="none"
                     maxLength={50}
                   />
@@ -404,7 +405,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     }}
                     onBlur={onBlur}
                     placeholder="예: 3"
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     keyboardType="number-pad"
                     maxLength={2}
                   />
@@ -436,7 +437,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="경력 및 이력을 입력해주세요"
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"
@@ -471,7 +472,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="기타 참고사항을 입력해주세요"
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"

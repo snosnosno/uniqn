@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Modal, Button, Badge } from '@/components/ui';
@@ -165,37 +166,37 @@ export function ScheduleDetailSheet({
           className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
           accessibilityLabel="닫기"
         >
-          <XMarkIcon size={18} color="#A89C84" />
+          <XMarkIcon size={18} color={SECONDARY_PALETTE[400]} />
         </Pressable>
       </View>
 
       {/* Details */}
       <View className="mb-6">
         <DetailRow
-          icon={<CalendarIcon size={18} color="#9A9078" />}
+          icon={<CalendarIcon size={18} color={SECONDARY_PALETTE[500]} />}
           label="날짜"
           value={formatDate(schedule.date)}
         />
         <DetailRow
-          icon={<ClockIcon size={18} color="#9A9078" />}
+          icon={<ClockIcon size={18} color={SECONDARY_PALETTE[500]} />}
           label="시간"
           value={`${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`}
         />
         {schedule.location && (
           <DetailRow
-            icon={<MapIcon size={18} color="#9A9078" />}
+            icon={<MapIcon size={18} color={SECONDARY_PALETTE[500]} />}
             label="장소"
             value={schedule.detailedAddress || schedule.location}
           />
         )}
         <DetailRow
-          icon={<BriefcaseIcon size={18} color="#9A9078" />}
+          icon={<BriefcaseIcon size={18} color={SECONDARY_PALETTE[500]} />}
           label="역할"
           value={getRoleDisplayName(schedule.role, schedule.customRole)}
         />
         {schedule.payrollAmount && schedule.payrollAmount > 0 && (
           <DetailRow
-            icon={<CurrencyDollarIcon size={18} color="#9A9078" />}
+            icon={<CurrencyDollarIcon size={18} color={SECONDARY_PALETTE[500]} />}
             label="급여"
             value={formatCurrency(schedule.payrollAmount)}
           />
@@ -237,7 +238,9 @@ export function ScheduleDetailSheet({
         >
           <QrCodeIcon
             size={20}
-            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#5C5546') : '#FFFFFF'}
+            color={
+              isWorking ? (isDarkMode ? SECONDARY_PALETTE[200] : SECONDARY_PALETTE[700]) : '#FFFFFF'
+            }
           />
           <Text
             className={`ml-2 font-sans-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-surface-dark'}`}

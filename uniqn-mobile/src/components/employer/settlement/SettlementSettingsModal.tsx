@@ -5,6 +5,7 @@
  * @version 2.0.0 - roles[].salary 구조 사용
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { DEFAULT_SALARY_INFO, DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
@@ -110,9 +111,9 @@ function AccordionSection({
           )}
         </View>
         {expanded ? (
-          <ChevronUpIcon size={20} color="#9A9078" />
+          <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
         ) : (
-          <ChevronDownIcon size={20} color="#9A9078" />
+          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
         )}
       </Pressable>
       {expanded && <View className="px-4 pb-4">{children}</View>}

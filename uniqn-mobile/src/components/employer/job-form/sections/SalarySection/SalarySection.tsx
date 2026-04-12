@@ -5,6 +5,7 @@
  * @version 4.0.0 - 서브컴포넌트 모듈화
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, memo, useEffect } from 'react';
 import { View, Text, Switch } from 'react-native';
 import { useAllowances } from '@/hooks';
@@ -194,8 +195,8 @@ export const SalarySection = memo(function SalarySection({
           <Switch
             value={data.useSameSalary}
             onValueChange={handleUseSameSalaryToggle}
-            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-            thumbColor={data.useSameSalary ? '#FFFFFF' : '#F5F5F2'}
+            trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+            thumbColor={data.useSameSalary ? '#FFFFFF' : SECONDARY_PALETTE[50]}
           />
         </View>
       )}

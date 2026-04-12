@@ -4,6 +4,7 @@
  * @description 출근/퇴근/근무 시간 표시
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { ClockIcon } from '../../../icons';
@@ -35,7 +36,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
   return (
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
-        <ClockIcon size={18} color="#9A9078" />
+        <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           근무 시간
         </Text>

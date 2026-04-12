@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback } from 'react';
 import { View, Text, Switch, Pressable, ScrollView } from 'react-native';
 import {
@@ -210,7 +211,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
             {settings.enabled ? (
               <BellIcon size={24} color="#D4AF37" />
             ) : (
-              <BellSlashIcon size={24} color="#A89C84" />
+              <BellSlashIcon size={24} color={SECONDARY_PALETTE[400]} />
             )}
             <View className="ml-3">
               <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
@@ -224,7 +225,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.enabled}
             onValueChange={handleMasterToggle}
-            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
             thumbColor="#FFFFFF"
             disabled={isSaving}
           />
@@ -235,7 +236,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       <Card className="mb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <MoonIcon size={24} color="#9A9078" />
+            <MoonIcon size={24} color={SECONDARY_PALETTE[500]} />
             <View className="ml-3">
               <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
                 방해 금지 시간
@@ -248,7 +249,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.quietHours?.enabled || false}
             onValueChange={handleQuietHoursToggle}
-            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
             thumbColor="#FFFFFF"
             disabled={isSaving || !settings.enabled}
           />
@@ -259,7 +260,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       <Card className="mb-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <Squares2X2Icon size={24} color="#9A9078" />
+            <Squares2X2Icon size={24} color={SECONDARY_PALETTE[500]} />
             <View className="ml-3">
               <Text className="text-base font-sans-medium text-secondary-900 dark:text-off-white">
                 알림 그룹화
@@ -272,7 +273,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.grouping?.enabled ?? true}
             onValueChange={handleGroupingToggle}
-            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
             thumbColor="#FFFFFF"
             disabled={isSaving || !settings.enabled}
           />
@@ -305,7 +306,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                 <Switch
                   value={categorySettings?.enabled ?? true}
                   onValueChange={(enabled) => handleCategoryToggle(category, enabled)}
-                  trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                  trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
                   thumbColor="#ffffff"
                   disabled={isSaving || !settings.enabled}
                 />
@@ -324,7 +325,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
-                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+                    trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
                     thumbColor="#ffffff"
                     disabled={isSaving || !settings.enabled}
                   />

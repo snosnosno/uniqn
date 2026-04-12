@@ -12,7 +12,7 @@ import { HeaderBackButton } from '@/components/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
-import { getLayoutColor } from '@/constants/colors';
+import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
 
 function HeaderQRButton({ tintColor, onPress }: { tintColor: string; onPress: () => void }) {
@@ -42,12 +42,15 @@ function HeaderTitle({
       </Text>
       {jobTitle && (
         <>
-          <Text className="mx-2 font-sans" style={{ color: isDark ? '#9A9078' : '#A89C84' }}>
+          <Text
+            className="mx-2 font-sans"
+            style={{ color: isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400] }}
+          >
             |
           </Text>
           <Text
             className="flex-1 text-base font-sans"
-            style={{ color: isDark ? '#A89C84' : '#9A9078' }}
+            style={{ color: isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500] }}
             numberOfLines={1}
           >
             {jobTitle}

@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { ReactNode } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,7 +53,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
               <Text className="text-xs font-sans-bold text-surface-dark">{badge}</Text>
             </View>
           ) : null}
-          <ChevronRightIcon size={20} color="#A89C84" />
+          <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
         </View>
       </View>
     </Pressable>

@@ -10,6 +10,7 @@
  * - 시간대 추가/삭제
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon, TrashIcon } from '@/components/icons';
@@ -152,7 +153,7 @@ export function DateRequirementCard({
         accessibilityLabel="시간대 추가"
       >
         <View className="mr-2">
-          <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#A89C84'} />
+          <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : SECONDARY_PALETTE[400]} />
         </View>
         <Text
           className={`text-sm font-sans-medium ${

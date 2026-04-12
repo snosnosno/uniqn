@@ -7,6 +7,7 @@
  * @version 1.2.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Modal, Badge, Button } from '@/components/ui';
@@ -374,12 +375,12 @@ export function ScheduleDetailModal({
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 8,
-            backgroundColor: isDarkMode ? '#111113' : '#F5F5F2',
+            backgroundColor: isDarkMode ? '#111113' : SECONDARY_PALETTE[50],
           }}
           activeOpacity={0.7}
           accessibilityLabel="닫기"
         >
-          <XMarkIcon size={18} color="#A89C84" />
+          <XMarkIcon size={18} color={SECONDARY_PALETTE[400]} />
         </TouchableOpacity>
       </View>
 
@@ -406,7 +407,7 @@ export function ScheduleDetailModal({
             >
               <View style={{ opacity: isActive ? 1 : 0.6 }}>
                 {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
-                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
+                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[500],
                 })}
               </View>
               <Text
@@ -415,7 +416,7 @@ export function ScheduleDetailModal({
                   fontSize: 14,
                   fontWeight: '500',
                   fontFamily: 'PlusJakartaSans_500Medium',
-                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
+                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[500],
                 }}
               >
                 {tab.label}
@@ -482,7 +483,7 @@ export function ScheduleDetailModal({
                 size="md"
                 onPress={handleOpenReportModal}
                 className="border-secondary-300 dark:border-surface-overlay"
-                icon={<AlertTriangleIcon size={16} color="#9A9078" />}
+                icon={<AlertTriangleIcon size={16} color={SECONDARY_PALETTE[500]} />}
               >
                 <Text className="text-secondary-600 dark:text-secondary-400 font-sans">신고</Text>
               </Button>

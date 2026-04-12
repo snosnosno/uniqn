@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { router } from 'expo-router';
@@ -19,7 +20,7 @@ export function NonEmployerView() {
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
         <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
-          <BriefcaseIcon size={48} color="#A89C84" />
+          <BriefcaseIcon size={48} color={SECONDARY_PALETTE[400]} />
         </View>
         <Text className="mb-2 text-center text-xl font-display text-secondary-900 dark:text-off-white">
           구인자 전용 기능입니다

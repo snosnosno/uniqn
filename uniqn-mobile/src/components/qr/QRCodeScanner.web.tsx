@@ -5,6 +5,7 @@
  * @version 1.1.0 - Portal 적용으로 z-index 문제 해결
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -68,9 +69,9 @@ export function QRCodeScanner({
 
   // DESIGN.md 토큰: 카메라 뷰는 다크 유지(카메라 UI 표준),
   // 권한 안내 화면만 테마에 반응
-  const infoBg = isDarkMode ? '#09090B' : '#F5F5F2';
+  const infoBg = isDarkMode ? '#09090B' : SECONDARY_PALETTE[50];
   const infoTextPrimary = isDarkMode ? '#F0F0F2' : '#09090B';
-  const infoTextMuted = isDarkMode ? '#9A9078' : '#8A8272';
+  const infoTextMuted = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[600];
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -530,7 +531,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   permissionText: {
-    color: '#A89C84',
+    color: SECONDARY_PALETTE[400],
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 24,
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   closeText: {
-    color: '#A89C84',
+    color: SECONDARY_PALETTE[400],
     fontSize: 14,
     fontFamily: 'PlusJakartaSans_400Regular',
   },

@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import Svg, { Circle, Line, Path, Polyline, Polygon, Rect } from 'react-native-svg';
 import type { SvgProps } from 'react-native-svg';
@@ -19,8 +20,8 @@ type IconRenderer = (color: string, strokeWidth: number) => React.ReactNode;
 type SolidIconRenderer = (color: string) => React.ReactNode;
 
 const DEFAULT_SIZE = 24;
-const DEFAULT_COLOR_LIGHT = '#9A9078';
-const DEFAULT_COLOR_DARK = '#A89C84';
+const DEFAULT_COLOR_LIGHT = SECONDARY_PALETTE[500];
+const DEFAULT_COLOR_DARK = SECONDARY_PALETTE[400];
 
 export const DEFAULT_COLOR = DEFAULT_COLOR_LIGHT;
 

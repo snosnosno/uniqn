@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -61,8 +62,8 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
                     ? '#D4AF37'
                     : '#8A7228'
                   : isDarkMode
-                    ? '#A89C84'
-                    : '#9A9078',
+                    ? SECONDARY_PALETTE[400]
+                    : SECONDARY_PALETTE[500],
               }}
             >
               {option.label} ({count})
@@ -257,7 +258,7 @@ function EmployerView() {
         <PostingSurfaceState
           mode="empty"
           scope="detail"
-          icon={<BriefcaseIcon size={48} color="#A89C84" />}
+          icon={<BriefcaseIcon size={48} color={SECONDARY_PALETTE[400]} />}
           title={
             filter === 'all'
               ? '등록된 공고가 없습니다'

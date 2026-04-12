@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable, Modal, FlatList, Platform } from 'react-native';
 import { XMarkIcon, CheckIcon, ChevronDownIcon } from '@/components/icons';
@@ -238,7 +239,10 @@ export const TimePicker = memo(function TimePicker({
         >
           {displayText}
         </Text>
-        <ChevronDownIcon size={20} color={disabled ? '#A89C84' : '#9A9078'} />
+        <ChevronDownIcon
+          size={20}
+          color={disabled ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+        />
       </Pressable>
 
       {/* 에러 메시지 */}
@@ -278,7 +282,7 @@ export const TimePicker = memo(function TimePicker({
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
               >
-                <XMarkIcon size={24} color="#9A9078" />
+                <XMarkIcon size={24} color={SECONDARY_PALETTE[500]} />
               </Pressable>
             </View>
 

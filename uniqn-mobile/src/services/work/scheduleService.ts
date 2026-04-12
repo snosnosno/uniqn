@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, toError } from '@/errors';
@@ -668,7 +669,7 @@ export function getCalendarMarkedDates(
   const colorMap: Record<ScheduleType, string> = {
     applied: '#D4AF37', // primary (gold)
     confirmed: '#22C55E', // success
-    completed: '#9A9078', // secondary (과거 근무 — confirmed와 시각 구분)
+    completed: SECONDARY_PALETTE[500], // secondary (과거 근무 — confirmed와 시각 구분)
     cancelled: '#DC2626', // error
   };
 

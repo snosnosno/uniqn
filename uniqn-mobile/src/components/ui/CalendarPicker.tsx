@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import {
@@ -387,7 +388,10 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoPrev ? 'opacity-30' : ''
               }`}
             >
-              <ChevronLeftIcon size={18} color={canGoPrev ? '#9A9078' : '#D6D2CA'} />
+              <ChevronLeftIcon
+                size={18}
+                color={canGoPrev ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[200]}
+              />
             </Pressable>
           </View>
 
@@ -405,7 +409,10 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoNext ? 'opacity-30' : ''
               }`}
             >
-              <ChevronRightIcon size={18} color={canGoNext ? '#9A9078' : '#D6D2CA'} />
+              <ChevronRightIcon
+                size={18}
+                color={canGoNext ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[200]}
+              />
             </Pressable>
             <Pressable
               onPress={goToNextYear}

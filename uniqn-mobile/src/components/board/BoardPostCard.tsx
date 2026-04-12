@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { Text, View } from 'react-native';
 import { Badge, Card } from '@/components/ui';
 import {
@@ -61,7 +62,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             </Text>
             {showEngagementMetrics ? (
               <View className="flex-row items-center">
-                <ChatbubbleEllipsesOutlineIcon size={14} color="#9A9078" />
+                <ChatbubbleEllipsesOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {post.commentCount}
                 </Text>
@@ -84,7 +85,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
               </View>
             ) : null}
             <View className="flex-row items-center">
-              <EyeIcon size={14} color="#9A9078" />
+              <EyeIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {post.viewCount}
               </Text>

@@ -6,6 +6,7 @@
  * @version 1.2.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -262,7 +263,7 @@ export function SignupStepProfile({
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="경력 및 이력을 입력해주세요"
-                placeholderTextColor="#A89C84"
+                placeholderTextColor={SECONDARY_PALETTE[400]}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -296,7 +297,7 @@ export function SignupStepProfile({
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="기타 참고사항을 입력해주세요"
-                placeholderTextColor="#A89C84"
+                placeholderTextColor={SECONDARY_PALETTE[400]}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"

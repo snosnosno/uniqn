@@ -5,6 +5,7 @@
  * @version 4.0.0 - SummaryCard, BulkActions 서브컴포넌트 분해
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -294,7 +295,7 @@ export function SettlementList({
   if (!workLogs.length) {
     return (
       <EmptyState
-        icon={<BanknotesIcon size={48} color="#A89C84" />}
+        icon={<BanknotesIcon size={48} color={SECONDARY_PALETTE[400]} />}
         title="정산할 내역이 없습니다"
         description="확정된 스태프의 출퇴근 기록이 여기에 표시됩니다."
       />
@@ -325,7 +326,7 @@ export function SettlementList({
             onPress={toggleSelectionMode}
             className="flex-row items-center justify-center py-2 rounded-lg bg-secondary-100 dark:bg-surface"
           >
-            <CheckIcon size={16} color={selectionMode ? '#B8962E' : '#9A9078'} />
+            <CheckIcon size={16} color={selectionMode ? '#B8962E' : SECONDARY_PALETTE[500]} />
             <Text
               className={`
               ml-2 text-sm font-sans-medium

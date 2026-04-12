@@ -35,7 +35,7 @@ import {
   TournamentStatusBadge,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
-import { getLayoutColor } from '@/constants/colors';
+import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useApplicantsByJobPosting } from '@/hooks/applicant';
 import { useJobDetail } from '@/hooks/useJobDetail';
@@ -94,7 +94,7 @@ function ActionCard({
             {resolvedDescription}
           </Text>
         </View>
-        <ChevronRightIcon size={20} color="#A89C84" />
+        <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
       </Card>
     </Pressable>
   );
@@ -267,9 +267,9 @@ export default function JobPostingDetailScreen() {
                     {isInfoExpanded ? '접기' : '상세'}
                   </Text>
                   {isInfoExpanded ? (
-                    <ChevronUpIcon size={14} color="#A89C84" />
+                    <ChevronUpIcon size={14} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <ChevronDownIcon size={14} color="#A89C84" />
+                    <ChevronDownIcon size={14} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -462,7 +462,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<EditIcon size={24} color="#9A9078" />}
+                icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
                 title="공고 수정"
                 description="공고 내용과 상태를 수정합니다."
                 onPress={handleEdit}
@@ -475,7 +475,7 @@ export default function JobPostingDetailScreen() {
         {isFixed ? (
           <View className="px-4 pb-4">
             <ActionCard
-              icon={<EditIcon size={24} color="#9A9078" />}
+              icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
               title="怨듦퀬 ?섏젙"
               description="怨듦퀬 ?댁슜怨??곹깭瑜??섏젙?⑸땲??"
               displayTitle="Edit Posting"

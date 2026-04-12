@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -133,7 +134,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                 ) : null}
               </View>
               <View className="mt-0.5 flex-row items-center">
-                <BriefcaseIcon size={12} color="#9A9078" />
+                <BriefcaseIcon size={12} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   {getRoleDisplayName(staff.role, staff.customRole)}
                 </Text>
@@ -150,12 +151,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               {CONFIRMED_STAFF_STATUS[staff.status].label}
             </Badge>
           </Pressable>
-          {onPress ? <ChevronRightIcon size={20} color="#A89C84" /> : null}
+          {onPress ? <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} /> : null}
         </View>
 
         {compact ? null : (
           <View className="mt-3 flex-row items-center border-t border-secondary-100 pt-3 dark:border-surface-overlay">
-            <ClockIcon size={16} color="#9A9078" />
+            <ClockIcon size={16} color={SECONDARY_PALETTE[500]} />
             <View className="ml-2 flex-1 flex-row">
               <View className="flex-1">
                 <View className="flex-row items-center">
@@ -251,7 +252,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               onPress={handleDelete}
               className="flex-row items-center justify-center rounded-lg bg-secondary-100 px-3 py-2 active:opacity-70 dark:bg-surface"
             >
-              <TrashIcon size={14} color="#9A9078" />
+              <TrashIcon size={14} color={SECONDARY_PALETTE[500]} />
             </Pressable>
           ) : null}
         </View>

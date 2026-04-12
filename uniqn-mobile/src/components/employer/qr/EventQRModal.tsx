@@ -2,6 +2,7 @@
  * UNIQN Mobile - Event QR modal (employer)
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
@@ -88,14 +89,14 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityState={{ selected: checkInActive }}
         accessibilityLabel="출근 QR 모드"
       >
-        <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : '#A89C84'} />
+        <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : SECONDARY_PALETTE[400]} />
         <Text
           style={{
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
             fontFamily: 'PlusJakartaSans_600SemiBold',
-            color: checkInActive ? '#FFFFFF' : '#9A9078',
+            color: checkInActive ? '#FFFFFF' : SECONDARY_PALETTE[500],
           }}
         >
           출근
@@ -120,14 +121,14 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityState={{ selected: checkOutActive }}
         accessibilityLabel="퇴근 QR 모드"
       >
-        <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : '#A89C84'} />
+        <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : SECONDARY_PALETTE[400]} />
         <Text
           style={{
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
             fontFamily: 'PlusJakartaSans_600SemiBold',
-            color: checkOutActive ? '#FFFFFF' : '#9A9078',
+            color: checkOutActive ? '#FFFFFF' : SECONDARY_PALETTE[500],
           }}
         >
           퇴근
@@ -565,7 +566,7 @@ export function EventQRModal({
             accessibilityRole="button"
             accessibilityLabel="닫기"
           >
-            <XMarkIcon size={20} color="#9A9078" />
+            <XMarkIcon size={20} color={SECONDARY_PALETTE[500]} />
           </Pressable>
         </View>
 
@@ -647,7 +648,7 @@ export function EventQRModal({
                   isRefreshing ? 'opacity-50' : 'active:opacity-70'
                 }`}
               >
-                <RefreshIcon size={18} color="#9A9078" />
+                <RefreshIcon size={18} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-2 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
                   새로고침
                 </Text>
@@ -681,7 +682,7 @@ export function EventQRModal({
           </Card>
 
           <View className="mt-3 flex-row items-start px-1">
-            <AlertCircleIcon size={14} color="#A89C84" />
+            <AlertCircleIcon size={14} color={SECONDARY_PALETTE[400]} />
             <Text className="ml-1.5 flex-1 text-xs text-secondary-400 dark:text-secondary-500 font-sans">
               QR 코드는 3분 동안 유효하며, 이 모달이 열려 있는 동안 자동으로 갱신됩니다.
             </Text>

@@ -2,6 +2,7 @@
  * UNIQN Mobile - ScheduleCard component
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Card, Badge } from '@/components/ui';
@@ -167,7 +168,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
         {schedule.location && (
           <View className="mb-2 flex-row items-center">
-            <MapIcon size={14} color="#9A9078" />
+            <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
             <Text
               className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
               numberOfLines={1}
@@ -180,12 +181,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         {schedule.type === STATUS.SCHEDULE.APPLIED ? (
           <View>
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color="#9A9078" />
+              <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color="#9A9078" />
+              <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 {formatTime(schedule.startTime)}
               </Text>
@@ -193,7 +194,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
             <View className="mt-2 flex-row flex-wrap items-center">
               <View className="mr-3 flex-row items-center">
-                <BriefcaseIcon size={14} color="#9A9078" />
+                <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
@@ -201,7 +202,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
               {salaryDisplay && (
                 <View className="mr-3 flex-row items-center">
-                  <BanknotesIcon size={14} color="#9A9078" />
+                  <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
                   <Text className="ml-1.5 text-sm font-sans-medium text-secondary-700 dark:text-secondary-300">
                     {salaryDisplay}
                   </Text>
@@ -210,7 +211,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
               {ownerName && (
                 <View className="flex-row items-center">
-                  <UserIcon size={14} color="#A89C84" />
+                  <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
                   <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                     {ownerName}
                   </Text>
@@ -221,12 +222,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         ) : (
           <View>
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color="#9A9078" />
+              <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color="#9A9078" />
+              <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 {schedule.type === STATUS.SCHEDULE.COMPLETED
                   ? timeDisplayInfo.duration
@@ -235,7 +236,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </View>
 
             <View className="mt-2 flex-row items-center">
-              <BriefcaseIcon size={14} color="#9A9078" />
+              <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
               </Text>

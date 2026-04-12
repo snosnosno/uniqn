@@ -4,6 +4,7 @@
  * @description 시간 수정, 금액 수정, 정산하기 버튼
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ClockIcon, EditIcon, BanknotesIcon } from '../../../icons';
@@ -44,7 +45,7 @@ export function SettlementActionButtons({
             accessibilityHint="근무 시간을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
-            <ClockIcon size={18} color="#9A9078" />
+            <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
               시간 수정
             </Text>
@@ -59,7 +60,7 @@ export function SettlementActionButtons({
             accessibilityHint="정산 금액을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
-            <EditIcon size={18} color="#9A9078" />
+            <EditIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-base font-sans-medium text-secondary-700 dark:text-secondary-300">
               금액 수정
             </Text>

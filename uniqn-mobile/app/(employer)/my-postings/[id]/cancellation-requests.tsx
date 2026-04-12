@@ -5,6 +5,7 @@
  * @version 1.1.0 - 웹호환성을 위해 Alert 대신 Modal 변경
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -173,7 +174,7 @@ export default function CancellationRequestsScreen() {
         <EmptyState
           title="취소 요청이 없습니다"
           description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
-          icon={<InboxIcon size={48} color="#A89C84" />}
+          icon={<InboxIcon size={48} color={SECONDARY_PALETTE[400]} />}
           variant="content"
         />
       ) : (
@@ -188,14 +189,14 @@ export default function CancellationRequestsScreen() {
             <RefreshControl
               refreshing={isRefetchingCancellationRequests}
               onRefresh={handleRefresh}
-              tintColor={isDarkMode ? '#A89C84' : '#9A9078'}
+              tintColor={isDarkMode ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
             />
           }
           ListEmptyComponent={
             <EmptyState
               title="취소 요청이 없습니다"
               description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
-              icon={<InboxIcon size={48} color="#A89C84" />}
+              icon={<InboxIcon size={48} color={SECONDARY_PALETTE[400]} />}
               variant="content"
             />
           }

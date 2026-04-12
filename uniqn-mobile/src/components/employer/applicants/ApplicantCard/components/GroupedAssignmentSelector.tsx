@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 
@@ -229,7 +230,10 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   </View>
 
                   <View className="flex-row items-center mt-1">
-                    <ClockIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
+                    <ClockIcon
+                      size={12}
+                      color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                    />
                     <Text
                       className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'} font-sans`}
                     >
@@ -238,7 +242,10 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     <View
                       className={`mx-1.5 h-3 w-px ${isDark ? 'bg-secondary-600' : 'bg-secondary-300'}`}
                     />
-                    <BriefcaseIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
+                    <BriefcaseIcon
+                      size={12}
+                      color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                    />
                     <Text
                       className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'} font-sans`}
                     >
@@ -257,9 +264,15 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
                 >
                   {isExpanded ? (
-                    <ChevronUpIcon size={16} color={isDark ? '#A89C84' : '#9A9078'} />
+                    <ChevronUpIcon
+                      size={16}
+                      color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                    />
                   ) : (
-                    <ChevronDownIcon size={16} color={isDark ? '#A89C84' : '#9A9078'} />
+                    <ChevronDownIcon
+                      size={16}
+                      color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                    />
                   )}
                 </Pressable>
               </Pressable>

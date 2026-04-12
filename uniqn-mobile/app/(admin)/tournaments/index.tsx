@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
@@ -65,13 +66,17 @@ const StatusTab = memo(function StatusTab({
       onPress={onPress}
       className="px-4 py-2 rounded-sm mr-2 flex-row items-center"
       style={{
-        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#EDEBE6',
+        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : SECONDARY_PALETTE[100],
       }}
     >
       <Text
         className="text-sm font-sans-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
+          color: isSelected
+            ? '#FFFFFF'
+            : isDarkMode
+              ? SECONDARY_PALETTE[200]
+              : SECONDARY_PALETTE[700],
         }}
       >
         {label}
@@ -80,7 +85,7 @@ const StatusTab = memo(function StatusTab({
         <View
           className="ml-1.5 px-1.5 py-0.5 rounded-sm"
           style={{
-            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : SECONDARY_PALETTE[400],
           }}
         >
           <Text className="text-xs font-sans-medium text-surface-dark">{count}</Text>
@@ -155,21 +160,21 @@ const TournamentCard = memo(function TournamentCard({
         </Text>
 
         <View className="flex-row items-center mb-1">
-          <LocationOutlineIcon size={14} color="#A89C84" />
+          <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {posting.location.name}
           </Text>
         </View>
 
         <View className="flex-row items-center mb-1">
-          <CalendarOutlineIcon size={14} color="#A89C84" />
+          <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {dateRange}
           </Text>
         </View>
 
         <View className="flex-row items-center">
-          <PersonOutlineIcon size={14} color="#A89C84" />
+          <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
             {posting.ownerName ?? '구인자'}
           </Text>

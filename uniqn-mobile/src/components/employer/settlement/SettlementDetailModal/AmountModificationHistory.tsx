@@ -4,6 +4,7 @@
  * @description 금액 수정 이력 접기/펼치기 UI
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { BanknotesIcon, ChevronDownIcon, ChevronUpIcon } from '../../../icons';
@@ -58,7 +59,7 @@ export function AmountModificationHistory({
         className="flex-row items-center justify-between active:opacity-70"
       >
         <View className="flex-row items-center">
-          <BanknotesIcon size={18} color="#9A9078" />
+          <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
             금액 수정 이력
           </Text>
@@ -69,9 +70,9 @@ export function AmountModificationHistory({
           </View>
         </View>
         {isExpanded ? (
-          <ChevronUpIcon size={20} color="#9A9078" />
+          <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
         ) : (
-          <ChevronDownIcon size={20} color="#9A9078" />
+          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
         )}
       </Pressable>
 

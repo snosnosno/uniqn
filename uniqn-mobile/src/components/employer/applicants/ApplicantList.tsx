@@ -5,6 +5,7 @@
  * @version 1.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -143,7 +144,7 @@ export function ApplicantList({
   if (!applicants.length) {
     return (
       <EmptyState
-        icon={<FilterIcon size={48} color="#A89C84" />}
+        icon={<FilterIcon size={48} color={SECONDARY_PALETTE[400]} />}
         title="지원자가 없습니다"
         description="아직 이 공고에 지원한 사람이 없습니다."
       />

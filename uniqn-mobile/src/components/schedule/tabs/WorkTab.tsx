@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Button, Badge } from '@/components/ui';
@@ -131,7 +132,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       {/* 역할 */}
       <View className="mb-5">
         <View className="flex-row items-center mb-2">
-          <BriefcaseIcon size={18} color="#9A9078" />
+          <BriefcaseIcon size={18} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
             역할
           </Text>
@@ -147,7 +148,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       {schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.ownerPhone && (
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
-            <PhoneIcon size={18} color="#9A9078" />
+            <PhoneIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
               구인자 연락처
             </Text>
@@ -173,7 +174,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       <View className="mb-5">
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
-            <ClockIcon size={18} color="#9A9078" />
+            <ClockIcon size={18} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
               출퇴근 기록
             </Text>
@@ -211,7 +212,9 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         >
           <QrCodeIcon
             size={20}
-            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#5C5546') : '#FFFFFF'}
+            color={
+              isWorking ? (isDarkMode ? SECONDARY_PALETTE[200] : SECONDARY_PALETTE[700]) : '#FFFFFF'
+            }
           />
           <Text
             className={`ml-2 font-sans-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-surface-dark'}`}

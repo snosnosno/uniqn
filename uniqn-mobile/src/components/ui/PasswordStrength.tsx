@@ -5,6 +5,7 @@
  * @version 2.0.0 - auth/settings 버전 통합
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { CheckIcon, XMarkIcon } from '../icons';
@@ -164,7 +165,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
               {req.passed ? (
                 <CheckIcon size={14} color="#22C55E" />
               ) : (
-                <XMarkIcon size={14} color="#A89C84" />
+                <XMarkIcon size={14} color={SECONDARY_PALETTE[400]} />
               )}
               <Text
                 className={`text-xs font-sans ${

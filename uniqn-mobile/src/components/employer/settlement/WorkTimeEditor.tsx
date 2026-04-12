@@ -5,6 +5,7 @@
  * @version 1.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -375,7 +376,7 @@ export function WorkTimeEditor({
             {/* 시간 선택 안내 */}
             <View className="flex-row items-start p-3 bg-secondary-100 dark:bg-surface-dark rounded-lg mb-4">
               <View className="mt-0.5">
-                <AlertCircleIcon size={16} color="#9A9078" />
+                <AlertCircleIcon size={16} color={SECONDARY_PALETTE[500]} />
               </View>
               <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                 탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
@@ -412,7 +413,7 @@ export function WorkTimeEditor({
               value={reason}
               onChangeText={setReason}
               placeholder="수정 사유를 입력하세요 (선택)"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               multiline
               numberOfLines={2}
               textAlignVertical="top"

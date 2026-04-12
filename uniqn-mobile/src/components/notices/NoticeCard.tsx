@@ -6,6 +6,7 @@
  */
 
 // 1. React/React Native
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { View, Text, Pressable } from 'react-native';
 
 // 2. 외부 라이브러리
@@ -30,7 +31,7 @@ const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
   notice: <MegaphoneIcon size={18} color="#D4AF37" />,
   update: <ArrowPathIcon size={18} color="#2563EB" />,
   event: <GiftIcon size={18} color="#D4A017" />,
-  maintenance: <WrenchScrewdriverIcon size={18} color="#9A9078" />,
+  maintenance: <WrenchScrewdriverIcon size={18} color={SECONDARY_PALETTE[500]} />,
 };
 
 // 카테고리별 라벨

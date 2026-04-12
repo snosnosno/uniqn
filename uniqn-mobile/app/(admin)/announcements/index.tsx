@@ -4,6 +4,7 @@
  * @description 공지사항 목록 조회 및 관리
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
@@ -162,7 +163,7 @@ export default function AdminAnnouncementsPage() {
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
-            <DocumentTextOutlineIcon size={64} color="#A89C84" />
+            <DocumentTextOutlineIcon size={64} color={SECONDARY_PALETTE[400]} />
             <Text className="text-lg font-sans-medium text-secondary-700 dark:text-secondary-300 mt-4">
               공지사항이 없습니다
             </Text>

@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import {
@@ -173,7 +174,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             keyboardType="numeric"
             editable={!disabled}
             placeholder="0"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
             accessibilityLabel="급여 금액"
           />

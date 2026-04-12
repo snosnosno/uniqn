@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Modal } from '@/components/ui/Modal';
@@ -119,7 +120,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               value={customRoleName}
               onChangeText={setCustomRoleName}
               placeholder="예: 플로어 매니저"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               autoFocus
               className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-secondary-900 dark:text-off-white bg-white dark:bg-surface"
             />

@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -50,8 +51,8 @@ const COLORS = {
     background: 'rgba(220,38,38,0.08)', // error-50
   },
   expired: {
-    stroke: '#A89C84', // secondary-400
-    background: '#EDEBE6', // secondary-100
+    stroke: SECONDARY_PALETTE[400], // secondary-400
+    background: SECONDARY_PALETTE[100], // secondary-100
   },
 };
 

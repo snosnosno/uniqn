@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 
@@ -48,7 +49,7 @@ export const ContactInfo = React.memo(function ContactInfo({
       {/* 연락처 */}
       {phone && (
         <View className="flex-row items-center mb-2">
-          <PhoneIcon size={14} color="#A89C84" />
+          <PhoneIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {phone}
           </Text>
@@ -58,7 +59,7 @@ export const ContactInfo = React.memo(function ContactInfo({
       {/* 지원 메시지 */}
       {message && (
         <View className="flex-row items-start mb-2">
-          <MessageIcon size={14} color="#A89C84" />
+          <MessageIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text
             className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 flex-1 font-sans"
             numberOfLines={3}
@@ -74,7 +75,7 @@ export const ContactInfo = React.memo(function ContactInfo({
           {preQuestionAnswers.map((answer, idx) => (
             <View key={idx} className="mb-2">
               <View className="flex-row items-center">
-                <DocumentIcon size={14} color="#A89C84" />
+                <DocumentIcon size={14} color={SECONDARY_PALETTE[400]} />
                 <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   Q{idx + 1}. {answer.question}
                 </Text>

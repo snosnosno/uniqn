@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   createMockScheduleEvent,
   createTodaySchedule,
@@ -338,7 +339,7 @@ describe('scheduleService', () => {
 
       expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // primary-500 for applied
 
-      expect(markedDates['2025-01-17'].dotColor).toBe('#9A9078'); // secondary-500 for completed (과거 근무)
+      expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]); // secondary-500 for completed (과거 근무)
 
       expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626'); // error-500 for cancelled
     });

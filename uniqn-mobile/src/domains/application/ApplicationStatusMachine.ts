@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { STATUS } from '@/constants';
 import type { ApplicationStatus } from '@/types';
 
@@ -82,8 +83,8 @@ const STATUS_METADATA: Record<ApplicationStatus, StatusMetadata> = {
   cancelled: {
     label: '취소',
     labelEn: 'Cancelled',
-    color: '#9A9078',
-    bgColor: '#EDEBE6',
+    color: SECONDARY_PALETTE[500],
+    bgColor: SECONDARY_PALETTE[100],
     description: '지원이 취소되었습니다.',
     isFinal: true,
     canStaffCancel: false,

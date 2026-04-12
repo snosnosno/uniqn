@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
@@ -267,7 +268,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         accessibilityHint={canAddDate ? '새 날짜를 추가합니다.' : '더 이상 추가할 수 없습니다.'}
       >
         <View className="mr-2">
-          <PlusIcon size={20} color={canAddDate ? '#D4AF37' : '#A89C84'} />
+          <PlusIcon size={20} color={canAddDate ? '#D4AF37' : SECONDARY_PALETTE[400]} />
         </View>
         <Text
           className={`font-sans-medium ${

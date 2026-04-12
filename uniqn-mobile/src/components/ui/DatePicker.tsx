@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, Modal } from 'react-native';
 import { format } from 'date-fns';
@@ -161,10 +162,13 @@ export const DatePicker = memo(function DatePicker({
             accessibilityLabel="날짜 초기화"
             className="ml-2"
           >
-            <XMarkIcon size={20} color="#A89C84" />
+            <XMarkIcon size={20} color={SECONDARY_PALETTE[400]} />
           </Pressable>
         ) : (
-          <ChevronDownIcon size={20} color={disabled ? '#A89C84' : '#9A9078'} />
+          <ChevronDownIcon
+            size={20}
+            color={disabled ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+          />
         )}
       </View>
 
@@ -193,7 +197,7 @@ export const DatePicker = memo(function DatePicker({
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
               >
-                <XMarkIcon size={24} color="#9A9078" />
+                <XMarkIcon size={24} color={SECONDARY_PALETTE[500]} />
               </Pressable>
             </View>
 

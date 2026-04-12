@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { SearchIcon, DocumentIcon } from '@/components/icons';
@@ -16,7 +17,7 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const ICON_COLORS = {
-  default: { light: '#9A9078', dark: '#A89C84' }, // gray-500 / gray-400
+  default: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[400] }, // gray-500 / gray-400
   error: '#DC2626', // error-500
 } as const;
 

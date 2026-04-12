@@ -7,6 +7,7 @@
  * @version 1.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Modal } from '../ui/Modal';
@@ -350,7 +351,7 @@ export function ReportModal({
             value={description}
             onChangeText={setDescription}
             placeholder="구체적인 상황을 설명해주세요 (최소 10자)"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={3}
             textAlignVertical="top"

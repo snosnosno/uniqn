@@ -65,7 +65,11 @@ idle → processing → verified
 ### 핵심 로직
 
 ```typescript
-import * as PortOne from '@portone/browser-sdk/v2';
+// SDK 실제 시그니처:
+// requestIdentityVerification(request): Promise<IdentityVerificationResponse | undefined>
+// - undefined: redirect 발생 (redirectUrl 미설정 시 발생하지 않음)
+// - result.code 있음: 에러/취소
+import { requestIdentityVerification } from '@portone/browser-sdk/v2';
 
 const startVerification = async () => {
   const request = buildPortOneInicisIdentityRequest({
@@ -78,23 +82,28 @@ const startVerification = async () => {
   setErrorMessage(null);
 
   try {
-    const result = await PortOne.requestIdentityVerification({
+    // redirectUrl 미설정 → iframe 방식 → result는 Promise로 반환
+    const result = await requestIdentityVerification({
       storeId: request.storeId,
       channelKey: request.channelKey,
       identityVerificationId: request.identityVerificationId,
-      bypass: request.bypass,
+      bypass: request.bypass,    // inicisUnified bypass 그대로 전달
+      customData: request.customData,
     });
 
-    // 사용자 취소
-    if (result?.code) {
+    // undefined → redirect 발생 (비정상)
+    if (!result) throw new Error('본인인증 창이 닫혔습니다.');
+
+    // 에러 코드 → 실패/취소
+    if (result.code) {
       setIsProcessing(false);
-      setErrorMessage(result.message ?? '본인인증이 취소되었습니다.');
+      setErrorMessage(result.message ?? '본인인증이 완료되지 않았습니다.');
       return;
     }
 
-    // Supabase Edge Function 검증 (기존 로직 재사용)
+    // Supabase Edge Function 검증 (기존 서비스 재사용)
     const verification = await callVerifyPortOneIdentity({
-      identityVerificationId: request.identityVerificationId,
+      identityVerificationId: result.identityVerificationId,
     });
 
     if (verification.hasDuplicatePhone) throw new Error('이미 가입된 휴대폰 번호입니다.');
@@ -103,7 +112,7 @@ const startVerification = async () => {
     setVerifiedIdentity(verification.identity);
     onVerified(verification.identity);
   } catch (error) {
-    // ...에러 처리
+    // setErrorMessage + onError 콜백
   } finally {
     clearPendingPortOneIdentityRequest();
     setIsProcessing(false);

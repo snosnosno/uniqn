@@ -3,6 +3,7 @@
  * 설정 메인 화면
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -36,7 +37,13 @@ import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
 
 // 태양 아이콘 (다크모드용)
-const SunIcon = ({ size = 24, color = '#9A9078' }: { size?: number; color?: string }) => (
+const SunIcon = ({
+  size = 24,
+  color = SECONDARY_PALETTE[500],
+}: {
+  size?: number;
+  color?: string;
+}) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
     <Text className="font-sans" style={{ fontSize: size * 0.7, color }}>
       {''}
@@ -68,7 +75,7 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
               {value}
             </Text>
           )}
-          <ChevronRightIcon size={20} color="#A89C84" />
+          <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
         </View>
       )}
     </View>
@@ -249,15 +256,15 @@ export default function SettingsScreen() {
             </Pressable>
           )}
           <SettingItem
-            icon={<BellIcon size={22} color="#9A9078" />}
+            icon={<BellIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="푸시 알림"
             rightElement={
               <Switch
                 value={notificationSettings?.pushEnabled ?? true}
                 onValueChange={handlePushToggle}
                 disabled={isSaving || !isAuthenticated}
-                trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                thumbColor={notificationSettings?.pushEnabled ? '#FFFFFF' : '#F5F5F2'}
+                trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                thumbColor={notificationSettings?.pushEnabled ? '#FFFFFF' : SECONDARY_PALETTE[50]}
               />
             }
           />
@@ -269,7 +276,7 @@ export default function SettingsScreen() {
             계정
           </Text>
           <SettingItem
-            icon={<LockIcon size={22} color="#9A9078" />}
+            icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="비밀번호 변경"
             onPress={() => router.push('/(app)/settings/change-password')}
           />
@@ -277,7 +284,7 @@ export default function SettingsScreen() {
             <>
               <Divider spacing="sm" />
               <SettingItem
-                icon={<LockIcon size={22} color="#9A9078" />}
+                icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
                 label="자동 로그인"
                 rightElement={
                   <Switch
@@ -285,8 +292,8 @@ export default function SettingsScreen() {
                     onValueChange={handleAutoLoginToggle}
                     disabled={isAutoLoginLoading}
                     testID="settings-auto-login-switch"
-                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                    thumbColor={autoLoginEnabled ? '#FFFFFF' : '#F5F5F2'}
+                    trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                    thumbColor={autoLoginEnabled ? '#FFFFFF' : SECONDARY_PALETTE[50]}
                   />
                 }
               />
@@ -297,7 +304,7 @@ export default function SettingsScreen() {
                 <>
                   <Divider spacing="sm" />
                   <SettingItem
-                    icon={<LockIcon size={22} color="#9A9078" />}
+                    icon={<LockIcon size={22} color={SECONDARY_PALETTE[500]} />}
                     label={biometricTypeName}
                     rightElement={
                       <Switch
@@ -306,8 +313,8 @@ export default function SettingsScreen() {
                         disabled={
                           isBiometricLoading || isBiometricAuthenticating || !autoLoginEnabled
                         }
-                        trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                        thumbColor={isBiometricEnabled ? '#FFFFFF' : '#F5F5F2'}
+                        trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                        thumbColor={isBiometricEnabled ? '#FFFFFF' : SECONDARY_PALETTE[50]}
                       />
                     }
                   />
@@ -323,26 +330,26 @@ export default function SettingsScreen() {
             앱 설정
           </Text>
           <SettingItem
-            icon={<SunIcon size={22} color="#9A9078" />}
+            icon={<SunIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="다크 모드"
             rightElement={
               <Switch
                 value={isDarkMode}
                 onValueChange={handleDarkModeToggle}
-                trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                thumbColor={isDarkMode ? '#FFFFFF' : '#F5F5F2'}
+                trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                thumbColor={isDarkMode ? '#FFFFFF' : SECONDARY_PALETTE[50]}
               />
             }
           />
           <Divider spacing="sm" />
           <SettingItem
-            icon={<TrashIcon size={22} color="#9A9078" />}
+            icon={<TrashIcon size={22} color={SECONDARY_PALETTE[500]} />}
             label="캐시 삭제"
             value={cacheStats ? `${cacheStats.queryCount}개 항목` : ''}
             onPress={handleClearCache}
             rightElement={
               isClearing ? (
-                <ActivityIndicator size="small" color="#9A9078" />
+                <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
               ) : (
                 <View className="flex-row items-center">
                   {cacheStats && (
@@ -350,7 +357,7 @@ export default function SettingsScreen() {
                       {cacheStats.queryCount}개 항목
                     </Text>
                   )}
-                  <ChevronRightIcon size={20} color="#A89C84" />
+                  <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
                 </View>
               )
             }
@@ -389,15 +396,15 @@ export default function SettingsScreen() {
             <>
               <Divider spacing="sm" />
               <SettingItem
-                icon={<BellIcon size={22} color="#9A9078" />}
+                icon={<BellIcon size={22} color={SECONDARY_PALETTE[500]} />}
                 label="마케팅 정보 수신"
                 rightElement={
                   <Switch
                     value={profile?.marketingAgreed ?? false}
                     onValueChange={handleMarketingConsentChange}
                     disabled={isMarketingUpdating}
-                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                    thumbColor={profile?.marketingAgreed ? '#FFFFFF' : '#F5F5F2'}
+                    trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                    thumbColor={profile?.marketingAgreed ? '#FFFFFF' : SECONDARY_PALETTE[50]}
                   />
                 }
               />

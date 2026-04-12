@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import {
   View,
@@ -187,7 +188,7 @@ export function AnnouncementForm({
             }}
             onBlur={() => validateField('title', title)}
             placeholder="공지사항 제목을 입력해주세요"
-            placeholderTextColor={isDarkMode ? '#9A9078' : '#A89C84'}
+            placeholderTextColor={isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}
             className={`${inputBaseClass} ${
               errors.title ? 'border-error-500' : 'border-secondary-300 dark:border-surface-overlay'
             }`}
@@ -244,7 +245,7 @@ export function AnnouncementForm({
             }}
             onBlur={() => validateField('content', content)}
             placeholder="공지사항 내용을 입력해주세요"
-            placeholderTextColor={isDarkMode ? '#9A9078' : '#A89C84'}
+            placeholderTextColor={isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={10}
             textAlignVertical="top"
@@ -327,7 +328,7 @@ export function AnnouncementForm({
           <Switch
             value={isPinned}
             onValueChange={setIsPinned}
-            trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
+            trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
             thumbColor={isPinned ? '#ffffff' : '#f4f4f5'}
           />
         </View>

@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { LayoutAnimation, Pressable, Text, View } from 'react-native';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
@@ -178,9 +179,9 @@ const GroupItem = memo(function GroupItem({
             accessibilityLabel={isExpanded ? '날짜 상세 접기' : '날짜 상세 펼치기'}
           >
             {isExpanded ? (
-              <ChevronUpIcon size={16} color="#9A9078" />
+              <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
             ) : (
-              <ChevronDownIcon size={16} color="#9A9078" />
+              <ChevronDownIcon size={16} color={SECONDARY_PALETTE[500]} />
             )}
           </Pressable>
         )}

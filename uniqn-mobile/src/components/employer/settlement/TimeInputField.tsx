@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ClockIcon, CheckIcon, ChevronDownIcon } from '../../icons';
@@ -97,7 +98,7 @@ export function TimeInputField({
           }`}
       >
         <View className="flex-row items-center flex-1">
-          <ClockIcon size={20} color={isUndefined ? '#A89C84' : iconColor} />
+          <ClockIcon size={20} color={isUndefined ? SECONDARY_PALETTE[400] : iconColor} />
           {isUndefined ? (
             <Text className="ml-2 text-lg font-display-semibold text-secondary-400 dark:text-secondary-500">
               미정
@@ -108,7 +109,7 @@ export function TimeInputField({
             </Text>
           )}
         </View>
-        {!isUndefined && <ChevronDownIcon size={20} color="#A89C84" />}
+        {!isUndefined && <ChevronDownIcon size={20} color={SECONDARY_PALETTE[400]} />}
       </Pressable>
 
       {hasChanged && originalTime && (

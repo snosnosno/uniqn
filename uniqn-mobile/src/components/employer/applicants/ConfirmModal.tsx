@@ -5,6 +5,7 @@
  * @version 1.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -204,7 +205,10 @@ export function ApplicantConfirmModal({
                   </Text>
                   {item.timeSlot && (
                     <View className="flex-row items-center ml-3">
-                      <ClockIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
+                      <ClockIcon
+                        size={14}
+                        color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                      />
                       <Text
                         className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'} font-sans`}
                       >
@@ -214,7 +218,10 @@ export function ApplicantConfirmModal({
                   )}
                   {item.roles && (
                     <View className="flex-row items-center ml-3">
-                      <BriefcaseIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
+                      <BriefcaseIcon
+                        size={14}
+                        color={isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500]}
+                      />
                       <Text
                         className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'} font-sans`}
                       >
@@ -258,7 +265,7 @@ export function ApplicantConfirmModal({
               value={inputValue}
               onChangeText={setInputValue}
               placeholder={config.inputPlaceholder}
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               multiline
               numberOfLines={2}
               textAlignVertical="top"

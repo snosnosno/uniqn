@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
@@ -139,9 +140,9 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           {/* 펼침/접힘 아이콘 */}
           <View className="ml-2 items-center justify-center">
             {isExpanded ? (
-              <ChevronUpIcon size={20} color="#A89C84" />
+              <ChevronUpIcon size={20} color={SECONDARY_PALETTE[400]} />
             ) : (
-              <ChevronDownIcon size={20} color="#A89C84" />
+              <ChevronDownIcon size={20} color={SECONDARY_PALETTE[400]} />
             )}
           </View>
         </View>

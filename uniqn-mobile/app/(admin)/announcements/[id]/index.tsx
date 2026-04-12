@@ -4,6 +4,7 @@
  * @description 공지사항 상세 보기 및 관리 (발행/보관/삭제)
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
@@ -200,13 +201,13 @@ export default function AnnouncementDetailPage() {
             {/* Meta */}
             <View className="flex-row flex-wrap gap-4">
               <View className="flex-row items-center">
-                <PersonOutlineIcon size={14} color="#A89C84" />
+                <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
                   {announcement.authorName}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <EyeOutlineIcon size={14} color="#A89C84" />
+                <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
                   {announcement.viewCount.toLocaleString()}
                 </Text>

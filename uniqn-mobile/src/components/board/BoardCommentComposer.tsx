@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
@@ -143,7 +144,7 @@ export function BoardCommentComposer({
         <Button
           variant="outline"
           className="flex-1"
-          icon={<ImageIcon size={18} color="#9A9078" />}
+          icon={<ImageIcon size={18} color={SECONDARY_PALETTE[500]} />}
           onPress={onPickImages}
           disabled={!canInteract || isUploadingImages}
         >

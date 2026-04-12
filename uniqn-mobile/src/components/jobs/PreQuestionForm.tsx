@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import type { PreQuestion, PreQuestionAnswer } from '@/types';
@@ -139,7 +140,7 @@ const QuestionItem = memo(function QuestionItem({
           onChangeText={handleTextChange}
           editable={!disabled}
           placeholder="답변을 입력해주세요"
-          placeholderTextColor="#A89C84"
+          placeholderTextColor={SECONDARY_PALETTE[400]}
           accessibilityLabel={`${question.question} 답변 입력`}
           className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-off-white`}
         />
@@ -151,7 +152,7 @@ const QuestionItem = memo(function QuestionItem({
           onChangeText={handleTextChange}
           editable={!disabled}
           placeholder="답변을 입력해주세요"
-          placeholderTextColor="#A89C84"
+          placeholderTextColor={SECONDARY_PALETTE[400]}
           multiline
           numberOfLines={4}
           textAlignVertical="top"

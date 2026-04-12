@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -138,7 +139,7 @@ export function InquiryForm({
             }}
             onBlur={() => validateField('subject', subject)}
             placeholder="문의 제목을 입력해주세요"
-            placeholderTextColor={isDark ? '#9A9078' : '#A89C84'}
+            placeholderTextColor={isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}
             className={`rounded-lg border px-4 py-3 text-base font-sans text-secondary-900 dark:text-secondary-100 ${
               errors.subject
                 ? 'border-error-500'
@@ -167,7 +168,7 @@ export function InquiryForm({
             }}
             onBlur={() => validateField('message', message)}
             placeholder="문의 내용을 상세히 입력해주세요"
-            placeholderTextColor={isDark ? '#9A9078' : '#A89C84'}
+            placeholderTextColor={isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={8}
             textAlignVertical="top"

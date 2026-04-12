@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { BadgeVariant } from '@/components/ui/Badge';
 import {
   APPLICATION_STATUS_LABELS,
@@ -74,7 +75,7 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   completed: {
     label: APPLICATION_STATUS_LABELS.completed,
@@ -114,7 +115,7 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   cancelled: {
     label: SCHEDULE_TYPE_LABELS.cancelled,
@@ -133,7 +134,7 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
     variant: 'default',
     bgColor: 'bg-secondary-100 dark:bg-surface',
     textColor: 'text-secondary-600 dark:text-secondary-400',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   checked_in: {
     label: ATTENDANCE_STATUS_LABELS.checked_in,
@@ -185,7 +186,7 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-300',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   checked_in: {
     label: CONFIRMED_STAFF_STATUS_LABELS.checked_in,
@@ -240,7 +241,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'secondary',
     textColor: 'text-secondary-500 dark:text-secondary-400',
     bgColor: 'bg-secondary-50 dark:bg-surface',
-    hexColor: '#A89C84',
+    hexColor: SECONDARY_PALETTE[400],
   },
   pending: {
     label: '승인대기',
@@ -268,7 +269,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   cancelled: {
     label: '취소됨',
@@ -282,7 +283,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
   rejected: {
     label: '거절됨',
@@ -341,7 +342,7 @@ export const ANNOUNCEMENT_PRIORITY: Record<AnnouncementPriorityType, StatusConfi
     variant: 'default',
     textColor: 'text-secondary-600 dark:text-secondary-400',
     bgColor: 'bg-secondary-100 dark:bg-surface',
-    hexColor: '#9A9078',
+    hexColor: SECONDARY_PALETTE[500],
   },
 };
 
@@ -355,7 +356,7 @@ export function getStatusConfig<T extends string>(
       variant: 'default',
       textColor: 'text-secondary-500 dark:text-secondary-400',
       bgColor: 'bg-secondary-100 dark:bg-surface',
-      hexColor: '#9A9078',
+      hexColor: SECONDARY_PALETTE[500],
     };
   }
 
@@ -373,7 +374,7 @@ export function getStatusHexColor<T extends string>(
   configMap: Record<T, StatusConfig>,
   status: T | string | undefined | null
 ): string {
-  return getStatusConfig(configMap, status).hexColor ?? '#9A9078';
+  return getStatusConfig(configMap, status).hexColor ?? SECONDARY_PALETTE[500];
 }
 
 export function getStatusVariant<T extends string>(

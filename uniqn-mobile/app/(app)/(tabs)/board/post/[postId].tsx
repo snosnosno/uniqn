@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   createContext,
   useCallback,
@@ -961,11 +962,11 @@ export default function BoardPostDetailScreen() {
 
           <View className="mt-5 flex-row flex-wrap gap-2">
             <MetaPill
-              icon={<ChatbubbleEllipsesOutlineIcon size={14} color="#9A9078" />}
+              icon={<ChatbubbleEllipsesOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />}
               label={`댓글 ${post.commentCount}`}
             />
             <MetaPill
-              icon={<EyeIcon size={14} color="#9A9078" />}
+              icon={<EyeIcon size={14} color={SECONDARY_PALETTE[500]} />}
               label={`조회 ${post.viewCount}`}
             />
             {postLastActivityLabel ? (

@@ -6,19 +6,38 @@
  */
 
 // ============================================================================
+// Secondary 팔레트 — 단일 진실 공급원 (RN color prop용)
+// Tailwind 클래스를 쓸 수 없는 곳(아이콘·인라인 스타일)은 이 상수를 참조.
+// 팔레트 변경 시 이 파일의 값만 수정하면 전체 반영됨.
+// ============================================================================
+
+export const SECONDARY_PALETTE = {
+  50: '#F5F5F7',
+  100: '#EBEBED',
+  200: '#DCDCE0',
+  300: '#C0C0C8',
+  400: '#A8A8B0',
+  500: '#9898A0',
+  600: '#707078',
+  700: '#4A4A52',
+  800: '#2A2A30',
+  900: '#18181E',
+} as const;
+
+// ============================================================================
 // 아이콘 색상 (다크모드 지원)
 // ============================================================================
 
 export const ICON_COLORS = {
   /** 기본 아이콘 색상 */
   primary: {
-    light: '#4A4A52', // secondary-700
-    dark: '#C0C0C8', // secondary-300
+    light: SECONDARY_PALETTE[700],
+    dark: SECONDARY_PALETTE[300],
   },
   /** 보조 아이콘 색상 */
   secondary: {
-    light: '#4A4A52', // secondary-700
-    dark: '#DCDCE0', // secondary-200
+    light: SECONDARY_PALETTE[700],
+    dark: SECONDARY_PALETTE[200],
   },
   /** 고대비 아이콘 색상 */
   contrast: {
@@ -27,8 +46,8 @@ export const ICON_COLORS = {
   },
   /** 비활성 아이콘 색상 */
   disabled: {
-    light: '#DCDCE0', // secondary-200
-    dark: '#2A2A30', // secondary-800
+    light: SECONDARY_PALETTE[200],
+    dark: SECONDARY_PALETTE[800],
   },
 } as const;
 
@@ -86,8 +105,8 @@ export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'
 // ============================================================================
 
 export const BORDER_COLORS = {
-  light: '#DCDCE0', // secondary-200 — 라이트 모드 기본 보더
-  lightSubtle: '#EBEBED', // 라이트 모드 subtle
+  light: SECONDARY_PALETTE[200], // 라이트 모드 기본 보더
+  lightSubtle: SECONDARY_PALETTE[100], // 라이트 모드 subtle
   dark: '#222228', // surface.hover — 다크 모드 기본 보더
   darkSubtle: '#19191D', // surface.overlay — 다크 모드 subtle
 } as const;
@@ -100,13 +119,13 @@ export const TEXT_COLORS = {
   },
   /** Text Secondary — 보조 정보 */
   secondary: {
-    light: '#4A4A52',
-    dark: '#C0C0C8',
+    light: SECONDARY_PALETTE[700],
+    dark: SECONDARY_PALETTE[300],
   },
   /** Text Muted — 플레이스홀더, 캡션 */
   muted: {
-    light: '#707078',
-    dark: '#9898A0',
+    light: SECONDARY_PALETTE[600],
+    dark: SECONDARY_PALETTE[500],
   },
   /** Text On Gold — 골드 배경 위 */
   onGold: '#09090B',
@@ -234,7 +253,7 @@ export const CHART_COLORS = {
     dark: '#F0F0F2',
   },
   grid: {
-    light: '#DCDCE0',
+    light: SECONDARY_PALETTE[200],
     dark: '#19191D',
   },
   series: {
@@ -257,8 +276,8 @@ export function getChartColors(isDarkMode: boolean) {
 // ============================================================================
 
 export const PLACEHOLDER_COLORS = {
-  light: '#707078', // secondary-600
-  dark: '#A8A8B0', // secondary-400
+  light: SECONDARY_PALETTE[600],
+  dark: SECONDARY_PALETTE[400],
 } as const;
 
 export function getPlaceholderColor(isDarkMode: boolean): string {
@@ -275,8 +294,8 @@ export const LOADING_COLORS = {
     dark: '#D4AF37', // primary-500
   },
   secondary: {
-    light: '#4A4A52', // secondary-700
-    dark: '#DCDCE0', // secondary-200
+    light: SECONDARY_PALETTE[700],
+    dark: SECONDARY_PALETTE[200],
   },
 } as const;
 
@@ -293,13 +312,13 @@ export function getLoadingColor(
 
 export const LAYOUT_COLORS = {
   header: { light: '#FFFFFF', dark: '#09090B' },
-  content: { light: '#F5F5F7', dark: '#09090B' },
+  content: { light: SECONDARY_PALETTE[50], dark: '#09090B' },
   headerTint: { light: '#09090B', dark: '#F0F0F2' },
-  headerBorder: { light: '#DCDCE0', dark: '#19191D' },
+  headerBorder: { light: SECONDARY_PALETTE[200], dark: '#19191D' },
   tabBarActive: { light: '#8A7228', dark: '#D4AF37' },
-  tabBarInactive: { light: '#707078', dark: '#9898A0' },
+  tabBarInactive: { light: SECONDARY_PALETTE[600], dark: SECONDARY_PALETTE[500] },
   tabBarBg: { light: '#FFFFFF', dark: '#09090B' },
-  tabBarBorder: { light: '#DCDCE0', dark: '#111113' },
+  tabBarBorder: { light: SECONDARY_PALETTE[200], dark: '#111113' },
   refreshTint: { light: '#8A7228', dark: '#D4AF37' },
 } as const;
 

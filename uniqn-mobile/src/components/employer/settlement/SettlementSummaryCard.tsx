@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Card } from '../../ui/Card';
@@ -54,7 +55,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
-              <SettingsIcon size={16} color="#9A9078" />
+              <SettingsIcon size={16} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
                 정산설정
               </Text>

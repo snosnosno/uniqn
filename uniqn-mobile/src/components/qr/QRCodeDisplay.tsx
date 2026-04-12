@@ -7,6 +7,7 @@
  * @note 구인자용 QR 표시는 EventQRModal 사용 권장
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
@@ -158,7 +159,7 @@ export function QRCodeDisplay({
         {/* 남은 시간 */}
         {displayData && !isLoading && (
           <View className="flex-row items-center mt-4">
-            <ClockIcon size={16} color={isExpired ? '#DC2626' : '#9A9078'} />
+            <ClockIcon size={16} color={isExpired ? '#DC2626' : SECONDARY_PALETTE[500]} />
             <Text
               className={`ml-1 text-sm ${
                 isExpired ? 'text-error-500' : 'text-secondary-500 dark:text-secondary-400'
@@ -184,7 +185,7 @@ export function QRCodeDisplay({
             className="flex-row items-center mt-4 p-2"
             accessibilityLabel="QR 코드 새로고침"
           >
-            <RefreshIcon size={16} color="#9A9078" />
+            <RefreshIcon size={16} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               새로고침
             </Text>

@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { formatBirthDate } from '@/utils/formatters';
@@ -103,7 +104,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
         {userProfile.gender ? (
           <View className="w-[48%]">
             <GridInfoItem
-              icon={<UserIcon size={16} color="#9A9078" />}
+              icon={<UserIcon size={16} color={SECONDARY_PALETTE[500]} />}
               label="성별"
               value={GENDER_LABELS[userProfile.gender] || userProfile.gender}
             />
@@ -113,7 +114,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
         {userProfile.birthDate ? (
           <View className="w-[48%]">
             <GridInfoItem
-              icon={<CalendarIcon size={16} color="#9A9078" />}
+              icon={<CalendarIcon size={16} color={SECONDARY_PALETTE[500]} />}
               label="생년월일"
               value={formatBirthDate(userProfile.birthDate)}
             />
@@ -123,7 +124,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
         {userProfile.region ? (
           <View className="w-[48%]">
             <GridInfoItem
-              icon={<MapPinIcon size={16} color="#9A9078" />}
+              icon={<MapPinIcon size={16} color={SECONDARY_PALETTE[500]} />}
               label="활동 지역"
               value={userProfile.region}
             />
@@ -133,7 +134,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
         {userProfile.experienceYears !== undefined && userProfile.experienceYears > 0 ? (
           <View className="w-[48%]">
             <GridInfoItem
-              icon={<StarIcon size={16} color="#9A9078" />}
+              icon={<StarIcon size={16} color={SECONDARY_PALETTE[500]} />}
               label="경력"
               value={`${userProfile.experienceYears}년`}
             />
@@ -143,7 +144,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
 
       {userProfile.career ? (
         <InfoRow
-          icon={<BriefcaseIcon size={16} color="#9A9078" />}
+          icon={<BriefcaseIcon size={16} color={SECONDARY_PALETTE[500]} />}
           label="경력 상세"
           value={userProfile.career}
         />
@@ -151,7 +152,7 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
 
       {userProfile.note ? (
         <InfoRow
-          icon={<DocumentIcon size={16} color="#9A9078" />}
+          icon={<DocumentIcon size={16} color={SECONDARY_PALETTE[500]} />}
           label="자기소개"
           value={userProfile.note}
         />
@@ -181,11 +182,19 @@ export function ContactInfoSection({
       </Text>
 
       {phone ? (
-        <InfoRow icon={<PhoneIcon size={16} color="#9A9078" />} label="전화번호" value={phone} />
+        <InfoRow
+          icon={<PhoneIcon size={16} color={SECONDARY_PALETTE[500]} />}
+          label="전화번호"
+          value={phone}
+        />
       ) : null}
 
       {email ? (
-        <InfoRow icon={<MailIcon size={16} color="#9A9078" />} label="이메일" value={email} />
+        <InfoRow
+          icon={<MailIcon size={16} color={SECONDARY_PALETTE[500]} />}
+          label="이메일"
+          value={email}
+        />
       ) : null}
     </View>
   );

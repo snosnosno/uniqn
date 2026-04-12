@@ -17,7 +17,7 @@ import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplication
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useThemeStore } from '@/stores/themeStore';
-import { getLayoutColor } from '@/constants/colors';
+import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import type { ScheduleEvent, GroupedScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 import { isGroupedScheduleEvent } from '@/types/schedule';
@@ -82,7 +82,7 @@ function MonthNavigator({
         accessibilityRole="button"
         testID="schedule-prev-month-button"
       >
-        <ChevronLeftIcon size={24} color="#9A9078" />
+        <ChevronLeftIcon size={24} color={SECONDARY_PALETTE[500]} />
       </Pressable>
 
       <View className="flex-1 px-3">
@@ -114,9 +114,9 @@ function MonthNavigator({
           testID="schedule-view-toggle-button"
         >
           {viewMode === 'list' ? (
-            <CalendarIcon size={22} color="#9A9078" />
+            <CalendarIcon size={22} color={SECONDARY_PALETTE[500]} />
           ) : (
-            <MenuIcon size={22} color="#9A9078" />
+            <MenuIcon size={22} color={SECONDARY_PALETTE[500]} />
           )}
         </Pressable>
         <Pressable
@@ -126,7 +126,7 @@ function MonthNavigator({
           accessibilityRole="button"
           testID="schedule-next-month-button"
         >
-          <ChevronRightIcon size={24} color="#9A9078" />
+          <ChevronRightIcon size={24} color={SECONDARY_PALETTE[500]} />
         </Pressable>
       </View>
     </View>

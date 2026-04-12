@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { ChevronDownIcon } from '@/components/icons';
@@ -104,7 +105,7 @@ export function AccordionItem({
           className={`ml-2 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
           style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
         >
-          <ChevronDownIcon size={20} color="#A89C84" />
+          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[400]} />
         </View>
       </Pressable>
 

@@ -5,6 +5,7 @@
  * @version 2.1.0 - 공통 RoleSelectModal 사용
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, memo, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { PlusIcon, MinusIcon, TrashIcon, BriefcaseIcon } from '@/components/icons';
@@ -65,7 +66,7 @@ const RoleCard = memo(function RoleCard({
               value={role.name}
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               className="font-sans-medium text-secondary-900 dark:text-off-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
@@ -86,7 +87,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityRole="button"
             accessibilityLabel="인원 감소"
           >
-            <MinusIcon size={18} color="#9A9078" />
+            <MinusIcon size={18} color={SECONDARY_PALETTE[500]} />
           </Pressable>
 
           <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay">
@@ -104,7 +105,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityRole="button"
             accessibilityLabel="인원 증가"
           >
-            <PlusIcon size={18} color="#9A9078" />
+            <PlusIcon size={18} color={SECONDARY_PALETTE[500]} />
           </Pressable>
 
           {/* 삭제 버튼 - 모든 역할에 표시 */}
@@ -120,7 +121,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityLabel="역할 삭제"
             accessibilityState={{ disabled: !canDelete }}
           >
-            <TrashIcon size={16} color={canDelete ? '#DC2626' : '#A89C84'} />
+            <TrashIcon size={16} color={canDelete ? '#DC2626' : SECONDARY_PALETTE[400]} />
           </Pressable>
         </View>
       </View>
@@ -224,7 +225,7 @@ export const RolesSection = memo(function RolesSection({
         accessibilityRole="button"
         accessibilityLabel="역할 추가"
       >
-        <PlusIcon size={18} color="#9A9078" />
+        <PlusIcon size={18} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-sans-medium text-sm">
           역할 추가
         </Text>

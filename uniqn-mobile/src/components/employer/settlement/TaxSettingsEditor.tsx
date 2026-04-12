@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { CheckmarkIcon } from '@/components/icons';
@@ -247,7 +248,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               keyboardType="decimal-pad"
               editable={!disabled}
               placeholder="3.3"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               accessibilityLabel="세율"
             />
@@ -319,7 +320,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               keyboardType="numeric"
               editable={!disabled}
               placeholder="10,000"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               accessibilityLabel="고정 세금 금액"
             />

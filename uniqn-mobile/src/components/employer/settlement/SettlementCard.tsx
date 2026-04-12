@@ -5,6 +5,7 @@
  * @version 3.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Card } from '../../ui/Card';
@@ -162,7 +163,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           accessibilityHint="정산 내역을 자세히 확인합니다"
           className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
         >
-          <ChevronRightIcon size={16} color="#9A9078" />
+          <ChevronRightIcon size={16} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-1 text-sm font-sans-medium text-secondary-600 dark:text-secondary-400">
             상세보기
           </Text>

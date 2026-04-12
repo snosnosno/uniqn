@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { View, TextInput, Pressable, Keyboard } from 'react-native';
 import { SearchIcon, XCircleIcon } from '@/components/icons';
@@ -15,8 +16,8 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const PLACEHOLDER_COLORS = {
-  light: '#9A9078', // gray-500 (WCAG AA 준수)
-  dark: '#A89C84', // gray-400 (다크모드에서 더 밝게)
+  light: SECONDARY_PALETTE[500], // gray-500 (WCAG AA 준수)
+  dark: SECONDARY_PALETTE[400], // gray-400 (다크모드에서 더 밝게)
 } as const;
 
 // ============================================================================

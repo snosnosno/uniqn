@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -66,7 +67,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       }`}
     >
       <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : '#9A9078'} />
+        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : SECONDARY_PALETTE[500]} />
         <Text
           className={`ml-2 text-base font-sans-semibold ${
             group.isToday
@@ -101,9 +102,9 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
         </View>
 
         {isExpanded ? (
-          <ChevronUpIcon size={20} color="#9A9078" />
+          <ChevronUpIcon size={20} color={SECONDARY_PALETTE[500]} />
         ) : (
-          <ChevronDownIcon size={20} color="#9A9078" />
+          <ChevronDownIcon size={20} color={SECONDARY_PALETTE[500]} />
         )}
       </View>
     </Pressable>
@@ -256,7 +257,7 @@ export function ConfirmedStaffList({
   if (grouped.length === 0) {
     return (
       <EmptyState
-        icon={<UsersIcon size={48} color="#A89C84" />}
+        icon={<UsersIcon size={48} color={SECONDARY_PALETTE[400]} />}
         title="아직 확정된 스태프가 없습니다"
         description="지원자를 확정하면 여기에 표시됩니다"
       />

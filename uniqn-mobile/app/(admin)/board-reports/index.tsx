@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -173,12 +174,12 @@ export default function AdminBoardReportsPage() {
       <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
           <View className="flex-row items-center rounded-lg bg-secondary-100 px-3 py-2 dark:bg-surface-elevated">
-            <SearchIcon size={18} color="#A89C84" />
+            <SearchIcon size={18} color={SECONDARY_PALETTE[400]} />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="사유, 신고자, 게시글 검색"
-              placeholderTextColor="#A89C84"
+              placeholderTextColor={SECONDARY_PALETTE[400]}
               className="ml-2 flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               autoCapitalize="none"
               autoCorrect={false}
@@ -233,7 +234,7 @@ export default function AdminBoardReportsPage() {
               <EmptyState
                 title="게시판 신고가 없습니다"
                 description="현재 조건에 맞는 신고가 없습니다."
-                icon={<FlagOutlineIcon size={40} color="#A89C84" />}
+                icon={<FlagOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
               />
             </View>
           ) : (

@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -49,7 +50,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
             isRefreshing ? 'opacity-50' : ''
           }`}
         >
-          <RefreshIcon size={24} color="#9A9078" />
+          <RefreshIcon size={24} color={SECONDARY_PALETTE[500]} />
         </Pressable>
       </View>
     </View>
@@ -191,7 +192,7 @@ export function StaffManagementTab({
       options.push({
         label: '출근 예정으로 변경',
         value: STATUS.WORK_LOG.SCHEDULED,
-        icon: <CalendarIcon size={20} color="#9A9078" />,
+        icon: <CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />,
       });
     }
 

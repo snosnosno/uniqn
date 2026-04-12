@@ -5,6 +5,7 @@
  * @version 1.1.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -69,9 +70,9 @@ const sizeTextStyles: Record<ButtonSize, string> = {
 /** 로딩 인디케이터 색상 (variant별, 다크모드 지원) */
 const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
   primary: { light: '#050506', dark: '#050506' },
-  secondary: { light: '#9A9078', dark: '#D6D2CA' },
-  outline: { light: '#9A9078', dark: '#D6D2CA' },
-  ghost: { light: '#9A9078', dark: '#D6D2CA' },
+  secondary: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
+  outline: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
+  ghost: { light: SECONDARY_PALETTE[500], dark: SECONDARY_PALETTE[200] },
   danger: { light: '#ffffff', dark: '#ffffff' },
   accent: { light: '#050506', dark: '#050506' }, // 다크 텍스트
 };

@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { ScheduleEvent, WorkLog, Application, ScheduleFilters } from '@/types';
 
 // Import after mocks
@@ -961,7 +962,7 @@ describe('scheduleService - getCalendarMarkedDates', () => {
 
     expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
     expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37');
-    expect(markedDates['2025-01-17'].dotColor).toBe('#9A9078');
+    expect(markedDates['2025-01-17'].dotColor).toBe(SECONDARY_PALETTE[500]);
     expect(markedDates['2025-01-18'].dotColor).toBe('#DC2626');
   });
 

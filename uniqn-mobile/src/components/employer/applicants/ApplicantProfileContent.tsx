@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { STATUS } from '@/constants';
@@ -32,7 +33,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
             <View className="flex-row items-start">
-              <MessageIcon size={16} color="#9A9078" />
+              <MessageIcon size={16} color={SECONDARY_PALETTE[500]} />
               <Text className="ml-2 flex-1 text-sm text-secondary-700 dark:text-secondary-300 font-sans">
                 {applicant.message}
               </Text>
@@ -50,7 +51,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
             {applicant.preQuestionAnswers.map((answer, index) => (
               <View key={index} className="mb-3 last:mb-0">
                 <View className="mb-1 flex-row items-start">
-                  <DocumentIcon size={14} color="#9A9078" />
+                  <DocumentIcon size={14} color={SECONDARY_PALETTE[500]} />
                   <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                     Q{index + 1}. {answer.question}
                   </Text>

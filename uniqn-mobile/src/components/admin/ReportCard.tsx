@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { formatDistanceToNow } from 'date-fns';
@@ -99,7 +100,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
             {typeLabel}
           </Text>
         </View>
-        <ChevronRightIcon size={20} color="#A89C84" />
+        <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
       </View>
 
       {/* 설명 */}

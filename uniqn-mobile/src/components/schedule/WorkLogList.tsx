@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -122,7 +123,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
     >
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
-          <CalendarIcon size={16} color="#9A9078" />
+          <CalendarIcon size={16} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-sm font-sans-medium text-secondary-900 dark:text-off-white">
             {formatDate(workLog.date)}
           </Text>
@@ -132,13 +133,13 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
 
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
-          <BriefcaseIcon size={14} color="#A89C84" />
+          <BriefcaseIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {roleLabel}
           </Text>
         </View>
         <View className="flex-row items-center">
-          <ClockIcon size={14} color="#A89C84" />
+          <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
             {timeInfo.effectiveStart} - {timeInfo.effectiveEnd}
           </Text>
@@ -150,7 +151,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           {isCompleted ? (
             <CheckCircleIcon size={14} color="#22c55e" />
           ) : (
-            <PendingIcon size={14} color="#A89C84" />
+            <PendingIcon size={14} color={SECONDARY_PALETTE[400]} />
           )}
           <Text
             className={`ml-1 text-sm font-sans ${

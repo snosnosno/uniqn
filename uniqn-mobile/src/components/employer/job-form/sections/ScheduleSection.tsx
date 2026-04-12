@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FormField } from '@/components';
@@ -89,7 +90,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
             label="근무 날짜"
             required
             error={errors?.workDate}
-            icon={<CalendarIcon size={16} color="#9A9078" />}
+            icon={<CalendarIcon size={16} color={SECONDARY_PALETTE[500]} />}
           >
             <DatePicker
               value={toDate(data.workDate)}
@@ -108,7 +109,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
             label="출근 시간"
             required
             error={errors?.startTime}
-            icon={<ClockIcon size={16} color="#9A9078" />}
+            icon={<ClockIcon size={16} color={SECONDARY_PALETTE[500]} />}
           >
             <TimePicker
               value={data.startTime}

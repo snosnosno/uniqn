@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -91,13 +92,17 @@ const FilterTab = memo(function FilterTab({
       accessibilityState={{ selected: isSelected }}
       accessibilityLabel={`${label} 공고 ${count ?? 0}개`}
       style={{
-        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : '#EDEBE6',
+        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : SECONDARY_PALETTE[100],
       }}
     >
       <Text
         className="text-sm font-sans-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#5C5546',
+          color: isSelected
+            ? '#FFFFFF'
+            : isDarkMode
+              ? SECONDARY_PALETTE[200]
+              : SECONDARY_PALETTE[700],
         }}
       >
         {label}
@@ -106,7 +111,7 @@ const FilterTab = memo(function FilterTab({
         <View
           className="ml-1.5 px-1.5 py-0.5 rounded-sm"
           style={{
-            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : SECONDARY_PALETTE[400],
           }}
         >
           <Text className="text-xs font-sans-medium text-surface-dark">{count}</Text>
@@ -184,7 +189,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 장소 */}
       <View className="flex-row items-center mb-1">
-        <LocationOutlineIcon size={14} color="#A89C84" />
+        <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {posting.location?.name || '-'}
         </Text>
@@ -192,7 +197,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
-        <CalendarOutlineIcon size={14} color="#A89C84" />
+        <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {getDateRange}
         </Text>
@@ -200,7 +205,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 모집 현황 */}
       <View className="flex-row items-center">
-        <PeopleOutlineIcon size={14} color="#A89C84" />
+        <PeopleOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
           {posting.filledPositions ?? 0}/{posting.totalPositions ?? 0}명 충원
         </Text>

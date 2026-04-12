@@ -2,6 +2,7 @@
  * UNIQN Mobile - schedule detail settlement tab
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui';
@@ -230,7 +231,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     <View className="py-2">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <BanknotesIcon size={18} color="#9A9078" />
+          <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
           <Text className="ml-2 text-sm font-sans-semibold text-secondary-700 dark:text-secondary-300">
             정산 정보
           </Text>

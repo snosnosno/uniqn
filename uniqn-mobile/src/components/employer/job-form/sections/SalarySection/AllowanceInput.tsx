@@ -4,6 +4,7 @@
  * @description 식비, 교통비, 숙박비 등 수당 입력 UI
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { View, Text, Switch, TextInput } from 'react-native';
 import { Card } from '@/components';
@@ -33,7 +34,7 @@ export const AllowanceInput = memo(function AllowanceInput({
   return (
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
-        <GiftIcon size={20} color="#9A9078" />
+        <GiftIcon size={20} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 font-sans-semibold text-secondary-900 dark:text-off-white">
           추가 수당 (선택)
         </Text>
@@ -52,7 +53,7 @@ export const AllowanceInput = memo(function AllowanceInput({
             <View className="flex-row items-center">
               <TextInput
                 placeholder="0"
-                placeholderTextColor="#A89C84"
+                placeholderTextColor={SECONDARY_PALETTE[400]}
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
@@ -101,8 +102,8 @@ export const AllowanceInput = memo(function AllowanceInput({
                   <Switch
                     value={isProvided}
                     onValueChange={(v) => onAllowanceProvidedToggle(allowance.key, v)}
-                    trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
-                    thumbColor={isProvided ? '#FFFFFF' : '#F5F5F2'}
+                    trackColor={{ false: SECONDARY_PALETTE[200], true: '#D4AF37' }}
+                    thumbColor={isProvided ? '#FFFFFF' : SECONDARY_PALETTE[50]}
                   />
                 </View>
               </View>
@@ -115,7 +116,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                   </Text>
                   <TextInput
                     placeholder={allowance.placeholder}
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"

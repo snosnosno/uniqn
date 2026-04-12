@@ -8,6 +8,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -135,7 +136,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                 accessibilityLabel="닫기"
                 accessibilityRole="button"
               >
-                <XMarkIcon size={24} color="#A89C84" />
+                <XMarkIcon size={24} color={SECONDARY_PALETTE[400]} />
               </Pressable>
             </View>
 
@@ -163,7 +164,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     value={reason}
                     onChangeText={handleReasonChange}
                     placeholder="거부 사유를 10자 이상 입력해주세요"
-                    placeholderTextColor="#A89C84"
+                    placeholderTextColor={SECONDARY_PALETTE[400]}
                     multiline
                     numberOfLines={4}
                     editable={!isProcessing}

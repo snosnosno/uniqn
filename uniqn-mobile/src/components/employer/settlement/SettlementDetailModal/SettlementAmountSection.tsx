@@ -4,6 +4,7 @@
  * @description 급여, 수당, 세금, 총액 정보 표시
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { View, Text } from 'react-native';
 import { BanknotesIcon } from '../../../icons';
@@ -50,7 +51,7 @@ export function SettlementAmountSection({
   return (
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
-        <BanknotesIcon size={18} color="#9A9078" />
+        <BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 text-base font-sans-semibold text-secondary-900 dark:text-off-white">
           정산 금액
         </Text>

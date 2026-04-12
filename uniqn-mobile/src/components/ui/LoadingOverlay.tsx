@@ -9,6 +9,7 @@
  * - 진행률 표시 옵션
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, Modal, Pressable } from 'react-native';
 import Animated, {
@@ -75,7 +76,7 @@ function ProgressCircle({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#D6D2CA"
+          stroke={SECONDARY_PALETTE[200]}
           strokeWidth={strokeWidth}
           fill="none"
         />

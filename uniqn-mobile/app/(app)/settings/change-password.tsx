@@ -3,6 +3,7 @@
  * 비밀번호 변경 화면
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState } from 'react';
 import {
   View,
@@ -119,7 +120,7 @@ export default function ChangePasswordScreen() {
                       onChangeText={onChange}
                       onBlur={onBlur}
                       placeholder="현재 비밀번호를 입력해주세요"
-                      placeholderTextColor="#A89C84"
+                      placeholderTextColor={SECONDARY_PALETTE[400]}
                       secureTextEntry={!showCurrentPassword}
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -132,9 +133,9 @@ export default function ChangePasswordScreen() {
                   hitSlop={8}
                 >
                   {showCurrentPassword ? (
-                    <EyeSlashIcon size={22} color="#A89C84" />
+                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color="#A89C84" />
+                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -161,7 +162,7 @@ export default function ChangePasswordScreen() {
                       onChangeText={onChange}
                       onBlur={onBlur}
                       placeholder="새 비밀번호를 입력해주세요"
-                      placeholderTextColor="#A89C84"
+                      placeholderTextColor={SECONDARY_PALETTE[400]}
                       secureTextEntry={!showNewPassword}
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -174,9 +175,9 @@ export default function ChangePasswordScreen() {
                   hitSlop={8}
                 >
                   {showNewPassword ? (
-                    <EyeSlashIcon size={22} color="#A89C84" />
+                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color="#A89C84" />
+                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>
@@ -210,7 +211,7 @@ export default function ChangePasswordScreen() {
                       onChangeText={onChange}
                       onBlur={onBlur}
                       placeholder="새 비밀번호를 다시 입력해주세요"
-                      placeholderTextColor="#A89C84"
+                      placeholderTextColor={SECONDARY_PALETTE[400]}
                       secureTextEntry={!showConfirmPassword}
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -223,9 +224,9 @@ export default function ChangePasswordScreen() {
                   hitSlop={8}
                 >
                   {showConfirmPassword ? (
-                    <EyeSlashIcon size={22} color="#A89C84" />
+                    <EyeSlashIcon size={22} color={SECONDARY_PALETTE[400]} />
                   ) : (
-                    <EyeIcon size={22} color="#A89C84" />
+                    <EyeIcon size={22} color={SECONDARY_PALETTE[400]} />
                   )}
                 </Pressable>
               </View>

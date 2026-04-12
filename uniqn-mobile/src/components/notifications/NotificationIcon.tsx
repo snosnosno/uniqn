@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo } from 'react';
 import { View } from 'react-native';
 import {
@@ -115,7 +116,7 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
   },
   [NotificationCategory.SYSTEM]: {
     bg: 'bg-secondary-100 dark:bg-surface-overlay',
-    icon: '#9A9078',
+    icon: SECONDARY_PALETTE[500],
   },
   [NotificationCategory.ADMIN]: {
     bg: 'bg-info-50 dark:bg-info-50',

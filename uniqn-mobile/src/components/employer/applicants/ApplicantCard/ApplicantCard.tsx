@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback, useMemo, useState } from 'react';
 import { LayoutAnimation, Text, View } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
@@ -48,7 +49,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const iconColors = useMemo<IconColors>(
     () => ({
       checked: isDark ? '#E8C84E' : '#B8962E',
-      unchecked: isDark ? '#D6D2CA' : '#5C5546',
+      unchecked: isDark ? SECONDARY_PALETTE[200] : SECONDARY_PALETTE[700],
     }),
     [isDark]
   );

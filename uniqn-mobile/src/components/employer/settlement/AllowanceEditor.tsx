@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import {
@@ -202,7 +203,10 @@ const AllowanceItem = memo(function AllowanceItem({
 
         {/* 아이콘 + 라벨 */}
         <View className="flex-row items-center flex-1">
-          <Icon size={18} color={isEnabled ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#A89C84'} />
+          <Icon
+            size={18}
+            color={isEnabled ? (isDarkMode ? '#D4AF37' : '#8A7228') : SECONDARY_PALETTE[400]}
+          />
           <Text
             className={`ml-2 text-base font-sans-medium ${
               isEnabled
@@ -378,7 +382,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
                 ? isDarkMode
                   ? '#D4AF37'
                   : '#8A7228'
-                : '#A89C84'
+                : SECONDARY_PALETTE[400]
             }
           />
           <Text

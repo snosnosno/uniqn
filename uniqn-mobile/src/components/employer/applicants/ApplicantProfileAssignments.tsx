@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { getAssignmentRoles } from '@/types/assignment';
@@ -83,12 +84,12 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
 
             {item.slots.map((slot, slotIndex) => (
               <View key={slotIndex} className="mb-1 ml-6 flex-row items-center">
-                <ClockIcon size={12} color="#9A9078" />
+                <ClockIcon size={12} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   {slot.timeSlot}
                 </Text>
                 <View className="ml-2">
-                  <BriefcaseIcon size={12} color="#9A9078" />
+                  <BriefcaseIcon size={12} color={SECONDARY_PALETTE[500]} />
                 </View>
                 <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
                   {slot.roles.join(', ')}

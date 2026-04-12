@@ -5,6 +5,7 @@
  * @version 2.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Card } from '../../ui/Card';
@@ -174,7 +175,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 취소 요청 사유 */}
         <View className="mb-3">
           <View className="flex-row items-center mb-1">
-            <MessageIcon size={14} color="#A89C84" />
+            <MessageIcon size={14} color={SECONDARY_PALETTE[400]} />
             <Text className="ml-1 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
               취소 사유
             </Text>
@@ -188,7 +189,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 요청 시간 */}
         <View className="flex-row items-center mb-3">
-          <ClockIcon size={14} color="#A89C84" />
+          <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
           <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {requestTimeAgo}
           </Text>
@@ -257,7 +258,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             value={rejectionReason}
             onChangeText={setRejectionReason}
             placeholder="최소 3자 이상 입력해주세요"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={3}
             maxLength={200}

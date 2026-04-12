@@ -5,6 +5,7 @@
  * @version 2.0.0 - 차트 라이브러리 제거, 경량화
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -188,7 +189,11 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
                     className="h-full rounded-sm"
                     style={{
                       width: `${barWidth}%`,
-                      backgroundColor: isToday ? color : isDarkMode ? '#9A9078' : '#A89C84',
+                      backgroundColor: isToday
+                        ? color
+                        : isDarkMode
+                          ? SECONDARY_PALETTE[500]
+                          : SECONDARY_PALETTE[400],
                     }}
                   />
                 </View>

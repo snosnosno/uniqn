@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
@@ -44,7 +45,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
     <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
       {isProfileLoading ? (
         <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
-          <ActivityIndicator size="small" color="#9A9078" />
+          <ActivityIndicator size="small" color={SECONDARY_PALETTE[500]} />
         </View>
       ) : (
         <Avatar

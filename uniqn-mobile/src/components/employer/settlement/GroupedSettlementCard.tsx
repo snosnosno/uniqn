@@ -9,6 +9,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Card, Avatar, Checkbox } from '@/components/ui';
@@ -320,7 +321,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
-        <CalendarIcon size={14} color="#9A9078" />
+        <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400 font-sans">
           {dateDisplay}
         </Text>
@@ -347,7 +348,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         )}
         {group.summary.settlableCount < group.summary.pendingCount && (
           <View className="flex-row items-center px-2 py-1 bg-secondary-50 dark:bg-surface rounded-lg">
-            <ExclamationCircleIcon size={12} color="#9A9078" />
+            <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
             <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400 font-sans">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
             </Text>
@@ -365,9 +366,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           날짜별 상세
         </Text>
         {isExpanded ? (
-          <ChevronUpIcon size={16} color="#9A9078" />
+          <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
         ) : (
-          <ChevronDownIcon size={16} color="#9A9078" />
+          <ChevronDownIcon size={16} color={SECONDARY_PALETTE[500]} />
         )}
       </Pressable>
 

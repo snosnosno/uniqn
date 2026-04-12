@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -126,9 +127,9 @@ export function BoardImagePicker({
             ) : (
               <View className="items-center px-2">
                 <View className="mb-2 rounded-sm bg-secondary-200 p-3 dark:bg-surface-elevated">
-                  <ImagesOutlineIcon size={20} color="#A89C84" />
+                  <ImagesOutlineIcon size={20} color={SECONDARY_PALETTE[400]} />
                 </View>
-                <AddIcon size={18} color="#9A9078" />
+                <AddIcon size={18} color={SECONDARY_PALETTE[500]} />
                 <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   추가
                 </Text>

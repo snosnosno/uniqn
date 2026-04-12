@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Button, FormField, FormSelect } from '@/components/ui';
@@ -92,7 +93,7 @@ export function InquiryResponseForm({
           }}
           onBlur={() => validateField('response', response)}
           placeholder="답변 내용을 입력해주세요"
-          placeholderTextColor="#A89C84"
+          placeholderTextColor={SECONDARY_PALETTE[400]}
           multiline
           numberOfLines={6}
           textAlignVertical="top"

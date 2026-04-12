@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { buildPostingFacts } from '@/domains/job-posting';
@@ -84,7 +85,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             ${isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface'}
           `}
         >
-          <UserIcon size={20} color={isSelected ? '#FFFFFF' : '#9A9078'} />
+          <UserIcon size={20} color={isSelected ? '#FFFFFF' : SECONDARY_PALETTE[500]} />
         </View>
         <Text
           className={`
@@ -247,7 +248,7 @@ export function RoleChangeModal({
             value={reason}
             onChangeText={setReason}
             placeholder="역할 변경 사유를 입력하세요"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             multiline
             numberOfLines={2}
             textAlignVertical="top"

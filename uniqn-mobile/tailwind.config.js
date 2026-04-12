@@ -9,7 +9,7 @@ module.exports = {
       // UNIQN 브랜드 컬러 (v3.0 - Black & Gold)
       colors: {
         // Text Primary (다크모드 전용) — DESIGN.md L47
-        // 라이트 모드 primary 텍스트는 secondary-900(#1E1C18) 또는 #09090B 사용
+        // 라이트 모드 primary 텍스트는 secondary-900(#18181E) 또는 #09090B 사용
         'off-white': '#F0F0F2',
         // Primary: 골드 (메인 액센트)
         primary: {

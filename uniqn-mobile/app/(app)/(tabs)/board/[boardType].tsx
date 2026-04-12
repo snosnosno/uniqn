@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -85,7 +86,7 @@ export default function BoardListScreen() {
               </View>
             ) : (
               <EmptyState
-                icon={<DocumentTextOutlineIcon size={48} color="#A89C84" />}
+                icon={<DocumentTextOutlineIcon size={48} color={SECONDARY_PALETTE[400]} />}
                 title="아직 게시글이 없어요"
                 description={
                   boardType === 'schedule'

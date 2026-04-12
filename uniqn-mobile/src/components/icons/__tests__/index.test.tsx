@@ -1,3 +1,4 @@
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import {
@@ -41,8 +42,8 @@ describe('icons', () => {
   });
 
   it('resolves default colors by theme', () => {
-    expect(getDefaultIconColor('light')).toBe('#9A9078');
-    expect(getDefaultIconColor('dark')).toBe('#A89C84');
+    expect(getDefaultIconColor('light')).toBe(SECONDARY_PALETTE[500]);
+    expect(getDefaultIconColor('dark')).toBe(SECONDARY_PALETTE[400]);
     expect(getDefaultIconColor('dark', '#123456')).toBe('#123456');
   });
 });

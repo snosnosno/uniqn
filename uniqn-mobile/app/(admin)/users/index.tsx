@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -95,7 +96,7 @@ function UserCard({ user, onPress }: UserCardProps) {
           <Avatar source={user.photoURL} name={user.name} size="lg" />
         ) : (
           <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
-            <UserIcon size={24} color="#A89C84" />
+            <UserIcon size={24} color={SECONDARY_PALETTE[400]} />
           </View>
         )}
       </View>
@@ -131,7 +132,7 @@ function UserCard({ user, onPress }: UserCardProps) {
         </View>
       </View>
 
-      <ChevronRightIcon size={20} color="#A89C84" />
+      <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
     </Pressable>
   );
 }
@@ -216,12 +217,12 @@ export default function AdminUsersPage() {
     <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
-          <MagnifyingGlassIcon size={20} color="#A89C84" />
+          <MagnifyingGlassIcon size={20} color={SECONDARY_PALETTE[400]} />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
-            placeholderTextColor="#A89C84"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
             className="flex-1 ml-2 text-base font-sans text-secondary-900 dark:text-off-white"
             autoCapitalize="none"
             autoCorrect={false}
