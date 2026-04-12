@@ -167,7 +167,7 @@ export default function AdminReportsPage() {
               onChangeText={setSearchQuery}
               placeholder="신고자, 피신고자, 공고명 검색"
               placeholderTextColor="#A89C84"
-              className="flex-1 ml-2 text-base text-secondary-900 dark:text-off-white"
+              className="flex-1 ml-2 text-base font-sans text-secondary-900 dark:text-off-white"
               returnKeyType="search"
               autoCapitalize="none"
               autoCorrect={false}

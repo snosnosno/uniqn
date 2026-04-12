@@ -46,7 +46,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
       }`}
     >
       <Text
-        className={`text-sm ${
+        className={`text-sm font-sans ${
           isTotal
             ? 'font-sans-semibold text-secondary-900 dark:text-off-white'
             : 'text-secondary-600 dark:text-secondary-400'

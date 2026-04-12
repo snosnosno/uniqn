@@ -17,7 +17,7 @@ export default React.memo(function BubbleScoreBadge({ score, size = 'sm' }: Bubb
   const colorRange = useMemo(() => getBubbleScoreColor(score), [score]);
 
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5' : 'px-2.5 py-1';
-  const textClasses = size === 'sm' ? 'text-xs' : 'text-sm';
+  const textClasses = size === 'sm' ? 'text-xs' : 'text-sm font-sans';
 
   return (
     <View

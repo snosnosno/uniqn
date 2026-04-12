@@ -59,7 +59,7 @@ export const SearchBar = memo(function SearchBar({
           autoCorrect={false}
           autoCapitalize="none"
           onSubmitEditing={() => Keyboard.dismiss()}
-          className="ml-2 flex-1 py-2.5 text-base text-secondary-900 dark:text-secondary-100"
+          className="ml-2 flex-1 py-2.5 text-base font-sans text-secondary-900 dark:text-secondary-100"
           accessibilityLabel="공고 검색"
           accessibilityHint="제목 또는 장소를 입력하여 공고를 검색합니다"
         />

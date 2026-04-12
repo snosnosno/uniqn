@@ -78,7 +78,7 @@ const SelectOption = memo(function SelectOption({
           {isSelected && <View className="w-2 h-2 rounded-sm bg-white" />}
         </View>
         <Text
-          className={`text-sm ${
+          className={`text-sm font-sans ${
             isSelected
               ? 'text-primary-700 dark:text-primary-300 font-sans-medium'
               : 'text-secondary-700 dark:text-secondary-300'

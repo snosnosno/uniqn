@@ -53,7 +53,7 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
       <View className="flex-row items-center">
         <View className="mr-3">{icon}</View>
         <Text
-          className={`text-base ${
+          className={`text-base font-sans ${
             danger
               ? 'text-error-600 dark:text-error-400'
               : 'text-secondary-900 dark:text-secondary-100'

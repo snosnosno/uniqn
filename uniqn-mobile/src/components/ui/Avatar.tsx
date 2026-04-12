@@ -41,9 +41,9 @@ const sizePixels: Record<AvatarSize, number> = {
 };
 
 const textSizeStyles: Record<AvatarSize, string> = {
-  xs: 'text-xs',
-  sm: 'text-sm',
-  md: 'text-base',
+  xs: 'text-xs font-sans',
+  sm: 'text-sm font-sans',
+  md: 'text-base font-sans',
   lg: 'text-lg',
   xl: 'text-xl',
 };

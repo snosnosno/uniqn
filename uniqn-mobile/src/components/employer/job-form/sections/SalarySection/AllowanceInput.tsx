@@ -56,7 +56,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
+                className="w-16 py-2 px-2 text-right text-sm font-sans rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
               />
               <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm font-sans">
                 시간
@@ -83,7 +83,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                 <View className="flex-row items-center flex-1">
                   <Text className="text-xl mr-2 font-sans">{allowance.icon}</Text>
                   <Text
-                    className={`text-sm ${
+                    className={`text-sm font-sans ${
                       isProvided
                         ? 'text-primary-600 dark:text-primary-400 font-sans-medium'
                         : 'text-secondary-900 dark:text-off-white'
@@ -119,7 +119,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
+                    className="w-32 py-2 px-2 text-right text-sm font-sans rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
                   />
                   <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm font-sans">
                     원

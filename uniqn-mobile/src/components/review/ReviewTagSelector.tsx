@@ -111,7 +111,7 @@ const TagGroup = React.memo(function TagGroup({
               accessibilityState={{ checked: isSelected }}
             >
               <Text
-                className={`text-sm ${
+                className={`text-sm font-sans ${
                   isSelected ? colors.text : 'text-secondary-700 dark:text-secondary-300'
                 } font-sans`}
               >

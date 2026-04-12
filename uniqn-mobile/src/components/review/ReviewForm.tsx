@@ -163,7 +163,7 @@ export default function ReviewForm({
                   placeholderTextColor={placeholderColor}
                   multiline
                   maxLength={REVIEW_COMMENT_MAX_LENGTH}
-                  className="min-h-[80px] rounded-lg border border-secondary-200 bg-white p-3 text-sm text-secondary-900 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-100"
+                  className="min-h-[80px] rounded-lg border border-secondary-200 bg-white p-3 text-sm font-sans text-secondary-900 dark:border-secondary-700 dark:bg-secondary-800 dark:text-secondary-100"
                   textAlignVertical="top"
                 />
                 <Text className="mt-1 text-right text-xs text-secondary-400 font-sans">

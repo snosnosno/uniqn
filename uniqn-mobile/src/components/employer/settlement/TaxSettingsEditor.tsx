@@ -248,7 +248,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="3.3"
               placeholderTextColor="#A89C84"
-              className="flex-1 text-base text-secondary-900 dark:text-off-white"
+              className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               accessibilityLabel="세율"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
@@ -287,7 +287,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                   `}
                 >
                   <Text
-                    className={`text-xs ${
+                    className={`text-xs font-sans ${
                       isSelected
                         ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                         : 'text-secondary-600 dark:text-secondary-400'
@@ -320,7 +320,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="10,000"
               placeholderTextColor="#A89C84"
-              className="flex-1 text-base text-secondary-900 dark:text-off-white"
+              className="flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               accessibilityLabel="고정 세금 금액"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2 font-sans">
@@ -370,7 +370,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     {isChecked && <CheckmarkIcon size={12} color="white" />}
                   </View>
                   <Text
-                    className={`text-sm ${
+                    className={`text-sm font-sans ${
                       isChecked
                         ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                         : 'text-secondary-600 dark:text-secondary-400'

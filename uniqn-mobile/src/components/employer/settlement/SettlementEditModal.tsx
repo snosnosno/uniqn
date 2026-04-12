@@ -356,7 +356,7 @@ export function SettlementEditModal({
             placeholderTextColor="#A89C84"
             multiline
             numberOfLines={2}
-            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-off-white"
+            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-secondary-900 dark:text-off-white"
             accessibilityLabel="수정 사유"
           />
         </View>

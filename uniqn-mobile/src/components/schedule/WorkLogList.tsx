@@ -153,7 +153,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
             <PendingIcon size={14} color="#A89C84" />
           )}
           <Text
-            className={`ml-1 text-sm ${
+            className={`ml-1 text-sm font-sans ${
               isCompleted
                 ? 'text-success-600 dark:text-success-400'
                 : 'text-secondary-500 dark:text-secondary-400'

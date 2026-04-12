@@ -261,7 +261,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             multiline
             numberOfLines={3}
             maxLength={200}
-            className="bg-secondary-50 dark:bg-surface rounded-lg p-3 text-secondary-900 dark:text-off-white text-base min-h-[80px] mb-4"
+            className="bg-secondary-50 dark:bg-surface rounded-lg p-3 text-secondary-900 dark:text-off-white text-base font-sans min-h-[80px] mb-4"
             textAlignVertical="top"
           />
           <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mb-4 font-sans">

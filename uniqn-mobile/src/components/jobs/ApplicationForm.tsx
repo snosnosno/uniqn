@@ -296,7 +296,7 @@ export function ApplicationForm({
             numberOfLines={4}
             maxLength={200}
             editable={!isSubmitting}
-            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base text-secondary-900 dark:bg-surface dark:text-off-white"
+            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base font-sans text-secondary-900 dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
           <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500 font-sans">

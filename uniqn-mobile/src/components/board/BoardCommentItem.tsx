@@ -113,7 +113,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
           </View>
 
           <Text
-            className={`text-sm leading-6 ${
+            className={`text-sm font-sans leading-6 ${
               contentDisabled
                 ? 'italic text-secondary-400 dark:text-secondary-500'
                 : 'text-secondary-700 dark:text-secondary-300'

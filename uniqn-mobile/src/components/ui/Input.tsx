@@ -94,7 +94,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
             setIsFocused(false);
             props.onBlur?.(e);
           }}
-          className="flex-1 py-3 text-base text-secondary-900 dark:text-secondary-100"
+          className="flex-1 py-3 text-base font-sans text-secondary-900 dark:text-secondary-100"
           placeholderTextColor={placeholderColor}
         />
 
@@ -113,7 +113,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
 
       {(error || hint) && (
         <Text
-          className={`mt-1 text-sm ${
+          className={`mt-1 text-sm font-sans ${
             // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
             error ? 'text-error-500' : 'text-secondary-600 dark:text-secondary-400'
           } font-sans`}

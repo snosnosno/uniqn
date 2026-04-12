@@ -82,7 +82,7 @@ export const NotificationItem = memo(function NotificationItem({
               {!notification.isRead && <View className="mr-2 h-2 w-2 rounded-sm bg-primary-500" />}
               <Text
                 numberOfLines={1}
-                className={`flex-1 text-base ${
+                className={`flex-1 text-base font-sans ${
                   notification.isRead
                     ? 'font-normal text-secondary-700 dark:text-secondary-300'
                     : 'font-sans-semibold text-secondary-900 dark:text-off-white'

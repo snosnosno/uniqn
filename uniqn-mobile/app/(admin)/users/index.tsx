@@ -222,7 +222,7 @@ export default function AdminUsersPage() {
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
             placeholderTextColor="#A89C84"
-            className="flex-1 ml-2 text-base text-secondary-900 dark:text-off-white"
+            className="flex-1 ml-2 text-base font-sans text-secondary-900 dark:text-off-white"
             autoCapitalize="none"
             autoCorrect={false}
           />

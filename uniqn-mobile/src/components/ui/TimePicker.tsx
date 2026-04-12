@@ -106,7 +106,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
       accessibilityLabel={`${item.label} 선택`}
     >
       <Text
-        className={`text-base ${
+        className={`text-base font-sans ${
           isSelected
             ? 'text-primary-700 dark:text-primary-300 font-sans-semibold'
             : 'text-secondary-900 dark:text-off-white'
@@ -228,7 +228,7 @@ export const TimePicker = memo(function TimePicker({
         className={getInputStyle()}
       >
         <Text
-          className={`flex-1 ${value ? 'text-base' : 'text-sm'} ${
+          className={`flex-1 ${value ? 'text-base' : 'text-sm font-sans'} ${
             disabled
               ? 'text-secondary-400 dark:text-secondary-500'
               : value

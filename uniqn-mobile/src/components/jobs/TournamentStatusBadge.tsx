@@ -93,11 +93,11 @@ const STATUS_CONFIG: Record<ApprovalStatus, StatusConfig> = {
 const SIZE_CONFIG = {
   sm: {
     paddingClass: 'px-2 py-0.5',
-    textClass: 'text-xs',
+    textClass: 'text-xs font-sans',
   },
   md: {
     paddingClass: 'px-2.5 py-1',
-    textClass: 'text-xs',
+    textClass: 'text-xs font-sans',
   },
 };
 

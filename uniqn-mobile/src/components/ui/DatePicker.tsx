@@ -140,7 +140,7 @@ export const DatePicker = memo(function DatePicker({
           className="flex-row items-center flex-1"
         >
           <Text
-            className={`flex-1 ${value ? 'text-base' : 'text-sm'} ${
+            className={`flex-1 ${value ? 'text-base' : 'text-sm font-sans'} ${
               disabled
                 ? 'text-secondary-400 dark:text-secondary-500'
                 : value

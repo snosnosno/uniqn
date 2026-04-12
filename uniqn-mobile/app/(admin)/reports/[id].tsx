@@ -339,7 +339,7 @@ function ReviewFormSection({
         placeholderTextColor="#A89C84"
         multiline
         numberOfLines={4}
-        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm text-secondary-900 dark:text-off-white mb-4"
+        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm font-sans text-secondary-900 dark:text-off-white mb-4"
         style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 

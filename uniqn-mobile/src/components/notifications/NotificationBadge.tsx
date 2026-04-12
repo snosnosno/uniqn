@@ -27,11 +27,11 @@ const sizeStyles = {
   },
   md: {
     container: 'min-w-[18px] h-[18px] px-1',
-    text: 'text-xs',
+    text: 'text-xs font-sans',
   },
   lg: {
     container: 'min-w-[22px] h-[22px] px-1.5',
-    text: 'text-sm',
+    text: 'text-sm font-sans',
   },
 };
 

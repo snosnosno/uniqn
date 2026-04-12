@@ -179,7 +179,7 @@ export default function AdminBoardReportsPage() {
               onChangeText={setQuery}
               placeholder="사유, 신고자, 게시글 검색"
               placeholderTextColor="#A89C84"
-              className="ml-2 flex-1 text-base text-secondary-900 dark:text-off-white"
+              className="ml-2 flex-1 text-base font-sans text-secondary-900 dark:text-off-white"
               autoCapitalize="none"
               autoCorrect={false}
             />

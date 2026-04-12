@@ -81,7 +81,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                 {showLabels && (
                   <Text
                     className={`
-                      text-xs mt-1 text-center
+                      text-xs font-sans mt-1 text-center
                       ${isActive ? 'font-sans-semibold text-primary-600 dark:text-primary-400' : ''}
                       ${isCompleted ? 'text-success-600 dark:text-success-400' : ''}
                       ${isUpcoming ? 'text-secondary-400 dark:text-secondary-500' : ''}

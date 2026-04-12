@@ -218,7 +218,7 @@ export function AnnouncementForm({
                 }`}
               >
                 <Text
-                  className={`text-sm ${
+                  className={`text-sm font-sans ${
                     category === cat.key
                       ? 'text-surface-dark font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
@@ -303,7 +303,7 @@ export function AnnouncementForm({
                 }`}
               >
                 <Text
-                  className={`text-sm ${
+                  className={`text-sm font-sans ${
                     priority === p
                       ? 'text-surface-dark font-sans-medium'
                       : 'text-secondary-700 dark:text-secondary-300'
@@ -349,7 +349,7 @@ export function AnnouncementForm({
               }`}
             >
               <Text
-                className={`text-sm ${
+                className={`text-sm font-sans ${
                   targetType === 'all'
                     ? 'text-surface-dark font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
@@ -367,7 +367,7 @@ export function AnnouncementForm({
               }`}
             >
               <Text
-                className={`text-sm ${
+                className={`text-sm font-sans ${
                   targetType === 'roles'
                     ? 'text-surface-dark font-sans-medium'
                     : 'text-secondary-700 dark:text-secondary-300'
@@ -392,7 +392,7 @@ export function AnnouncementForm({
                   }`}
                 >
                   <Text
-                    className={`text-sm ${
+                    className={`text-sm font-sans ${
                       targetRoles.includes(role)
                         ? 'text-surface-dark font-sans-medium'
                         : 'text-secondary-700 dark:text-secondary-300'

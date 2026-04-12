@@ -144,7 +144,7 @@ export function CancellationRequestForm({
             editable={!isSubmitting}
             className={`
                 bg-secondary-50 dark:bg-surface rounded-lg p-4
-                text-secondary-900 dark:text-off-white text-base min-h-[140px]
+                text-secondary-900 dark:text-off-white text-base font-sans min-h-[140px]
                 ${error ? 'border-2 border-error-500' : 'border border-secondary-200 dark:border-surface-overlay'}
               `}
             textAlignVertical="top"

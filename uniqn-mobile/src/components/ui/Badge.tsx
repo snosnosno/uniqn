@@ -122,8 +122,8 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 const textSizeStyles: Record<BadgeSize, string> = {
-  sm: 'text-xs',
-  md: 'text-sm',
+  sm: 'text-xs font-sans',
+  md: 'text-sm font-sans',
 };
 
 export function Badge({

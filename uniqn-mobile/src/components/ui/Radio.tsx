@@ -52,20 +52,20 @@ const sizeConfig = {
   sm: {
     outer: 'h-4 w-4',
     inner: 'h-2 w-2',
-    label: 'text-sm',
-    description: 'text-xs',
+    label: 'text-sm font-sans',
+    description: 'text-xs font-sans',
   },
   md: {
     outer: 'h-5 w-5',
     inner: 'h-2.5 w-2.5',
-    label: 'text-base',
-    description: 'text-sm',
+    label: 'text-base font-sans',
+    description: 'text-sm font-sans',
   },
   lg: {
     outer: 'h-6 w-6',
     inner: 'h-3 w-3',
     label: 'text-lg',
-    description: 'text-base',
+    description: 'text-base font-sans',
   },
 };
 

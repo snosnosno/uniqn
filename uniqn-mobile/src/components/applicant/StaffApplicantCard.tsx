@@ -160,7 +160,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         <View className="flex-row items-center mb-1">
           <Text
             className={`font-sans-semibold text-secondary-900 dark:text-off-white ${
-              compact ? 'text-base' : 'text-lg'
+              compact ? 'text-base font-sans' : 'text-lg'
             }`}
           >
             {application.applicantName}

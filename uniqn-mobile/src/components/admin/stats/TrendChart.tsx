@@ -168,7 +168,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
               {/* 날짜 */}
               <View className="w-16">
                 <Text
-                  className={`text-sm ${
+                  className={`text-sm font-sans ${
                     isToday
                       ? 'font-sans-semibold text-primary-700 dark:text-primary-300'
                       : 'text-secondary-600 dark:text-secondary-400'

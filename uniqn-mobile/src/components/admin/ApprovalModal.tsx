@@ -174,7 +174,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                   />
                   <View className="flex-row justify-between mt-1">
                     <Text
-                      className={`text-xs ${
+                      className={`text-xs font-sans ${
                         isValidReason
                           ? 'text-success-600 dark:text-success-400'
                           : 'text-secondary-500 dark:text-secondary-400'

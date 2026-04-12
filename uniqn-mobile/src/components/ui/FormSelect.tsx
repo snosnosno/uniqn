@@ -56,7 +56,7 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
     >
       <View className="flex-row items-center justify-between">
         <Text
-          className={`text-base ${
+          className={`text-base font-sans ${
             isSelected
               ? 'text-primary-600 dark:text-primary-400 font-sans-medium'
               : 'text-secondary-900 dark:text-off-white'
@@ -225,7 +225,7 @@ export function FormSelect<T = string>({
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
                 placeholderTextColor="#A89C84"
-                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base text-secondary-900 dark:text-off-white"
+                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base font-sans text-secondary-900 dark:text-off-white"
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel="옵션 검색"

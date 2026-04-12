@@ -46,12 +46,12 @@ export function ResubmitButton({
   const sizeStyles = {
     sm: {
       paddingClass: 'px-3 py-2',
-      textClass: 'text-sm',
+      textClass: 'text-sm font-sans',
       iconSize: 16,
     },
     md: {
       paddingClass: 'px-4 py-3',
-      textClass: 'text-base',
+      textClass: 'text-base font-sans',
       iconSize: 18,
     },
     lg: {

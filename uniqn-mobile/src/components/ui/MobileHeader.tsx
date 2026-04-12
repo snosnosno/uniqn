@@ -186,7 +186,7 @@ export function MobileHeader({
                 onChangeText={handleSearchChange}
                 placeholder={searchPlaceholder}
                 placeholderTextColor={searchPlaceholderColor}
-                className={`ml-2 flex-1 text-base ${HEADER_CLASSES.title}`}
+                className={`ml-2 flex-1 text-base font-sans ${HEADER_CLASSES.title}`}
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect={false}

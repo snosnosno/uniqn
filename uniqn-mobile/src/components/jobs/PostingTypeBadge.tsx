@@ -30,15 +30,15 @@ interface PostingTypeBadgeProps {
 const SIZE_STYLES = {
   sm: {
     container: 'px-2 py-0.5 rounded',
-    text: 'text-xs',
+    text: 'text-xs font-sans',
   },
   md: {
     container: 'px-2.5 py-1 rounded-md',
-    text: 'text-sm',
+    text: 'text-sm font-sans',
   },
   lg: {
     container: 'px-3 py-1.5 rounded-lg',
-    text: 'text-base',
+    text: 'text-base font-sans',
   },
 } as const;
 

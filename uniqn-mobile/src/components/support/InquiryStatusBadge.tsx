@@ -19,11 +19,11 @@ export interface InquiryStatusBadgeProps {
 const sizeStyles = {
   sm: {
     container: 'px-2 py-0.5',
-    text: 'text-xs',
+    text: 'text-xs font-sans',
   },
   md: {
     container: 'px-3 py-1',
-    text: 'text-sm',
+    text: 'text-sm font-sans',
   },
 };
 

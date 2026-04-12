@@ -167,7 +167,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
                 <XMarkIcon size={14} color="#A89C84" />
               )}
               <Text
-                className={`text-xs ${
+                className={`text-xs font-sans ${
                   req.passed
                     ? 'text-success-600 dark:text-success-400'
                     : 'text-secondary-500 dark:text-secondary-400'

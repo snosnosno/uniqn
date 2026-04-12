@@ -88,7 +88,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
           <View className="flex-row items-center">
             <Text className="text-xl mr-3 font-sans">{item.icon}</Text>
             <Text
-              className={`text-base ${
+              className={`text-base font-sans ${
                 isExisting && !isOther
                   ? 'text-secondary-400 dark:text-secondary-500'
                   : 'text-secondary-900 dark:text-off-white'
@@ -121,7 +121,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               placeholder="예: 플로어 매니저"
               placeholderTextColor="#A89C84"
               autoFocus
-              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-off-white bg-white dark:bg-surface"
+              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base font-sans text-secondary-900 dark:text-off-white bg-white dark:bg-surface"
             />
             <View className="flex-row gap-3 mt-4">
               <Pressable

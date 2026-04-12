@@ -44,20 +44,20 @@ const sizeConfig = {
   sm: {
     box: 'h-4 w-4',
     icon: 12,
-    label: 'text-sm',
-    description: 'text-xs',
+    label: 'text-sm font-sans',
+    description: 'text-xs font-sans',
   },
   md: {
     box: 'h-5 w-5',
     icon: 14,
-    label: 'text-base',
-    description: 'text-sm',
+    label: 'text-base font-sans',
+    description: 'text-sm font-sans',
   },
   lg: {
     box: 'h-6 w-6',
     icon: 18,
     label: 'text-lg',
-    description: 'text-base',
+    description: 'text-base font-sans',
   },
 };
 

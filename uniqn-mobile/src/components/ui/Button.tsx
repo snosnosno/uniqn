@@ -61,8 +61,8 @@ const sizeStyles: Record<ButtonSize, string> = {
 };
 
 const sizeTextStyles: Record<ButtonSize, string> = {
-  sm: 'text-sm',
-  md: 'text-base',
+  sm: 'text-sm font-sans',
+  md: 'text-base font-sans',
   lg: 'text-lg',
 };
 

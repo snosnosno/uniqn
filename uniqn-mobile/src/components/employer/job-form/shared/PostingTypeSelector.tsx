@@ -56,7 +56,7 @@ const TypeCard = memo(function TypeCard({
           </Text>
           <Text
             className={`
-              text-xs
+              text-xs font-sans
               ${isSelected ? 'text-primary-500 dark:text-primary-300' : 'text-secondary-500 dark:text-secondary-400'}
              font-sans`}
           >

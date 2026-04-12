@@ -125,8 +125,8 @@ export const BiometricButton = memo(function BiometricButton({
 
   // 텍스트 크기
   const textSizeStyles = {
-    sm: 'text-sm',
-    md: 'text-base',
+    sm: 'text-sm font-sans',
+    md: 'text-base font-sans',
     lg: 'text-lg',
   };
 

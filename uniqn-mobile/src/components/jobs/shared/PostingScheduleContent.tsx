@@ -98,7 +98,7 @@ export function PostingScheduleContent({
           <Text
             className={
               display === 'card'
-                ? 'text-sm font-medium text-secondary-700 dark:text-secondary-300'
+                ? 'text-sm font-sans-medium text-secondary-700 dark:text-secondary-300'
                 : 'text-sm font-sans-semibold text-secondary-900 dark:text-off-white'
             }
           >
@@ -111,7 +111,7 @@ export function PostingScheduleContent({
                 slot.roles.map((role, roleIndex) => (
                   <Text
                     key={role.key}
-                    className={`text-sm ${
+                    className={`text-sm font-sans ${
                       role.isFilled
                         ? 'text-secondary-400 line-through dark:text-secondary-500'
                         : 'text-secondary-900 dark:text-secondary-100'
@@ -158,7 +158,7 @@ function RoleBadge({
       }`}
     >
       <Text
-        className={`text-xs ${
+        className={`text-xs font-sans ${
           role.isFilled
             ? 'text-secondary-500 line-through dark:text-secondary-400'
             : 'text-primary-700 dark:text-primary-300'

@@ -96,7 +96,7 @@ export function InquiryResponseForm({
           multiline
           numberOfLines={6}
           textAlignVertical="top"
-          className={`min-h-[150px] rounded-lg border px-4 py-3 text-base text-secondary-900 dark:text-secondary-100 ${
+          className={`min-h-[150px] rounded-lg border px-4 py-3 text-base font-sans text-secondary-900 dark:text-secondary-100 ${
             errors.response
               ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
               : 'border-secondary-300 bg-secondary-50 dark:border-surface-overlay dark:bg-surface'

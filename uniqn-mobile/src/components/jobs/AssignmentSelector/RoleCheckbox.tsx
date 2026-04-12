@@ -36,7 +36,7 @@ export const RoleCheckbox = memo(function RoleCheckbox({
       </View>
 
       <Text
-        className={`text-sm ${
+        className={`text-sm font-sans ${
           isFilled
             ? 'text-secondary-400 line-through dark:text-secondary-500'
             : isSelected

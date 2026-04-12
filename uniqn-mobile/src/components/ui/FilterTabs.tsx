@@ -42,8 +42,8 @@ export interface FilterTabsProps<T extends string = string> {
 // ============================================================================
 
 const LABEL_SIZE_CLASS = {
-  xs: 'text-xs',
-  sm: 'text-sm',
+  xs: 'text-xs font-sans',
+  sm: 'text-sm font-sans',
 } as const;
 
 // ============================================================================

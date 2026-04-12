@@ -93,7 +93,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             <View className="flex-row items-center">
               {hasUnread && <View className="w-2 h-2 rounded-sm bg-primary-500 mr-2" />}
               <Text
-                className={`text-base flex-1 ${
+                className={`text-base font-sans flex-1 ${
                   hasUnread
                     ? 'text-secondary-900 dark:text-off-white font-sans-semibold'
                     : 'text-secondary-700 dark:text-secondary-300 font-normal'

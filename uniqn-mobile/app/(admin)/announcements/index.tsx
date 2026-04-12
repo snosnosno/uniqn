@@ -136,7 +136,7 @@ export default function AdminAnnouncementsPage() {
                       }`}
                     >
                       <Text
-                        className={`text-xs ${
+                        className={`text-xs font-sans ${
                           isActive
                             ? 'text-primary-600'
                             : 'text-secondary-500 dark:text-secondary-400'

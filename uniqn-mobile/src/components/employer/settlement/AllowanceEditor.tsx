@@ -244,7 +244,7 @@ const AllowanceItem = memo(function AllowanceItem({
                 )}
               </View>
               <Text
-                className={`text-sm ${
+                className={`text-sm font-sans ${
                   status === 'provided'
                     ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
@@ -278,7 +278,7 @@ const AllowanceItem = memo(function AllowanceItem({
                 )}
               </View>
               <Text
-                className={`text-sm ${
+                className={`text-sm font-sans ${
                   status === 'amount'
                     ? 'text-primary-800 dark:text-primary-200 font-sans-medium'
                     : 'text-secondary-600 dark:text-secondary-400'
