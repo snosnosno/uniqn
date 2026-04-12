@@ -28,7 +28,7 @@
 | Stage 1 | 폰트 설치 + 초기 적용 (Outfit + Plus Jakarta Sans)      | ✅ 완료 | `21deded1c` |
 | Stage 2 | 헤딩 73개 파일 — H1~H5 fontFamily 일괄 적용             | ✅ 완료 | `d455a1989` |
 | Stage 3 | 네이티브 Stack 헤더 fontFamily 주입                     | ✅ 완료 | `c32991172` |
-| Stage 4 | 본문/캡션 Text 요소 (~1,800개) — Plus Jakarta Sans 적용 | ⏳ 예정 | —           |
+| Stage 4 | 본문/캡션 Text 요소 (~1,800개) — Plus Jakarta Sans 적용 | ✅ 완료 | `f3599214d` |
 
 - **Scale:**
   - H1: 36px / weight 800
