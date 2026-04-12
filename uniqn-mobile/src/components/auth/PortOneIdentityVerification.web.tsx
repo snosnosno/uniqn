@@ -102,6 +102,7 @@ export function PortOneIdentityVerification({
         storeId: request.storeId,
         channelKey: request.channelKey,
         identityVerificationId: request.identityVerificationId,
+        customer: request.customer,
         bypass: request.bypass,
         customData: request.customData,
       });
@@ -113,10 +114,8 @@ export function PortOneIdentityVerification({
 
       // 에러 코드 → 실패/취소
       if (result.code) {
-        setIsProcessing(false);
         setErrorMessage(result.message ?? '본인인증이 완료되지 않았습니다.');
-        clearPendingPortOneIdentityRequest();
-        return;
+        return; // finally가 cleanup 처리
       }
 
       // Supabase Edge Function으로 검증

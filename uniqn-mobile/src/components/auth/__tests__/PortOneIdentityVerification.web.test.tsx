@@ -35,6 +35,7 @@ const mockRequest = {
   storeId: 'store-id',
   channelKey: 'channel-key',
   identityVerificationId: 'test-id-123',
+  customer: { fullName: '홍길동' },
   bypass: { inicisUnified: { flgFixedUser: 'N' } },
   customData: undefined,
 };
@@ -93,6 +94,7 @@ describe('PortOneIdentityVerification (web)', () => {
       storeId: 'store-id',
       channelKey: 'channel-key',
       identityVerificationId: 'test-id-123',
+      customer: { fullName: '홍길동' },
       bypass: { inicisUnified: { flgFixedUser: 'N' } },
       customData: undefined,
     });
@@ -171,5 +173,34 @@ describe('PortOneIdentityVerification (web)', () => {
     );
     expect(getByText('이니시스 본인인증 완료')).toBeTruthy();
     expect(getByText('홍길동')).toBeTruthy();
+  });
+
+  it('phoneVerified false 시 에러 메시지를 표시한다', async () => {
+    mockCallVerify.mockResolvedValue({
+      ...mockVerification,
+      phoneVerified: false,
+      identity: { ...mockIdentity, phoneNumber: undefined },
+    });
+    const { getByText } = render(<PortOneIdentityVerification {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(getByText('본인인증 시작'));
+    });
+    await waitFor(() => {
+      expect(getByText(/휴대폰 번호가 없습니다/)).toBeTruthy();
+    });
+  });
+
+  it('gender 없을 시 에러 메시지를 표시한다', async () => {
+    mockCallVerify.mockResolvedValue({
+      ...mockVerification,
+      identity: { ...mockIdentity, gender: undefined },
+    });
+    const { getByText } = render(<PortOneIdentityVerification {...defaultProps} />);
+    await act(async () => {
+      fireEvent.press(getByText('본인인증 시작'));
+    });
+    await waitFor(() => {
+      expect(getByText(/성별 정보가 없습니다/)).toBeTruthy();
+    });
   });
 });
