@@ -46,7 +46,7 @@ export function getIconColor(
 export const STATUS_COLORS = {
   success: '#22C55E',
   warning: '#D4A017',
-  error: '#EF4444',
+  error: '#DC2626',
   info: '#2563EB',
 } as const;
 
@@ -190,7 +190,7 @@ export const CHART_COLORS = {
   },
   series: {
     light: ['#8A7228', '#16A34A', '#A16207', '#B91C1C', '#1D4ED8'],
-    dark: ['#D4AF37', '#22C55E', '#D4A017', '#EF4444', '#3B82F6'],
+    dark: ['#D4AF37', '#22C55E', '#D4A017', '#DC2626', '#2563EB'],
   },
 } as const;
 

@@ -38,6 +38,7 @@ module.exports = {
           dark: '#050506',
           elevated: '#111113',
           overlay: '#19191D',
+          hover: '#222228',
         },
         // Secondary: 골드 틴트 그레이 (웜 톤)
         secondary: {
@@ -70,27 +71,28 @@ module.exports = {
         error: {
           50: 'rgba(220,38,38,0.08)',
           100: 'rgba(220,38,38,0.12)',
-          500: '#EF4444',
-          600: '#DC2626',
-          700: '#B91C1C',
+          500: '#DC2626',
+          600: '#B91C1C',
+          700: '#991B1B',
         },
         info: {
           50: 'rgba(37,99,235,0.08)',
           100: 'rgba(37,99,235,0.12)',
-          500: '#3B82F6',
-          600: '#2563EB',
-          700: '#1D4ED8',
+          500: '#2563EB',
+          600: '#1D4ED8',
+          700: '#1E40AF',
         },
       },
       // 폰트 사이즈 (React Native 호환)
       fontSize: {
+        micro: ['10px', { lineHeight: '14px' }],
         xs: ['12px', { lineHeight: '16px' }],
         sm: ['14px', { lineHeight: '20px' }],
-        base: ['16px', { lineHeight: '24px' }],
+        base: ['15px', { lineHeight: '22px' }],
         lg: ['18px', { lineHeight: '28px' }],
-        xl: ['20px', { lineHeight: '28px' }],
-        '2xl': ['24px', { lineHeight: '32px' }],
-        '3xl': ['30px', { lineHeight: '36px' }],
+        xl: ['22px', { lineHeight: '30px' }],
+        '2xl': ['28px', { lineHeight: '36px' }],
+        '3xl': ['36px', { lineHeight: '44px' }],
       },
       // 스페이싱 (px 단위)
       spacing: {
@@ -125,7 +127,6 @@ module.exports = {
         xl: '12px',
         '2xl': '14px',
         '3xl': '16px',
-        full: '9999px',
       },
       // 그림자 (React Native 호환)
       boxShadow: {

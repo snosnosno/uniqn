@@ -7,6 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -57,6 +58,8 @@ function FilterTabsInner<T extends string = string>({
   labelSize = 'xs',
   className,
 }: FilterTabsProps<T>) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+
   const renderCount = useCallback(
     (option: FilterTabOption<T>): string => {
       if (countDisplay === 'none') return '';
@@ -83,7 +86,7 @@ function FilterTabsInner<T extends string = string>({
               onPress={() => onSelect(option.value)}
               className="flex-1 items-center justify-center py-2 rounded-md"
               style={{
-                backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
+                backgroundColor: isSelected ? (isDarkMode ? '#111113' : '#FFFFFF') : 'transparent',
               }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isSelected }}
@@ -92,7 +95,7 @@ function FilterTabsInner<T extends string = string>({
               <Text
                 className={`${LABEL_SIZE_CLASS[labelSize]} font-medium`}
                 style={{
-                  color: isSelected ? '#4F46E5' : '#9A9078',
+                  color: isSelected ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
                 }}
               >
                 {option.label}

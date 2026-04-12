@@ -46,7 +46,7 @@ const variantStyles: Record<ButtonVariant, string> = {
 };
 
 const variantTextStyles: Record<ButtonVariant, string> = {
-  primary: 'text-white',
+  primary: 'text-surface-dark font-bold',
   secondary: 'text-secondary-900 dark:text-secondary-100',
   outline: 'text-secondary-900 dark:text-secondary-100',
   ghost: 'text-secondary-900 dark:text-secondary-100',
@@ -68,7 +68,7 @@ const sizeTextStyles: Record<ButtonSize, string> = {
 
 /** 로딩 인디케이터 색상 (variant별, 다크모드 지원) */
 const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
-  primary: { light: '#ffffff', dark: '#ffffff' },
+  primary: { light: '#050506', dark: '#050506' },
   secondary: { light: '#9A9078', dark: '#D6D2CA' },
   outline: { light: '#9A9078', dark: '#D6D2CA' },
   ghost: { light: '#9A9078', dark: '#D6D2CA' },
@@ -104,7 +104,7 @@ export const Button = memo(function Button({
     accessibilityLabel ?? (typeof children === 'string' ? children : undefined);
 
   const buttonClass =
-    `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`.trim();
+    `flex-row items-center justify-center rounded ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`.trim();
   const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
   const content =
     typeof children === 'string' || typeof children === 'number' ? (

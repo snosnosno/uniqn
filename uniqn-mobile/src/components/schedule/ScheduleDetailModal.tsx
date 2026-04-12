@@ -26,6 +26,7 @@ import { getUserProfile } from '@/services/auth';
 import { createReport } from '@/services/admin';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { logger } from '@/utils/logger';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
 import { STATUS } from '@/constants';
@@ -87,6 +88,7 @@ export function ScheduleDetailModal({
   onRefreshSchedule,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   // 신고 모달 상태
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
@@ -367,12 +369,12 @@ export function ScheduleDetailModal({
         <TouchableOpacity
           onPress={onClose}
           style={{
-            width: 32,
-            height: 32,
+            width: 40,
+            height: 40,
             alignItems: 'center',
             justifyContent: 'center',
-            borderRadius: 16,
-            backgroundColor: '#F3F4F6',
+            borderRadius: 8,
+            backgroundColor: isDarkMode ? '#111113' : '#F5F5F2',
           }}
           activeOpacity={0.7}
           accessibilityLabel="닫기"
@@ -396,7 +398,7 @@ export function ScheduleDetailModal({
                 justifyContent: 'center',
                 paddingVertical: 10,
                 borderRadius: 8,
-                backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+                backgroundColor: isActive ? (isDarkMode ? '#111113' : '#FFFFFF') : 'transparent',
               }}
               activeOpacity={0.7}
               accessibilityRole="tab"
@@ -404,7 +406,7 @@ export function ScheduleDetailModal({
             >
               <View style={{ opacity: isActive ? 1 : 0.6 }}>
                 {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
-                  color: isActive ? '#4F46E5' : '#9A9078',
+                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
                 })}
               </View>
               <Text
@@ -412,7 +414,7 @@ export function ScheduleDetailModal({
                   marginLeft: 6,
                   fontSize: 14,
                   fontWeight: '500',
-                  color: isActive ? '#4F46E5' : '#9A9078',
+                  color: isActive ? (isDarkMode ? '#D4AF37' : '#8A7228') : '#9A9078',
                 }}
               >
                 {tab.label}
