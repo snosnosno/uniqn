@@ -171,7 +171,7 @@ function WebSheetModal({
                 <Pressable
                   onPress={handleRequestClose}
                   disabled={isLoading}
-                  className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                  className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -334,7 +334,7 @@ function NativeSheetModal({
                   <Pressable
                     onPress={handleRequestClose}
                     disabled={isLoading}
-                    className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                    className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}

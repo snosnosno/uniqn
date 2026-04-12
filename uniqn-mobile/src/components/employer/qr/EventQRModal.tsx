@@ -557,7 +557,7 @@ export function EventQRModal({
         <View className="mb-2 flex-row justify-end">
           <Pressable
             onPress={onClose}
-            className="h-9 w-9 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
+            className="h-10 w-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
             accessibilityRole="button"
             accessibilityLabel="닫기"
           >
