@@ -86,9 +86,9 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
   cancellation_pending: {
     label: APPLICATION_STATUS_LABELS.cancellation_pending,
     variant: 'warning',
-    textColor: 'text-orange-600 dark:text-orange-400',
-    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-    hexColor: '#F97316',
+    textColor: 'text-warning-600 dark:text-warning-400',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
+    hexColor: '#D4A017',
   },
 };
 
@@ -218,9 +218,9 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
   no_show: {
     label: CONFIRMED_STAFF_STATUS_LABELS.no_show,
     variant: 'warning',
-    textColor: 'text-orange-600 dark:text-orange-300',
-    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-    hexColor: '#F97316',
+    textColor: 'text-warning-600 dark:text-warning-300',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
+    hexColor: '#D4A017',
   },
 };
 

@@ -148,12 +148,12 @@ export const APPLICATION_STATUS_COLORS: Record<
     text: 'text-secondary-500 dark:text-secondary-400',
   },
   completed: {
-    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-    text: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'bg-success-100 dark:bg-success-900/30',
+    text: 'text-success-700 dark:text-success-300',
   },
   cancellation_pending: {
-    bg: 'bg-orange-100 dark:bg-orange-900/30',
-    text: 'text-orange-700 dark:text-orange-300',
+    bg: 'bg-warning-100 dark:bg-warning-900/30',
+    text: 'text-warning-700 dark:text-warning-300',
   },
 };
 
