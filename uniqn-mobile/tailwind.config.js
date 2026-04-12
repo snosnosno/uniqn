@@ -83,6 +83,15 @@ module.exports = {
           700: '#1E40AF',
         },
       },
+      // 폰트 패밀리 (Expo Google Fonts)
+      fontFamily: {
+        display: ['Outfit_700Bold'],
+        'display-bold': ['Outfit_800ExtraBold'],
+        sans: ['PlusJakartaSans_400Regular'],
+        'sans-medium': ['PlusJakartaSans_500Medium'],
+        'sans-semibold': ['PlusJakartaSans_600SemiBold'],
+        'sans-bold': ['PlusJakartaSans_700Bold'],
+      },
       // 폰트 사이즈 (React Native 호환)
       fontSize: {
         micro: ['10px', { lineHeight: '14px' }],

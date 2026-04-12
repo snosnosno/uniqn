@@ -7,6 +7,15 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
+import { useFonts } from 'expo-font';
+import { Outfit_600SemiBold, Outfit_700Bold, Outfit_800ExtraBold } from '@expo-google-fonts/outfit';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   ErrorState,
   Loading,
@@ -48,6 +57,11 @@ try {
     logger.warn('[Sentry] initialization failed', { error });
   }
 }
+
+// 폰트 로드 전까지 스플래시 화면 유지
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // 이미 호출된 경우 무시
+});
 
 if (__DEV__) {
   LogBox.ignoreLogs(SUPPRESSED_WARNINGS);
@@ -155,12 +169,34 @@ function AppContent() {
 export default function RootLayout() {
   useAndroidOrientationPolicy();
 
+  const [fontsLoaded, fontError] = useFonts({
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+
   useEffect(() => {
     const unsubscribe = initializeNetworkState();
     return () => {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {
+        // 이미 숨겨진 경우 무시
+      });
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

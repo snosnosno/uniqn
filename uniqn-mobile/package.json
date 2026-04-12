@@ -31,6 +31,8 @@
     "e2e:setup": "npx playwright install --with-deps chromium"
   },
   "dependencies": {
+    "@expo-google-fonts/outfit": "^0.4.3",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
     "@portone/react-native-sdk": "^0.6.0",
@@ -49,6 +51,7 @@
     "expo-crypto": "~55.0.10",
     "expo-dev-client": "~55.0.19",
     "expo-device": "~55.0.10",
+    "expo-font": "~55.0.6",
     "expo-image": "~55.0.6",
     "expo-image-manipulator": "~55.0.11",
     "expo-image-picker": "~55.0.14",
@@ -59,7 +62,7 @@
     "expo-router": "~55.0.8",
     "expo-screen-orientation": "~55.0.9",
     "expo-secure-store": "~55.0.9",
-    "expo-splash-screen": "~55.0.13",
+    "expo-splash-screen": "~55.0.17",
     "expo-status-bar": "~55.0.4",
     "expo-system-ui": "~55.0.11",
     "expo-updates": "~55.0.16",
