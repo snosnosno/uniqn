@@ -27,7 +27,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.message ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             지원 메시지
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
@@ -43,7 +43,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.preQuestionAnswers && applicant.preQuestionAnswers.length > 0 ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             사전질문 답변
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
@@ -91,7 +91,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.confirmationHistory && applicant.confirmationHistory.length > 0 ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             확정 이력
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">

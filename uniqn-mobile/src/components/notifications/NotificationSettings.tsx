@@ -213,7 +213,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <BellSlashIcon size={24} color="#A89C84" />
             )}
             <View className="ml-3">
-              <Text className="text-base font-medium text-secondary-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                 알림 받기
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -237,7 +237,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <MoonIcon size={24} color="#9A9078" />
             <View className="ml-3">
-              <Text className="text-base font-medium text-secondary-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                 방해 금지 시간
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -261,7 +261,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <Squares2X2Icon size={24} color="#9A9078" />
             <View className="ml-3">
-              <Text className="text-base font-medium text-secondary-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                 알림 그룹화
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -298,7 +298,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center flex-1">
                   <View className={`w-3 h-3 rounded-sm ${info.color} mr-2`} />
-                  <Text className="text-base font-medium text-secondary-900 dark:text-white">
+                  <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                     {NOTIFICATION_CATEGORY_LABELS[category]}
                   </Text>
                 </View>

@@ -160,7 +160,7 @@ export function ApplicantConfirmModal({
         <View className="flex-row items-center p-3 bg-secondary-50 dark:bg-surface rounded-md mb-3">
           <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
-            <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -262,7 +262,7 @@ export function ApplicantConfirmModal({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[60px]"
+              className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[60px]"
             />
           </View>
         )}

@@ -115,7 +115,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           <View className="flex-row items-center flex-1">
             <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                 {displayName}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">

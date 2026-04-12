@@ -252,7 +252,9 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
             >
               {/* 헤더 */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-                <Text className="text-lg font-bold text-secondary-900 dark:text-white">필터</Text>
+                <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
+                  필터
+                </Text>
                 <View className="flex-row items-center gap-4">
                   <Pressable onPress={handleResetFilters}>
                     <Text className="text-primary-600 dark:text-primary-400 font-medium">
@@ -271,7 +273,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <MapPinIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
                       지역
                     </Text>
                   </View>
@@ -295,7 +297,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <CalendarIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
                       근무일
                     </Text>
                   </View>
@@ -315,7 +317,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                 <View className="mb-6">
                   <View className="flex-row items-center mb-3">
                     <BriefcaseIcon size={18} color={primaryIconColor} />
-                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+                    <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
                       역할
                     </Text>
                   </View>
@@ -346,7 +348,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     `}
                   >
                     <View className="flex-row items-center">
-                      <Text className="font-medium text-secondary-900 dark:text-white">
+                      <Text className="font-medium text-secondary-900 dark:text-off-white">
                         긴급 공고만 보기
                       </Text>
                     </View>

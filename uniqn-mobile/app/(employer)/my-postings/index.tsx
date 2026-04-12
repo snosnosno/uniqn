@@ -176,7 +176,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 제목 */}
       <Text
-        className="text-base font-semibold text-secondary-900 dark:text-white mb-2"
+        className="text-base font-semibold text-secondary-900 dark:text-off-white mb-2"
         numberOfLines={2}
       >
         {posting.title}
@@ -302,7 +302,9 @@ export default function MyPostingsPage() {
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-xl font-bold text-secondary-900 dark:text-white">내 공고 관리</Text>
+          <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
+            내 공고 관리
+          </Text>
           <Pressable
             onPress={handleCreatePress}
             className="bg-primary-600 dark:bg-primary-500 px-4 py-2 rounded-lg flex-row items-center"

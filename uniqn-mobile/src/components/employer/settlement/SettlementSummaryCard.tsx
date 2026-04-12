@@ -39,7 +39,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
           정산 현황
         </Text>
         <View className="flex-row items-center">

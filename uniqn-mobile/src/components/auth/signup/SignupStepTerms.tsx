@@ -107,7 +107,7 @@ function Checkbox({
           ) : (
             <Text className="mr-1 text-secondary-400">[선택]</Text>
           )}
-          <Text className="text-secondary-900 dark:text-white">{label}</Text>
+          <Text className="text-secondary-900 dark:text-off-white">{label}</Text>
         </View>
       </Pressable>
 
@@ -207,7 +207,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         >
           {allChecked && <Text className="text-sm font-bold text-white">{''}</Text>}
         </View>
-        <Text className="font-semibold text-secondary-900 dark:text-white">전체 동의하기</Text>
+        <Text className="font-semibold text-secondary-900 dark:text-off-white">전체 동의하기</Text>
       </Pressable>
 
       <View className="h-px bg-secondary-200 dark:bg-surface" />

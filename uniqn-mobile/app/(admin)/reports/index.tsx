@@ -167,7 +167,7 @@ export default function AdminReportsPage() {
               onChangeText={setSearchQuery}
               placeholder="신고자, 피신고자, 공고명 검색"
               placeholderTextColor="#A89C84"
-              className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
+              className="flex-1 ml-2 text-base text-secondary-900 dark:text-off-white"
               returnKeyType="search"
               autoCapitalize="none"
               autoCorrect={false}
@@ -297,7 +297,7 @@ export default function AdminReportsPage() {
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
               <AlertTriangleIcon size={48} color="#A89C84" />
-              <Text className="text-lg font-medium text-secondary-900 dark:text-white mt-4">
+              <Text className="text-lg font-medium text-secondary-900 dark:text-off-white mt-4">
                 신고 없음
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center">

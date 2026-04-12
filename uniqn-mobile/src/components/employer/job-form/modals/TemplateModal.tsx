@@ -59,7 +59,7 @@ export function TemplateModal({
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor="#A89C84"
-          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-secondary-900 dark:text-white ${
+          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-secondary-900 dark:text-off-white ${
             isTooShort
               ? 'border-error-400 dark:border-error-500'
               : 'border-secondary-200 dark:border-surface-overlay'
@@ -82,7 +82,7 @@ export function TemplateModal({
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor="#A89C84"
-          className="bg-secondary-50 dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-md px-4 py-3 text-secondary-900 dark:text-white"
+          className="bg-secondary-50 dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-md px-4 py-3 text-secondary-900 dark:text-off-white"
           maxLength={100}
           editable={!isSaving}
           multiline

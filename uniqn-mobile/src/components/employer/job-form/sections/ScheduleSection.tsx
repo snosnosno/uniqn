@@ -171,7 +171,7 @@ const FixedSchedule = memo(function FixedSchedule({
                 `}
               >
                 <Text
-                  className={`font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-900 dark:text-white'}`}
+                  className={`font-medium ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-secondary-900 dark:text-off-white'}`}
                 >
                   {option.label}
                 </Text>

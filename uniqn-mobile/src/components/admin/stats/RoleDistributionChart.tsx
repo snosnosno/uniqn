@@ -86,7 +86,7 @@ export function RoleDistributionChart({
   if (total === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-4">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-4">
           {title}
         </Text>
         <View className="h-[120px] items-center justify-center">
@@ -100,7 +100,9 @@ export function RoleDistributionChart({
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+          {title}
+        </Text>
         <View className="px-2.5 py-1 rounded-sm bg-secondary-100 dark:bg-surface-elevated">
           <Text className="text-sm font-bold text-secondary-700 dark:text-secondary-300">
             총 {total.toLocaleString()}명

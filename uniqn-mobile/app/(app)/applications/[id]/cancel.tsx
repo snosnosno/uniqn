@@ -42,7 +42,7 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
   return (
     <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">{''}</Text>
-      <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-2">
         오류가 발생했습니다
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">{message}</Text>
@@ -61,7 +61,7 @@ function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => v
   return (
     <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">{''}</Text>
-      <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-2">
         취소 요청 불가
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">{reason}</Text>
@@ -81,7 +81,7 @@ function SuccessState() {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-6xl mb-4">{''}</Text>
-      <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-2">
         취소 요청 완료
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400 text-center">

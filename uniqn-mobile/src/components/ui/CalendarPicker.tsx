@@ -224,7 +224,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
     if (dayOfWeek === 6) {
       return 'text-primary-500 dark:text-primary-400'; // 토요일
     }
-    return 'text-secondary-900 dark:text-white';
+    return 'text-secondary-900 dark:text-off-white';
   };
 
   const dayNumber = day.date.getDate();
@@ -391,7 +391,7 @@ export const CalendarPicker = memo(function CalendarPicker({
             </Pressable>
           </View>
 
-          <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
             {format(currentMonth, 'yyyy년 M월', { locale: ko })}
           </Text>
 

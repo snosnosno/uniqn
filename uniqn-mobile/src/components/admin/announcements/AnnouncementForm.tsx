@@ -160,7 +160,7 @@ export function AnnouncementForm({
     (targetType === 'all' || targetRoles.length > 0) &&
     !isUploading;
 
-  const inputBaseClass = `rounded-lg border px-4 py-3 text-secondary-900 dark:text-white ${
+  const inputBaseClass = `rounded-lg border px-4 py-3 text-secondary-900 dark:text-off-white ${
     isDarkMode ? 'bg-secondary-800' : 'bg-white'
   }`;
 

@@ -48,7 +48,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
       <Text
         className={`text-sm ${
           isTotal
-            ? 'font-semibold text-secondary-900 dark:text-white'
+            ? 'font-semibold text-secondary-900 dark:text-off-white'
             : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >
@@ -62,7 +62,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
               ? 'text-error-600 dark:text-error-400'
               : isProvided
                 ? 'text-success-600 dark:text-success-400'
-                : 'text-secondary-900 dark:text-white'
+                : 'text-secondary-900 dark:text-off-white'
         }`}
       >
         {value}
@@ -205,7 +205,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
             <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400">
               예상 급여 (참고용)
             </Text>
-            <Text className="text-lg font-bold text-secondary-900 dark:text-white">
+            <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
               {formatCurrency(settlement.totalPay)}
             </Text>
           </View>

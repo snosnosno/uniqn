@@ -181,7 +181,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       <View className="mb-4 flex-row items-center">
         <BriefcaseIcon size={18} color="#9A9078" />
         <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">역할 :</Text>
-        <Text className="ml-2 text-base font-medium text-secondary-900 dark:text-white">
+        <Text className="ml-2 text-base font-medium text-secondary-900 dark:text-off-white">
           {getRoleDisplayName(schedule.role, schedule.customRole)}
         </Text>
       </View>
@@ -191,7 +191,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <MapIcon size={18} color="#9A9078" />
           <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">장소 :</Text>
           <View className="ml-2 flex-1">
-            <Text className="text-base font-medium text-secondary-900 dark:text-white">
+            <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
               {schedule.location || '-'}
             </Text>
             {schedule.detailedAddress && (
@@ -204,7 +204,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       </View>
 
       <Section icon={<CalendarIcon size={18} color="#9A9078" />} title="일정">
-        <Text className="text-base text-secondary-900 dark:text-white">
+        <Text className="text-base text-secondary-900 dark:text-off-white">
           {formatFullDate(schedule.date)}
         </Text>
 
@@ -265,7 +265,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       {salaryInfo && (
         <Section icon={<BanknotesIcon size={18} color="#9A9078" />} title="급여 정보">
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface/30">
-            <Text className="text-base font-medium text-secondary-900 dark:text-white">
+            <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
             </Text>
 
@@ -278,7 +278,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-medium ${
                         allowances.meal === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-white'
+                          : 'text-secondary-900 dark:text-off-white'
                       }`}
                     >
                       {allowances.meal === PROVIDED_FLAG
@@ -297,7 +297,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-medium ${
                         allowances.transportation === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-white'
+                          : 'text-secondary-900 dark:text-off-white'
                       }`}
                     >
                       {allowances.transportation === PROVIDED_FLAG
@@ -316,7 +316,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-medium ${
                         allowances.accommodation === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-white'
+                          : 'text-secondary-900 dark:text-off-white'
                       }`}
                     >
                       {allowances.accommodation === PROVIDED_FLAG
@@ -349,7 +349,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <View className="flex-row items-center justify-between rounded-lg bg-secondary-50 p-3 dark:bg-surface/30">
             <View>
               {schedule.settlementBreakdown && (
-                <Text className="text-base font-medium text-secondary-900 dark:text-white">
+                <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                   {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
                 </Text>
               )}

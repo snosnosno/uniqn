@@ -100,7 +100,7 @@ function AccordionSection({
         className="flex-row items-center justify-between px-4 py-4 active:bg-secondary-50 dark:active:bg-secondary-800"
       >
         <View className="flex-1">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
             {title}
           </Text>
           {subtitle && (
@@ -138,7 +138,7 @@ function RoleSalaryItem({
   return (
     <View className="mb-4 pb-4 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 last:mb-0 last:pb-0">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
           {getRoleLabel(role)}
         </Text>
         {showApplyButton && (

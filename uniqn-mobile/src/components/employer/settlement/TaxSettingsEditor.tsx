@@ -248,7 +248,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="3.3"
               placeholderTextColor="#A89C84"
-              className="flex-1 text-base text-secondary-900 dark:text-white"
+              className="flex-1 text-base text-secondary-900 dark:text-off-white"
               accessibilityLabel="세율"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">%</Text>
@@ -318,7 +318,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               editable={!disabled}
               placeholder="10,000"
               placeholderTextColor="#A89C84"
-              className="flex-1 text-base text-secondary-900 dark:text-white"
+              className="flex-1 text-base text-secondary-900 dark:text-off-white"
               accessibilityLabel="고정 세금 금액"
             />
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">원</Text>

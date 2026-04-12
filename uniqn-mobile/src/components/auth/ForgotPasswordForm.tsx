@@ -58,7 +58,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           <Text className="text-3xl">{''}</Text>
         </View>
 
-        <Text className="text-lg font-bold text-secondary-900 dark:text-white text-center mb-2">
+        <Text className="text-lg font-bold text-secondary-900 dark:text-off-white text-center mb-2">
           이메일이 발송되었습니다
         </Text>
 

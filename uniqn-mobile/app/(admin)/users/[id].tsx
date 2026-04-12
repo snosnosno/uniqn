@@ -44,7 +44,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
       <View className="flex-1">
         <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
         {typeof value === 'string' ? (
-          <Text className="text-base text-secondary-900 dark:text-white">{value}</Text>
+          <Text className="text-base text-secondary-900 dark:text-off-white">{value}</Text>
         ) : (
           value
         )}
@@ -186,7 +186,7 @@ export default function AdminUserDetailPage() {
             <UserIcon size={40} color="#A89C84" />
           </View>
         )}
-        <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-1">
+        <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-1">
           {user.name}
         </Text>
         <View className="flex-row items-center">
@@ -208,7 +208,7 @@ export default function AdminUserDetailPage() {
 
       {/* Basic Info */}
       <View className="bg-white dark:bg-surface mt-3 px-4">
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           기본 정보
         </Text>
         <InfoRow
@@ -250,7 +250,7 @@ export default function AdminUserDetailPage() {
 
       {/* Role Management */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           역할 관리
         </Text>
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3">
@@ -280,7 +280,7 @@ export default function AdminUserDetailPage() {
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-base font-medium text-secondary-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
                 {option.label}
               </Text>
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -302,7 +302,7 @@ export default function AdminUserDetailPage() {
 
       {/* Account Actions */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           계정 관리
         </Text>
         <View className="mt-4">

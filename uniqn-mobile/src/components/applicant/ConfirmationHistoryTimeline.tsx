@@ -250,7 +250,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
     <View className={`bg-secondary-50 dark:bg-surface-dark rounded-md p-4 ${className}`}>
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
           확정 이력
         </Text>
         <View className="flex-row items-center">
@@ -270,7 +270,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
       {history && history.length > 0 && (
         <View className="flex-row mb-4 pb-4 border-b border-secondary-200 dark:border-surface-overlay">
           <View className="flex-1 items-center">
-            <Text className="text-lg font-bold text-secondary-900 dark:text-white">
+            <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
               {history.length}
             </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">총 확정</Text>

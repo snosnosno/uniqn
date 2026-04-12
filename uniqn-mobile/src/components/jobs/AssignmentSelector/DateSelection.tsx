@@ -19,7 +19,7 @@ export const DateSelection = memo(function DateSelection({
   return (
     <View className="mb-3 rounded-lg bg-secondary-50 p-3 dark:bg-surface-dark">
       <View className="mb-3 flex-row items-center">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
           {formattedDate}
         </Text>
       </View>

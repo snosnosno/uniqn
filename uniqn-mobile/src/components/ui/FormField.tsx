@@ -81,7 +81,7 @@ export function FormSection({ title, description, children }: FormSectionProps) 
   return (
     <View className="mb-6">
       {title && (
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-1">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white mb-1">
           {title}
         </Text>
       )}

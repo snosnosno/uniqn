@@ -62,7 +62,7 @@ export const SectionCard = memo(function SectionCard({
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
           {resolvedTitle}
         </Text>
         {required && <Text className="ml-1 text-error-500">*</Text>}

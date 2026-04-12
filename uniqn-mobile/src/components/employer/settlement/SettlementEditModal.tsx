@@ -74,7 +74,7 @@ function AccordionSection({ title, icon, expanded, onToggle, children }: Accordi
       >
         <View className="flex-row items-center">
           {icon}
-          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             {title}
           </Text>
         </View>
@@ -224,7 +224,7 @@ export function SettlementEditModal({
         <View className="flex-row items-center p-4 bg-secondary-50 dark:bg-surface -mx-5 -mt-5">
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400">
@@ -280,7 +280,7 @@ export function SettlementEditModal({
         {/* 정산 금액 요약 */}
         {settlement && (
           <View className="px-4 py-4 bg-secondary-50 dark:bg-surface">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-3">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-3">
               정산 금액 요약
             </Text>
 
@@ -293,7 +293,7 @@ export function SettlementEditModal({
                     <Text className="text-xs"> ({formatDuration(settlement.hoursWorked)})</Text>
                   )}
                 </Text>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
                   {formatCurrency(settlement.basePay)}
                 </Text>
               </View>
@@ -328,7 +328,7 @@ export function SettlementEditModal({
 
               {/* 세후 금액 */}
               <View className="flex-row items-center justify-between">
-                <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+                <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                   {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
                 </Text>
                 <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
@@ -351,7 +351,7 @@ export function SettlementEditModal({
             placeholderTextColor="#A89C84"
             multiline
             numberOfLines={2}
-            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-white"
+            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-off-white"
             accessibilityLabel="수정 사유"
           />
         </View>

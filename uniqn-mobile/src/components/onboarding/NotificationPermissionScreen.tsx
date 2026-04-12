@@ -130,7 +130,7 @@ export function NotificationPermissionScreen({
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
               <BadgeIcon size={40} color={PRIMARY_COLORS[500]} />
             </View>
-            <Text className="text-center text-2xl font-bold text-secondary-900 dark:text-white">
+            <Text className="text-center text-2xl font-bold text-secondary-900 dark:text-off-white">
               {content.title}
             </Text>
             <Text className="mt-2 text-center text-base text-secondary-500 dark:text-secondary-400">
@@ -152,7 +152,7 @@ export function NotificationPermissionScreen({
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+                    <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                       {item.title}
                     </Text>
                     <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">

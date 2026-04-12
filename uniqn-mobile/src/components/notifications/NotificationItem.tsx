@@ -85,7 +85,7 @@ export const NotificationItem = memo(function NotificationItem({
                 className={`flex-1 text-base ${
                   notification.isRead
                     ? 'font-normal text-secondary-700 dark:text-secondary-300'
-                    : 'font-semibold text-secondary-900 dark:text-white'
+                    : 'font-semibold text-secondary-900 dark:text-off-white'
                 }`}
               >
                 {notification.title}

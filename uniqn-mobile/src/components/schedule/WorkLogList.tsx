@@ -123,7 +123,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <CalendarIcon size={16} color="#9A9078" />
-          <Text className="ml-2 text-sm font-medium text-secondary-900 dark:text-white">
+          <Text className="ml-2 text-sm font-medium text-secondary-900 dark:text-off-white">
             {formatDate(workLog.date)}
           </Text>
         </View>

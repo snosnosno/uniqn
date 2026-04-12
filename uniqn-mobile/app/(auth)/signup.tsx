@@ -142,7 +142,7 @@ export default function SignUpScreen() {
         <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
           <ChevronLeftIcon size={24} />
         </Pressable>
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
           {headerTitle}
         </Text>
         <View className="w-8" />

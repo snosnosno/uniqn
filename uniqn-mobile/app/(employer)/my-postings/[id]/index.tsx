@@ -81,7 +81,7 @@ function ActionCard({
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="mr-2 text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="mr-2 text-base font-semibold text-secondary-900 dark:text-off-white">
               {resolvedTitle}
             </Text>
             {badge ? (
@@ -249,7 +249,7 @@ export default function JobPostingDetailScreen() {
 
             <View className="mb-2 flex-row items-start justify-between">
               <Text
-                className="mr-3 flex-1 text-lg font-bold text-secondary-900 dark:text-white"
+                className="mr-3 flex-1 text-lg font-bold text-secondary-900 dark:text-off-white"
                 numberOfLines={2}
               >
                 {title}
@@ -388,7 +388,7 @@ export default function JobPostingDetailScreen() {
                 <Text className="mr-1.5 text-xs text-secondary-500 dark:text-secondary-400">
                   배정 현황
                 </Text>
-                <Text className="text-base font-bold text-secondary-900 dark:text-white">
+                <Text className="text-base font-bold text-secondary-900 dark:text-off-white">
                   {filledPositions}
                 </Text>
                 <Text className="mx-0.5 text-base text-secondary-400 dark:text-secondary-500">
@@ -404,7 +404,7 @@ export default function JobPostingDetailScreen() {
         </View>
 
         <View className="px-4 pb-4 pt-3">
-          <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-off-white">
             관리
           </Text>
 
@@ -480,7 +480,7 @@ export default function JobPostingDetailScreen() {
 
         {posting.description && String(posting.description).length > 0 ? (
           <View className="px-4 pb-6">
-            <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-white">
+            <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-off-white">
               공고 내용
             </Text>
             <Card variant="outlined" padding="md">

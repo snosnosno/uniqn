@@ -33,7 +33,7 @@ function InfoRow({
       <View className="flex-1">
         <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
         {typeof value === 'string' ? (
-          <Text className="text-sm text-secondary-900 dark:text-white">{value}</Text>
+          <Text className="text-sm text-secondary-900 dark:text-off-white">{value}</Text>
         ) : (
           value
         )}
@@ -80,7 +80,7 @@ export function JobDetail({ job }: JobDetailProps) {
           <PostingStatusBadge status={detail.status} size="sm" />
         </View>
 
-        <Text className="mb-3 text-xl font-bold text-secondary-900 dark:text-white">
+        <Text className="mb-3 text-xl font-bold text-secondary-900 dark:text-off-white">
           {detail.title || '제목 없음'}
         </Text>
 
@@ -95,7 +95,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.description ? (
         <View className="p-4">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             상세 설명
           </Text>
           <Text className="text-sm leading-6 text-secondary-600 dark:text-secondary-300">
@@ -105,7 +105,7 @@ export function JobDetail({ job }: JobDetailProps) {
       ) : null}
 
       <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-        <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+        <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
           근무 정보
         </Text>
 
@@ -152,7 +152,7 @@ export function JobDetail({ job }: JobDetailProps) {
                   {detail.allowanceLabels.map((item, index) => (
                     <Text
                       key={`${item}-${index}`}
-                      className="mb-1 mr-3 text-sm text-secondary-900 dark:text-white"
+                      className="mb-1 mr-3 text-sm text-secondary-900 dark:text-off-white"
                     >
                       {item}
                     </Text>
@@ -168,7 +168,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {detail.questions.length > 0 ? (
         <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             사전질문 ({detail.questions.length}개)
           </Text>
           <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
@@ -198,7 +198,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 구인처
               </Text>
               <View className="flex-row items-center gap-2">
-                <Text className="text-sm text-secondary-900 dark:text-white">
+                <Text className="text-sm text-secondary-900 dark:text-off-white">
                   {detail.ownerName ?? '구인처'}
                 </Text>
                 {ownerProfile?.bubbleScore ? (

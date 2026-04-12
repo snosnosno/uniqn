@@ -34,7 +34,7 @@ export const AllowanceInput = memo(function AllowanceInput({
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color="#9A9078" />
-        <Text className="ml-2 font-semibold text-secondary-900 dark:text-white">
+        <Text className="ml-2 font-semibold text-secondary-900 dark:text-off-white">
           추가 수당 (선택)
         </Text>
       </View>
@@ -45,7 +45,7 @@ export const AllowanceInput = memo(function AllowanceInput({
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
               <Text className="text-xl mr-2">{''}</Text>
-              <Text className="text-sm text-secondary-900 dark:text-white">보장시간</Text>
+              <Text className="text-sm text-secondary-900 dark:text-off-white">보장시간</Text>
             </View>
             <View className="flex-row items-center">
               <TextInput
@@ -54,7 +54,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white"
+                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
               />
               <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">시간</Text>
             </View>
@@ -82,7 +82,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     className={`text-sm ${
                       isProvided
                         ? 'text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-secondary-900 dark:text-white'
+                        : 'text-secondary-900 dark:text-off-white'
                     }`}
                   >
                     {displayLabel}
@@ -113,7 +113,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white"
+                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white"
                   />
                   <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">
                     원

@@ -59,7 +59,7 @@ export function AmountModificationHistory({
       >
         <View className="flex-row items-center">
           <BanknotesIcon size={18} color="#9A9078" />
-          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             금액 수정 이력
           </Text>
           <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-sm">
@@ -88,7 +88,7 @@ export function AmountModificationHistory({
                   <Text className="text-xs text-primary-700 dark:text-primary-300">{idx + 1}</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm text-secondary-900 dark:text-white">
+                  <Text className="text-sm text-secondary-900 dark:text-off-white">
                     {mod.reason || '금액 수정'}
                   </Text>
                   {modifiedAt && (

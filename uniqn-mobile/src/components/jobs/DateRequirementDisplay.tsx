@@ -139,7 +139,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
     return (
       <View className="py-1">
         <View className="mb-1 flex-row items-center">
-          <Text className="mr-2 text-sm font-medium text-secondary-900 dark:text-white">
+          <Text className="mr-2 text-sm font-medium text-secondary-900 dark:text-off-white">
             {formattedDate}
           </Text>
           {showFilledCount && (
@@ -166,7 +166,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
   return (
     <View className="mb-3">
       <View className="mb-1 flex-row items-center justify-between">
-        <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
           {formattedDate}
         </Text>
         {showFilledCount && (

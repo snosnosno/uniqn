@@ -199,7 +199,7 @@ export default function EditJobPostingScreen() {
     return (
       <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
-          <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
             공고를 불러올 수 없습니다
           </Text>
           <Text className="mb-4 text-center text-secondary-500 dark:text-secondary-400">

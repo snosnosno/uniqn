@@ -103,10 +103,12 @@ const RoleCard = React.memo(function RoleCard({
             onChangeText={(text) => onCustomNameChange(roleIndex, text)}
             placeholder="역할명 입력"
             placeholderTextColor="#A89C84"
-            className="text-sm text-secondary-900 dark:text-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
+            className="text-sm text-secondary-900 dark:text-off-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
           />
         ) : (
-          <Text className="text-sm font-medium text-secondary-900 dark:text-white">{roleName}</Text>
+          <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+            {roleName}
+          </Text>
         )}
       </View>
 
@@ -131,7 +133,9 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 선택"
         >
-          <Text className="font-bold text-sm text-secondary-900 dark:text-white">{headcount}</Text>
+          <Text className="font-bold text-sm text-secondary-900 dark:text-off-white">
+            {headcount}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -373,7 +377,7 @@ export function TimeSlotCard({
                 value={timeSlot.tentativeDescription || ''}
                 onChangeText={handleTentativeDescriptionChange}
                 placeholder="예: 토너먼트 진행 상황에 따라 결정"
-                className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-white text-sm"
+                className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white text-sm"
                 placeholderTextColor="#A89C84"
                 multiline
                 maxLength={200}

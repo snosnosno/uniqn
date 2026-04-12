@@ -248,7 +248,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-sm items-center justify-center mb-3">
               <ShieldCheckIcon size={32} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
             </View>
-            <Text className="text-xl font-bold text-secondary-900 dark:text-white">문자인증</Text>
+            <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
+              문자인증
+            </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center mt-1">
               안전한 서비스 이용을 위해 전화번호 인증이 필요합니다.
             </Text>

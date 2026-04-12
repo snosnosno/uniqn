@@ -64,7 +64,7 @@ export function ModificationHistoryItem({ modification, index }: ModificationHis
         <Text className="text-xs text-secondary-500 dark:text-secondary-400">{index + 1}</Text>
       </View>
       <View className="flex-1">
-        <Text className="text-sm text-secondary-900 dark:text-white">
+        <Text className="text-sm text-secondary-900 dark:text-off-white">
           {modification.reason || '시간 수정'}
         </Text>
         {modifiedAt && (

@@ -109,7 +109,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
         className={`text-base ${
           isSelected
             ? 'text-primary-700 dark:text-primary-300 font-semibold'
-            : 'text-secondary-900 dark:text-white'
+            : 'text-secondary-900 dark:text-off-white'
         }`}
       >
         {item.label}
@@ -212,7 +212,7 @@ export const TimePicker = memo(function TimePicker({
     <View className={className} testID={testID}>
       {/* 레이블 */}
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
       )}
 
       {/* 트리거 버튼 */}
@@ -230,7 +230,7 @@ export const TimePicker = memo(function TimePicker({
             disabled
               ? 'text-secondary-400 dark:text-secondary-500'
               : value
-                ? 'text-secondary-900 dark:text-white'
+                ? 'text-secondary-900 dark:text-off-white'
                 : 'text-secondary-400 dark:text-secondary-500'
           }`}
         >
@@ -265,7 +265,7 @@ export const TimePicker = memo(function TimePicker({
           <View className="bg-white dark:bg-surface rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
                 출근 시간 선택
               </Text>
               <Pressable

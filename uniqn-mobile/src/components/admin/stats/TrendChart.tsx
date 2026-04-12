@@ -91,7 +91,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
   if (!data || data.length === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-4">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-4">
           {title}
         </Text>
         <View className="h-[120px] items-center justify-center">
@@ -105,7 +105,9 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
     <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+          {title}
+        </Text>
         <View className="px-2.5 py-1 rounded-sm" style={{ backgroundColor: `${color}20` }}>
           <Text style={{ color }} className="text-sm font-bold">
             총 {stats.total.toLocaleString()}
@@ -118,7 +120,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
       <View className="flex-row mb-4 gap-2">
         <View className="flex-1 bg-secondary-50 dark:bg-surface-elevated rounded-lg p-3">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">일평균</Text>
-          <Text className="text-lg font-bold text-secondary-900 dark:text-white">
+          <Text className="text-lg font-bold text-secondary-900 dark:text-off-white">
             {stats.average.toLocaleString()}
             {suffix}
           </Text>

@@ -105,7 +105,7 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
         {label}
       </Text>
       <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-secondary-900 dark:text-white`}
+        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-secondary-900 dark:text-off-white`}
       >
         {salaryText}
       </Text>
@@ -232,7 +232,7 @@ export const SalarySummary = memo(function SalarySummary({
     }
 
     return (
-      <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
         {formatSalary(displaySalary.type, displaySalary.amount)}
       </Text>
     );
@@ -244,7 +244,7 @@ export const SalarySummary = memo(function SalarySummary({
     .map((r) => r.salary!.amount);
 
   if (amounts.length === 0) {
-    return <Text className="text-sm font-medium text-secondary-900 dark:text-white">협의</Text>;
+    return <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">협의</Text>;
   }
 
   const min = Math.min(...amounts);
@@ -254,14 +254,14 @@ export const SalarySummary = memo(function SalarySummary({
 
   if (min === max) {
     return (
-      <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
         {formatSalaryShort(firstType, min)}
       </Text>
     );
   }
 
   return (
-    <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+    <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
       {formatSalaryShort(firstType, min)} ~ {formatSalaryShort(firstType, max)}
     </Text>
   );

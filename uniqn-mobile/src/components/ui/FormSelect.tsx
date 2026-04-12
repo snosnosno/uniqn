@@ -59,7 +59,7 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
           className={`text-base ${
             isSelected
               ? 'text-primary-600 dark:text-primary-400 font-medium'
-              : 'text-secondary-900 dark:text-white'
+              : 'text-secondary-900 dark:text-off-white'
           } ${item.disabled ? 'text-secondary-400' : ''}`}
         >
           {item.label}
@@ -161,7 +161,7 @@ export function FormSelect<T = string>({
   const getTextStyle = () => {
     if (disabled) return 'text-secondary-400 dark:text-secondary-500';
     if (!selectedOption) return 'text-secondary-400 dark:text-secondary-500';
-    return 'text-secondary-900 dark:text-white';
+    return 'text-secondary-900 dark:text-off-white';
   };
 
   return (
@@ -223,7 +223,7 @@ export function FormSelect<T = string>({
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
                 placeholderTextColor="#A89C84"
-                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base text-secondary-900 dark:text-white"
+                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base text-secondary-900 dark:text-off-white"
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel="옵션 검색"

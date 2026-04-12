@@ -43,7 +43,7 @@ function NetworkErrorFallback({
         <Text className="text-4xl">{isOffline ? '' : ''}</Text>
       </View>
 
-      <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white text-center mb-2">
         {isOffline ? '오프라인 상태입니다' : '네트워크 오류'}
       </Text>
 

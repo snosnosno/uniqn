@@ -38,7 +38,9 @@ function FixedRoleSelector({
 }) {
   return (
     <View className="gap-3">
-      <Text className="text-base font-semibold text-secondary-900 dark:text-white">지원 역할</Text>
+      <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+        지원 역할
+      </Text>
       {options.map((option) => {
         const isSelected = selectedRoleId === option.key;
         const isDisabled = disabled || !option.isAvailable;
@@ -60,7 +62,7 @@ function FixedRoleSelector({
                   className={`text-base font-semibold ${
                     isSelected
                       ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-secondary-900 dark:text-white'
+                      : 'text-secondary-900 dark:text-off-white'
                   }`}
                 >
                   {option.roleLabel}
@@ -224,7 +226,7 @@ export function ApplicationForm({
             </View>
           )}
 
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             {job.title}
           </Text>
           <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
@@ -282,7 +284,7 @@ export function ApplicationForm({
         )}
 
         <View className="mb-6">
-          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             자기소개 <Text className="text-secondary-400">(선택)</Text>
           </Text>
           <TextInput
@@ -294,7 +296,7 @@ export function ApplicationForm({
             numberOfLines={4}
             maxLength={200}
             editable={!isSubmitting}
-            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base text-secondary-900 dark:bg-surface dark:text-white"
+            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base text-secondary-900 dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
           <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500">

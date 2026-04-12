@@ -40,7 +40,7 @@ export function TutorialPage({ page, width, iconBgClass }: TutorialPageProps) {
 
       {/* 제목 */}
       <Animated.View entering={FadeInUp.delay(350).duration(500)} className="mt-8">
-        <Text className="text-2xl font-bold text-secondary-900 dark:text-white text-center">
+        <Text className="text-2xl font-bold text-secondary-900 dark:text-off-white text-center">
           {page.title}
         </Text>
       </Animated.View>

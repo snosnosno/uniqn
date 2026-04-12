@@ -159,7 +159,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         {/* 이름 + 상태 */}
         <View className="flex-row items-center mb-1">
           <Text
-            className={`font-semibold text-secondary-900 dark:text-white ${
+            className={`font-semibold text-secondary-900 dark:text-off-white ${
               compact ? 'text-base' : 'text-lg'
             }`}
           >
@@ -248,7 +248,9 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
 
   return (
     <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
-      <Text className="text-sm font-medium text-secondary-900 dark:text-white mb-2">지원 일정</Text>
+      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white mb-2">
+        지원 일정
+      </Text>
       {dateGroups.map(([date, { roles, timeSlots }]) => (
         <View key={date} className="flex-row items-center mb-1.5 last:mb-0">
           <Text className="text-sm text-secondary-600 dark:text-secondary-400 w-20">
@@ -433,7 +435,7 @@ export const StaffApplicantCard = memo(function StaffApplicantCard({
       {application.message && (
         <View className={`mt-2 ${compact ? '' : 'bg-secondary-50 dark:bg-surface rounded-lg p-3'}`}>
           {!compact && (
-            <Text className="text-sm font-medium text-secondary-900 dark:text-white mb-1">
+            <Text className="text-sm font-medium text-secondary-900 dark:text-off-white mb-1">
               지원 메시지
             </Text>
           )}

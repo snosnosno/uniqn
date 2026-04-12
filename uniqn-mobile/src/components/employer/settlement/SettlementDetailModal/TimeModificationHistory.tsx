@@ -46,7 +46,7 @@ export function TimeModificationHistory({
       >
         <View className="flex-row items-center">
           <DocumentIcon size={18} color="#9A9078" />
-          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
             시간 수정 이력
           </Text>
           <View className="ml-2 px-2 py-0.5 bg-warning-100 dark:bg-warning-900/30 rounded-sm">

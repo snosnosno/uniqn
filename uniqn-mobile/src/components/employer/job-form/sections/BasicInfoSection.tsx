@@ -200,7 +200,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           numberOfLines={4}
           maxLength={500}
           textAlignVertical="top"
-          className="px-4 py-3 bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-white min-h-[100px]"
+          className="px-4 py-3 bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-off-white min-h-[100px]"
           placeholderTextColor="#A89C84"
         />
         <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right">

@@ -127,7 +127,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
               <CalendarIcon size={20} color="#D4A017" />
             </View>
             <View className="flex-1">
-              <Text className="text-base font-bold text-secondary-900 dark:text-white">
+              <Text className="text-base font-bold text-secondary-900 dark:text-off-white">
                 {dateRangeLabel}
               </Text>
               <View className="flex-row items-center mt-0.5">

@@ -68,7 +68,7 @@ export const CardHeader = React.memo(function CardHeader({
         <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             {!isRead && (

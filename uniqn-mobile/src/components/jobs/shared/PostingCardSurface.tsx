@@ -64,7 +64,7 @@ export function PostingCardSurface({
               </Badge>
             ) : null}
             <Text
-              className="flex-1 text-base font-semibold text-secondary-900 dark:text-white"
+              className="flex-1 text-base font-semibold text-secondary-900 dark:text-off-white"
               numberOfLines={1}
             >
               {card.title}

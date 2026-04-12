@@ -101,7 +101,7 @@ export function TimeInputField({
               미정
             </Text>
           ) : (
-            <Text className="ml-2 text-lg font-semibold text-secondary-900 dark:text-white">
+            <Text className="ml-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
               {displayText}
             </Text>
           )}

@@ -87,7 +87,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           )}
 
           <View className="mb-1 flex-row items-center gap-2">
-            <Text className="text-xl font-bold text-secondary-900 dark:text-white">
+            <Text className="text-xl font-bold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             <Badge variant={CONFIRMED_STAFF_STATUS[staff.status].variant} size="sm" dot>
@@ -101,7 +101,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
         </View>
 
         <View className="border-b border-secondary-100 px-4 py-4 dark:border-surface-overlay">
-          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-off-white">
             근무 정보
           </Text>
 
@@ -122,7 +122,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
                 근무 시간
               </Text>
               <View className="flex-row items-center">
-                <Text className="text-sm text-secondary-900 dark:text-white">
+                <Text className="text-sm text-secondary-900 dark:text-off-white">
                   {startTimeStr} ~ {endTimeStr}
                 </Text>
                 {isCheckedIn ? (
@@ -146,7 +146,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
         {staff.notes ? (
           <View className="px-4 pb-4">
-            <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-off-white">
               비고
             </Text>
             <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">

@@ -216,7 +216,7 @@ export default function CancellationRequestsScreen() {
             className="w-full max-w-sm rounded-lg bg-white p-5 dark:bg-surface"
             onPress={(e) => e.stopPropagation()}
           >
-            <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-white">
+            <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-off-white">
               취소 요청 승인
             </Text>
             <Text className="mb-6 text-sm text-secondary-500 dark:text-secondary-400">

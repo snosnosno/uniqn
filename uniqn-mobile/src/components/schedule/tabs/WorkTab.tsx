@@ -56,7 +56,7 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
         className={`text-base font-semibold ${
           isHighlight
             ? 'text-primary-600 dark:text-primary-400'
-            : 'text-secondary-900 dark:text-white'
+            : 'text-secondary-900 dark:text-off-white'
         }`}
       >
         {value}
@@ -135,7 +135,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           </Text>
         </View>
         <View className="ml-6">
-          <Text className="text-base text-secondary-900 dark:text-white font-medium">
+          <Text className="text-base text-secondary-900 dark:text-off-white font-medium">
             {getRoleDisplayName(schedule.role, schedule.customRole)}
           </Text>
         </View>

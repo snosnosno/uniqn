@@ -73,7 +73,7 @@ export function ActionSheet({
       {(title || description) && (
         <View className="items-center pb-4 mb-2 border-b border-secondary-200 dark:border-surface-overlay">
           {title && (
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
               {title}
             </Text>
           )}
@@ -106,7 +106,7 @@ export function ActionSheet({
                 ${
                   option.destructive
                     ? 'text-error-600 dark:text-error-400'
-                    : 'text-secondary-900 dark:text-white'
+                    : 'text-secondary-900 dark:text-off-white'
                 }
                 ${option.disabled ? 'text-secondary-400 dark:text-secondary-600' : ''}
               `}
@@ -125,7 +125,7 @@ export function ActionSheet({
           accessibilityRole="button"
           accessibilityLabel={cancelText}
         >
-          <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
             {cancelText}
           </Text>
         </Pressable>

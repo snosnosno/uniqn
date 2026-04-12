@@ -136,7 +136,7 @@ const GroupItem = memo(function GroupItem({
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <View className="mb-1 flex-row items-center">
-            <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
               {isSingleDay ? formatSingleDate(group.startDate) : dateDisplay}
             </Text>
           </View>

@@ -102,7 +102,7 @@ function UserCard({ user, onPress }: UserCardProps) {
 
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-white mr-2">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mr-2">
             {user.name}
           </Text>
           <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
@@ -220,7 +220,7 @@ export default function AdminUsersPage() {
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
             placeholderTextColor="#A89C84"
-            className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
+            className="flex-1 ml-2 text-base text-secondary-900 dark:text-off-white"
             autoCapitalize="none"
             autoCorrect={false}
           />

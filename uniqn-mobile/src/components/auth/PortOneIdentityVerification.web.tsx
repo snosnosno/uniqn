@@ -17,7 +17,7 @@ export function PortOneIdentityVerification({
 }: PortOneIdentityVerificationProps) {
   return (
     <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-      <Text className="mb-2 font-semibold text-secondary-900 dark:text-white">
+      <Text className="mb-2 font-semibold text-secondary-900 dark:text-off-white">
         이니시스 본인인증
       </Text>
       <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300">

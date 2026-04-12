@@ -125,7 +125,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             />
             <View className="flex-1">
               <View className="flex-row items-center">
-                <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+                <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                   {displayName}
                 </Text>
                 {staff.isRead === false ? (
@@ -168,7 +168,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                     </View>
                   ) : null}
                 </View>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
                   {timeInfo.effectiveStart}
                 </Text>
               </View>
@@ -177,7 +177,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                   {timeInfo.isEffectiveEndActual ? '퇴근' : '종료'}
                 </Text>
-                <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+                <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
                   {timeInfo.effectiveEnd}
                 </Text>
               </View>

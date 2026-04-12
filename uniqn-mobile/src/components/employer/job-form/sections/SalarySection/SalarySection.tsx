@@ -184,7 +184,9 @@ export const SalarySection = memo(function SalarySection({
       {roles.length > 1 && (
         <View className="mb-4 flex-row items-center justify-between p-3 bg-secondary-50 dark:bg-surface rounded-lg">
           <View>
-            <Text className="text-secondary-900 dark:text-white font-medium">전체 동일 급여</Text>
+            <Text className="text-secondary-900 dark:text-off-white font-medium">
+              전체 동일 급여
+            </Text>
             <Text className="text-xs text-secondary-500 dark:text-secondary-400">
               모든 역할에 같은 급여를 적용합니다
             </Text>

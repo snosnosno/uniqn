@@ -155,7 +155,7 @@ const RadioItem = memo(function RadioItem({
           className={`
             font-medium
             ${config.label}
-            ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-white'}
+            ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-off-white'}
           `}
         >
           {option.label}
@@ -215,7 +215,7 @@ export const Radio = memo(function Radio({
       testID={testID}
     >
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
       )}
 
       <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>

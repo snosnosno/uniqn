@@ -190,7 +190,9 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
       {/* 주 출근일수 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-secondary-900 dark:text-white">{daysText}</Text>
+        <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+          {daysText}
+        </Text>
       </View>
 
       {/* 출근 시간 */}

@@ -14,7 +14,7 @@ export function InstallPromptContent({ description, onLogin }: InstallPromptCont
         <DevicePhoneMobileIcon size={32} color="#D4AF37" />
       </View>
 
-      <Text className="text-center text-base font-semibold text-secondary-900 dark:text-white">
+      <Text className="text-center text-base font-semibold text-secondary-900 dark:text-off-white">
         UNIQN 앱에서 계속 이용할 수 있어요
       </Text>
 

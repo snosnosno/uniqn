@@ -71,7 +71,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
           className={`ml-2 text-base font-semibold ${
             group.isToday
               ? 'text-primary-600 dark:text-primary-400'
-              : 'text-secondary-900 dark:text-white'
+              : 'text-secondary-900 dark:text-off-white'
           }`}
         >
           {group.formattedDate}

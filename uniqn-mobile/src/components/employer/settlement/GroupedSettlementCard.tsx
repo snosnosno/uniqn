@@ -296,7 +296,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
           {/* 이름 + 역할 */}
           <View className="flex-1">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
               {displayName}
             </Text>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400">

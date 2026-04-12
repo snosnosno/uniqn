@@ -174,7 +174,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             editable={!disabled}
             placeholder="0"
             placeholderTextColor="#A89C84"
-            className="flex-1 text-base text-secondary-900 dark:text-white"
+            className="flex-1 text-base text-secondary-900 dark:text-off-white"
             accessibilityLabel="급여 금액"
           />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">

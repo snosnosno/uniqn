@@ -338,7 +338,7 @@ export function WorkTimeEditor({
             <Avatar source={profilePhotoURL} name={displayName} size="md" />
             <View className="ml-3 flex-1">
               {/* 이름(닉네임) */}
-              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                 {workLog.staffName || '이름 없음'}
                 {displayName ? '' : workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
               </Text>
@@ -416,7 +416,7 @@ export function WorkTimeEditor({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-3 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[60px]"
+              className="p-3 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[60px]"
             />
             <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
               예: QR 인식 오류로 실제 출근 시간과 다름

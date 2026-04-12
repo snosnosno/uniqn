@@ -123,7 +123,7 @@ const QuestionItem = memo(function QuestionItem({
     <View className="mb-6">
       {/* 질문 헤더 */}
       <View className="flex-row items-start mb-2">
-        <Text className="text-base font-medium text-secondary-900 dark:text-white flex-1">
+        <Text className="text-base font-medium text-secondary-900 dark:text-off-white flex-1">
           {question.question}
           {question.required && <Text className="text-error-500"> *</Text>}
         </Text>
@@ -141,7 +141,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor="#A89C84"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-white`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-off-white`}
         />
       )}
 
@@ -156,7 +156,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-white min-h-[100px]`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-off-white min-h-[100px]`}
         />
       )}
 
@@ -239,7 +239,9 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     <View className="bg-white dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-lg font-semibold text-secondary-900 dark:text-white">사전질문</Text>
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
+          사전질문
+        </Text>
         {requiredCount > 0 && (
           <Text className="text-sm text-secondary-500 dark:text-secondary-400">
             필수 {answeredRequiredCount}/{requiredCount}

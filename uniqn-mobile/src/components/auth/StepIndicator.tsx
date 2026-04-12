@@ -111,7 +111,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
 
       {/* 현재 단계 제목 */}
       <View className="mt-4">
-        <Text className="text-center text-lg font-bold text-secondary-900 dark:text-white">
+        <Text className="text-center text-lg font-bold text-secondary-900 dark:text-off-white">
           {steps[currentStep - 1]?.label}
         </Text>
         <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 mt-1">

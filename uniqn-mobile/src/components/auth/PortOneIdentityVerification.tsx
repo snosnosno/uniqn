@@ -177,19 +177,19 @@ export function PortOneIdentityVerification({
           <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
             <View className="flex-row justify-between">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">이름</Text>
-              <Text className="font-medium text-secondary-900 dark:text-white">
+              <Text className="font-medium text-secondary-900 dark:text-off-white">
                 {verifiedIdentity.name}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">생년월일</Text>
-              <Text className="font-medium text-secondary-900 dark:text-white">
+              <Text className="font-medium text-secondary-900 dark:text-off-white">
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">성별</Text>
-              <Text className="font-medium text-secondary-900 dark:text-white">
+              <Text className="font-medium text-secondary-900 dark:text-off-white">
                 {getGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
@@ -197,7 +197,7 @@ export function PortOneIdentityVerification({
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 휴대폰 번호
               </Text>
-              <Text className="font-medium text-secondary-900 dark:text-white">
+              <Text className="font-medium text-secondary-900 dark:text-off-white">
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -217,7 +217,7 @@ export function PortOneIdentityVerification({
         <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
             <ShieldCheckIcon size={20} color="#4f46e5" />
-            <Text className="ml-2 font-semibold text-secondary-900 dark:text-white">
+            <Text className="ml-2 font-semibold text-secondary-900 dark:text-off-white">
               이니시스 본인인증
             </Text>
           </View>

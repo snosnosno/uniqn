@@ -69,7 +69,7 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
   return (
     <View className="px-4 pb-4">
       <View className="rounded-lg bg-primary-50 p-3 dark:bg-primary-900/20">
-        <Text className="mb-2 text-sm font-medium text-secondary-900 dark:text-white">
+        <Text className="mb-2 text-sm font-medium text-secondary-900 dark:text-off-white">
           지원 일정
         </Text>
         {groupedByDate.map((item, index) => (

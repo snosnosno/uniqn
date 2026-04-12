@@ -31,7 +31,7 @@ export function StatsSummaryCard({
   icon,
   iconColor = '#9A9078',
   iconBgColor = 'bg-secondary-100 dark:bg-surface',
-  valueColor = 'text-secondary-900 dark:text-white',
+  valueColor = 'text-secondary-900 dark:text-off-white',
   suffix = '',
   description,
 }: StatsSummaryCardProps) {

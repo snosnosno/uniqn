@@ -43,7 +43,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
       <View className="flex-row items-start justify-between">
         <View className="flex-1 mr-3">
           <Text
-            className="text-base font-semibold text-secondary-900 dark:text-white"
+            className="text-base font-semibold text-secondary-900 dark:text-off-white"
             numberOfLines={1}
           >
             {item.jobPostingTitle}

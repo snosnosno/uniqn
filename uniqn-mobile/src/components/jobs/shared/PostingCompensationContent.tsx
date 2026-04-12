@@ -22,7 +22,7 @@ export function PostingCompensationContent({
               <Text className="text-sm text-secondary-600 dark:text-secondary-400">
                 {row.roleLabel}
               </Text>
-              <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+              <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
                 {row.text}
               </Text>
             </View>
@@ -44,12 +44,12 @@ export function PostingCompensationContent({
     <View>
       {!compensation.useSameSalary && compensation.rows.length > 0 ? (
         compensation.rows.map((row) => (
-          <Text key={row.key} className="text-sm text-secondary-900 dark:text-white">
+          <Text key={row.key} className="text-sm text-secondary-900 dark:text-off-white">
             {row.roleLabel}: {row.text}
           </Text>
         ))
       ) : (
-        <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+        <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
           {compensation.primaryText}
         </Text>
       )}

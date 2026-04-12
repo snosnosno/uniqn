@@ -141,7 +141,7 @@ export const Checkbox = memo(function Checkbox({
               className={`
                 font-medium
                 ${config.label}
-                ${disabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-white'}
+                ${disabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-off-white'}
               `}
             >
               {label}
@@ -227,7 +227,7 @@ export const CheckboxGroup = memo(function CheckboxGroup({
   return (
     <View className={className}>
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
       )}
       <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
         {options.map((option) => (

@@ -72,7 +72,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
       {/* Title */}
       <Text
-        className="text-base font-semibold text-secondary-900 dark:text-white mb-1"
+        className="text-base font-semibold text-secondary-900 dark:text-off-white mb-1"
         numberOfLines={2}
       >
         {announcement.title}

@@ -43,7 +43,7 @@ function DataFetchErrorFallback({
         <Text className="text-3xl">{''}</Text>
       </View>
 
-      <Text className="text-lg font-semibold text-secondary-900 dark:text-white text-center mb-2">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white text-center mb-2">
         {resourceName}를 불러올 수 없습니다
       </Text>
 

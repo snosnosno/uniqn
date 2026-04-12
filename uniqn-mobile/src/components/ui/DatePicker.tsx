@@ -122,7 +122,7 @@ export const DatePicker = memo(function DatePicker({
     <View className={className} testID={testID}>
       {/* 레이블 */}
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
       )}
 
       {/* 트리거 영역 - 버튼 중첩 방지를 위해 flex 구조 변경 */}
@@ -142,7 +142,7 @@ export const DatePicker = memo(function DatePicker({
               disabled
                 ? 'text-secondary-400 dark:text-secondary-500'
                 : value
-                  ? 'text-secondary-900 dark:text-white'
+                  ? 'text-secondary-900 dark:text-off-white'
                   : 'text-secondary-400 dark:text-secondary-500'
             }`}
           >
@@ -180,7 +180,7 @@ export const DatePicker = memo(function DatePicker({
           <View className="bg-white dark:bg-surface rounded-t-2xl">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white">
                 날짜 선택
               </Text>
               <Pressable
@@ -281,7 +281,7 @@ export const DateRangePicker = memo(function DateRangePicker({
   return (
     <View className={className} testID={testID}>
       {label && (
-        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-off-white">{label}</Text>
       )}
 
       <View className="flex-row items-center gap-2">

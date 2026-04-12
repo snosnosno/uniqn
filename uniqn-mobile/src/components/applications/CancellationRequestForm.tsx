@@ -109,7 +109,7 @@ export function CancellationRequestForm({
 
         {/* 지원 정보 요약 */}
         <View className="bg-secondary-50 dark:bg-surface rounded-lg p-4 mb-6">
-          <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-2">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-off-white mb-2">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
           <View className="flex-row items-center mb-1">
@@ -144,7 +144,7 @@ export function CancellationRequestForm({
             editable={!isSubmitting}
             className={`
                 bg-secondary-50 dark:bg-surface rounded-lg p-4
-                text-secondary-900 dark:text-white text-base min-h-[140px]
+                text-secondary-900 dark:text-off-white text-base min-h-[140px]
                 ${error ? 'border-2 border-error-500' : 'border border-secondary-200 dark:border-surface-overlay'}
               `}
             textAlignVertical="top"

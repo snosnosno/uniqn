@@ -36,7 +36,9 @@ function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View className="flex-row justify-between py-2">
       <Text className="text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
-      <Text className="text-sm font-medium text-secondary-900 dark:text-white">{value || '-'}</Text>
+      <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
+        {value || '-'}
+      </Text>
     </View>
   );
 }
@@ -75,7 +77,7 @@ function AgreementCheckbox({
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-medium text-secondary-900 dark:text-white">
+            <Text className="text-base font-medium text-secondary-900 dark:text-off-white">
               {title}
             </Text>
             {onViewDetail && (
@@ -216,7 +218,7 @@ export default function EmployerRegisterScreen() {
             ) : (
               <ExclamationCircleIcon size={20} color="#EF4444" />
             )}
-            <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-off-white">
               본인인증 정보
             </Text>
           </View>
@@ -245,7 +247,7 @@ export default function EmployerRegisterScreen() {
 
         {/* 프로필 정보 */}
         <Card variant="outlined" padding="md" className="mb-6">
-          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-off-white">
             프로필 정보
           </Text>
           <InfoRow label="닉네임" value={profile?.nickname} />
@@ -254,7 +256,7 @@ export default function EmployerRegisterScreen() {
 
         {/* 동의 항목 */}
         <View className="mb-6">
-          <Text className="mb-4 text-base font-semibold text-secondary-900 dark:text-white">
+          <Text className="mb-4 text-base font-semibold text-secondary-900 dark:text-off-white">
             필수 동의 항목
           </Text>
 

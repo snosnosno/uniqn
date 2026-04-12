@@ -66,10 +66,10 @@ const RoleCard = memo(function RoleCard({
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
               placeholderTextColor="#A89C84"
-              className="font-medium text-secondary-900 dark:text-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
+              className="font-medium text-secondary-900 dark:text-off-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
-            <Text className="font-medium text-secondary-900 dark:text-white text-base">
+            <Text className="font-medium text-secondary-900 dark:text-off-white text-base">
               {role.name}
             </Text>
           )}
@@ -90,7 +90,7 @@ const RoleCard = memo(function RoleCard({
           </Pressable>
 
           <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay">
-            <Text className="font-bold text-secondary-900 dark:text-white">{role.count}</Text>
+            <Text className="font-bold text-secondary-900 dark:text-off-white">{role.count}</Text>
           </View>
 
           <Pressable

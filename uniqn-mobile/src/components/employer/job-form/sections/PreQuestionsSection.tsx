@@ -117,7 +117,7 @@ const QuestionCard = memo(function QuestionCard({
               {index + 1}
             </Text>
           </View>
-          <Text className="ml-2 font-medium text-secondary-900 dark:text-white">
+          <Text className="ml-2 font-medium text-secondary-900 dark:text-off-white">
             질문 {index + 1}
           </Text>
         </View>
@@ -138,7 +138,7 @@ const QuestionCard = memo(function QuestionCard({
         placeholder="질문 내용을 입력하세요"
         placeholderTextColor="#A89C84"
         multiline
-        className="px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white min-h-[48px]"
+        className="px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-off-white min-h-[48px]"
       />
 
       {/* 질문 타입 & 필수 여부 */}
@@ -149,7 +149,7 @@ const QuestionCard = memo(function QuestionCard({
             onPress={() => setShowTypeSelector(true)}
             className="flex-row items-center justify-between px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg"
           >
-            <Text className="text-secondary-900 dark:text-white">
+            <Text className="text-secondary-900 dark:text-off-white">
               {PRE_QUESTION_TYPE_LABELS[question.type]}
             </Text>
             <ChevronDownIcon size={20} color="#9A9078" />
@@ -192,7 +192,7 @@ const QuestionCard = memo(function QuestionCard({
                 onChangeText={(v) => handleOptionChange(optionIndex, v)}
                 placeholder={`선택지 ${optionIndex + 1}`}
                 placeholderTextColor="#A89C84"
-                className="flex-1 px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white"
+                className="flex-1 px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-off-white"
               />
               {(question.options?.length || 0) > 1 && (
                 <Pressable
@@ -310,7 +310,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {/* 사전질문 사용 토글 */}
       <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-4">
         <View>
-          <Text className="text-secondary-900 dark:text-white font-medium">사전질문 사용</Text>
+          <Text className="text-secondary-900 dark:text-off-white font-medium">사전질문 사용</Text>
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
             지원자에게 추가 질문을 할 수 있습니다
           </Text>
@@ -327,7 +327,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {hasPreQuestions && (
         <>
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
               질문 목록 ({data.preQuestions.length}/10)
             </Text>
           </View>

@@ -68,7 +68,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       <View className="mb-2 flex-row items-start justify-between">
         <View className="mr-2 flex-1">
           <Text
-            className="text-base font-semibold text-secondary-900 dark:text-white"
+            className="text-base font-semibold text-secondary-900 dark:text-off-white"
             numberOfLines={1}
           >
             {name}

@@ -193,7 +193,7 @@ export default function AnnouncementDetailPage() {
             </View>
 
             {/* Title */}
-            <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">
+            <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-2">
               {announcement.title}
             </Text>
 
@@ -219,7 +219,7 @@ export default function AnnouncementDetailPage() {
             <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
               내용
             </Text>
-            <Text className="text-base text-secondary-900 dark:text-white leading-6">
+            <Text className="text-base text-secondary-900 dark:text-off-white leading-6">
               {announcement.content}
             </Text>
           </View>
@@ -285,7 +285,7 @@ export default function AnnouncementDetailPage() {
             {/* Target Audience */}
             <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">대상</Text>
-              <Text className="text-sm text-secondary-900 dark:text-white">
+              <Text className="text-sm text-secondary-900 dark:text-off-white">
                 {announcement.targetAudience.type === 'all'
                   ? '전체'
                   : announcement.targetAudience.roles
@@ -308,7 +308,7 @@ export default function AnnouncementDetailPage() {
             {/* Created At */}
             <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">작성일</Text>
-              <Text className="text-sm text-secondary-900 dark:text-white">
+              <Text className="text-sm text-secondary-900 dark:text-off-white">
                 {formatDate(announcement.createdAt)}
               </Text>
             </View>
@@ -317,7 +317,7 @@ export default function AnnouncementDetailPage() {
             {announcement.publishedAt && (
               <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400">발행일</Text>
-                <Text className="text-sm text-secondary-900 dark:text-white">
+                <Text className="text-sm text-secondary-900 dark:text-off-white">
                   {formatDate(announcement.publishedAt)}
                 </Text>
               </View>
@@ -326,7 +326,7 @@ export default function AnnouncementDetailPage() {
             {/* Updated At */}
             <View className="flex-row justify-between py-2">
               <Text className="text-sm text-secondary-500 dark:text-secondary-400">수정일</Text>
-              <Text className="text-sm text-secondary-900 dark:text-white">
+              <Text className="text-sm text-secondary-900 dark:text-off-white">
                 {formatDate(announcement.updatedAt)}
               </Text>
             </View>

@@ -98,7 +98,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
             <Text
               className={`
                 text-base font-semibold
-                ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-secondary-900 dark:text-white'}
+                ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-secondary-900 dark:text-off-white'}
               `}
             >
               {typeInfo.label}
@@ -289,7 +289,7 @@ export function ReportModal({
               )}
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                 {reportTarget.name}
               </Text>
               {mode === 'employer' && staff ? (
@@ -354,7 +354,7 @@ export function ReportModal({
             textAlignVertical="top"
             accessibilityLabel="신고 상세 설명"
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
-            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[80px]"
+            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[80px]"
           />
           <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
             {description.length}/500자 (최소 10자)

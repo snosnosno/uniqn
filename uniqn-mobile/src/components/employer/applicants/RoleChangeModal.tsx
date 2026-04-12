@@ -92,7 +92,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             ${
               isSelected
                 ? 'text-primary-600 dark:text-primary-400'
-                : 'text-secondary-900 dark:text-white'
+                : 'text-secondary-900 dark:text-off-white'
             }
           `}
         >
@@ -205,7 +205,7 @@ export function RoleChangeModal({
               </Text>
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
                 {staff.staffName}
                 {staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
@@ -253,7 +253,7 @@ export function RoleChangeModal({
             textAlignVertical="top"
             accessibilityLabel="역할 변경 사유 입력"
             accessibilityHint="역할 변경 사유를 입력하세요. 필수 입력 항목입니다."
-            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[48px]"
+            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-off-white min-h-[48px]"
           />
         </View>
 

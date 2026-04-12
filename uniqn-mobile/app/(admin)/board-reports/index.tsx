@@ -89,7 +89,7 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
         </Text>
       </View>
 
-      <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-white">
+      <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-off-white">
         {record.post?.title ?? '원본 게시글을 확인할 수 없습니다.'}
       </Text>
       <Text className="mb-3 text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
@@ -176,7 +176,7 @@ export default function AdminBoardReportsPage() {
               onChangeText={setQuery}
               placeholder="사유, 신고자, 게시글 검색"
               placeholderTextColor="#A89C84"
-              className="ml-2 flex-1 text-base text-secondary-900 dark:text-white"
+              className="ml-2 flex-1 text-base text-secondary-900 dark:text-off-white"
               autoCapitalize="none"
               autoCorrect={false}
             />

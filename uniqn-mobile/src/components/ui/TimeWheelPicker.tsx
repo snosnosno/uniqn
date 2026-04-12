@@ -202,7 +202,9 @@ function WebTimePicker({
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+          {title}
+        </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
           <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
             확인
@@ -240,7 +242,7 @@ function WebTimePicker({
 
         {/* 구분자 */}
         <View className="w-8 items-center justify-center">
-          <Text className="text-2xl font-bold text-secondary-900 dark:text-white">:</Text>
+          <Text className="text-2xl font-bold text-secondary-900 dark:text-off-white">:</Text>
         </View>
 
         {/* 분 리스트 */}
@@ -376,7 +378,9 @@ function NativeWheelPicker({
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white">
+          {title}
+        </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
           <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
             확인
@@ -437,7 +441,7 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-secondary-900 dark:text-white'
+                        ? 'font-bold text-secondary-900 dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
@@ -455,7 +459,7 @@ function NativeWheelPicker({
         </View>
 
         {/* 구분자 */}
-        <Text className="text-2xl font-bold text-secondary-900 dark:text-white mx-2">:</Text>
+        <Text className="text-2xl font-bold text-secondary-900 dark:text-off-white mx-2">:</Text>
 
         {/* 분 휠 */}
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
@@ -494,7 +498,7 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-secondary-900 dark:text-white'
+                        ? 'font-bold text-secondary-900 dark:text-off-white'
                         : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >

@@ -48,7 +48,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
     >
       {/* 역할명 + 인원 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="font-medium text-secondary-900 dark:text-white text-sm">
+        <Text className="font-medium text-secondary-900 dark:text-off-white text-sm">
           {displayName}
         </Text>
         <Text className="text-xs text-secondary-500 dark:text-secondary-400">{role.count}명</Text>
@@ -107,7 +107,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
             className={`w-32 py-2 px-2 text-right text-sm rounded-md ${
               isReadOnly
                 ? 'bg-secondary-100 dark:bg-surface/50 text-secondary-400'
-                : 'bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white'
+                : 'bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-off-white'
             }`}
           />
           <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">원</Text>

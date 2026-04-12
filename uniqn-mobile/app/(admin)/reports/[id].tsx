@@ -119,17 +119,19 @@ function ReportInfoSection({ report }: { report: Report }) {
       </View>
 
       {/* 신고 유형 */}
-      <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">{typeLabel}</Text>
+      <Text className="text-xl font-bold text-secondary-900 dark:text-off-white mb-2">
+        {typeLabel}
+      </Text>
 
       {/* 신고자 정보 */}
       <View className="flex-row items-center mb-3">
         <UserIcon size={16} color="#9A9078" />
         <Text className="text-sm text-secondary-600 dark:text-secondary-400 ml-2">
-          <Text className="font-medium text-secondary-900 dark:text-white">
+          <Text className="font-medium text-secondary-900 dark:text-off-white">
             {report.reporterName}
           </Text>
           <Text> → </Text>
-          <Text className="font-medium text-secondary-900 dark:text-white">
+          <Text className="font-medium text-secondary-900 dark:text-off-white">
             {report.targetName}
           </Text>
         </Text>
@@ -159,7 +161,7 @@ function ReportContentSection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <DocumentIcon size={18} color="#D4AF37" />
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white ml-2">
           신고 내용
         </Text>
       </View>
@@ -172,7 +174,7 @@ function ReportContentSection({ report }: { report: Report }) {
       {report.jobPostingTitle && (
         <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">관련 공고</Text>
-          <Text className="text-sm text-secondary-900 dark:text-white">
+          <Text className="text-sm text-secondary-900 dark:text-off-white">
             {report.jobPostingTitle}
           </Text>
         </View>
@@ -182,7 +184,7 @@ function ReportContentSection({ report }: { report: Report }) {
       {report.workDate && (
         <View className="mt-3">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">근무 날짜</Text>
-          <Text className="text-sm text-secondary-900 dark:text-white">{report.workDate}</Text>
+          <Text className="text-sm text-secondary-900 dark:text-off-white">{report.workDate}</Text>
         </View>
       )}
 
@@ -217,7 +219,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color="#22C55E" />
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white ml-2">
           처리 이력
         </Text>
       </View>
@@ -225,7 +227,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
       <View className="space-y-3">
         <View>
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">처리 상태</Text>
-          <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+          <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
             {REPORT_STATUS_LABELS[report.status]}
           </Text>
         </View>
@@ -235,7 +237,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
               처리 일시
             </Text>
-            <Text className="text-sm text-secondary-900 dark:text-white">
+            <Text className="text-sm text-secondary-900 dark:text-off-white">
               {formatTimestamp(report.reviewedAt)}
             </Text>
           </View>
@@ -282,7 +284,7 @@ function ReviewFormSection({
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color="#D4A017" />
-        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-off-white ml-2">
           신고 처리
         </Text>
       </View>
@@ -306,7 +308,7 @@ function ReviewFormSection({
               className={`font-medium ${
                 selectedStatus === option.value
                   ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-secondary-900 dark:text-white'
+                  : 'text-secondary-900 dark:text-off-white'
               }`}
             >
               {option.label}
@@ -329,7 +331,7 @@ function ReviewFormSection({
         placeholderTextColor="#A89C84"
         multiline
         numberOfLines={4}
-        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm text-secondary-900 dark:text-white mb-4"
+        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm text-secondary-900 dark:text-off-white mb-4"
         style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 

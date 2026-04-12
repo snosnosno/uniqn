@@ -135,7 +135,7 @@ const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         {/* Header */}
         {title && (
           <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-secondary-200 dark:border-surface-overlay">
-            <Text className="text-lg font-semibold text-secondary-900 dark:text-white flex-1">
+            <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white flex-1">
               {title}
             </Text>
           </View>
@@ -268,7 +268,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
           {/* Header */}
           {(title || showCloseButton) && (
             <View className="flex-row items-center justify-between px-5 pb-3 border-b border-secondary-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-secondary-900 dark:text-white flex-1">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-off-white flex-1">
                 {title ?? ''}
               </Text>
               {showCloseButton && (
@@ -392,7 +392,7 @@ export function SelectBottomSheet({
                 ${
                   option.destructive
                     ? 'text-error-600 dark:text-error-400'
-                    : 'text-secondary-900 dark:text-white'
+                    : 'text-secondary-900 dark:text-off-white'
                 }
               `}
             >

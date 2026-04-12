@@ -28,7 +28,7 @@ export function PostingScheduleContent({
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-medium text-secondary-900 dark:text-white">
+        <Text className="text-sm font-medium text-secondary-900 dark:text-off-white">
           {schedule.fixed.daysLabel}
         </Text>
         <Text className="mt-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
@@ -70,7 +70,7 @@ export function PostingScheduleContent({
       </View>
     ) : (
       <View className="py-1">
-        <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
+        <Text className="text-sm font-semibold text-secondary-900 dark:text-off-white">
           {schedule.dateLabel}
         </Text>
         <Text className="mt-2 text-sm text-secondary-700 dark:text-secondary-300">
@@ -99,7 +99,7 @@ export function PostingScheduleContent({
             className={
               display === 'card'
                 ? 'text-sm font-medium text-secondary-700 dark:text-secondary-300'
-                : 'text-sm font-semibold text-secondary-900 dark:text-white'
+                : 'text-sm font-semibold text-secondary-900 dark:text-off-white'
             }
           >
             {section.label}
