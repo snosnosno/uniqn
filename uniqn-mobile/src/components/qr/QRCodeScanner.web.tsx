@@ -5,7 +5,7 @@
  * @version 1.1.0 - Portal 적용으로 z-index 문제 해결
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -404,7 +404,7 @@ export function QRCodeScanner({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: SURFACE_COLORS.DEFAULT,
   },
   header: {
     flexDirection: 'row',
