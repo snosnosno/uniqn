@@ -55,9 +55,7 @@ export function buildPostingFacts(posting: JobPosting): PostingFacts {
   const salaryRows = getPostingSalaryRows(posting);
   const defaultSalary = getPostingDefaultSalary(posting);
   const filledPositions = posting.filledPositions ?? posting.stats?.filledPositions ?? 0;
-  const allowanceLabels = getAllowanceItems(posting.compensation.allowances, {
-    includeEmoji: true,
-  });
+  const allowanceLabels = getAllowanceItems(posting.compensation.allowances);
   const dateRequirements = getPostingDateRequirements(posting);
   const requiredRolesWithCount = getPostingRequiredRolesWithCount(posting);
   const scheduleDisplay: PostingScheduleDisplay = {
