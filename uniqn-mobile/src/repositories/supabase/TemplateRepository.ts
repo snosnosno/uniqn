@@ -49,7 +49,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
       const { data, error } = await supabase
         .from(TABLES.TEMPLATES)
         .select(TABLE_COLUMNS)
-        .eq('created_by', userId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -83,7 +83,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
 
       const insertData: Record<string, unknown> = {
         name: input.name,
-        created_by: userId,
+        user_id: userId,
         created_at: now,
         template_data: templateData,
         usage_count: 0,
@@ -153,7 +153,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
         .from(TABLES.TEMPLATES)
         .delete()
         .eq('id', templateId)
-        .eq('created_by', userId)
+        .eq('user_id', userId)
         .select('id');
 
       if (error) {
@@ -164,7 +164,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
         // 템플릿이 없거나 본인 것이 아님 — 존재 여부를 확인
         const { data: existing } = await supabase
           .from(TABLES.TEMPLATES)
-          .select('id, created_by')
+          .select('id, user_id')
           .eq('id', templateId)
           .maybeSingle();
 
@@ -219,7 +219,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
         .from(TABLES.TEMPLATES)
         .update(updateData)
         .eq('id', templateId)
-        .eq('created_by', userId)
+        .eq('user_id', userId)
         .select('id');
 
       if (error) {
@@ -229,7 +229,7 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
       if (!data || data.length === 0) {
         const { data: existing } = await supabase
           .from(TABLES.TEMPLATES)
-          .select('id, created_by')
+          .select('id, user_id')
           .eq('id', templateId)
           .maybeSingle();
 
