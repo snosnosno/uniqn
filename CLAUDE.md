@@ -29,7 +29,7 @@
 ```yaml
 Expo SDK 54 / React Native 0.81.5 / React 19.1.4 / TypeScript 5.9.2 (strict)
 Expo Router 6.0 / Zustand 5.0 / TanStack Query 5.90 / NativeWind 4.2
-Firebase 12.6 (Modular API) / Zod 4.1 / React Hook Form 7.68
+Supabase (Auth + PostgreSQL + Realtime) / Zod 4.1 / React Hook Form 7.68
 RevenueCat (인앱 결제) / FlashList 2.0 / expo-image 3.0
 ```
 
@@ -42,16 +42,15 @@ Presentation (app/, components/)
   → Hooks (+ Zustand, TanStack Query)
     → Service (+ Domain, Shared)
       → Repository
-        → Firebase
+        → Supabase (PostgreSQL + Auth + Realtime)
 ```
 
 **의존성 규칙**:
-- Firestore 데이터 접근: Service → Repository → Firebase (필수)
-- Firebase Auth는 예외 (authService + 인증/부트스트랩 전용 hook에서 직접 호출 허용)
-- Firebase Functions 초기화/호출도 앱 초기화·인증 연동용 hook에서는 예외 허용
+- DB 데이터 접근: Service → Repository → Supabase (필수)
+- Supabase Auth는 예외 (authService + 인증/부트스트랩 전용 hook에서 직접 호출 허용)
 - TanStack Query 데이터 소스 hook의 읽기 전용 조회는 Repository 직접 호출 허용
-- 버전 체크/관측성 같은 인프라성 Service는 Firebase SDK 직접 호출 허용
-- Presentation/Hooks에서 Firestore 직접 호출 금지
+- 버전 체크/관측성 같은 인프라성 Service는 Supabase SDK 직접 호출 허용
+- Presentation/Hooks에서 Supabase 직접 호출 금지
 - 상위 → 하위 의존만 허용, 역방향 금지
 
 ---
@@ -105,7 +104,7 @@ z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어
 ## 에러 처리
 
 `src/errors/`의 AppError 계층 사용. 에러 코드 체계:
-- E1xxx 네트워크 / E2xxx 인증 / E3xxx 검증 / E4xxx Firebase / E5xxx 보안 / E6xxx 비즈니스 / E7xxx 알 수 없음
+- E1xxx 네트워크 / E2xxx 인증 / E3xxx 검증 / E4xxx Supabase/DB / E5xxx 보안 / E6xxx 비즈니스 / E7xxx 알 수 없음
 
 ---
 
@@ -134,13 +133,13 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬을 조
 | 계획 리뷰 | `/plan-eng-review` | 엔지니어링 관점 검토 |
 | TDD | `superpowers:test-driven-development` | Red→Green→Improve |
 | 코드 리뷰 | `/review` | 5대 전문가 리뷰 + 자동 수정 |
-| 보안 감사 | `/cso` | OWASP + STRIDE + Firebase Rules |
+| 보안 감사 | `/cso` | OWASP + STRIDE + Supabase RLS |
 | 버그 조사 | `/investigate` | 4단계 근본 원인 조사 |
 | 커밋 | `/commit` | 프로젝트 컨벤션 한글 커밋 |
 | PR | `/pr` | PR 생성 자동화 |
-| 배포 | `/deploy` | Firebase/EAS/Cloudflare 배포 |
+| 배포 | `/deploy` | Supabase/EAS/Cloudflare 배포 |
 | 품질 점수 | `/health` | 0-10점 종합 대시보드 |
-| 위험 확인 | `/guard` | Firebase/결제/권한 변경 경고 |
+| 위험 확인 | `/guard` | Supabase/결제/권한 변경 경고 |
 | 회고 | `/retro` | 커밋 기반 주간 회고 |
 | 완료 검증 | `superpowers:verification-before-completion` | 증거 기반 완료 확인 |
 
@@ -160,7 +159,7 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬을 조
 | "이 기능 어떻게 만들지" | `/autoplan` |
 | "프로젝트 상태" | `/health` |
 | "이번 주 뭐했지" | `/retro` |
-| "Security Rules 바꿔야 해" | `/guard` 먼저 → 작업 |
+| "RLS 바꿔야 해" | `/guard` 먼저 → 작업 |
 | "테스트 작성해줘" | `/test` |
 | "리팩토링 해줘" | `/refactor` |
 | "배포해줘" | `/deploy` |
@@ -168,7 +167,7 @@ gstack 기반 커스텀 스킬 + superpowers + 프로젝트 전용 스킬을 조
 
 ---
 
-*마지막 업데이트: 2026-04-12*
+*마지막 업데이트: 2026-04-12 (Supabase 이전 완료 반영)*
 
 ## Health Stack
 

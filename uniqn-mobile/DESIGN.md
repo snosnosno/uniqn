@@ -19,7 +19,17 @@
 - **Display/Hero:** Outfit — 기하학적이고 모던, 한국어와 어울리는 라운드 형태
 - **Body/UI/Numbers:** Plus Jakarta Sans — 가독성 높고 친근, 숫자도 동일 폰트
 - **Code (개발 전용):** Geist Mono — 앱 UI에는 사용하지 않음
-- **Loading:** Google Fonts CDN
+- **Loading:** expo-font (useFonts hook, @expo-google-fonts/\*)
+
+### 롤아웃 현황 (2026-04-12 기준)
+
+| Stage   | 범위                                                    | 상태    | 커밋        |
+| ------- | ------------------------------------------------------- | ------- | ----------- |
+| Stage 1 | 폰트 설치 + 초기 적용 (Outfit + Plus Jakarta Sans)      | ✅ 완료 | `21deded1c` |
+| Stage 2 | 헤딩 73개 파일 — H1~H5 fontFamily 일괄 적용             | ✅ 완료 | `d455a1989` |
+| Stage 3 | 네이티브 Stack 헤더 fontFamily 주입                     | ✅ 완료 | `c32991172` |
+| Stage 4 | 본문/캡션 Text 요소 (~1,800개) — Plus Jakarta Sans 적용 | ⏳ 예정 | —           |
+
 - **Scale:**
   - H1: 36px / weight 800
   - H2: 28px / weight 700
