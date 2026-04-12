@@ -56,6 +56,16 @@ module.exports = {
           800: '#2A2A30',
           900: '#18181E',
         },
+        // 시멘틱 컨텐츠 토큰 (CSS 변수 참조 — 다크모드 자동 대응)
+        content: {
+          primary: 'var(--color-content-primary)',
+          secondary: 'var(--color-content-secondary)',
+          muted: 'var(--color-content-muted)',
+          placeholder: 'var(--color-content-placeholder)',
+        },
+        'surface-page': 'var(--color-surface-page)',
+        'surface-card': 'var(--color-surface-card)',
+        divider: 'var(--color-divider)',
         // 상태 색상
         success: {
           50: 'rgba(34,197,94,0.08)',
