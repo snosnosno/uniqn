@@ -16,6 +16,10 @@ jest.mock('@/domains/job-posting', () => ({
     workflow: { isFixed: false },
     questions: { items: [] },
     posting: { roles: [] },
+    application: {
+      fixedAssignmentTimeSlot: '',
+      availableRoleOptions: [],
+    },
     compensation: {
       display: { useSameSalary: false },
       defaultSalary: 0,
@@ -120,15 +124,15 @@ describe('ApplicationForm', () => {
     );
 
     fireEvent.changeText(
-      getByPlaceholderText('간단한 자기소개나 경력을 입력해 주세요.'),
+      getByPlaceholderText('간단한 자기소개나 경력을 입력해 주세요'),
       '지원 동기를 입력합니다.'
     );
     fireEvent.press(getByTestId('sheet-request-close'));
 
     expect(mockShowConfirm).toHaveBeenCalledTimes(1);
     expect(mockShowConfirm).toHaveBeenCalledWith(
-      '작성을 그만둘까요?',
-      '입력한 지원 내용은 저장되지 않고 바로 삭제됩니다.',
+      '작성을 그만할까요?',
+      '입력한 지원 내용은 저장되지 않고 바로 닫힙니다.',
       expect.any(Function)
     );
     expect(onClose).not.toHaveBeenCalled();

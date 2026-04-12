@@ -5,7 +5,7 @@
  * @version 1.0.0
  *
  * 이 인터페이스의 목적:
- * 1. Firebase 직접 의존 제거 → 테스트 용이성
+ * 1. DB 직접 의존 제거 → 테스트 용이성
  * 2. 트랜잭션 로직 캡슐화 → 데이터 정합성 보장
  * 3. 향후 백엔드 교체 가능성 확보
  */
@@ -113,7 +113,7 @@ export interface SubscribeCallbacks {
  * Application Repository 인터페이스
  *
  * 구현체:
- * - FirebaseApplicationRepository (프로덕션)
+ * - SupabaseApplicationRepository (프로덕션)
  * - MockApplicationRepository (테스트)
  */
 export interface IApplicationRepository {
@@ -189,7 +189,7 @@ export interface IApplicationRepository {
   getCancellationRequests(jobPostingId: string, ownerId: string): Promise<ApplicationWithJob[]>;
 
   // ==========================================================================
-  // 트랜잭션 (Write) - Firebase 특화
+  // 트랜잭션 (Write)
   // ==========================================================================
 
   /**

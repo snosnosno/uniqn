@@ -56,7 +56,7 @@ export interface MonthlyPayrollSummary {
  * WorkLog Repository 인터페이스
  *
  * 구현체:
- * - FirebaseWorkLogRepository (프로덕션)
+ * - SupabaseWorkLogRepository (프로덕션)
  * - MockWorkLogRepository (테스트)
  */
 export interface IWorkLogRepository {

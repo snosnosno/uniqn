@@ -40,16 +40,48 @@ const mockWhere = jest.fn();
 const mockOrderBy = jest.fn();
 const mockLimit = jest.fn();
 
+function mockCreateChain(): any {
+  const chain: any = {};
+  const self = () => chain;
+
+  chain.select = jest.fn((...args: unknown[]) => {
+    mockGetDocs(...args);
+    return chain;
+  });
+  chain.insert = jest.fn(self);
+  chain.update = jest.fn(self);
+  chain.delete = jest.fn(self);
+  chain.eq = jest.fn(self);
+  chain.neq = jest.fn(self);
+  chain.gt = jest.fn(self);
+  chain.gte = jest.fn(self);
+  chain.lt = jest.fn(self);
+  chain.lte = jest.fn(self);
+  chain.in = jest.fn(self);
+  chain.is = jest.fn(self);
+  chain.or = jest.fn(self);
+  chain.order = jest.fn(self);
+  chain.limit = jest.fn(self);
+  chain.range = jest.fn(self);
+  chain.filter = jest.fn(self);
+  chain.match = jest.fn(self);
+  chain.contains = jest.fn(self);
+  chain.overlaps = jest.fn(self);
+  chain.single = jest.fn((...args: unknown[]) => mockGetDoc(...args));
+  chain.then = jest.fn((resolve: (v: unknown) => void, reject?: (r: unknown) => void) => {
+    const result = mockGetDocs();
+    if (result && typeof result === 'object' && 'then' in result) {
+      return (result as Promise<unknown>).then(resolve, reject);
+    }
+    return Promise.resolve(result).then(resolve, reject);
+  });
+
+  return chain;
+}
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
-    from: jest.fn(() => ({
-      select: (...args: unknown[]) => mockGetDocs(...args),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: (...args: unknown[]) => mockGetDoc(...args),
-    })),
+    from: jest.fn(() => mockCreateChain()),
     channel: jest.fn(() => ({
       on: jest.fn().mockReturnThis(),
       subscribe: (...args: unknown[]) => mockOnSnapshot(...args),
@@ -88,7 +120,9 @@ jest.mock('@/errors', () => ({
     INFRA_NOT_FOUND: 'E4002',
     INFRA_PERMISSION_DENIED: 'E4001',
     BUSINESS_INVALID_STATE: 'E6042',
+    NETWORK_REQUEST_FAILED: 'E1002',
   },
+  toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
   BusinessError: class BusinessError extends Error {
     public userMessage: string;
     public code: string;
@@ -96,6 +130,17 @@ jest.mock('@/errors', () => ({
       const message = options?.userMessage || code;
       super(message);
       this.name = 'BusinessError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
+  NetworkError: class NetworkError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'NetworkError';
       this.code = code;
       this.userMessage = message;
     }
@@ -392,10 +437,9 @@ describe('scheduleService', () => {
       expect(result.schedules.length).toBeGreaterThanOrEqual(0);
     });
 
-    it('should throw error on Firebase failure', async () => {
-      // Both queries need to reject for the function to throw
-      mockGetDocs.mockRejectedValueOnce(new Error('Firebase error'));
-      mockGetDocs.mockRejectedValueOnce(new Error('Firebase error'));
+    it('should throw error on database failure', async () => {
+      // Mock chain .then() resolves with error
+      mockGetDocs.mockReturnValue(Promise.reject(new Error('Database error')));
 
       await expect(getMySchedules('staff-123')).rejects.toThrow();
     });

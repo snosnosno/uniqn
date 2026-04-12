@@ -22,9 +22,6 @@ import {
   type UserProfile,
 } from '../authStore';
 
-const mockFirebaseAuth = {
-  currentUser: null as any,
-};
 const mockGetUserProfile = jest.fn();
 const mockToStoreProfile = jest.fn((profile) => profile);
 const mockUnsubscribeAll = jest.fn();
@@ -34,11 +31,12 @@ const mockIsAutoLoginEnabled = jest.fn();
 const mockSyncSignOut = jest.fn();
 const mockTrackLogout = jest.fn();
 const mockSetUserId = jest.fn().mockResolvedValue(undefined);
+const mockGetUser = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      getUser: (...args: unknown[]) => mockGetUser(...args),
       signOut: () => mockSyncSignOut(),
       onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
     },
@@ -79,11 +77,19 @@ jest.mock('@/services/offline/criticalOfflineCache', () => ({
     mockClearCriticalOfflineCacheForUser(userId),
 }));
 
+const mockGetProtectedAuthFlowKind = jest.fn();
+jest.mock('@/shared/auth/protectedAuthFlow', () => ({
+  getProtectedAuthFlowKind: (...args: unknown[]) => mockGetProtectedAuthFlowKind(...args),
+  protectAuthFlow: jest.fn(),
+  clearProtectedAuthFlow: jest.fn(),
+  isProtectedAuthFlow: jest.fn(),
+}));
+
 describe('AuthStore', () => {
   beforeEach(() => {
     // Reset store to initial state before each test
     useAuthStore.getState().reset();
-    mockFirebaseAuth.currentUser = null;
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
     mockGetUserProfile.mockReset();
     mockToStoreProfile.mockClear();
     mockUnsubscribeAll.mockClear();
@@ -93,6 +99,7 @@ describe('AuthStore', () => {
     mockSyncSignOut.mockResolvedValue(undefined);
     mockTrackLogout.mockClear();
     mockSetUserId.mockClear();
+    mockGetProtectedAuthFlowKind.mockReturnValue(null);
   });
 
   describe('Initial State', () => {
@@ -113,18 +120,20 @@ describe('AuthStore', () => {
   });
 
   describe('setUser', () => {
-    it('should set user from Firebase user', () => {
-      const mockFirebaseUser = {
-        uid: 'test-uid',
+    it('should set user from Supabase user', () => {
+      const mockSupabaseUser = {
+        id: 'test-uid',
         email: 'test@example.com',
-        displayName: 'Test User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: '+821012345678',
+        user_metadata: { name: 'Test User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: '+821012345678',
+        aud: 'authenticated',
+        created_at: '',
       };
 
       act(() => {
-        useAuthStore.getState().setUser(mockFirebaseUser as any);
+        useAuthStore.getState().setUser(mockSupabaseUser as any);
       });
 
       const state = useAuthStore.getState();
@@ -145,12 +154,14 @@ describe('AuthStore', () => {
       // First set a user
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'test-uid',
+          id: 'test-uid',
           email: 'test@example.com',
-          displayName: 'Test User',
-          photoURL: null,
-          emailVerified: true,
-          phoneNumber: null,
+          user_metadata: { name: 'Test User' },
+          app_metadata: { providers: [] },
+          email_confirmed_at: '2024-01-01T00:00:00Z',
+          phone: null,
+          aud: 'authenticated',
+          created_at: '',
         } as any);
       });
 
@@ -302,8 +313,12 @@ describe('AuthStore', () => {
       act(() => {
         useAuthStore.getState().reset();
         useAuthStore.getState().setUser({
-          uid: 'test-uid',
+          id: 'test-uid',
           email: 'test@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
       });
 
@@ -317,11 +332,15 @@ describe('AuthStore', () => {
   });
 
   describe('checkAuthState', () => {
-    it('should preserve cached auth state when Firebase auth has not settled yet', async () => {
+    it('should preserve cached auth state when Supabase auth has not settled yet', async () => {
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'stale-user',
+          id: 'stale-user',
           email: 'stale@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
         useAuthStore.getState().setProfile({
           uid: 'stale-user',
@@ -349,8 +368,12 @@ describe('AuthStore', () => {
     it('should clear stale authenticated state when auth listener explicitly reports sign-out', async () => {
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'stale-user',
+          id: 'stale-user',
           email: 'stale@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
         useAuthStore.getState().setProfile({
           uid: 'stale-user',
@@ -375,40 +398,19 @@ describe('AuthStore', () => {
       expect(mockClearCriticalOfflineCacheForUser).toHaveBeenCalledWith('stale-user');
     });
 
-    it('should ignore stale explicit auth restore when live Firebase session is already cleared', async () => {
-      const firebaseUser = {
-        uid: 'stale-user',
-        email: 'stale@example.com',
-        displayName: 'Stale User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
-      };
-
-      mockFirebaseAuth.currentUser = null;
-
-      await act(async () => {
-        await useAuthStore.getState().checkAuthState(firebaseUser as any);
-      });
-
-      expect(useAuthStore.getState().user).toBeNull();
-      expect(useAuthStore.getState().profile).toBeNull();
-      expect(useAuthStore.getState().status).toBe('unauthenticated');
-      expect(mockGetUserProfile).not.toHaveBeenCalled();
-    });
-
     it('should sign out explicit auth restore when auto login is disabled', async () => {
-      const firebaseUser = {
-        uid: 'suppressed-user',
+      const supabaseUser = {
+        id: 'suppressed-user',
         email: 'suppressed@example.com',
-        displayName: 'Suppressed User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
+        user_metadata: { name: 'Suppressed User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: null,
+        aud: 'authenticated',
+        created_at: '',
       };
 
       mockIsAutoLoginEnabled.mockResolvedValue(false);
-      mockFirebaseAuth.currentUser = firebaseUser;
 
       act(() => {
         useAuthStore.setState({
@@ -422,7 +424,7 @@ describe('AuthStore', () => {
       });
 
       await act(async () => {
-        await useAuthStore.getState().checkAuthState(firebaseUser as any);
+        await useAuthStore.getState().checkAuthState(supabaseUser as any);
       });
 
       expect(useAuthStore.getState().user).toBeNull();
@@ -436,22 +438,23 @@ describe('AuthStore', () => {
     });
 
     it('should allow explicit login snapshots when auto login is disabled but no restored session is suppressed', async () => {
-      const firebaseUser = {
-        uid: 'manual-login-user',
+      const supabaseUser = {
+        id: 'manual-login-user',
         email: 'manual@example.com',
-        displayName: 'Manual Login User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
+        user_metadata: { name: 'Manual Login User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: null,
+        aud: 'authenticated',
+        created_at: '',
       };
 
       const profile = {
-        uid: firebaseUser.uid,
+        uid: supabaseUser.id,
         role: 'staff',
       };
 
       mockIsAutoLoginEnabled.mockResolvedValue(false);
-      mockFirebaseAuth.currentUser = firebaseUser;
       mockGetUserProfile.mockResolvedValue(profile);
 
       act(() => {
@@ -466,59 +469,63 @@ describe('AuthStore', () => {
       });
 
       await act(async () => {
-        await useAuthStore.getState().checkAuthState(firebaseUser as any);
+        await useAuthStore.getState().checkAuthState(supabaseUser as any);
       });
 
-      expect(useAuthStore.getState().user?.uid).toBe(firebaseUser.uid);
-      expect(useAuthStore.getState().profile?.uid).toBe(firebaseUser.uid);
+      expect(useAuthStore.getState().user?.uid).toBe(supabaseUser.id);
+      expect(useAuthStore.getState().profile?.uid).toBe(supabaseUser.id);
       expect(useAuthStore.getState().status).toBe('authenticated');
       expect(mockSyncSignOut).not.toHaveBeenCalled();
-      expect(mockGetUserProfile).toHaveBeenCalledWith(firebaseUser.uid);
+      expect(mockGetUserProfile).toHaveBeenCalledWith(supabaseUser.id);
     });
 
-    it('should hydrate user and profile from Firebase session', async () => {
-      const firebaseUser = {
-        uid: 'firebase-user',
-        email: 'firebase@example.com',
-        displayName: 'Firebase User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
+    it('should hydrate user and profile from Supabase session', async () => {
+      const supabaseUser = {
+        id: 'supabase-user',
+        email: 'supabase@example.com',
+        user_metadata: { name: 'Supabase User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: null,
+        aud: 'authenticated',
+        created_at: '',
       };
       const profile = {
-        uid: 'firebase-user',
-        email: 'firebase@example.com',
-        name: 'Firebase User',
+        uid: 'supabase-user',
+        email: 'supabase@example.com',
+        name: 'Supabase User',
         role: 'staff',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUser.mockResolvedValue({ data: { user: supabaseUser }, error: null });
       mockGetUserProfile.mockResolvedValue(profile as never);
 
       await act(async () => {
         await useAuthStore.getState().checkAuthState();
       });
 
-      expect(useAuthStore.getState().user?.uid).toBe('firebase-user');
+      expect(useAuthStore.getState().user?.uid).toBe('supabase-user');
       expect(useAuthStore.getState().profile).toEqual(profile);
       expect(useAuthStore.getState().status).toBe('authenticated');
-      expect(mockGetUserProfile).toHaveBeenCalledWith('firebase-user');
+      expect(mockGetUserProfile).toHaveBeenCalledWith('supabase-user');
       expect(mockToStoreProfile).toHaveBeenCalledWith(profile);
     });
 
     it('should clear session when authenticated user has no profile document', async () => {
-      const firebaseUser = {
-        uid: 'firebase-user',
-        email: 'firebase@example.com',
-        displayName: 'Firebase User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
+      const supabaseUser = {
+        id: 'supabase-user',
+        email: 'supabase@example.com',
+        user_metadata: { name: 'Supabase User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: null,
+        aud: 'authenticated',
+        created_at: '',
       };
 
-      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUser.mockResolvedValue({ data: { user: supabaseUser }, error: null });
       mockGetUserProfile.mockResolvedValue(null);
 
       await act(async () => {
@@ -531,19 +538,22 @@ describe('AuthStore', () => {
       expect(useAuthStore.getState().status).toBe('unauthenticated');
     });
 
-    it('should preserve a phone-only signup session when the profile is not created yet', async () => {
-      const firebaseUser = {
-        uid: 'phone-only-user',
-        email: null,
-        displayName: null,
-        photoURL: null,
-        emailVerified: false,
-        phoneNumber: '+821012345678',
-        providerData: [{ providerId: 'phone' }],
+    it('should preserve a protected auth flow session when the profile is not created yet', async () => {
+      const supabaseUser = {
+        id: 'phone-only-user',
+        email: undefined,
+        user_metadata: {},
+        app_metadata: { providers: ['phone'] },
+        phone: '+821012345678',
+        aud: 'authenticated',
+        created_at: '',
       };
 
-      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUser.mockResolvedValue({ data: { user: supabaseUser }, error: null });
       mockGetUserProfile.mockResolvedValue(null);
+
+      // Simulate a protected auth flow (e.g., phone signup in progress)
+      mockGetProtectedAuthFlowKind.mockReturnValue('email_signup');
 
       await act(async () => {
         await useAuthStore.getState().checkAuthState();
@@ -558,23 +568,25 @@ describe('AuthStore', () => {
     });
 
     it('should request server reconcile when profile refresh fails', async () => {
-      const firebaseUser = {
-        uid: 'firebase-user',
-        email: 'firebase@example.com',
-        displayName: 'Firebase User',
-        photoURL: null,
-        emailVerified: true,
-        phoneNumber: null,
+      const supabaseUser = {
+        id: 'supabase-user',
+        email: 'supabase@example.com',
+        user_metadata: { name: 'Supabase User' },
+        app_metadata: { providers: [] },
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+        phone: null,
+        aud: 'authenticated',
+        created_at: '',
       };
 
-      mockFirebaseAuth.currentUser = firebaseUser;
+      mockGetUser.mockResolvedValue({ data: { user: supabaseUser }, error: null });
       mockGetUserProfile.mockRejectedValue(new Error('network failure'));
 
       await act(async () => {
         await useAuthStore.getState().checkAuthState();
       });
 
-      expect(useAuthStore.getState().user?.uid).toBe('firebase-user');
+      expect(useAuthStore.getState().user?.uid).toBe('supabase-user');
       expect(useAuthStore.getState().profile).toBeNull();
       expect(useAuthStore.getState().status).toBe('authenticated');
       expect(useAuthStore.getState().needsServerReconcile).toBe(true);
@@ -586,8 +598,12 @@ describe('AuthStore', () => {
     it('should preserve user-scoped offline cache while clearing local auth UI state', () => {
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'cached-user',
+          id: 'cached-user',
           email: 'cached@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
         useAuthStore.getState().setProfile({
           uid: 'cached-user',
@@ -617,8 +633,12 @@ describe('AuthStore', () => {
     it('should clear preserved offline cache when a different user logs in later', () => {
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'cached-user',
+          id: 'cached-user',
           email: 'cached@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
         useAuthStore.getState().setProfile({
           uid: 'cached-user',
@@ -637,8 +657,12 @@ describe('AuthStore', () => {
 
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'other-user',
+          id: 'other-user',
           email: 'other@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
       });
 
@@ -730,8 +754,12 @@ describe('AuthStore', () => {
       // Set some state
       act(() => {
         useAuthStore.getState().setUser({
-          uid: 'test-uid',
+          id: 'test-uid',
           email: 'test@example.com',
+          user_metadata: {},
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: '',
         } as any);
         useAuthStore.getState().setProfile({
           uid: 'test-uid',

@@ -186,6 +186,7 @@ describe('AssignmentSelector', () => {
     buildPostingFacts.mockReturnValue({
       workflow: {
         isTournament: true,
+        usesGroupedDateRanges: true,
       },
       postingType: 'tournament',
     });
@@ -269,7 +270,7 @@ describe('AssignmentSelector', () => {
       />
     );
 
-    fireEvent.press(screen.getByRole('checkbox'));
+    fireEvent.press(screen.getAllByRole('checkbox')[0]!);
 
     expect(onSelectionChange).toHaveBeenCalledWith([
       expect.objectContaining({

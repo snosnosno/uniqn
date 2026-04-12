@@ -7,7 +7,7 @@
  * ## 사용 가이드
  *
  * - 일반 사용 (Date 타입): `UserProfile`
- * - Firestore 저장/조회: `FirestoreUserProfile`
+ * - Firestore 저장/조회: `FirestoreUserProfile` (deprecated, UserProfile 직접 사용 권장)
  * - 프로필 수정: `EditableProfileFields`
  * - 개인정보 열람: `ProfileViewFields`
  */
@@ -38,11 +38,11 @@ export interface PortOneIdentityProfile {
  * // Zustand Store에서 사용
  * const profile: UserProfile = { ... };
  *
- * // Firestore Repository에서 반환
- * const firestoreProfile: FirestoreUserProfile = { ... };
+ * // Repository에서 반환
+ * const profile: UserProfile = { ... };
  */
 export interface UserProfile {
-  /** Firebase Auth UID */
+  /** Auth UID */
   uid: string;
   /** 이메일 주소 */
   email: string;
@@ -57,7 +57,7 @@ export interface UserProfile {
   /** 프로필 사진 URL (삭제 시 null) */
   photoURL?: string | null;
 
-  // 전화번호 인증 (Firebase Phone Auth)
+  // 전화번호 인증
   /** 전화번호 인증 완료 여부 */
   phoneVerified?: boolean;
   /** 포트원 본인인증 완료 여부 */
@@ -85,7 +85,7 @@ export interface UserProfile {
   /** 소셜 로그인 제공자 (없으면 이메일 가입) */
   socialProvider?: 'apple' | 'google' | 'kakao' | 'naver';
 
-  // 동의 정보 (Firestore 전용, Store에서는 optional)
+  // 동의 정보 (DB 전용, Store에서는 optional)
   /** 이용약관 동의 */
   termsAgreed?: boolean;
   /** 개인정보처리방침 동의 */
@@ -124,7 +124,7 @@ export interface UserProfile {
   profileCompleted?: boolean;
 
   // 메타데이터
-  /** 활성 상태 (Firestore 전용, Store에서는 optional) */
+  /** 활성 상태 (DB 전용, Store에서는 optional) */
   isActive?: boolean;
   /** 생성일 */
   createdAt: Date;
@@ -136,11 +136,7 @@ export interface UserProfile {
 // Type Aliases
 // ============================================================================
 
-/**
- * Firestore용 UserProfile 호환성 별칭
- *
- * @description 하위 호환성을 위한 별칭. UserProfile과 동일.
- */
+/** @deprecated Use UserProfile directly. Firebase 이전 레거시 타입. */
 export type FirestoreUserProfile = UserProfile;
 
 /**

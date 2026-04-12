@@ -1,17 +1,17 @@
 /**
  * UNIQN Mobile - 대회공고 승인 서비스
  *
- * @description Firebase Functions 기반 대회공고 승인/거부/재제출 워크플로우
+ * @description Supabase Edge Functions 기반 대회공고 승인/거부/재제출 워크플로우
  * @version 2.0.0
  *
  * Repository 패턴 적용:
- * - Query Functions의 Firebase 직접 호출 제거
+ * - Query Functions의 직접 호출 제거
  * - jobPostingRepository를 통한 데이터 접근
  *
- * 기존 Firebase Functions 재사용:
- * - approveJobPosting: 관리자 승인
- * - rejectJobPosting: 관리자 거부
- * - resubmitJobPosting: 구인자 재제출
+ * Supabase Edge Functions:
+ * - approve-job-posting: 관리자 승인
+ * - reject-job-posting: 관리자 거부
+ * - resubmit-job-posting: 구인자 재제출
  */
 
 import { supabase } from '@/lib/supabase';
@@ -40,7 +40,7 @@ import type {
 // ============================================================================
 
 /**
- * Firebase Functions 응답 타입
+ * Edge Function 응답 타입
  */
 interface ApprovalResponse {
   success: boolean;
@@ -62,36 +62,42 @@ export type { TournamentApprovalStatus } from '@/types';
 // ============================================================================
 
 /**
- * Firebase Functions 에러를 비즈니스 에러로 매핑
+ * Supabase Edge Function 에러를 비즈니스 에러로 매핑
  */
-function mapFirebaseFunctionError(error: unknown): Error {
-  const errorCode = (error as { code?: string }).code;
-  const errorMessage = (error as { message?: string }).message;
+function mapEdgeFunctionError(error: unknown): Error {
+  // Supabase FunctionsHttpError: response body에 에러 정보
+  if (error && typeof error === 'object' && 'context' in error) {
+    const context = (error as { context?: { status?: number } }).context;
+    const status = context?.status;
+    const message = (error as { message?: string }).message || '';
 
-  switch (errorCode) {
-    case 'unauthenticated':
-      return new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-        userMessage: '로그인이 필요합니다',
-      });
-    case 'permission-denied':
-      return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: '권한이 없습니다',
-      });
-    case 'not-found':
-      return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '공고를 찾을 수 없습니다',
-      });
-    case 'failed-precondition':
-      return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: errorMessage || '이미 처리된 공고입니다',
-      });
-    case 'invalid-argument':
-      return new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-        userMessage: errorMessage || '잘못된 요청입니다',
-      });
-    default:
-      return normalizeError(error);
+    switch (status) {
+      case 401:
+        return new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+          userMessage: '로그인이 필요합니다',
+        });
+      case 403:
+        return new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+          userMessage: '권한이 없습니다',
+        });
+      case 404:
+        return new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
+      case 409:
+        return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: message || '이미 처리된 공고입니다',
+        });
+      case 422:
+        return new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: message || '잘못된 요청입니다',
+        });
+      default:
+        break;
+    }
   }
+
+  return normalizeError(error);
 }
 
 // ============================================================================
@@ -101,7 +107,7 @@ function mapFirebaseFunctionError(error: unknown): Error {
 /**
  * 대회공고 승인 (관리자 전용)
  *
- * @description Firebase Function 'approveJobPosting' 호출
+ * @description Edge Function 'approve-job-posting' 호출
  * @throws BusinessError - 권한 없음, 공고 없음, 이미 처리됨
  */
 export async function approveTournamentPosting(
@@ -126,14 +132,14 @@ export async function approveTournamentPosting(
     logger.error('대회공고 승인 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapFirebaseFunctionError(error);
+    throw mapEdgeFunctionError(error);
   }
 }
 
 /**
  * 대회공고 거부 (관리자 전용)
  *
- * @description Firebase Function 'rejectJobPosting' 호출
+ * @description Edge Function 'reject-job-posting' 호출
  * @param data.postingId - 공고 ID
  * @param data.reason - 거부 사유 (최소 10자)
  * @throws BusinessError - 권한 없음, 공고 없음, 이미 처리됨, 사유 부족
@@ -163,14 +169,14 @@ export async function rejectTournamentPosting(
     logger.error('대회공고 거부 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapFirebaseFunctionError(error);
+    throw mapEdgeFunctionError(error);
   }
 }
 
 /**
  * 대회공고 재제출 (구인자 전용)
  *
- * @description Firebase Function 'resubmitJobPosting' 호출
+ * @description Edge Function 'resubmit-job-posting' 호출
  * @param data.postingId - 거부된 공고 ID
  * @throws BusinessError - 권한 없음, 공고 없음, rejected 상태 아님
  */
@@ -196,7 +202,7 @@ export async function resubmitTournamentPosting(
     logger.error('대회공고 재제출 실패', toError(error), {
       postingId: data.postingId,
     });
-    throw mapFirebaseFunctionError(error);
+    throw mapEdgeFunctionError(error);
   }
 }
 

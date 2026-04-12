@@ -94,8 +94,7 @@ export class SupabaseBoardRepository implements IBoardRepository {
 
   async getPosts(options: FetchBoardRepositoryPostsOptions = {}): Promise<BoardPost[]> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLES.BOARD_POSTS).select(POST_COLUMNS);
+      let query = supabase.from(TABLES.BOARD_POSTS).select(POST_COLUMNS);
 
       if (options.boardTypes?.length === 1) {
         query = query.eq('board_type', options.boardTypes[0]);

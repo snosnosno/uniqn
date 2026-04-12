@@ -71,12 +71,13 @@ jest.mock('@/hooks', () => ({
   }),
 }));
 
-jest.mock('@/lib/firebase', () => ({
-  getFirebaseAuth: () => ({
-    currentUser: {
-      uid: 'user-1',
+jest.mock('@/lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     },
-  }),
+  },
 }));
 
 jest.mock('@/services/observability', () => ({

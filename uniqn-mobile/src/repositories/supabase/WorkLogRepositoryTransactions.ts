@@ -13,7 +13,7 @@ import {
   AlreadyCheckedInError,
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
-import { handleSupabaseError } from '@/utils/supabase';
+import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
 import { TimeNormalizer } from '@/shared/time';
 import { STATUS } from '@/constants';
 import type { PayrollStatus, QRCodeAction } from '@/types';
@@ -187,7 +187,7 @@ export async function executeProcessQRCheckInOut(
   staffId: string,
   jobPostingId: string,
   action: QRCodeAction,
-  checkTime: Date,
+  _checkTime: Date,
   date: string
 ): Promise<{
   action: QRCodeAction;
@@ -282,16 +282,18 @@ export async function executeProcessQRCheckInOut(
         });
       }
 
-      const { error } = await supabase
+      const { data: updatedCheckIn, error } = await supabase
         .from(TABLE)
         .update({
           status: STATUS.WORK_LOG.CHECKED_IN,
           check_in_time: now,
           updated_at: now,
         })
-        .eq('id', workLogId);
+        .eq('id', workLogId)
+        .select('id');
 
       if (error) handleSupabaseError(error, { operation: 'QR 출근 처리', table: TABLE });
+      assertUpdated(updatedCheckIn, { operation: 'QR 출근 처리', table: TABLE, id: workLogId });
 
       return {
         action: 'checkIn' as const,
@@ -311,23 +313,27 @@ export async function executeProcessQRCheckInOut(
       if (checkInSource) {
         const startTime = TimeNormalizer.parseTime(checkInSource);
         if (startTime) {
+          const nowDate = new Date(now);
           const durationMinutes = Math.round(
-            (checkTime.getTime() - startTime.getTime()) / (1000 * 60)
+            (nowDate.getTime() - startTime.getTime()) / (1000 * 60)
           );
           workDuration = Math.round((durationMinutes / 60) * 100) / 100;
         }
       }
 
-      const { error } = await supabase
+      const { data: updatedCheckOut, error } = await supabase
         .from(TABLE)
         .update({
           status: STATUS.WORK_LOG.CHECKED_OUT,
           check_out_time: now,
+          work_duration: workDuration,
           updated_at: now,
         })
-        .eq('id', workLogId);
+        .eq('id', workLogId)
+        .select('id');
 
       if (error) handleSupabaseError(error, { operation: 'QR 퇴근 처리', table: TABLE });
+      assertUpdated(updatedCheckOut, { operation: 'QR 퇴근 처리', table: TABLE, id: workLogId });
 
       return {
         action: 'checkOut' as const,

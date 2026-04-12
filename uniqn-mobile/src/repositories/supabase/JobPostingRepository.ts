@@ -261,8 +261,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async getByOwnerId(ownerId: string, status?: JobPostingStatus): Promise<JobPosting[]> {
     try {
       logger.info('소유자별 공고 조회', { ownerId, status });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLE).select(TABLE_COLUMNS).eq('owner_id', ownerId);
+      let query = supabase.from(TABLE).select(TABLE_COLUMNS).eq('owner_id', ownerId);
       if (status) query = query.eq('status', status);
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;

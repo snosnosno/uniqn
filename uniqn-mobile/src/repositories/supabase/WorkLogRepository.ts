@@ -126,8 +126,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('필터를 포함한 스태프별 근무 기록 조회', { staffId, options });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLE).select(TABLE_COLUMNS).eq('staff_id', staffId);
+      let query = supabase.from(TABLE).select(TABLE_COLUMNS).eq('staff_id', staffId);
 
       if (options?.dateRange) {
         query = query.gte('date', options.dateRange.start).lte('date', options.dateRange.end);
@@ -205,8 +204,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('구인자별 완료된 근무 기록 조회', { ownerId });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase
+      let query = supabase
         .from(TABLE)
         .select(TABLE_COLUMNS)
         .eq('owner_id', ownerId)

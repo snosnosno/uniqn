@@ -38,8 +38,7 @@ export async function executeGetMembershipsByUser(
   options: FetchScheduleMembershipsOptions = {}
 ): Promise<BoardMembership[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query: any = supabase
+    let query = supabase
       .from(TABLES.BOARD_MEMBERSHIPS)
       .select(MEMBERSHIP_COLUMNS)
       .eq('user_id', userId)
@@ -353,8 +352,7 @@ export async function executeGetReports(
   options: FetchBoardReportsOptions = {}
 ): Promise<BoardReport[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query: any = supabase
+    let query = supabase
       .from(TABLES.BOARD_REPORTS)
       .select(REPORT_COLUMNS)
       .order('created_at', { ascending: false });

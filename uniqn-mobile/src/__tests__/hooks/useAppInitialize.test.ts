@@ -17,12 +17,6 @@ let mockStartupPhase = 'idle';
 const mockSetStartupPhase = jest.fn((phase: string) => {
   mockStartupPhase = phase;
 });
-const mockFirebaseAuth = {
-  currentUser: null as unknown,
-  authStateReady: jest.fn(),
-  onAuthStateChanged: jest.fn(),
-};
-
 const mockAuthStoreState = {
   user: null as { uid: string } | null,
   profile: null as { uid: string } | null,
@@ -158,6 +152,14 @@ jest.mock('@/services/versionService', () => ({
   isMaintenanceError: jest.fn(() => false),
 }));
 
+const mockGetProtectedAuthFlowKind = jest.fn().mockReturnValue(null);
+
+jest.mock('@/shared/auth/protectedAuthFlow', () => ({
+  protectAuthFlow: jest.fn(),
+  clearProtectedAuthFlow: jest.fn(),
+  getProtectedAuthFlowKind: (...args: unknown[]) => mockGetProtectedAuthFlowKind(...args),
+}));
+
 jest.mock('@/hooks/useAutoLogin', () => ({
   checkAutoLoginEnabled: jest.fn(),
 }));
@@ -187,15 +189,12 @@ describe('resolveSession', () => {
     mockAuthStoreState.user = null;
     mockAuthStoreState.profile = null;
     mockAuthStoreState.status = 'unauthenticated';
-    mockFirebaseAuth.currentUser = null;
-    mockFirebaseAuth.authStateReady.mockResolvedValue(undefined);
-    mockFirebaseAuth.onAuthStateChanged.mockReset();
   });
 
   it('signs out restored Firebase session when auto login is disabled', async () => {
     const result = await resolveSession({
       authUser: {
-        uid: 'user-1',
+        id: 'user-1',
       } as never,
       authResolutionSource: 'current',
       autoLoginEnabled: false,
@@ -216,9 +215,8 @@ describe('resolveSession', () => {
     mockIsCurrentAutoLoginSession.mockReturnValue(true);
 
     const authUser = {
-      uid: 'user-1',
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: { role: 'staff' } }),
+      id: 'user-1',
+      app_metadata: { role: 'staff' },
     };
 
     const profile = {
@@ -256,13 +254,13 @@ describe('resolveSession', () => {
 
   it('preserves a phone-only signup session when the profile document is not ready yet', async () => {
     const authUser = {
-      uid: 'phone-only-user',
+      id: 'phone-only-user',
       email: null,
-      phoneNumber: '+821012345678',
-      providerData: [{ providerId: 'phone' }],
-      getIdToken: jest.fn().mockResolvedValue('token'),
-      getIdTokenResult: jest.fn().mockResolvedValue({ claims: {} }),
+      phone: '+821012345678',
+      app_metadata: { providers: ['phone'] },
     };
+
+    mockGetProtectedAuthFlowKind.mockReturnValueOnce('phone_signup');
 
     const { retryWithBackoff } = jest.requireMock('@/utils/retry') as {
       retryWithBackoff: jest.Mock;
@@ -334,7 +332,7 @@ describe('resolveSession', () => {
 
     const result = await resolveSession({
       authUser: {
-        uid: 'user-1',
+        id: 'user-1',
       } as never,
       authResolutionSource: 'current',
       autoLoginEnabled: false,
@@ -401,9 +399,6 @@ describe('useAppInitialize', () => {
     mockAuthStoreState.profile = null;
     mockAuthStoreState.status = 'unauthenticated';
     mockAuthStoreState.needsServerReconcile = false;
-    mockFirebaseAuth.currentUser = null;
-    mockFirebaseAuth.authStateReady.mockResolvedValue(undefined);
-    mockFirebaseAuth.onAuthStateChanged.mockReset();
 
     const { validateEnv } = jest.requireMock('@/lib/env') as {
       validateEnv: jest.Mock;
@@ -487,29 +482,39 @@ describe('useAppInitialize', () => {
 describe('waitForInitialAuthUser', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFirebaseAuth.currentUser = null;
-    mockFirebaseAuth.onAuthStateChanged.mockReset();
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('waits for authStateReady before resolving a restored user', async () => {
+  it('waits for onAuthStateChange before resolving a restored user', async () => {
     jest.useFakeTimers();
 
     const restoredUser = {
-      uid: 'restored-user',
+      id: 'restored-user',
     };
 
-    mockFirebaseAuth.authStateReady.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            mockFirebaseAuth.currentUser = restoredUser;
-            resolve();
-          }, 4000);
-        })
+    const { supabase } = jest.requireMock('@/lib/supabase') as {
+      supabase: {
+        auth: {
+          getSession: jest.Mock;
+          onAuthStateChange: jest.Mock;
+        };
+      };
+    };
+
+    // getSession returns no session initially
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+
+    // onAuthStateChange fires with a session after a delay
+    supabase.auth.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
+        setTimeout(() => {
+          callback('SIGNED_IN', { user: restoredUser });
+        }, 4000);
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      }
     );
 
     const resolutionPromise = waitForInitialAuthUser(5000);

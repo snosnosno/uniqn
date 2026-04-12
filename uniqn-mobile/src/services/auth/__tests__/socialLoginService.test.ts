@@ -36,6 +36,17 @@ const mockAuthUser = {
 
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
+  Appearance: { getColorScheme: jest.fn(() => 'light') },
+}));
+
+jest.mock('expo-crypto', () => ({
+  getRandomValues: jest.fn((arr: Uint8Array) => arr),
+  randomUUID: jest.fn(() => 'mock-uuid'),
+}));
+
+jest.mock('react-native-css-interop', () => ({
+  cssInterop: jest.fn(),
+  remapProps: jest.fn(),
 }));
 
 jest.mock('expo-apple-authentication', () => ({

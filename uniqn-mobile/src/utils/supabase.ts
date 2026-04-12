@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import {
   AppError,
+  BusinessError,
   NetworkError,
   PermissionError,
   AuthError as AppAuthError,
@@ -344,14 +345,51 @@ export async function batchUpdate<T extends Record<string, unknown>>(
     )
   );
 
-  const firstError = results.find((r) => r.error);
-  if (firstError?.error) {
-    handleSupabaseError(firstError.error, { operation: 'batchUpdate', table });
+  const errors = results
+    .map((r, i) => (r.error ? { id: items[i].id, error: r.error } : null))
+    .filter(Boolean);
+
+  if (errors.length > 0) {
+    const firstError = errors[0]!;
+    logger.warn('batchUpdate 부분 실패', {
+      table,
+      totalItems: items.length,
+      failedCount: errors.length,
+      failedIds: errors.map((e) => e!.id),
+    });
+    handleSupabaseError(firstError.error, {
+      operation: `batchUpdate (${errors.length}/${items.length} failed)`,
+      table,
+    });
   }
 }
 
 // ============================================================================
-// 5. Realtime Subscription Helper
+// 5. Update Assertion Helper
+// ============================================================================
+
+/**
+ * Supabase update 결과에서 실제 변경된 행 수 검증
+ *
+ * @description PostgREST는 조건부 update가 0 rows를 매칭해도 error: null을 반환.
+ *              이 함수로 실제 변경 여부를 확인하여 silent no-op을 방지한다.
+ * @throws BusinessError 변경된 행이 없을 때
+ */
+export function assertUpdated(
+  data: unknown[] | null,
+  context: { operation: string; table: string; id?: string }
+): void {
+  if (!data || data.length === 0) {
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      message: `${context.operation}: 변경된 행 없음 (이미 처리되었거나 조건 불일치)`,
+      userMessage: '이미 처리된 요청이거나 상태가 변경되었습니다. 새로고침 후 다시 시도해 주세요.',
+      metadata: { table: context.table, id: context.id },
+    });
+  }
+}
+
+// ============================================================================
+// 6. Realtime Subscription Helper
 // ============================================================================
 
 /**
@@ -439,7 +477,10 @@ export function createRealtimeSubscription(
 export function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(obj)) {
-    const snakeKey = key.replace(/[A-Z]/g, (ch) => `_${ch.toLowerCase()}`);
+    const snakeKey = key
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+      .replace(/([a-z\d])([A-Z])/g, '$1_$2')
+      .toLowerCase();
     result[snakeKey] = obj[key];
   }
   return result;
@@ -459,10 +500,22 @@ export function toSnakeCase(obj: Record<string, unknown>): Record<string, unknow
  * // → { userId: '1', createdAt: '2026-01-01' }
  * ```
  */
+const KNOWN_ACRONYMS: Record<string, string> = {
+  Url: 'URL',
+  Urls: 'URLs',
+};
+
 export function toCamelCase<T>(obj: Record<string, unknown>): T {
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(obj)) {
-    const camelKey = key.replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
+    let camelKey = key.replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
+    // Restore known acronyms at end of key (e.g., photoUrl → photoURL)
+    for (const [suffix, replacement] of Object.entries(KNOWN_ACRONYMS)) {
+      if (camelKey.endsWith(suffix) && camelKey !== suffix.toLowerCase()) {
+        camelKey = camelKey.slice(0, -suffix.length) + replacement;
+        break;
+      }
+    }
     result[camelKey] = obj[key];
   }
   return result as T;

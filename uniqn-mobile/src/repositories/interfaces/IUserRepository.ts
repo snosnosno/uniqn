@@ -73,7 +73,7 @@ export interface EmployerRegistrationInput {
  * User Repository 인터페이스
  *
  * 구현체:
- * - FirebaseUserRepository (프로덕션)
+ * - SupabaseUserRepository (프로덕션)
  * - MockUserRepository (테스트)
  */
 export interface IUserRepository {
@@ -155,7 +155,7 @@ export interface IUserRepository {
   // ==========================================================================
 
   /**
-   * 고아 계정 마킹 (삭제 실패 시 Firestore에 기록)
+   * 고아 계정 마킹 (삭제 실패 시 DB에 기록)
    *
    * @description Cloud Function Scheduler가 주기적으로 정리
    * @param uid - 사용자 ID

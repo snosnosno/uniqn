@@ -182,8 +182,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 목록 조회', { filters, page, pageSize });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase.from(TABLES.USERS).select(USER_COLUMNS, { count: 'exact' });
+      let query = supabase.from(TABLES.USERS).select(USER_COLUMNS, { count: 'exact' });
 
       if (filters.role && filters.role !== 'all') {
         query = query.eq('role', filters.role);

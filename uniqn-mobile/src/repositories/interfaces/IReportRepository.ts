@@ -5,7 +5,7 @@
  * @version 1.0.0
  *
  * 이 인터페이스의 목적:
- * 1. Firebase 직접 의존 제거 → 테스트 용이성
+ * 1. DB 직접 의존 제거 → 테스트 용이성
  * 2. 트랜잭션 로직 캡슐화 → 중복 신고 방지 (Race Condition 해결)
  * 3. 중복 쿼리 패턴 통합 → 코드 재사용성
  */
@@ -84,7 +84,7 @@ export interface ReportCounts {
  * Report Repository 인터페이스
  *
  * 구현체:
- * - FirebaseReportRepository (프로덕션)
+ * - SupabaseReportRepository (프로덕션)
  * - MockReportRepository (테스트)
  */
 export interface IReportRepository {

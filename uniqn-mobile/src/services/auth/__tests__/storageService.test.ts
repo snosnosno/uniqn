@@ -55,6 +55,13 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
+/**
+ * Helper: Supabase getPublicUrl returns { data: { publicUrl } } synchronously
+ */
+function mockPublicUrl(url: string) {
+  return { data: { publicUrl: url } };
+}
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -104,13 +111,12 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024 * 1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue(downloadURL);
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl(downloadURL));
 
       const result = await uploadProfileImage(userId, imageUri);
 
       expect(result.downloadURL).toBe(downloadURL);
-      expect(result.path).toContain('profile-images/');
       expect(result.path).toContain(userId);
       expect(mockManipulateAsync).toHaveBeenCalledWith(
         imageUri,
@@ -149,18 +155,7 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockRejectedValue(new Error('Upload failed'));
-
-      await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
-    });
-
-    it('다운로드 URL 가져오기 실패 시 에러를 던져야 함', async () => {
-      mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        blob: () => Promise.resolve(createMockBlob(1024)),
-      });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockRejectedValue(new Error('GetURL failed'));
+      mockUploadBytes.mockResolvedValue({ error: { message: 'Upload failed' } });
 
       await expect(uploadProfileImage(userId, imageUri)).rejects.toThrow();
     });
@@ -171,7 +166,7 @@ describe('StorageService', () => {
       const imageUrl =
         'https://firebasestorage.googleapis.com/v0/b/bucket/o/profile-images%2Fuser-123%2F123.jpg?token=abc';
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteProfileImage(imageUrl);
 
@@ -181,15 +176,15 @@ describe('StorageService', () => {
     it('직접 경로를 사용하여 삭제해야 함', async () => {
       const imagePath = 'profile-images/user-123/123.jpg';
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteProfileImage(imagePath);
 
       expect(mockDeleteObject).toHaveBeenCalled();
     });
 
-    it('profile-images로 시작하지 않는 경로는 삭제하지 않아야 함', async () => {
-      const invalidPath = 'invalid/path/image.jpg';
+    it('http URL이지만 스토리지 경로를 추출할 수 없는 경우 삭제하지 않아야 함', async () => {
+      const invalidPath = 'https://unknown-domain.com/image.jpg';
 
       await deleteProfileImage(invalidPath);
 
@@ -198,10 +193,8 @@ describe('StorageService', () => {
 
     it('이미 삭제된 이미지는 무시해야 함', async () => {
       const imageUrl = 'profile-images/user-123/123.jpg';
-      const error = new Error('Not found') as Error & { code?: string };
-      error.code = 'storage/object-not-found';
 
-      mockDeleteObject.mockRejectedValue(error);
+      mockDeleteObject.mockResolvedValue({ error: { message: 'Not found' } });
 
       await expect(deleteProfileImage(imageUrl)).resolves.not.toThrow();
     });
@@ -209,7 +202,7 @@ describe('StorageService', () => {
     it('삭제 실패 시 무시하고 계속 진행해야 함', async () => {
       const imageUrl = 'profile-images/user-123/123.jpg';
 
-      mockDeleteObject.mockRejectedValue(new Error('Delete failed'));
+      mockDeleteObject.mockResolvedValue({ error: { message: 'Delete failed' } });
 
       await expect(deleteProfileImage(imageUrl)).resolves.not.toThrow();
     });
@@ -221,13 +214,13 @@ describe('StorageService', () => {
     const oldImageUrl = 'profile-images/user-123/old.jpg';
 
     it('이전 이미지를 삭제하고 새 이미지를 업로드해야 함', async () => {
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
       mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue('https://new-url.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://new-url.jpg'));
 
       const result = await replaceProfileImage(userId, newImageUri, oldImageUrl);
 
@@ -241,8 +234,8 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue('https://new-url.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://new-url.jpg'));
 
       const result = await replaceProfileImage(userId, newImageUri, null);
 
@@ -267,13 +260,12 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(2 * 1024 * 1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue(downloadURL);
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl(downloadURL));
 
       const result = await uploadAnnouncementImage(userId, imageUri);
 
       expect(result.downloadURL).toBe(downloadURL);
-      expect(result.path).toContain('announcements/');
       expect(result.path).toContain(userId);
       expect(mockManipulateAsync).toHaveBeenCalledWith(imageUri, [{ resize: { width: 1200 } }], {
         compress: 0.8,
@@ -288,16 +280,14 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue('https://url.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
       await uploadAnnouncementImage(userId, imageUri, onProgress);
 
       expect(onProgress).toHaveBeenCalledWith(0);
-      expect(onProgress).toHaveBeenCalledWith(20);
       expect(onProgress).toHaveBeenCalledWith(40);
       expect(onProgress).toHaveBeenCalledWith(50);
-      expect(onProgress).toHaveBeenCalledWith(80);
       expect(onProgress).toHaveBeenCalledWith(100);
     });
 
@@ -315,15 +305,15 @@ describe('StorageService', () => {
     it('공지사항 이미지를 성공적으로 삭제해야 함', async () => {
       const imageUrl = 'announcements/admin-123/image.jpg';
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteAnnouncementImage(imageUrl);
 
       expect(mockDeleteObject).toHaveBeenCalled();
     });
 
-    it('announcements로 시작하지 않는 경로는 삭제하지 않아야 함', async () => {
-      const invalidPath = 'profile-images/user/image.jpg';
+    it('http URL이지만 스토리지 경로를 추출할 수 없는 경우 삭제하지 않아야 함', async () => {
+      const invalidPath = 'https://unknown-domain.com/image.jpg';
 
       await deleteAnnouncementImage(invalidPath);
 
@@ -334,7 +324,7 @@ describe('StorageService', () => {
       const imageUrl =
         'https://firebasestorage.googleapis.com/v0/b/bucket/o/announcements%2Fadmin%2Fimage.jpg?token=xyz';
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteAnnouncementImage(imageUrl);
 
@@ -343,10 +333,8 @@ describe('StorageService', () => {
 
     it('이미 삭제된 이미지는 무시해야 함', async () => {
       const imageUrl = 'announcements/admin-123/image.jpg';
-      const error = new Error('Not found') as Error & { code?: string };
-      error.code = 'storage/object-not-found';
 
-      mockDeleteObject.mockRejectedValue(error);
+      mockDeleteObject.mockResolvedValue({ error: { message: 'Not found' } });
 
       await expect(deleteAnnouncementImage(imageUrl)).resolves.not.toThrow();
     });
@@ -360,13 +348,13 @@ describe('StorageService', () => {
     it('이전 이미지를 삭제하고 새 이미지를 업로드해야 함', async () => {
       const newUrl = 'https://new-url.jpg';
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
       mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue(newUrl);
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl(newUrl));
 
       const result = await replaceAnnouncementImage(userId, newImageUri, oldImageUrl);
 
@@ -377,13 +365,13 @@ describe('StorageService', () => {
     it('진행률 콜백을 전달해야 함', async () => {
       const onProgress = jest.fn();
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
       mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue('https://url.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
       await replaceAnnouncementImage(userId, newImageUri, oldImageUrl, onProgress);
 
@@ -396,34 +384,31 @@ describe('StorageService', () => {
     const imageUri = 'file:///board.jpg';
 
     it('stores board images under the boards path', async () => {
-      const downloadURL = 'https://storage.example.com/board.jpg';
-
       mockManipulateAsync.mockResolvedValue({ uri: 'file:///resized.jpg' });
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(2 * 1024 * 1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue(downloadURL);
+      mockUploadBytes.mockResolvedValue({ error: null });
 
       const result = await uploadBoardImage(userId, imageUri);
 
-      expect(result.downloadURL).toBe(downloadURL);
-      expect(result.path).toContain('boards/');
+      // boards bucket uses createSignedUrl (private), URL comes from the mock
+      expect(result.downloadURL).toBe('https://test.com/signed');
       expect(result.path).toContain(userId);
     });
   });
 
   describe('deleteBoardImage', () => {
     it('deletes only board storage paths', async () => {
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteBoardImage('boards/staff-123/image.jpg');
 
       expect(mockDeleteObject).toHaveBeenCalled();
     });
 
-    it('ignores non-board image paths', async () => {
-      await deleteBoardImage('announcements/admin-123/image.jpg');
+    it('ignores non-board http URLs', async () => {
+      await deleteBoardImage('https://unknown-domain.com/image.jpg');
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
     });
@@ -442,11 +427,11 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
+      mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL
-        .mockResolvedValueOnce('https://url1.jpg')
-        .mockResolvedValueOnce('https://url2.jpg')
-        .mockResolvedValueOnce('https://url3.jpg');
+        .mockReturnValueOnce(mockPublicUrl('https://url1.jpg'))
+        .mockReturnValueOnce(mockPublicUrl('https://url2.jpg'))
+        .mockReturnValueOnce(mockPublicUrl('https://url3.jpg'));
 
       const results = await uploadMultipleAnnouncementImages(userId, uris);
 
@@ -466,8 +451,8 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL.mockResolvedValue('https://url.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      mockGetDownloadURL.mockReturnValue(mockPublicUrl('https://url.jpg'));
 
       await uploadMultipleAnnouncementImages(userId, uris, onProgress);
 
@@ -485,10 +470,10 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
+      mockUploadBytes.mockResolvedValue({ error: null });
       mockGetDownloadURL
-        .mockResolvedValueOnce('https://url1.jpg')
-        .mockResolvedValueOnce('https://url3.jpg');
+        .mockReturnValueOnce(mockPublicUrl('https://url1.jpg'))
+        .mockReturnValueOnce(mockPublicUrl('https://url3.jpg'));
 
       const results = await uploadMultipleAnnouncementImages(userId, uris);
 
@@ -513,15 +498,13 @@ describe('StorageService', () => {
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
       });
-      mockUploadBytes.mockResolvedValue({});
-      mockGetDownloadURL
-        .mockResolvedValueOnce('https://board-1.jpg')
-        .mockResolvedValueOnce('https://board-2.jpg');
+      mockUploadBytes.mockResolvedValue({ error: null });
+      // boards use createSignedUrl (private), already mocked globally
 
       const results = await uploadMultipleBoardImages(userId, uris);
 
       expect(results).toHaveLength(2);
-      expect(results[0].storagePath).toContain('boards/');
+      expect(results[0].storagePath).toContain(userId);
       expect(results[0].order).toBe(0);
       expect(results[1].order).toBe(1);
     });
@@ -550,7 +533,7 @@ describe('StorageService', () => {
         },
       ];
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteMultipleAnnouncementImages(images);
 
@@ -574,8 +557,8 @@ describe('StorageService', () => {
       ];
 
       mockDeleteObject
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('Delete failed'));
+        .mockResolvedValueOnce({ error: null })
+        .mockResolvedValueOnce({ error: { message: 'Delete failed' } });
 
       await expect(deleteMultipleAnnouncementImages(images)).resolves.not.toThrow();
     });
@@ -595,11 +578,10 @@ describe('StorageService', () => {
         },
       ];
 
-      mockDeleteObject.mockResolvedValue(undefined);
+      mockDeleteObject.mockResolvedValue({ error: null });
 
       await deleteMultipleBoardImages(images);
 
-      expect(mockRef).toHaveBeenCalledWith(expect.anything(), 'boards/staff-1/1.jpg');
       expect(mockDeleteObject).toHaveBeenCalledTimes(1);
     });
 

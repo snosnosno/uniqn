@@ -84,7 +84,7 @@ export interface BulkSettlementResultDTO {
  * @description 정산 관련 데이터 접근 추상화
  *
  * 트랜잭션 보장:
- * - 모든 메서드는 Firestore 트랜잭션 내에서 실행
+ * - 모든 메서드는 DB 트랜잭션 내에서 실행
  * - 소유권 검증 + 상태 확인 + 업데이트가 원자적으로 처리됨
  */
 export interface ISettlementRepository {
@@ -129,7 +129,7 @@ export interface ISettlementRepository {
    * 일괄 정산 처리
    *
    * @description 여러 근무 기록 한번에 정산 처리 (배치 트랜잭션)
-   * - Firestore 배치 제한 (500개) 자동 분할
+   * - DB 배치 처리
    * - 각 항목별 성공/실패 결과 반환
    * - 정산 금액 자동 계산 (SettlementCalculator 사용)
    *

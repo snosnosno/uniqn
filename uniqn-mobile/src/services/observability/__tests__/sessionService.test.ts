@@ -33,13 +33,13 @@ const mockAuthStoreState = {
   status: 'authenticated',
   bootstrapSource: 'server' as 'none' | 'cache' | 'server',
   suppressedSessionUserId: null as string | null,
+  user: { uid: 'test-user-id', email: 'test@example.com' } as Record<string, unknown> | null,
   reset: jest.fn(),
   checkAuthState: jest.fn().mockResolvedValue(undefined),
 };
 
-jest.mock('@/lib/authBridge', () => ({
-  syncSignOut: jest.fn().mockResolvedValue(undefined),
-}));
+const mockRefreshSession = jest.fn();
+const mockGetSession = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -47,6 +47,8 @@ jest.mock('@/lib/supabase', () => ({
       getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       signOut: jest.fn().mockResolvedValue({ error: null }),
       onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+      refreshSession: (...args: unknown[]) => mockRefreshSession(...args),
+      getSession: (...args: unknown[]) => mockGetSession(...args),
     },
   },
 }));
@@ -136,9 +138,10 @@ const { authStorage, deleteItem, getItem, setItem } = jest.requireMock('@/lib/se
   getItem: jest.Mock;
   setItem: jest.Mock;
 };
-const { syncSignOut } = jest.requireMock('@/lib/authBridge') as {
-  syncSignOut: jest.Mock;
+const { supabase: mockSupabase } = jest.requireMock('@/lib/supabase') as {
+  supabase: { auth: { signOut: jest.Mock; onAuthStateChange: jest.Mock } };
 };
+const syncSignOut = mockSupabase.auth.signOut;
 const { router } = jest.requireMock('expo-router') as {
   router: { replace: jest.Mock };
 };
@@ -185,6 +188,14 @@ describe('sessionService', () => {
     mockAuthStoreState.checkAuthState.mockResolvedValue(undefined);
     mockToastAddToast.mockReset();
     mockTokenExpiry(30);
+    mockRefreshSession.mockResolvedValue({
+      data: { session: { access_token: 'new-token' } },
+      error: null,
+    });
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'test-token' } },
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -194,17 +205,16 @@ describe('sessionService', () => {
 
   it('registers listeners on initialize and cleans them up', () => {
     const remove = jest.fn();
-    const unsubscribe = jest.fn();
     jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove });
-    mockAuth.onAuthStateChanged.mockReturnValue(unsubscribe);
 
     sessionService.initialize();
-    sessionService.cleanup();
 
     expect(AppState.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
-    expect(mockAuth.onAuthStateChanged).toHaveBeenCalledWith(expect.any(Function));
+    expect(mockSupabase.auth.onAuthStateChange).toHaveBeenCalledWith(expect.any(Function));
+
+    sessionService.cleanup();
+
     expect(remove).toHaveBeenCalled();
-    expect(unsubscribe).toHaveBeenCalled();
   });
 
   it('keeps suppressed auto-login sessions inactive', async () => {
@@ -436,13 +446,16 @@ describe('sessionService', () => {
   it('refreshes tokens successfully', async () => {
     const token = await refreshToken();
 
-    expect(token).toBe('test-token');
-    expect(mockAuth.currentUser?.getIdToken).toHaveBeenCalledWith(true);
-    expect(authStorage.setAuthToken).toHaveBeenCalledWith('test-token');
+    expect(token).toBe('new-token');
+    expect(mockRefreshSession).toHaveBeenCalled();
+    expect(authStorage.setAuthToken).toHaveBeenCalledWith('new-token');
   });
 
   it('expires the session when token refresh fails', async () => {
-    mockAuth.currentUser?.getIdToken.mockRejectedValue(new Error('refresh failed'));
+    mockRefreshSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'refresh failed' },
+    });
 
     const token = await refreshToken();
 
@@ -451,14 +464,11 @@ describe('sessionService', () => {
     expect(router.replace).toHaveBeenCalledWith('/(auth)/login');
   });
 
-  it('returns a refreshed token when the current token is near expiry', async () => {
-    mockTokenExpiry(3);
-    mockAuth.currentUser?.getIdToken.mockResolvedValue('new-token');
-
+  it('returns the current session token when available', async () => {
     const token = await getValidToken();
 
-    expect(token).toBe('new-token');
-    expect(mockAuth.currentUser?.getIdToken).toHaveBeenCalledWith(true);
+    expect(token).toBe('test-token');
+    expect(mockGetSession).toHaveBeenCalled();
   });
 
   it('tracks login attempts and resets them', async () => {

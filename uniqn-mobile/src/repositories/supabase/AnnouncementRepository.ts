@@ -112,8 +112,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
       const { pageSize = 20, lastDoc } = options;
 
       // Supabase에서는 다중 정렬을 지원하므로 isPinned → priority → publishedAt 순
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = supabase
+      let query = supabase
         .from(TABLE)
         .select(TABLE_COLUMNS)
         .eq('status', 'published')

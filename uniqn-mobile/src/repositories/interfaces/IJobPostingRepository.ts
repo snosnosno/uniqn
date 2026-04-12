@@ -81,7 +81,7 @@ export interface JobPostingSubscriptionCallbacks {
  * JobPosting Repository 인터페이스
  *
  * 구현체:
- * - FirebaseJobPostingRepository (프로덕션)
+ * - SupabaseJobPostingRepository (프로덕션)
  * - MockJobPostingRepository (테스트)
  */
 export interface IJobPostingRepository {

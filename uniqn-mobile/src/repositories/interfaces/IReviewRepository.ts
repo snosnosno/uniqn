@@ -5,7 +5,7 @@
  * @version 1.0.0
  *
  * 이 인터페이스의 목적:
- * 1. Firebase 직접 의존 제거 → 테스트 용이성
+ * 1. DB 직접 의존 제거 → 테스트 용이성
  * 2. 트랜잭션 로직 캡슐화 → 중복 평가 방지 + 버블 점수 원자적 업데이트
  * 3. 결정적 문서 ID 활용 → getDoc 직접 접근 (인덱스 불필요)
  */
@@ -48,7 +48,7 @@ export interface PaginatedReviews {
  * Review Repository 인터페이스
  *
  * 구현체:
- * - FirebaseReviewRepository (프로덕션)
+ * - SupabaseReviewRepository (프로덕션)
  * - MockReviewRepository (테스트)
  */
 export interface IReviewRepository {

@@ -50,6 +50,8 @@ const PAGE_SIZE = 20;
 const NOTIFICATION_REALTIME_LIMIT = 50;
 const NOTIFICATION_COLUMNS =
   'id,body,category,created_at,data,is_read,link,priority,read_at,recipient_id,title,type' as const;
+const NOTIFICATION_SETTINGS_COLUMNS =
+  'id,user_id,enabled,push_enabled,categories,quiet_hours,updated_at' as const;
 
 // ============================================================================
 // Helpers
@@ -435,7 +437,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     try {
       const { data, error } = await supabase
         .from(TABLES.NOTIFICATION_SETTINGS)
-        .select(NOTIFICATION_COLUMNS)
+        .select(NOTIFICATION_SETTINGS_COLUMNS)
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -612,6 +614,9 @@ export class SupabaseNotificationRepository implements INotificationRepository {
           if (payload.eventType === 'INSERT') {
             const newNotification = toNotification(payload.new as Record<string, unknown>);
             currentNotifications = [newNotification, ...currentNotifications];
+            if (currentNotifications.length > NOTIFICATION_REALTIME_LIMIT) {
+              currentNotifications = currentNotifications.slice(0, NOTIFICATION_REALTIME_LIMIT);
+            }
             onNotifications(currentNotifications);
           } else if (payload.eventType === 'UPDATE') {
             const updated = toNotification(payload.new as Record<string, unknown>);

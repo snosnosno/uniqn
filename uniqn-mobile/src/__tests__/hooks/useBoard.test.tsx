@@ -68,9 +68,12 @@ jest.mock('@/repositories', () => ({
   },
 }));
 
+const useAuthStoreFn = (selector?: (state: typeof mockAuthState) => unknown) =>
+  typeof selector === 'function' ? selector(mockAuthState) : mockAuthState;
+useAuthStoreFn.getState = () => mockAuthState;
+
 jest.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector?: (state: typeof mockAuthState) => unknown) =>
-    typeof selector === 'function' ? selector(mockAuthState) : mockAuthState,
+  useAuthStore: useAuthStoreFn,
   selectNeedsServerReconcile: (state: typeof mockAuthState) => state.needsServerReconcile,
   selectBootstrapSource: (state: typeof mockAuthState) => state.bootstrapSource,
 }));

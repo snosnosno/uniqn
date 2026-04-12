@@ -21,6 +21,11 @@ jest.mock('../../settlement/WorkTimeEditor', () => ({
   WorkTimeEditor: () => null,
 }));
 
+jest.mock('@/utils/date', () => ({
+  ...jest.requireActual('@/utils/date'),
+  getTodayString: () => '2026-04-01',
+}));
+
 const { useConfirmedStaff } = jest.requireMock('@/hooks/useConfirmedStaff') as {
   useConfirmedStaff: jest.Mock;
 };

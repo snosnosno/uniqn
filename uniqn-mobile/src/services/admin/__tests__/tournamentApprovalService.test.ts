@@ -111,28 +111,28 @@ describe('TournamentApprovalService', () => {
       });
     });
 
-    it('실패: 권한 없음 (unauthenticated)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'unauthenticated',
-        message: 'Unauthenticated',
+    it('실패: 권한 없음 (401)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Unauthenticated', context: { status: 401 } },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow('로그인이 필요합니다');
     });
 
-    it('실패: 관리자 권한 없음 (permission-denied)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'permission-denied',
-        message: 'Permission denied',
+    it('실패: 관리자 권한 없음 (403)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Permission denied', context: { status: 403 } },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow('권한이 없습니다');
     });
 
-    it('실패: 공고를 찾을 수 없음 (not-found)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'not-found',
-        message: 'Document not found',
+    it('실패: 공고를 찾을 수 없음 (404)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Document not found', context: { status: 404 } },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow(
@@ -140,19 +140,19 @@ describe('TournamentApprovalService', () => {
       );
     });
 
-    it('실패: 이미 처리된 공고 (failed-precondition)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'failed-precondition',
-        message: 'Already processed',
+    it('실패: 이미 처리된 공고 (409)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Already processed', context: { status: 409 } },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow('Already processed');
     });
 
-    it('실패: 잘못된 요청 (invalid-argument)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'invalid-argument',
-        message: 'Invalid posting ID',
+    it('실패: 잘못된 요청 (422)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Invalid posting ID', context: { status: 422 } },
       });
 
       await expect(approveTournamentPosting({ postingId })).rejects.toThrow();
@@ -208,9 +208,9 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: 권한 없음', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'permission-denied',
-        message: 'Permission denied',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Permission denied', context: { status: 403 } },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
@@ -219,9 +219,9 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: 공고를 찾을 수 없음', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'not-found',
-        message: 'Posting not found',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Posting not found', context: { status: 404 } },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
@@ -230,9 +230,9 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: 이미 처리된 공고', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'failed-precondition',
-        message: 'Already approved',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Already approved', context: { status: 409 } },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
@@ -240,10 +240,10 @@ describe('TournamentApprovalService', () => {
       );
     });
 
-    it('실패: 잘못된 거부 사유 (invalid-argument)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'invalid-argument',
-        message: 'Reason too short',
+    it('실패: 잘못된 거부 사유 (422)', async () => {
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Reason too short', context: { status: 422 } },
       });
 
       await expect(rejectTournamentPosting({ postingId, reason: 'too short' })).rejects.toThrow();
@@ -274,27 +274,27 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: 로그인 필요', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'unauthenticated',
-        message: 'Unauthenticated',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Unauthenticated', context: { status: 401 } },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow('로그인이 필요합니다');
     });
 
     it('실패: 권한 없음 (공고 소유자가 아님)', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'permission-denied',
-        message: 'Not owner',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Not owner', context: { status: 403 } },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow('권한이 없습니다');
     });
 
     it('실패: 공고를 찾을 수 없음', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'not-found',
-        message: 'Posting not found',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Posting not found', context: { status: 404 } },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
@@ -303,9 +303,9 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: rejected 상태가 아님', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'failed-precondition',
-        message: 'Not in rejected status',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Not in rejected status', context: { status: 409 } },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
@@ -314,9 +314,9 @@ describe('TournamentApprovalService', () => {
     });
 
     it('실패: 이미 재제출됨', async () => {
-      mockHttpsCallable.mockRejectedValue({
-        code: 'failed-precondition',
-        message: 'Already resubmitted',
+      mockHttpsCallable.mockResolvedValue({
+        data: null,
+        error: { message: 'Already resubmitted', context: { status: 409 } },
       });
 
       await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow();

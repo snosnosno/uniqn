@@ -8,7 +8,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
-import { handleSupabaseError } from '@/utils/supabase';
+import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
 import {
   createHistoryEntry,
   findActiveConfirmation,
@@ -107,7 +107,7 @@ export async function executeConfirmWithHistory(
     }
 
     // 지원서 업데이트
-    const { error: appError } = await supabase
+    const { data: updatedApp, error: appError } = await supabase
       .from(TABLES.APPLICATIONS)
       .update({
         status: STATUS.APPLICATION.CONFIRMED,
@@ -121,10 +121,16 @@ export async function executeConfirmWithHistory(
         updated_at: now,
       })
       .eq('id', applicationId)
-      .eq('status', STATUS.APPLICATION.APPLIED);
+      .eq('status', STATUS.APPLICATION.APPLIED)
+      .select('id');
 
     if (appError)
       handleSupabaseError(appError, { operation: '지원 확정', table: TABLES.APPLICATIONS });
+    assertUpdated(updatedApp, {
+      operation: '지원 확정',
+      table: TABLES.APPLICATIONS,
+      id: applicationId,
+    });
 
     // 공고 정원 업데이트
     await updateJobPostingCapacity(

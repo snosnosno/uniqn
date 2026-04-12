@@ -5,7 +5,7 @@
  * @version 1.0.0
  *
  * 이 인터페이스의 목적:
- * 1. Firebase 직접 의존 제거 → 테스트 용이성
+ * 1. DB 직접 의존 제거 → 테스트 용이성
  * 2. 문의 CRUD 작업 캡슐화
  * 3. 향후 백엔드 교체 가능성 확보
  */
@@ -53,7 +53,7 @@ export interface CreateInquiryContext {
  * Inquiry Repository 인터페이스
  *
  * 구현체:
- * - FirebaseInquiryRepository (프로덕션)
+ * - SupabaseInquiryRepository (프로덕션)
  * - MockInquiryRepository (테스트)
  */
 export interface IInquiryRepository {

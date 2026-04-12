@@ -5,9 +5,9 @@
  * @version 1.0.0
  *
  * 동작 방식:
- * 1. 설정에서 생체 인증 활성화 시 현재 Firebase 세션 정보 저장
+ * 1. 설정에서 생체 인증 활성화 시 현재 Supabase 세션 정보 저장
  * 2. 로그인 화면에서 생체 인증 성공 시 저장된 세션으로 자동 로그인
- * 3. Firebase 세션이 만료된 경우 비밀번호 로그인 요청
+ * 3. Supabase 세션이 만료된 경우 비밀번호 로그인 요청
  */
 
 import { useState, useCallback } from 'react';
@@ -233,7 +233,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
   /**
    * 생체 인증으로 로그인
    *
-   * Firebase Auth 세션이 유효한 경우에만 동작합니다.
+   * Supabase Auth 세션이 유효한 경우에만 동작합니다.
    * 세션이 만료된 경우 비밀번호 로그인을 요청합니다.
    */
   const loginWithBiometric = useCallback(async (): Promise<boolean> => {
@@ -307,7 +307,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         return false;
       }
 
-      // 6. Firestore에서 최신 프로필 로드 (필수 필드 검증 포함)
+      // 6. DB에서 최신 프로필 로드 (필수 필드 검증 포함)
       const profile = await getUserProfile(currentUser.id);
       if (profile && profile.uid && profile.role) {
         useAuthStore.getState().setUser(currentUser);
