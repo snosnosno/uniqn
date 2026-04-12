@@ -178,7 +178,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                         isValidReason
                           ? 'text-success-600 dark:text-success-400'
                           : 'text-secondary-500 dark:text-secondary-400'
-                      } font-sans`}
+                      }`}
                     >
                       {trimmedReason.length}/{MIN_REASON_LENGTH}자 이상
                     </Text>

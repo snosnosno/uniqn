@@ -117,7 +117,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
               contentDisabled
                 ? 'italic text-secondary-400 dark:text-secondary-500'
                 : 'text-secondary-700 dark:text-secondary-300'
-            } font-sans`}
+            }`}
           >
             {comment.body}
           </Text>

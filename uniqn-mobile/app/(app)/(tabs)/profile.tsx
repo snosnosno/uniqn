@@ -57,7 +57,7 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
             danger
               ? 'text-error-600 dark:text-error-400'
               : 'text-secondary-900 dark:text-secondary-100'
-          } font-sans`}
+          }`}
         >
           {label}
         </Text>

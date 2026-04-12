@@ -37,7 +37,7 @@ function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
           isLink
             ? 'text-primary-600 dark:text-primary-300'
             : 'text-secondary-900 dark:text-secondary-100'
-        } font-sans`}
+        }`}
       >
         {value}
       </Text>
