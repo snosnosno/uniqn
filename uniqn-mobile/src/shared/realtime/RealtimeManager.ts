@@ -102,7 +102,10 @@ export class RealtimeManager {
 
       try {
         const subscriberUnsub = subscribeFn();
-        existing.subscriberUnsubscribes.push(subscriberUnsub);
+        this.subscriptions.set(key, {
+          ...existing,
+          subscriberUnsubscribes: [...existing.subscriberUnsubscribes, subscriberUnsub],
+        });
         return () => this.cleanupSubscriberEntry(key, subscriberUnsub);
       } catch (error) {
         existing.refCount--;
@@ -143,10 +146,11 @@ export class RealtimeManager {
   private static cleanupSubscriberEntry(key: string, subscriberUnsub: () => void): void {
     const entry = this.subscriptions.get(key);
     if (entry) {
-      const idx = entry.subscriberUnsubscribes.indexOf(subscriberUnsub);
-      if (idx !== -1) {
-        entry.subscriberUnsubscribes.splice(idx, 1);
-      }
+      // Immutability: filter로 새 배열 생성 후 Map 값 교체
+      this.subscriptions.set(key, {
+        ...entry,
+        subscriberUnsubscribes: entry.subscriberUnsubscribes.filter((fn) => fn !== subscriberUnsub),
+      });
     }
     try {
       subscriberUnsub();

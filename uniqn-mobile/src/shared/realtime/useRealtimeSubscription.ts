@@ -315,7 +315,10 @@ export function useRealtimeSubscription<T>(
    */
   const reconnectAttemptRef = useRef(0);
   const subscribeRef = useRef(subscribe);
-  subscribeRef.current = subscribe;
+  // subscribeFnRef 등 다른 ref와 동일하게 useEffect로 갱신하여 concurrent mode 안전성 확보
+  useEffect(() => {
+    subscribeRef.current = subscribe;
+  });
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
