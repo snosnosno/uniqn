@@ -162,7 +162,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
               {req.passed ? (
                 <CheckIcon size={14} color="#22C55E" />
               ) : (
-                <XMarkIcon size={14} color="#9CA3AF" />
+                <XMarkIcon size={14} color="#A89C84" />
               )}
               <Text
                 className={`text-xs ${

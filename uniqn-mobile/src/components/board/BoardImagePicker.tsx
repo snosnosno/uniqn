@@ -126,9 +126,9 @@ export function BoardImagePicker({
             ) : (
               <View className="items-center px-2">
                 <View className="mb-2 rounded-sm bg-secondary-200 p-3 dark:bg-surface-elevated">
-                  <ImagesOutlineIcon size={20} color="#9CA3AF" />
+                  <ImagesOutlineIcon size={20} color="#A89C84" />
                 </View>
-                <AddIcon size={18} color="#6B7280" />
+                <AddIcon size={18} color="#9A9078" />
                 <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400">
                   추가
                 </Text>

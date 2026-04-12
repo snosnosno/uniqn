@@ -58,7 +58,7 @@ export function TemplateModal({
           value={templateName}
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
           className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-secondary-900 dark:text-white ${
             isTooShort
               ? 'border-error-400 dark:border-error-500'
@@ -81,7 +81,7 @@ export function TemplateModal({
           value={templateDescription}
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
           className="bg-secondary-50 dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-md px-4 py-3 text-secondary-900 dark:text-white"
           maxLength={100}
           editable={!isSaving}

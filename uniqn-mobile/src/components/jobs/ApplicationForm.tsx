@@ -289,7 +289,7 @@ export function ApplicationForm({
             value={message}
             onChangeText={setMessage}
             placeholder="간단한 자기소개나 경력을 입력해 주세요"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={4}
             maxLength={200}

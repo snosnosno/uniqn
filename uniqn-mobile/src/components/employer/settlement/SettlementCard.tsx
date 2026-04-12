@@ -162,7 +162,7 @@ export const SettlementCard = React.memo(function SettlementCard({
           accessibilityHint="정산 내역을 자세히 확인합니다"
           className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
         >
-          <ChevronRightIcon size={16} color="#6B7280" />
+          <ChevronRightIcon size={16} color="#9A9078" />
           <Text className="ml-1 text-sm font-medium text-secondary-600 dark:text-secondary-400">
             상세보기
           </Text>

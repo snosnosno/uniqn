@@ -82,9 +82,9 @@ export const SectionCard = memo(function SectionCard({
       {collapsible && (
         <View className="p-1">
           {collapsed ? (
-            <ChevronDownIcon size={20} color="#9CA3AF" />
+            <ChevronDownIcon size={20} color="#A89C84" />
           ) : (
-            <ChevronUpIcon size={20} color="#9CA3AF" />
+            <ChevronUpIcon size={20} color="#A89C84" />
           )}
         </View>
       )}

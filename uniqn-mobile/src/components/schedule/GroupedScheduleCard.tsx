@@ -138,7 +138,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         {group.location && (
           <View className="mb-2 flex-row items-center">
-            <MapIcon size={14} color="#6B7280" />
+            <MapIcon size={14} color="#9A9078" />
             <Text
               className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400"
               numberOfLines={1}
@@ -149,7 +149,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         )}
 
         <View className="mb-2 flex-row items-center">
-          <CalendarIcon size={14} color="#6B7280" />
+          <CalendarIcon size={14} color="#9A9078" />
           <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
             {dateDisplay}
           </Text>
@@ -157,7 +157,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         {group.timeSlot && (
           <View className="mb-2 flex-row items-center">
-            <ClockIcon size={14} color="#6B7280" />
+            <ClockIcon size={14} color="#9A9078" />
             <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
               {group.timeSlot}
             </Text>
@@ -166,7 +166,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         <View className="flex-row flex-wrap items-center">
           <View className="mr-3 flex-row items-center">
-            <BriefcaseIcon size={14} color="#6B7280" />
+            <BriefcaseIcon size={14} color="#9A9078" />
             <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
               {rolesDisplay}
             </Text>
@@ -174,7 +174,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
           {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
             <View className="mr-3 flex-row items-center">
-              <BanknotesIcon size={14} color="#6B7280" />
+              <BanknotesIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 {salaryDisplay}
               </Text>
@@ -183,7 +183,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
           {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
             <View className="flex-row items-center">
-              <UserIcon size={14} color="#9CA3AF" />
+              <UserIcon size={14} color="#A89C84" />
               <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
                 {ownerName}
               </Text>
@@ -201,9 +201,9 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
               날짜별 상세
             </Text>
             {isExpanded ? (
-              <ChevronUpIcon size={16} color="#6B7280" />
+              <ChevronUpIcon size={16} color="#9A9078" />
             ) : (
-              <ChevronDownIcon size={16} color="#6B7280" />
+              <ChevronDownIcon size={16} color="#9A9078" />
             )}
           </Pressable>
         )}

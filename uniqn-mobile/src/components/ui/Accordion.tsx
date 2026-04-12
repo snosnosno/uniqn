@@ -104,7 +104,7 @@ export function AccordionItem({
           className={`ml-2 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
           style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
         >
-          <ChevronDownIcon size={20} color="#9CA3AF" />
+          <ChevronDownIcon size={20} color="#A89C84" />
         </View>
       </Pressable>
 

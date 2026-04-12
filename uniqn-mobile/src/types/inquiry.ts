@@ -190,13 +190,13 @@ export const INQUIRY_STATUS_CONFIG: Record<
   },
   in_progress: {
     label: '처리중',
-    color: 'text-amber-700 dark:text-amber-300',
-    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    color: 'text-warning-700 dark:text-warning-300',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
   },
   closed: {
     label: '답변 완료',
-    color: 'text-green-700 dark:text-green-300',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    color: 'text-success-700 dark:text-success-300',
+    bgColor: 'bg-success-100 dark:bg-success-900/30',
   },
 };
 

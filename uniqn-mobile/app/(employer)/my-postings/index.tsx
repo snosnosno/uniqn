@@ -97,7 +97,7 @@ const FilterTab = memo(function FilterTab({
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D1D5DB' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#374151',
         }}
       >
         {label}
@@ -106,7 +106,7 @@ const FilterTab = memo(function FilterTab({
         <View
           className="ml-1.5 px-1.5 py-0.5 rounded-sm"
           style={{
-            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#9CA3AF',
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
           <Text className="text-xs font-medium text-white">{count}</Text>
@@ -184,7 +184,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 장소 */}
       <View className="flex-row items-center mb-1">
-        <LocationOutlineIcon size={14} color="#9CA3AF" />
+        <LocationOutlineIcon size={14} color="#A89C84" />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
           {posting.location?.name || '-'}
         </Text>
@@ -192,7 +192,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
-        <CalendarOutlineIcon size={14} color="#9CA3AF" />
+        <CalendarOutlineIcon size={14} color="#A89C84" />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
           {getDateRange}
         </Text>
@@ -200,7 +200,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 모집 현황 */}
       <View className="flex-row items-center">
-        <PeopleOutlineIcon size={14} color="#9CA3AF" />
+        <PeopleOutlineIcon size={14} color="#A89C84" />
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
           {posting.filledPositions ?? 0}/{posting.totalPositions ?? 0}명 충원
         </Text>

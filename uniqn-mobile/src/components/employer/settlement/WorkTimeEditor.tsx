@@ -375,7 +375,7 @@ export function WorkTimeEditor({
             {/* 시간 선택 안내 */}
             <View className="flex-row items-start p-3 bg-secondary-100 dark:bg-surface-dark rounded-lg mb-4">
               <View className="mt-0.5">
-                <AlertCircleIcon size={16} color="#6B7280" />
+                <AlertCircleIcon size={16} color="#9A9078" />
               </View>
               <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">
                 탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
@@ -412,7 +412,7 @@ export function WorkTimeEditor({
               value={reason}
               onChangeText={setReason}
               placeholder="수정 사유를 입력하세요 (선택)"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               multiline
               numberOfLines={2}
               textAlignVertical="top"

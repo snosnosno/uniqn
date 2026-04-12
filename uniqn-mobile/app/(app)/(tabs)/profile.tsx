@@ -62,7 +62,7 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
           {label}
         </Text>
       </View>
-      <ChevronRightIcon size={20} color="#9CA3AF" />
+      <ChevronRightIcon size={20} color="#A89C84" />
     </Pressable>
   );
 }
@@ -168,25 +168,25 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-            <EditIcon size={20} color="#9CA3AF" />
+            <EditIcon size={20} color="#A89C84" />
           </Pressable>
         </Card>
 
         <Card className="mb-4">
           <MenuItem
-            icon={<MegaphoneIcon size={22} color="#6B7280" />}
+            icon={<MegaphoneIcon size={22} color="#9A9078" />}
             label="공지사항"
             onPress={() => router.push('/(app)/(tabs)/board/notice')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<SettingsIcon size={22} color="#6B7280" />}
+            icon={<SettingsIcon size={22} color="#9A9078" />}
             label="설정센터"
             onPress={() => router.push('/(app)/settings')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<MessageIcon size={22} color="#6B7280" />}
+            icon={<MessageIcon size={22} color="#9A9078" />}
             label="고객센터"
             onPress={() => router.push('/(app)/support')}
           />

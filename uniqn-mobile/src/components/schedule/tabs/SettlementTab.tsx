@@ -230,7 +230,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     <View className="py-2">
       <View className="mb-4 flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <BanknotesIcon size={18} color="#6B7280" />
+          <BanknotesIcon size={18} color="#9A9078" />
           <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
             정산 정보
           </Text>

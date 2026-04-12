@@ -151,7 +151,7 @@ function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
   const severityIcons = {
     critical: '#DC2626',
     high: '#EF4444',
-    medium: '#F59E0B',
+    medium: '#D4A017',
     low: '#EAB308',
   };
 
@@ -348,7 +348,7 @@ export function ReportModal({
             value={description}
             onChangeText={setDescription}
             placeholder="구체적인 상황을 설명해주세요 (최소 10자)"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={3}
             textAlignVertical="top"

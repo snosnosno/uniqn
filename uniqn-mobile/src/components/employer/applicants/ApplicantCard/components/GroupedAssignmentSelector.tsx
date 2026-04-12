@@ -227,7 +227,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   </View>
 
                   <View className="flex-row items-center mt-1">
-                    <ClockIcon size={12} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                    <ClockIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
                     <Text
                       className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
                     >
@@ -236,7 +236,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     <View
                       className={`mx-1.5 h-3 w-px ${isDark ? 'bg-secondary-600' : 'bg-secondary-300'}`}
                     />
-                    <BriefcaseIcon size={12} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                    <BriefcaseIcon size={12} color={isDark ? '#A89C84' : '#9A9078'} />
                     <Text
                       className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
                     >
@@ -255,9 +255,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
                 >
                   {isExpanded ? (
-                    <ChevronUpIcon size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                    <ChevronUpIcon size={16} color={isDark ? '#A89C84' : '#9A9078'} />
                   ) : (
-                    <ChevronDownIcon size={16} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                    <ChevronDownIcon size={16} color={isDark ? '#A89C84' : '#9A9078'} />
                   )}
                 </Pressable>
               </Pressable>

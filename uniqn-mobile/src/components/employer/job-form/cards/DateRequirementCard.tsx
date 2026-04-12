@@ -152,7 +152,7 @@ export function DateRequirementCard({
         accessibilityLabel="시간대 추가"
       >
         <View className="mr-2">
-          <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#9CA3AF'} />
+          <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#A89C84'} />
         </View>
         <Text
           className={`text-sm font-medium ${

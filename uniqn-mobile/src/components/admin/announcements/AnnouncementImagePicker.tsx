@@ -209,7 +209,7 @@ export function AnnouncementImagePicker({
           className="rounded-md border-2 border-dashed border-secondary-300 dark:border-surface-overlay items-center justify-center bg-secondary-50 dark:bg-surface/50 active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="이미지 추가"
         >
-          <AddIcon size={32} color="#9CA3AF" />
+          <AddIcon size={32} color="#A89C84" />
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
             이미지 추가
           </Text>
@@ -268,7 +268,7 @@ export function AnnouncementImagePicker({
             ) : (
               <View className="items-center">
                 <View className="w-14 h-14 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-2">
-                  <ImagesOutlineIcon size={28} color="#9CA3AF" />
+                  <ImagesOutlineIcon size={28} color="#A89C84" />
                 </View>
                 <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                   이미지를 선택하세요

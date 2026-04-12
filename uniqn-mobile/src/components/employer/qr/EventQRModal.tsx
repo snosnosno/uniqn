@@ -88,13 +88,13 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityState={{ selected: checkInActive }}
         accessibilityLabel="출근 QR 모드"
       >
-        <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : '#9CA3AF'} />
+        <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : '#A89C84'} />
         <Text
           style={{
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
-            color: checkInActive ? '#FFFFFF' : '#6B7280',
+            color: checkInActive ? '#FFFFFF' : '#9A9078',
           }}
         >
           출근
@@ -119,13 +119,13 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityState={{ selected: checkOutActive }}
         accessibilityLabel="퇴근 QR 모드"
       >
-        <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : '#9CA3AF'} />
+        <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : '#A89C84'} />
         <Text
           style={{
             marginLeft: 8,
             fontSize: 16,
             fontWeight: '600',
-            color: checkOutActive ? '#FFFFFF' : '#6B7280',
+            color: checkOutActive ? '#FFFFFF' : '#9A9078',
           }}
         >
           퇴근
@@ -460,7 +460,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#F59E0B" />
+        <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
           QR은 날짜 지정형 스케줄 공고에서만 사용할 수 있습니다.
         </Text>
@@ -472,7 +472,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#F59E0B" />
+        <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
           QR을 생성할 수 있는 날짜 지정 슬롯이 없습니다.
         </Text>
@@ -484,7 +484,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-secondary-50 px-4 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#F59E0B" />
+        <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-medium text-secondary-800">
           QR 생성을 위한 공고 정보를 불러오지 못했습니다.
         </Text>
@@ -561,7 +561,7 @@ export function EventQRModal({
             accessibilityRole="button"
             accessibilityLabel="닫기"
           >
-            <XMarkIcon size={20} color="#6B7280" />
+            <XMarkIcon size={20} color="#9A9078" />
           </Pressable>
         </View>
 
@@ -643,7 +643,7 @@ export function EventQRModal({
                   isRefreshing ? 'opacity-50' : 'active:opacity-70'
                 }`}
               >
-                <RefreshIcon size={18} color="#6B7280" />
+                <RefreshIcon size={18} color="#9A9078" />
                 <Text className="ml-2 text-sm font-medium text-secondary-600 dark:text-secondary-400">
                   새로고침
                 </Text>
@@ -677,7 +677,7 @@ export function EventQRModal({
           </Card>
 
           <View className="mt-3 flex-row items-start px-1">
-            <AlertCircleIcon size={14} color="#9CA3AF" />
+            <AlertCircleIcon size={14} color="#A89C84" />
             <Text className="ml-1.5 flex-1 text-xs text-secondary-400 dark:text-secondary-500">
               QR 코드는 3분 동안 유효하며, 이 모달이 열려 있는 동안 자동으로 갱신됩니다.
             </Text>

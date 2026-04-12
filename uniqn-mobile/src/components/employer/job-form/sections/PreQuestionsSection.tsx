@@ -136,7 +136,7 @@ const QuestionCard = memo(function QuestionCard({
         value={question.question}
         onChangeText={handleQuestionTextChange}
         placeholder="질문 내용을 입력하세요"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="#A89C84"
         multiline
         className="px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white min-h-[48px]"
       />
@@ -152,7 +152,7 @@ const QuestionCard = memo(function QuestionCard({
             <Text className="text-secondary-900 dark:text-white">
               {PRE_QUESTION_TYPE_LABELS[question.type]}
             </Text>
-            <ChevronDownIcon size={20} color="#6B7280" />
+            <ChevronDownIcon size={20} color="#9A9078" />
           </Pressable>
 
           {/* ActionSheet로 타입 선택 */}
@@ -174,7 +174,7 @@ const QuestionCard = memo(function QuestionCard({
           <Switch
             value={question.required}
             onValueChange={handleRequiredChange}
-            trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
+            trackColor={{ false: '#D6D2CA', true: '#818CF8' }}
             thumbColor={question.required ? '#4F46E5' : '#F3F4F6'}
           />
         </View>
@@ -191,7 +191,7 @@ const QuestionCard = memo(function QuestionCard({
                 value={option}
                 onChangeText={(v) => handleOptionChange(optionIndex, v)}
                 placeholder={`선택지 ${optionIndex + 1}`}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A89C84"
                 className="flex-1 px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white"
               />
               {(question.options?.length || 0) > 1 && (
@@ -201,7 +201,7 @@ const QuestionCard = memo(function QuestionCard({
                   accessibilityRole="button"
                   accessibilityLabel="선택지 삭제"
                 >
-                  <XMarkIcon size={18} color="#9CA3AF" />
+                  <XMarkIcon size={18} color="#A89C84" />
                 </Pressable>
               )}
             </View>
@@ -210,7 +210,7 @@ const QuestionCard = memo(function QuestionCard({
             onPress={handleAddOption}
             className="flex-row items-center justify-center py-2 border border-dashed border-secondary-300 dark:border-surface-overlay rounded-lg"
           >
-            <PlusIcon size={16} color="#6B7280" />
+            <PlusIcon size={16} color="#9A9078" />
             <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
               선택지 추가
             </Text>
@@ -318,7 +318,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
         <Switch
           value={hasPreQuestions}
           onValueChange={handleUsesPreQuestionsToggle}
-          trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
+          trackColor={{ false: '#D6D2CA', true: '#818CF8' }}
           thumbColor={hasPreQuestions ? '#4F46E5' : '#F3F4F6'}
         />
       </View>
@@ -350,7 +350,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
               accessibilityRole="button"
               accessibilityLabel="질문 추가"
             >
-              <PlusIcon size={20} color="#6B7280" />
+              <PlusIcon size={20} color="#9A9078" />
               <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium">
                 질문 추가
               </Text>

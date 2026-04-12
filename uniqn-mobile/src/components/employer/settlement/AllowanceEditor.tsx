@@ -200,7 +200,7 @@ const AllowanceItem = memo(function AllowanceItem({
 
         {/* 아이콘 + 라벨 */}
         <View className="flex-row items-center flex-1">
-          <Icon size={18} color={isEnabled ? '#4F46E5' : '#9CA3AF'} />
+          <Icon size={18} color={isEnabled ? '#4F46E5' : '#A89C84'} />
           <Text
             className={`ml-2 text-base font-medium ${
               isEnabled
@@ -370,7 +370,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
         <View className="flex-row items-center mb-2">
           <AddCircleOutlineIcon
             size={18}
-            color={allowances.additional && allowances.additional > 0 ? '#4F46E5' : '#9CA3AF'}
+            color={allowances.additional && allowances.additional > 0 ? '#4F46E5' : '#A89C84'}
           />
           <Text
             className={`ml-2 text-base font-medium ${

@@ -323,7 +323,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                         onChangeText={(text) => handleNicknameChange(onChange, text)}
                         onBlur={() => handleNicknameBlur(onBlur)}
                         placeholder="닉네임을 입력해주세요 (2-15자)"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor="#A89C84"
                         autoCapitalize="none"
                         maxLength={15}
                       />
@@ -361,7 +361,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="예: 서울 강남구"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     autoCapitalize="none"
                     maxLength={50}
                   />
@@ -394,7 +394,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     }}
                     onBlur={onBlur}
                     placeholder="예: 3"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     keyboardType="number-pad"
                     maxLength={2}
                   />
@@ -424,7 +424,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="경력 및 이력을 입력해주세요"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"
@@ -457,7 +457,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="기타 참고사항을 입력해주세요"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"

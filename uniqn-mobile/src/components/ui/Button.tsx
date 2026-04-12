@@ -69,9 +69,9 @@ const sizeTextStyles: Record<ButtonSize, string> = {
 /** 로딩 인디케이터 색상 (variant별, 다크모드 지원) */
 const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
   primary: { light: '#ffffff', dark: '#ffffff' },
-  secondary: { light: '#6B7280', dark: '#D1D5DB' },
-  outline: { light: '#6B7280', dark: '#D1D5DB' },
-  ghost: { light: '#6B7280', dark: '#D1D5DB' },
+  secondary: { light: '#9A9078', dark: '#D6D2CA' },
+  outline: { light: '#9A9078', dark: '#D6D2CA' },
+  ghost: { light: '#9A9078', dark: '#D6D2CA' },
   danger: { light: '#ffffff', dark: '#ffffff' },
   accent: { light: '#050506', dark: '#050506' }, // 다크 텍스트
 };

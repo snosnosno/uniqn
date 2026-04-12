@@ -75,7 +75,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
         <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
           {isProfileLoading ? (
             <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
-              <ActivityIndicator size="small" color="#6B7280" />
+              <ActivityIndicator size="small" color="#9A9078" />
             </View>
           ) : (
             <Avatar
@@ -107,7 +107,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
           {staff.date ? (
             <InfoRow
-              icon={<CalendarIcon size={16} color="#6B7280" />}
+              icon={<CalendarIcon size={16} color="#9A9078" />}
               label="근무 날짜"
               value={formatProfileDate(staff.date)}
             />
@@ -115,7 +115,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
           <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
             <View className="mt-0.5 w-6">
-              <ClockIcon size={16} color="#6B7280" />
+              <ClockIcon size={16} color="#9A9078" />
             </View>
             <View className="ml-2 flex-1">
               <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">
@@ -135,7 +135,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </View>
 
           <InfoRow
-            icon={<BriefcaseIcon size={16} color="#6B7280" />}
+            icon={<BriefcaseIcon size={16} color="#9A9078" />}
             label="역할"
             value={getRoleDisplayName(staff.role, staff.customRole)}
           />

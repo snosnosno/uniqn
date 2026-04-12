@@ -71,7 +71,7 @@ const StatusTab = memo(function StatusTab({
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D1D5DB' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D6D2CA' : '#374151',
         }}
       >
         {label}
@@ -80,7 +80,7 @@ const StatusTab = memo(function StatusTab({
         <View
           className="ml-1.5 px-1.5 py-0.5 rounded-sm"
           style={{
-            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#9CA3AF',
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#A89C84',
           }}
         >
           <Text className="text-xs font-medium text-white">{count}</Text>
@@ -155,21 +155,21 @@ const TournamentCard = memo(function TournamentCard({
         </Text>
 
         <View className="flex-row items-center mb-1">
-          <LocationOutlineIcon size={14} color="#9CA3AF" />
+          <LocationOutlineIcon size={14} color="#A89C84" />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
             {posting.location.name}
           </Text>
         </View>
 
         <View className="flex-row items-center mb-1">
-          <CalendarOutlineIcon size={14} color="#9CA3AF" />
+          <CalendarOutlineIcon size={14} color="#A89C84" />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
             {dateRange}
           </Text>
         </View>
 
         <View className="flex-row items-center">
-          <PersonOutlineIcon size={14} color="#9CA3AF" />
+          <PersonOutlineIcon size={14} color="#A89C84" />
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
             {posting.ownerName ?? '구인자'}
           </Text>

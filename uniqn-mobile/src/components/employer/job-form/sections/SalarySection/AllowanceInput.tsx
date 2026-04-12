@@ -33,7 +33,7 @@ export const AllowanceInput = memo(function AllowanceInput({
   return (
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
-        <GiftIcon size={20} color="#6B7280" />
+        <GiftIcon size={20} color="#9A9078" />
         <Text className="ml-2 font-semibold text-secondary-900 dark:text-white">
           추가 수당 (선택)
         </Text>
@@ -50,7 +50,7 @@ export const AllowanceInput = memo(function AllowanceInput({
             <View className="flex-row items-center">
               <TextInput
                 placeholder="0"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A89C84"
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
@@ -97,7 +97,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                   <Switch
                     value={isProvided}
                     onValueChange={(v) => onAllowanceProvidedToggle(allowance.key, v)}
-                    trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
+                    trackColor={{ false: '#D6D2CA', true: '#818CF8' }}
                     thumbColor={isProvided ? '#4F46E5' : '#F3F4F6'}
                   />
                 </View>
@@ -109,7 +109,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                   <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2">₩</Text>
                   <TextInput
                     placeholder={allowance.placeholder}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"

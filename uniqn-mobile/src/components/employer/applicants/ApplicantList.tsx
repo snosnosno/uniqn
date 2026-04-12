@@ -141,7 +141,7 @@ export function ApplicantList({
   if (!applicants.length) {
     return (
       <EmptyState
-        icon={<FilterIcon size={48} color="#9CA3AF" />}
+        icon={<FilterIcon size={48} color="#A89C84" />}
         title="지원자가 없습니다"
         description="아직 이 공고에 지원한 사람이 없습니다."
       />

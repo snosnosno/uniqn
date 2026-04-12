@@ -234,7 +234,7 @@ export const TimePicker = memo(function TimePicker({
         >
           {displayText}
         </Text>
-        <ChevronDownIcon size={20} color={disabled ? '#9CA3AF' : '#6B7280'} />
+        <ChevronDownIcon size={20} color={disabled ? '#A89C84' : '#9A9078'} />
       </Pressable>
 
       {/* 에러 메시지 */}
@@ -272,7 +272,7 @@ export const TimePicker = memo(function TimePicker({
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
               >
-                <XMarkIcon size={24} color="#6B7280" />
+                <XMarkIcon size={24} color="#9A9078" />
               </Pressable>
             </View>
 

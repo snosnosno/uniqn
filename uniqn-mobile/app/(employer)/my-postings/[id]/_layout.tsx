@@ -39,12 +39,12 @@ function HeaderTitle({
       </Text>
       {jobTitle && (
         <>
-          <Text className="mx-2" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>
+          <Text className="mx-2" style={{ color: isDark ? '#9A9078' : '#A89C84' }}>
             |
           </Text>
           <Text
             className="flex-1 text-base"
-            style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+            style={{ color: isDark ? '#A89C84' : '#9A9078' }}
             numberOfLines={1}
           >
             {jobTitle}

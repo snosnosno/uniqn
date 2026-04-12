@@ -100,7 +100,7 @@ export default function QRScreen() {
               {isWorking ? (
                 <ClockIcon size={24} color="#22C55E" />
               ) : (
-                <CheckCircleIcon size={24} color="#9CA3AF" />
+                <CheckCircleIcon size={24} color="#A89C84" />
               )}
             </View>
             <View className="ml-4 flex-1">
@@ -138,7 +138,7 @@ export default function QRScreen() {
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
           <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface">
-            <ScanIcon size={80} color="#9CA3AF" />
+            <ScanIcon size={80} color="#A89C84" />
           </View>
 
           <Text className="text-center text-xl font-bold text-secondary-900 dark:text-secondary-100">

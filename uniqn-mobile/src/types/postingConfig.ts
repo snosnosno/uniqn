@@ -59,10 +59,10 @@ export const POSTING_TYPE_BADGE_STYLES: Record<
   { bgClass: string; textClass: string; darkBgClass: string; darkTextClass: string }
 > = {
   regular: {
-    bgClass: 'bg-gray-100',
-    textClass: 'text-gray-700',
+    bgClass: 'bg-secondary-100',
+    textClass: 'text-secondary-700',
     darkBgClass: 'dark:bg-surface',
-    darkTextClass: 'dark:text-gray-300',
+    darkTextClass: 'dark:text-secondary-300',
   },
   fixed: {
     bgClass: 'bg-primary-100',
@@ -71,16 +71,16 @@ export const POSTING_TYPE_BADGE_STYLES: Record<
     darkTextClass: 'dark:text-primary-300',
   },
   tournament: {
-    bgClass: 'bg-purple-100',
-    textClass: 'text-purple-700',
-    darkBgClass: 'dark:bg-purple-900/30',
-    darkTextClass: 'dark:text-purple-300',
+    bgClass: 'bg-primary-100',
+    textClass: 'text-primary-700',
+    darkBgClass: 'dark:bg-primary-900/30',
+    darkTextClass: 'dark:text-primary-300',
   },
   urgent: {
-    bgClass: 'bg-red-100',
-    textClass: 'text-red-700',
-    darkBgClass: 'dark:bg-red-900/30',
-    darkTextClass: 'dark:text-red-300',
+    bgClass: 'bg-error-100',
+    textClass: 'text-error-700',
+    darkBgClass: 'dark:bg-error-900/30',
+    darkTextClass: 'dark:text-error-300',
   },
 };
 

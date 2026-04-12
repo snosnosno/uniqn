@@ -70,18 +70,18 @@ const CALENDAR_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as c
 const calendarTheme = {
   backgroundColor: 'transparent',
   calendarBackground: 'transparent',
-  textSectionTitleColor: '#6B7280',
-  textSectionTitleDisabledColor: '#9CA3AF',
+  textSectionTitleColor: '#9A9078',
+  textSectionTitleDisabledColor: '#A89C84',
   selectedDayBackgroundColor: PRIMARY_COLORS[600],
   selectedDayTextColor: '#FFFFFF',
   todayTextColor: ACCENT_COLORS[600],
   dayTextColor: '#09090B',
-  textDisabledColor: '#D1D5DB',
+  textDisabledColor: '#D6D2CA',
   dotColor: PRIMARY_COLORS[500],
   selectedDotColor: '#FFFFFF',
   monthTextColor: '#09090B',
   indicatorColor: PRIMARY_COLORS[500],
-  arrowColor: '#6B7280',
+  arrowColor: '#9A9078',
   textDayFontSize: 14,
   textMonthFontSize: 16,
   textDayHeaderFontSize: 12,
@@ -92,13 +92,13 @@ const calendarTheme = {
 
 const darkCalendarTheme = {
   ...calendarTheme,
-  textSectionTitleColor: '#9CA3AF',
-  textSectionTitleDisabledColor: '#6B7280',
+  textSectionTitleColor: '#A89C84',
+  textSectionTitleDisabledColor: '#9A9078',
   todayTextColor: ACCENT_COLORS[300],
   dayTextColor: '#F3F4F6',
-  textDisabledColor: '#6B7280',
+  textDisabledColor: '#9A9078',
   monthTextColor: '#F3F4F6',
-  arrowColor: '#D1D5DB',
+  arrowColor: '#D6D2CA',
 };
 
 function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {

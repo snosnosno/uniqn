@@ -159,10 +159,10 @@ export const DatePicker = memo(function DatePicker({
             accessibilityLabel="날짜 초기화"
             className="ml-2"
           >
-            <XMarkIcon size={20} color="#9CA3AF" />
+            <XMarkIcon size={20} color="#A89C84" />
           </Pressable>
         ) : (
-          <ChevronDownIcon size={20} color={disabled ? '#9CA3AF' : '#6B7280'} />
+          <ChevronDownIcon size={20} color={disabled ? '#A89C84' : '#9A9078'} />
         )}
       </View>
 
@@ -189,7 +189,7 @@ export const DatePicker = memo(function DatePicker({
                 accessibilityRole="button"
                 accessibilityLabel="닫기"
               >
-                <XMarkIcon size={24} color="#6B7280" />
+                <XMarkIcon size={24} color="#9A9078" />
               </Pressable>
             </View>
 

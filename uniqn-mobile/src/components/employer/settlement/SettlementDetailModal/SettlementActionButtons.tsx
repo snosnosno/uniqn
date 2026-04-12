@@ -44,7 +44,7 @@ export function SettlementActionButtons({
             accessibilityHint="근무 시간을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
-            <ClockIcon size={18} color="#6B7280" />
+            <ClockIcon size={18} color="#9A9078" />
             <Text className="ml-2 text-base font-medium text-secondary-700 dark:text-secondary-300">
               시간 수정
             </Text>
@@ -59,7 +59,7 @@ export function SettlementActionButtons({
             accessibilityHint="정산 금액을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
           >
-            <EditIcon size={18} color="#6B7280" />
+            <EditIcon size={18} color="#9A9078" />
             <Text className="ml-2 text-base font-medium text-secondary-700 dark:text-secondary-300">
               금액 수정
             </Text>

@@ -184,7 +184,7 @@ export default function AnnouncementDetailPage() {
               {/* Pinned */}
               {announcement.isPinned && (
                 <View className="px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 flex-row items-center">
-                  <PinIcon size={12} color="#f59e0b" />
+                  <PinIcon size={12} color="#D4A017" />
                   <Text className="text-xs font-medium text-warning-700 dark:text-warning-300 ml-1">
                     고정
                   </Text>

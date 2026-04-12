@@ -66,7 +66,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       }`}
     >
       <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : '#6B7280'} />
+        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : '#9A9078'} />
         <Text
           className={`ml-2 text-base font-semibold ${
             group.isToday
@@ -101,9 +101,9 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
         </View>
 
         {isExpanded ? (
-          <ChevronUpIcon size={20} color="#6B7280" />
+          <ChevronUpIcon size={20} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={20} color="#9A9078" />
         )}
       </View>
     </Pressable>
@@ -256,7 +256,7 @@ export function ConfirmedStaffList({
   if (grouped.length === 0) {
     return (
       <EmptyState
-        icon={<UsersIcon size={48} color="#9CA3AF" />}
+        icon={<UsersIcon size={48} color="#A89C84" />}
         title="아직 확정된 스태프가 없습니다"
         description="지원자를 확정하면 여기에 표시됩니다"
       />

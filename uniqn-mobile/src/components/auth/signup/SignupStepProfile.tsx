@@ -262,7 +262,7 @@ export function SignupStepProfile({
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="경력 및 이력을 입력해주세요"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A89C84"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -296,7 +296,7 @@ export function SignupStepProfile({
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="기타 참고사항을 입력해주세요"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A89C84"
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"

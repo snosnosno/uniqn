@@ -95,7 +95,7 @@ function UserCard({ user, onPress }: UserCardProps) {
           <Avatar source={user.photoURL} name={user.name} size="lg" />
         ) : (
           <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
-            <UserIcon size={24} color="#9CA3AF" />
+            <UserIcon size={24} color="#A89C84" />
           </View>
         )}
       </View>
@@ -129,7 +129,7 @@ function UserCard({ user, onPress }: UserCardProps) {
         </View>
       </View>
 
-      <ChevronRightIcon size={20} color="#9CA3AF" />
+      <ChevronRightIcon size={20} color="#A89C84" />
     </Pressable>
   );
 }
@@ -214,12 +214,12 @@ export default function AdminUsersPage() {
     <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
-          <MagnifyingGlassIcon size={20} color="#9CA3AF" />
+          <MagnifyingGlassIcon size={20} color="#A89C84" />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
             autoCapitalize="none"
             autoCorrect={false}

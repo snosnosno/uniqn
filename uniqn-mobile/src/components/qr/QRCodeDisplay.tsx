@@ -158,7 +158,7 @@ export function QRCodeDisplay({
         {/* 남은 시간 */}
         {displayData && !isLoading && (
           <View className="flex-row items-center mt-4">
-            <ClockIcon size={16} color={isExpired ? '#EF4444' : '#6B7280'} />
+            <ClockIcon size={16} color={isExpired ? '#EF4444' : '#9A9078'} />
             <Text
               className={`ml-1 text-sm ${
                 isExpired ? 'text-error-500' : 'text-secondary-500 dark:text-secondary-400'
@@ -184,7 +184,7 @@ export function QRCodeDisplay({
             className="flex-row items-center mt-4 p-2"
             accessibilityLabel="QR 코드 새로고침"
           >
-            <RefreshIcon size={16} color="#6B7280" />
+            <RefreshIcon size={16} color="#9A9078" />
             <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
               새로고침
             </Text>

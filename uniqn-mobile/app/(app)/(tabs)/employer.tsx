@@ -56,7 +56,7 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             <Text
               className="text-sm font-medium"
               style={{
-                color: isSelected ? '#4F46E5' : isDarkMode ? '#9CA3AF' : '#6B7280',
+                color: isSelected ? '#4F46E5' : isDarkMode ? '#A89C84' : '#9A9078',
               }}
             >
               {option.label} ({count})
@@ -251,7 +251,7 @@ function EmployerView() {
         <PostingSurfaceState
           mode="empty"
           scope="detail"
-          icon={<BriefcaseIcon size={48} color="#9CA3AF" />}
+          icon={<BriefcaseIcon size={48} color="#A89C84" />}
           title={
             filter === 'all'
               ? '등록된 공고가 없습니다'

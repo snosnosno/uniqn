@@ -83,7 +83,7 @@ export default function BoardListScreen() {
               </View>
             ) : (
               <EmptyState
-                icon={<DocumentTextOutlineIcon size={48} color="#9CA3AF" />}
+                icon={<DocumentTextOutlineIcon size={48} color="#A89C84" />}
                 title="아직 게시글이 없어요"
                 description={
                   boardType === 'schedule'

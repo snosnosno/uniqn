@@ -179,20 +179,20 @@ export const REPORT_SEVERITY_COLORS: Record<
   { bg: string; text: string }
 > = {
   low: {
-    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    text: 'text-yellow-600 dark:text-yellow-300',
+    bg: 'bg-warning-100 dark:bg-warning-900/30',
+    text: 'text-warning-600 dark:text-warning-300',
   },
   medium: {
     bg: 'bg-orange-100 dark:bg-orange-900/30',
     text: 'text-orange-600 dark:text-orange-300',
   },
   high: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    text: 'text-red-600 dark:text-red-300',
+    bg: 'bg-error-100 dark:bg-error-900/30',
+    text: 'text-error-600 dark:text-error-300',
   },
   critical: {
-    bg: 'bg-red-200 dark:bg-red-900/50',
-    text: 'text-red-700 dark:text-red-200',
+    bg: 'bg-error-200 dark:bg-error-900/50',
+    text: 'text-error-700 dark:text-error-200',
   },
 };
 
@@ -220,20 +220,20 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
  */
 export const REPORT_STATUS_COLORS: Record<ReportStatus, { bg: string; text: string }> = {
   pending: {
-    bg: 'bg-gray-100 dark:bg-surface',
-    text: 'text-gray-600 dark:text-gray-300',
+    bg: 'bg-secondary-100 dark:bg-surface',
+    text: 'text-secondary-600 dark:text-secondary-300',
   },
   reviewed: {
     bg: 'bg-primary-100 dark:bg-primary-900/30',
     text: 'text-primary-600 dark:text-primary-300',
   },
   resolved: {
-    bg: 'bg-green-100 dark:bg-green-900/30',
-    text: 'text-green-600 dark:text-green-300',
+    bg: 'bg-success-100 dark:bg-success-900/30',
+    text: 'text-success-600 dark:text-success-300',
   },
   dismissed: {
-    bg: 'bg-gray-100 dark:bg-surface',
-    text: 'text-gray-500 dark:text-gray-400',
+    bg: 'bg-secondary-100 dark:bg-surface',
+    text: 'text-secondary-500 dark:text-secondary-400',
   },
 };
 

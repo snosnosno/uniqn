@@ -245,7 +245,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
   if (item.section === 'pinned') {
     return (
       <View className="mb-3 mt-3 flex-row items-center gap-2">
-        <PinIcon size={16} color="#F59E0B" />
+        <PinIcon size={16} color="#D4A017" />
         <Text className="text-sm font-semibold uppercase tracking-[0.8px] text-secondary-700 dark:text-secondary-200">
           {item.title}
         </Text>
@@ -961,11 +961,11 @@ export default function BoardPostDetailScreen() {
 
           <View className="mt-5 flex-row flex-wrap gap-2">
             <MetaPill
-              icon={<ChatbubbleEllipsesOutlineIcon size={14} color="#6B7280" />}
+              icon={<ChatbubbleEllipsesOutlineIcon size={14} color="#9A9078" />}
               label={`댓글 ${post.commentCount}`}
             />
             <MetaPill
-              icon={<EyeIcon size={14} color="#6B7280" />}
+              icon={<EyeIcon size={14} color="#9A9078" />}
               label={`조회 ${post.viewCount}`}
             />
             {postLastActivityLabel ? (

@@ -204,7 +204,7 @@ export function ApplicantConfirmModal({
                   </Text>
                   {item.timeSlot && (
                     <View className="flex-row items-center ml-3">
-                      <ClockIcon size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <ClockIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
                       <Text
                         className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'}`}
                       >
@@ -214,7 +214,7 @@ export function ApplicantConfirmModal({
                   )}
                   {item.roles && (
                     <View className="flex-row items-center ml-3">
-                      <BriefcaseIcon size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <BriefcaseIcon size={14} color={isDark ? '#A89C84' : '#9A9078'} />
                       <Text
                         className={`ml-1 text-sm ${isDark ? 'text-secondary-300' : 'text-secondary-600'}`}
                       >
@@ -258,7 +258,7 @@ export function ApplicantConfirmModal({
               value={inputValue}
               onChangeText={setInputValue}
               placeholder={config.inputPlaceholder}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               multiline
               numberOfLines={2}
               textAlignVertical="top"

@@ -79,9 +79,9 @@ function AccordionSection({ title, icon, expanded, onToggle, children }: Accordi
           </Text>
         </View>
         {expanded ? (
-          <ChevronUpIcon size={20} color="#6B7280" />
+          <ChevronUpIcon size={20} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={20} color="#9A9078" />
         )}
       </Pressable>
       {expanded && <View className="px-4 pb-4">{children}</View>}
@@ -348,7 +348,7 @@ export function SettlementEditModal({
             value={reason}
             onChangeText={setReason}
             placeholder="예: 역할 변경으로 인한 조정"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={2}
             className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-white"

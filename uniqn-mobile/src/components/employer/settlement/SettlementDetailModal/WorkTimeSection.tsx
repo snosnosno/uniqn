@@ -35,7 +35,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
   return (
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
-        <ClockIcon size={18} color="#6B7280" />
+        <ClockIcon size={18} color="#9A9078" />
         <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
           근무 시간
         </Text>

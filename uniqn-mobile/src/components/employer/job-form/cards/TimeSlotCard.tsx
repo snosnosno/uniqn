@@ -102,7 +102,7 @@ const RoleCard = React.memo(function RoleCard({
             value={role.customRole || ''}
             onChangeText={(text) => onCustomNameChange(roleIndex, text)}
             placeholder="역할명 입력"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             className="text-sm text-secondary-900 dark:text-white py-1 px-0 border-b border-secondary-300 dark:border-surface-overlay"
           />
         ) : (
@@ -121,7 +121,7 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 감소"
         >
-          <MinusIcon size={14} color="#6B7280" />
+          <MinusIcon size={14} color="#9A9078" />
         </Pressable>
 
         {/* 숫자 탭 → 휠 피커 */}
@@ -143,7 +143,7 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 증가"
         >
-          <PlusIcon size={14} color="#6B7280" />
+          <PlusIcon size={14} color="#9A9078" />
         </Pressable>
 
         {/* 삭제 버튼 */}
@@ -321,9 +321,9 @@ export function TimeSlotCard({
           accessibilityLabel={isExpanded ? '접기' : '펼치기'}
         >
           {isExpanded ? (
-            <ChevronUpIcon size={18} color="#6B7280" />
+            <ChevronUpIcon size={18} color="#9A9078" />
           ) : (
-            <ChevronDownIcon size={18} color="#6B7280" />
+            <ChevronDownIcon size={18} color="#9A9078" />
           )}
           <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
             시간대 {index + 1}
@@ -358,7 +358,7 @@ export function TimeSlotCard({
             <Switch
               value={timeSlot.isTimeToBeAnnounced}
               onValueChange={handleTimeToBeAnnouncedToggle}
-              trackColor={{ false: '#D1D5DB', true: '#D4AF37' }}
+              trackColor={{ false: '#D6D2CA', true: '#D4AF37' }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -374,7 +374,7 @@ export function TimeSlotCard({
                 onChangeText={handleTentativeDescriptionChange}
                 placeholder="예: 토너먼트 진행 상황에 따라 결정"
                 className="px-3 py-2 bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-white text-sm"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A89C84"
                 multiline
                 maxLength={200}
               />

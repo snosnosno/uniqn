@@ -65,7 +65,7 @@ const RoleCard = memo(function RoleCard({
               value={role.name}
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               className="font-medium text-secondary-900 dark:text-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
@@ -86,7 +86,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityRole="button"
             accessibilityLabel="인원 감소"
           >
-            <MinusIcon size={18} color="#6B7280" />
+            <MinusIcon size={18} color="#9A9078" />
           </Pressable>
 
           <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay">
@@ -102,7 +102,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityRole="button"
             accessibilityLabel="인원 증가"
           >
-            <PlusIcon size={18} color="#6B7280" />
+            <PlusIcon size={18} color="#9A9078" />
           </Pressable>
 
           {/* 삭제 버튼 - 모든 역할에 표시 */}
@@ -118,7 +118,7 @@ const RoleCard = memo(function RoleCard({
             accessibilityLabel="역할 삭제"
             accessibilityState={{ disabled: !canDelete }}
           >
-            <TrashIcon size={16} color={canDelete ? '#EF4444' : '#9CA3AF'} />
+            <TrashIcon size={16} color={canDelete ? '#EF4444' : '#A89C84'} />
           </Pressable>
         </View>
       </View>
@@ -222,7 +222,7 @@ export const RolesSection = memo(function RolesSection({
         accessibilityRole="button"
         accessibilityLabel="역할 추가"
       >
-        <PlusIcon size={18} color="#6B7280" />
+        <PlusIcon size={18} color="#9A9078" />
         <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium text-sm">
           역할 추가
         </Text>

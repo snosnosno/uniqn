@@ -115,7 +115,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               value={customRoleName}
               onChangeText={setCustomRoleName}
               placeholder="예: 플로어 매니저"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               autoFocus
               className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-white bg-white dark:bg-surface"
             />

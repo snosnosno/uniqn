@@ -95,7 +95,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
           <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2">₩</Text>
           <TextInput
             placeholder="0"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             value={
               roleSalary?.amount && roleSalary.amount > 0 ? formatNumber(roleSalary.amount) : ''
             }

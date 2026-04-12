@@ -159,37 +159,37 @@ export function ScheduleDetailSheet({
           className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
           accessibilityLabel="닫기"
         >
-          <XMarkIcon size={18} color="#9CA3AF" />
+          <XMarkIcon size={18} color="#A89C84" />
         </Pressable>
       </View>
 
       {/* Details */}
       <View className="mb-6">
         <DetailRow
-          icon={<CalendarIcon size={18} color="#6B7280" />}
+          icon={<CalendarIcon size={18} color="#9A9078" />}
           label="날짜"
           value={formatDate(schedule.date)}
         />
         <DetailRow
-          icon={<ClockIcon size={18} color="#6B7280" />}
+          icon={<ClockIcon size={18} color="#9A9078" />}
           label="시간"
           value={`${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`}
         />
         {schedule.location && (
           <DetailRow
-            icon={<MapIcon size={18} color="#6B7280" />}
+            icon={<MapIcon size={18} color="#9A9078" />}
             label="장소"
             value={schedule.detailedAddress || schedule.location}
           />
         )}
         <DetailRow
-          icon={<BriefcaseIcon size={18} color="#6B7280" />}
+          icon={<BriefcaseIcon size={18} color="#9A9078" />}
           label="역할"
           value={getRoleDisplayName(schedule.role, schedule.customRole)}
         />
         {schedule.payrollAmount && schedule.payrollAmount > 0 && (
           <DetailRow
-            icon={<CurrencyDollarIcon size={18} color="#6B7280" />}
+            icon={<CurrencyDollarIcon size={18} color="#9A9078" />}
             label="급여"
             value={formatCurrency(schedule.payrollAmount)}
           />
@@ -231,7 +231,7 @@ export function ScheduleDetailSheet({
         >
           <QrCodeIcon
             size={20}
-            color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'}
+            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#374151') : '#FFFFFF'}
           />
           <Text
             className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}

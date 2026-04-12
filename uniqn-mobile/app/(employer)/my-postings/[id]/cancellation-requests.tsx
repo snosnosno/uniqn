@@ -173,7 +173,7 @@ export default function CancellationRequestsScreen() {
         <EmptyState
           title="취소 요청이 없습니다"
           description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
-          icon={<InboxIcon size={48} color="#9CA3AF" />}
+          icon={<InboxIcon size={48} color="#A89C84" />}
           variant="content"
         />
       ) : (
@@ -188,14 +188,14 @@ export default function CancellationRequestsScreen() {
             <RefreshControl
               refreshing={isRefetchingCancellationRequests}
               onRefresh={handleRefresh}
-              tintColor={isDarkMode ? '#9CA3AF' : '#6B7280'}
+              tintColor={isDarkMode ? '#A89C84' : '#9A9078'}
             />
           }
           ListEmptyComponent={
             <EmptyState
               title="취소 요청이 없습니다"
               description="스태프의 취소 요청이 들어오면 여기에 표시됩니다"
-              icon={<InboxIcon size={48} color="#9CA3AF" />}
+              icon={<InboxIcon size={48} color="#A89C84" />}
               variant="content"
             />
           }

@@ -89,7 +89,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
             label="근무 날짜"
             required
             error={errors?.workDate}
-            icon={<CalendarIcon size={16} color="#6B7280" />}
+            icon={<CalendarIcon size={16} color="#9A9078" />}
           >
             <DatePicker
               value={toDate(data.workDate)}
@@ -108,7 +108,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
             label="출근 시간"
             required
             error={errors?.startTime}
-            icon={<ClockIcon size={16} color="#6B7280" />}
+            icon={<ClockIcon size={16} color="#9A9078" />}
           >
             <TimePicker
               value={data.startTime}

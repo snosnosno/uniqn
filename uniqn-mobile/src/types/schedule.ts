@@ -485,14 +485,14 @@ export const SCHEDULE_COLORS: Record<
   }
 > = {
   applied: {
-    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    border: 'border-yellow-500',
-    text: 'text-yellow-800 dark:text-yellow-200',
+    bg: 'bg-warning-100 dark:bg-warning-900/30',
+    border: 'border-warning-500',
+    text: 'text-warning-800 dark:text-warning-200',
   },
   confirmed: {
-    bg: 'bg-green-100 dark:bg-green-900/30',
-    border: 'border-green-500',
-    text: 'text-green-800 dark:text-green-200',
+    bg: 'bg-success-100 dark:bg-success-900/30',
+    border: 'border-success-500',
+    text: 'text-success-800 dark:text-success-200',
   },
   completed: {
     bg: 'bg-primary-100 dark:bg-primary-900/30',
@@ -500,9 +500,9 @@ export const SCHEDULE_COLORS: Record<
     text: 'text-primary-800 dark:text-primary-200',
   },
   cancelled: {
-    bg: 'bg-red-100 dark:bg-red-900/30',
-    border: 'border-red-500',
-    text: 'text-red-800 dark:text-red-200',
+    bg: 'bg-error-100 dark:bg-error-900/30',
+    border: 'border-error-500',
+    text: 'text-error-800 dark:text-error-200',
   },
 };
 
@@ -510,8 +510,8 @@ export const SCHEDULE_COLORS: Record<
  * 異쒖꽍 ?곹깭蹂??됱긽
  */
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  not_started: 'bg-gray-100 dark:bg-surface text-gray-600 dark:text-gray-300',
-  checked_in: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
+  not_started: 'bg-secondary-100 dark:bg-surface text-secondary-600 dark:text-secondary-300',
+  checked_in: 'bg-success-100 dark:bg-success-900/30 text-success-600 dark:text-success-300',
   checked_out: 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300',
 };
 

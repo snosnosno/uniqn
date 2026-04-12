@@ -136,7 +136,7 @@ export const NotificationList = memo(function NotificationList({
 
   const defaultEmptyComponent = (
     <EmptyState
-      icon={<BellSlashIcon size={48} color="#9CA3AF" />}
+      icon={<BellSlashIcon size={48} color="#A89C84" />}
       title="알림이 없습니다"
       description="새로운 알림이 오면 이곳에 표시됩니다."
     />
@@ -220,7 +220,7 @@ export function SimpleNotificationList({
   if (displayNotifications.length === 0) {
     return (
       <View className="items-center py-8">
-        <BellSlashIcon size={32} color="#D1D5DB" />
+        <BellSlashIcon size={32} color="#D6D2CA" />
         <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
           {emptyMessage}
         </Text>

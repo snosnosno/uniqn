@@ -135,7 +135,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                 accessibilityLabel="닫기"
                 accessibilityRole="button"
               >
-                <XMarkIcon size={24} color="#9CA3AF" />
+                <XMarkIcon size={24} color="#A89C84" />
               </Pressable>
             </View>
 
@@ -163,7 +163,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     value={reason}
                     onChangeText={handleReasonChange}
                     placeholder="거부 사유를 10자 이상 입력해주세요"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="#A89C84"
                     multiline
                     numberOfLines={4}
                     editable={!isProcessing}

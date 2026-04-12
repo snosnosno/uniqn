@@ -216,18 +216,18 @@ export const ANNOUNCEMENT_STATUS_CONFIG: Record<
 > = {
   draft: {
     label: '초안',
-    color: 'text-gray-700 dark:text-gray-300',
-    bgColor: 'bg-gray-100 dark:bg-surface',
+    color: 'text-secondary-700 dark:text-secondary-300',
+    bgColor: 'bg-secondary-100 dark:bg-surface',
   },
   published: {
     label: '발행됨',
-    color: 'text-green-700 dark:text-green-300',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    color: 'text-success-700 dark:text-success-300',
+    bgColor: 'bg-success-100 dark:bg-success-900/30',
   },
   archived: {
     label: '보관됨',
-    color: 'text-amber-700 dark:text-amber-300',
-    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    color: 'text-warning-700 dark:text-warning-300',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
   },
 };
 
@@ -253,8 +253,8 @@ export const ANNOUNCEMENT_PRIORITY_CONFIG: Record<
 > = {
   0: {
     label: '일반',
-    color: 'text-gray-700 dark:text-gray-300',
-    bgColor: 'bg-gray-100 dark:bg-surface',
+    color: 'text-secondary-700 dark:text-secondary-300',
+    bgColor: 'bg-secondary-100 dark:bg-surface',
   },
   1: {
     label: '중요',
@@ -263,8 +263,8 @@ export const ANNOUNCEMENT_PRIORITY_CONFIG: Record<
   },
   2: {
     label: '긴급',
-    color: 'text-red-700 dark:text-red-300',
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
+    color: 'text-error-700 dark:text-error-300',
+    bgColor: 'bg-error-100 dark:bg-error-900/30',
   },
 };
 

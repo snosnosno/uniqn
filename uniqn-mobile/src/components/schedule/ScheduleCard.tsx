@@ -167,7 +167,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
         {schedule.location && (
           <View className="mb-2 flex-row items-center">
-            <MapIcon size={14} color="#6B7280" />
+            <MapIcon size={14} color="#9A9078" />
             <Text
               className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400"
               numberOfLines={1}
@@ -180,12 +180,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         {schedule.type === STATUS.SCHEDULE.APPLIED ? (
           <View>
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color="#6B7280" />
+              <CalendarIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color="#6B7280" />
+              <ClockIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatTime(schedule.startTime)}
               </Text>
@@ -193,7 +193,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
             <View className="mt-2 flex-row flex-wrap items-center">
               <View className="mr-3 flex-row items-center">
-                <BriefcaseIcon size={14} color="#6B7280" />
+                <BriefcaseIcon size={14} color="#9A9078" />
                 <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
@@ -201,7 +201,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
               {salaryDisplay && (
                 <View className="mr-3 flex-row items-center">
-                  <BanknotesIcon size={14} color="#6B7280" />
+                  <BanknotesIcon size={14} color="#9A9078" />
                   <Text className="ml-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
                     {salaryDisplay}
                   </Text>
@@ -210,7 +210,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
               {ownerName && (
                 <View className="flex-row items-center">
-                  <UserIcon size={14} color="#9CA3AF" />
+                  <UserIcon size={14} color="#A89C84" />
                   <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
                     {ownerName}
                   </Text>
@@ -221,12 +221,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         ) : (
           <View>
             <View className="flex-row items-center">
-              <CalendarIcon size={14} color="#6B7280" />
+              <CalendarIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatDate(schedule.date)}
               </Text>
               <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color="#6B7280" />
+              <ClockIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {schedule.type === STATUS.SCHEDULE.COMPLETED
                   ? timeDisplayInfo.duration
@@ -235,7 +235,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </View>
 
             <View className="mt-2 flex-row items-center">
-              <BriefcaseIcon size={14} color="#6B7280" />
+              <BriefcaseIcon size={14} color="#9A9078" />
               <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
               </Text>

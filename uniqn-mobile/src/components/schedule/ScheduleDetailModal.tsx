@@ -377,7 +377,7 @@ export function ScheduleDetailModal({
           activeOpacity={0.7}
           accessibilityLabel="닫기"
         >
-          <XMarkIcon size={18} color="#9CA3AF" />
+          <XMarkIcon size={18} color="#A89C84" />
         </TouchableOpacity>
       </View>
 
@@ -404,7 +404,7 @@ export function ScheduleDetailModal({
             >
               <View style={{ opacity: isActive ? 1 : 0.6 }}>
                 {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
-                  color: isActive ? '#4F46E5' : '#6B7280',
+                  color: isActive ? '#4F46E5' : '#9A9078',
                 })}
               </View>
               <Text
@@ -412,7 +412,7 @@ export function ScheduleDetailModal({
                   marginLeft: 6,
                   fontSize: 14,
                   fontWeight: '500',
-                  color: isActive ? '#4F46E5' : '#6B7280',
+                  color: isActive ? '#4F46E5' : '#9A9078',
                 }}
               >
                 {tab.label}
@@ -479,7 +479,7 @@ export function ScheduleDetailModal({
                 size="md"
                 onPress={handleOpenReportModal}
                 className="border-secondary-300 dark:border-surface-overlay"
-                icon={<AlertTriangleIcon size={16} color="#6B7280" />}
+                icon={<AlertTriangleIcon size={16} color="#9A9078" />}
               >
                 <Text className="text-secondary-600 dark:text-secondary-400">신고</Text>
               </Button>

@@ -45,7 +45,7 @@ export function TimeModificationHistory({
         className="flex-row items-center justify-between active:opacity-70"
       >
         <View className="flex-row items-center">
-          <DocumentIcon size={18} color="#6B7280" />
+          <DocumentIcon size={18} color="#9A9078" />
           <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
             시간 수정 이력
           </Text>
@@ -56,9 +56,9 @@ export function TimeModificationHistory({
           </View>
         </View>
         {isExpanded ? (
-          <ChevronUpIcon size={20} color="#6B7280" />
+          <ChevronUpIcon size={20} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={20} color="#9A9078" />
         )}
       </Pressable>
 

@@ -45,7 +45,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 flex-row items-center flex-wrap gap-2">
           {/* Pinned Icon */}
-          {announcement.isPinned && <PinIcon size={14} color="#f59e0b" />}
+          {announcement.isPinned && <PinIcon size={14} color="#D4A017" />}
 
           {/* Priority Badge */}
           {announcement.priority > 0 && (

@@ -25,7 +25,7 @@ const PROFILE_RETRY_DELAY_MS = 500;
 
 const SPINNER_COLOR = {
   light: '#D4AF37',
-  dark: '#C084FC',
+  dark: '#E8C84E',
 } as const;
 
 export default function SplashScreen() {

@@ -138,7 +138,7 @@ export function InquiryForm({
             }}
             onBlur={() => validateField('subject', subject)}
             placeholder="문의 제목을 입력해주세요"
-            placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+            placeholderTextColor={isDark ? '#9A9078' : '#A89C84'}
             className={`rounded-lg border px-4 py-3 text-base text-secondary-900 dark:text-secondary-100 ${
               errors.subject
                 ? 'border-error-500'
@@ -167,7 +167,7 @@ export function InquiryForm({
             }}
             onBlur={() => validateField('message', message)}
             placeholder="문의 내용을 상세히 입력해주세요"
-            placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
+            placeholderTextColor={isDark ? '#9A9078' : '#A89C84'}
             multiline
             numberOfLines={8}
             textAlignVertical="top"

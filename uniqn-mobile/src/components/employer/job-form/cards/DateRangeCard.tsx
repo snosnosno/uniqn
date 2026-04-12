@@ -124,7 +124,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <View className="w-10 h-10 rounded-sm bg-warning-100 dark:bg-warning-900/30 items-center justify-center mr-3">
-              <CalendarIcon size={20} color="#F59E0B" />
+              <CalendarIcon size={20} color="#D4A017" />
             </View>
             <View className="flex-1">
               <Text className="text-base font-bold text-secondary-900 dark:text-white">
@@ -187,7 +187,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
           accessibilityLabel="시간대 추가"
         >
           <View className="mr-2">
-            <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#9CA3AF'} />
+            <PlusIcon size={16} color={canAddTimeSlot ? '#D4AF37' : '#A89C84'} />
           </View>
           <Text
             className={`text-sm font-medium ${

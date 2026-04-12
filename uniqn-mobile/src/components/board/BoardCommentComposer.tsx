@@ -139,7 +139,7 @@ export function BoardCommentComposer({
         <Button
           variant="outline"
           className="flex-1"
-          icon={<ImageIcon size={18} color="#6B7280" />}
+          icon={<ImageIcon size={18} color="#9A9078" />}
           onPress={onPickImages}
           disabled={!canInteract || isUploadingImages}
         >

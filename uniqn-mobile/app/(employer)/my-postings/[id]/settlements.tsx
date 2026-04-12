@@ -122,7 +122,7 @@ interface TabHeaderProps {
 
 function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
   const { isDarkMode } = useThemeStore();
-  const inactiveColor = isDarkMode ? '#9CA3AF' : '#6B7280';
+  const inactiveColor = isDarkMode ? '#A89C84' : '#9A9078';
   const activeBadgeBg = isDarkMode ? '#312E81' : '#EEF2FF';
   const inactiveBadgeBg = isDarkMode ? '#374151' : '#F3F4F6';
 

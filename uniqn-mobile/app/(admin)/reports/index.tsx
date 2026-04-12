@@ -161,12 +161,12 @@ export default function AdminReportsPage() {
         {/* 검색바 */}
         <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
           <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
-            <SearchIcon size={20} color="#9CA3AF" />
+            <SearchIcon size={20} color="#A89C84" />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="신고자, 피신고자, 공고명 검색"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
               returnKeyType="search"
               autoCapitalize="none"
@@ -177,7 +177,7 @@ export default function AdminReportsPage() {
               hitSlop={8}
               accessibilityLabel="필터 토글"
             >
-              <FilterIcon size={20} color={showFilters ? '#D4AF37' : '#9CA3AF'} />
+              <FilterIcon size={20} color={showFilters ? '#D4AF37' : '#A89C84'} />
             </Pressable>
           </View>
         </View>
@@ -296,7 +296,7 @@ export default function AdminReportsPage() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
-              <AlertTriangleIcon size={48} color="#9CA3AF" />
+              <AlertTriangleIcon size={48} color="#A89C84" />
               <Text className="text-lg font-medium text-secondary-900 dark:text-white mt-4">
                 신고 없음
               </Text>

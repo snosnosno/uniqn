@@ -120,7 +120,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
     >
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
-          <CalendarIcon size={16} color="#6B7280" />
+          <CalendarIcon size={16} color="#9A9078" />
           <Text className="ml-2 text-sm font-medium text-secondary-900 dark:text-white">
             {formatDate(workLog.date)}
           </Text>
@@ -130,13 +130,13 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
 
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
-          <BriefcaseIcon size={14} color="#9CA3AF" />
+          <BriefcaseIcon size={14} color="#A89C84" />
           <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
             {roleLabel}
           </Text>
         </View>
         <View className="flex-row items-center">
-          <ClockIcon size={14} color="#9CA3AF" />
+          <ClockIcon size={14} color="#A89C84" />
           <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
             {timeInfo.effectiveStart} - {timeInfo.effectiveEnd}
           </Text>
@@ -148,7 +148,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           {isCompleted ? (
             <CheckCircleIcon size={14} color="#22c55e" />
           ) : (
-            <PendingIcon size={14} color="#9CA3AF" />
+            <PendingIcon size={14} color="#A89C84" />
           )}
           <Text
             className={`ml-1 text-sm ${

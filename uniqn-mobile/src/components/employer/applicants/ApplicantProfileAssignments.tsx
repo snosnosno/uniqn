@@ -83,12 +83,12 @@ export const ApplicantProfileAssignments = React.memo(function ApplicantProfileA
 
             {item.slots.map((slot, slotIndex) => (
               <View key={slotIndex} className="mb-1 ml-6 flex-row items-center">
-                <ClockIcon size={12} color="#6B7280" />
+                <ClockIcon size={12} color="#9A9078" />
                 <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
                   {slot.timeSlot}
                 </Text>
                 <View className="ml-2">
-                  <BriefcaseIcon size={12} color="#6B7280" />
+                  <BriefcaseIcon size={12} color="#9A9078" />
                 </View>
                 <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
                   {slot.roles.join(', ')}

@@ -178,9 +178,9 @@ const GroupItem = memo(function GroupItem({
             accessibilityLabel={isExpanded ? '날짜 상세 접기' : '날짜 상세 펼치기'}
           >
             {isExpanded ? (
-              <ChevronUpIcon size={16} color="#6B7280" />
+              <ChevronUpIcon size={16} color="#9A9078" />
             ) : (
-              <ChevronDownIcon size={16} color="#6B7280" />
+              <ChevronDownIcon size={16} color="#9A9078" />
             )}
           </Pressable>
         )}

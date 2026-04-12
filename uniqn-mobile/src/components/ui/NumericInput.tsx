@@ -100,7 +100,7 @@ export const NumericInput = memo(function NumericInput({
         keyboardType="numeric"
         editable={!disabled}
         placeholder={placeholder}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="#A89C84"
         className={`flex-1 text-base text-secondary-900 dark:text-white ${inputClassName}`}
         accessibilityLabel={accessibilityLabel}
         {...textInputProps}

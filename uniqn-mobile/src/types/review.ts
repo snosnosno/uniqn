@@ -353,22 +353,22 @@ export const SENTIMENT_COLORS: Record<
   { bg: string; border: string; text: string; darkBg: string }
 > = {
   positive: {
-    bg: 'bg-green-50',
-    border: 'border-green-500',
-    text: 'text-green-700',
-    darkBg: 'dark:bg-green-900/30',
+    bg: 'bg-success-50',
+    border: 'border-success-500',
+    text: 'text-success-700',
+    darkBg: 'dark:bg-success-900/30',
   },
   neutral: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-400',
-    text: 'text-gray-600',
-    darkBg: 'dark:bg-gray-800/50',
+    bg: 'bg-secondary-50',
+    border: 'border-secondary-400',
+    text: 'text-secondary-600',
+    darkBg: 'dark:bg-secondary-800/50',
   },
   negative: {
-    bg: 'bg-red-50',
-    border: 'border-red-500',
-    text: 'text-red-700',
-    darkBg: 'dark:bg-red-900/30',
+    bg: 'bg-error-50',
+    border: 'border-error-500',
+    text: 'text-error-700',
+    darkBg: 'dark:bg-error-900/30',
   },
 };
 
@@ -390,8 +390,8 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
   {
     min: 0,
     max: 30,
-    bg: 'bg-red-500',
-    darkBg: 'dark:bg-red-400',
+    bg: 'bg-error-500',
+    darkBg: 'dark:bg-error-400',
     text: 'text-white',
     hex: '#EF4444',
     label: '주의',
@@ -408,17 +408,17 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
   {
     min: 45,
     max: 55,
-    bg: 'bg-yellow-500',
-    darkBg: 'dark:bg-yellow-400',
-    text: 'text-gray-900',
+    bg: 'bg-warning-500',
+    darkBg: 'dark:bg-warning-400',
+    text: 'text-secondary-900',
     hex: '#EAB308',
     label: '보통',
   },
   {
     min: 55,
     max: 70,
-    bg: 'bg-green-500',
-    darkBg: 'dark:bg-green-400',
+    bg: 'bg-success-500',
+    darkBg: 'dark:bg-success-400',
     text: 'text-white',
     hex: '#22C55E',
     label: '좋음',
@@ -429,7 +429,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-primary-500',
     darkBg: 'dark:bg-primary-400',
     text: 'text-white',
-    hex: '#6366F1',
+    hex: '#2563EB',
     label: '우수',
   },
 ];

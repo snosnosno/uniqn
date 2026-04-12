@@ -137,7 +137,7 @@ export function CancellationRequestForm({
               if (error) setError(null);
             }}
             placeholder="취소하려는 이유를 상세히 입력해주세요"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={5}
             maxLength={500}

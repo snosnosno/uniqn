@@ -48,7 +48,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const iconColors = useMemo<IconColors>(
     () => ({
       checked: isDark ? '#93C5FD' : '#1D4ED8',
-      unchecked: isDark ? '#D1D5DB' : '#374151',
+      unchecked: isDark ? '#D6D2CA' : '#374151',
     }),
     [isDark]
   );

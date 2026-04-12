@@ -36,7 +36,7 @@ import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
 
 // 태양 아이콘 (다크모드용)
-const SunIcon = ({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) => (
+const SunIcon = ({ size = 24, color = '#9A9078' }: { size?: number; color?: string }) => (
   <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ fontSize: size * 0.7, color }}>{''}</Text>
   </View>
@@ -62,7 +62,7 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
           {value && (
             <Text className="mr-2 text-secondary-500 dark:text-secondary-400">{value}</Text>
           )}
-          <ChevronRightIcon size={20} color="#9CA3AF" />
+          <ChevronRightIcon size={20} color="#A89C84" />
         </View>
       )}
     </View>
@@ -243,7 +243,7 @@ export default function SettingsScreen() {
             </Pressable>
           )}
           <SettingItem
-            icon={<BellIcon size={22} color="#6B7280" />}
+            icon={<BellIcon size={22} color="#9A9078" />}
             label="푸시 알림"
             rightElement={
               <Switch
@@ -263,7 +263,7 @@ export default function SettingsScreen() {
             계정
           </Text>
           <SettingItem
-            icon={<LockIcon size={22} color="#6B7280" />}
+            icon={<LockIcon size={22} color="#9A9078" />}
             label="비밀번호 변경"
             onPress={() => router.push('/(app)/settings/change-password')}
           />
@@ -271,7 +271,7 @@ export default function SettingsScreen() {
             <>
               <Divider spacing="sm" />
               <SettingItem
-                icon={<LockIcon size={22} color="#6B7280" />}
+                icon={<LockIcon size={22} color="#9A9078" />}
                 label="자동 로그인"
                 rightElement={
                   <Switch
@@ -291,7 +291,7 @@ export default function SettingsScreen() {
                 <>
                   <Divider spacing="sm" />
                   <SettingItem
-                    icon={<LockIcon size={22} color="#6B7280" />}
+                    icon={<LockIcon size={22} color="#9A9078" />}
                     label={biometricTypeName}
                     rightElement={
                       <Switch
@@ -317,7 +317,7 @@ export default function SettingsScreen() {
             앱 설정
           </Text>
           <SettingItem
-            icon={<SunIcon size={22} color="#6B7280" />}
+            icon={<SunIcon size={22} color="#9A9078" />}
             label="다크 모드"
             rightElement={
               <Switch
@@ -330,13 +330,13 @@ export default function SettingsScreen() {
           />
           <Divider spacing="sm" />
           <SettingItem
-            icon={<TrashIcon size={22} color="#6B7280" />}
+            icon={<TrashIcon size={22} color="#9A9078" />}
             label="캐시 삭제"
             value={cacheStats ? `${cacheStats.queryCount}개 항목` : ''}
             onPress={handleClearCache}
             rightElement={
               isClearing ? (
-                <ActivityIndicator size="small" color="#6B7280" />
+                <ActivityIndicator size="small" color="#9A9078" />
               ) : (
                 <View className="flex-row items-center">
                   {cacheStats && (
@@ -344,7 +344,7 @@ export default function SettingsScreen() {
                       {cacheStats.queryCount}개 항목
                     </Text>
                   )}
-                  <ChevronRightIcon size={20} color="#9CA3AF" />
+                  <ChevronRightIcon size={20} color="#A89C84" />
                 </View>
               )
             }
@@ -383,7 +383,7 @@ export default function SettingsScreen() {
             <>
               <Divider spacing="sm" />
               <SettingItem
-                icon={<BellIcon size={22} color="#6B7280" />}
+                icon={<BellIcon size={22} color="#9A9078" />}
                 label="마케팅 정보 수신"
                 rightElement={
                   <Switch

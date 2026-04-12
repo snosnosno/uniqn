@@ -64,7 +64,7 @@ export function DateNavigationHeader({
         }`}
         accessibilityLabel="이전 날짜"
       >
-        <ChevronLeftIcon size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+        <ChevronLeftIcon size={24} color={isDark ? '#A89C84' : '#9A9078'} />
       </Pressable>
 
       <View className="flex-1 items-center">
@@ -84,7 +84,7 @@ export function DateNavigationHeader({
         }`}
         accessibilityLabel="다음 날짜"
       >
-        <ChevronRightIcon size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+        <ChevronRightIcon size={24} color={isDark ? '#A89C84' : '#9A9078'} />
       </Pressable>
     </View>
   );

@@ -318,7 +318,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
-        <CalendarIcon size={14} color="#6B7280" />
+        <CalendarIcon size={14} color="#9A9078" />
         <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
           {dateDisplay}
         </Text>
@@ -345,7 +345,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         )}
         {group.summary.settlableCount < group.summary.pendingCount && (
           <View className="flex-row items-center px-2 py-1 bg-secondary-50 dark:bg-surface rounded-lg">
-            <ExclamationCircleIcon size={12} color="#6B7280" />
+            <ExclamationCircleIcon size={12} color="#9A9078" />
             <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
             </Text>
@@ -361,9 +361,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       >
         <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1">날짜별 상세</Text>
         {isExpanded ? (
-          <ChevronUpIcon size={16} color="#6B7280" />
+          <ChevronUpIcon size={16} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={16} color="#6B7280" />
+          <ChevronDownIcon size={16} color="#9A9078" />
         )}
       </Pressable>
 

@@ -42,7 +42,7 @@ const COLORS = {
     background: '#DBEAFE', // primary-100
   },
   warning: {
-    stroke: '#F59E0B', // amber-500
+    stroke: '#D4A017', // amber-500
     background: '#FEF3C7', // amber-100
   },
   danger: {
@@ -50,7 +50,7 @@ const COLORS = {
     background: '#FEE2E2', // red-100
   },
   expired: {
-    stroke: '#9CA3AF', // gray-400
+    stroke: '#A89C84', // gray-400
     background: '#F3F4F6', // gray-100
   },
 };

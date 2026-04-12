@@ -54,7 +54,7 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
-              <SettingsIcon size={16} color="#6B7280" />
+              <SettingsIcon size={16} color="#9A9078" />
               <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
                 정산설정
               </Text>

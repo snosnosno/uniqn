@@ -15,8 +15,8 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const PLACEHOLDER_COLORS = {
-  light: '#6B7280', // gray-500 (WCAG AA 준수)
-  dark: '#9CA3AF', // gray-400 (다크모드에서 더 밝게)
+  light: '#9A9078', // gray-500 (WCAG AA 준수)
+  dark: '#A89C84', // gray-400 (다크모드에서 더 밝게)
 } as const;
 
 // ============================================================================

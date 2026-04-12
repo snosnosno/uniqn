@@ -387,7 +387,7 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoPrev ? 'opacity-30' : ''
               }`}
             >
-              <ChevronLeftIcon size={18} color={canGoPrev ? '#6B7280' : '#D1D5DB'} />
+              <ChevronLeftIcon size={18} color={canGoPrev ? '#9A9078' : '#D6D2CA'} />
             </Pressable>
           </View>
 
@@ -405,7 +405,7 @@ export const CalendarPicker = memo(function CalendarPicker({
                 !canGoNext ? 'opacity-30' : ''
               }`}
             >
-              <ChevronRightIcon size={18} color={canGoNext ? '#6B7280' : '#D1D5DB'} />
+              <ChevronRightIcon size={18} color={canGoNext ? '#9A9078' : '#D6D2CA'} />
             </Pressable>
             <Pressable
               onPress={goToNextYear}

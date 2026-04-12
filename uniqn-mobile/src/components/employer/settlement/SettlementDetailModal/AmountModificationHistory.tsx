@@ -58,7 +58,7 @@ export function AmountModificationHistory({
         className="flex-row items-center justify-between active:opacity-70"
       >
         <View className="flex-row items-center">
-          <BanknotesIcon size={18} color="#6B7280" />
+          <BanknotesIcon size={18} color="#9A9078" />
           <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
             금액 수정 이력
           </Text>
@@ -69,9 +69,9 @@ export function AmountModificationHistory({
           </View>
         </View>
         {isExpanded ? (
-          <ChevronUpIcon size={20} color="#6B7280" />
+          <ChevronUpIcon size={20} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={20} color="#9A9078" />
         )}
       </Pressable>
 

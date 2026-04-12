@@ -44,7 +44,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
     <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
       {isProfileLoading ? (
         <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
-          <ActivityIndicator size="small" color="#6B7280" />
+          <ActivityIndicator size="small" color="#9A9078" />
         </View>
       ) : (
         <Avatar

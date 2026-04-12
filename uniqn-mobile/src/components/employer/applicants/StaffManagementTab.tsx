@@ -47,7 +47,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
             isRefreshing ? 'opacity-50' : ''
           }`}
         >
-          <RefreshIcon size={24} color="#6B7280" />
+          <RefreshIcon size={24} color="#9A9078" />
         </Pressable>
       </View>
     </View>
@@ -189,7 +189,7 @@ export function StaffManagementTab({
       options.push({
         label: '출근 예정으로 변경',
         value: STATUS.WORK_LOG.SCHEDULED,
-        icon: <CalendarIcon size={20} color="#6B7280" />,
+        icon: <CalendarIcon size={20} color="#9A9078" />,
       });
     }
 

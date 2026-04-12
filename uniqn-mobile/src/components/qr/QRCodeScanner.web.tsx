@@ -270,7 +270,7 @@ export function QRCodeScanner({
           </View>
 
           <View style={styles.centerContent}>
-            <ScanIcon size={64} color="#6B7280" />
+            <ScanIcon size={64} color="#9A9078" />
             <Text style={styles.permissionTitle}>
               {permission === 'denied' ? '카메라 권한이 필요합니다' : '오류 발생'}
             </Text>
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   permissionText: {
-    color: '#9CA3AF',
+    color: '#A89C84',
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 24,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   closeText: {
-    color: '#9CA3AF',
+    color: '#A89C84',
     fontSize: 14,
   },
   bottomContainer: {

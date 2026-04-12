@@ -19,8 +19,8 @@ type IconRenderer = (color: string, strokeWidth: number) => React.ReactNode;
 type SolidIconRenderer = (color: string) => React.ReactNode;
 
 const DEFAULT_SIZE = 24;
-const DEFAULT_COLOR_LIGHT = '#6B7280';
-const DEFAULT_COLOR_DARK = '#9CA3AF';
+const DEFAULT_COLOR_LIGHT = '#9A9078';
+const DEFAULT_COLOR_DARK = '#A89C84';
 
 export const DEFAULT_COLOR = DEFAULT_COLOR_LIGHT;
 
@@ -452,7 +452,7 @@ export const BookmarkOutlineIcon = createOutlineIcon((color, strokeWidth) => (
 
 export const BookmarkFilledIcon = ({
   size = DEFAULT_SIZE,
-  color = '#F59E0B',
+  color = '#D4A017',
   ...rest
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
@@ -467,7 +467,7 @@ export const BookmarkIcon = ({
   ...rest
 }: BookmarkIconProps) => {
   if (filled) {
-    return <BookmarkFilledIcon size={size} color={color || '#F59E0B'} {...rest} />;
+    return <BookmarkFilledIcon size={size} color={color || '#D4A017'} {...rest} />;
   }
 
   return <BookmarkOutlineIcon size={size} color={color} {...rest} />;

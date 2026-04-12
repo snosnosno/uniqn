@@ -123,7 +123,7 @@ function ReportInfoSection({ report }: { report: Report }) {
 
       {/* 신고자 정보 */}
       <View className="flex-row items-center mb-3">
-        <UserIcon size={16} color="#6B7280" />
+        <UserIcon size={16} color="#9A9078" />
         <Text className="text-sm text-secondary-600 dark:text-secondary-400 ml-2">
           <Text className="font-medium text-secondary-900 dark:text-white">
             {report.reporterName}
@@ -142,7 +142,7 @@ function ReportInfoSection({ report }: { report: Report }) {
 
       {/* 생성 시간 */}
       <View className="flex-row items-center">
-        <ClockIcon size={14} color="#9CA3AF" />
+        <ClockIcon size={14} color="#A89C84" />
         <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-1">
           {formatTimestamp(report.createdAt)} ({formatTimeAgo(report.createdAt)})
         </Text>
@@ -281,7 +281,7 @@ function ReviewFormSection({
   return (
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
-        <AlertTriangleIcon size={18} color="#F59E0B" />
+        <AlertTriangleIcon size={18} color="#D4A017" />
         <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
           신고 처리
         </Text>
@@ -326,7 +326,7 @@ function ReviewFormSection({
         value={notes}
         onChangeText={setNotes}
         placeholder="처리에 대한 메모를 입력하세요"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="#A89C84"
         multiline
         numberOfLines={4}
         className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm text-secondary-900 dark:text-white mb-4"

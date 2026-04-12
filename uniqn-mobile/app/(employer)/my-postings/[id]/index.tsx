@@ -94,7 +94,7 @@ function ActionCard({
             {resolvedDescription}
           </Text>
         </View>
-        <ChevronRightIcon size={20} color="#9CA3AF" />
+        <ChevronRightIcon size={20} color="#A89C84" />
       </Card>
     </Pressable>
   );
@@ -267,9 +267,9 @@ export default function JobPostingDetailScreen() {
                     {isInfoExpanded ? '접기' : '상세'}
                   </Text>
                   {isInfoExpanded ? (
-                    <ChevronUpIcon size={14} color="#9CA3AF" />
+                    <ChevronUpIcon size={14} color="#A89C84" />
                   ) : (
-                    <ChevronDownIcon size={14} color="#9CA3AF" />
+                    <ChevronDownIcon size={14} color="#A89C84" />
                   )}
                 </Pressable>
               </View>
@@ -454,7 +454,7 @@ export default function JobPostingDetailScreen() {
 
             {!isFixed && (
               <ActionCard
-                icon={<EditIcon size={24} color="#6B7280" />}
+                icon={<EditIcon size={24} color="#9A9078" />}
                 title="공고 수정"
                 description="공고 내용과 상태를 수정합니다."
                 onPress={handleEdit}
@@ -467,7 +467,7 @@ export default function JobPostingDetailScreen() {
         {isFixed ? (
           <View className="px-4 pb-4">
             <ActionCard
-              icon={<EditIcon size={24} color="#6B7280" />}
+              icon={<EditIcon size={24} color="#9A9078" />}
               title="怨듦퀬 ?섏젙"
               description="怨듦퀬 ?댁슜怨??곹깭瑜??섏젙?⑸땲??"
               displayTitle="Edit Posting"

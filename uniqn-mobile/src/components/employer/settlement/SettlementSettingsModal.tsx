@@ -110,9 +110,9 @@ function AccordionSection({
           )}
         </View>
         {expanded ? (
-          <ChevronUpIcon size={20} color="#6B7280" />
+          <ChevronUpIcon size={20} color="#9A9078" />
         ) : (
-          <ChevronDownIcon size={20} color="#6B7280" />
+          <ChevronDownIcon size={20} color="#9A9078" />
         )}
       </Pressable>
       {expanded && <View className="px-4 pb-4">{children}</View>}

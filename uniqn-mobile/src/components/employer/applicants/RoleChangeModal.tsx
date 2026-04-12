@@ -84,7 +84,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             ${isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface'}
           `}
         >
-          <UserIcon size={20} color={isSelected ? '#FFFFFF' : '#6B7280'} />
+          <UserIcon size={20} color={isSelected ? '#FFFFFF' : '#9A9078'} />
         </View>
         <Text
           className={`
@@ -247,7 +247,7 @@ export function RoleChangeModal({
             value={reason}
             onChangeText={setReason}
             placeholder="역할 변경 사유를 입력하세요"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={2}
             textAlignVertical="top"

@@ -173,7 +173,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             keyboardType="numeric"
             editable={!disabled}
             placeholder="0"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             className="flex-1 text-base text-secondary-900 dark:text-white"
             accessibilityLabel="급여 금액"
           />

@@ -97,7 +97,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
           {/* 신고 유형 */}
           <Text className="font-semibold text-secondary-900 dark:text-white">{typeLabel}</Text>
         </View>
-        <ChevronRightIcon size={20} color="#9CA3AF" />
+        <ChevronRightIcon size={20} color="#A89C84" />
       </View>
 
       {/* 설명 */}

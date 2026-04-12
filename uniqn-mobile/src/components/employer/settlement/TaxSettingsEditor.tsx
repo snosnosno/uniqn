@@ -247,7 +247,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               keyboardType="decimal-pad"
               editable={!disabled}
               placeholder="3.3"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               className="flex-1 text-base text-secondary-900 dark:text-white"
               accessibilityLabel="세율"
             />
@@ -317,7 +317,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               keyboardType="numeric"
               editable={!disabled}
               placeholder="10,000"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A89C84"
               className="flex-1 text-base text-secondary-900 dark:text-white"
               accessibilityLabel="고정 세금 금액"
             />

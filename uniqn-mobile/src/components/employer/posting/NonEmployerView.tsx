@@ -19,7 +19,7 @@ export function NonEmployerView() {
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
         <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
-          <BriefcaseIcon size={48} color="#9CA3AF" />
+          <BriefcaseIcon size={48} color="#A89C84" />
         </View>
         <Text className="mb-2 text-center text-xl font-bold text-secondary-900 dark:text-white">
           구인자 전용 기능입니다

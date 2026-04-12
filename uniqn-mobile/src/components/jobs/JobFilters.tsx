@@ -257,7 +257,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     </Text>
                   </Pressable>
                   <Pressable onPress={handleCloseModal} className="p-1" accessibilityLabel="닫기">
-                    <XMarkIcon size={24} color="#6B7280" />
+                    <XMarkIcon size={24} color="#9A9078" />
                   </Pressable>
                 </View>
               </View>

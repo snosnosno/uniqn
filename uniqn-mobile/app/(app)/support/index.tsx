@@ -52,7 +52,7 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
               <Text className="text-xs font-bold text-white">{badge}</Text>
             </View>
           ) : null}
-          <ChevronRightIcon size={20} color="#9CA3AF" />
+          <ChevronRightIcon size={20} color="#A89C84" />
         </View>
       </View>
     </Pressable>

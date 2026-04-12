@@ -95,7 +95,7 @@ export function TimeInputField({
           }`}
       >
         <View className="flex-row items-center flex-1">
-          <ClockIcon size={20} color={isUndefined ? '#9CA3AF' : iconColor} />
+          <ClockIcon size={20} color={isUndefined ? '#A89C84' : iconColor} />
           {isUndefined ? (
             <Text className="ml-2 text-lg font-semibold text-secondary-400 dark:text-secondary-500">
               미정
@@ -106,7 +106,7 @@ export function TimeInputField({
             </Text>
           )}
         </View>
-        {!isUndefined && <ChevronDownIcon size={20} color="#9CA3AF" />}
+        {!isUndefined && <ChevronDownIcon size={20} color="#A89C84" />}
       </Pressable>
 
       {hasChanged && originalTime && (

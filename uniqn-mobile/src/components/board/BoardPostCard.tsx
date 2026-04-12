@@ -38,7 +38,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             <Badge variant={post.boardType === 'schedule' ? 'primary' : 'secondary'} size="sm">
               {BOARD_TYPE_LABELS[post.boardType]}
             </Badge>
-            {post.isPinned ? <PinIcon size={16} color="#F59E0B" /> : null}
+            {post.isPinned ? <PinIcon size={16} color="#D4A017" /> : null}
             {post.isLocked ? <LockIcon size={16} color="#DC2626" /> : null}
           </View>
 
@@ -61,7 +61,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             </Text>
             {showEngagementMetrics ? (
               <View className="flex-row items-center">
-                <ChatbubbleEllipsesOutlineIcon size={14} color="#6B7280" />
+                <ChatbubbleEllipsesOutlineIcon size={14} color="#9A9078" />
                 <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                   {post.commentCount}
                 </Text>
@@ -84,7 +84,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
               </View>
             ) : null}
             <View className="flex-row items-center">
-              <EyeIcon size={14} color="#6B7280" />
+              <EyeIcon size={14} color="#9A9078" />
               <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                 {post.viewCount}
               </Text>

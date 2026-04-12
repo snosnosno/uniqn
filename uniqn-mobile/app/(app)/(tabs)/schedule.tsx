@@ -82,7 +82,7 @@ function MonthNavigator({
         accessibilityRole="button"
         testID="schedule-prev-month-button"
       >
-        <ChevronLeftIcon size={24} color="#6B7280" />
+        <ChevronLeftIcon size={24} color="#9A9078" />
       </Pressable>
 
       <View className="flex-1 px-3">
@@ -114,9 +114,9 @@ function MonthNavigator({
           testID="schedule-view-toggle-button"
         >
           {viewMode === 'list' ? (
-            <CalendarIcon size={22} color="#6B7280" />
+            <CalendarIcon size={22} color="#9A9078" />
           ) : (
-            <MenuIcon size={22} color="#6B7280" />
+            <MenuIcon size={22} color="#9A9078" />
           )}
         </Pressable>
         <Pressable
@@ -126,7 +126,7 @@ function MonthNavigator({
           accessibilityRole="button"
           testID="schedule-next-month-button"
         >
-          <ChevronRightIcon size={24} color="#6B7280" />
+          <ChevronRightIcon size={24} color="#9A9078" />
         </Pressable>
       </View>
     </View>

@@ -92,7 +92,7 @@ function FilterTabsInner<T extends string = string>({
               <Text
                 className={`${LABEL_SIZE_CLASS[labelSize]} font-medium`}
                 style={{
-                  color: isSelected ? '#4F46E5' : '#6B7280',
+                  color: isSelected ? '#4F46E5' : '#9A9078',
                 }}
               >
                 {option.label}

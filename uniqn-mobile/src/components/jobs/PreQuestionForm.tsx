@@ -139,7 +139,7 @@ const QuestionItem = memo(function QuestionItem({
           onChangeText={handleTextChange}
           editable={!disabled}
           placeholder="답변을 입력해주세요"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
           accessibilityLabel={`${question.question} 답변 입력`}
           className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-white`}
         />
@@ -151,7 +151,7 @@ const QuestionItem = memo(function QuestionItem({
           onChangeText={handleTextChange}
           editable={!disabled}
           placeholder="답변을 입력해주세요"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
           multiline
           numberOfLines={4}
           textAlignVertical="top"

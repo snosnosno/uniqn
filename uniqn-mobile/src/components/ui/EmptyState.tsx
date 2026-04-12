@@ -16,7 +16,7 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const ICON_COLORS = {
-  default: { light: '#6B7280', dark: '#9CA3AF' }, // gray-500 / gray-400
+  default: { light: '#9A9078', dark: '#A89C84' }, // gray-500 / gray-400
   error: '#EF4444', // error-500 (동일)
 } as const;
 

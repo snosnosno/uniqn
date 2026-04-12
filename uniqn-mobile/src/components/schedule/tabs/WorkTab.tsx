@@ -129,7 +129,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       {/* 역할 */}
       <View className="mb-5">
         <View className="flex-row items-center mb-2">
-          <BriefcaseIcon size={18} color="#6B7280" />
+          <BriefcaseIcon size={18} color="#9A9078" />
           <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
             역할
           </Text>
@@ -145,7 +145,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       {schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.ownerPhone && (
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
-            <PhoneIcon size={18} color="#6B7280" />
+            <PhoneIcon size={18} color="#9A9078" />
             <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
               구인자 연락처
             </Text>
@@ -169,7 +169,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       <View className="mb-5">
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
-            <ClockIcon size={18} color="#6B7280" />
+            <ClockIcon size={18} color="#9A9078" />
             <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
               출퇴근 기록
             </Text>
@@ -207,7 +207,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         >
           <QrCodeIcon
             size={20}
-            color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'}
+            color={isWorking ? (isDarkMode ? '#D6D2CA' : '#374151') : '#FFFFFF'}
           />
           <Text
             className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}

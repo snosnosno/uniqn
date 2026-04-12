@@ -144,7 +144,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           accessibilityLabel="근무 장소명"
           testID="job-posting-location-name-input"
           maxLength={50}
-          leftIcon={<MapPinIcon size={20} color="#6B7280" />}
+          leftIcon={<MapPinIcon size={20} color="#9A9078" />}
         />
       </FormField>
 
@@ -184,7 +184,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           testID="job-posting-contact-phone-input"
           keyboardType="phone-pad"
           maxLength={25}
-          leftIcon={<PhoneIcon size={20} color="#6B7280" />}
+          leftIcon={<PhoneIcon size={20} color="#9A9078" />}
         />
       </FormField>
 
@@ -201,7 +201,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
           maxLength={500}
           textAlignVertical="top"
           className="px-4 py-3 bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-lg text-secondary-900 dark:text-white min-h-[100px]"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
         />
         <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400 text-right">
           {data.description.length}/500

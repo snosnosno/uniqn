@@ -11,8 +11,12 @@ import {
   createUpcomingSchedule,
   createCheckedInSchedule,
   createCompletedSchedule,
+  createMockWorkLog,
+  createMockJobPosting,
   resetCounters,
 } from '../../../__tests__/mocks/factories';
+
+import type { WorkLog, Application, ScheduleEvent } from '@/types';
 
 // Import after mocks
 import {
@@ -27,81 +31,99 @@ import {
   subscribeToSchedules,
   getScheduleStats,
 } from '@/services/work/scheduleService';
-import type { ScheduleEvent } from '@/types';
 
-// Mock Firebase
-const mockGetDoc = jest.fn();
-const mockGetDocs = jest.fn();
-const mockDoc = jest.fn();
-const mockCollection = jest.fn();
-const mockQuery = jest.fn();
-const mockOnSnapshot = jest.fn();
-const mockWhere = jest.fn();
-const mockOrderBy = jest.fn();
-const mockLimit = jest.fn();
+// ============================================================================
+// Repository Mocks
+// ============================================================================
 
-function mockCreateChain(): any {
-  const chain: any = {};
-  const self = () => chain;
+const mockWorkLogRepoGetByStaffIdWithFilters = jest.fn();
+const mockWorkLogRepoGetById = jest.fn();
+const mockWorkLogRepoSubscribeByStaffId = jest.fn();
+const mockAppRepoGetByApplicantIdWithStatuses = jest.fn();
+const mockAppRepoSubscribeByApplicantIdWithStatuses = jest.fn(() => jest.fn());
+const mockJobPostingRepoGetById = jest.fn();
+const mockJobPostingRepoGetByIdBatch = jest.fn();
 
-  chain.select = jest.fn((...args: unknown[]) => {
-    mockGetDocs(...args);
-    return chain;
-  });
-  chain.insert = jest.fn(self);
-  chain.update = jest.fn(self);
-  chain.delete = jest.fn(self);
-  chain.eq = jest.fn((...args: unknown[]) => {
-    mockWhere(...args);
-    return chain;
-  });
-  chain.neq = jest.fn(self);
-  chain.gt = jest.fn(self);
-  chain.gte = jest.fn((...args: unknown[]) => {
-    mockWhere('date', '>=', ...args);
-    return chain;
-  });
-  chain.lt = jest.fn(self);
-  chain.lte = jest.fn((...args: unknown[]) => {
-    mockWhere('date', '<=', ...args);
-    return chain;
-  });
-  chain.in = jest.fn(self);
-  chain.is = jest.fn(self);
-  chain.or = jest.fn(self);
-  chain.order = jest.fn(self);
-  chain.limit = jest.fn(self);
-  chain.range = jest.fn(self);
-  chain.filter = jest.fn(self);
-  chain.match = jest.fn(self);
-  chain.contains = jest.fn(self);
-  chain.overlaps = jest.fn(self);
-  chain.single = jest.fn((...args: unknown[]) => mockGetDoc(...args));
-  chain.maybeSingle = jest.fn(() => {
-    const result = mockGetDoc();
-    if (result && typeof result === 'object' && 'then' in result) {
-      return result;
-    }
-    return Promise.resolve(result);
-  });
-  chain.then = jest.fn((resolve: (v: unknown) => void, reject?: (r: unknown) => void) => {
-    const result = mockGetDocs();
-    if (result && typeof result === 'object' && 'then' in result) {
-      return (result as Promise<unknown>).then(resolve, reject);
-    }
-    return Promise.resolve(result).then(resolve, reject);
-  });
+jest.mock('@/repositories', () => ({
+  workLogRepository: {
+    getByStaffIdWithFilters: (...args: unknown[]) =>
+      mockWorkLogRepoGetByStaffIdWithFilters(...args),
+    getById: (...args: unknown[]) => mockWorkLogRepoGetById(...args),
+    subscribeByStaffId: (...args: unknown[]) => mockWorkLogRepoSubscribeByStaffId(...args),
+  },
+  applicationRepository: {
+    getByApplicantIdWithStatuses: (...args: unknown[]) =>
+      mockAppRepoGetByApplicantIdWithStatuses(...args),
+    subscribeByApplicantIdWithStatuses: (...args: unknown[]) =>
+      mockAppRepoSubscribeByApplicantIdWithStatuses.apply(null, args),
+  },
+  jobPostingRepository: {
+    getById: (...args: unknown[]) => mockJobPostingRepoGetById(...args),
+    getByIdBatch: (...args: unknown[]) => mockJobPostingRepoGetByIdBatch(...args),
+  },
+}));
 
-  return chain;
-}
+// ============================================================================
+// Domain / Shared Mocks
+// ============================================================================
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: jest.fn(() => mockCreateChain()),
-    channel: jest.fn(() => ({
-      on: jest.fn().mockReturnThis(),
-      subscribe: (...args: unknown[]) => mockOnSnapshot(...args),
-    })),
+const mockScheduleMergerMerge = jest.fn();
+
+jest.mock('@/domains/schedule', () => ({
+  ScheduleMerger: {
+    merge: (...args: unknown[]) => mockScheduleMergerMerge(...args),
+  },
+  ScheduleConverter: {
+    workLogToScheduleEvent: (workLog: WorkLog, cardInfo?: unknown) => ({
+      id: workLog.id,
+      jobPostingId: workLog.jobPostingId,
+      jobPostingName: (cardInfo as { title?: string })?.title || '이벤트',
+      location: (cardInfo as { location?: string })?.location || '',
+      date: workLog.date,
+      role: workLog.role || '스태프',
+      type: workLog.status === 'checked_out' ? 'completed' : 'confirmed',
+      status: 'not_started',
+      startTime: null,
+      endTime: null,
+      checkInTime: workLog.checkInTime || null,
+      checkOutTime: workLog.checkOutTime || null,
+      payrollAmount: (workLog as { payrollAmount?: number }).payrollAmount,
+      settlementBreakdown: (workLog as { settlementBreakdown?: unknown }).settlementBreakdown,
+    }),
+    applicationToScheduleEvents: (app: Application, cardInfo?: unknown) => {
+      const appAny = app as unknown as { selectedDates?: string[]; date?: string };
+      const dates = appAny.selectedDates || [appAny.date || '2025-01-15'];
+      return dates.map((date: string) => ({
+        id: `${app.id}-${date}`,
+        jobPostingId: app.jobPostingId,
+        jobPostingName: (cardInfo as { title?: string })?.title || '이벤트',
+        location: (cardInfo as { location?: string })?.location || '',
+        date,
+        role: '스태프',
+        type: 'applied',
+        status: 'not_started',
+        startTime: null,
+        endTime: null,
+        checkInTime: null,
+        checkOutTime: null,
+      }));
+    },
+  },
+  createSchedulePostingContext: (posting: unknown) => {
+    const p = posting as { id?: string; title?: string; location?: string };
+    return { title: p.title || '이벤트', location: p.location || '' };
+  },
+}));
+
+jest.mock('@/shared/id', () => ({
+  IdNormalizer: {
+    normalizeJobId: (record: { jobPostingId?: string }) => record.jobPostingId || '',
+    extractUnifiedIds: (workLogs: WorkLog[], applications: Application[]) => {
+      const ids = new Set<string>();
+      workLogs.forEach((wl) => ids.add(wl.jobPostingId));
+      applications.forEach((app) => ids.add(app.jobPostingId));
+      return [...ids];
+    },
   },
 }));
 
@@ -190,12 +212,17 @@ describe('scheduleService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
-    mockDoc.mockReturnValue({ id: 'test-doc' });
-    mockCollection.mockReturnValue({ id: 'test-collection' });
-    mockQuery.mockReturnValue({ id: 'test-query' });
-    mockWhere.mockReturnValue({ id: 'where-constraint' });
-    mockOrderBy.mockReturnValue({ id: 'orderBy-constraint' });
-    mockLimit.mockReturnValue({ id: 'limit-constraint' });
+
+    // Default: return empty arrays
+    mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+    mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
+    mockJobPostingRepoGetByIdBatch.mockResolvedValue([]);
+    mockScheduleMergerMerge.mockImplementation(
+      (workLogSchedules: ScheduleEvent[], appSchedules: ScheduleEvent[]) => [
+        ...workLogSchedules,
+        ...appSchedules,
+      ]
+    );
   });
 
   describe('groupSchedulesByDate', () => {
@@ -309,9 +336,9 @@ describe('scheduleService', () => {
       expect(markedDates['2025-01-15'].marked).toBe(true);
       expect(markedDates['2025-01-15'].dotColor).toBe('#22c55e'); // green for confirmed
 
-      expect(markedDates['2025-01-16'].dotColor).toBe('#f59e0b'); // yellow for applied
+      expect(markedDates['2025-01-16'].dotColor).toBe('#D4A017'); // yellow for applied
 
-      expect(markedDates['2025-01-17'].dotColor).toBe('#A855F7'); // blue for completed
+      expect(markedDates['2025-01-17'].dotColor).toBe('#D4AF37'); // primary for completed
 
       expect(markedDates['2025-01-18'].dotColor).toBe('#ef4444'); // red for cancelled
     });
@@ -357,96 +384,68 @@ describe('scheduleService', () => {
     });
   });
 
-  // TODO: Supabase 전환 후 Repository 레이어를 통한 데이터 접근으로 변경됨.
-  // mock 데이터 형식을 Firebase {docs: [{data: () => ...}]} → Supabase {data: [...], error: null}로 변환 필요.
-  // 또한 필드명 camelCase → snake_case 변환 및 Repository mock 전략 재설계 필요.
-  describe.skip('getMySchedules', () => {
+  describe('getMySchedules', () => {
     it('should return schedules for a staff member', async () => {
-      const mockWorkLogs = [
-        {
-          id: 'wl-1',
-          staffId: 'staff-123',
-          jobPostingId: 'job-1',
-          date: '2025-01-15',
-          status: 'scheduled',
-          role: '딜러',
-        },
-      ];
+      const workLog = createMockWorkLog({
+        id: 'wl-1',
+        staffId: 'staff-123',
+        jobPostingId: 'job-1',
+        status: 'scheduled',
+      });
 
-      const mockEventData = {
+      const posting = createMockJobPosting({
+        id: 'job-1',
         title: '테스트 이벤트',
         location: '서울',
-      };
-
-      // Mock workLogs query
-      mockGetDocs.mockResolvedValueOnce({
-        docs: mockWorkLogs.map((wl) => ({
-          id: wl.id,
-          data: () => wl,
-        })),
-      });
-      // Mock applications query
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [],
       });
 
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => mockEventData,
-      });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([workLog]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
+      mockJobPostingRepoGetByIdBatch.mockResolvedValue([posting]);
 
       const result = await getMySchedules('staff-123');
 
       expect(result.schedules).toBeDefined();
       expect(result.stats).toBeDefined();
-      expect(mockGetDocs).toHaveBeenCalled();
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({ pageSize: 50 })
+      );
     });
 
     it('should apply date range filter', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getMySchedules('staff-123', {
         dateRange: { start: '2025-01-01', end: '2025-01-31' },
       });
 
-      expect(mockWhere).toHaveBeenCalledWith('staffId', '==', 'staff-123');
-      expect(mockWhere).toHaveBeenCalledWith('date', '>=', '2025-01-01');
-      expect(mockWhere).toHaveBeenCalledWith('date', '<=', '2025-01-31');
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        })
+      );
     });
 
     it('should filter by search term', async () => {
-      const mockWorkLogs = [
-        {
-          id: 'wl-1',
-          staffId: 'staff-123',
-          jobPostingId: 'job-1',
-          date: '2025-01-15',
-          status: 'scheduled',
-          role: '딜러',
-        },
-      ];
+      const workLog = createMockWorkLog({
+        id: 'wl-1',
+        staffId: 'staff-123',
+        jobPostingId: 'job-1',
+        status: 'scheduled',
+      });
 
-      const mockEventData = {
+      const posting = createMockJobPosting({
+        id: 'job-1',
         title: '강남 홀덤',
         location: '강남구',
-      };
-
-      // Mock workLogs query
-      mockGetDocs.mockResolvedValueOnce({
-        docs: mockWorkLogs.map((wl) => ({
-          id: wl.id,
-          data: () => wl,
-        })),
       });
-      // Mock applications query
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
 
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => mockEventData,
-      });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([workLog]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
+      mockJobPostingRepoGetByIdBatch.mockResolvedValue([posting]);
 
       const result = await getMySchedules('staff-123', {
         dateRange: { start: '2025-01-01', end: '2025-01-31' },
@@ -457,58 +456,62 @@ describe('scheduleService', () => {
     });
 
     it('should throw error on database failure', async () => {
-      // Mock chain .then() resolves with error
-      mockGetDocs.mockReturnValue(Promise.reject(new Error('Database error')));
+      mockWorkLogRepoGetByStaffIdWithFilters.mockRejectedValue(new Error('Database error'));
+      mockAppRepoGetByApplicantIdWithStatuses.mockRejectedValue(new Error('Database error'));
 
       await expect(getMySchedules('staff-123')).rejects.toThrow();
     });
   });
 
-  describe.skip('getSchedulesByDate', () => {
+  describe('getSchedulesByDate', () => {
     it('should return schedules for a specific date', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getSchedulesByDate('staff-123', '2025-01-15');
 
-      expect(mockWhere).toHaveBeenCalledWith('date', '>=', '2025-01-15');
-      expect(mockWhere).toHaveBeenCalledWith('date', '<=', '2025-01-15');
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: { start: '2025-01-15', end: '2025-01-15' },
+        })
+      );
     });
   });
 
-  describe.skip('getSchedulesByMonth', () => {
+  describe('getSchedulesByMonth', () => {
     it('should return schedules for a specific month', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getSchedulesByMonth('staff-123', 2025, 1);
 
-      expect(mockWhere).toHaveBeenCalledWith('date', '>=', '2025-01-01');
-      expect(mockWhere).toHaveBeenCalledWith('date', '<=', '2025-01-31');
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        })
+      );
     });
 
     it('should handle February correctly', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getSchedulesByMonth('staff-123', 2024, 2); // leap year
 
-      expect(mockWhere).toHaveBeenCalledWith('date', '>=', '2024-02-01');
-      expect(mockWhere).toHaveBeenCalledWith('date', '<=', '2024-02-29');
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: { start: '2024-02-01', end: '2024-02-29' },
+        })
+      );
     });
   });
 
   describe('getScheduleById', () => {
-    beforeEach(() => {
-      // Reset mockGetDoc to avoid pollution from previous tests
-      mockGetDoc.mockReset();
-    });
-
     it('should return null for non-existent schedule', async () => {
-      mockGetDoc.mockResolvedValueOnce({ exists: () => false });
+      mockWorkLogRepoGetById.mockResolvedValue(null);
 
       const result = await getScheduleById('non-existent');
 
@@ -516,176 +519,134 @@ describe('scheduleService', () => {
     });
 
     it('should return schedule event for existing worklog', async () => {
-      const mockWorkLog = {
+      const workLog = createMockWorkLog({
         id: 'wl-1',
         staffId: 'staff-123',
         jobPostingId: 'job-1',
-        date: '2025-01-15',
         status: 'scheduled',
-        role: '딜러',
-      };
+      });
 
-      const mockEventData = {
+      const posting = createMockJobPosting({
+        id: 'job-1',
         title: '테스트 이벤트',
         location: '서울',
-      };
+      });
 
-      // First call: workLog document
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: mockWorkLog.id,
-        data: () => mockWorkLog,
-      });
-      // Second call: job posting document
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: 'job-1',
-        data: () => mockEventData,
-      });
+      mockWorkLogRepoGetById.mockResolvedValue(workLog);
+      mockJobPostingRepoGetById.mockResolvedValue(posting);
 
       const result = await getScheduleById('wl-1');
 
       expect(result).not.toBeNull();
-      // jobPostingName comes from card.title which is built from JobPostingCard
       expect(result?.jobPostingName).toBeDefined();
       expect(result?.location).toBeDefined();
     });
   });
 
-  describe.skip('getTodaySchedules', () => {
+  describe('getTodaySchedules', () => {
     it('should query for today', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getTodaySchedules('staff-123');
 
-      // Check that date range query is made with a valid date format (YYYY-MM-DD)
-      expect(mockWhere).toHaveBeenCalledWith('staffId', '==', 'staff-123');
-      expect(mockWhere).toHaveBeenCalledWith(
-        'date',
-        '>=',
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
-      );
-      expect(mockWhere).toHaveBeenCalledWith(
-        'date',
-        '<=',
-        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: expect.objectContaining({
+            start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+            end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          }),
+        })
       );
     });
   });
 
-  describe.skip('getUpcomingSchedules', () => {
+  describe('getUpcomingSchedules', () => {
     it('should query for upcoming 7 days by default', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getUpcomingSchedules('staff-123');
 
-      expect(mockWhere).toHaveBeenCalledWith('staffId', '==', 'staff-123');
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalledWith(
+        'staff-123',
+        expect.objectContaining({
+          dateRange: expect.objectContaining({
+            start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+            end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          }),
+        })
+      );
     });
 
     it('should allow custom days parameter', async () => {
-      // Mock both queries
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue([]);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
 
       await getUpcomingSchedules('staff-123', 14);
 
-      expect(mockGetDocs).toHaveBeenCalled();
+      expect(mockWorkLogRepoGetByStaffIdWithFilters).toHaveBeenCalled();
     });
   });
 
   describe('subscribeToSchedules', () => {
-    it('should set up onSnapshot subscription', () => {
+    it('should set up subscription via repository', () => {
       const onUpdate = jest.fn();
       const onError = jest.fn();
-      const mockUnsubscribe = jest.fn();
+      const mockWorkLogUnsub = jest.fn();
+      const mockAppUnsub = jest.fn();
 
-      mockOnSnapshot.mockReturnValue(mockUnsubscribe);
+      mockWorkLogRepoSubscribeByStaffId.mockReturnValue(mockWorkLogUnsub);
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockReturnValue(mockAppUnsub);
 
       const unsubscribe = subscribeToSchedules('staff-123', onUpdate, onError);
 
-      expect(mockOnSnapshot).toHaveBeenCalled();
+      expect(mockWorkLogRepoSubscribeByStaffId).toHaveBeenCalled();
       expect(typeof unsubscribe).toBe('function');
     });
 
-    // TODO: Supabase Realtime 구독 패턴으로 변경됨. Firebase onSnapshot 콜백 → Supabase channel 구독으로 재작성 필요.
-    it.skip('should call onUpdate with schedules when snapshot changes', () => {
+    it('should unsubscribe both repositories when unsubscribed', () => {
       const onUpdate = jest.fn();
-      const mockWorkLogs = [
-        {
-          id: 'wl-1',
-          staffId: 'staff-123',
-          jobPostingId: 'job-1',
-          date: '2025-01-15',
-          status: 'scheduled',
-          role: '딜러',
-        },
-      ];
+      const mockWorkLogUnsub = jest.fn();
+      const mockAppUnsub = jest.fn();
 
-      mockOnSnapshot.mockImplementation((_query, successCallback, _errorCallback) => {
-        // Simulate snapshot (query and errorCallback available for error scenarios)
-        void _query;
-        void _errorCallback;
-        successCallback({
-          docs: mockWorkLogs.map((wl) => ({
-            id: wl.id,
-            data: () => wl,
-          })),
-        });
-        return jest.fn();
-      });
+      mockWorkLogRepoSubscribeByStaffId.mockReturnValue(mockWorkLogUnsub);
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockReturnValue(mockAppUnsub);
 
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ title: '이벤트', location: '서울' }),
-      });
+      const unsubscribe = subscribeToSchedules('staff-123', onUpdate);
+      unsubscribe();
 
-      subscribeToSchedules('staff-123', onUpdate);
-
-      // The callback is async, so we need to wait
-      expect(mockOnSnapshot).toHaveBeenCalled();
+      expect(mockWorkLogUnsub).toHaveBeenCalled();
+      expect(mockAppUnsub).toHaveBeenCalled();
     });
   });
 
-  describe.skip('getScheduleStats', () => {
+  describe('getScheduleStats', () => {
     it('should return stats for last 6 months', async () => {
-      const mockWorkLogs = [
-        {
+      const workLogs = [
+        createMockWorkLog({
           id: 'wl-1',
           staffId: 'staff-123',
           jobPostingId: 'job-1',
-          date: '2025-01-15',
-          status: 'completed',
-          role: '딜러',
-          payrollAmount: 150000,
-        },
-        {
+          status: 'checked_out',
+        }),
+        createMockWorkLog({
           id: 'wl-2',
           staffId: 'staff-123',
           jobPostingId: 'job-2',
-          date: '2025-01-20',
           status: 'scheduled',
-          role: '딜러',
-        },
+        }),
       ];
 
-      // Mock workLogs query
-      mockGetDocs.mockResolvedValueOnce({
-        docs: mockWorkLogs.map((wl) => ({
-          id: wl.id,
-          data: () => wl,
-        })),
-      });
-      // Mock applications query
-      mockGetDocs.mockResolvedValueOnce({ docs: [] });
+      const postings = [
+        createMockJobPosting({ id: 'job-1', title: '이벤트 1', location: '서울' }),
+        createMockJobPosting({ id: 'job-2', title: '이벤트 2', location: '서울' }),
+      ];
 
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ title: '이벤트', location: '서울' }),
-      });
+      mockWorkLogRepoGetByStaffIdWithFilters.mockResolvedValue(workLogs);
+      mockAppRepoGetByApplicantIdWithStatuses.mockResolvedValue([]);
+      mockJobPostingRepoGetByIdBatch.mockResolvedValue(postings);
 
       const stats = await getScheduleStats('staff-123');
 

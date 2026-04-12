@@ -174,7 +174,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 취소 요청 사유 */}
         <View className="mb-3">
           <View className="flex-row items-center mb-1">
-            <MessageIcon size={14} color="#9CA3AF" />
+            <MessageIcon size={14} color="#A89C84" />
             <Text className="ml-1 text-xs font-medium text-secondary-500 dark:text-secondary-400">
               취소 사유
             </Text>
@@ -188,7 +188,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 요청 시간 */}
         <View className="flex-row items-center mb-3">
-          <ClockIcon size={14} color="#9CA3AF" />
+          <ClockIcon size={14} color="#A89C84" />
           <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400">
             {requestTimeAgo}
           </Text>
@@ -257,7 +257,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             value={rejectionReason}
             onChangeText={setRejectionReason}
             placeholder="최소 3자 이상 입력해주세요"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#A89C84"
             multiline
             numberOfLines={3}
             maxLength={200}

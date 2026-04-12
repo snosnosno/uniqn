@@ -139,11 +139,14 @@ export const APPLICATION_STATUS_COLORS: Record<
     text: 'text-primary-700 dark:text-primary-300',
   },
   confirmed: {
-    bg: 'bg-green-100 dark:bg-green-900/30',
-    text: 'text-green-700 dark:text-green-300',
+    bg: 'bg-success-100 dark:bg-success-900/30',
+    text: 'text-success-700 dark:text-success-300',
   },
-  rejected: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300' },
-  cancelled: { bg: 'bg-gray-100 dark:bg-surface', text: 'text-gray-500 dark:text-gray-400' },
+  rejected: { bg: 'bg-error-100 dark:bg-error-900/30', text: 'text-error-700 dark:text-error-300' },
+  cancelled: {
+    bg: 'bg-secondary-100 dark:bg-surface',
+    text: 'text-secondary-500 dark:text-secondary-400',
+  },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-300',

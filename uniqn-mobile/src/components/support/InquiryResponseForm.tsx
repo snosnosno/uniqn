@@ -92,7 +92,7 @@ export function InquiryResponseForm({
           }}
           onBlur={() => validateField('response', response)}
           placeholder="답변 내용을 입력해주세요"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A89C84"
           multiline
           numberOfLines={6}
           textAlignVertical="top"
