@@ -256,8 +256,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   // 플러그인
   plugins: [
-    '@react-native-firebase/app',
-    '@react-native-firebase/auth',
     'expo-apple-authentication',
     'expo-router',
     '@portone/react-native-sdk/plugin',
@@ -324,10 +322,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
-    // RNFirebase non-modular header 에러 수정 (useFrameworks: 'static' 사용 시 필요)
-    './plugins/withNonModularHeaders',
-    // Firebase Phone Auth용 reCAPTCHA Enterprise SDK (iOS)
-    './plugins/withRecaptchaEnterprise',
+    // NOTE: @react-native-firebase 플러그인 제거 (Supabase 이전 완료, 네이티브 Firebase SDK 미사용)
   ],
 
   // 추가 설정
