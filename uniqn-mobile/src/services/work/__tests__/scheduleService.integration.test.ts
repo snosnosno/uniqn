@@ -334,13 +334,13 @@ describe('scheduleService', () => {
       const markedDates = getCalendarMarkedDates(schedules);
 
       expect(markedDates['2025-01-15'].marked).toBe(true);
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22c55e'); // green for confirmed
+      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E'); // green for confirmed
 
-      expect(markedDates['2025-01-16'].dotColor).toBe('#D4A017'); // yellow for applied
+      expect(markedDates['2025-01-16'].dotColor).toBe('#D4AF37'); // yellow for applied
 
-      expect(markedDates['2025-01-17'].dotColor).toBe('#D4AF37'); // primary for completed
+      expect(markedDates['2025-01-17'].dotColor).toBe('#8B5CF6'); // purple for completed
 
-      expect(markedDates['2025-01-18'].dotColor).toBe('#ef4444'); // red for cancelled
+      expect(markedDates['2025-01-18'].dotColor).toBe('#EF4444'); // red for cancelled
     });
 
     it('should prioritize confirmed over other types for same date', () => {
@@ -358,7 +358,7 @@ describe('scheduleService', () => {
       const markedDates = getCalendarMarkedDates(schedules);
 
       expect(markedDates['2025-01-15'].type).toBe('confirmed');
-      expect(markedDates['2025-01-15'].dotColor).toBe('#22c55e');
+      expect(markedDates['2025-01-15'].dotColor).toBe('#22C55E');
     });
 
     it('should prioritize applied over completed for same date', () => {
