@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { useModalStore, type ModalConfig } from '@/stores/modalStore';
 import { Modal, AlertModal, ConfirmModal } from './Modal';
 import { Button } from './Button';
@@ -18,7 +19,7 @@ import { Button } from './Button';
 function LoadingModalContent({ message }: { message?: string }) {
   return (
     <View className="items-center py-4">
-      <ActivityIndicator size="large" color="#D4AF37" />
+      <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
       {message && (
         <Text className="text-content-muted dark:text-secondary-300 mt-4 text-center font-sans">
           {message}

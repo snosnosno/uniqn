@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { CheckCircleIcon } from '../../../icons';
 import { formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
@@ -27,7 +28,7 @@ export function SettlementCompletedBanner({ payrollDate }: SettlementCompletedBa
   return (
     <View className="px-4 py-4">
       <View className="flex-row items-center justify-center p-4 bg-success-50 dark:bg-success-900/20 rounded-lg">
-        <CheckCircleIcon size={20} color="#22C55E" />
+        <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
         <Text className="ml-2 text-base font-sans-medium text-success-600 dark:text-success-400">
           {parsedDate ? `${formatDate(parsedDate)} 정산 완료` : '정산 완료'}
         </Text>

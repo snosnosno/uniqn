@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 
 import { CheckIcon, XMarkIcon } from '@/components/icons';
 
@@ -58,7 +59,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         accessibilityHint="지원자를 거절합니다"
         className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-surface-card dark:bg-surface active:opacity-70"
       >
-        <XMarkIcon size={16} color="#DC2626" />
+        <XMarkIcon size={16} color={STATUS_COLORS.error} />
         <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
           거절
         </Text>

@@ -15,6 +15,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { format, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 import { Modal } from '@/components/ui/Modal';
@@ -186,7 +187,10 @@ export function DatePickerModal({
                   hitSlop={8}
                   accessibilityLabel={`${format(date, 'M월 d일')} 선택 해제`}
                 >
-                  <XMarkIcon size={14} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+                  <XMarkIcon
+                    size={14}
+                    color={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
+                  />
                 </Pressable>
               </View>
             ))}

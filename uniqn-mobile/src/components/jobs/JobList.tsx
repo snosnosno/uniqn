@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { FlashList } from '@shopify/flash-list';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
@@ -102,7 +103,7 @@ export function JobList({
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
+            tintColor={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
           />
         }
         onEndReached={handleEndReached}

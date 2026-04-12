@@ -15,6 +15,7 @@ import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
+import { SURFACE_COLORS } from '@/constants/colors';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
@@ -199,9 +200,9 @@ export default function ApplyScreen() {
     headerShown: true,
     title: '지원하기',
     headerStyle: {
-      backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
+      backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
     },
-    headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
+    headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
   } as const;
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {

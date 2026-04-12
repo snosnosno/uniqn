@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { SURFACE_COLORS, PRIMARY_COLORS } from '@/constants/colors';
 import { View, Text, ScrollView, Share, ActivityIndicator, Pressable } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -181,13 +182,16 @@ export default function MyDataScreen() {
             headerShown: true,
             title: '내 정보',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
+              backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
             },
-            headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
+            headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
           }}
         />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+          <ActivityIndicator
+            size="large"
+            color={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
+          />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             정보를 불러오는 중...
           </Text>
@@ -203,9 +207,9 @@ export default function MyDataScreen() {
           headerShown: true,
           title: '내 정보',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
+            backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
           },
-          headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
+          headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
         }}
       />
 
@@ -294,7 +298,10 @@ export default function MyDataScreen() {
           <Button onPress={handleExport} variant="outline" fullWidth disabled={isExporting}>
             {isExporting ? (
               <View className="flex-row items-center">
-                <ActivityIndicator size="small" color={isDarkMode ? '#D4AF37' : '#8A7228'} />
+                <ActivityIndicator
+                  size="small"
+                  color={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
+                />
                 <Text className="ml-2 text-primary-600 dark:text-primary-400 font-sans">
                   내보내는 중...
                 </Text>

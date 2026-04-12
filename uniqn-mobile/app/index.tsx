@@ -8,6 +8,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { APP_VERSION } from '@/constants/version';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
 import {
   AUTH_ENTRY_ROUTES,
@@ -24,8 +25,8 @@ const SPLASH_REDIRECT_DELAY_MS = 500;
 const PROFILE_RETRY_DELAY_MS = 500;
 
 const SPINNER_COLOR = {
-  light: '#D4AF37',
-  dark: '#E8C84E',
+  light: PRIMARY_COLORS[300],
+  dark: PRIMARY_COLORS[200],
 } as const;
 
 export default function SplashScreen() {

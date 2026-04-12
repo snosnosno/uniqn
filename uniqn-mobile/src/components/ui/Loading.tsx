@@ -8,13 +8,14 @@
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
+import { PRIMARY_COLORS } from '@/constants/colors';
 
 // ============================================================================
 // Theme Constants
 // ============================================================================
 
 const LOADING_COLORS = {
-  light: '#D4AF37', // primary-500
+  light: PRIMARY_COLORS[300], // primary-500
   dark: '#E8C84E', // primary-400 (다크모드에서 더 밝게)
 } as const;
 

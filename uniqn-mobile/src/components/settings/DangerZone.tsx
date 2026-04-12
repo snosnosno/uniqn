@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { Card } from '@/components/ui';
 import { TrashIcon, ExclamationTriangleIcon } from '@/components/icons';
 
@@ -28,7 +29,7 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
     <Card className="border border-error-200 bg-error-50 dark:border-error-800 dark:bg-error-900/20">
       {/* 헤더 */}
       <View className="mb-3 flex-row items-center">
-        <ExclamationTriangleIcon size={18} color="#DC2626" />
+        <ExclamationTriangleIcon size={18} color={STATUS_COLORS.error} />
         <Text className="ml-2 text-sm font-sans-semibold text-error-700 dark:text-error-300">
           위험 영역
         </Text>
@@ -48,7 +49,7 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
         testID="settings-delete-account-button"
       >
         <View className="flex-row items-center">
-          <TrashIcon size={20} color="#DC2626" />
+          <TrashIcon size={20} color={STATUS_COLORS.error} />
           <View className="ml-3">
             <Text className="text-sm font-sans-medium text-error-700 dark:text-error-300">
               계정 삭제

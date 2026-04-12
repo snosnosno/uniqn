@@ -24,6 +24,7 @@ import {
 import { XMarkIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { getIconColor } from '@/constants';
+import { SURFACE_COLORS } from '@/constants/colors';
 import { isWeb } from '@/utils/platform';
 import { Modal } from './Modal';
 
@@ -34,7 +35,7 @@ import { Modal } from './Modal';
 /** BottomSheet 배경색 (Tailwind gray-800 / white 대응) */
 const BACKGROUND_COLORS = {
   light: '#FFFFFF',
-  dark: '#09090B', // gray-800
+  dark: SURFACE_COLORS.DEFAULT, // gray-800
 } as const;
 
 // ============================================================================

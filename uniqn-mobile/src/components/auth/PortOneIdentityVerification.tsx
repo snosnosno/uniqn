@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, useWindowDimensions } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { IdentityVerification } from '@portone/react-native-sdk';
 import { CheckCircleIcon, ShieldCheckIcon, XCircleIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
@@ -168,7 +169,7 @@ export function PortOneIdentityVerification({
       {verifiedIdentity ? (
         <View className="rounded-md border border-success-200 bg-success-50 p-4 dark:border-success-900/40 dark:bg-success-900/10">
           <View className="mb-3 flex-row items-center">
-            <CheckCircleIcon size={20} color="#22C55E" />
+            <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
             <Text className="ml-2 font-sans-semibold text-success-700 dark:text-success-400">
               이니시스 본인인증 완료
             </Text>
@@ -239,7 +240,7 @@ export function PortOneIdentityVerification({
 
       {errorMessage && (
         <View className="mt-3 flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
-          <XCircleIcon size={18} color="#DC2626" />
+          <XCircleIcon size={18} color={STATUS_COLORS.error} />
           <Text className="ml-2 flex-1 text-sm text-error-600 dark:text-error-400 font-sans">
             {errorMessage}
           </Text>

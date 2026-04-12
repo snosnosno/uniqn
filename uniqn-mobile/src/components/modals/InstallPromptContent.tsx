@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { DevicePhoneMobileIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 
@@ -11,7 +12,7 @@ export function InstallPromptContent({ description, onLogin }: InstallPromptCont
   return (
     <View className="items-center py-2">
       <View className="mb-4 h-16 w-16 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
-        <DevicePhoneMobileIcon size={32} color="#D4AF37" />
+        <DevicePhoneMobileIcon size={32} color={PRIMARY_COLORS[300]} />
       </View>
 
       <Text className="text-center text-base font-sans-semibold text-content-primary dark:text-off-white">

@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import { Avatar } from '@/components/ui';
 import { CameraIcon, TrashIcon } from '@/components/icons';
@@ -172,7 +173,7 @@ export function ProfileImagePicker({
           className="mt-3 flex-row items-center"
           accessibilityLabel="프로필 사진 삭제"
         >
-          <TrashIcon size={14} color="#DC2626" />
+          <TrashIcon size={14} color={STATUS_COLORS.error} />
           <Text className="ml-1 text-sm text-error-600 dark:text-error-400 font-sans">
             사진 삭제
           </Text>

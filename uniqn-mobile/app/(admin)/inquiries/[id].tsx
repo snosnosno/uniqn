@@ -5,6 +5,7 @@
 
 import { useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Card } from '@/components/ui';
@@ -41,7 +42,7 @@ export default function AdminInquiryDetailScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#D4AF37" />
+        <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
       </SafeAreaView>
     );
   }

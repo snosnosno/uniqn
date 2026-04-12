@@ -1,5 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { CheckCircleIcon } from '@/components/icons';
 
 import type { PostingType } from '@/types';
@@ -63,7 +64,7 @@ const TypeCard = memo(function TypeCard({
             {info.description}
           </Text>
         </View>
-        {isSelected && <CheckCircleIcon size={16} color="#D4AF37" />}
+        {isSelected && <CheckCircleIcon size={16} color={PRIMARY_COLORS[300]} />}
       </View>
     </Pressable>
   );

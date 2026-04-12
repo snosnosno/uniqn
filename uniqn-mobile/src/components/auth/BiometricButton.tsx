@@ -9,6 +9,7 @@ import React, { memo } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useBiometricAuth } from '@/hooks';
 import { useThemeStore } from '@/stores/themeStore';
+import { PRIMARY_COLORS } from '@/constants/colors';
 
 // ============================================================================
 // Types
@@ -96,7 +97,7 @@ export const BiometricButton = memo(function BiometricButton({
 }: BiometricButtonProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const { biometricTypeName, status } = useBiometricAuth();
-  const primaryColor = isDarkMode ? '#D4AF37' : '#8A7228';
+  const primaryColor = isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700];
 
   // 생체 인증 타입에 따른 아이콘 선택
   const isFaceId = status?.biometricTypes.includes('facial');

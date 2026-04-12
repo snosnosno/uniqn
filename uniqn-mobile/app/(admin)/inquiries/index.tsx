@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, Text, RefreshControl, ActivityIndicator, Pressable, ScrollView } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
@@ -57,7 +58,7 @@ export default function AdminInquiriesScreen() {
     if (!hasMore) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#D4AF37" />
+        <ActivityIndicator size="small" color={PRIMARY_COLORS[300]} />
       </View>
     );
   }, [hasMore]);
@@ -127,7 +128,7 @@ export default function AdminInquiriesScreen() {
       {/* 문의 목록 */}
       {isLoading && inquiries.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#D4AF37" />
+          <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
         </View>
       ) : (
         <FlashList
@@ -142,7 +143,11 @@ export default function AdminInquiriesScreen() {
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#D4AF37" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refetch}
+              tintColor={PRIMARY_COLORS[300]}
+            />
           }
         />
       )}

@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { Link } from 'expo-router';
 import {
   ChatbubbleEllipsesOutlineIcon,
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
       title: '신고 관리',
       description: '일반 서비스 신고를 검토하고 처리합니다.',
       icon: FlagOutlineIcon,
-      iconColor: '#DC2626',
+      iconColor: STATUS_COLORS.error,
       href: '/(admin)/reports',
       bgColor: 'bg-error-50 dark:bg-error-900/30',
     },
@@ -90,7 +91,7 @@ export default function AdminDashboard() {
       title: '통계',
       description: '최근 서비스 지표를 확인합니다.',
       icon: RefreshIcon,
-      iconColor: '#2563EB',
+      iconColor: STATUS_COLORS.info,
       href: '/(admin)/stats',
       bgColor: 'bg-info-100 dark:bg-info-900/30',
     },

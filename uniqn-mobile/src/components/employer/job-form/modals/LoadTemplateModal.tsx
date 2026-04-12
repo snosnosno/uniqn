@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { STATUS_COLORS, PRIMARY_COLORS } from '@/constants/colors';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TrashIcon } from '@/components/icons';
 import { toDate, type DateInput } from '@/utils/date';
@@ -100,7 +101,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           accessibilityRole="button"
           accessibilityLabel="템플릿 삭제"
         >
-          <TrashIcon size={18} color="#DC2626" />
+          <TrashIcon size={18} color={STATUS_COLORS.error} />
         </TouchableOpacity>
       </View>
 
@@ -214,7 +215,7 @@ export function LoadTemplateModal({
       <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
         {templatesLoading ? (
           <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#D4AF37" />
+            <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
             <Text className="mt-3 text-secondary-500 dark:text-secondary-400 font-sans">
               템플릿을 불러오는 중...
             </Text>

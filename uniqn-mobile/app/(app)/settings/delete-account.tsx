@@ -11,6 +11,7 @@
 
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { SURFACE_COLORS } from '@/constants/colors';
 import { router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
@@ -222,9 +223,9 @@ export default function DeleteAccountScreen() {
           headerShown: true,
           title: '회원탈퇴',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#09090B' : '#FFFFFF',
+            backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
           },
-          headerTintColor: isDarkMode ? '#FFFFFF' : '#09090B',
+          headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
         }}
       />
 

@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { CalendarIcon } from '@/components/icons';
 import { Modal } from '@/components/ui/Modal';
 import {
@@ -73,7 +74,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
       <View className="-mt-2">
         <View className="mb-4 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
           <View className="mb-1 flex-row items-center">
-            <CalendarIcon size={18} color="#D4A017" />
+            <CalendarIcon size={18} color={STATUS_COLORS.warning} />
             <Text className="ml-2 text-xs text-warning-600 dark:text-warning-400 font-sans">
               {dayCount}일 선택됨
             </Text>

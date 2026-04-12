@@ -5,6 +5,7 @@
 
 import { useCallback } from 'react';
 import { View, RefreshControl, ActivityIndicator } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
@@ -49,7 +50,7 @@ export default function MyInquiriesScreen() {
     if (!isFetchingNextPage) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#D4AF37" />
+        <ActivityIndicator size="small" color={PRIMARY_COLORS[300]} />
       </View>
     );
   }, [isFetchingNextPage]);
@@ -69,7 +70,7 @@ export default function MyInquiriesScreen() {
   if (isLoading && inquiries.length === 0) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-surface-page dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#D4AF37" />
+        <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
       </SafeAreaView>
     );
   }
@@ -88,7 +89,11 @@ export default function MyInquiriesScreen() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#D4AF37" />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refetch}
+            tintColor={PRIMARY_COLORS[300]}
+          />
         }
       />
     </SafeAreaView>

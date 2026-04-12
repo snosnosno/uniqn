@@ -1,4 +1,4 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
 import type { BadgeVariant } from '@/components/ui/Badge';
 import {
   APPLICATION_STATUS_LABELS,
@@ -54,21 +54,21 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#D4AF37',
+    hexColor: PRIMARY_COLORS[300],
   },
   confirmed: {
     label: APPLICATION_STATUS_LABELS.confirmed,
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   rejected: {
     label: APPLICATION_STATUS_LABELS.rejected,
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
   cancelled: {
     label: APPLICATION_STATUS_LABELS.cancelled,
@@ -82,14 +82,14 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   cancellation_pending: {
     label: APPLICATION_STATUS_LABELS.cancellation_pending,
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
 };
 
@@ -101,14 +101,14 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
   confirmed: {
     label: SCHEDULE_TYPE_LABELS.confirmed,
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   completed: {
     label: SCHEDULE_TYPE_LABELS.completed,
@@ -122,7 +122,7 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
 };
 
@@ -141,14 +141,14 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
     variant: 'success',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
     textColor: 'text-success-700 dark:text-success-300',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   checked_out: {
     label: ATTENDANCE_STATUS_LABELS.checked_out,
     variant: 'primary',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     textColor: 'text-primary-700 dark:text-primary-300',
-    hexColor: '#D4AF37',
+    hexColor: PRIMARY_COLORS[300],
   },
 };
 
@@ -160,21 +160,21 @@ export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
   processing: {
     label: PAYROLL_STATUS_LABELS.processing,
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#D4AF37',
+    hexColor: PRIMARY_COLORS[300],
   },
   completed: {
     label: PAYROLL_STATUS_LABELS.completed,
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
 };
 
@@ -193,35 +193,35 @@ export const CONFIRMED_STAFF_STATUS: Record<ConfirmedStaffStatusType, StatusConf
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-300',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   checked_out: {
     label: CONFIRMED_STAFF_STATUS_LABELS.checked_out,
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-300',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#D4AF37',
+    hexColor: PRIMARY_COLORS[300],
   },
   completed: {
     label: CONFIRMED_STAFF_STATUS_LABELS.completed,
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-300',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   cancelled: {
     label: CONFIRMED_STAFF_STATUS_LABELS.cancelled,
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-300',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
   no_show: {
     label: CONFIRMED_STAFF_STATUS_LABELS.no_show,
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-300',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
 };
 
@@ -248,21 +248,21 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
   approved: {
     label: '승인완료',
     variant: 'info',
     textColor: 'text-info-600 dark:text-info-400',
     bgColor: 'bg-info-100 dark:bg-info-900/30',
-    hexColor: '#2563EB',
+    hexColor: STATUS_COLORS.info,
   },
   active: {
     label: '모집중',
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
   closed: {
     label: '마감',
@@ -276,7 +276,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
   expired: {
     label: '만료됨',
@@ -290,7 +290,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
 };
 
@@ -302,21 +302,21 @@ export const INQUIRY_STATUS: Record<InquiryStatusType, StatusConfig> = {
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    hexColor: '#D4AF37',
+    hexColor: PRIMARY_COLORS[300],
   },
   in_progress: {
     label: '처리중',
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
   closed: {
     label: '답변 완료',
     variant: 'success',
     textColor: 'text-success-600 dark:text-success-400',
     bgColor: 'bg-success-100 dark:bg-success-900/30',
-    hexColor: '#22C55E',
+    hexColor: STATUS_COLORS.success,
   },
 };
 
@@ -328,14 +328,14 @@ export const ANNOUNCEMENT_PRIORITY: Record<AnnouncementPriorityType, StatusConfi
     variant: 'error',
     textColor: 'text-error-600 dark:text-error-400',
     bgColor: 'bg-error-100 dark:bg-error-900/30',
-    hexColor: '#DC2626',
+    hexColor: STATUS_COLORS.error,
   },
   important: {
     label: '중요',
     variant: 'warning',
     textColor: 'text-warning-600 dark:text-warning-400',
     bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-    hexColor: '#D4A017',
+    hexColor: STATUS_COLORS.warning,
   },
   normal: {
     label: '일반',

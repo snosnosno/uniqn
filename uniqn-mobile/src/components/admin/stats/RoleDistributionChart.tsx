@@ -7,6 +7,7 @@
 
 import { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 
 // ============================================================================
 // Types
@@ -31,7 +32,7 @@ const ROLE_CONFIG = [
   {
     key: 'admin' as const,
     label: '관리자',
-    color: '#DC2626',
+    color: STATUS_COLORS.error,
     bgColor: 'bg-error-600',
     lightBg: 'bg-error-50 dark:bg-error-900/20',
     textColor: 'text-error-700 dark:text-error-300',

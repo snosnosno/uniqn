@@ -11,6 +11,7 @@
 
 import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { format } from 'date-fns';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { ko } from 'date-fns/locale/ko';
@@ -224,7 +225,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
         {config.label}
       </Text>
       {isResubmitted && approvalStatus === STATUS.TOURNAMENT.PENDING && (
-        <RefreshIcon size={12} color="#D4AF37" />
+        <RefreshIcon size={12} color={PRIMARY_COLORS[300]} />
       )}
     </>
   );

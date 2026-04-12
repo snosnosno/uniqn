@@ -1,5 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import { Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
@@ -62,7 +63,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
           >
             {bookmarked ? (
-              <HeartFilledIcon size={22} color="#DC2626" />
+              <HeartFilledIcon size={22} color={STATUS_COLORS.error} />
             ) : (
               <HeartOutlineIcon size={22} />
             )}
@@ -76,7 +77,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityRole="button"
           >
             {bookmarked ? (
-              <HeartFilledIcon size={22} color="#DC2626" />
+              <HeartFilledIcon size={22} color={STATUS_COLORS.error} />
             ) : (
               <HeartOutlineIcon size={22} />
             )}

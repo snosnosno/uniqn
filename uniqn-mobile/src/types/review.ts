@@ -7,6 +7,8 @@
  * @version 1.0.0
  */
 
+import { STATUS_COLORS, PRIMARY_COLORS } from '@/constants/colors';
+
 // ============================================================================
 // 기본 타입
 // ============================================================================
@@ -393,7 +395,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-error-500',
     darkBg: 'dark:bg-error-400',
     text: 'text-white',
-    hex: '#DC2626',
+    hex: STATUS_COLORS.error,
     label: '주의',
   },
   {
@@ -402,7 +404,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-warning-500',
     darkBg: 'dark:bg-warning-400',
     text: 'text-white',
-    hex: '#D4A017',
+    hex: STATUS_COLORS.warning,
     label: '보통 이하',
   },
   {
@@ -411,7 +413,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-warning-500',
     darkBg: 'dark:bg-warning-400',
     text: 'text-secondary-900',
-    hex: '#D4A017',
+    hex: STATUS_COLORS.warning,
     label: '보통',
   },
   {
@@ -420,7 +422,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-success-500',
     darkBg: 'dark:bg-success-400',
     text: 'text-white',
-    hex: '#22C55E',
+    hex: STATUS_COLORS.success,
     label: '좋음',
   },
   {
@@ -429,7 +431,7 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
     bg: 'bg-primary-500',
     darkBg: 'dark:bg-primary-400',
     text: 'text-surface-dark',
-    hex: '#D4AF37',
+    hex: PRIMARY_COLORS[300],
     label: '우수',
   },
 ];

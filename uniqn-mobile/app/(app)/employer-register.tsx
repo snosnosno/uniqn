@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Button, Card, Loading } from '@/components';
+import { STATUS_COLORS } from '@/constants/colors';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -216,9 +217,9 @@ export default function EmployerRegisterScreen() {
         <Card variant="outlined" padding="md" className="mb-4">
           <View className="mb-3 flex-row items-center">
             {isVerified ? (
-              <CheckCircleIcon size={20} color="#22C55E" />
+              <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
             ) : (
-              <ExclamationCircleIcon size={20} color="#DC2626" />
+              <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
             )}
             <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
               본인인증 정보

@@ -20,6 +20,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { AlertCircleIcon } from '../icons';
+import { STATUS_COLORS } from '@/constants/colors';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
 import {
@@ -266,7 +267,7 @@ function WebTimePicker({
       {/* 다음날 안내 */}
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <AlertCircleIcon size={16} color="#D4A017" />
+          <AlertCircleIcon size={16} color={STATUS_COLORS.warning} />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400 font-sans">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}
@@ -522,7 +523,7 @@ function NativeWheelPicker({
       {/* 다음날 안내 (24시 이상 선택 시) */}
       {isNextDay && (
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <AlertCircleIcon size={16} color="#D4A017" />
+          <AlertCircleIcon size={16} color={STATUS_COLORS.warning} />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400 font-sans">
             다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
             {selectedMinute.toString().padStart(2, '0')}

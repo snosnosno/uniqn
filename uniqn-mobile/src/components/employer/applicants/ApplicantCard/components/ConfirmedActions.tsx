@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { STATUS_COLORS } from '@/constants/colors';
 import { XMarkIcon } from '@/components/icons';
 
 export interface ConfirmedActionsProps {
@@ -19,7 +20,7 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
         onPress={onCancelConfirmation}
         className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
       >
-        <XMarkIcon size={16} color="#DC2626" />
+        <XMarkIcon size={16} color={STATUS_COLORS.error} />
         <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
           확정 취소
         </Text>
