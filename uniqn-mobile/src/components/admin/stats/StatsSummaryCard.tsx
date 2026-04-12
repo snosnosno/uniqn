@@ -30,18 +30,18 @@ export function StatsSummaryCard({
   isLoading = false,
   icon,
   iconColor = '#6b7280',
-  iconBgColor = 'bg-gray-100 dark:bg-surface',
-  valueColor = 'text-gray-900 dark:text-white',
+  iconBgColor = 'bg-secondary-100 dark:bg-surface',
+  valueColor = 'text-secondary-900 dark:text-white',
   suffix = '',
   description,
 }: StatsSummaryCardProps) {
   const Icon = icon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
@@ -50,12 +50,16 @@ export function StatsSummaryCard({
                 {value?.toLocaleString() ?? '--'}
               </Text>
               {suffix && (
-                <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{suffix}</Text>
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+                  {suffix}
+                </Text>
               )}
             </View>
           )}
           {description && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{description}</Text>
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
+              {description}
+            </Text>
           )}
         </View>
         {Icon && (
@@ -80,20 +84,20 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
   const statusConfig = {
     healthy: {
       label: '정상',
-      color: 'text-green-600',
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
+      color: 'text-success-600',
+      bgColor: 'bg-success-50 dark:bg-success-900/30',
       iconColor: '#16a34a',
     },
     degraded: {
       label: '저하',
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+      color: 'text-warning-600',
+      bgColor: 'bg-warning-100 dark:bg-warning-900/30',
       iconColor: '#d97706',
     },
     down: {
       label: '장애',
-      color: 'text-red-600',
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      color: 'text-error-600',
+      bgColor: 'bg-error-50 dark:bg-error-900/30',
       iconColor: '#dc2626',
     },
   };
@@ -107,10 +111,12 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
         : XCircleIcon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">시스템 상태</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">
+            시스템 상태
+          </Text>
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (

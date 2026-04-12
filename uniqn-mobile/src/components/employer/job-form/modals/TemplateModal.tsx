@@ -51,30 +51,30 @@ export function TemplateModal({
     <Modal visible={visible} onClose={onClose} title="템플릿으로 저장" size="md">
       {/* 템플릿 이름 */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          템플릿 이름 <Text className="text-red-500">*</Text>
+        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          템플릿 이름 <Text className="text-error-500">*</Text>
         </Text>
         <TextInput
           value={templateName}
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor="#9CA3AF"
-          className={`bg-gray-50 dark:bg-surface border rounded-md px-4 py-3 text-gray-900 dark:text-white ${
+          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-secondary-900 dark:text-white ${
             isTooShort
-              ? 'border-red-400 dark:border-red-500'
-              : 'border-gray-200 dark:border-surface-overlay'
+              ? 'border-error-400 dark:border-error-500'
+              : 'border-secondary-200 dark:border-surface-overlay'
           }`}
           maxLength={50}
           editable={!isSaving}
         />
         {isTooShort && (
-          <Text className="text-red-500 text-xs mt-1">템플릿 이름은 2자 이상 입력해주세요</Text>
+          <Text className="text-error-500 text-xs mt-1">템플릿 이름은 2자 이상 입력해주세요</Text>
         )}
       </View>
 
       {/* 템플릿 설명 */}
       <View className="mb-4">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
           설명 (선택)
         </Text>
         <TextInput
@@ -82,7 +82,7 @@ export function TemplateModal({
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor="#9CA3AF"
-          className="bg-gray-50 dark:bg-surface border border-gray-200 dark:border-surface-overlay rounded-md px-4 py-3 text-gray-900 dark:text-white"
+          className="bg-secondary-50 dark:bg-surface border border-secondary-200 dark:border-surface-overlay rounded-md px-4 py-3 text-secondary-900 dark:text-white"
           maxLength={100}
           editable={!isSaving}
           multiline
@@ -117,18 +117,20 @@ export function TemplateModal({
         <Pressable
           onPress={onClose}
           disabled={isSaving}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
+          className="flex-1 bg-secondary-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
-          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">취소</Text>
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
+            취소
+          </Text>
         </Pressable>
 
         <Pressable
           onPress={handleSave}
           disabled={!isValid || isSaving}
           className={`flex-1 py-3 rounded-md ${
-            isValid && !isSaving ? 'bg-primary-600' : 'bg-gray-400'
+            isValid && !isSaving ? 'bg-primary-600' : 'bg-secondary-400'
           }`}
           accessibilityRole="button"
           accessibilityLabel="템플릿 저장"

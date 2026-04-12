@@ -48,10 +48,10 @@ export function SettlementAmountSection({
   allowanceItems,
 }: SettlementAmountSectionProps) {
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
+    <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <BanknotesIcon size={18} color="#6B7280" />
-        <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
+        <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
           정산 금액
         </Text>
       </View>
@@ -75,7 +75,7 @@ export function SettlementAmountSection({
           <InfoRow
             label="수당"
             value={`+${formatCurrency(settlement.allowancePay)}`}
-            valueColor="text-green-600 dark:text-green-400"
+            valueColor="text-success-600 dark:text-success-400"
           />
         )}
 
@@ -95,11 +95,11 @@ export function SettlementAmountSection({
           <InfoRow
             label="세금 공제"
             value={`-${formatCurrency(settlement.taxAmount)}`}
-            valueColor="text-red-600 dark:text-red-400"
+            valueColor="text-error-600 dark:text-error-400"
           />
         )}
 
-        <View className="h-px bg-gray-200 dark:bg-surface my-2" />
+        <View className="h-px bg-secondary-200 dark:bg-surface my-2" />
 
         <InfoRow
           label="총 정산 금액"

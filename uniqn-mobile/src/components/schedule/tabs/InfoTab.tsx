@@ -66,7 +66,9 @@ function Section({ icon, title, children }: SectionProps) {
     <View className="mb-5">
       <View className="mb-2 flex-row items-center">
         {icon}
-        <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">{title}</Text>
+        <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+          {title}
+        </Text>
       </View>
       <View className="ml-6">{children}</View>
     </View>
@@ -139,25 +141,25 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-2 opacity-70">
-        <View className="mb-4 rounded-md bg-red-50 p-4 dark:bg-red-900/20">
-          <Text className="text-center text-sm font-medium text-red-600 dark:text-red-400">
+        <View className="mb-4 rounded-md bg-error-50 p-4 dark:bg-error-900/20">
+          <Text className="text-center text-sm font-medium text-error-600 dark:text-error-400">
             취소된 일정입니다
           </Text>
         </View>
 
         <Section icon={<DocumentIcon size={18} color="#9CA3AF" />} title="공고 정보">
-          <Text className="text-base text-gray-500 dark:text-gray-400">
+          <Text className="text-base text-secondary-500 dark:text-secondary-400">
             {schedule.jobPostingName}
           </Text>
         </Section>
 
         <Section icon={<CalendarIcon size={18} color="#9CA3AF" />} title="일정">
-          <Text className="text-base text-gray-500 dark:text-gray-400">
+          <Text className="text-base text-secondary-500 dark:text-secondary-400">
             {formatFullDate(schedule.date)}
           </Text>
           <View className="mt-1 flex-row items-center">
             <ClockIcon size={14} color="#9CA3AF" />
-            <Text className="ml-1.5 text-sm text-gray-400 dark:text-gray-500">
+            <Text className="ml-1.5 text-sm text-secondary-400 dark:text-secondary-500">
               {getTimeDisplay(schedule)}
             </Text>
           </View>
@@ -170,14 +172,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     <View className="py-2">
       {description && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="공고 설명">
-          <Text className="text-sm leading-5 text-gray-700 dark:text-gray-300">{description}</Text>
+          <Text className="text-sm leading-5 text-secondary-700 dark:text-secondary-300">
+            {description}
+          </Text>
         </Section>
       )}
 
       <View className="mb-4 flex-row items-center">
         <BriefcaseIcon size={18} color="#6B7280" />
-        <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">역할 :</Text>
-        <Text className="ml-2 text-base font-medium text-gray-900 dark:text-white">
+        <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">역할 :</Text>
+        <Text className="ml-2 text-base font-medium text-secondary-900 dark:text-white">
           {getRoleDisplayName(schedule.role, schedule.customRole)}
         </Text>
       </View>
@@ -185,13 +189,13 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       <View className="mb-4">
         <View className="flex-row items-start">
           <MapIcon size={18} color="#6B7280" />
-          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">장소 :</Text>
+          <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">장소 :</Text>
           <View className="ml-2 flex-1">
-            <Text className="text-base font-medium text-gray-900 dark:text-white">
+            <Text className="text-base font-medium text-secondary-900 dark:text-white">
               {schedule.location || '-'}
             </Text>
             {schedule.detailedAddress && (
-              <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">
                 {schedule.detailedAddress}
               </Text>
             )}
@@ -200,7 +204,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       </View>
 
       <Section icon={<CalendarIcon size={18} color="#6B7280" />} title="일정">
-        <Text className="text-base text-gray-900 dark:text-white">
+        <Text className="text-base text-secondary-900 dark:text-white">
           {formatFullDate(schedule.date)}
         </Text>
 
@@ -221,7 +225,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         ) : (
           <View className="mt-2 flex-row items-center">
             <ClockIcon size={14} color="#9CA3AF" />
-            <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+            <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
               {getTimeDisplay(schedule)}
             </Text>
           </View>
@@ -233,7 +237,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {ownerName && (
             <View className="mb-2 flex-row items-center">
               <UserIcon size={14} color="#9CA3AF" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 구인자: {ownerName}
               </Text>
             </View>
@@ -260,21 +264,21 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
       {salaryInfo && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="급여 정보">
-          <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface/30">
-            <Text className="text-base font-medium text-gray-900 dark:text-white">
+          <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface/30">
+            <Text className="text-base font-medium text-secondary-900 dark:text-white">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
             </Text>
 
             {hasAllowances && (
-              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-surface-overlay">
+              <View className="mt-2 border-t border-secondary-200 pt-2 dark:border-surface-overlay">
                 {allowances?.meal !== undefined && allowances.meal !== 0 && (
                   <View className="flex-row items-center justify-between py-1">
-                    <Text className="text-sm text-gray-600 dark:text-gray-400">식비</Text>
+                    <Text className="text-sm text-secondary-600 dark:text-secondary-400">식비</Text>
                     <Text
                       className={`text-sm font-medium ${
                         allowances.meal === PROVIDED_FLAG
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-900 dark:text-white'
+                          ? 'text-success-600 dark:text-success-400'
+                          : 'text-secondary-900 dark:text-white'
                       }`}
                     >
                       {allowances.meal === PROVIDED_FLAG
@@ -286,12 +290,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
                 {allowances?.transportation !== undefined && allowances.transportation !== 0 && (
                   <View className="flex-row items-center justify-between py-1">
-                    <Text className="text-sm text-gray-600 dark:text-gray-400">교통비</Text>
+                    <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+                      교통비
+                    </Text>
                     <Text
                       className={`text-sm font-medium ${
                         allowances.transportation === PROVIDED_FLAG
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-900 dark:text-white'
+                          ? 'text-success-600 dark:text-success-400'
+                          : 'text-secondary-900 dark:text-white'
                       }`}
                     >
                       {allowances.transportation === PROVIDED_FLAG
@@ -303,12 +309,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
                 {allowances?.accommodation !== undefined && allowances.accommodation !== 0 && (
                   <View className="flex-row items-center justify-between py-1">
-                    <Text className="text-sm text-gray-600 dark:text-gray-400">숙박비</Text>
+                    <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+                      숙박비
+                    </Text>
                     <Text
                       className={`text-sm font-medium ${
                         allowances.accommodation === PROVIDED_FLAG
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-900 dark:text-white'
+                          ? 'text-success-600 dark:text-success-400'
+                          : 'text-secondary-900 dark:text-white'
                       }`}
                     >
                       {allowances.accommodation === PROVIDED_FLAG
@@ -321,10 +329,10 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
             )}
 
             {hasTax && (
-              <View className="mt-2 border-t border-gray-200 pt-2 dark:border-surface-overlay">
+              <View className="mt-2 border-t border-secondary-200 pt-2 dark:border-surface-overlay">
                 <View className="flex-row items-center justify-between py-1">
-                  <Text className="text-sm text-gray-600 dark:text-gray-400">세금</Text>
-                  <Text className="text-sm font-medium text-red-600 dark:text-red-400">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">세금</Text>
+                  <Text className="text-sm font-medium text-error-600 dark:text-error-400">
                     {taxSettings.type === 'rate'
                       ? `${taxSettings.value}%`
                       : `${taxSettings.value.toLocaleString()}원`}
@@ -338,15 +346,15 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
       {schedule.type === STATUS.SCHEDULE.COMPLETED && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="정산 현황">
-          <View className="flex-row items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-surface/30">
+          <View className="flex-row items-center justify-between rounded-lg bg-secondary-50 p-3 dark:bg-surface/30">
             <View>
               {schedule.settlementBreakdown && (
-                <Text className="text-base font-medium text-gray-900 dark:text-white">
+                <Text className="text-base font-medium text-secondary-900 dark:text-white">
                   {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
                 </Text>
               )}
               {schedule.payrollAmount && schedule.payrollAmount > 0 && (
-                <Text className="mt-0.5 text-sm text-green-600 dark:text-green-400">
+                <Text className="mt-0.5 text-sm text-success-600 dark:text-success-400">
                   확정: {formatCurrency(schedule.payrollAmount)}
                 </Text>
               )}
@@ -360,7 +368,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
       {schedule.notes && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="메모">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">{schedule.notes}</Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+            {schedule.notes}
+          </Text>
         </Section>
       )}
     </View>

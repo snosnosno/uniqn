@@ -128,8 +128,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         <Text
           className={`mb-2 text-base font-semibold ${
             isCancelled
-              ? 'text-gray-400 dark:text-gray-500 line-through'
-              : 'text-gray-900 dark:text-white'
+              ? 'text-secondary-400 dark:text-secondary-500 line-through'
+              : 'text-secondary-900 dark:text-white'
           }`}
           numberOfLines={1}
         >
@@ -140,7 +140,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           <View className="mb-2 flex-row items-center">
             <MapIcon size={14} color="#6B7280" />
             <Text
-              className="ml-1.5 flex-1 text-sm text-gray-500 dark:text-gray-400"
+              className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400"
               numberOfLines={1}
             >
               {group.location}
@@ -150,13 +150,15 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         <View className="mb-2 flex-row items-center">
           <CalendarIcon size={14} color="#6B7280" />
-          <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">{dateDisplay}</Text>
+          <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
+            {dateDisplay}
+          </Text>
         </View>
 
         {group.timeSlot && (
           <View className="mb-2 flex-row items-center">
             <ClockIcon size={14} color="#6B7280" />
-            <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+            <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
               {group.timeSlot}
             </Text>
           </View>
@@ -165,13 +167,15 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         <View className="flex-row flex-wrap items-center">
           <View className="mr-3 flex-row items-center">
             <BriefcaseIcon size={14} color="#6B7280" />
-            <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">{rolesDisplay}</Text>
+            <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
+              {rolesDisplay}
+            </Text>
           </View>
 
           {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
             <View className="mr-3 flex-row items-center">
               <BanknotesIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Text className="ml-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
                 {salaryDisplay}
               </Text>
             </View>
@@ -180,7 +184,9 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
             <View className="flex-row items-center">
               <UserIcon size={14} color="#9CA3AF" />
-              <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">{ownerName}</Text>
+              <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
+                {ownerName}
+              </Text>
             </View>
           )}
         </View>
@@ -188,10 +194,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         {group.dateRange.totalDays > 1 && (
           <Pressable
             onPress={toggleExpanded}
-            className="mt-3 flex-row items-center justify-center border-t border-gray-200 py-2 dark:border-surface-overlay"
+            className="mt-3 flex-row items-center justify-center border-t border-secondary-200 py-2 dark:border-surface-overlay"
             accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
           >
-            <Text className="mr-1 text-sm text-gray-500 dark:text-gray-400">날짜별 상세</Text>
+            <Text className="mr-1 text-sm text-secondary-500 dark:text-secondary-400">
+              날짜별 상세
+            </Text>
             {isExpanded ? (
               <ChevronUpIcon size={16} color="#6B7280" />
             ) : (
@@ -201,7 +209,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         )}
 
         {isExpanded && (
-          <View className="mt-2 border-t border-gray-100 pt-2 dark:border-surface-overlay">
+          <View className="mt-2 border-t border-secondary-100 pt-2 dark:border-surface-overlay">
             {group.dateStatuses.map((dateStatus, index) => {
               const attendance = ATTENDANCE_STATUS[dateStatus.status];
               return (
@@ -210,12 +218,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                   onPress={() => handleDatePress(dateStatus.date, dateStatus.scheduleEventId)}
                   className={`flex-row items-center justify-between py-2 ${
                     index < group.dateStatuses.length - 1
-                      ? 'border-b border-gray-100 dark:border-surface-overlay/50'
+                      ? 'border-b border-secondary-100 dark:border-surface-overlay/50'
                       : ''
                   }`}
                   accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}`}
                 >
-                  <Text className="text-sm text-gray-700 dark:text-gray-300">
+                  <Text className="text-sm text-secondary-700 dark:text-secondary-300">
                     {dateStatus.formattedDate}
                   </Text>
                   <View className={`rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>
@@ -238,8 +246,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         )}
 
         {isCancelled && (
-          <View className="mt-3 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
-            <Text className="text-center text-xs text-red-600 dark:text-red-400">
+          <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+            <Text className="text-center text-xs text-error-600 dark:text-error-400">
               이 일정이 취소되었습니다.
             </Text>
           </View>

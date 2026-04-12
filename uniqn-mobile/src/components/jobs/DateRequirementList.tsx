@@ -71,13 +71,17 @@ const getTotalPositions = (slots: TimeSlot[]): number => {
 const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemProps) {
   if (compact) {
     return (
-      <Text className="text-xs text-gray-500 dark:text-gray-400">{formatTimeRange(slot)}</Text>
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+        {formatTimeRange(slot)}
+      </Text>
     );
   }
 
   return (
     <View className="ml-4 mb-2">
-      <Text className="text-sm text-gray-700 dark:text-gray-300 mb-1">{formatTimeRange(slot)}</Text>
+      <Text className="text-sm text-secondary-700 dark:text-secondary-300 mb-1">
+        {formatTimeRange(slot)}
+      </Text>
       <View className="flex-row flex-wrap gap-1">
         {slot.roles.map((role, index) => (
           <Badge key={index} variant="default" size="sm">
@@ -100,7 +104,7 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
   if (compact) {
     return (
       <View className="flex-row items-center mr-3 mb-1">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-1">
+        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mr-1">
           {formattedDate}
         </Text>
       </View>
@@ -108,14 +112,16 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
   }
 
   return (
-    <View className="mb-3 pb-3 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
+    <View className="mb-3 pb-3 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mr-2">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-white mr-2">
             {formattedDate}
           </Text>
         </View>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">{totalPositions}명 모집</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+          {totalPositions}명 모집
+        </Text>
       </View>
 
       {requirement.timeSlots.map((slot, index) => (
@@ -161,15 +167,17 @@ export const DateRequirementList = memo(function DateRequirementList({
           <DateItem key={index} requirement={req} compact />
         ))}
         {remainingCount > 0 && (
-          <Text className="text-xs text-gray-400 dark:text-gray-500">+{remainingCount}일</Text>
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+            +{remainingCount}일
+          </Text>
         )}
       </View>
     );
   }
 
   return (
-    <View className={`bg-gray-50 dark:bg-surface-dark rounded-lg p-3 ${className}`}>
-      <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+    <View className={`bg-secondary-50 dark:bg-surface-dark rounded-lg p-3 ${className}`}>
+      <Text className="text-sm font-semibold text-secondary-900 dark:text-white mb-3">
         날짜별 모집 정보
       </Text>
 
@@ -178,7 +186,7 @@ export const DateRequirementList = memo(function DateRequirementList({
       ))}
 
       {remainingCount > 0 && (
-        <Text className="text-sm text-center text-gray-400 dark:text-gray-500 mt-2">
+        <Text className="text-sm text-center text-secondary-400 dark:text-secondary-500 mt-2">
           +{remainingCount}일 더 보기
         </Text>
       )}

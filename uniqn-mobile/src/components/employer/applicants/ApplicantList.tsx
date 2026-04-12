@@ -119,7 +119,9 @@ export function ApplicantList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">지원자 목록을 불러오는 중...</Text>
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          지원자 목록을 불러오는 중...
+        </Text>
       </View>
     );
   }

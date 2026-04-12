@@ -63,12 +63,12 @@ const getInitials = (name?: string): string => {
 const getBackgroundColor = (name?: string): string => {
   const colors = [
     'bg-primary-500',
-    'bg-green-500',
-    'bg-yellow-500',
+    'bg-success-500',
+    'bg-warning-500',
     'bg-primary-500',
     'bg-pink-500',
     'bg-indigo-500',
-    'bg-red-500',
+    'bg-error-500',
     'bg-orange-500',
   ];
 

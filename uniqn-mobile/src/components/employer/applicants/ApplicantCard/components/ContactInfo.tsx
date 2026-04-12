@@ -49,7 +49,7 @@ export const ContactInfo = React.memo(function ContactInfo({
       {phone && (
         <View className="flex-row items-center mb-2">
           <PhoneIcon size={14} color="#9CA3AF" />
-          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">{phone}</Text>
+          <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">{phone}</Text>
         </View>
       )}
 
@@ -57,7 +57,10 @@ export const ContactInfo = React.memo(function ContactInfo({
       {message && (
         <View className="flex-row items-start mb-2">
           <MessageIcon size={14} color="#9CA3AF" />
-          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400 flex-1" numberOfLines={3}>
+          <Text
+            className="ml-2 text-sm text-secondary-600 dark:text-secondary-400 flex-1"
+            numberOfLines={3}
+          >
             {message}
           </Text>
         </View>
@@ -70,13 +73,13 @@ export const ContactInfo = React.memo(function ContactInfo({
             <View key={idx} className="mb-2">
               <View className="flex-row items-center">
                 <DocumentIcon size={14} color="#9CA3AF" />
-                <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                <Text className="ml-2 text-sm text-secondary-600 dark:text-secondary-400">
                   Q{idx + 1}. {answer.question}
                 </Text>
               </View>
               <View className="flex-row items-start ml-5">
-                <Text className="text-gray-400 dark:text-gray-500 mr-1">↳</Text>
-                <Text className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                <Text className="text-secondary-400 dark:text-secondary-500 mr-1">↳</Text>
+                <Text className="text-sm text-secondary-600 dark:text-secondary-400 flex-1">
                   {answer.answer}
                 </Text>
               </View>

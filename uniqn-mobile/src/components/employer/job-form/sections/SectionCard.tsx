@@ -56,23 +56,25 @@ export const SectionCard = memo(function SectionCard({
 }: SectionCardProps) {
   const resolvedTitle = displayTitle ?? title;
   const borderColor = hasError
-    ? 'border-red-300 dark:border-red-700'
-    : 'border-gray-200 dark:border-surface-overlay';
+    ? 'border-error-300 dark:border-error-700'
+    : 'border-secondary-200 dark:border-surface-overlay';
 
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
           {resolvedTitle}
         </Text>
-        {required && <Text className="ml-1 text-red-500">*</Text>}
-        {optional && <Text className="ml-2 text-xs text-gray-400 dark:text-gray-500">(선택)</Text>}
+        {required && <Text className="ml-1 text-error-500">*</Text>}
+        {optional && (
+          <Text className="ml-2 text-xs text-secondary-400 dark:text-secondary-500">(선택)</Text>
+        )}
       </View>
 
       {/* 에러 배지 */}
       {hasError && errorCount > 0 && (
-        <View className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded-sm mr-2">
-          <Text className="text-xs text-red-600 dark:text-red-400">{errorCount}개 오류</Text>
+        <View className="px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded-sm mr-2">
+          <Text className="text-xs text-error-600 dark:text-error-400">{errorCount}개 오류</Text>
         </View>
       )}
 
@@ -102,14 +104,14 @@ export const SectionCard = memo(function SectionCard({
       {collapsible ? (
         <Pressable
           onPress={onToggle}
-          className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay"
+          className="px-4 py-3 bg-secondary-50 dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay"
           accessibilityRole="button"
           accessibilityLabel={`${resolvedTitle} 섹션 ${collapsed ? '펼치기' : '접기'}`}
         >
           {HeaderContent}
         </Pressable>
       ) : (
-        <View className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay">
+        <View className="px-4 py-3 bg-secondary-50 dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay">
           {HeaderContent}
         </View>
       )}

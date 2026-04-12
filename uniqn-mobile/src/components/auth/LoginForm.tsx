@@ -61,7 +61,9 @@ export function LoginForm({
     <View className="w-full flex-col gap-4">
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">이메일</Text>
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          이메일
+        </Text>
         <Controller
           control={control}
           name="email"
@@ -83,7 +85,9 @@ export function LoginForm({
 
       {/* 비밀번호 입력 */}
       <View className="mt-4">
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">비밀번호</Text>
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          비밀번호
+        </Text>
         <Controller
           control={control}
           name="password"
@@ -141,7 +145,7 @@ export function LoginForm({
 
       {/* 회원가입 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-gray-600 dark:text-gray-400">계정이 없으신가요? </Text>
+        <Text className="text-secondary-600 dark:text-secondary-400">계정이 없으신가요? </Text>
         <Link href="/signup" asChild>
           <Pressable>
             <Text className="font-medium text-primary-600 dark:text-primary-400">회원가입</Text>

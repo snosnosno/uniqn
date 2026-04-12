@@ -60,7 +60,7 @@ const categoryInfo: Record<NotificationCategory, { description: string; color: s
   },
   [NotificationCategory.SYSTEM]: {
     description: '공지사항, 시스템 점검 알림',
-    color: 'bg-gray-500',
+    color: 'bg-secondary-500',
   },
   [NotificationCategory.ADMIN]: {
     description: '문의 답변, 신고 처리 알림',
@@ -68,7 +68,7 @@ const categoryInfo: Record<NotificationCategory, { description: string; color: s
   },
   [NotificationCategory.REVIEW]: {
     description: '근무 평가 요청, 평가 도착 알림',
-    color: 'bg-amber-500',
+    color: 'bg-warning-500',
   },
 };
 
@@ -162,7 +162,10 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   const categoryKeys = Object.values(NotificationCategory);
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark" contentContainerClassName="p-4">
+    <ScrollView
+      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
+      contentContainerClassName="p-4"
+    >
       {/* 푸시 알림 권한 영구 거부 배너 */}
       {pushPermission && !pushPermission.granted && !pushPermission.canAskAgain && (
         <Pressable
@@ -210,8 +213,10 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <BellSlashIcon size={24} color="#9ca3af" />
             )}
             <View className="ml-3">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">알림 받기</Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-base font-medium text-secondary-900 dark:text-white">
+                알림 받기
+              </Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 모든 알림을 켜거나 끕니다
               </Text>
             </View>
@@ -232,10 +237,10 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <MoonIcon size={24} color="#6b7280" />
             <View className="ml-3">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-white">
                 방해 금지 시간
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 {settings.quietHours?.start || '22:00'} - {settings.quietHours?.end || '08:00'}
               </Text>
             </View>
@@ -256,10 +261,10 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <View className="flex-row items-center">
             <Squares2X2Icon size={24} color="#6b7280" />
             <View className="ml-3">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-white">
                 알림 그룹화
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 같은 공고의 알림을 묶어서 표시
               </Text>
             </View>
@@ -275,7 +280,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       </Card>
 
       {/* 카테고리별 설정 */}
-      <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-2 px-1">
+      <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 uppercase mb-2 px-1">
         카테고리별 설정
       </Text>
 
@@ -288,12 +293,12 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           return (
             <View
               key={category}
-              className={`p-4 ${!isLast ? 'border-b border-gray-100 dark:border-surface' : ''}`}
+              className={`p-4 ${!isLast ? 'border-b border-secondary-100 dark:border-surface' : ''}`}
             >
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center flex-1">
                   <View className={`w-3 h-3 rounded-sm ${info.color} mr-2`} />
-                  <Text className="text-base font-medium text-gray-900 dark:text-white">
+                  <Text className="text-base font-medium text-secondary-900 dark:text-white">
                     {NOTIFICATION_CATEGORY_LABELS[category]}
                   </Text>
                 </View>
@@ -306,14 +311,16 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                 />
               </View>
 
-              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-5">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-5">
                 {info.description}
               </Text>
 
               {/* 푸시 알림 토글 (서브 옵션) */}
               {categorySettings?.enabled && (
-                <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-gray-100 dark:border-surface">
-                  <Text className="text-sm text-gray-600 dark:text-gray-400">푸시 알림 받기</Text>
+                <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-secondary-100 dark:border-surface">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+                    푸시 알림 받기
+                  </Text>
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
@@ -329,7 +336,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       </Card>
 
       {/* 하단 안내 */}
-      <Text className="text-xs text-gray-400 dark:text-gray-500 text-center mt-4 px-4">
+      <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-center mt-4 px-4">
         알림 설정은 자동으로 저장됩니다.
         {'\n'}
         푸시 알림을 받으려면 기기 설정에서도 알림을 허용해야 합니다.

@@ -39,19 +39,25 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">정산 현황</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+          정산 현황
+        </Text>
         <View className="flex-row items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">총 {totalCount}건</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-2">
+            총 {totalCount}건
+          </Text>
           {onOpenSettings && (
             <Pressable
               onPress={onOpenSettings}
               hitSlop={8}
-              className="flex-row items-center px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
+              className="flex-row items-center px-2 py-1.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
               <SettingsIcon size={16} color="#6B7280" />
-              <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">정산설정</Text>
+              <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
+                정산설정
+              </Text>
             </Pressable>
           )}
         </View>
@@ -59,27 +65,27 @@ export const SettlementSummaryCard = React.memo(function SettlementSummaryCard({
 
       <View className="flex-row justify-between mb-2">
         <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">미정산</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">미정산</Text>
           <Text className="text-lg font-bold text-warning-600 dark:text-warning-400">
             {pendingCount}건
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
             {formatCurrency(pendingAmount)}
           </Text>
         </View>
-        <View className="w-px bg-gray-200 dark:bg-surface" />
+        <View className="w-px bg-secondary-200 dark:bg-surface" />
         <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">완료</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">완료</Text>
           <Text className="text-lg font-bold text-success-600 dark:text-success-400">
             {completedCount}건
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
             {formatCurrency(totalAmount - pendingAmount)}
           </Text>
         </View>
-        <View className="w-px bg-gray-200 dark:bg-surface" />
+        <View className="w-px bg-secondary-200 dark:bg-surface" />
         <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 금액</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">총 금액</Text>
           <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
             {formatCurrency(totalAmount)}
           </Text>

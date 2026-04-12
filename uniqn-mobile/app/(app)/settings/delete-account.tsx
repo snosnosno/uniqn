@@ -40,7 +40,7 @@ interface ReasonSelectProps {
 function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
   return (
     <View className="flex-col gap-2">
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
         탈퇴 사유를 선택해주세요
       </Text>
       {(Object.entries(DELETION_REASONS) as [DeletionReason, string][]).map(([key, label]) => (
@@ -50,7 +50,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
           className={`p-4 rounded-lg border ${
             selectedReason === key
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
+              : 'border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface'
           }`}
         >
           <View className="flex-row items-center">
@@ -58,7 +58,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
               className={`w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ${
                 selectedReason === key
                   ? 'border-primary-500 bg-primary-500'
-                  : 'border-gray-300 dark:border-surface-overlay'
+                  : 'border-secondary-300 dark:border-surface-overlay'
               }`}
             >
               {selectedReason === key && <View className="w-2 h-2 rounded-sm bg-white" />}
@@ -67,7 +67,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
               className={`flex-1 ${
                 selectedReason === key
                   ? 'text-primary-700 dark:text-primary-300 font-medium'
-                  : 'text-gray-700 dark:text-gray-300'
+                  : 'text-secondary-700 dark:text-secondary-300'
               }`}
             >
               {label}
@@ -216,7 +216,7 @@ export default function DeleteAccountScreen() {
   const canSubmit = selectedReason && (isAppleUser || password.length >= 8);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -234,14 +234,14 @@ export default function DeleteAccountScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 경고 카드 */}
-        <Card className="mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+        <Card className="mb-6 bg-error-50 dark:bg-error-900/20 border-error-200 dark:border-error-800">
           <View className="flex-row items-start">
             <Text className="text-2xl mr-3">{''}</Text>
             <View className="flex-1">
-              <Text className="text-red-800 dark:text-red-200 font-semibold mb-1">
+              <Text className="text-error-800 dark:text-error-200 font-semibold mb-1">
                 회원탈퇴 안내
               </Text>
-              <Text className="text-red-700 dark:text-red-300 text-sm leading-5">
+              <Text className="text-error-700 dark:text-error-300 text-sm leading-5">
                 • 탈퇴 요청 후 {DELETION_GRACE_PERIOD_DAYS}일간 복구 가능합니다{'\n'}•{' '}
                 {DELETION_GRACE_PERIOD_DAYS}일 후 모든 데이터가 영구 삭제됩니다{'\n'}• 진행 중인
                 지원 내역이 모두 취소됩니다{'\n'}• 삭제된 데이터는 복구할 수 없습니다
@@ -280,7 +280,7 @@ export default function DeleteAccountScreen() {
               secureTextEntry
               autoComplete="password"
             />
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
               본인 확인을 위해 비밀번호를 입력해주세요
             </Text>
           </View>
@@ -288,8 +288,8 @@ export default function DeleteAccountScreen() {
 
         {/* Apple 사용자 안내 */}
         {isAppleUser && (
-          <View className="mb-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4">
-            <Text className="text-sm text-blue-700 dark:text-blue-300">
+          <View className="mb-6 rounded-lg bg-info-50 dark:bg-info-900/20 p-4">
+            <Text className="text-sm text-info-700 dark:text-info-300">
               Apple 계정으로 로그인하셨습니다.{'\n'}
               탈퇴 시 Apple 재인증 다이얼로그가 표시됩니다.
             </Text>
@@ -309,9 +309,9 @@ export default function DeleteAccountScreen() {
           variant="outline"
           fullWidth
           disabled={!canSubmit}
-          className="border-red-500"
+          className="border-error-500"
         >
-          <Text className="text-red-600 dark:text-red-400 font-semibold">회원탈퇴 요청</Text>
+          <Text className="text-error-600 dark:text-error-400 font-semibold">회원탈퇴 요청</Text>
         </Button>
       </ScrollView>
 
@@ -322,7 +322,7 @@ export default function DeleteAccountScreen() {
         title="정말 탈퇴하시겠습니까?"
       >
         <View className="p-4">
-          <Text className="text-gray-700 dark:text-gray-300 text-center mb-6">
+          <Text className="text-secondary-700 dark:text-secondary-300 text-center mb-6">
             회원탈퇴를 요청하면 {DELETION_GRACE_PERIOD_DAYS}일 후{'\n'}
             모든 데이터가 영구 삭제됩니다.
           </Text>
@@ -333,12 +333,12 @@ export default function DeleteAccountScreen() {
               variant="outline"
               fullWidth
               disabled={isSubmitting}
-              className="border-red-500"
+              className="border-error-500"
             >
               {isSubmitting ? (
                 <ActivityIndicator size="small" color="#ef4444" />
               ) : (
-                <Text className="text-red-600 dark:text-red-400 font-semibold">
+                <Text className="text-error-600 dark:text-error-400 font-semibold">
                   네, 탈퇴하겠습니다
                 </Text>
               )}
@@ -360,11 +360,11 @@ export default function DeleteAccountScreen() {
         title="Apple 계정 연결 해제"
       >
         <View className="p-4">
-          <Text className="text-gray-700 dark:text-gray-300 text-center mb-4">
+          <Text className="text-secondary-700 dark:text-secondary-300 text-center mb-4">
             Apple 계정 연결 해제에 실패했습니다.{'\n'}
             재시도하시겠습니까?
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center mb-6">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center mb-6">
             건너뛰면 탈퇴는 진행되지만, Apple ID 설정에서{'\n'}
             수동으로 앱 연결을 해제해야 할 수 있습니다.
           </Text>

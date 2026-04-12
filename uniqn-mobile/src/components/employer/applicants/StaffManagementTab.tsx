@@ -43,7 +43,7 @@ function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) 
         <Pressable
           onPress={onRefresh}
           disabled={isRefreshing}
-          className={`rounded-md bg-gray-100 p-4 active:opacity-80 dark:bg-surface ${
+          className={`rounded-md bg-secondary-100 p-4 active:opacity-80 dark:bg-surface ${
             isRefreshing ? 'opacity-50' : ''
           }`}
         >
@@ -233,7 +233,7 @@ export function StaffManagementTab({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
           확정된 스태프를 불러오는 중입니다...
         </Text>
       </View>
@@ -251,7 +251,7 @@ export function StaffManagementTab({
   }
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <QuickActions onShowQR={handleShowQR} onRefresh={refresh} isRefreshing={isRefreshing} />
 
       <View className="flex-1">

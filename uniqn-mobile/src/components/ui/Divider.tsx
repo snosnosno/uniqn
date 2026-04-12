@@ -23,14 +23,14 @@ export function Divider({ label, spacing = 'md' }: DividerProps) {
   if (label) {
     return (
       <View className={`flex-row items-center ${spacingStyles[spacing]}`}>
-        <View className="flex-1 h-px bg-gray-200 dark:bg-surface" />
-        <Text className="mx-4 text-sm text-gray-500 dark:text-gray-400">{label}</Text>
-        <View className="flex-1 h-px bg-gray-200 dark:bg-surface" />
+        <View className="flex-1 h-px bg-secondary-200 dark:bg-surface" />
+        <Text className="mx-4 text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <View className="flex-1 h-px bg-secondary-200 dark:bg-surface" />
       </View>
     );
   }
 
-  return <View className={`h-px bg-gray-200 dark:bg-surface ${spacingStyles[spacing]}`} />;
+  return <View className={`h-px bg-secondary-200 dark:bg-surface ${spacingStyles[spacing]}`} />;
 }
 
 export default Divider;

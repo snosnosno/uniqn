@@ -29,12 +29,14 @@ function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Link href={href as never} asChild>
-      <Pressable className="rounded-md border border-gray-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
+      <Pressable className="rounded-md border border-secondary-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
         <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
           <Icon size={24} color={iconColor} />
         </View>
-        <Text className="mb-1 text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">{description}</Text>
+        <Text className="mb-1 text-lg font-semibold text-secondary-900 dark:text-white">
+          {title}
+        </Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">{description}</Text>
       </Pressable>
     </Link>
   );
@@ -48,7 +50,7 @@ export default function AdminDashboard() {
       icon: TrophyOutlineIcon,
       iconColor: '#eab308',
       href: '/(admin)/tournaments',
-      bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+      bgColor: 'bg-warning-100 dark:bg-warning-900/30',
     },
     {
       title: '사용자 관리',
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
       icon: FlagOutlineIcon,
       iconColor: '#dc2626',
       href: '/(admin)/reports',
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
+      bgColor: 'bg-error-50 dark:bg-error-900/30',
     },
     {
       title: '게시판 신고',
@@ -88,7 +90,7 @@ export default function AdminDashboard() {
       icon: RefreshIcon,
       iconColor: '#2563eb',
       href: '/(admin)/stats',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+      bgColor: 'bg-info-100 dark:bg-info-900/30',
     },
     {
       title: '공지사항 관리',
@@ -101,11 +103,11 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+    <ScrollView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <View className="p-4">
         <View className="mb-6">
-          <Text className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">관리자</Text>
-          <Text className="text-gray-500 dark:text-gray-400">
+          <Text className="mb-1 text-2xl font-bold text-secondary-900 dark:text-white">관리자</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400">
             주요 운영 화면을 한 곳에서 빠르게 확인합니다.
           </Text>
         </View>

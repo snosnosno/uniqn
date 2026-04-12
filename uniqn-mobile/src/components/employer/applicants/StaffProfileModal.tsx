@@ -72,9 +72,9 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
   return (
     <SheetModal visible={visible} onClose={onClose} title="스태프 프로필">
       <View>
-        <View className="items-center bg-gray-50 py-4 dark:bg-surface">
+        <View className="items-center bg-secondary-50 py-4 dark:bg-surface">
           {isProfileLoading ? (
-            <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-gray-200 dark:bg-surface">
+            <View className="mb-2 h-16 w-16 items-center justify-center rounded-sm bg-secondary-200 dark:bg-surface">
               <ActivityIndicator size="small" color="#6B7280" />
             </View>
           ) : (
@@ -87,19 +87,21 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           )}
 
           <View className="mb-1 flex-row items-center gap-2">
-            <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
+            <Text className="text-xl font-bold text-secondary-900 dark:text-white">
+              {displayName}
+            </Text>
             <Badge variant={CONFIRMED_STAFF_STATUS[staff.status].variant} size="sm" dot>
               {CONFIRMED_STAFF_STATUS[staff.status].label}
             </Badge>
           </View>
 
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
             {getRoleDisplayName(staff.role, staff.customRole)}
           </Text>
         </View>
 
-        <View className="border-b border-gray-100 px-4 py-4 dark:border-surface-overlay">
-          <Text className="mb-3 text-base font-semibold text-gray-900 dark:text-white">
+        <View className="border-b border-secondary-100 px-4 py-4 dark:border-surface-overlay">
+          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-white">
             근무 정보
           </Text>
 
@@ -111,14 +113,16 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
             />
           ) : null}
 
-          <View className="flex-row items-start border-b border-gray-100 py-3 dark:border-surface-overlay">
+          <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
             <View className="mt-0.5 w-6">
               <ClockIcon size={16} color="#6B7280" />
             </View>
             <View className="ml-2 flex-1">
-              <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">근무 시간</Text>
+              <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">
+                근무 시간
+              </Text>
               <View className="flex-row items-center">
-                <Text className="text-sm text-gray-900 dark:text-white">
+                <Text className="text-sm text-secondary-900 dark:text-white">
                   {startTimeStr} ~ {endTimeStr}
                 </Text>
                 {isCheckedIn ? (
@@ -142,17 +146,21 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
         {staff.notes ? (
           <View className="px-4 pb-4">
-            <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">비고</Text>
-            <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface">
-              <Text className="text-sm text-gray-700 dark:text-gray-300">{staff.notes}</Text>
+            <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+              비고
+            </Text>
+            <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
+              <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+                {staff.notes}
+              </Text>
             </View>
           </View>
         ) : null}
 
         {staff.status === STATUS.CONFIRMED_STAFF.NO_SHOW ? (
           <View className="px-4 pb-4">
-            <View className="flex-row items-center rounded-lg bg-yellow-50 p-3 dark:bg-yellow-900/20">
-              <Text className="text-sm text-yellow-700 dark:text-yellow-300">
+            <View className="flex-row items-center rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
+              <Text className="text-sm text-warning-700 dark:text-warning-300">
                 노쇼 처리된 스태프입니다.
               </Text>
             </View>
@@ -161,17 +169,19 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
         {staff.status === STATUS.WORK_LOG.CANCELLED ? (
           <View className="px-4 pb-4">
-            <View className="flex-row items-center rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
-              <Text className="text-sm text-red-700 dark:text-red-300">취소된 스태프입니다.</Text>
+            <View className="flex-row items-center rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
+              <Text className="text-sm text-error-700 dark:text-error-300">
+                취소된 스태프입니다.
+              </Text>
             </View>
           </View>
         ) : null}
 
         {staff.status === STATUS.WORK_LOG.COMPLETED ? (
           <View className="px-4 pb-4">
-            <View className="flex-row items-center rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
+            <View className="flex-row items-center rounded-lg bg-success-50 p-3 dark:bg-success-900/20">
               <CheckCircleIcon size={16} color="#10B981" />
-              <Text className="ml-2 text-sm text-green-700 dark:text-green-300">
+              <Text className="ml-2 text-sm text-success-700 dark:text-success-300">
                 근무 완료된 스태프입니다.
               </Text>
             </View>

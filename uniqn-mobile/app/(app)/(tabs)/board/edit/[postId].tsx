@@ -17,7 +17,7 @@ export default function BoardEditScreen() {
 
   if (!postId) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
           title="게시글을 찾을 수 없어요"
@@ -30,7 +30,7 @@ export default function BoardEditScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref="/(app)/(tabs)/board" />
         <BoardPostEditorLoading title="기존 게시글 내용을 불러오는 중이에요." />
       </SafeAreaView>
@@ -39,7 +39,7 @@ export default function BoardEditScreen() {
 
   if (error || !data) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref="/(app)/(tabs)/board" />
         <ErrorState
           title="게시글을 불러오지 못했어요"
@@ -55,7 +55,7 @@ export default function BoardEditScreen() {
 
   if (!EDITABLE_BOARD_TYPES.includes(boardType)) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref={`/(app)/(tabs)/board/post/${postId}`} />
         <ErrorState
           title="이 게시글은 수정 화면을 지원하지 않아요"
@@ -68,7 +68,7 @@ export default function BoardEditScreen() {
 
   if (!canManagePost) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref={`/(app)/(tabs)/board/post/${postId}`} />
         <ErrorState
           title="게시글을 수정할 수 없어요"
@@ -81,7 +81,7 @@ export default function BoardEditScreen() {
 
   if (data.post.isLocked) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="글 수정" fallbackHref={`/(app)/(tabs)/board/post/${postId}`} />
         <ErrorState
           title="잠긴 게시글이에요"
@@ -93,7 +93,7 @@ export default function BoardEditScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <StackHeader
         title={`${BOARD_TYPE_LABELS[boardType]} 글 수정`}
         fallbackHref={`/(app)/(tabs)/board/post/${postId}`}

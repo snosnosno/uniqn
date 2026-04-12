@@ -76,7 +76,7 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
       accessibilityLabel={`${label} ${dayLabel}`}
       accessibilityState={{ selected: isSelected }}
       className={`items-center px-4 py-2 rounded-lg min-w-[60px] ${
-        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >
       <Text
@@ -85,13 +85,13 @@ const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipP
             ? 'text-white'
             : today
               ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-700 dark:text-gray-300'
+              : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >
         {label}
       </Text>
       <Text
-        className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}
+        className={`text-xs ${isSelected ? 'text-white/70' : 'text-secondary-500 dark:text-secondary-400'}`}
       >
         {dayLabel}
       </Text>
@@ -112,12 +112,12 @@ const AllChip = memo(function AllChip({ isSelected, onPress }: AllChipProps) {
       accessibilityLabel="전체 날짜"
       accessibilityState={{ selected: isSelected }}
       className={`items-center justify-center px-4 py-2 rounded-lg min-w-[60px] ${
-        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >
       <Text
         className={`text-sm font-medium ${
-          isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+          isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >
         전체
@@ -189,7 +189,7 @@ export const DateSlider = memo(function DateSlider({
 
   return (
     <View
-      className={`bg-white dark:bg-surface border-t border-gray-100 dark:border-surface-overlay ${className}`}
+      className={`bg-white dark:bg-surface border-t border-secondary-100 dark:border-surface-overlay ${className}`}
     >
       <ScrollView
         ref={scrollRef}

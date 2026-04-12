@@ -32,9 +32,9 @@ const ROLE_CONFIG = [
     key: 'admin' as const,
     label: '관리자',
     color: '#dc2626',
-    bgColor: 'bg-red-600',
-    lightBg: 'bg-red-50 dark:bg-red-900/20',
-    textColor: 'text-red-700 dark:text-red-300',
+    bgColor: 'bg-error-600',
+    lightBg: 'bg-error-50 dark:bg-error-900/20',
+    textColor: 'text-error-700 dark:text-error-300',
   },
   {
     key: 'employer' as const,
@@ -48,9 +48,9 @@ const ROLE_CONFIG = [
     key: 'staff' as const,
     label: '스태프',
     color: '#16a34a',
-    bgColor: 'bg-green-600',
-    lightBg: 'bg-green-50 dark:bg-green-900/20',
-    textColor: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-success-600',
+    lightBg: 'bg-success-50 dark:bg-success-900/20',
+    textColor: 'text-success-700 dark:text-success-300',
   },
 ];
 
@@ -85,22 +85,24 @@ export function RoleDistributionChart({
   // 데이터가 없는 경우
   if (total === 0) {
     return (
-      <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
+      <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-4">
+          {title}
+        </Text>
         <View className="h-[120px] items-center justify-center">
-          <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400">데이터가 없습니다</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
-        <View className="px-2.5 py-1 rounded-sm bg-gray-100 dark:bg-surface-elevated">
-          <Text className="text-sm font-bold text-gray-700 dark:text-gray-300">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
+        <View className="px-2.5 py-1 rounded-sm bg-secondary-100 dark:bg-surface-elevated">
+          <Text className="text-sm font-bold text-secondary-700 dark:text-secondary-300">
             총 {total.toLocaleString()}명
           </Text>
         </View>
@@ -131,7 +133,7 @@ export function RoleDistributionChart({
                 {role.count.toLocaleString()}명
               </Text>
               <View className="bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded">
-                <Text className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                <Text className="text-xs font-medium text-secondary-600 dark:text-secondary-400">
                   {role.percent}%
                 </Text>
               </View>
@@ -141,12 +143,14 @@ export function RoleDistributionChart({
       </View>
 
       {/* 비율 요약 (하단) */}
-      <View className="flex-row justify-center mt-4 pt-3 border-t border-gray-100 dark:border-surface-overlay">
+      <View className="flex-row justify-center mt-4 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
         {ROLE_CONFIG.map((role, index) => (
           <View key={role.key} className="flex-row items-center">
-            {index > 0 && <Text className="text-gray-300 dark:text-gray-600 mx-2">·</Text>}
+            {index > 0 && (
+              <Text className="text-secondary-300 dark:text-secondary-600 mx-2">·</Text>
+            )}
             <View className={`w-2 h-2 rounded-sm ${role.bgColor} mr-1`} />
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
               {role.label} {getPercent(data[role.key])}%
             </Text>
           </View>

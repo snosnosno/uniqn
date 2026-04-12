@@ -48,11 +48,11 @@ interface InfoRowProps {
 
 export function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-start border-b border-gray-100 py-3 dark:border-surface-overlay">
+    <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
       <View className="mt-0.5 w-6">{icon}</View>
       <View className="ml-2 flex-1">
-        <Text className="mb-1 text-xs text-gray-500 dark:text-gray-400">{label}</Text>
-        <Text className="text-sm text-gray-900 dark:text-white">{value}</Text>
+        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <Text className="text-sm text-secondary-900 dark:text-white">{value}</Text>
       </View>
     </View>
   );
@@ -66,13 +66,13 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center rounded-lg bg-gray-50 p-3 dark:bg-surface">
-      <View className="mr-2 h-8 w-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface">
+    <View className="flex-row items-center rounded-lg bg-secondary-50 p-3 dark:bg-surface">
+      <View className="mr-2 h-8 w-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
         {icon}
       </View>
       <View className="flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
-        <Text className="text-sm font-medium text-gray-900 dark:text-white">{value}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <Text className="text-sm font-medium text-secondary-900 dark:text-white">{value}</Text>
       </View>
     </View>
   );
@@ -88,8 +88,8 @@ export function ProfileInfoSection({ userProfile }: ProfileInfoSectionProps) {
   }
 
   return (
-    <View className="border-b border-gray-100 px-4 py-4 dark:border-surface-overlay">
-      <Text className="mb-3 text-base font-semibold text-gray-900 dark:text-white">
+    <View className="border-b border-secondary-100 px-4 py-4 dark:border-surface-overlay">
+      <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-white">
         프로필 정보
       </Text>
 
@@ -170,7 +170,7 @@ export function ContactInfoSection({
 
   return (
     <View className="px-4 py-4">
-      <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+      <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
         연락처 정보
       </Text>
 

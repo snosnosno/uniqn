@@ -65,7 +65,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -76,7 +76,7 @@ export default function AdminBoardReportDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
           <EmptyState
             title="게시판 신고를 확인할 수 없습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -92,7 +92,7 @@ export default function AdminBoardReportDetailPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고 상세' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
           <Card className="mb-4">
             <View className="mb-3 flex-row flex-wrap items-center gap-2">
@@ -109,34 +109,34 @@ export default function AdminBoardReportDetailPage() {
               ) : null}
             </View>
 
-            <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-white">
               {data.post?.title ?? '원본 게시글이 삭제되었거나 접근할 수 없습니다.'}
             </Text>
-            <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
               신고자: {data.reporterName}
             </Text>
-            <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
               대상 작성자: {data.targetAuthorName ?? '확인 필요'}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               접수 시각: {formatTimestamp(data.report.createdAt)}
             </Text>
           </Card>
 
           <Card className="mb-4">
-            <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+            <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
               신고 사유
             </Text>
-            <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">
+            <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
               {data.report.reason}
             </Text>
 
             {data.report.details ? (
               <>
-                <Text className="mb-2 mt-4 text-base font-semibold text-gray-900 dark:text-white">
+                <Text className="mb-2 mt-4 text-base font-semibold text-secondary-900 dark:text-white">
                   상세 설명
                 </Text>
-                <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">
+                <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
                   {data.report.details}
                 </Text>
               </>
@@ -145,10 +145,10 @@ export default function AdminBoardReportDetailPage() {
 
           {data.post ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
                 게시글 본문
               </Text>
-              <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">
+              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
                 {data.post.body}
               </Text>
             </Card>
@@ -156,13 +156,13 @@ export default function AdminBoardReportDetailPage() {
 
           {data.targetComment ? (
             <Card className="mb-4">
-              <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
                 신고 대상 댓글
               </Text>
-              <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
                 작성자: {data.targetComment.authorName}
               </Text>
-              <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">
+              <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
                 {data.targetComment.body}
               </Text>
             </Card>
@@ -188,10 +188,10 @@ export default function AdminBoardReportDetailPage() {
             </View>
           ) : (
             <Card>
-              <Text className="text-sm font-medium text-gray-900 dark:text-white">
+              <Text className="text-sm font-medium text-secondary-900 dark:text-white">
                 처리 상태: {getStatusLabel(data.report.status)}
               </Text>
-              <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
                 처리 시각: {formatTimestamp(data.report.resolvedAt)}
               </Text>
             </Card>

@@ -27,13 +27,13 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.message ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
             지원 메시지
           </Text>
-          <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface">
+          <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
             <View className="flex-row items-start">
               <MessageIcon size={16} color="#6B7280" />
-              <Text className="ml-2 flex-1 text-sm text-gray-700 dark:text-gray-300">
+              <Text className="ml-2 flex-1 text-sm text-secondary-700 dark:text-secondary-300">
                 {applicant.message}
               </Text>
             </View>
@@ -43,19 +43,19 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.preQuestionAnswers && applicant.preQuestionAnswers.length > 0 ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
             사전질문 답변
           </Text>
-          <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface">
+          <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
             {applicant.preQuestionAnswers.map((answer, index) => (
               <View key={index} className="mb-3 last:mb-0">
                 <View className="mb-1 flex-row items-start">
                   <DocumentIcon size={14} color="#6B7280" />
-                  <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
                     Q{index + 1}. {answer.question}
                   </Text>
                 </View>
-                <Text className="ml-6 text-sm text-gray-700 dark:text-gray-300">
+                <Text className="ml-6 text-sm text-secondary-700 dark:text-secondary-300">
                   {answer.answer}
                 </Text>
               </View>
@@ -66,11 +66,11 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.status === STATUS.APPLICATION.REJECTED && applicant.rejectionReason ? (
         <View className="px-4 pb-4">
-          <View className="flex-row items-start rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+          <View className="flex-row items-start rounded-lg bg-error-50 p-3 dark:bg-error-900/20">
             <XCircleIcon size={16} color="#EF4444" />
             <View className="ml-2 flex-1">
-              <Text className="mb-1 text-xs text-red-500 dark:text-red-400">거절 사유</Text>
-              <Text className="text-sm text-red-700 dark:text-red-300">
+              <Text className="mb-1 text-xs text-error-500 dark:text-error-400">거절 사유</Text>
+              <Text className="text-sm text-error-700 dark:text-error-300">
                 {applicant.rejectionReason}
               </Text>
             </View>
@@ -80,9 +80,9 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.status === STATUS.APPLICATION.CONFIRMED ? (
         <View className="px-4 pb-4">
-          <View className="flex-row items-center rounded-lg bg-green-50 p-3 dark:bg-green-900/20">
+          <View className="flex-row items-center rounded-lg bg-success-50 p-3 dark:bg-success-900/20">
             <CheckCircleIcon size={16} color="#10B981" />
-            <Text className="ml-2 text-sm text-green-700 dark:text-green-300">
+            <Text className="ml-2 text-sm text-success-700 dark:text-success-300">
               확정된 지원자입니다.
             </Text>
           </View>
@@ -91,10 +91,10 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
 
       {applicant.confirmationHistory && applicant.confirmationHistory.length > 0 ? (
         <View className="px-4 pb-4">
-          <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
             확정 이력
           </Text>
-          <View className="rounded-lg bg-gray-50 p-3 dark:bg-surface">
+          <View className="rounded-lg bg-secondary-50 p-3 dark:bg-surface">
             {applicant.confirmationHistory.map((entry, index) => {
               const isCancelled = Boolean(entry.cancelledAt);
               const timestamp = toDateString(isCancelled ? entry.cancelledAt : entry.confirmedAt);
@@ -103,10 +103,10 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
                 <View key={index} className="mb-2 flex-row items-center last:mb-0">
                   <View
                     className={`mr-2 h-2 w-2 rounded-sm ${
-                      isCancelled ? 'bg-red-500' : 'bg-green-500'
+                      isCancelled ? 'bg-error-500' : 'bg-success-500'
                     }`}
                   />
-                  <Text className="text-sm text-gray-700 dark:text-gray-300">
+                  <Text className="text-sm text-secondary-700 dark:text-secondary-300">
                     {isCancelled ? '취소' : '확정'} · {formatProfileDate(timestamp)}
                   </Text>
                 </View>

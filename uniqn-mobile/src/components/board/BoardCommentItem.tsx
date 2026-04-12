@@ -77,8 +77,8 @@ export const BoardCommentItem = memo(function BoardCommentItem({
   const hasDepthIndicator = depth > 0;
 
   const actionChipClass =
-    'rounded-sm bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
-  const mutedActionTextClass = 'text-xs font-medium text-gray-600 dark:text-gray-300';
+    'rounded-sm bg-secondary-100 px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
+  const mutedActionTextClass = 'text-xs font-medium text-secondary-600 dark:text-secondary-300';
 
   return (
     <View style={{ marginLeft: indentationOffset }} className="mb-3">
@@ -87,11 +87,11 @@ export const BoardCommentItem = memo(function BoardCommentItem({
           hasDepthIndicator ? 'border-l-2 border-primary-200 pl-3 dark:border-primary-900/40' : ''
         }
       >
-        <Card className="border border-gray-100 bg-white dark:border-surface-overlay dark:bg-surface">
+        <Card className="border border-secondary-100 bg-white dark:border-surface-overlay dark:bg-surface">
           <View className="mb-3 flex-row items-start justify-between gap-3">
             <View className="flex-1">
               <View className="flex-row flex-wrap items-center gap-2">
-                <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
                   {comment.authorName}
                 </Text>
                 <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
@@ -104,7 +104,7 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                 ) : null}
               </View>
               {createdAtLabel ? (
-                <Text className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                <Text className="mt-2 text-xs text-secondary-400 dark:text-secondary-500">
                   {createdAtLabel}
                 </Text>
               ) : null}
@@ -114,8 +114,8 @@ export const BoardCommentItem = memo(function BoardCommentItem({
           <Text
             className={`text-sm leading-6 ${
               contentDisabled
-                ? 'italic text-gray-400 dark:text-gray-500'
-                : 'text-gray-700 dark:text-gray-300'
+                ? 'italic text-secondary-400 dark:text-secondary-500'
+                : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
             {comment.body}
@@ -148,10 +148,10 @@ export const BoardCommentItem = memo(function BoardCommentItem({
                     className={`rounded-sm px-3 py-1.5 ${
                       isActive
                         ? 'bg-primary-100 dark:bg-primary-900/30'
-                        : 'bg-gray-100 dark:bg-surface-elevated'
+                        : 'bg-secondary-100 dark:bg-surface-elevated'
                     } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
                   >
-                    <Text className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                    <Text className="text-xs font-medium text-secondary-700 dark:text-secondary-200">
                       {COMMENT_REACTION_LABELS[reactionType]} {count}
                     </Text>
                   </Pressable>

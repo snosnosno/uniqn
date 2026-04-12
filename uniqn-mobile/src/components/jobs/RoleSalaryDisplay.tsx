@@ -99,11 +99,13 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
 
   return (
     <View className={`flex-row items-center justify-between ${compact ? 'py-0.5' : 'py-1'}`}>
-      <Text className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400`}>
+      <Text
+        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-600 dark:text-secondary-400`}
+      >
         {label}
       </Text>
       <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white`}
+        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-secondary-900 dark:text-white`}
       >
         {salaryText}
       </Text>
@@ -149,7 +151,7 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
       return (
         <View className={compact ? '' : 'py-1'}>
           <Text
-            className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-gray-500 dark:text-gray-400`}
+            className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-secondary-500 dark:text-secondary-400`}
           >
             급여 미설정
           </Text>
@@ -171,7 +173,9 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
   // 역할별 급여 표시
   return (
     <View className={compact ? '' : 'py-1'}>
-      <Text className={`${compact ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400 mb-1`}>
+      <Text
+        className={`${compact ? 'text-xs' : 'text-sm'} text-secondary-500 dark:text-secondary-400 mb-1`}
+      >
         역할별 급여
       </Text>
       <View className={`${compact ? '' : 'pl-4'}`}>
@@ -221,12 +225,14 @@ export const SalarySummary = memo(function SalarySummary({
   if (useSameSalary || rolesWithSalary.length === 0) {
     if (!displaySalary) {
       return (
-        <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">급여 미설정</Text>
+        <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
+          급여 미설정
+        </Text>
       );
     }
 
     return (
-      <Text className="text-sm font-medium text-gray-900 dark:text-white">
+      <Text className="text-sm font-medium text-secondary-900 dark:text-white">
         {formatSalary(displaySalary.type, displaySalary.amount)}
       </Text>
     );
@@ -238,7 +244,7 @@ export const SalarySummary = memo(function SalarySummary({
     .map((r) => r.salary!.amount);
 
   if (amounts.length === 0) {
-    return <Text className="text-sm font-medium text-gray-900 dark:text-white">협의</Text>;
+    return <Text className="text-sm font-medium text-secondary-900 dark:text-white">협의</Text>;
   }
 
   const min = Math.min(...amounts);
@@ -248,14 +254,14 @@ export const SalarySummary = memo(function SalarySummary({
 
   if (min === max) {
     return (
-      <Text className="text-sm font-medium text-gray-900 dark:text-white">
+      <Text className="text-sm font-medium text-secondary-900 dark:text-white">
         {formatSalaryShort(firstType, min)}
       </Text>
     );
   }
 
   return (
-    <Text className="text-sm font-medium text-gray-900 dark:text-white">
+    <Text className="text-sm font-medium text-secondary-900 dark:text-white">
       {formatSalaryShort(firstType, min)} ~ {formatSalaryShort(firstType, max)}
     </Text>
   );

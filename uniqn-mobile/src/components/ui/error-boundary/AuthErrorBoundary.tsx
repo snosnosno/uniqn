@@ -37,23 +37,23 @@ function AuthErrorFallback({
 
   return (
     <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
-      <View className="w-20 h-20 rounded-sm bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mb-6">
+      <View className="w-20 h-20 rounded-sm bg-warning-100 dark:bg-warning-900/30 items-center justify-center mb-6">
         <Text className="text-4xl">{''}</Text>
       </View>
 
-      <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
         {isSessionExpired ? '세션이 만료되었습니다' : '로그인이 필요합니다'}
       </Text>
 
-      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+      <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6">
         {isSessionExpired
           ? '보안을 위해 다시 로그인해주세요.'
           : '이 기능을 사용하려면 로그인이 필요합니다.'}
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6">
-          <Text className="text-xs text-yellow-600 dark:text-yellow-400 font-mono">
+        <View className="w-full bg-secondary-100 dark:bg-surface rounded-md p-4 mb-6">
+          <Text className="text-xs text-warning-600 dark:text-warning-400 font-mono">
             {error.message}
           </Text>
         </View>
@@ -71,11 +71,13 @@ function AuthErrorFallback({
 
         <Pressable
           onPress={onRetry}
-          className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-md active:bg-gray-300 dark:active:bg-gray-600"
+          className="bg-secondary-200 dark:bg-surface px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >
-          <Text className="text-gray-700 dark:text-gray-200 font-semibold">다시 시도</Text>
+          <Text className="text-secondary-700 dark:text-secondary-200 font-semibold">
+            다시 시도
+          </Text>
         </Pressable>
       </View>
     </View>

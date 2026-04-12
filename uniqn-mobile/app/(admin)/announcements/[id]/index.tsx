@@ -107,7 +107,7 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -118,9 +118,9 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#ef4444" />
-          <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
+          <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
           <Pressable
@@ -152,10 +152,10 @@ export default function AnnouncementDetailPage() {
         }}
       />
 
-      <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <ScrollView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <View className="p-4">
           {/* Header Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
             {/* Badges */}
             <View className="flex-row flex-wrap gap-2 mb-3">
               {/* Status */}
@@ -175,15 +175,17 @@ export default function AnnouncementDetailPage() {
               )}
 
               {/* Category */}
-              <View className="px-2 py-1 rounded bg-gray-100 dark:bg-surface">
-                <Text className="text-xs text-gray-600 dark:text-gray-400">{categoryLabel}</Text>
+              <View className="px-2 py-1 rounded bg-secondary-100 dark:bg-surface">
+                <Text className="text-xs text-secondary-600 dark:text-secondary-400">
+                  {categoryLabel}
+                </Text>
               </View>
 
               {/* Pinned */}
               {announcement.isPinned && (
-                <View className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 flex-row items-center">
+                <View className="px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 flex-row items-center">
                   <PinIcon size={12} color="#f59e0b" />
-                  <Text className="text-xs font-medium text-amber-700 dark:text-amber-300 ml-1">
+                  <Text className="text-xs font-medium text-warning-700 dark:text-warning-300 ml-1">
                     고정
                   </Text>
                 </View>
@@ -191,7 +193,7 @@ export default function AnnouncementDetailPage() {
             </View>
 
             {/* Title */}
-            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">
               {announcement.title}
             </Text>
 
@@ -199,13 +201,13 @@ export default function AnnouncementDetailPage() {
             <View className="flex-row flex-wrap gap-4">
               <View className="flex-row items-center">
                 <PersonOutlineIcon size={14} color="#9ca3af" />
-                <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
                   {announcement.authorName}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <EyeOutlineIcon size={14} color="#9ca3af" />
-                <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
                   {announcement.viewCount.toLocaleString()}
                 </Text>
               </View>
@@ -213,9 +215,11 @@ export default function AnnouncementDetailPage() {
           </View>
 
           {/* Content Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">내용</Text>
-            <Text className="text-base text-gray-900 dark:text-white leading-6">
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
+            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
+              내용
+            </Text>
+            <Text className="text-base text-secondary-900 dark:text-white leading-6">
               {announcement.content}
             </Text>
           </View>
@@ -226,8 +230,8 @@ export default function AnnouncementDetailPage() {
             if (images.length === 0) return null;
 
             return (
-              <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
-                <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
+                <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
                   첨부 이미지 ({images.length}장)
                 </Text>
                 {images.length === 1 ? (
@@ -273,13 +277,15 @@ export default function AnnouncementDetailPage() {
           })()}
 
           {/* Info Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">정보</Text>
+          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
+            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-3">
+              정보
+            </Text>
 
             {/* Target Audience */}
-            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">대상</Text>
-              <Text className="text-sm text-gray-900 dark:text-white">
+            <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">대상</Text>
+              <Text className="text-sm text-secondary-900 dark:text-white">
                 {announcement.targetAudience.type === 'all'
                   ? '전체'
                   : announcement.targetAudience.roles
@@ -300,18 +306,18 @@ export default function AnnouncementDetailPage() {
             </View>
 
             {/* Created At */}
-            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">작성일</Text>
-              <Text className="text-sm text-gray-900 dark:text-white">
+            <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">작성일</Text>
+              <Text className="text-sm text-secondary-900 dark:text-white">
                 {formatDate(announcement.createdAt)}
               </Text>
             </View>
 
             {/* Published At */}
             {announcement.publishedAt && (
-              <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
-                <Text className="text-sm text-gray-500 dark:text-gray-400">발행일</Text>
-                <Text className="text-sm text-gray-900 dark:text-white">
+              <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400">발행일</Text>
+                <Text className="text-sm text-secondary-900 dark:text-white">
                   {formatDate(announcement.publishedAt)}
                 </Text>
               </View>
@@ -319,8 +325,8 @@ export default function AnnouncementDetailPage() {
 
             {/* Updated At */}
             <View className="flex-row justify-between py-2">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">수정일</Text>
-              <Text className="text-sm text-gray-900 dark:text-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">수정일</Text>
+              <Text className="text-sm text-secondary-900 dark:text-white">
                 {formatDate(announcement.updatedAt)}
               </Text>
             </View>
@@ -333,7 +339,7 @@ export default function AnnouncementDetailPage() {
               <Pressable
                 onPress={handlePublish}
                 disabled={!!actionLoading}
-                className="bg-green-600 rounded-lg py-3 items-center flex-row justify-center"
+                className="bg-success-600 rounded-lg py-3 items-center flex-row justify-center"
               >
                 {actionLoading === 'publish' ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -351,7 +357,7 @@ export default function AnnouncementDetailPage() {
               <Pressable
                 onPress={handleArchive}
                 disabled={!!actionLoading}
-                className="bg-amber-600 rounded-lg py-3 items-center flex-row justify-center"
+                className="bg-warning-600 rounded-lg py-3 items-center flex-row justify-center"
               >
                 {actionLoading === 'archive' ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -378,7 +384,7 @@ export default function AnnouncementDetailPage() {
             <Pressable
               onPress={handleDelete}
               disabled={!!actionLoading}
-              className="bg-red-600 rounded-lg py-3 items-center flex-row justify-center"
+              className="bg-error-600 rounded-lg py-3 items-center flex-row justify-center"
             >
               {actionLoading === 'delete' ? (
                 <ActivityIndicator color="#fff" size="small" />

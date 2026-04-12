@@ -72,8 +72,8 @@ function GroupCheckbox({ state, isDark }: GroupCheckboxProps) {
           isChecked || isIndeterminate
             ? 'bg-primary-500 border-primary-500'
             : isDark
-              ? 'border-gray-500'
-              : 'border-gray-400'
+              ? 'border-secondary-500'
+              : 'border-secondary-400'
         }
       `}
     >
@@ -122,7 +122,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
     <View className="mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">선택된 일정</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">선택된 일정</Text>
         <Text className="text-xs text-primary-500 dark:text-primary-400 font-medium">
           {selectedCount}/{totalCount}개 선택
         </Text>
@@ -146,8 +146,8 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                 ? 'bg-primary-900 border-primary-700'
                 : 'bg-primary-100 border-primary-300'
               : isDark
-                ? 'bg-gray-700 border-gray-600'
-                : 'bg-gray-100 border-gray-200';
+                ? 'bg-secondary-700 border-secondary-600'
+                : 'bg-secondary-100 border-secondary-200';
 
             return (
               <Pressable
@@ -162,8 +162,8 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     isChecked
                       ? 'bg-primary-500 border-primary-500'
                       : isDark
-                        ? 'border-gray-500'
-                        : 'border-gray-400'
+                        ? 'border-secondary-500'
+                        : 'border-secondary-400'
                   }
                 `}
                 >
@@ -174,17 +174,19 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                   color={isChecked ? iconColors.checked : iconColors.unchecked}
                 />
                 <Text
-                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                 >
                   {item.formattedDate} {item.timeSlotDisplay}
                 </Text>
-                <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+                <View
+                  className={`mx-2 h-4 w-px ${isDark ? 'bg-secondary-500' : 'bg-secondary-300'}`}
+                />
                 <BriefcaseIcon
                   size={16}
                   color={isChecked ? iconColors.checked : iconColors.unchecked}
                 />
                 <Text
-                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                 >
                   {item.roleLabel}
                 </Text>
@@ -199,8 +201,8 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
               ? 'bg-primary-900/50 border-primary-700'
               : 'bg-primary-50 border-primary-200'
             : isDark
-              ? 'bg-gray-700 border-gray-600'
-              : 'bg-gray-100 border-gray-200';
+              ? 'bg-secondary-700 border-secondary-600'
+              : 'bg-secondary-100 border-secondary-200';
 
           return (
             <View key={group.groupId} className={`rounded-lg border overflow-hidden ${bgClass}`}>
@@ -218,7 +220,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       color={hasSelection ? iconColors.checked : iconColors.unchecked}
                     />
                     <Text
-                      className={`ml-1.5 text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      className={`ml-1.5 text-sm font-semibold ${isDark ? 'text-white' : 'text-secondary-900'}`}
                     >
                       {formatDateDisplay(group.dateRange.dates)}
                     </Text>
@@ -226,12 +228,18 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
 
                   <View className="flex-row items-center mt-1">
                     <ClockIcon size={12} color={isDark ? '#9CA3AF' : '#6B7280'} />
-                    <Text className={`ml-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <Text
+                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
+                    >
                       {group.timeSlotDisplay}
                     </Text>
-                    <View className={`mx-1.5 h-3 w-px ${isDark ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                    <View
+                      className={`mx-1.5 h-3 w-px ${isDark ? 'bg-secondary-600' : 'bg-secondary-300'}`}
+                    />
                     <BriefcaseIcon size={12} color={isDark ? '#9CA3AF' : '#6B7280'} />
-                    <Text className={`ml-1 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <Text
+                      className={`ml-1 text-xs ${isDark ? 'text-secondary-400' : 'text-secondary-500'}`}
+                    >
                       {group.roleLabel}
                     </Text>
                   </View>
@@ -243,7 +251,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                     e.stopPropagation();
                     toggleExpand(group.groupId);
                   }}
-                  className="p-1.5 rounded-sm active:bg-gray-200 dark:active:bg-gray-600"
+                  className="p-1.5 rounded-sm active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
                 >
                   {isExpanded ? (
@@ -257,9 +265,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
               {/* 펼침 상태: 개별 날짜 */}
               {isExpanded && (
                 <View
-                  className={`border-t ${isDark ? 'border-gray-600' : 'border-gray-200'} px-3 py-2`}
+                  className={`border-t ${isDark ? 'border-secondary-600' : 'border-secondary-200'} px-3 py-2`}
                 >
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2">
                     개별 날짜 선택
                   </Text>
                   <View className="flex-row flex-wrap gap-2">
@@ -272,8 +280,8 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                           ? 'bg-primary-800 border-primary-600'
                           : 'bg-primary-100 border-primary-300'
                         : isDark
-                          ? 'bg-gray-600 border-gray-500'
-                          : 'bg-white border-gray-200';
+                          ? 'bg-secondary-600 border-secondary-500'
+                          : 'bg-white border-secondary-200';
 
                       return (
                         <Pressable
@@ -288,15 +296,15 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                               isChecked
                                 ? 'bg-primary-500 border-primary-500'
                                 : isDark
-                                  ? 'border-gray-400'
-                                  : 'border-gray-400'
+                                  ? 'border-secondary-400'
+                                  : 'border-secondary-400'
                             }
                           `}
                           >
                             {isChecked && <CheckIcon size={10} color="#fff" />}
                           </View>
                           <Text
-                            className={`text-xs font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                            className={`text-xs font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
                           >
                             {item.formattedDate}
                           </Text>

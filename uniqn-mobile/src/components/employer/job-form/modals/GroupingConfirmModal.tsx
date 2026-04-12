@@ -71,19 +71,19 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
   return (
     <Modal visible={visible} onClose={handleClose} title="날짜 그룹화" size="md" position="center">
       <View className="-mt-2">
-        <View className="mb-4 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/20">
+        <View className="mb-4 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/20">
           <View className="mb-1 flex-row items-center">
             <CalendarIcon size={18} color="#F59E0B" />
-            <Text className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+            <Text className="ml-2 text-xs text-warning-600 dark:text-warning-400">
               {dayCount}일 선택됨
             </Text>
           </View>
-          <Text className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+          <Text className="text-sm font-semibold text-warning-700 dark:text-warning-300">
             {selectedOption === 'group' ? groupedPreview : individualPreview}
           </Text>
         </View>
 
-        <Text className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        <Text className="mb-4 text-sm text-secondary-600 dark:text-secondary-400">
           날짜별 요구사항을 어떻게 관리할까요?
         </Text>
 
@@ -92,7 +92,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`mb-3 rounded-md border-2 p-4 ${
             selectedOption === 'group'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-200 bg-gray-50 dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-secondary-50 dark:border-surface-overlay dark:bg-surface-dark'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'group' }}
@@ -102,7 +102,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               className={`mr-3 h-5 w-5 items-center justify-center rounded-sm border-2 ${
                 selectedOption === 'group'
                   ? 'border-primary-500 bg-primary-500'
-                  : 'border-gray-400 dark:border-surface-overlay'
+                  : 'border-secondary-400 dark:border-surface-overlay'
               }`}
             >
               {selectedOption === 'group' && <View className="h-2 w-2 rounded-sm bg-white" />}
@@ -111,7 +111,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               className={`text-base font-semibold ${
                 selectedOption === 'group'
                   ? 'text-primary-700 dark:text-primary-300'
-                  : 'text-gray-700 dark:text-gray-300'
+                  : 'text-secondary-700 dark:text-secondary-300'
               }`}
             >
               그룹으로 묶기
@@ -122,7 +122,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               </Text>
             </View>
           </View>
-          <Text className="ml-8 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400">
             모든 날짜에 같은 시간대와 인원 설정을 적용합니다.
           </Text>
         </Pressable>
@@ -132,7 +132,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`rounded-md border-2 p-4 ${
             selectedOption === 'individual'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-200 bg-gray-50 dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-secondary-50 dark:border-surface-overlay dark:bg-surface-dark'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'individual' }}
@@ -142,7 +142,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               className={`mr-3 h-5 w-5 items-center justify-center rounded-sm border-2 ${
                 selectedOption === 'individual'
                   ? 'border-primary-500 bg-primary-500'
-                  : 'border-gray-400 dark:border-surface-overlay'
+                  : 'border-secondary-400 dark:border-surface-overlay'
               }`}
             >
               {selectedOption === 'individual' && <View className="h-2 w-2 rounded-sm bg-white" />}
@@ -151,13 +151,13 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               className={`text-base font-semibold ${
                 selectedOption === 'individual'
                   ? 'text-primary-700 dark:text-primary-300'
-                  : 'text-gray-700 dark:text-gray-300'
+                  : 'text-secondary-700 dark:text-secondary-300'
               }`}
             >
               개별로 관리
             </Text>
           </View>
-          <Text className="ml-8 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="ml-8 text-sm text-secondary-500 dark:text-secondary-400">
             각 날짜마다 다른 시간대와 인원 설정을 둘 수 있습니다.
           </Text>
         </Pressable>
@@ -165,11 +165,11 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
         <View className="mt-4 flex-row gap-3">
           <Pressable
             onPress={handleClose}
-            className="flex-1 rounded-md bg-gray-200 py-3 active:opacity-80 dark:bg-surface"
+            className="flex-1 rounded-md bg-secondary-200 py-3 active:opacity-80 dark:bg-surface"
             accessibilityRole="button"
             accessibilityLabel="취소"
           >
-            <Text className="text-center text-base font-semibold text-gray-700 dark:text-gray-300">
+            <Text className="text-center text-base font-semibold text-secondary-700 dark:text-secondary-300">
               취소
             </Text>
           </Pressable>

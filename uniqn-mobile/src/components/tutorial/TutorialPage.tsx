@@ -40,21 +40,21 @@ export function TutorialPage({ page, width, iconBgClass }: TutorialPageProps) {
 
       {/* 제목 */}
       <Animated.View entering={FadeInUp.delay(350).duration(500)} className="mt-8">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white text-center">
+        <Text className="text-2xl font-bold text-secondary-900 dark:text-white text-center">
           {page.title}
         </Text>
       </Animated.View>
 
       {/* 부제 */}
       <Animated.View entering={FadeInUp.delay(450).duration(500)} className="mt-2">
-        <Text className="text-base text-gray-500 dark:text-gray-400 text-center">
+        <Text className="text-base text-secondary-500 dark:text-secondary-400 text-center">
           {page.subtitle}
         </Text>
       </Animated.View>
 
       {/* 설명 */}
       <Animated.View entering={FadeInUp.delay(550).duration(500)} className="mt-6 px-4">
-        <Text className="text-sm text-gray-500 dark:text-gray-400 text-center leading-relaxed">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center leading-relaxed">
           {page.description}
         </Text>
       </Animated.View>

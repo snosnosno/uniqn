@@ -260,18 +260,22 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
         >
           <View className="-mt-2">
             {formattedDate && (
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-3">{formattedDate}</Text>
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
+                {formattedDate}
+              </Text>
             )}
 
             {/* 거부 사유 */}
-            <View className="p-3 bg-gray-50 dark:bg-surface rounded-lg mb-3">
-              <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <View className="p-3 bg-secondary-50 dark:bg-surface rounded-lg mb-3">
+              <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-1">
                 거부 사유
               </Text>
-              <Text className="text-base text-gray-700 dark:text-gray-300">{rejectionReason}</Text>
+              <Text className="text-base text-secondary-700 dark:text-secondary-300">
+                {rejectionReason}
+              </Text>
             </View>
 
-            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
               공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
             </Text>
 

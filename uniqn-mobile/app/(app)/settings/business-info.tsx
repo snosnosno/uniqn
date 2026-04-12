@@ -29,10 +29,12 @@ interface InfoRowProps {
 function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
   const content = (
     <View className="flex-row py-3">
-      <Text className="w-28 text-sm text-gray-500 dark:text-gray-400">{label}</Text>
+      <Text className="w-28 text-sm text-secondary-500 dark:text-secondary-400">{label}</Text>
       <Text
         className={`flex-1 text-sm ${
-          isLink ? 'text-primary-600 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'
+          isLink
+            ? 'text-primary-600 dark:text-primary-300'
+            : 'text-secondary-900 dark:text-secondary-100'
         }`}
       >
         {value}
@@ -61,38 +63,38 @@ export default function BusinessInfoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-bold text-gray-900 dark:text-gray-100">
+          <Text className="mb-4 text-lg font-bold text-secondary-900 dark:text-secondary-100">
             사업자정보
           </Text>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="상호명" value={BUSINESS_INFO.companyName} />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="대표자" value={BUSINESS_INFO.representative} />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="사업자등록번호" value={BUSINESS_INFO.businessNumber} />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="통신판매업신고" value={BUSINESS_INFO.salesNumber} />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="사업장 주소" value={BUSINESS_INFO.address} />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="이메일" value={BUSINESS_INFO.email} onPress={handleEmailPress} isLink />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow
               label="고객센터"
               value={BUSINESS_INFO.phone}
@@ -101,12 +103,12 @@ export default function BusinessInfoScreen() {
             />
           </View>
 
-          <View className="border-t border-gray-100 dark:border-gray-700">
+          <View className="border-t border-secondary-100 dark:border-secondary-700">
             <InfoRow label="운영시간" value={BUSINESS_INFO.customerServiceHours} />
           </View>
         </Card>
 
-        <Text className="px-2 text-xs leading-5 text-gray-400 dark:text-gray-500">
+        <Text className="px-2 text-xs leading-5 text-secondary-400 dark:text-secondary-500">
           사업자정보 확인은 국세청 홈택스(www.hometax.go.kr)에서 가능합니다.
         </Text>
       </ScrollView>

@@ -65,9 +65,9 @@ export function ErrorState({
 
   if (compact) {
     return (
-      <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-md">
-        <Text className="text-red-600 dark:text-red-400 text-lg mr-3">{''}</Text>
-        <Text className="text-red-700 dark:text-red-300 text-sm flex-1">{errorMessage}</Text>
+      <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 px-4 py-3 rounded-md">
+        <Text className="text-error-600 dark:text-error-400 text-lg mr-3">{''}</Text>
+        <Text className="text-error-700 dark:text-error-300 text-sm flex-1">{errorMessage}</Text>
         {canRetry && (
           <Pressable
             onPress={onRetry}
@@ -75,7 +75,9 @@ export function ErrorState({
             accessibilityRole="button"
             accessibilityLabel={retryText}
           >
-            <Text className="text-red-600 dark:text-red-400 text-sm font-medium">{retryText}</Text>
+            <Text className="text-error-600 dark:text-error-400 text-sm font-medium">
+              {retryText}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -85,23 +87,23 @@ export function ErrorState({
   return (
     <View className="flex-1 items-center justify-center p-8">
       {/* 에러 아이콘 */}
-      <View className="w-20 h-20 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
+      <View className="w-20 h-20 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center mb-6">
         <Text className="text-4xl">{''}</Text>
       </View>
 
       {/* 제목 */}
-      <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
         {title}
       </Text>
 
       {/* 메시지 */}
-      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+      <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6">
         {errorMessage}
       </Text>
 
       {/* 에러 코드 (AppError인 경우) */}
       {isAppError(error) && (
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-4">
           에러 코드: {error.code}
         </Text>
       )}

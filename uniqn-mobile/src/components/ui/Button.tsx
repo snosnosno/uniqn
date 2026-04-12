@@ -37,19 +37,19 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-500 dark:active:bg-primary-600',
   secondary:
-    'bg-gray-100 active:bg-gray-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
+    'bg-secondary-100 active:bg-secondary-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
   outline:
-    'bg-transparent border border-gray-300 active:bg-gray-50 dark:border-surface-overlay dark:active:bg-surface-elevated',
-  ghost: 'bg-transparent active:bg-gray-100 dark:active:bg-surface-elevated',
+    'bg-transparent border border-secondary-300 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-elevated',
+  ghost: 'bg-transparent active:bg-secondary-100 dark:active:bg-surface-elevated',
   danger: 'bg-error-600 active:bg-error-700 dark:bg-error-500 dark:active:bg-error-600',
   accent: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500',
 };
 
 const variantTextStyles: Record<ButtonVariant, string> = {
   primary: 'text-white',
-  secondary: 'text-gray-900 dark:text-gray-100',
-  outline: 'text-gray-900 dark:text-gray-100',
-  ghost: 'text-gray-900 dark:text-gray-100',
+  secondary: 'text-secondary-900 dark:text-secondary-100',
+  outline: 'text-secondary-900 dark:text-secondary-100',
+  ghost: 'text-secondary-900 dark:text-secondary-100',
   danger: 'text-white',
   accent: 'text-surface-dark font-bold',
 };

@@ -95,7 +95,7 @@ function ProgressCircle({
       </Svg>
       {/* 퍼센트 텍스트 */}
       <View className="absolute inset-0 items-center justify-center">
-        <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <Text className="text-sm font-semibold text-secondary-700 dark:text-secondary-300">
           {Math.round(progress)}%
         </Text>
       </View>
@@ -190,7 +190,7 @@ export function LoadingOverlay({
 
           {/* 메시지 */}
           {message && (
-            <Text className="text-gray-700 dark:text-gray-300 text-center mt-4 text-base">
+            <Text className="text-secondary-700 dark:text-secondary-300 text-center mt-4 text-base">
               {message}
             </Text>
           )}
@@ -203,7 +203,9 @@ export function LoadingOverlay({
               accessibilityRole="button"
               accessibilityLabel="취소"
             >
-              <Text className="text-gray-500 dark:text-gray-400 text-sm underline">취소</Text>
+              <Text className="text-secondary-500 dark:text-secondary-400 text-sm underline">
+                취소
+              </Text>
             </Pressable>
           )}
         </Animated.View>
@@ -247,7 +249,7 @@ export function InlineLoadingOverlay({
           <ActivityIndicator size={size} color={color} />
         )}
         {message && (
-          <Text className="text-gray-700 dark:text-gray-300 text-center mt-4 text-base">
+          <Text className="text-secondary-700 dark:text-secondary-300 text-center mt-4 text-base">
             {message}
           </Text>
         )}

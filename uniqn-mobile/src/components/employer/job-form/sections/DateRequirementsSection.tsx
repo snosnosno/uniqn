@@ -203,17 +203,17 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   return (
     <View>
       <View className="mb-4">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400">
           최대 {constraints.maxDates}개 날짜 추가 가능
           {hasGroupedRequirements && totalGroupCount > 0 && (
-            <Text className="text-gray-500 dark:text-gray-500">
+            <Text className="text-secondary-500 dark:text-secondary-500">
               {' '}
               (현재 {totalGroupCount}개 일정, {totalDateCount}일)
             </Text>
           )}
         </Text>
         {supportsGroupedDates && (
-          <Text className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+          <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400">
             연속 날짜는 그룹으로 묶을지, 개별 날짜로 관리할지 선택할 수 있습니다.
           </Text>
         )}
@@ -221,7 +221,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
 
       {dateRequirements.length === 0 ? (
         <View className="items-center p-8">
-          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해 주세요.</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400">날짜를 추가해 주세요.</Text>
         </View>
       ) : hasGroupedRequirements ? (
         <View className="mb-4">
@@ -257,7 +257,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         className={`flex-row items-center justify-center rounded-lg border-2 border-dashed p-4 ${
           canAddDate
             ? 'border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20'
-            : 'border-gray-300 bg-gray-50 opacity-50 dark:border-surface-overlay dark:bg-surface'
+            : 'border-secondary-300 bg-secondary-50 opacity-50 dark:border-surface-overlay dark:bg-surface'
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
@@ -271,7 +271,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           className={`font-medium ${
             canAddDate
               ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-400 dark:text-gray-600'
+              : 'text-secondary-400 dark:text-secondary-600'
           }`}
         >
           날짜 추가 {canAddDate && `(${totalDateCount}/${constraints.maxDates})`}
@@ -279,7 +279,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       </Pressable>
 
       {errors?.dateSpecificRequirements && (
-        <Text className="mt-2 text-sm text-red-600 dark:text-red-400">
+        <Text className="mt-2 text-sm text-error-600 dark:text-error-400">
           {errors.dateSpecificRequirements}
         </Text>
       )}

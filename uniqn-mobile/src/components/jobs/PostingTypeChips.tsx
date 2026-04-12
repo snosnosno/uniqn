@@ -47,12 +47,12 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected }}
       className={`flex-row items-center rounded-sm px-4 py-2 ${
-        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >
       <Text className="mr-1.5">{chip.icon}</Text>
       <Text
-        className={`font-medium ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
+        className={`font-medium ${isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'}`}
       >
         {chip.label}
       </Text>
@@ -64,7 +64,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
         >
           <Text
             className={`text-xs font-semibold ${
-              isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+              isSelected ? 'text-white' : 'text-secondary-600 dark:text-secondary-300'
             }`}
           >
             {formatCount(count)}

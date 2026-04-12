@@ -98,12 +98,12 @@ export default function AdminAnnouncementsPage() {
         }}
       />
 
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         {/* Status Tabs */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="border-b border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface"
+          className="border-b border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface"
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
@@ -122,7 +122,7 @@ export default function AdminAnnouncementsPage() {
                 <View className="flex-row items-center">
                   <Text
                     className={`text-sm font-medium ${
-                      isActive ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'
+                      isActive ? 'text-primary-600' : 'text-secondary-500 dark:text-secondary-400'
                     }`}
                   >
                     {tab.label}
@@ -132,12 +132,14 @@ export default function AdminAnnouncementsPage() {
                       className={`ml-2 px-1.5 py-0.5 rounded ${
                         isActive
                           ? 'bg-primary-100 dark:bg-primary-900/30'
-                          : 'bg-gray-100 dark:bg-surface'
+                          : 'bg-secondary-100 dark:bg-surface'
                       }`}
                     >
                       <Text
                         className={`text-xs ${
-                          isActive ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'
+                          isActive
+                            ? 'text-primary-600'
+                            : 'text-secondary-500 dark:text-secondary-400'
                         }`}
                       >
                         {count}
@@ -154,15 +156,17 @@ export default function AdminAnnouncementsPage() {
         {isLoading && !data ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" />
-            <Text className="text-gray-500 dark:text-gray-400 mt-4">공지사항을 불러오는 중...</Text>
+            <Text className="text-secondary-500 dark:text-secondary-400 mt-4">
+              공지사항을 불러오는 중...
+            </Text>
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
             <DocumentTextOutlineIcon size={64} color="#9ca3af" />
-            <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
+            <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 mt-4">
               공지사항이 없습니다
             </Text>
-            <Text className="text-gray-500 dark:text-gray-400 text-center mt-2">
+            <Text className="text-secondary-500 dark:text-secondary-400 text-center mt-2">
               새 공지사항을 작성해보세요
             </Text>
             <Pressable onPress={handleCreate} className="mt-6 bg-primary-600 px-6 py-3 rounded-lg">

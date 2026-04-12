@@ -61,7 +61,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
   return (
     <Pressable
       onPress={onToggle}
-      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-surface/50 ${
+      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-secondary-50 px-4 py-3 dark:bg-surface/50 ${
         group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''
       }`}
     >
@@ -71,7 +71,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
           className={`ml-2 text-base font-semibold ${
             group.isToday
               ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-900 dark:text-white'
+              : 'text-secondary-900 dark:text-white'
           }`}
         >
           {group.formattedDate}
@@ -81,10 +81,12 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
 
       <View className="flex-row items-center">
         <View className="mr-2 flex-row items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">{group.stats.total}</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+            {group.stats.total}
+          </Text>
           {group.stats.checkedIn > 0 ? (
-            <View className="ml-1 rounded bg-green-100 px-1.5 py-0.5 dark:bg-green-900/30">
-              <Text className="text-xs text-green-600 dark:text-green-400">
+            <View className="ml-1 rounded bg-success-50 px-1.5 py-0.5 dark:bg-success-900/30">
+              <Text className="text-xs text-success-600 dark:text-success-400">
                 {group.stats.checkedIn}
               </Text>
             </View>
@@ -234,7 +236,7 @@ export function ConfirmedStaffList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
           확정된 스태프를 불러오는 중입니다...
         </Text>
       </View>

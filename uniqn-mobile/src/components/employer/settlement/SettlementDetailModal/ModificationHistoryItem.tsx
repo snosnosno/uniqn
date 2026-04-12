@@ -59,27 +59,31 @@ export function ModificationHistoryItem({ modification, index }: ModificationHis
   );
 
   return (
-    <View className="flex-row items-start py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
-      <View className="w-6 h-6 rounded-sm bg-gray-100 dark:bg-surface items-center justify-center mr-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{index + 1}</Text>
+    <View className="flex-row items-start py-2 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0">
+      <View className="w-6 h-6 rounded-sm bg-secondary-100 dark:bg-surface items-center justify-center mr-2">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{index + 1}</Text>
       </View>
       <View className="flex-1">
-        <Text className="text-sm text-gray-900 dark:text-white">
+        <Text className="text-sm text-secondary-900 dark:text-white">
           {modification.reason || '시간 수정'}
         </Text>
         {modifiedAt && (
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
             {formatDate(modifiedAt)} {formatTime(modifiedAt)}
           </Text>
         )}
         {/* 상세 변경 내용 표시 */}
         {(startTimeChange || endTimeChange) && (
-          <View className="mt-1.5 bg-gray-100 dark:bg-surface rounded px-2 py-1.5">
+          <View className="mt-1.5 bg-secondary-100 dark:bg-surface rounded px-2 py-1.5">
             {startTimeChange && (
-              <Text className="text-xs text-gray-600 dark:text-gray-300">• {startTimeChange}</Text>
+              <Text className="text-xs text-secondary-600 dark:text-secondary-300">
+                • {startTimeChange}
+              </Text>
             )}
             {endTimeChange && (
-              <Text className="text-xs text-gray-600 dark:text-gray-300">• {endTimeChange}</Text>
+              <Text className="text-xs text-secondary-600 dark:text-secondary-300">
+                • {endTimeChange}
+              </Text>
             )}
           </View>
         )}

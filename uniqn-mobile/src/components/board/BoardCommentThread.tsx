@@ -79,7 +79,7 @@ function CommentNodeView({
     <View style={{ marginLeft: indentationDepth * 12 }} className="mb-3">
       <Card className="bg-white dark:bg-surface">
         <View className="mb-2 flex-row flex-wrap items-center gap-2">
-          <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
             {comment.authorName}
           </Text>
           <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
@@ -92,7 +92,9 @@ function CommentNodeView({
           ) : null}
         </View>
 
-        <Text className="text-sm leading-6 text-gray-700 dark:text-gray-300">{comment.body}</Text>
+        <Text className="text-sm leading-6 text-secondary-700 dark:text-secondary-300">
+          {comment.body}
+        </Text>
 
         {!contentDisabled ? (
           <BoardImageGrid
@@ -115,10 +117,10 @@ function CommentNodeView({
                   className={`rounded-sm px-2 py-1 ${
                     isActive
                       ? 'bg-primary-100 dark:bg-primary-900/30'
-                      : 'bg-gray-100 dark:bg-surface-elevated'
+                      : 'bg-secondary-100 dark:bg-surface-elevated'
                   } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
                 >
-                  <Text className="text-xs text-gray-700 dark:text-gray-200">
+                  <Text className="text-xs text-secondary-700 dark:text-secondary-200">
                     {COMMENT_REACTION_LABELS[reactionType]} {count}
                   </Text>
                 </Pressable>
@@ -140,12 +142,12 @@ function CommentNodeView({
             <>
               {canInteract ? (
                 <Pressable onPress={() => onEdit(comment)} className="active:opacity-70">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">수정</Text>
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400">수정</Text>
                 </Pressable>
               ) : null}
               {canInteract ? (
                 <Pressable onPress={() => onDelete(comment)} className="active:opacity-70">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">삭제</Text>
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400">삭제</Text>
                 </Pressable>
               ) : null}
             </>
@@ -153,7 +155,7 @@ function CommentNodeView({
 
           {canPin ? (
             <Pressable onPress={() => onTogglePin(comment)} className="active:opacity-70">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {comment.isPinned ? '고정 해제' : '고정'}
               </Text>
             </Pressable>
@@ -167,7 +169,7 @@ function CommentNodeView({
 
           {!isOwnComment && !contentDisabled ? (
             <Pressable onPress={() => onReport(comment)} className="active:opacity-70">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">신고</Text>
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">신고</Text>
             </Pressable>
           ) : null}
         </View>

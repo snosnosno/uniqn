@@ -24,19 +24,19 @@ export default function FAQScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 카테고리 탭 */}
       <FAQCategoryTabs
         selectedCategory={selectedCategory}
         onSelectCategory={handleCategoryChange}
-        className="border-b border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface"
+        className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface"
       />
 
       {/* FAQ 리스트 */}
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {isLoading ? (
           <View className="items-center justify-center py-12">
-            <Text className="text-gray-500 dark:text-gray-400">로딩 중...</Text>
+            <Text className="text-secondary-500 dark:text-secondary-400">로딩 중...</Text>
           </View>
         ) : faqItems && faqItems.length > 0 ? (
           <FAQList
@@ -50,7 +50,7 @@ export default function FAQScreen() {
 
         {/* 문의하기 CTA */}
         <View className="mt-6 items-center">
-          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
             원하는 답변을 찾지 못하셨나요?
           </Text>
           <Button onPress={handleInquiry} variant="outline" size="sm">

@@ -113,7 +113,7 @@ export default function NotificationsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <StackHeader
         title="알림"

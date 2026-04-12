@@ -167,7 +167,7 @@ export default function JobsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="구인구직" />
 
       <SearchBar value={searchText} onChangeText={setSearchText} />

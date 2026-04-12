@@ -87,7 +87,9 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
               key={option.key}
               onPress={() => handleSelect(option.key)}
               className={`flex-row items-center rounded-sm px-4 py-2 ${
-                isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
+                isSelected
+                  ? 'bg-primary-500 dark:bg-primary-600'
+                  : 'bg-secondary-100 dark:bg-surface'
               }`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
@@ -97,7 +99,7 @@ export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
             >
               <Text
                 className={`text-sm font-medium ${
-                  isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                  isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
                 {option.label}

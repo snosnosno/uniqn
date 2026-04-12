@@ -24,9 +24,11 @@ import type { Application } from '@/types';
 
 function LoadingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">지원 정보를 불러오는 중...</Text>
+      <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+        지원 정보를 불러오는 중...
+      </Text>
     </View>
   );
 }
@@ -37,12 +39,12 @@ function LoadingState() {
 
 function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">{''}</Text>
-      <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
         오류가 발생했습니다
       </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{message}</Text>
+      <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">{message}</Text>
       <Button onPress={onBack} variant="outline">
         돌아가기
       </Button>
@@ -56,12 +58,12 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
 
 function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">{''}</Text>
-      <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
         취소 요청 불가
       </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{reason}</Text>
+      <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">{reason}</Text>
       <Button onPress={onBack} variant="outline">
         돌아가기
       </Button>
@@ -75,10 +77,12 @@ function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => v
 
 function SuccessState() {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center p-6 bg-secondary-50 dark:bg-surface-dark">
       <Text className="text-6xl mb-4">{''}</Text>
-      <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">취소 요청 완료</Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">
+        취소 요청 완료
+      </Text>
+      <Text className="text-secondary-500 dark:text-secondary-400 text-center">
         구인자가 검토 후 승인/거절합니다.{'\n'}
         결과는 알림으로 안내해드립니다.
       </Text>
@@ -208,7 +212,7 @@ export default function CancellationRequestScreen() {
   // 로딩 상태
   if (isLoadingApplication) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -227,7 +231,7 @@ export default function CancellationRequestScreen() {
   // 조회 에러
   if (loadError) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -246,7 +250,7 @@ export default function CancellationRequestScreen() {
   // 지원서를 찾을 수 없는 경우
   if (!application) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -265,7 +269,7 @@ export default function CancellationRequestScreen() {
   // 취소 요청 불가능한 경우
   if (!canRequestCancel.allowed) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -284,7 +288,7 @@ export default function CancellationRequestScreen() {
   // 성공 상태
   if (isSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -302,7 +306,7 @@ export default function CancellationRequestScreen() {
 
   // 폼 표시
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       <Stack.Screen
         options={{
           headerShown: false,

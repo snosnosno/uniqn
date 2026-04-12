@@ -33,10 +33,10 @@ interface DataRowProps {
 
 function DataRow({ label, value, editable, onEdit }: DataRowProps) {
   return (
-    <View className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-surface-overlay">
-      <Text className="text-gray-600 dark:text-gray-400 text-sm">{label}</Text>
+    <View className="flex-row items-center justify-between py-3 border-b border-secondary-100 dark:border-surface-overlay">
+      <Text className="text-secondary-600 dark:text-secondary-400 text-sm">{label}</Text>
       <View className="flex-row items-center">
-        <Text className="text-gray-900 dark:text-white font-medium mr-2">{value || '-'}</Text>
+        <Text className="text-secondary-900 dark:text-white font-medium mr-2">{value || '-'}</Text>
         {editable && onEdit && (
           <Pressable onPress={onEdit}>
             <Text className="text-primary-600 dark:text-primary-400 text-sm">수정</Text>
@@ -173,7 +173,7 @@ export default function MyDataScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
@@ -186,14 +186,16 @@ export default function MyDataScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6366f1" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">정보를 불러오는 중...</Text>
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+            정보를 불러오는 중...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
@@ -227,7 +229,7 @@ export default function MyDataScreen() {
 
         {/* 기본 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-4">
             기본 정보
           </Text>
 
@@ -247,7 +249,7 @@ export default function MyDataScreen() {
 
         {/* 본인인증 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-4">
             본인인증 정보
           </Text>
 
@@ -268,7 +270,7 @@ export default function MyDataScreen() {
 
         {/* 동의 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-4">
             동의 정보
           </Text>
 
@@ -279,10 +281,10 @@ export default function MyDataScreen() {
 
         {/* 데이터 내보내기 */}
         <Card className="mb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
             데이터 내보내기
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4">
+          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mb-4">
             저장된 모든 개인정보를 JSON 형식으로 내보낼 수 있습니다. 지원 내역, 근무 기록 등이
             포함됩니다.
           </Text>
@@ -300,8 +302,8 @@ export default function MyDataScreen() {
         </Card>
 
         {/* 개인정보 삭제 안내 */}
-        <Card className="bg-gray-100 dark:bg-surface">
-          <Text className="text-gray-600 dark:text-gray-400 text-sm leading-5">
+        <Card className="bg-secondary-100 dark:bg-surface">
+          <Text className="text-secondary-600 dark:text-secondary-400 text-sm leading-5">
             개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요. 탈퇴 시 30일간의 유예 기간이 있으며,
             이 기간 동안 복구가 가능합니다.
           </Text>

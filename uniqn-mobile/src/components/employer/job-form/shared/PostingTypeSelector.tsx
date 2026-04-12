@@ -35,7 +35,7 @@ const TypeCard = memo(function TypeCard({
         ${
           isSelected
             ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
-            : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+            : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
         }
         ${disabled ? 'opacity-50' : 'active:scale-[0.98]'}
       `}
@@ -49,7 +49,7 @@ const TypeCard = memo(function TypeCard({
           <Text
             className={`
               text-sm font-semibold
-              ${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100'}
+              ${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-900 dark:text-secondary-100'}
             `}
           >
             {info.label}
@@ -57,7 +57,7 @@ const TypeCard = memo(function TypeCard({
           <Text
             className={`
               text-xs
-              ${isSelected ? 'text-primary-500 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}
+              ${isSelected ? 'text-primary-500 dark:text-primary-300' : 'text-secondary-500 dark:text-secondary-400'}
             `}
           >
             {info.description}
@@ -85,8 +85,8 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
   return (
     <View className="mb-4">
-      <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-        공고 타입<Text className="text-red-500">*</Text>
+      <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        공고 타입<Text className="text-error-500">*</Text>
       </Text>
 
       <View className="gap-2">
@@ -104,24 +104,24 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
       </View>
 
       {value === 'tournament' && (
-        <View className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 dark:border-amber-800 dark:bg-amber-900/20">
-          <Text className="text-sm text-amber-700 dark:text-amber-300">
+        <View className="mt-3 rounded-lg border border-amber-200 bg-warning-50 p-2.5 dark:border-amber-800 dark:bg-warning-900/20">
+          <Text className="text-sm text-warning-700 dark:text-warning-300">
             대회공고는 관리자 승인 후 게시됩니다.
           </Text>
         </View>
       )}
 
       {value === 'urgent' && (
-        <View className="mt-3 rounded-lg border border-red-200 bg-red-50 p-2.5 dark:border-red-800 dark:bg-red-900/20">
-          <Text className="text-sm text-red-700 dark:text-red-300">
+        <View className="mt-3 rounded-lg border border-error-200 bg-error-50 p-2.5 dark:border-error-800 dark:bg-error-900/20">
+          <Text className="text-sm text-error-700 dark:text-error-300">
             긴급 공고는 오늘 기준 7일 이내 날짜만 선택할 수 있습니다.
           </Text>
         </View>
       )}
 
       {disabled && (
-        <View className="mt-2 rounded bg-gray-100 p-2 dark:bg-surface">
-          <Text className="text-center text-xs text-gray-500 dark:text-gray-400">
+        <View className="mt-2 rounded bg-secondary-100 p-2 dark:bg-surface">
+          <Text className="text-center text-xs text-secondary-500 dark:text-secondary-400">
             공고 타입은 수정할 수 없습니다.
           </Text>
         </View>

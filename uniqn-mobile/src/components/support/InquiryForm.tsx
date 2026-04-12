@@ -139,8 +139,10 @@ export function InquiryForm({
             onBlur={() => validateField('subject', subject)}
             placeholder="문의 제목을 입력해주세요"
             placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
-            className={`rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
-              errors.subject ? 'border-error-500' : 'border-gray-300 dark:border-surface-overlay'
+            className={`rounded-lg border px-4 py-3 text-base text-secondary-900 dark:text-secondary-100 ${
+              errors.subject
+                ? 'border-error-500'
+                : 'border-secondary-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.subject)}
             maxLength={100}
@@ -169,13 +171,15 @@ export function InquiryForm({
             multiline
             numberOfLines={8}
             textAlignVertical="top"
-            className={`min-h-[200px] rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
-              errors.message ? 'border-error-500' : 'border-gray-300 dark:border-surface-overlay'
+            className={`min-h-[200px] rounded-lg border px-4 py-3 text-base text-secondary-900 dark:text-secondary-100 ${
+              errors.message
+                ? 'border-error-500'
+                : 'border-secondary-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.message)}
             maxLength={2000}
           />
-          <Text className="mt-1 text-right text-xs text-gray-400">{message.length}/2000</Text>
+          <Text className="mt-1 text-right text-xs text-secondary-400">{message.length}/2000</Text>
         </FormField>
 
         {/* 버튼 */}

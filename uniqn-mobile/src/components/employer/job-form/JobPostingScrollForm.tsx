@@ -151,11 +151,11 @@ export function JobPostingScrollForm({
         </View>
 
         {isTournament && (
-          <View className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
-            <Text className="mb-1 text-sm font-medium text-amber-800 dark:text-amber-200">
+          <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 p-4 dark:border-amber-700 dark:bg-warning-900/20">
+            <Text className="mb-1 text-sm font-medium text-warning-800 dark:text-warning-200">
               대회공고 안내
             </Text>
-            <Text className="text-xs text-amber-700 dark:text-amber-300">
+            <Text className="text-xs text-warning-700 dark:text-warning-300">
               대회공고는 관리자 승인 후 게시됩니다.
               {'\n'}
               승인까지 1-2 영업일이 소요될 수 있습니다.
@@ -164,7 +164,7 @@ export function JobPostingScrollForm({
         )}
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface-dark">
+      <View className="absolute bottom-0 left-0 right-0 border-t border-secondary-200 bg-white px-4 py-2 dark:border-surface-overlay dark:bg-surface-dark">
         <View className="flex-row items-center gap-2">
           {onLoadTemplate && (
             <Button variant="ghost" size="sm" onPress={onLoadTemplate}>
@@ -174,7 +174,7 @@ export function JobPostingScrollForm({
           {onSaveTemplate && (
             <Button variant="ghost" size="sm" onPress={onSaveTemplate} disabled={isSavingTemplate}>
               <Text
-                className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-primary-600 dark:text-primary-400'}`}
+                className={`text-sm ${isSavingTemplate ? 'text-secondary-400' : 'text-primary-600 dark:text-primary-400'}`}
               >
                 {isSavingTemplate ? '저장 중...' : '저장'}
               </Text>

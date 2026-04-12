@@ -68,7 +68,7 @@ export const CardHeader = React.memo(function CardHeader({
         <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
               {displayName}
             </Text>
             {!isRead && (
@@ -90,10 +90,10 @@ export const CardHeader = React.memo(function CardHeader({
         accessibilityRole="button"
         accessibilityLabel={isExpanded ? '지원 상세 접기' : '지원 상세 열기'}
         accessibilityState={{ expanded: isExpanded }}
-        className="ml-2 px-3 py-1 rounded-sm bg-gray-100 dark:bg-surface active:opacity-60 flex-row items-center"
+        className="ml-2 px-3 py-1 rounded-sm bg-secondary-100 dark:bg-surface active:opacity-60 flex-row items-center"
         hitSlop={8}
       >
-        <Text className="text-xs font-medium text-gray-600 dark:text-gray-300">
+        <Text className="text-xs font-medium text-secondary-600 dark:text-secondary-300">
           {isExpanded ? '접기' : '열기'}
         </Text>
         {isExpanded ? (

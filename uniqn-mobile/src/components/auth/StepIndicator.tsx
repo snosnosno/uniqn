@@ -59,7 +59,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                     w-8 h-8 rounded-sm items-center justify-center
                     ${isCompleted ? 'bg-success-500 dark:bg-success-600' : ''}
                     ${isActive ? 'bg-primary-600 dark:bg-primary-500' : ''}
-                    ${isUpcoming ? 'bg-gray-200 dark:bg-surface' : ''}
+                    ${isUpcoming ? 'bg-secondary-200 dark:bg-surface' : ''}
                   `}
                 >
                   {isCompleted ? (
@@ -67,7 +67,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                   ) : (
                     <Text
                       className={`text-sm font-bold ${
-                        isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'
+                        isActive ? 'text-white' : 'text-secondary-500 dark:text-secondary-400'
                       }`}
                     >
                       {stepNumber}
@@ -82,7 +82,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                       text-xs mt-1 text-center
                       ${isActive ? 'font-semibold text-primary-600 dark:text-primary-400' : ''}
                       ${isCompleted ? 'text-success-600 dark:text-success-400' : ''}
-                      ${isUpcoming ? 'text-gray-400 dark:text-gray-500' : ''}
+                      ${isUpcoming ? 'text-secondary-400 dark:text-secondary-500' : ''}
                     `}
                     numberOfLines={1}
                   >
@@ -99,7 +99,7 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
                     ${
                       stepNumber < currentStep
                         ? 'bg-success-500 dark:bg-success-600'
-                        : 'bg-gray-200 dark:bg-surface'
+                        : 'bg-secondary-200 dark:bg-surface'
                     }
                   `}
                 />
@@ -111,10 +111,10 @@ export function StepIndicator({ currentStep, steps, showLabels = true }: StepInd
 
       {/* 현재 단계 제목 */}
       <View className="mt-4">
-        <Text className="text-center text-lg font-bold text-gray-900 dark:text-white">
+        <Text className="text-center text-lg font-bold text-secondary-900 dark:text-white">
           {steps[currentStep - 1]?.label}
         </Text>
-        <Text className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 mt-1">
           {currentStep}/{steps.length} 단계
         </Text>
       </View>

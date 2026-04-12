@@ -136,7 +136,7 @@ const GroupItem = memo(function GroupItem({
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <View className="mb-1 flex-row items-center">
-            <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+            <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
               {isSingleDay ? formatSingleDate(group.startDate) : dateDisplay}
             </Text>
           </View>
@@ -150,7 +150,7 @@ const GroupItem = memo(function GroupItem({
               return (
                 <Text
                   key={getGroupTimeSlotKey(`${group.startDate}-${group.endDate}`, slot, slotIdx)}
-                  className="text-sm text-gray-600 dark:text-gray-400"
+                  className="text-sm text-secondary-600 dark:text-secondary-400"
                 >
                   {formatTimeSlotLabel(slot)} {rolesDisplay || '-'}
                 </Text>
@@ -173,7 +173,7 @@ const GroupItem = memo(function GroupItem({
         {!isSingleDay && (
           <Pressable
             onPress={toggleExpand}
-            className="ml-2 rounded-sm p-1.5 active:bg-gray-100 dark:active:bg-gray-700"
+            className="ml-2 rounded-sm p-1.5 active:bg-secondary-100 dark:active:bg-secondary-700"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityLabel={isExpanded ? '날짜 상세 접기' : '날짜 상세 펼치기'}
           >
@@ -187,14 +187,14 @@ const GroupItem = memo(function GroupItem({
       </View>
 
       {isExpanded && !isSingleDay && (
-        <View className="mt-2 ml-4 border-l-2 border-gray-200 pl-3 dark:border-surface-overlay">
+        <View className="mt-2 ml-4 border-l-2 border-secondary-200 pl-3 dark:border-surface-overlay">
           {group.originalRequirements.map((requirement, idx) => {
             const dateStr = toDateString(requirement.date);
             const stats = calculateTimeSlotStats(requirement.timeSlots);
 
             return (
               <View key={idx} className="flex-row items-center justify-between py-1.5">
-                <Text className="text-sm text-gray-700 dark:text-gray-300">
+                <Text className="text-sm text-secondary-700 dark:text-secondary-300">
                   {formatSingleDate(dateStr)}
                 </Text>
                 {showFilledCount && (

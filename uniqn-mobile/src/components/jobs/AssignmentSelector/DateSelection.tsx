@@ -17,9 +17,9 @@ export const DateSelection = memo(function DateSelection({
   const formattedDate = formatDateDisplay(date);
 
   return (
-    <View className="mb-3 rounded-lg bg-gray-50 p-3 dark:bg-surface-dark">
+    <View className="mb-3 rounded-lg bg-secondary-50 p-3 dark:bg-surface-dark">
       <View className="mb-3 flex-row items-center">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
           {formattedDate}
         </Text>
       </View>
@@ -31,7 +31,7 @@ export const DateSelection = memo(function DateSelection({
 
           return (
             <View key={slot.id || slotIndex} className="pl-2">
-              <Text className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+              <Text className="mb-2 text-sm font-medium text-secondary-600 dark:text-secondary-400">
                 {timeDisplay}
               </Text>
               <View className="flex-row flex-wrap pl-4">

@@ -71,12 +71,14 @@ export function ActionSheet({
     >
       {/* Header */}
       {(title || description) && (
-        <View className="items-center pb-4 mb-2 border-b border-gray-200 dark:border-surface-overlay">
+        <View className="items-center pb-4 mb-2 border-b border-secondary-200 dark:border-surface-overlay">
           {title && (
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+              {title}
+            </Text>
           )}
           {description && (
-            <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-center">
+            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 text-center">
               {description}
             </Text>
           )}
@@ -92,7 +94,7 @@ export function ActionSheet({
             disabled={option.disabled}
             className={`
               flex-row items-center justify-center py-4 rounded-md
-              ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
+              ${option.disabled ? 'opacity-50' : 'active:bg-secondary-100 dark:active:bg-secondary-700'}
             `}
             accessibilityRole="button"
             accessibilityLabel={option.label}
@@ -103,10 +105,10 @@ export function ActionSheet({
                 text-base font-medium
                 ${
                   option.destructive
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-gray-900 dark:text-white'
+                    ? 'text-error-600 dark:text-error-400'
+                    : 'text-secondary-900 dark:text-white'
                 }
-                ${option.disabled ? 'text-gray-400 dark:text-gray-600' : ''}
+                ${option.disabled ? 'text-secondary-400 dark:text-secondary-600' : ''}
               `}
             >
               {option.label}
@@ -116,14 +118,14 @@ export function ActionSheet({
       </View>
 
       {/* Cancel Button */}
-      <View className="mt-4 pt-4 border-t border-gray-200 dark:border-surface-overlay">
+      <View className="mt-4 pt-4 border-t border-secondary-200 dark:border-surface-overlay">
         <Pressable
           onPress={onClose}
-          className="items-center justify-center py-4 rounded-md bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+          className="items-center justify-center py-4 rounded-md bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
           accessibilityRole="button"
           accessibilityLabel={cancelText}
         >
-          <Text className="text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-white">
             {cancelText}
           </Text>
         </Pressable>

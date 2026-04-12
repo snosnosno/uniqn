@@ -55,11 +55,13 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
     <View className="flex-row items-center justify-between py-3">
       <View className="flex-row items-center">
         <View className="mr-3">{icon}</View>
-        <Text className="text-base text-gray-900 dark:text-gray-100">{label}</Text>
+        <Text className="text-base text-secondary-900 dark:text-secondary-100">{label}</Text>
       </View>
       {rightElement || (
         <View className="flex-row items-center">
-          {value && <Text className="mr-2 text-gray-500 dark:text-gray-400">{value}</Text>}
+          {value && (
+            <Text className="mr-2 text-secondary-500 dark:text-secondary-400">{value}</Text>
+          )}
           <ChevronRightIcon size={20} color="#9CA3AF" />
         </View>
       )}
@@ -210,18 +212,20 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">알림</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            알림
+          </Text>
           {permissionStatus === 'denied' && (
             <Pressable
               onPress={handleOpenSettings}
-              className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg flex-row items-center"
+              className="mb-3 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg flex-row items-center"
             >
               <BellSlashIcon size={20} color="#dc2626" />
-              <Text className="flex-1 ml-2 text-red-700 dark:text-red-300 text-sm">
+              <Text className="flex-1 ml-2 text-error-700 dark:text-error-300 text-sm">
                 알림 권한이 거부되었습니다. 탭하여 설정에서 허용해주세요.
               </Text>
               <ChevronRightIcon size={16} color="#dc2626" />
@@ -230,10 +234,10 @@ export default function SettingsScreen() {
           {permissionStatus === 'undetermined' && (
             <Pressable
               onPress={handleRequestPermission}
-              className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg flex-row items-center"
+              className="mb-3 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg flex-row items-center"
             >
               <BellIcon size={20} color="#d97706" />
-              <Text className="flex-1 ml-2 text-yellow-700 dark:text-yellow-300 text-sm">
+              <Text className="flex-1 ml-2 text-warning-700 dark:text-warning-300 text-sm">
                 푸시 알림이 꺼져있습니다. 탭하여 허용해주세요.
               </Text>
             </Pressable>
@@ -255,7 +259,9 @@ export default function SettingsScreen() {
 
         {/* 계정 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">계정</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            계정
+          </Text>
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"
@@ -278,7 +284,7 @@ export default function SettingsScreen() {
                   />
                 }
               />
-              <Text className="ml-[34px] mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <Text className="ml-[34px] mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                 {AUTO_LOGIN_HELPER_TEXT}
               </Text>
               {isBiometricAvailable && (
@@ -307,7 +313,9 @@ export default function SettingsScreen() {
 
         {/* 앱 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">앱 설정</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            앱 설정
+          </Text>
           <SettingItem
             icon={<SunIcon size={22} color="#6B7280" />}
             label="다크 모드"
@@ -332,7 +340,7 @@ export default function SettingsScreen() {
               ) : (
                 <View className="flex-row items-center">
                   {cacheStats && (
-                    <Text className="mr-2 text-gray-500 dark:text-gray-400">
+                    <Text className="mr-2 text-secondary-500 dark:text-secondary-400">
                       {cacheStats.queryCount}개 항목
                     </Text>
                   )}
@@ -345,7 +353,9 @@ export default function SettingsScreen() {
 
         {/* 앱 정보 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">정보</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-500 dark:text-secondary-400">
+            정보
+          </Text>
           <SettingItem
             icon={<View className="h-[22px] w-[22px]" />}
             label="버전"

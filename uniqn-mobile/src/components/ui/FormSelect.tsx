@@ -46,8 +46,8 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
       onPress={handlePress}
       disabled={item.disabled}
       className={`
-        px-4 py-4 border-b border-gray-100 dark:border-surface-overlay
-        ${item.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
+        px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay
+        ${item.disabled ? 'opacity-50' : 'active:bg-secondary-100 dark:active:bg-secondary-700'}
         ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
       `}
       accessibilityRole="radio"
@@ -59,8 +59,8 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
           className={`text-base ${
             isSelected
               ? 'text-primary-600 dark:text-primary-400 font-medium'
-              : 'text-gray-900 dark:text-white'
-          } ${item.disabled ? 'text-gray-400' : ''}`}
+              : 'text-secondary-900 dark:text-white'
+          } ${item.disabled ? 'text-secondary-400' : ''}`}
         >
           {item.label}
         </Text>
@@ -153,15 +153,15 @@ export function FormSelect<T = string>({
 
   // 스타일 계산
   const getBorderStyle = () => {
-    if (error || errorMessage) return 'border-red-500';
-    if (disabled) return 'border-gray-200 dark:border-surface-overlay';
-    return 'border-gray-300 dark:border-surface-overlay';
+    if (error || errorMessage) return 'border-error-500';
+    if (disabled) return 'border-secondary-200 dark:border-surface-overlay';
+    return 'border-secondary-300 dark:border-surface-overlay';
   };
 
   const getTextStyle = () => {
-    if (disabled) return 'text-gray-400 dark:text-gray-500';
-    if (!selectedOption) return 'text-gray-400 dark:text-gray-500';
-    return 'text-gray-900 dark:text-white';
+    if (disabled) return 'text-secondary-400 dark:text-secondary-500';
+    if (!selectedOption) return 'text-secondary-400 dark:text-secondary-500';
+    return 'text-secondary-900 dark:text-white';
   };
 
   return (
@@ -169,8 +169,10 @@ export function FormSelect<T = string>({
       {/* 레이블 */}
       {label && (
         <View className="flex-row mb-2">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
-          {required && <Text className="text-red-600 ml-0.5">*</Text>}
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            {label}
+          </Text>
+          {required && <Text className="text-error-600 ml-0.5">*</Text>}
         </View>
       )}
 
@@ -183,7 +185,7 @@ export function FormSelect<T = string>({
           px-4 py-3 rounded-lg border
           bg-white dark:bg-surface
           ${getBorderStyle()}
-          ${disabled ? 'opacity-50' : 'active:bg-gray-50 dark:active:bg-gray-700'}
+          ${disabled ? 'opacity-50' : 'active:bg-secondary-50 dark:active:bg-secondary-700'}
         `}
         accessibilityRole="button"
         accessibilityLabel={`${label || placeholder}${selectedOption ? `, 현재 선택: ${selectedOption.label}` : ''}`}
@@ -193,14 +195,14 @@ export function FormSelect<T = string>({
         <Text className={`text-base ${getTextStyle()}`}>
           {selectedOption?.label || placeholder}
         </Text>
-        <Text className="text-gray-400 dark:text-gray-500">▼</Text>
+        <Text className="text-secondary-400 dark:text-secondary-500">▼</Text>
       </Pressable>
 
       {/* 에러 메시지 */}
       {errorMessage && (
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-red-600 mr-1">{''}</Text>
-          <Text className="text-red-600 text-sm flex-1">{errorMessage}</Text>
+          <Text className="text-error-600 mr-1">{''}</Text>
+          <Text className="text-error-600 text-sm flex-1">{errorMessage}</Text>
         </View>
       )}
 
@@ -215,13 +217,13 @@ export function FormSelect<T = string>({
         <View className="-mx-5 -mb-5">
           {/* 검색 입력 */}
           {showSearch && (
-            <View className="px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
+            <View className="px-4 py-2 border-b border-secondary-200 dark:border-surface-overlay">
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
                 placeholderTextColor="#9CA3AF"
-                className="px-3 py-2 bg-gray-100 dark:bg-surface rounded-lg text-base text-gray-900 dark:text-white"
+                className="px-3 py-2 bg-secondary-100 dark:bg-surface rounded-lg text-base text-secondary-900 dark:text-white"
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel="옵션 검색"
@@ -243,7 +245,7 @@ export function FormSelect<T = string>({
               )}
               ListEmptyComponent={
                 <View className="py-8 items-center">
-                  <Text className="text-gray-500 dark:text-gray-400">
+                  <Text className="text-secondary-500 dark:text-secondary-400">
                     {searchQuery.trim() ? '검색 결과가 없습니다' : '선택 가능한 옵션이 없습니다'}
                   </Text>
                   {searchQuery.trim() && (

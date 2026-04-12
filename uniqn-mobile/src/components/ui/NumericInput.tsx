@@ -89,7 +89,7 @@ export const NumericInput = memo(function NumericInput({
       className={`
         flex-row items-center rounded-lg border px-3 h-10
         bg-white dark:bg-surface
-        ${error ? 'border-red-500' : 'border-gray-300 dark:border-surface-overlay'}
+        ${error ? 'border-error-500' : 'border-secondary-300 dark:border-surface-overlay'}
         ${disabled ? 'opacity-50' : ''}
         ${className}
       `}
@@ -101,12 +101,12 @@ export const NumericInput = memo(function NumericInput({
         editable={!disabled}
         placeholder={placeholder}
         placeholderTextColor="#9CA3AF"
-        className={`flex-1 text-base text-gray-900 dark:text-white ${inputClassName}`}
+        className={`flex-1 text-base text-secondary-900 dark:text-white ${inputClassName}`}
         accessibilityLabel={accessibilityLabel}
         {...textInputProps}
       />
       {suffix ? (
-        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">{suffix}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-2">{suffix}</Text>
       ) : null}
     </View>
   );

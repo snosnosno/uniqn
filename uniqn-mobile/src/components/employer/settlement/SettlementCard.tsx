@@ -115,10 +115,10 @@ export const SettlementCard = React.memo(function SettlementCard({
           <View className="flex-row items-center flex-1">
             <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
             <View className="flex-1">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                 {displayName}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 {workLog.role
                   ? getRoleDisplayName(
                       workLog.role,
@@ -145,25 +145,25 @@ export const SettlementCard = React.memo(function SettlementCard({
 
       {/* 출퇴근 미완료 표시 */}
       {!hasValidTimes && (
-        <View className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-          <Text className="text-xs text-yellow-700 dark:text-yellow-300 text-center">
+        <View className="mt-3 p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
+          <Text className="text-xs text-warning-700 dark:text-warning-300 text-center">
             출퇴근 기록 미완료
           </Text>
         </View>
       )}
 
       {/* 하단: 상세보기 + 정산하기 버튼 */}
-      <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay gap-2">
+      <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay gap-2">
         {/* 상세보기 */}
         <Pressable
           onPress={handlePress}
           accessibilityRole="button"
           accessibilityLabel="정산 상세보기"
           accessibilityHint="정산 내역을 자세히 확인합니다"
-          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
+          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70"
         >
           <ChevronRightIcon size={16} color="#6B7280" />
-          <Text className="ml-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+          <Text className="ml-1 text-sm font-medium text-secondary-600 dark:text-secondary-400">
             상세보기
           </Text>
         </Pressable>

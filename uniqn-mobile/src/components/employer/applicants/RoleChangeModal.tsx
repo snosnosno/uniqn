@@ -70,10 +70,10 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         flex-row items-center justify-between p-4 rounded-md mb-2
         ${
           isCurrentRole
-            ? 'bg-gray-100 dark:bg-surface opacity-50'
+            ? 'bg-secondary-100 dark:bg-surface opacity-50'
             : isSelected
               ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500'
-              : 'bg-white dark:bg-surface border border-gray-200 dark:border-surface-overlay'
+              : 'bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay'
         }
       `}
     >
@@ -81,7 +81,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         <View
           className={`
             h-10 w-10 rounded-sm items-center justify-center
-            ${isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'}
+            ${isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface'}
           `}
         >
           <UserIcon size={20} color={isSelected ? '#FFFFFF' : '#6B7280'} />
@@ -92,7 +92,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             ${
               isSelected
                 ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-900 dark:text-white'
+                : 'text-secondary-900 dark:text-white'
             }
           `}
         >
@@ -205,7 +205,7 @@ export function RoleChangeModal({
               </Text>
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                 {staff.staffName}
                 {staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
@@ -213,14 +213,16 @@ export function RoleChangeModal({
                 <Badge variant="default" size="sm">
                   {getRoleDisplayName(currentRole, staff?.customRole)}
                 </Badge>
-                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">{staff.date}</Text>
+                <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
+                  {staff.date}
+                </Text>
               </View>
             </View>
           </View>
         </Card>
 
         {/* 역할 선택 */}
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
           변경할 역할 선택
         </Text>
 
@@ -238,8 +240,8 @@ export function RoleChangeModal({
 
         {/* 변경 사유 */}
         <View className="mb-3">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            변경 사유 <Text className="text-red-500">*</Text>
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            변경 사유 <Text className="text-error-500">*</Text>
           </Text>
           <TextInput
             value={reason}
@@ -251,14 +253,14 @@ export function RoleChangeModal({
             textAlignVertical="top"
             accessibilityLabel="역할 변경 사유 입력"
             accessibilityHint="역할 변경 사유를 입력하세요. 필수 입력 항목입니다."
-            className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[48px]"
+            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[48px]"
           />
         </View>
 
         {/* 안내 메시지 */}
-        <View className="flex-row items-start p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
+        <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
           <AlertCircleIcon size={14} color="#D97706" />
-          <Text className="ml-2 text-xs text-yellow-700 dark:text-yellow-300 flex-1">
+          <Text className="ml-2 text-xs text-warning-700 dark:text-warning-300 flex-1">
             역할 변경 시 해당 역할의 시급이 적용되며, 스태프에게 알림이 발송됩니다.
           </Text>
         </View>

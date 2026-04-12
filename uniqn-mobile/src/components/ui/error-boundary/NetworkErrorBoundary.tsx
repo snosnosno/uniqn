@@ -43,18 +43,18 @@ function NetworkErrorFallback({
         <Text className="text-4xl">{isOffline ? '' : ''}</Text>
       </View>
 
-      <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+      <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
         {isOffline ? '오프라인 상태입니다' : '네트워크 오류'}
       </Text>
 
-      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+      <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6">
         {isOffline
           ? '인터넷 연결을 확인해주세요.'
           : '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'}
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6">
+        <View className="w-full bg-secondary-100 dark:bg-surface rounded-md p-4 mb-6">
           <Text className="text-xs text-orange-600 dark:text-orange-400 font-mono">
             {error.message}
           </Text>

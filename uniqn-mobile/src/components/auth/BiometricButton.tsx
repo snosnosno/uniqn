@@ -105,14 +105,14 @@ export const BiometricButton = memo(function BiometricButton({
   // 버튼 변형 스타일
   const variantStyles = {
     default: 'bg-primary-600 dark:bg-primary-700',
-    outline: 'bg-transparent border border-gray-300 dark:border-surface-overlay',
+    outline: 'bg-transparent border border-secondary-300 dark:border-surface-overlay',
     ghost: 'bg-transparent',
   };
 
   // 텍스트 스타일
   const textStyles = {
     default: 'text-white',
-    outline: 'text-gray-900 dark:text-gray-100',
+    outline: 'text-secondary-900 dark:text-secondary-100',
     ghost: 'text-primary-600 dark:text-primary-400',
   };
 

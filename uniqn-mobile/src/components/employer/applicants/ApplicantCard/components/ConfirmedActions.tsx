@@ -14,10 +14,10 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
   }
 
   return (
-    <View className="mt-3 flex-row border-t border-gray-100 pt-3 dark:border-surface-overlay">
+    <View className="mt-3 flex-row border-t border-secondary-100 pt-3 dark:border-surface-overlay">
       <Pressable
         onPress={onCancelConfirmation}
-        className="flex-1 flex-row items-center justify-center rounded-lg bg-gray-100 py-2 active:opacity-70 dark:bg-surface"
+        className="flex-1 flex-row items-center justify-center rounded-lg bg-secondary-100 py-2 active:opacity-70 dark:bg-surface"
       >
         <XMarkIcon size={16} color="#EF4444" />
         <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">

@@ -68,10 +68,10 @@ export function BoardImagePicker({
   return (
     <View className="w-full">
       <View className="mb-3 px-1">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {images.length}/{MAX_BOARD_POST_IMAGES}장
         </Text>
-        <Text className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+        <Text className="mt-0.5 text-xs text-secondary-400 dark:text-secondary-500">
           커뮤니티 글에 첨부할 이미지를 선택하세요.
         </Text>
       </View>
@@ -107,8 +107,8 @@ export function BoardImagePicker({
             style={getTileStyle(images.length, tileSize)}
             className={`items-center justify-center rounded-lg border border-dashed ${
               canAddMore
-                ? 'border-gray-300 bg-gray-50 active:bg-gray-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
-                : 'border-gray-300 bg-gray-100 dark:border-surface-overlay dark:bg-surface'
+                ? 'border-secondary-300 bg-secondary-50 active:bg-secondary-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
+                : 'border-secondary-300 bg-secondary-100 dark:border-surface-overlay dark:bg-surface'
             }`}
             accessibilityRole="button"
             accessibilityLabel="게시글 이미지 추가"
@@ -116,7 +116,7 @@ export function BoardImagePicker({
             {isUploading ? (
               <View className="items-center px-2">
                 <ActivityIndicator size="small" color="#6366F1" />
-                <Text className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400">
                   업로드 중
                 </Text>
                 <Text className="mt-0.5 text-center text-xs font-medium text-primary-600 dark:text-primary-400">
@@ -125,11 +125,11 @@ export function BoardImagePicker({
               </View>
             ) : (
               <View className="items-center px-2">
-                <View className="mb-2 rounded-sm bg-gray-200 p-3 dark:bg-surface-elevated">
+                <View className="mb-2 rounded-sm bg-secondary-200 p-3 dark:bg-surface-elevated">
                   <ImagesOutlineIcon size={20} color="#9CA3AF" />
                 </View>
                 <AddIcon size={18} color="#6B7280" />
-                <Text className="mt-1 text-center text-xs text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-center text-xs text-secondary-500 dark:text-secondary-400">
                   추가
                 </Text>
               </View>

@@ -61,13 +61,15 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
     if (isFocused) {
       return 'border-primary-500 bg-white dark:bg-surface';
     }
-    return 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface';
+    return 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface';
   };
 
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
+        <Text className="mb-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          {label}
+        </Text>
       )}
 
       <View
@@ -92,7 +94,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
             setIsFocused(false);
             props.onBlur?.(e);
           }}
-          className="flex-1 py-3 text-base text-gray-900 dark:text-gray-100"
+          className="flex-1 py-3 text-base text-secondary-900 dark:text-secondary-100"
           placeholderTextColor={placeholderColor}
         />
 
@@ -113,7 +115,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
         <Text
           className={`mt-1 text-sm ${
             // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
-            error ? 'text-error-500' : 'text-gray-600 dark:text-gray-400'
+            error ? 'text-error-500' : 'text-secondary-600 dark:text-secondary-400'
           }`}
         >
           {error || hint}

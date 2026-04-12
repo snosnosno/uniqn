@@ -33,11 +33,11 @@ function getStatusLabel(status: BoardAdminReportRecord['report']['status']): str
 function getStatusClassName(status: BoardAdminReportRecord['report']['status']): string {
   switch (status) {
     case 'resolved':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+      return 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300';
     case 'dismissed':
-      return 'bg-gray-100 text-gray-600 dark:bg-surface-elevated dark:text-gray-300';
+      return 'bg-secondary-100 text-secondary-600 dark:bg-surface-elevated dark:text-secondary-300';
     default:
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+      return 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300';
   }
 }
 
@@ -68,8 +68,8 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
     >
       <View className="mb-2 flex-row items-center justify-between gap-3">
         <View className="flex-1 flex-row flex-wrap items-center gap-2">
-          <View className="rounded-sm bg-red-100 px-2.5 py-1 dark:bg-red-900/30">
-            <Text className="text-xs font-medium text-red-700 dark:text-red-300">
+          <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
+            <Text className="text-xs font-medium text-error-700 dark:text-error-300">
               {getTargetLabel(record)}
             </Text>
           </View>
@@ -84,23 +84,23 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
             <Text className="text-xs font-medium">{getStatusLabel(record.report.status)}</Text>
           </View>
         </View>
-        <Text className="text-xs text-gray-400 dark:text-gray-500">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500">
           {formatDateValue(record.report.createdAt)}
         </Text>
       </View>
 
-      <Text className="mb-1 text-base font-semibold text-gray-900 dark:text-white">
+      <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-white">
         {record.post?.title ?? '원본 게시글을 확인할 수 없습니다.'}
       </Text>
-      <Text className="mb-3 text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
+      <Text className="mb-3 text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
         사유: {record.report.reason}
       </Text>
 
       <View className="flex-row flex-wrap items-center gap-3">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           신고자: {record.reporterName}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           대상 작성자: {record.targetAuthorName ?? '확인 필요'}
         </Text>
       </View>
@@ -140,7 +140,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 items-center justify-center bg-secondary-50 dark:bg-surface-dark">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
       </>
@@ -151,7 +151,7 @@ export default function AdminBoardReportsPage() {
     return (
       <>
         <Stack.Screen options={{ title: '게시판 신고' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
           <EmptyState
             title="게시판 신고를 불러오지 못했습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -167,23 +167,23 @@ export default function AdminBoardReportsPage() {
   return (
     <>
       <Stack.Screen options={{ title: '게시판 신고' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
-        <View className="border-b border-gray-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
-          <View className="flex-row items-center rounded-lg bg-gray-100 px-3 py-2 dark:bg-surface-elevated">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+        <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
+          <View className="flex-row items-center rounded-lg bg-secondary-100 px-3 py-2 dark:bg-surface-elevated">
             <SearchIcon size={18} color="#9CA3AF" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="사유, 신고자, 게시글 검색"
               placeholderTextColor="#9CA3AF"
-              className="ml-2 flex-1 text-base text-gray-900 dark:text-white"
+              className="ml-2 flex-1 text-base text-secondary-900 dark:text-white"
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
         </View>
 
-        <View className="border-b border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface">
+        <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -198,12 +198,12 @@ export default function AdminBoardReportsPage() {
                   key={option.value}
                   onPress={() => setStatus(option.value)}
                   className={`rounded-sm px-4 py-2 ${
-                    isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface-elevated'
+                    isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'
                   }`}
                 >
                   <Text
                     className={`text-sm font-medium ${
-                      isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                      isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
                     }`}
                   >
                     {option.label}
@@ -219,7 +219,7 @@ export default function AdminBoardReportsPage() {
           contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
         >
-          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
             총 {filteredReports.length}건
           </Text>
 

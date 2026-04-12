@@ -35,8 +35,8 @@ function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
   const baseClass = 'px-4 py-2 rounded-sm mr-2';
   const selectedClass = isSelected
     ? 'bg-primary-600 dark:bg-primary-500'
-    : 'bg-gray-200 dark:bg-surface';
-  const textClass = isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300';
+    : 'bg-secondary-200 dark:bg-surface';
+  const textClass = isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300';
 
   return (
     <Pressable onPress={onPress} className={baseClass + ' ' + selectedClass}>
@@ -94,7 +94,7 @@ function UserCard({ user, onPress }: UserCardProps) {
         {user.photoURL ? (
           <Avatar source={user.photoURL} name={user.name} size="lg" />
         ) : (
-          <View className="w-12 h-12 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center">
+          <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
             <UserIcon size={24} color="#9CA3AF" />
           </View>
         )}
@@ -102,26 +102,28 @@ function UserCard({ user, onPress }: UserCardProps) {
 
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mr-2">
+          <Text className="text-base font-semibold text-secondary-900 dark:text-white mr-2">
             {user.name}
           </Text>
           <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
             {getRoleLabel(user.role)}
           </Badge>
         </View>
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">{user.email}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1">
+          {user.email}
+        </Text>
         <View className="flex-row items-center">
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
             가입일: {formatDate(user.createdAt)}
           </Text>
           {!user.isActive && (
-            <View className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded">
-              <Text className="text-xs text-red-600 dark:text-red-400">비활성</Text>
+            <View className="ml-2 px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded">
+              <Text className="text-xs text-error-600 dark:text-error-400">비활성</Text>
             </View>
           )}
           {user.isVerified && (
-            <View className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded">
-              <Text className="text-xs text-green-600 dark:text-green-400">인증됨</Text>
+            <View className="ml-2 px-2 py-0.5 bg-success-50 dark:bg-success-900/30 rounded">
+              <Text className="text-xs text-success-600 dark:text-success-400">인증됨</Text>
             </View>
           )}
         </View>
@@ -183,16 +185,18 @@ export default function AdminUsersPage() {
 
   if (isLoading && !data) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 목록을 불러오는 중...</Text>
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          사용자 목록을 불러오는 중...
+        </Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="사용자 목록을 불러오는 데 실패했습니다."
@@ -207,23 +211,23 @@ export default function AdminUsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
-        <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-lg px-3 py-2">
+    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+        <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
           <MagnifyingGlassIcon size={20} color="#9CA3AF" />
           <TextInput
             value={searchQuery}
             onChangeText={handleSearch}
             placeholder="이름 또는 이메일로 검색"
             placeholderTextColor="#9CA3AF"
-            className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
+            className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
             autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
       </View>
 
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {ROLE_OPTIONS.map((option) => (
             <RoleChip
@@ -238,7 +242,7 @@ export default function AdminUsersPage() {
       </View>
 
       <View className="px-4 py-2">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           총 {total.toLocaleString()}명의 사용자
         </Text>
       </View>
@@ -268,7 +272,7 @@ export default function AdminUsersPage() {
             ))}
             {data && (
               <View className="py-4 items-center">
-                <Text className="text-sm text-gray-400 dark:text-gray-500">
+                <Text className="text-sm text-secondary-400 dark:text-secondary-500">
                   {data.page} / {data.totalPages} 페이지
                 </Text>
                 {data.hasNextPage && (

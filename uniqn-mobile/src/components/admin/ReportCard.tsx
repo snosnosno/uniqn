@@ -95,14 +95,14 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
             </View>
           </View>
           {/* 신고 유형 */}
-          <Text className="font-semibold text-gray-900 dark:text-white">{typeLabel}</Text>
+          <Text className="font-semibold text-secondary-900 dark:text-white">{typeLabel}</Text>
         </View>
         <ChevronRightIcon size={20} color="#9CA3AF" />
       </View>
 
       {/* 설명 */}
       <View className="mb-2">
-        <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400" numberOfLines={2}>
           {report.description}
         </Text>
       </View>
@@ -110,19 +110,19 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
       {/* 신고자 → 피신고자 */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
             <Text className="font-medium">{report.reporterName}</Text>
             <Text> → </Text>
             <Text className="font-medium">{report.targetName}</Text>
           </Text>
         </View>
-        <Text className="text-xs text-gray-400 dark:text-gray-500">{timeAgo}</Text>
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500">{timeAgo}</Text>
       </View>
 
       {/* 관련 공고 (있는 경우) */}
       {report.jobPostingTitle && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-400 dark:text-gray-500" numberOfLines={1}>
+        <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500" numberOfLines={1}>
             공고: {report.jobPostingTitle}
           </Text>
         </View>

@@ -80,27 +80,27 @@ export interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-gray-100 dark:bg-surface',
+  default: 'bg-secondary-100 dark:bg-surface',
   primary: 'bg-primary-100 dark:bg-primary-900/30',
-  secondary: 'bg-gray-200 dark:bg-surface-elevated',
+  secondary: 'bg-secondary-200 dark:bg-surface-elevated',
   success: 'bg-success-100 dark:bg-success-700/30',
   warning: 'bg-warning-100 dark:bg-warning-700/30',
   error: 'bg-error-100 dark:bg-error-700/30',
 };
 
 const textStyles: Record<BadgeVariant, string> = {
-  default: 'text-gray-700 dark:text-gray-300',
+  default: 'text-secondary-700 dark:text-secondary-300',
   primary: 'text-primary-700 dark:text-primary-300',
-  secondary: 'text-gray-600 dark:text-gray-200',
+  secondary: 'text-secondary-600 dark:text-secondary-200',
   success: 'text-success-700 dark:text-success-500',
   warning: 'text-warning-700 dark:text-warning-500',
   error: 'text-error-700 dark:text-error-500',
 };
 
 const dotStyles: Record<BadgeVariant, string> = {
-  default: 'bg-gray-500',
+  default: 'bg-secondary-500',
   primary: 'bg-primary-500',
-  secondary: 'bg-gray-400',
+  secondary: 'bg-secondary-400',
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   error: 'bg-error-500',

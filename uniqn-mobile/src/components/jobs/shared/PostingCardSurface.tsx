@@ -64,7 +64,7 @@ export function PostingCardSurface({
               </Badge>
             ) : null}
             <Text
-              className="flex-1 text-base font-semibold text-gray-900 dark:text-white"
+              className="flex-1 text-base font-semibold text-secondary-900 dark:text-white"
               numberOfLines={1}
             >
               {card.title}
@@ -74,7 +74,9 @@ export function PostingCardSurface({
           {titleAccessory}
         </View>
 
-        <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">{card.location}</Text>
+        <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
+          {card.location}
+        </Text>
 
         <View className="flex-row">
           <View className="flex-1 pr-3">
@@ -91,7 +93,7 @@ export function PostingCardSurface({
             />
           </View>
 
-          <View className="flex-1 border-l border-gray-100 pl-3 dark:border-surface-overlay">
+          <View className="flex-1 border-l border-secondary-100 pl-3 dark:border-surface-overlay">
             <PostingCompensationContent
               display="card"
               salaryDisplay={card.salaryDisplay}

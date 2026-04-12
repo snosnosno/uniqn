@@ -130,10 +130,10 @@ export function NotificationPermissionScreen({
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
               <BadgeIcon size={40} color={PRIMARY_COLORS[500]} />
             </View>
-            <Text className="text-center text-2xl font-bold text-gray-900 dark:text-white">
+            <Text className="text-center text-2xl font-bold text-secondary-900 dark:text-white">
               {content.title}
             </Text>
-            <Text className="mt-2 text-center text-base text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-base text-secondary-500 dark:text-secondary-400">
               {content.description}
             </Text>
           </Animated.View>
@@ -146,16 +146,16 @@ export function NotificationPermissionScreen({
                 <Animated.View
                   key={item.title}
                   entering={FadeInUp.delay(200 + index * 100).duration(500)}
-                  className="mb-3 flex-row items-center rounded-md bg-gray-50 px-4 py-4 dark:bg-surface"
+                  className="mb-3 flex-row items-center rounded-md bg-secondary-50 px-4 py-4 dark:bg-surface"
                 >
                   <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                    <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                       {item.title}
                     </Text>
-                    <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                    <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400">
                       {item.description}
                     </Text>
                   </View>
@@ -190,12 +190,12 @@ export function NotificationPermissionScreen({
               accessibilityLabel={content.secondaryLabel}
               className="items-center rounded-md py-4"
             >
-              <Text className="text-base text-gray-500 dark:text-gray-400">
+              <Text className="text-base text-secondary-500 dark:text-secondary-400">
                 {content.secondaryLabel}
               </Text>
             </Pressable>
 
-            <Text className="mt-4 text-center text-xs text-gray-400 dark:text-gray-500">
+            <Text className="mt-4 text-center text-xs text-secondary-400 dark:text-secondary-500">
               {content.helperText}
             </Text>
           </Animated.View>

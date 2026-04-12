@@ -51,7 +51,7 @@ export default function ChangePasswordScreen() {
 
   // 입력 필드 스타일
   const getInputClassName = (hasError: boolean) =>
-    `rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'}`;
+    `rounded-lg border px-4 py-3 pr-12 text-secondary-900 dark:text-secondary-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'}`;
 
   // 비밀번호 변경 핸들러
   const onSubmit = async (data: PasswordChangeData) => {
@@ -83,7 +83,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -95,7 +95,7 @@ export default function ChangePasswordScreen() {
         >
           {/* 안내 문구 */}
           <Card className="mb-4">
-            <Text className="text-sm leading-5 text-gray-600 dark:text-gray-400">
+            <Text className="text-sm leading-5 text-secondary-600 dark:text-secondary-400">
               보안을 위해 비밀번호를 주기적으로 변경해주세요.{'\n'}
               비밀번호는 8자 이상, 대소문자, 숫자, 특수문자를 포함해야 합니다.
             </Text>
@@ -105,7 +105,9 @@ export default function ChangePasswordScreen() {
           <Card className="mb-4">
             {/* 현재 비밀번호 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">현재 비밀번호</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                현재 비밀번호
+              </Text>
               <View className="relative">
                 <Controller
                   control={control}
@@ -145,7 +147,9 @@ export default function ChangePasswordScreen() {
 
             {/* 새 비밀번호 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">새 비밀번호</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                새 비밀번호
+              </Text>
               <View className="relative">
                 <Controller
                   control={control}
@@ -190,7 +194,7 @@ export default function ChangePasswordScreen() {
 
             {/* 비밀번호 확인 */}
             <View>
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
                 새 비밀번호 확인
               </Text>
               <View className="relative">
@@ -233,23 +237,23 @@ export default function ChangePasswordScreen() {
 
           {/* 비밀번호 정책 안내 */}
           <Card className="mb-4">
-            <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
               비밀번호 정책
             </Text>
             <View className="flex-col gap-1">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {'\u2022'} 최소 8자 이상
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {'\u2022'} 대문자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {'\u2022'} 소문자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {'\u2022'} 숫자 1개 이상 포함
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                 {'\u2022'} 특수문자 1개 이상 포함 (!@#$%^&*)
               </Text>
             </View>
@@ -259,7 +263,7 @@ export default function ChangePasswordScreen() {
           <Pressable
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`rounded-lg py-4 ${isSubmitting ? 'bg-gray-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
+            className={`rounded-lg py-4 ${isSubmitting ? 'bg-secondary-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />

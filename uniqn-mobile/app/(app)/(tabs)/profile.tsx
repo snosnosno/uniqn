@@ -54,7 +54,9 @@ function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
         <View className="mr-3">{icon}</View>
         <Text
           className={`text-base ${
-            danger ? 'text-error-600 dark:text-error-400' : 'text-gray-900 dark:text-gray-100'
+            danger
+              ? 'text-error-600 dark:text-error-400'
+              : 'text-secondary-900 dark:text-secondary-100'
           }`}
         >
           {label}
@@ -110,7 +112,7 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="프로필" showSettings />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
           <Card className="mb-4">
@@ -130,7 +132,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="프로필" showSettings />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
@@ -147,10 +149,10 @@ export default function ProfileScreen() {
               source={currentUserIdentity.photoURL}
             />
             <View className="ml-4 flex-1">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
                 {currentUserIdentity.displayName}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                 {profile?.email ?? user?.email ?? '이메일 없음'}
               </Text>
               <View className="mt-1 flex-row items-center gap-2">

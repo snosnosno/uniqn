@@ -188,14 +188,14 @@ function WebModal({
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-secondary-200 dark:border-surface-overlay">
+                <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
                   {title || ''}
                 </Text>
                 {showCloseButton && (
                   <Pressable
                     onPress={onClose}
-                    className="w-10 h-10 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                    className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -377,14 +377,14 @@ function NativeModal({
               <View className={modalClassName}>
                 {/* Header */}
                 {(title || showCloseButton) && (
-                  <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                    <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <View className="flex-row items-center justify-between px-5 py-4 border-b border-secondary-200 dark:border-surface-overlay">
+                    <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
                       {title || ''}
                     </Text>
                     {showCloseButton && (
                       <Pressable
                         onPress={onClose}
-                        className="w-10 h-10 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                        className="w-10 h-10 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                         accessibilityRole="button"
                         accessibilityLabel="닫기"
                         hitSlop={8}
@@ -445,7 +445,7 @@ export function AlertModal({
 }: AlertModalProps) {
   return (
     <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
-      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</Text>
+      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6">{message}</Text>
       <Pressable
         onPress={onClose}
         className="bg-primary-600 py-3 rounded-md"
@@ -484,15 +484,15 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return (
     <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
-      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</Text>
+      <Text className="text-secondary-600 dark:text-secondary-300 text-center mb-6">{message}</Text>
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
+          className="flex-1 bg-secondary-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           testID={cancelTestID}
         >
-          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
             {cancelText}
           </Text>
         </Pressable>
@@ -501,7 +501,7 @@ export function ConfirmModal({
             onConfirm();
             onClose();
           }}
-          className={`flex-1 py-3 rounded-md ${isDestructive ? 'bg-red-600' : 'bg-primary-600'}`}
+          className={`flex-1 py-3 rounded-md ${isDestructive ? 'bg-error-600' : 'bg-primary-600'}`}
           accessibilityRole="button"
           testID={confirmTestID}
         >

@@ -34,16 +34,18 @@ export const AllowanceInput = memo(function AllowanceInput({
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color="#6B7280" />
-        <Text className="ml-2 font-semibold text-gray-900 dark:text-white">추가 수당 (선택)</Text>
+        <Text className="ml-2 font-semibold text-secondary-900 dark:text-white">
+          추가 수당 (선택)
+        </Text>
       </View>
 
       <Card variant="outlined" padding="md">
         {/* 보장시간 */}
-        <View className="pb-3 mb-3 border-b border-gray-100 dark:border-surface-overlay">
+        <View className="pb-3 mb-3 border-b border-secondary-100 dark:border-surface-overlay">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
               <Text className="text-xl mr-2">{''}</Text>
-              <Text className="text-sm text-gray-900 dark:text-white">보장시간</Text>
+              <Text className="text-sm text-secondary-900 dark:text-white">보장시간</Text>
             </View>
             <View className="flex-row items-center">
               <TextInput
@@ -52,9 +54,9 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
+                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white"
               />
-              <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">시간</Text>
+              <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">시간</Text>
             </View>
           </View>
         </View>
@@ -69,7 +71,7 @@ export const AllowanceInput = memo(function AllowanceInput({
               key={allowance.key}
               className={`${
                 index < ALLOWANCE_TYPES.length - 1
-                  ? 'pb-3 mb-3 border-b border-gray-100 dark:border-surface-overlay'
+                  ? 'pb-3 mb-3 border-b border-secondary-100 dark:border-surface-overlay'
                   : ''
               }`}
             >
@@ -80,7 +82,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     className={`text-sm ${
                       isProvided
                         ? 'text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-900 dark:text-white'
+                        : 'text-secondary-900 dark:text-white'
                     }`}
                   >
                     {displayLabel}
@@ -89,7 +91,9 @@ export const AllowanceInput = memo(function AllowanceInput({
 
                 {/* 제공 토글 */}
                 <View className="flex-row items-center">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-2">제공</Text>
+                  <Text className="text-xs text-secondary-500 dark:text-secondary-400 mr-2">
+                    제공
+                  </Text>
                   <Switch
                     value={isProvided}
                     onValueChange={(v) => onAllowanceProvidedToggle(allowance.key, v)}
@@ -102,16 +106,18 @@ export const AllowanceInput = memo(function AllowanceInput({
               {/* 금액 입력 (제공이 아닐 때만) */}
               {!isProvided && (
                 <View className="flex-row items-center justify-end mt-2">
-                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">₩</Text>
+                  <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2">₩</Text>
                   <TextInput
                     placeholder={allowance.placeholder}
                     placeholderTextColor="#9CA3AF"
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
+                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white"
                   />
-                  <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">원</Text>
+                  <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">
+                    원
+                  </Text>
                 </View>
               )}
             </View>

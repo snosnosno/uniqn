@@ -59,7 +59,9 @@ export function TimeInputField({
   return (
     <View className="mb-4">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</Text>
+        <Text className="text-sm font-medium text-secondary-600 dark:text-secondary-400">
+          {label}
+        </Text>
         {/* 미정 체크박스 */}
         {onUndefinedChange && (
           <Pressable
@@ -71,12 +73,12 @@ export function TimeInputField({
                 ${
                   isUndefined
                     ? 'bg-primary-600 border-primary-600'
-                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
                 }`}
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-gray-600 dark:text-gray-400">미정</Text>
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400">미정</Text>
           </Pressable>
         )}
       </View>
@@ -88,18 +90,18 @@ export function TimeInputField({
         className={`flex-row items-center justify-between p-3 border rounded-lg min-h-[52px]
           ${
             isUndefined
-              ? 'bg-gray-100 dark:bg-surface-dark border-gray-200 dark:border-surface-overlay'
-              : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700'
+              ? 'bg-secondary-100 dark:bg-surface-dark border-secondary-200 dark:border-surface-overlay'
+              : 'bg-white dark:bg-surface border-secondary-200 dark:border-surface-overlay active:bg-secondary-50 dark:active:bg-secondary-700'
           }`}
       >
         <View className="flex-row items-center flex-1">
           <ClockIcon size={20} color={isUndefined ? '#9CA3AF' : iconColor} />
           {isUndefined ? (
-            <Text className="ml-2 text-lg font-semibold text-gray-400 dark:text-gray-500">
+            <Text className="ml-2 text-lg font-semibold text-secondary-400 dark:text-secondary-500">
               미정
             </Text>
           ) : (
-            <Text className="ml-2 text-lg font-semibold text-gray-900 dark:text-white">
+            <Text className="ml-2 text-lg font-semibold text-secondary-900 dark:text-white">
               {displayText}
             </Text>
           )}
@@ -108,7 +110,7 @@ export function TimeInputField({
       </Pressable>
 
       {hasChanged && originalTime && (
-        <Text className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+        <Text className="mt-1 text-xs text-warning-600 dark:text-warning-400">
           원래: {formatTime(originalTime)}
         </Text>
       )}

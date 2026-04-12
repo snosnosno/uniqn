@@ -42,14 +42,16 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
     <View
       className={`mb-3 p-3 border rounded-lg ${
         isReadOnly
-          ? 'bg-gray-50 dark:bg-surface/50 border-gray-100 dark:border-surface-overlay/50'
-          : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay'
+          ? 'bg-secondary-50 dark:bg-surface/50 border-secondary-100 dark:border-surface-overlay/50'
+          : 'bg-white dark:bg-surface border-secondary-200 dark:border-surface-overlay'
       }`}
     >
       {/* 역할명 + 인원 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="font-medium text-gray-900 dark:text-white text-sm">{displayName}</Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{role.count}명</Text>
+        <Text className="font-medium text-secondary-900 dark:text-white text-sm">
+          {displayName}
+        </Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{role.count}명</Text>
       </View>
 
       {/* 급여 타입 선택 */}
@@ -65,8 +67,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
                 isSelected
                   ? 'bg-primary-500'
                   : isReadOnly
-                    ? 'bg-gray-100 dark:bg-surface/50'
-                    : 'bg-gray-100 dark:bg-surface'
+                    ? 'bg-secondary-100 dark:bg-surface/50'
+                    : 'bg-secondary-100 dark:bg-surface'
               }`}
               accessibilityRole="radio"
               accessibilityState={{ checked: isSelected, disabled: isReadOnly }}
@@ -76,8 +78,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
                   isSelected
                     ? 'text-white'
                     : isReadOnly
-                      ? 'text-gray-400 dark:text-gray-500'
-                      : 'text-gray-600 dark:text-gray-300'
+                      ? 'text-secondary-400 dark:text-secondary-500'
+                      : 'text-secondary-600 dark:text-secondary-300'
                 }`}
               >
                 {type.label}
@@ -90,7 +92,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
       {/* 금액 입력 (협의가 아닐 때만) */}
       {!isOther && (
         <View className="flex-row items-center justify-end">
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">₩</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mr-2">₩</Text>
           <TextInput
             placeholder="0"
             placeholderTextColor="#9CA3AF"
@@ -104,17 +106,17 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
             testID={`job-posting-salary-input-${index}`}
             className={`w-32 py-2 px-2 text-right text-sm rounded-md ${
               isReadOnly
-                ? 'bg-gray-100 dark:bg-surface/50 text-gray-400'
-                : 'bg-gray-50 dark:bg-surface text-gray-900 dark:text-white'
+                ? 'bg-secondary-100 dark:bg-surface/50 text-secondary-400'
+                : 'bg-secondary-50 dark:bg-surface text-secondary-900 dark:text-white'
             }`}
           />
-          <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">원</Text>
+          <Text className="text-secondary-600 dark:text-secondary-400 ml-2 text-sm">원</Text>
         </View>
       )}
 
       {/* 협의 선택 시 안내 */}
       {isOther && (
-        <Text className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center py-2">
           급여는 개별 협의로 진행됩니다
         </Text>
       )}

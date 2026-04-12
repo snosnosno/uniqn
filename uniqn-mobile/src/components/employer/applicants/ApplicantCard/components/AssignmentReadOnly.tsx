@@ -47,19 +47,21 @@ export const AssignmentReadOnly = React.memo(function AssignmentReadOnly({
           <View
             key={key}
             className={`flex-row items-center rounded-lg px-3 py-2 border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
+              isDark
+                ? 'bg-secondary-700 border-secondary-600'
+                : 'bg-secondary-100 border-secondary-200'
             }`}
           >
             <CalendarIcon size={16} color={iconColors.unchecked} />
             <Text
-              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
             >
               {display.formattedDate} {display.timeSlotDisplay}
             </Text>
-            <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+            <View className={`mx-2 h-4 w-px ${isDark ? 'bg-secondary-500' : 'bg-secondary-300'}`} />
             <BriefcaseIcon size={16} color={iconColors.unchecked} />
             <Text
-              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
             >
               {display.roleLabel}
             </Text>

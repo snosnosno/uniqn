@@ -8,7 +8,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
-import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
+import { handleSupabaseError } from '@/utils/supabase';
 import {
   createHistoryEntry,
   findActiveConfirmation,
@@ -92,56 +92,24 @@ export async function executeConfirmWithHistory(
 
     const historyEntry = createHistoryEntry(assignmentsToConfirm, ownerId);
     const confirmationHistory = [...(applicationData.confirmationHistory ?? []), historyEntry];
-    const workLogIds: string[] = [];
-    const now = new Date().toISOString();
-
-    // WorkLog 생성 (비고정 공고만)
-    if (!isFixedPosting) {
-      const insertedIds = await createWorkLogsForConfirmation(
-        assignmentsToConfirm,
-        applicationData,
-        jobData,
-        now
-      );
-      workLogIds.push(...insertedIds);
-    }
-
-    // 지원서 업데이트
-    const { data: updatedApp, error: appError } = await supabase
-      .from(TABLES.APPLICATIONS)
-      .update({
-        status: STATUS.APPLICATION.CONFIRMED,
-        assignments: assignmentsToConfirm,
-        original_application: originalApplication,
-        confirmation_history: confirmationHistory,
-        confirmed_at: now,
-        processed_by: ownerId,
-        processed_at: now,
-        ...(notes ? { notes } : {}),
-        updated_at: now,
-      })
-      .eq('id', applicationId)
-      .eq('status', STATUS.APPLICATION.APPLIED)
-      .select('id');
-
-    if (appError)
-      handleSupabaseError(appError, { operation: '지원 확정', table: TABLES.APPLICATIONS });
-    assertUpdated(updatedApp, {
-      operation: '지원 확정',
-      table: TABLES.APPLICATIONS,
-      id: applicationId,
+    // 서버사이드 원자적 트랜잭션으로 확정 처리
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_application', {
+      p_application_id: applicationId,
+      p_owner_id: ownerId,
+      p_assignments: assignmentsToConfirm,
+      p_original_application: originalApplication,
+      p_confirmation_history: confirmationHistory,
+      p_notes: notes ?? null,
+      p_is_fixed_posting: isFixedPosting,
     });
 
-    // 공고 정원 업데이트
-    await updateJobPostingCapacity(
-      applicationData.jobPostingId,
-      jobData,
-      assignmentsToConfirm,
-      'increment',
-      now
-    );
+    if (rpcError) {
+      handleSupabaseError(rpcError, { operation: '지원 확정 RPC', table: TABLES.APPLICATIONS });
+    }
 
-    logger.info('지원 확정 성공', { applicationId, workLogIds });
+    const workLogIds: string[] = (rpcResult?.workLogIds as string[]) ?? [];
+
+    logger.info('지원 확정 성공 (RPC)', { applicationId, workLogIds });
 
     return {
       applicationId,
@@ -364,7 +332,8 @@ function validateConfirmCapacity(
   }
 }
 
-async function createWorkLogsForConfirmation(
+/** @internal 서버 RPC 마이그레이션 완료 시 제거 예정 */
+export async function createWorkLogsForConfirmation(
   assignmentsToConfirm: Assignment[],
   applicationData: Application,
   jobData: JobPosting,

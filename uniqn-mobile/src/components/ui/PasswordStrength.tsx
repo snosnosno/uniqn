@@ -143,10 +143,10 @@ export const PasswordStrength = React.memo(function PasswordStrength({
       {/* 강도 바 */}
       <View className="flex-col gap-1">
         <View className="flex-row justify-between items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">비밀번호 강도</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">비밀번호 강도</Text>
           <Text className={`text-xs font-medium ${config.color}`}>{config.label}</Text>
         </View>
-        <View className="h-2 bg-gray-200 dark:bg-surface rounded-sm overflow-hidden">
+        <View className="h-2 bg-secondary-200 dark:bg-surface rounded-sm overflow-hidden">
           <View className={`h-full rounded-sm ${config.barColor}`} style={{ width: `${score}%` }} />
         </View>
       </View>
@@ -154,7 +154,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
       {/* 요구사항 체크리스트 */}
       {showRequirements && (
         <View className="flex-col gap-1">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
             요구사항 ({passedCount}/{REQUIREMENTS.length})
           </Text>
           {requirementResults.map((req) => (
@@ -168,7 +168,7 @@ export const PasswordStrength = React.memo(function PasswordStrength({
                 className={`text-xs ${
                   req.passed
                     ? 'text-success-600 dark:text-success-400'
-                    : 'text-gray-500 dark:text-gray-400'
+                    : 'text-secondary-500 dark:text-secondary-400'
                 }`}
               >
                 {req.label}

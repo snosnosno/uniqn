@@ -128,14 +128,14 @@ const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         {/* Handle bar (시각적 요소만) */}
         {showHandle && (
           <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
-            <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
+            <View className="w-10 h-1 rounded-sm bg-secondary-300 dark:bg-surface-elevated" />
           </View>
         )}
 
         {/* Header */}
         {title && (
-          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-surface-overlay">
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-secondary-200 dark:border-surface-overlay">
+            <Text className="text-lg font-semibold text-secondary-900 dark:text-white flex-1">
               {title}
             </Text>
           </View>
@@ -239,7 +239,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       if (!showHandle) return null;
       return (
         <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
+          <View className="w-10 h-1 rounded-sm bg-secondary-300 dark:bg-surface-elevated" />
         </View>
       );
     }, [showHandle]);
@@ -267,14 +267,14 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         <ContentWrapper style={styles.contentContainer}>
           {/* Header */}
           {(title || showCloseButton) && (
-            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-secondary-200 dark:border-surface-overlay">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-white flex-1">
                 {title ?? ''}
               </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={onClose}
-                  className="w-8 h-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -381,7 +381,7 @@ export function SelectBottomSheet({
             disabled={option.disabled}
             className={`
               flex-row items-center py-4 px-2 rounded-md
-              ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
+              ${option.disabled ? 'opacity-50' : 'active:bg-secondary-100 dark:active:bg-secondary-700'}
             `}
             accessibilityRole="button"
           >
@@ -391,8 +391,8 @@ export function SelectBottomSheet({
                 text-base font-medium flex-1
                 ${
                   option.destructive
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-gray-900 dark:text-white'
+                    ? 'text-error-600 dark:text-error-400'
+                    : 'text-secondary-900 dark:text-white'
                 }
               `}
             >

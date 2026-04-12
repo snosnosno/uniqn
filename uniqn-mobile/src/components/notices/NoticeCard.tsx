@@ -56,7 +56,7 @@ const CATEGORY_BADGE_VARIANT: Record<
 const PRIORITY_STYLES: Record<AnnouncementPriority, { bg: string; border: string }> = {
   0: { bg: '', border: '' },
   1: { bg: 'bg-primary-50 dark:bg-primary-900/10', border: 'border-l-4 border-l-primary-500' },
-  2: { bg: 'bg-red-50 dark:bg-red-900/10', border: 'border-l-4 border-l-red-500' },
+  2: { bg: 'bg-error-50 dark:bg-error-900/10', border: 'border-l-4 border-l-red-500' },
 };
 
 export function NoticeCard({ notice }: NoticeCardProps) {
@@ -113,19 +113,24 @@ export function NoticeCard({ notice }: NoticeCardProps) {
 
               {/* 제목 */}
               <Text
-                className="text-base font-semibold text-gray-900 dark:text-gray-100"
+                className="text-base font-semibold text-secondary-900 dark:text-secondary-100"
                 numberOfLines={2}
               >
                 {notice.title}
               </Text>
 
               {/* 내용 미리보기 */}
-              <Text className="mt-1 text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
+              <Text
+                className="mt-1 text-sm text-secondary-600 dark:text-secondary-400"
+                numberOfLines={2}
+              >
                 {notice.content}
               </Text>
 
               {/* 날짜 */}
-              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-500">{formattedDate}</Text>
+              <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-500">
+                {formattedDate}
+              </Text>
             </View>
           </View>
         </View>

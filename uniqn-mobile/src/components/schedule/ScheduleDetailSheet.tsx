@@ -74,11 +74,11 @@ interface DetailRowProps {
 
 function DetailRow({ icon, label, value }: DetailRowProps) {
   return (
-    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-surface-overlay">
+    <View className="flex-row items-center py-3 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="w-8">{icon}</View>
       <View className="flex-1 ml-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
-        <Text className="text-sm text-gray-900 dark:text-gray-100 mt-0.5">{value}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
+        <Text className="text-sm text-secondary-900 dark:text-secondary-100 mt-0.5">{value}</Text>
       </View>
     </View>
   );
@@ -134,7 +134,7 @@ export function ScheduleDetailSheet({
     <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
       {/* Handle Bar */}
       <View className="items-center mb-4">
-        <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
+        <View className="w-10 h-1 rounded-sm bg-secondary-300 dark:bg-surface-elevated" />
       </View>
 
       {/* Header */}
@@ -150,13 +150,13 @@ export function ScheduleDetailSheet({
               </View>
             )}
           </View>
-          <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <Text className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
             {schedule.jobPostingName}
           </Text>
         </View>
         <Pressable
           onPress={onClose}
-          className="w-8 h-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface"
+          className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface"
           accessibilityLabel="닫기"
         >
           <XMarkIcon size={18} color="#9CA3AF" />
@@ -212,9 +212,13 @@ export function ScheduleDetailSheet({
 
       {/* 메모 */}
       {schedule.notes && (
-        <View className="bg-gray-50 dark:bg-surface/50 rounded-md p-4 mb-6">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">메모</Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-400">{schedule.notes}</Text>
+        <View className="bg-secondary-50 dark:bg-surface/50 rounded-md p-4 mb-6">
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+            메모
+          </Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400">
+            {schedule.notes}
+          </Text>
         </View>
       )}
 
@@ -230,7 +234,7 @@ export function ScheduleDetailSheet({
             color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'}
           />
           <Text
-            className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}
+            className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}
           >
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>
@@ -239,8 +243,8 @@ export function ScheduleDetailSheet({
 
       {/* 취소된 스케줄 안내 */}
       {schedule.type === STATUS.SCHEDULE.CANCELLED && (
-        <View className="bg-red-50 dark:bg-red-900/20 rounded-md p-4">
-          <Text className="text-sm text-red-600 dark:text-red-300 text-center">
+        <View className="bg-error-50 dark:bg-error-900/20 rounded-md p-4">
+          <Text className="text-sm text-error-600 dark:text-error-300 text-center">
             이 스케줄은 취소되었습니다.
           </Text>
         </View>
@@ -249,8 +253,8 @@ export function ScheduleDetailSheet({
       {/* 지원 중: 안내 + 취소 버튼 */}
       {schedule.type === STATUS.SCHEDULE.APPLIED && (
         <View>
-          <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-md p-4 mb-4">
-            <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
+          <View className="bg-warning-50 dark:bg-warning-900/20 rounded-md p-4 mb-4">
+            <Text className="text-sm text-warning-700 dark:text-warning-300 text-center">
               지원이 확정되면 출퇴근 기능을 사용할 수 있습니다.
             </Text>
           </View>
@@ -258,9 +262,9 @@ export function ScheduleDetailSheet({
             <Button
               variant="outline"
               onPress={handleCancelApplication}
-              className="border-red-300 dark:border-red-700"
+              className="border-error-300 dark:border-error-700"
             >
-              <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
+              <Text className="text-error-600 dark:text-error-400 font-semibold">지원 취소</Text>
             </Button>
           )}
         </View>

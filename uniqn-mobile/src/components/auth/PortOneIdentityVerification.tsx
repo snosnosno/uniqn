@@ -176,26 +176,28 @@ export function PortOneIdentityVerification({
 
           <View className="gap-2 rounded-lg bg-white p-3 dark:bg-surface">
             <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">이름</Text>
-              <Text className="font-medium text-gray-900 dark:text-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">이름</Text>
+              <Text className="font-medium text-secondary-900 dark:text-white">
                 {verifiedIdentity.name}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
-              <Text className="font-medium text-gray-900 dark:text-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">생년월일</Text>
+              <Text className="font-medium text-secondary-900 dark:text-white">
                 {formatBirthDate(verifiedIdentity.birthDate)}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">성별</Text>
-              <Text className="font-medium text-gray-900 dark:text-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">성별</Text>
+              <Text className="font-medium text-secondary-900 dark:text-white">
                 {getGenderLabel(verifiedIdentity.gender)}
               </Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">휴대폰 번호</Text>
-              <Text className="font-medium text-gray-900 dark:text-white">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+                휴대폰 번호
+              </Text>
+              <Text className="font-medium text-secondary-900 dark:text-white">
                 {verifiedIdentity.phoneNumber}
               </Text>
             </View>
@@ -212,14 +214,14 @@ export function PortOneIdentityVerification({
           </Button>
         </View>
       ) : (
-        <View className="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
+        <View className="rounded-md border border-secondary-200 bg-secondary-50 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
             <ShieldCheckIcon size={20} color="#4f46e5" />
-            <Text className="ml-2 font-semibold text-gray-900 dark:text-white">
+            <Text className="ml-2 font-semibold text-secondary-900 dark:text-white">
               이니시스 본인인증
             </Text>
           </View>
-          <Text className="mb-4 text-sm leading-5 text-gray-600 dark:text-gray-300">
+          <Text className="mb-4 text-sm leading-5 text-secondary-600 dark:text-secondary-300">
             PASS, 토스, 카카오, 네이버 등 이니시스 통합인증 수단으로 본인인증을 진행합니다. 인증
             완료 후 검증된 이름, 생년월일, 성별, 휴대폰 번호를 자동으로 반영합니다.
           </Text>

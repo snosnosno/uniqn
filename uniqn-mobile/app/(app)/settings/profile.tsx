@@ -36,7 +36,7 @@ export default function ProfileEditScreen() {
   // profile이 로드될 때까지 로딩 표시
   if (isLoading || !profile) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <Loading />
       </SafeAreaView>
     );
@@ -205,7 +205,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -223,34 +223,38 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               onImageUpdated={handleImageUpdated}
               size="xl"
             />
-            <Text className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mt-3 text-sm text-secondary-500 dark:text-secondary-400">
               프로필 사진을 탭하여 변경
             </Text>
           </Card>
 
           {/* 기본 정보 (수정 불가) */}
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <Text className="mb-3 text-sm font-medium text-secondary-500 dark:text-secondary-400">
               기본 정보 (수정 불가)
             </Text>
 
             {/* 이름 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">{profile.name ?? '-'}</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">이름</Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
+                  {profile.name ?? '-'}
+                </Text>
               </View>
             </View>
 
             {/* 이메일 (읽기 전용) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이메일</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                이메일
+              </Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
                   {profile.email ?? user?.email ?? '-'}
                 </Text>
                 {(profile.email ?? user?.email ?? '').endsWith('@privaterelay.apple.com') && (
-                  <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1">
                     (Apple 비공개 이메일)
                   </Text>
                 )}
@@ -259,17 +263,23 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 전화번호 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">{profile.phone ?? '-'}</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                전화번호
+              </Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
+                  {profile.phone ?? '-'}
+                </Text>
               </View>
             </View>
 
             {/* 생년월일 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                생년월일
+              </Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
                   {formatBirthDate(profile.birthDate)}
                 </Text>
               </View>
@@ -277,9 +287,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 성별 (읽기 전용 - 회원가입 Step2) */}
             <View>
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">성별</Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
                   {profile.gender === 'male' ? '남성' : profile.gender === 'female' ? '여성' : '-'}
                 </Text>
               </View>
@@ -288,13 +298,15 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
           {/* 추가 정보 */}
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+            <Text className="mb-3 text-sm font-medium text-secondary-500 dark:text-secondary-400">
               추가 정보
             </Text>
 
             {/* 닉네임 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">닉네임</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                닉네임
+              </Text>
               <Controller
                 control={control}
                 name="nickname"
@@ -302,10 +314,10 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                   <View className="flex-row items-center">
                     <View className="flex-1">
                       <TextInput
-                        className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                        className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                           errors.nickname
                             ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                            : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                            : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                         }`}
                         value={value}
                         onChangeText={(text) => handleNicknameChange(onChange, text)}
@@ -326,7 +338,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                 <Text className="mt-1 text-sm text-error-500">{errors.nickname.message}</Text>
               )}
               {nicknameStatus === 'available' && !errors.nickname && (
-                <Text className="mt-1 text-xs text-green-600 dark:text-green-400">
+                <Text className="mt-1 text-xs text-success-600 dark:text-success-400">
                   사용 가능한 닉네임입니다
                 </Text>
               )}
@@ -334,16 +346,16 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 지역 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">지역</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">지역</Text>
               <Controller
                 control={control}
                 name="region"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                       errors.region
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                        : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -362,16 +374,18 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 경력 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">경력 (년)</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                경력 (년)
+              </Text>
               <Controller
                 control={control}
                 name="experienceYears"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                       errors.experienceYears
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                        : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value?.toString() ?? ''}
                     onChangeText={(text) => {
@@ -395,16 +409,16 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 이력 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이력</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">이력</Text>
               <Controller
                 control={control}
                 name="career"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                       errors.career
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                        : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -426,16 +440,18 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 기타사항 */}
             <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">기타사항</Text>
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">
+                기타사항
+              </Text>
               <Controller
                 control={control}
                 name="note"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                    className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                       errors.note
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                        : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -457,9 +473,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
 
             {/* 역할 (읽기 전용) */}
             <View>
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">역할</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400">역할</Text>
+              <View className="rounded-lg bg-secondary-100 px-4 py-3 dark:bg-surface">
+                <Text className="text-secondary-600 dark:text-secondary-300">
                   {profile.role === 'admin'
                     ? '관리자'
                     : profile.role === 'employer'
@@ -478,7 +494,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             disabled={isSaving || !isDirty || nicknameStatus === 'taken'}
             className={`rounded-lg py-4 ${
               isSaving || !isDirty || nicknameStatus === 'taken'
-                ? 'bg-gray-300 dark:bg-surface'
+                ? 'bg-secondary-300 dark:bg-surface'
                 : 'bg-primary-600 active:bg-primary-700'
             }`}
           >

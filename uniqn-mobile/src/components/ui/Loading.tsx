@@ -40,7 +40,9 @@ export function Loading({
   const content = (
     <View className="items-center justify-center">
       <ActivityIndicator size={size} color={resolvedColor} />
-      {message && <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400">{message}</Text>}
+      {message && (
+        <Text className="mt-3 text-sm text-secondary-600 dark:text-secondary-400">{message}</Text>
+      )}
     </View>
   );
 

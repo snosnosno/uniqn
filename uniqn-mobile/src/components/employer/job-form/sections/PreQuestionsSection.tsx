@@ -117,11 +117,13 @@ const QuestionCard = memo(function QuestionCard({
               {index + 1}
             </Text>
           </View>
-          <Text className="ml-2 font-medium text-gray-900 dark:text-white">질문 {index + 1}</Text>
+          <Text className="ml-2 font-medium text-secondary-900 dark:text-white">
+            질문 {index + 1}
+          </Text>
         </View>
         <Pressable
           onPress={onDelete}
-          className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20"
+          className="p-2 rounded-lg bg-error-50 dark:bg-error-900/20"
           accessibilityRole="button"
           accessibilityLabel="질문 삭제"
         >
@@ -136,7 +138,7 @@ const QuestionCard = memo(function QuestionCard({
         placeholder="질문 내용을 입력하세요"
         placeholderTextColor="#9CA3AF"
         multiline
-        className="px-3 py-2 bg-gray-50 dark:bg-surface rounded-lg text-gray-900 dark:text-white min-h-[48px]"
+        className="px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white min-h-[48px]"
       />
 
       {/* 질문 타입 & 필수 여부 */}
@@ -145,9 +147,9 @@ const QuestionCard = memo(function QuestionCard({
         <View className="flex-1 mr-4">
           <Pressable
             onPress={() => setShowTypeSelector(true)}
-            className="flex-row items-center justify-between px-3 py-2 bg-gray-50 dark:bg-surface rounded-lg"
+            className="flex-row items-center justify-between px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg"
           >
-            <Text className="text-gray-900 dark:text-white">
+            <Text className="text-secondary-900 dark:text-white">
               {PRE_QUESTION_TYPE_LABELS[question.type]}
             </Text>
             <ChevronDownIcon size={20} color="#6B7280" />
@@ -168,7 +170,7 @@ const QuestionCard = memo(function QuestionCard({
 
         {/* 필수 여부 */}
         <View className="flex-row items-center">
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mr-2">필수</Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mr-2">필수</Text>
           <Switch
             value={question.required}
             onValueChange={handleRequiredChange}
@@ -181,16 +183,16 @@ const QuestionCard = memo(function QuestionCard({
       {/* 선택형 옵션 */}
       {question.type === 'select' && (
         <View className="mt-3">
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">선택지</Text>
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">선택지</Text>
           {question.options?.map((option, optionIndex) => (
             <View key={optionIndex} className="flex-row items-center mb-2">
-              <View className="w-6 h-6 rounded-sm border-2 border-gray-300 dark:border-surface-overlay mr-2" />
+              <View className="w-6 h-6 rounded-sm border-2 border-secondary-300 dark:border-surface-overlay mr-2" />
               <TextInput
                 value={option}
                 onChangeText={(v) => handleOptionChange(optionIndex, v)}
                 placeholder={`선택지 ${optionIndex + 1}`}
                 placeholderTextColor="#9CA3AF"
-                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-surface rounded-lg text-gray-900 dark:text-white"
+                className="flex-1 px-3 py-2 bg-secondary-50 dark:bg-surface rounded-lg text-secondary-900 dark:text-white"
               />
               {(question.options?.length || 0) > 1 && (
                 <Pressable
@@ -206,10 +208,12 @@ const QuestionCard = memo(function QuestionCard({
           ))}
           <Pressable
             onPress={handleAddOption}
-            className="flex-row items-center justify-center py-2 border border-dashed border-gray-300 dark:border-surface-overlay rounded-lg"
+            className="flex-row items-center justify-center py-2 border border-dashed border-secondary-300 dark:border-surface-overlay rounded-lg"
           >
             <PlusIcon size={16} color="#6B7280" />
-            <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">선택지 추가</Text>
+            <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+              선택지 추가
+            </Text>
           </Pressable>
         </View>
       )}
@@ -304,10 +308,10 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       </View>
 
       {/* 사전질문 사용 토글 */}
-      <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay mb-4">
+      <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-4">
         <View>
-          <Text className="text-gray-900 dark:text-white font-medium">사전질문 사용</Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <Text className="text-secondary-900 dark:text-white font-medium">사전질문 사용</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
             지원자에게 추가 질문을 할 수 있습니다
           </Text>
         </View>
@@ -323,7 +327,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {hasPreQuestions && (
         <>
           <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
               질문 목록 ({data.preQuestions.length}/10)
             </Text>
           </View>
@@ -342,12 +346,14 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
           {data.preQuestions.length < 10 && (
             <Pressable
               onPress={handleAddQuestion}
-              className="flex-row items-center justify-center p-4 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-md"
+              className="flex-row items-center justify-center p-4 border-2 border-dashed border-secondary-300 dark:border-surface-overlay rounded-md"
               accessibilityRole="button"
               accessibilityLabel="질문 추가"
             >
               <PlusIcon size={20} color="#6B7280" />
-              <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium">질문 추가</Text>
+              <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium">
+                질문 추가
+              </Text>
             </Pressable>
           )}
         </>
@@ -355,7 +361,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
 
       {/* 에러 메시지 */}
       {errors.preQuestions && (
-        <Text className="mt-3 text-sm text-red-500">{errors.preQuestions}</Text>
+        <Text className="mt-3 text-sm text-error-500">{errors.preQuestions}</Text>
       )}
     </View>
   );

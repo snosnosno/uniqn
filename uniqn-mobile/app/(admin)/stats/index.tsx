@@ -52,7 +52,7 @@ export default function AdminStatsScreen() {
 
   if (isLoading && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <Loading variant="layout" message="통계 데이터를 불러오는 중..." />
       </SafeAreaView>
@@ -61,7 +61,7 @@ export default function AdminStatsScreen() {
 
   if (error && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <Stack.Screen options={{ title: '서비스 통계' }} />
         <ErrorState
           error={error}
@@ -74,7 +74,7 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen options={{ title: '서비스 통계' }} />
       <ScrollView
         className="flex-1"
@@ -89,8 +89,10 @@ export default function AdminStatsScreen() {
       >
         <View className="mb-6 flex-row items-start justify-between">
           <View className="flex-1 pr-4">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-white">서비스 통계</Text>
-            <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-2xl font-bold text-secondary-900 dark:text-white">
+              서비스 통계
+            </Text>
+            <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
               운영 상태와 최근 7일 추이를 한 화면에서 확인합니다.
             </Text>
           </View>
@@ -100,19 +102,21 @@ export default function AdminStatsScreen() {
         </View>
 
         {error ? (
-          <View className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
-            <Text className="text-sm font-medium text-amber-800 dark:text-amber-300">
+          <View className="mb-4 rounded-md border border-amber-200 bg-warning-50 px-4 py-3 dark:border-amber-800 dark:bg-warning-900/20">
+            <Text className="text-sm font-medium text-warning-800 dark:text-warning-300">
               일부 통계만 표시 중입니다
             </Text>
-            <Text className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+            <Text className="mt-1 text-xs text-warning-700 dark:text-warning-400">
               최신 데이터를 모두 불러오지 못했지만 확인 가능한 항목은 유지했습니다.
             </Text>
           </View>
         ) : null}
 
         <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">주요 지표</Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+            주요 지표
+          </Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
             마지막 업데이트: {lastUpdatedAt}
           </Text>
         </View>
@@ -125,7 +129,7 @@ export default function AdminStatsScreen() {
               isLoading={isLoading && !stats}
               icon={PeopleOutlineIcon}
               iconColor="#2563eb"
-              iconBgColor="bg-blue-100 dark:bg-blue-900/20"
+              iconBgColor="bg-info-100 dark:bg-info-900/20"
             />
           </View>
           <View className="w-[48%]">
@@ -135,7 +139,7 @@ export default function AdminStatsScreen() {
               isLoading={isLoading && !stats}
               icon={CalendarIcon}
               iconColor="#16a34a"
-              iconBgColor="bg-green-100 dark:bg-green-900/20"
+              iconBgColor="bg-success-50 dark:bg-success-900/20"
             />
           </View>
           <View className="w-[48%]">
@@ -165,7 +169,7 @@ export default function AdminStatsScreen() {
               isLoading={isLoading && !stats}
               icon={FlagOutlineIcon}
               iconColor="#dc2626"
-              iconBgColor="bg-red-100 dark:bg-red-900/20"
+              iconBgColor="bg-error-50 dark:bg-error-900/20"
             />
           </View>
           <View className="w-[48%]">
@@ -177,7 +181,9 @@ export default function AdminStatsScreen() {
           <RoleDistributionChart data={stats?.usersByRole ?? { admin: 0, employer: 0, staff: 0 }} />
         </View>
 
-        <Text className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">7일 트렌드</Text>
+        <Text className="mb-3 text-lg font-semibold text-secondary-900 dark:text-white">
+          7일 트렌드
+        </Text>
         <View className="mb-4">
           <TrendChart title="일별 가입자 수" data={metrics?.dailySignups ?? []} suffix="명" />
         </View>
@@ -185,10 +191,12 @@ export default function AdminStatsScreen() {
           <TrendChart title="일별 지원 수" data={metrics?.dailyApplications ?? []} suffix="건" />
         </View>
 
-        <View className="rounded-md border border-gray-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+        <View className="rounded-md border border-secondary-100 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white">최근 가입자</Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
+            <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+              최근 가입자
+            </Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
               최대 {stats?.recentUsers.length ?? 0}명
             </Text>
           </View>
@@ -198,13 +206,13 @@ export default function AdminStatsScreen() {
               {stats.recentUsers.map((user) => (
                 <View
                   key={user.uid}
-                  className="flex-row items-center justify-between rounded-lg bg-gray-50 px-3 py-3 dark:bg-surface-elevated"
+                  className="flex-row items-center justify-between rounded-lg bg-secondary-50 px-3 py-3 dark:bg-surface-elevated"
                 >
                   <View className="flex-1 pr-3">
-                    <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
                       {user.name}
                     </Text>
-                    <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                       {user.email}
                     </Text>
                   </View>
@@ -212,7 +220,7 @@ export default function AdminStatsScreen() {
                     <Text className="text-xs font-medium uppercase text-primary-600 dark:text-primary-300">
                       {user.role}
                     </Text>
-                    <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                       {formatDateTime(user.createdAt)}
                     </Text>
                   </View>
@@ -220,7 +228,7 @@ export default function AdminStatsScreen() {
               ))}
             </View>
           ) : (
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               최근 가입자 데이터가 없습니다.
             </Text>
           )}

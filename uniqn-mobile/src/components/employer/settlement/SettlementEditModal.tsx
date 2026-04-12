@@ -67,14 +67,14 @@ interface AccordionSectionProps {
 
 function AccordionSection({ title, icon, expanded, onToggle, children }: AccordionSectionProps) {
   return (
-    <View className="border-b border-gray-100 dark:border-surface-overlay">
+    <View className="border-b border-secondary-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
-        className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50 dark:active:bg-gray-800"
+        className="flex-row items-center justify-between px-4 py-4 active:bg-secondary-50 dark:active:bg-secondary-800"
       >
         <View className="flex-row items-center">
           {icon}
-          <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
             {title}
           </Text>
         </View>
@@ -189,11 +189,11 @@ export function SettlementEditModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-3.5 rounded-md bg-gray-100 dark:bg-surface ${
+        className={`flex-1 py-3.5 rounded-md bg-secondary-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-base font-medium text-gray-700 dark:text-gray-300 text-center">
+        <Text className="text-base font-medium text-secondary-700 dark:text-secondary-300 text-center">
           취소
         </Text>
       </Pressable>
@@ -221,13 +221,13 @@ export function SettlementEditModal({
     >
       <View>
         {/* 프로필 헤더 */}
-        <View className="flex-row items-center p-4 bg-gray-50 dark:bg-surface -mx-5 -mt-5">
+        <View className="flex-row items-center p-4 bg-secondary-50 dark:bg-surface -mx-5 -mt-5">
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               {workLog.role
                 ? getRoleDisplayName(
                     workLog.role,
@@ -279,21 +279,21 @@ export function SettlementEditModal({
 
         {/* 정산 금액 요약 */}
         {settlement && (
-          <View className="px-4 py-4 bg-gray-50 dark:bg-surface">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+          <View className="px-4 py-4 bg-secondary-50 dark:bg-surface">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-3">
               정산 금액 요약
             </Text>
 
             <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
               {/* 기본 급여 */}
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-gray-600 dark:text-gray-400">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-400">
                   기본급
                   {settlement.hoursWorked > 0 && (
                     <Text className="text-xs"> ({formatDuration(settlement.hoursWorked)})</Text>
                   )}
                 </Text>
-                <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                <Text className="text-sm font-medium text-secondary-900 dark:text-white">
                   {formatCurrency(settlement.basePay)}
                 </Text>
               </View>
@@ -301,8 +301,8 @@ export function SettlementEditModal({
               {/* 수당 */}
               {settlement.allowancePay > 0 && (
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-gray-600 dark:text-gray-400">수당</Text>
-                  <Text className="text-sm font-medium text-green-600 dark:text-green-400">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">수당</Text>
+                  <Text className="text-sm font-medium text-success-600 dark:text-success-400">
                     +{formatCurrency(settlement.allowancePay)}
                   </Text>
                 </View>
@@ -311,24 +311,24 @@ export function SettlementEditModal({
               {/* 세금 */}
               {taxSettings.type !== 'none' && taxAmount > 0 && (
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-gray-600 dark:text-gray-400">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-400">
                     세금
                     {taxSettings.type === 'rate' && (
                       <Text className="text-xs"> ({taxSettings.value}%)</Text>
                     )}
                   </Text>
-                  <Text className="text-sm font-medium text-red-500 dark:text-red-400">
+                  <Text className="text-sm font-medium text-error-500 dark:text-error-400">
                     -{formatCurrency(taxAmount)}
                   </Text>
                 </View>
               )}
 
               {/* 구분선 */}
-              <View className="h-px bg-gray-200 dark:bg-surface my-2" />
+              <View className="h-px bg-secondary-200 dark:bg-surface my-2" />
 
               {/* 세후 금액 */}
               <View className="flex-row items-center justify-between">
-                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                   {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
                 </Text>
                 <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
@@ -341,7 +341,7 @@ export function SettlementEditModal({
 
         {/* 수정 사유 입력 */}
         <View className="px-4 py-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
             수정 사유 (선택)
           </Text>
           <TextInput
@@ -351,7 +351,7 @@ export function SettlementEditModal({
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={2}
-            className="bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white"
+            className="bg-white dark:bg-surface border border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-white"
             accessibilityLabel="수정 사유"
           />
         </View>

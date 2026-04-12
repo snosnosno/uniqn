@@ -70,7 +70,7 @@ export function Skeleton({
 
   return (
     <Animated.View
-      className={`bg-gray-200 dark:bg-surface ${className || ''}`}
+      className={`bg-secondary-200 dark:bg-surface ${className || ''}`}
       style={[
         {
           width,
@@ -242,7 +242,7 @@ export function SkeletonScheduleCard() {
 
 export function SkeletonNotificationItem() {
   return (
-    <View className="flex-row items-start py-4 px-4 bg-white dark:bg-surface border-b border-gray-100 dark:border-surface-overlay">
+    <View className="flex-row items-start py-4 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
       {/* Icon */}
       <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
 
@@ -346,7 +346,7 @@ export function SkeletonStatsCard() {
 
 export function SkeletonSettlementRow() {
   return (
-    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-surface border-b border-gray-100 dark:border-surface-overlay">
+    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-surface border-b border-secondary-100 dark:border-surface-overlay">
       {/* Date */}
       <View className="w-20">
         <Skeleton width={60} height={14} className="mb-1" />

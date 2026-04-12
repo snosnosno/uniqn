@@ -112,31 +112,31 @@ export function QRCodeDisplay({
         {/* 제목 */}
         <View className="flex-row items-center mb-2">
           <CheckCircleIcon size={24} color="#D4AF37" />
-          <Text className="text-xl font-bold text-gray-900 dark:text-gray-100 ml-2">
+          <Text className="text-xl font-bold text-secondary-900 dark:text-secondary-100 ml-2">
             {actionLabel} QR 코드
           </Text>
         </View>
 
-        <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
+        <Text className="text-secondary-500 dark:text-secondary-400 text-center mb-6">
           QR 코드를 스캔하여 {actionLabel}을 완료하세요
         </Text>
 
         {/* QR 코드 영역 - 다크모드에서도 QR 가독성을 위해 흰색 배경 유지 */}
-        <View className="bg-white dark:bg-gray-100 rounded-lg p-6 shadow-lg dark:shadow-gray-800/50">
+        <View className="bg-white dark:bg-secondary-100 rounded-lg p-6 shadow-lg dark:shadow-gray-800/50">
           {isLoading ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
               className="items-center justify-center"
             >
               <ActivityIndicator size="large" color="#D4AF37" />
-              <Text className="text-gray-500 mt-4">QR 코드 생성 중...</Text>
+              <Text className="text-secondary-500 mt-4">QR 코드 생성 중...</Text>
             </View>
           ) : isExpired || !displayData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
-              className="items-center justify-center bg-gray-100 dark:bg-surface rounded-md"
+              className="items-center justify-center bg-secondary-100 dark:bg-surface rounded-md"
             >
-              <Text className="text-gray-400 dark:text-gray-500 text-center mb-4">
+              <Text className="text-secondary-400 dark:text-secondary-500 text-center mb-4">
                 {isExpired ? 'QR 코드가 만료되었습니다' : 'QR 코드를 생성해주세요'}
               </Text>
               {onRefresh && (
@@ -161,7 +161,7 @@ export function QRCodeDisplay({
             <ClockIcon size={16} color={isExpired ? '#EF4444' : '#6B7280'} />
             <Text
               className={`ml-1 text-sm ${
-                isExpired ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
+                isExpired ? 'text-error-500' : 'text-secondary-500 dark:text-secondary-400'
               }`}
             >
               {remainingTime}
@@ -185,7 +185,9 @@ export function QRCodeDisplay({
             accessibilityLabel="QR 코드 새로고침"
           >
             <RefreshIcon size={16} color="#6B7280" />
-            <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">새로고침</Text>
+            <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
+              새로고침
+            </Text>
           </Pressable>
         )}
       </View>

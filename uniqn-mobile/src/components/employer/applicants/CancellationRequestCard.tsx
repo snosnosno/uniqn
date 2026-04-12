@@ -123,7 +123,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
           <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                 {displayName}
               </Text>
               <Badge
@@ -140,7 +140,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                 {STATUS_LABELS[cancellationRequest.status]}
               </Badge>
             </View>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               {getRoleDisplayName(
                 application.assignments[0]?.roleIds?.[0] || 'other',
                 application.customRole
@@ -152,9 +152,9 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 취소 대상 일정 표시 (assignments 기반) */}
         {application.assignments.length > 0 && (
-          <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-3">
+          <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-3">
             <CalendarIcon size={14} color="#DC2626" />
-            <Text className="ml-2 text-sm text-red-700 dark:text-red-300">
+            <Text className="ml-2 text-sm text-error-700 dark:text-error-300">
               취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
               {application.assignments[0]?.timeSlot && ` ${application.assignments[0].timeSlot}`}
             </Text>
@@ -162,11 +162,11 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         )}
 
         {/* 공고 정보 */}
-        <View className="bg-gray-50 dark:bg-surface rounded-lg px-3 py-2 mb-3">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">
+        <View className="bg-secondary-50 dark:bg-surface rounded-lg px-3 py-2 mb-3">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-400">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500">
             {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
           </Text>
         </View>
@@ -175,7 +175,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         <View className="mb-3">
           <View className="flex-row items-center mb-1">
             <MessageIcon size={14} color="#9CA3AF" />
-            <Text className="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Text className="ml-1 text-xs font-medium text-secondary-500 dark:text-secondary-400">
               취소 사유
             </Text>
           </View>
@@ -189,7 +189,9 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 요청 시간 */}
         <View className="flex-row items-center mb-3">
           <ClockIcon size={14} color="#9CA3AF" />
-          <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">{requestTimeAgo}</Text>
+          <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400">
+            {requestTimeAgo}
+          </Text>
         </View>
 
         {/* 검토 결과 표시 (처리 완료 시) */}
@@ -203,14 +205,14 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 액션 버튼 (pending 상태일 때만) */}
         {isPending && (
-          <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
+          <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
             {/* 거절 버튼 */}
             <Pressable
               onPress={handleOpenRejectModal}
               disabled={isProcessing}
               className={`
                 flex-1 flex-row items-center justify-center py-2 mr-2
-                rounded-lg bg-gray-100 dark:bg-surface active:opacity-70
+                rounded-lg bg-secondary-100 dark:bg-surface active:opacity-70
                 ${isProcessing ? 'opacity-50' : ''}
               `}
             >
@@ -246,7 +248,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         position="center"
       >
         <View className="-mt-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4">
             거절 사유를 입력해주세요.
           </Text>
 
@@ -259,10 +261,10 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             multiline
             numberOfLines={3}
             maxLength={200}
-            className="bg-gray-50 dark:bg-surface rounded-lg p-3 text-gray-900 dark:text-white text-base min-h-[80px] mb-4"
+            className="bg-secondary-50 dark:bg-surface rounded-lg p-3 text-secondary-900 dark:text-white text-base min-h-[80px] mb-4"
             textAlignVertical="top"
           />
-          <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mb-4">
+          <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mb-4">
             {rejectionReason.length}/200
           </Text>
 

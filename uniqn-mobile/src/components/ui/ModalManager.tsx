@@ -20,7 +20,9 @@ function LoadingModalContent({ message }: { message?: string }) {
     <View className="items-center py-4">
       <ActivityIndicator size="large" color="#D4AF37" />
       {message && (
-        <Text className="text-gray-600 dark:text-gray-300 mt-4 text-center">{message}</Text>
+        <Text className="text-secondary-600 dark:text-secondary-300 mt-4 text-center">
+          {message}
+        </Text>
       )}
     </View>
   );

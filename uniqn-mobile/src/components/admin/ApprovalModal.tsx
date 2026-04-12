@@ -118,12 +118,12 @@ export const ApprovalModal = memo(function ApprovalModal({
             onPress={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-surface-overlay">
+            <View className="flex-row items-center justify-between p-4 border-b border-secondary-200 dark:border-surface-overlay">
               <Text
                 className={`text-lg font-semibold ${
                   isApprove
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
+                    ? 'text-success-600 dark:text-success-400'
+                    : 'text-error-600 dark:text-error-400'
                 }`}
               >
                 {isApprove ? '공고 승인' : '공고 거부'}
@@ -141,12 +141,12 @@ export const ApprovalModal = memo(function ApprovalModal({
 
             {/* 본문 */}
             <View className="p-4">
-              <Text className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-300 mb-2">
                 다음 공고를 {isApprove ? '승인' : '거부'}하시겠습니까?
               </Text>
-              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3 mb-4">
+              <View className="bg-secondary-50 dark:bg-surface rounded-lg p-3 mb-4">
                 <Text
-                  className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                  className="text-sm font-medium text-secondary-900 dark:text-secondary-100"
                   numberOfLines={2}
                 >
                   {postingTitle}
@@ -156,8 +156,8 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 거부 사유 입력 */}
               {!isApprove && (
                 <View className="mb-4">
-                  <Text className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    거부 사유 <Text className="text-red-500">*</Text>
+                  <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200 mb-2">
+                    거부 사유 <Text className="text-error-500">*</Text>
                   </Text>
                   <TextInput
                     value={reason}
@@ -168,7 +168,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     numberOfLines={4}
                     editable={!isProcessing}
                     textAlignVertical="top"
-                    className="border border-gray-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-gray-900 dark:text-gray-100 min-h-[100px]"
+                    className="border border-secondary-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-secondary-900 dark:text-secondary-100 min-h-[100px]"
                     accessibilityLabel="거부 사유 입력"
                     accessibilityHint="최소 10자 이상 입력해주세요"
                   />
@@ -176,13 +176,13 @@ export const ApprovalModal = memo(function ApprovalModal({
                     <Text
                       className={`text-xs ${
                         isValidReason
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-500 dark:text-gray-400'
+                          ? 'text-success-600 dark:text-success-400'
+                          : 'text-secondary-500 dark:text-secondary-400'
                       }`}
                     >
                       {trimmedReason.length}/{MIN_REASON_LENGTH}자 이상
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                       {reason.length}/{MAX_REASON_LENGTH}
                     </Text>
                   </View>
@@ -191,8 +191,8 @@ export const ApprovalModal = memo(function ApprovalModal({
 
               {/* 승인 안내 */}
               {isApprove && (
-                <View className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-green-800 dark:text-green-300">
+                <View className="bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-700 rounded-lg p-3 mb-4">
+                  <Text className="text-sm text-success-800 dark:text-success-300">
                     승인 후 공고가 대회 탭에 즉시 노출됩니다.
                   </Text>
                 </View>
@@ -200,14 +200,14 @@ export const ApprovalModal = memo(function ApprovalModal({
 
               {/* 에러 메시지 */}
               {error && (
-                <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-red-800 dark:text-red-300">{error}</Text>
+                <View className="bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-700 rounded-lg p-3 mb-4">
+                  <Text className="text-sm text-error-800 dark:text-error-300">{error}</Text>
                 </View>
               )}
             </View>
 
             {/* 버튼 */}
-            <View className="flex-row gap-3 p-4 border-t border-gray-200 dark:border-surface-overlay">
+            <View className="flex-row gap-3 p-4 border-t border-secondary-200 dark:border-surface-overlay">
               <View className="flex-1">
                 <Button variant="outline" onPress={handleCancel} disabled={isProcessing} fullWidth>
                   취소

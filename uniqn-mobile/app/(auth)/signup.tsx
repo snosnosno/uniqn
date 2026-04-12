@@ -138,11 +138,13 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between px-4 py-2 border-b border-secondary-200 dark:border-surface-overlay">
         <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
           <ChevronLeftIcon size={24} />
         </Pressable>
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">{headerTitle}</Text>
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+          {headerTitle}
+        </Text>
         <View className="w-8" />
       </View>
 

@@ -154,7 +154,7 @@ export function ProfileImagePicker({
         {/* 카메라 아이콘 오버레이 */}
         <View
           className={`absolute bottom-0 right-0 items-center justify-center rounded-sm p-2 ${
-            disabled ? 'bg-gray-400' : 'bg-primary-600'
+            disabled ? 'bg-secondary-400' : 'bg-primary-600'
           }`}
         >
           {isUploading ? (
@@ -179,7 +179,9 @@ export function ProfileImagePicker({
 
       {/* 업로드 중 안내 */}
       {isUploading && (
-        <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">업로드 중...</Text>
+        <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
+          업로드 중...
+        </Text>
       )}
     </View>
   );

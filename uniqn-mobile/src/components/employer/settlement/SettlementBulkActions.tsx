@@ -48,13 +48,13 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
             ${
               isAllSelected
                 ? 'bg-primary-500 border-primary-500'
-                : 'border-gray-400 dark:border-surface-overlay'
+                : 'border-secondary-400 dark:border-surface-overlay'
             }
           `}
           >
             {isAllSelected && <CheckIcon size={12} color="#fff" />}
           </View>
-          <Text className="text-sm text-gray-700 dark:text-gray-300">
+          <Text className="text-sm text-secondary-700 dark:text-secondary-300">
             {isAllSelected ? '해제' : '전체'}
           </Text>
         </Pressable>
@@ -62,7 +62,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
           <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
             {selectedCount}건 선택
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">
             {formatCurrency(selectedAmount)}
           </Text>
         </View>
@@ -72,14 +72,14 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
         disabled={selectedCount === 0}
         className={`
           flex-row items-center px-4 py-2 rounded-lg
-          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-gray-300 dark:bg-surface'}
+          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-secondary-300 dark:bg-surface'}
         `}
       >
         <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#9CA3AF'} />
         <Text
           className={`
           ml-1 text-sm font-medium
-          ${selectedCount > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
+          ${selectedCount > 0 ? 'text-white' : 'text-secondary-500 dark:text-secondary-400'}
         `}
         >
           일괄 정산

@@ -87,8 +87,8 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
         p-4 rounded-md mb-2
         ${
           isSelected
-            ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20'
-            : 'border border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
+            ? 'border-2 border-error-500 bg-error-50 dark:bg-error-900/20'
+            : 'border border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface'
         }
       `}
     >
@@ -98,7 +98,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
             <Text
               className={`
                 text-base font-semibold
-                ${isSelected ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}
+                ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-secondary-900 dark:text-white'}
               `}
             >
               {typeInfo.label}
@@ -115,13 +115,13 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
               </Text>
             </View>
           </View>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
             {typeInfo.description}
           </Text>
         </View>
 
         {isSelected && (
-          <View className="h-6 w-6 rounded-sm bg-red-500 items-center justify-center">
+          <View className="h-6 w-6 rounded-sm bg-error-500 items-center justify-center">
             <CheckIcon size={14} color="#FFFFFF" />
           </View>
         )}
@@ -279,9 +279,9 @@ export function ReportModal({
     <Modal visible={visible} onClose={handleClose} title={modalTitle} position="bottom">
       <View>
         {/* 신고 대상 정보 */}
-        <Card variant="filled" padding="sm" className="mb-3 bg-red-50 dark:bg-red-900/20">
+        <Card variant="filled" padding="sm" className="mb-3 bg-error-50 dark:bg-error-900/20">
           <View className="flex-row items-center">
-            <View className="h-12 w-12 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center">
+            <View className="h-12 w-12 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center">
               {mode === 'employee' ? (
                 <BriefcaseIcon size={24} color="#EF4444" />
               ) : (
@@ -289,7 +289,7 @@ export function ReportModal({
               )}
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+              <Text className="text-base font-semibold text-secondary-900 dark:text-white">
                 {reportTarget.name}
               </Text>
               {mode === 'employer' && staff ? (
@@ -297,12 +297,12 @@ export function ReportModal({
                   <Badge variant="default" size="sm">
                     {getRoleDisplayName(staff.role, staff.customRole)}
                   </Badge>
-                  <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="ml-2 text-xs text-secondary-500 dark:text-secondary-400">
                     {staff.date}
                   </Text>
                 </View>
               ) : (
-                <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
                   {jobPostingTitle || '구인자'}
                 </Text>
               )}
@@ -311,8 +311,8 @@ export function ReportModal({
         </Card>
 
         {/* 신고 유형 선택 */}
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          신고 유형 선택 <Text className="text-red-500">*</Text>
+        <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
+          신고 유형 선택 <Text className="text-error-500">*</Text>
         </Text>
 
         <ScrollView
@@ -341,8 +341,8 @@ export function ReportModal({
 
         {/* 상세 설명 */}
         <View className="mb-3">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            상세 설명 <Text className="text-red-500">*</Text>
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1.5">
+            상세 설명 <Text className="text-error-500">*</Text>
           </Text>
           <TextInput
             value={description}
@@ -354,21 +354,21 @@ export function ReportModal({
             textAlignVertical="top"
             accessibilityLabel="신고 상세 설명"
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
-            className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[80px]"
+            className="p-2.5 border border-secondary-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-secondary-900 dark:text-white min-h-[80px]"
           />
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
             {description.length}/500자 (최소 10자)
           </Text>
         </View>
 
         {/* 안내 메시지 */}
-        <View className="flex-row items-start p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
+        <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
           <AlertCircleIcon size={14} color="#D97706" />
           <View className="ml-2 flex-1">
-            <Text className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-0.5">
+            <Text className="text-xs font-medium text-warning-700 dark:text-warning-300 mb-0.5">
               신고 시 유의사항
             </Text>
-            <Text className="text-xs text-yellow-600 dark:text-yellow-400 leading-4">
+            <Text className="text-xs text-warning-600 dark:text-warning-400 leading-4">
               • 허위 신고는 제재의 대상이 될 수 있습니다{'\n'}• 신고 내용은 관리자가 검토 후
               처리됩니다
             </Text>

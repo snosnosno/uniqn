@@ -138,13 +138,13 @@ export function SignupStepProfile({
     <View className="w-full flex-col gap-4">
       {/* 필수 항목 */}
       <View>
-        <Text className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <Text className="mb-3 text-sm font-semibold text-secondary-800 dark:text-secondary-200">
           필수 항목
         </Text>
 
         {/* 닉네임 입력 */}
         <View>
-          <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
             닉네임 <Text className="text-error-500">*</Text>
           </Text>
           <Controller
@@ -172,14 +172,14 @@ export function SignupStepProfile({
                   )}
                 </View>
                 {nicknameStatus === 'available' && !errors.nickname && (
-                  <Text className="mt-1 text-xs text-green-600 dark:text-green-400">
+                  <Text className="mt-1 text-xs text-success-600 dark:text-success-400">
                     사용 가능한 닉네임입니다
                   </Text>
                 )}
               </View>
             )}
           />
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">
             다른 사용자에게 보여지는 이름입니다.
           </Text>
         </View>
@@ -187,16 +187,18 @@ export function SignupStepProfile({
 
       {/* 선택 항목 */}
       <View className="mt-2">
-        <Text className="mb-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <Text className="mb-1 text-sm font-semibold text-secondary-800 dark:text-secondary-200">
           선택 항목
         </Text>
-        <Text className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+        <Text className="mb-3 text-xs text-secondary-500 dark:text-secondary-400">
           나중에 프로필 설정에서 입력할 수 있습니다.
         </Text>
 
         {/* 지역 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">지역</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            지역
+          </Text>
           <Controller
             control={control}
             name="region"
@@ -217,7 +219,7 @@ export function SignupStepProfile({
 
         {/* 경력 (년) */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
             경력 (년)
           </Text>
           <Controller
@@ -243,16 +245,18 @@ export function SignupStepProfile({
 
         {/* 이력 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">이력</Text>
+          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            이력
+          </Text>
           <Controller
             control={control}
             name="career"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                   errors.career
                     ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                    : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                    : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                 }`}
                 value={value ?? ''}
                 onChangeText={onChange}
@@ -275,7 +279,7 @@ export function SignupStepProfile({
 
         {/* 기타사항 */}
         <View className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
             기타사항
           </Text>
           <Controller
@@ -283,10 +287,10 @@ export function SignupStepProfile({
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                className={`rounded-lg border px-4 py-3 text-secondary-900 dark:text-secondary-100 ${
                   errors.note
                     ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                    : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                    : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                 }`}
                 value={value ?? ''}
                 onChangeText={onChange}

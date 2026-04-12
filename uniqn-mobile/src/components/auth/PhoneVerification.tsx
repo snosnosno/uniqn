@@ -230,8 +230,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-sm items-center justify-center mb-3">
               <ShieldCheckIcon size={32} color="#6366f1" />
             </View>
-            <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증</Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
+            <Text className="text-xl font-bold text-secondary-900 dark:text-white">문자인증</Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 text-center mt-1">
               안전한 서비스 이용을 위해 전화번호 인증이 필요합니다.
             </Text>
           </View>
@@ -277,7 +277,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           {/* OTP 입력 */}
           {step === 'otp' && (
             <View className="flex-col gap-3 mt-2">
-              <Text className="text-sm text-gray-600 dark:text-gray-300">
+              <Text className="text-sm text-secondary-600 dark:text-secondary-300">
                 인증번호가 발송되었습니다. 수신까지 최대 1분 소요될 수 있습니다.
                 {'\n'}문자가 늦게 도착했거나 만료되면 상단의 다시 요청 버튼으로 새 번호를
                 받아주세요.
@@ -331,13 +331,13 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {__DEV__ && (
           <View className="items-center mt-4 gap-1">
             <View className="flex-row items-center justify-center">
-              <View className="w-2 h-2 bg-yellow-500 rounded-sm mr-2" />
-              <Text className="text-xs text-gray-400 dark:text-gray-500">
+              <View className="w-2 h-2 bg-warning-500 rounded-sm mr-2" />
+              <Text className="text-xs text-secondary-400 dark:text-secondary-500">
                 개발 모드: Firebase Console 테스트 번호를 사용하세요
               </Text>
             </View>
             {Platform.OS === 'ios' && (
-              <Text className="text-xs text-gray-400 dark:text-gray-500">
+              <Text className="text-xs text-secondary-400 dark:text-secondary-500">
                 시뮬레이터: reCAPTCHA 인증이 표시될 수 있습니다
               </Text>
             )}
@@ -347,7 +347,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         {/* 안내 문구 */}
         {step === 'input' && !compact && (
           <View className="mt-6">
-            <Text className="text-xs text-gray-400 dark:text-gray-500 text-center">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-center">
               전화번호 인증 정보는 회원 확인 용도로만 사용되며,{'\n'}
               안전하게 보호됩니다.
             </Text>

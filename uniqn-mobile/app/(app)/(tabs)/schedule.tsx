@@ -74,10 +74,10 @@ function MonthNavigator({
   onToggleView,
 }: MonthNavigatorProps) {
   return (
-    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
+    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
       <Pressable
         onPress={onPrev}
-        className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700"
+        className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
         accessibilityLabel="이전 달"
         accessibilityRole="button"
         testID="schedule-prev-month-button"
@@ -88,7 +88,7 @@ function MonthNavigator({
       <View className="flex-1 px-3">
         <Text
           testID="schedule-month-title"
-          className="text-lg font-semibold text-gray-900 dark:text-gray-100"
+          className="text-lg font-semibold text-secondary-900 dark:text-secondary-100"
         >
           {formatMonthTitle(year, month)}
         </Text>
@@ -97,16 +97,18 @@ function MonthNavigator({
       <View className="flex-row items-center">
         <Pressable
           onPress={onToday}
-          className="rounded-sm px-3 py-1.5 active:bg-gray-100 dark:active:bg-gray-700 mr-1"
+          className="rounded-sm px-3 py-1.5 active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel="오늘로 이동"
           accessibilityRole="button"
           testID="schedule-today-button"
         >
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-200">오늘</Text>
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200">
+            오늘
+          </Text>
         </Pressable>
         <Pressable
           onPress={onToggleView}
-          className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700 mr-1"
+          className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel={viewMode === 'list' ? '캘린더 보기' : '목록 보기'}
           accessibilityRole="button"
           testID="schedule-view-toggle-button"
@@ -119,7 +121,7 @@ function MonthNavigator({
         </Pressable>
         <Pressable
           onPress={onNext}
-          className="p-2 rounded-sm active:bg-gray-100 dark:active:bg-gray-700"
+          className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="다음 달"
           accessibilityRole="button"
           testID="schedule-next-month-button"
@@ -157,7 +159,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           ))}
         </View>
         {/* 구분선 */}
-        <View className="h-px bg-gray-200 dark:bg-surface my-3" />
+        <View className="h-px bg-secondary-200 dark:bg-surface my-3" />
         {/* 2행: 수익 스켈레톤 */}
         <View className="flex-row justify-between items-center px-2">
           <Skeleton width={40} height={16} />
@@ -175,37 +177,37 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
       <View className="flex-row justify-around">
         {/* 지원 (applied) */}
         <View className="items-center" accessible accessibilityLabel="지원 통계">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">지원</Text>
-          <Text className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">지원</Text>
+          <Text className="text-2xl font-bold text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
+        <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
         {/* 확정 (confirmed) */}
         <View className="items-center" accessible accessibilityLabel="확정 통계">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
-          <Text className="text-2xl font-bold text-green-600 dark:text-green-400">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">확정</Text>
+          <Text className="text-2xl font-bold text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
+        <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
         {/* 완료 (completed) */}
         <View className="items-center" accessible accessibilityLabel="완료 통계">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
-          <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400">완료</Text>
+          <Text className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
         </View>
       </View>
       {/* 구분선 */}
-      <View className="h-px bg-gray-200 dark:bg-surface my-3" />
+      <View className="h-px bg-secondary-200 dark:bg-surface my-3" />
       {/* 2행: 수익 */}
       <View
         className="flex-row justify-between items-center px-2"
         accessible
         accessibilityLabel="수익 통계"
       >
-        <Text className="text-sm text-gray-500 dark:text-gray-400">수익</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">수익</Text>
         <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
           {formatCurrency(stats.thisMonthEarnings)}
         </Text>
@@ -406,7 +408,7 @@ export default function ScheduleScreen() {
   // 에러 상태
   if (error && !isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -420,7 +422,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 
@@ -473,7 +475,7 @@ export default function ScheduleScreen() {
             {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
             {selectedDateSchedules.length > 0 && (
               <View className="mt-4 px-4">
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
                 {selectedDateSchedules.map((item) => {
@@ -532,7 +534,7 @@ export default function ScheduleScreen() {
           ) : (
             // 지원(applicationId)별 그룹화된 스케줄
             <View>
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3">
                 {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
               </Text>
               {groupedByApplication.map((item) => {

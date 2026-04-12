@@ -49,12 +49,12 @@ export default function ReviewHistoryScreen() {
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-secondary-900" edges={['bottom']}>
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}
 
       {/* 탭 바 */}
-      <View className="flex-row border-b border-gray-200 dark:border-gray-700">
+      <View className="flex-row border-b border-secondary-200 dark:border-secondary-700">
         <TabButton
           label="받은 평가"
           isActive={activeTab === 'received'}
@@ -115,15 +115,15 @@ interface ScoreSummaryData {
 
 function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
   return (
-    <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-gray-800">
+    <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-secondary-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <Text className="text-2xl font-bold text-secondary-900 dark:text-secondary-100">
             {bubbleScore.score.toFixed(1)}
           </Text>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
         </View>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           총 {bubbleScore.totalReviewCount}건
         </Text>
       </View>
@@ -140,8 +140,10 @@ function StatItem({ emoji, count, label }: { emoji: string; count: number; label
   return (
     <View className="flex-row items-center gap-1">
       <Text className="text-sm">{emoji}</Text>
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{count}</Text>
-      <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
+      <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+        {count}
+      </Text>
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400">{label}</Text>
     </View>
   );
 }
@@ -164,7 +166,9 @@ function TabButton({
     >
       <Text
         className={`text-sm font-medium ${
-          isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
+          isActive
+            ? 'text-primary-600 dark:text-primary-400'
+            : 'text-secondary-500 dark:text-secondary-400'
         }`}
       >
         {label}

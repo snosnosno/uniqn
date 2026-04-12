@@ -70,7 +70,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
         >
-          <View className="flex-row items-center justify-between bg-red-600 dark:bg-red-700 px-4 py-3 rounded-lg shadow-lg">
+          <View className="flex-row items-center justify-between bg-error-600 dark:bg-error-700 px-4 py-3 rounded-lg shadow-lg">
             <View className="flex-row items-center flex-1">
               <WifiOff size={18} color="white" />
               <Text className="text-white text-sm font-medium ml-2 flex-1">{message}</Text>
@@ -100,20 +100,22 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     if (variant === 'fullscreen') {
       return (
         <View
-          className="absolute inset-0 z-50 bg-gray-900/80 items-center justify-center px-6"
+          className="absolute inset-0 z-50 bg-secondary-900/80 items-center justify-center px-6"
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
         >
           <View className="bg-white dark:bg-surface rounded-lg p-8 items-center shadow-2xl max-w-sm w-full">
-            <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-sm items-center justify-center mb-4">
+            <View className="w-20 h-20 bg-error-50 dark:bg-error-900/30 rounded-sm items-center justify-center mb-4">
               <WifiOff size={40} color="#ef4444" />
             </View>
 
-            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+            <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
               연결 끊김
             </Text>
 
-            <Text className="text-gray-600 dark:text-gray-400 text-center mb-6">{message}</Text>
+            <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6">
+              {message}
+            </Text>
 
             {showRetry && (
               <Pressable
@@ -142,7 +144,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     // 기본 배너 스타일
     return (
       <View
-        className="bg-red-600 dark:bg-red-700 px-4 py-3"
+        className="bg-error-600 dark:bg-error-700 px-4 py-3"
         accessibilityRole="alert"
         accessibilityLiveRegion="assertive"
       >

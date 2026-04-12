@@ -55,12 +55,12 @@ export function DateNavigationHeader({
   isDark,
 }: DateNavigationHeaderProps) {
   return (
-    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-gray-50 dark:bg-surface rounded-lg">
+    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-secondary-50 dark:bg-surface rounded-lg">
       <Pressable
         onPress={onPrevDate}
         disabled={!canGoPrev}
         className={`p-2 rounded-sm min-w-[44px] min-h-[44px] items-center justify-center ${
-          !canGoPrev ? 'opacity-30' : 'active:bg-gray-200 dark:active:bg-gray-700'
+          !canGoPrev ? 'opacity-30' : 'active:bg-secondary-200 dark:active:bg-secondary-700'
         }`}
         accessibilityLabel="이전 날짜"
       >
@@ -68,10 +68,10 @@ export function DateNavigationHeader({
       </Pressable>
 
       <View className="flex-1 items-center">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">
           {formatDate(parseTimestamp(workLogDate) ?? workLogDate)}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           {currentDateIndex + 1} / {totalDays}
         </Text>
       </View>
@@ -80,7 +80,7 @@ export function DateNavigationHeader({
         onPress={onNextDate}
         disabled={!canGoNext}
         className={`p-2 rounded-sm min-w-[44px] min-h-[44px] items-center justify-center ${
-          !canGoNext ? 'opacity-30' : 'active:bg-gray-200 dark:active:bg-gray-700'
+          !canGoNext ? 'opacity-30' : 'active:bg-secondary-200 dark:active:bg-secondary-700'
         }`}
         accessibilityLabel="다음 날짜"
       >

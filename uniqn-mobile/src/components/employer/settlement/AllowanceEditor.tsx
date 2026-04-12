@@ -191,7 +191,7 @@ const AllowanceItem = memo(function AllowanceItem({
             ${
               isEnabled
                 ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
-                : 'bg-transparent border-gray-300 dark:border-surface-overlay'
+                : 'bg-transparent border-secondary-300 dark:border-surface-overlay'
             }
           `}
         >
@@ -203,7 +203,9 @@ const AllowanceItem = memo(function AllowanceItem({
           <Icon size={18} color={isEnabled ? '#4F46E5' : '#9CA3AF'} />
           <Text
             className={`ml-2 text-base font-medium ${
-              isEnabled ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+              isEnabled
+                ? 'text-secondary-900 dark:text-white'
+                : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
             {config.label}
@@ -225,14 +227,14 @@ const AllowanceItem = memo(function AllowanceItem({
               className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'provided'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
-                  : 'bg-gray-100 dark:bg-surface'
+                  : 'bg-secondary-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'provided'
                     ? 'border-indigo-600 dark:border-indigo-400'
-                    : 'border-gray-400 dark:border-surface-overlay'
+                    : 'border-secondary-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'provided' && (
@@ -243,7 +245,7 @@ const AllowanceItem = memo(function AllowanceItem({
                 className={`text-sm ${
                   status === 'provided'
                     ? 'text-indigo-700 dark:text-indigo-300 font-medium'
-                    : 'text-gray-600 dark:text-gray-400'
+                    : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
                 제공
@@ -259,14 +261,14 @@ const AllowanceItem = memo(function AllowanceItem({
               className={`flex-row items-center px-3 py-1.5 rounded-sm ${
                 status === 'amount'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
-                  : 'bg-gray-100 dark:bg-surface'
+                  : 'bg-secondary-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-sm border-2 mr-2 items-center justify-center ${
                   status === 'amount'
                     ? 'border-indigo-600 dark:border-indigo-400'
-                    : 'border-gray-400 dark:border-surface-overlay'
+                    : 'border-secondary-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'amount' && (
@@ -277,7 +279,7 @@ const AllowanceItem = memo(function AllowanceItem({
                 className={`text-sm ${
                   status === 'amount'
                     ? 'text-indigo-700 dark:text-indigo-300 font-medium'
-                    : 'text-gray-600 dark:text-gray-400'
+                    : 'text-secondary-600 dark:text-secondary-400'
                 }`}
               >
                 금액
@@ -347,7 +349,9 @@ export const AllowanceEditor = memo(function AllowanceEditor({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">수당 설정</Text>
+        <Text className="mb-3 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          수당 설정
+        </Text>
       )}
 
       {/* 수당 항목들 */}
@@ -371,8 +375,8 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           <Text
             className={`ml-2 text-base font-medium ${
               allowances.additional && allowances.additional > 0
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-500 dark:text-gray-400'
+                ? 'text-secondary-900 dark:text-white'
+                : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
             추가 수당
@@ -391,21 +395,21 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           disabled={disabled}
           accessibilityLabel="추가 수당 금액"
         />
-        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-1 ml-1">
           기타 수당 금액을 직접 입력하세요
         </Text>
       </View>
 
       {/* 구분선 */}
       {showTotal && (totalAllowance > 0 || providedCount > 0) && (
-        <View className="h-px bg-gray-200 dark:bg-surface my-2" />
+        <View className="h-px bg-secondary-200 dark:bg-surface my-2" />
       )}
 
       {/* 총 수당 요약 */}
       {showTotal && (totalAllowance > 0 || providedCount > 0) && (
         <View className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-gray-600 dark:text-gray-400">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400">
               총 수당
               {workDays && workDays > 1 && <Text className="text-xs"> ({workDays}일 기준)</Text>}
             </Text>
@@ -416,7 +420,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
                 </Text>
               )}
               {providedCount > 0 && (
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                   + {providedCount}개 항목 제공
                 </Text>
               )}

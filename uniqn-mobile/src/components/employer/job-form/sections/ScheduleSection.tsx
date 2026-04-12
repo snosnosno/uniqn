@@ -76,8 +76,8 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
   return (
     <View>
       {isUrgent && (
-        <View className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <Text className="text-sm text-red-700 dark:text-red-300">
+        <View className="mb-4 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg border border-error-200 dark:border-error-800">
+          <Text className="text-sm text-error-700 dark:text-error-300">
             긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
           </Text>
         </View>
@@ -166,12 +166,12 @@ const FixedSchedule = memo(function FixedSchedule({
                   ${
                     isSelected
                       ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
-                      : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                      : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
                   }
                 `}
               >
                 <Text
-                  className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}
+                  className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-secondary-900 dark:text-white'}`}
                 >
                   {option.label}
                 </Text>
@@ -185,8 +185,10 @@ const FixedSchedule = memo(function FixedSchedule({
       <View className="mt-4">
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">출근 시간</Text>
-            {!isNegotiable && <Text className="text-sm text-red-500 ml-1">*</Text>}
+            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+              출근 시간
+            </Text>
+            {!isNegotiable && <Text className="text-sm text-error-500 ml-1">*</Text>}
           </View>
           {/* 협의 체크박스 */}
           <Pressable onPress={handleNegotiableToggle} className="flex-row items-center">
@@ -195,18 +197,18 @@ const FixedSchedule = memo(function FixedSchedule({
                 ${
                   isNegotiable
                     ? 'bg-indigo-600 border-indigo-600'
-                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                    : 'bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay'
                 }`}
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
             </View>
-            <Text className="text-sm text-gray-600 dark:text-gray-400">협의</Text>
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400">협의</Text>
           </Pressable>
         </View>
 
         {isNegotiable ? (
-          <View className="p-3 bg-gray-100 dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay">
-            <Text className="text-gray-500 dark:text-gray-400 text-center">
+          <View className="p-3 bg-secondary-100 dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay">
+            <Text className="text-secondary-500 dark:text-secondary-400 text-center">
               출근 시간은 협의 후 결정됩니다
             </Text>
           </View>
@@ -218,7 +220,9 @@ const FixedSchedule = memo(function FixedSchedule({
             error={!!errors?.startTime}
           />
         )}
-        {errors?.startTime && <Text className="mt-1 text-sm text-red-500">{errors.startTime}</Text>}
+        {errors?.startTime && (
+          <Text className="mt-1 text-sm text-error-500">{errors.startTime}</Text>
+        )}
       </View>
     </View>
   );

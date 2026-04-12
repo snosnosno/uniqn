@@ -94,15 +94,19 @@ function AccordionSection({
   children,
 }: AccordionSectionProps) {
   return (
-    <View className="border-b border-gray-100 dark:border-surface-overlay">
+    <View className="border-b border-secondary-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
-        className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50 dark:active:bg-gray-800"
+        className="flex-row items-center justify-between px-4 py-4 active:bg-secondary-50 dark:active:bg-secondary-800"
       >
         <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+          <Text className="text-base font-semibold text-secondary-900 dark:text-white">
+            {title}
+          </Text>
           {subtitle && (
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
+              {subtitle}
+            </Text>
           )}
         </View>
         {expanded ? (
@@ -132,9 +136,9 @@ function RoleSalaryItem({
   showApplyButton = true,
 }: RoleSalaryItemProps) {
   return (
-    <View className="mb-4 pb-4 border-b border-gray-100 dark:border-surface-overlay last:border-b-0 last:mb-0 last:pb-0">
+    <View className="mb-4 pb-4 border-b border-secondary-100 dark:border-surface-overlay last:border-b-0 last:mb-0 last:pb-0">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
+        <Text className="text-sm font-semibold text-secondary-900 dark:text-white">
           {getRoleLabel(role)}
         </Text>
         {showApplyButton && (
@@ -261,11 +265,11 @@ export function SettlementSettingsModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-4 rounded-md bg-gray-100 dark:bg-surface ${
+        className={`flex-1 py-4 rounded-md bg-secondary-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
-        <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 text-center">
+        <Text className="text-lg font-medium text-secondary-700 dark:text-secondary-300 text-center">
           취소
         </Text>
       </Pressable>

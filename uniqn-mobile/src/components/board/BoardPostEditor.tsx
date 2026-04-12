@@ -71,7 +71,7 @@ export function BoardPostEditor({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-gray-50 dark:bg-surface-dark"
+      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -86,7 +86,7 @@ export function BoardPostEditor({
             <Badge variant={boardType === 'tda' ? 'warning' : 'primary'} size="sm">
               {BOARD_TYPE_LABELS[boardType]}
             </Badge>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               {mode === 'create' ? '새 글 작성' : '글 수정'}
             </Text>
           </View>
@@ -114,7 +114,7 @@ export function BoardPostEditor({
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-3 text-base font-semibold text-gray-900 dark:text-gray-100">
+          <Text className="mb-3 text-base font-semibold text-secondary-900 dark:text-secondary-100">
             이미지 첨부
           </Text>
           <BoardImagePicker
@@ -160,7 +160,7 @@ export function BoardPostEditorLoading({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-gray-50 dark:bg-surface-dark"
+      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -184,12 +184,12 @@ export function BoardPostEditorLoading({
             <Skeleton width="100%" height={180} borderRadius={16} />
           </View>
 
-          <Text className="mt-4 text-sm text-gray-500 dark:text-gray-400">{title}</Text>
+          <Text className="mt-4 text-sm text-secondary-500 dark:text-secondary-400">{title}</Text>
         </Card>
 
         <Card className="mb-4">
           <Skeleton width={96} height={20} className="mb-3" />
-          <View className="rounded-lg border border-dashed border-gray-200 p-5 dark:border-surface-overlay">
+          <View className="rounded-lg border border-dashed border-secondary-200 p-5 dark:border-surface-overlay">
             <Skeleton width={52} height={52} borderRadius={26} className="mb-3" />
             <SkeletonText lines={2} lineHeight={14} lastLineWidth="55%" />
           </View>

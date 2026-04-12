@@ -157,8 +157,8 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         <Text
           className={`mb-2 text-base font-semibold ${
             isCancelled
-              ? 'text-gray-400 dark:text-gray-500 line-through'
-              : 'text-gray-900 dark:text-white'
+              ? 'text-secondary-400 dark:text-secondary-500 line-through'
+              : 'text-secondary-900 dark:text-white'
           }`}
           numberOfLines={1}
         >
@@ -169,7 +169,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           <View className="mb-2 flex-row items-center">
             <MapIcon size={14} color="#6B7280" />
             <Text
-              className="ml-1.5 flex-1 text-sm text-gray-500 dark:text-gray-400"
+              className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400"
               numberOfLines={1}
             >
               {schedule.location}
@@ -181,12 +181,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatDate(schedule.date)}
               </Text>
-              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-surface-elevated" />
+              <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatTime(schedule.startTime)}
               </Text>
             </View>
@@ -194,7 +194,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             <View className="mt-2 flex-row flex-wrap items-center">
               <View className="mr-3 flex-row items-center">
                 <BriefcaseIcon size={14} color="#6B7280" />
-                <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
               </View>
@@ -202,7 +202,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               {salaryDisplay && (
                 <View className="mr-3 flex-row items-center">
                   <BanknotesIcon size={14} color="#6B7280" />
-                  <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Text className="ml-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300">
                     {salaryDisplay}
                   </Text>
                 </View>
@@ -211,7 +211,9 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               {ownerName && (
                 <View className="flex-row items-center">
                   <UserIcon size={14} color="#9CA3AF" />
-                  <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">{ownerName}</Text>
+                  <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400">
+                    {ownerName}
+                  </Text>
                 </View>
               )}
             </View>
@@ -220,12 +222,12 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {formatDate(schedule.date)}
               </Text>
-              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-surface-elevated" />
+              <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
                 {schedule.type === STATUS.SCHEDULE.COMPLETED
                   ? timeDisplayInfo.duration
                   : confirmedTimeDisplay}
@@ -234,7 +236,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
             <View className="mt-2 flex-row items-center">
               <BriefcaseIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+              <Text className="ml-1.5 text-sm text-secondary-700 dark:text-secondary-300">
                 {getRoleDisplayName(schedule.role, schedule.customRole)}
               </Text>
             </View>
@@ -250,8 +252,8 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         )}
 
         {isCancelled && (
-          <View className="mt-3 rounded-lg bg-red-50 px-3 py-2 dark:bg-red-900/20">
-            <Text className="text-center text-xs text-red-600 dark:text-red-400">
+          <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+            <Text className="text-center text-xs text-error-600 dark:text-error-400">
               이 일정이 취소되었습니다.
             </Text>
           </View>

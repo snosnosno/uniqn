@@ -127,7 +127,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
   const inactiveBadgeBg = isDarkMode ? '#374151' : '#F3F4F6';
 
   return (
-    <View className="flex-row bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+    <View className="flex-row bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
       <Pressable
         onPress={() => onTabChange('staff')}
         className="flex-1 flex-row items-center justify-center py-4"
@@ -610,7 +610,7 @@ export default function StaffSettlementsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 정산과 근무 운영을 지원하지 않습니다."
@@ -622,10 +622,12 @@ export default function StaffSettlementsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">데이터를 불러오는 중...</Text>
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+            데이터를 불러오는 중...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -634,7 +636,7 @@ export default function StaffSettlementsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="데이터를 불러올 수 없습니다"
           message={error.message}
@@ -651,7 +653,7 @@ export default function StaffSettlementsScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 탭 헤더 */}
       <TabHeader
         activeTab={activeTab}

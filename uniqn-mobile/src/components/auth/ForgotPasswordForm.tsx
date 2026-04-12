@@ -58,11 +58,11 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           <Text className="text-3xl">{''}</Text>
         </View>
 
-        <Text className="text-lg font-bold text-gray-900 dark:text-white text-center mb-2">
+        <Text className="text-lg font-bold text-secondary-900 dark:text-white text-center mb-2">
           이메일이 발송되었습니다
         </Text>
 
-        <Text className="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center mb-6">
           {submittedEmail}로 비밀번호 재설정 링크를 발송했습니다.{'\n'}
           이메일을 확인해주세요.
         </Text>
@@ -89,7 +89,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     <View className="w-full flex-col gap-4">
       {/* 안내 문구 */}
       <View className="mb-4">
-        <Text className="text-sm text-gray-600 dark:text-gray-400 text-center">
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 text-center">
           가입하신 이메일 주소를 입력하시면{'\n'}
           비밀번호 재설정 링크를 보내드립니다.
         </Text>
@@ -97,7 +97,9 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">이메일</Text>
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          이메일
+        </Text>
         <Controller
           control={control}
           name="email"
@@ -133,7 +135,9 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 로그인 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-gray-600 dark:text-gray-400">비밀번호가 기억나셨나요? </Text>
+        <Text className="text-secondary-600 dark:text-secondary-400">
+          비밀번호가 기억나셨나요?{' '}
+        </Text>
         <Link href="/login" asChild>
           <Pressable>
             <Text className="font-medium text-primary-600 dark:text-primary-400">로그인</Text>

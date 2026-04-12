@@ -42,20 +42,27 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             {post.isLocked ? <LockIcon size={16} color="#DC2626" /> : null}
           </View>
 
-          <Text className="mb-1 text-base font-semibold text-gray-900 dark:text-gray-100">
+          <Text className="mb-1 text-base font-semibold text-secondary-900 dark:text-secondary-100">
             {post.title}
           </Text>
-          <Text className="mb-3 text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
+          <Text
+            className="mb-3 text-sm text-secondary-600 dark:text-secondary-400"
+            numberOfLines={2}
+          >
             {post.body}
           </Text>
 
           <View className="flex-row flex-wrap items-center gap-3">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">{post.authorName}</Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">{formatMetaDate(post)}</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              {post.authorName}
+            </Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+              {formatMetaDate(post)}
+            </Text>
             {showEngagementMetrics ? (
               <View className="flex-row items-center">
                 <ChatbubbleEllipsesOutlineIcon size={14} color="#6B7280" />
-                <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                   {post.commentCount}
                 </Text>
               </View>
@@ -63,7 +70,7 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             {showEngagementMetrics ? (
               <View className="flex-row items-center">
                 <HeartIcon size={14} color="#16A34A" />
-                <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                   {post.likeCount}
                 </Text>
               </View>
@@ -71,14 +78,14 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             {showEngagementMetrics ? (
               <View className="flex-row items-center">
                 <CloseCircleOutlineIcon size={14} color="#DC2626" />
-                <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                   {post.dislikeCount}
                 </Text>
               </View>
             ) : null}
             <View className="flex-row items-center">
               <EyeIcon size={14} color="#6B7280" />
-              <Text className="ml-1 text-xs text-gray-500 dark:text-gray-400">
+              <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400">
                 {post.viewCount}
               </Text>
             </View>

@@ -119,7 +119,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
       </>
@@ -136,7 +136,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
           <EmptyState
             title="오류 발생"
             description="신고 목록을 불러오는 데 실패했습니다."
@@ -157,17 +157,17 @@ export default function AdminReportsPage() {
           title: '신고 관리',
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         {/* 검색바 */}
-        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
-          <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-lg px-3 py-2">
+        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+          <View className="flex-row items-center bg-secondary-100 dark:bg-surface rounded-lg px-3 py-2">
             <SearchIcon size={20} color="#9CA3AF" />
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholder="신고자, 피신고자, 공고명 검색"
               placeholderTextColor="#9CA3AF"
-              className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
+              className="flex-1 ml-2 text-base text-secondary-900 dark:text-white"
               returnKeyType="search"
               autoCapitalize="none"
               autoCorrect={false}
@@ -183,7 +183,7 @@ export default function AdminReportsPage() {
         </View>
 
         {/* 상태 필터 */}
-        <View className="bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+        <View className="bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -195,14 +195,16 @@ export default function AdminReportsPage() {
                 key={option.value}
                 onPress={() => handleStatusFilter(option.value)}
                 className={`px-4 py-2 rounded-sm ${
-                  filters.status === option.value ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'
+                  filters.status === option.value
+                    ? 'bg-primary-600'
+                    : 'bg-secondary-200 dark:bg-surface'
                 }`}
               >
                 <Text
                   className={`text-sm font-medium ${
                     filters.status === option.value
                       ? 'text-white'
-                      : 'text-gray-700 dark:text-gray-300'
+                      : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
                   {option.label}
@@ -214,9 +216,9 @@ export default function AdminReportsPage() {
 
         {/* 확장 필터 패널 */}
         {showFilters && (
-          <View className="px-4 py-3 bg-gray-50 dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+          <View className="px-4 py-3 bg-secondary-50 dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
             {/* 심각도 필터 */}
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
               심각도
             </Text>
             <View className="flex-row flex-wrap gap-2 mb-3">
@@ -227,14 +229,14 @@ export default function AdminReportsPage() {
                   className={`px-3 py-1.5 rounded-sm ${
                     filters.severity === option.value
                       ? 'bg-primary-600'
-                      : 'bg-gray-200 dark:bg-surface'
+                      : 'bg-secondary-200 dark:bg-surface'
                   }`}
                 >
                   <Text
                     className={`text-xs font-medium ${
                       filters.severity === option.value
                         ? 'text-white'
-                        : 'text-gray-600 dark:text-gray-300'
+                        : 'text-secondary-600 dark:text-secondary-300'
                     }`}
                   >
                     {option.label}
@@ -244,7 +246,7 @@ export default function AdminReportsPage() {
             </View>
 
             {/* 신고자 유형 필터 */}
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+            <Text className="text-sm font-medium text-secondary-500 dark:text-secondary-400 mb-2">
               신고자 유형
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -259,14 +261,14 @@ export default function AdminReportsPage() {
                   className={`px-3 py-1.5 rounded-sm ${
                     filters.reporterType === option.value
                       ? 'bg-primary-600'
-                      : 'bg-gray-200 dark:bg-surface'
+                      : 'bg-secondary-200 dark:bg-surface'
                   }`}
                 >
                   <Text
                     className={`text-xs font-medium ${
                       filters.reporterType === option.value
                         ? 'text-white'
-                        : 'text-gray-600 dark:text-gray-300'
+                        : 'text-secondary-600 dark:text-secondary-300'
                     }`}
                   >
                     {option.label}
@@ -279,7 +281,7 @@ export default function AdminReportsPage() {
 
         {/* 결과 개수 */}
         <View className="px-4 py-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
             총 {filteredReports.length}건의 신고
           </Text>
         </View>
@@ -295,10 +297,10 @@ export default function AdminReportsPage() {
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">
               <AlertTriangleIcon size={48} color="#9CA3AF" />
-              <Text className="text-lg font-medium text-gray-900 dark:text-white mt-4">
+              <Text className="text-lg font-medium text-secondary-900 dark:text-white mt-4">
                 신고 없음
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1 text-center">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center">
                 해당 조건의 신고가 없습니다.
               </Text>
             </View>

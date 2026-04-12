@@ -105,10 +105,10 @@ export function DateRequirementCard({
   const canAddTimeSlot = requirement.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-secondary-200 dark:border-surface-overlay mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-secondary-100">
           {dateString ? formatDateWithDay(dateString) : '날짜 선택 필요'}
         </Text>
 
@@ -116,7 +116,7 @@ export function DateRequirementCard({
         {canRemove && (
           <Pressable
             onPress={() => onRemove(index)}
-            className="p-2 rounded-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-2 rounded-sm hover:bg-secondary-100 dark:hover:bg-secondary-700"
             accessibilityRole="button"
             accessibilityLabel="날짜 삭제"
           >
@@ -146,7 +146,7 @@ export function DateRequirementCard({
         className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
           canAddTimeSlot
             ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
-            : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
+            : 'border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface opacity-50'
         }`}
         accessibilityRole="button"
         accessibilityLabel="시간대 추가"
@@ -158,7 +158,7 @@ export function DateRequirementCard({
           className={`text-sm font-medium ${
             canAddTimeSlot
               ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-400 dark:text-gray-600'
+              : 'text-secondary-400 dark:text-secondary-600'
           }`}
         >
           시간대 추가{' '}

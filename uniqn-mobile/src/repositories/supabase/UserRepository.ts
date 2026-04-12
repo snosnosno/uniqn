@@ -435,7 +435,7 @@ export class SupabaseUserRepository implements IUserRepository {
         });
       }
 
-      // 4. 역할 업데이트
+      // 4. 서버사이드 RPC로 역할 변경 (역할 상승 공격 방지)
       const now = new Date().toISOString();
       const employerAgreements = {
         termsAgreedAt: now,
@@ -444,21 +444,12 @@ export class SupabaseUserRepository implements IUserRepository {
         liabilityWaiverVersion: input.liabilityWaiverVersion,
       };
 
-      const { data: updatedData, error: updateError } = await supabase
-        .from(TABLES.USERS)
-        .update({
-          role: 'employer',
-          employer_agreements: employerAgreements,
-          employer_registered_at: now,
-          updated_at: now,
-        })
-        .eq('id', userId)
-        .eq('role', currentRole) // 낙관적 잠금: 조회 시 role과 동일해야 업데이트
-        .select(USER_COLUMNS)
-        .single();
+      const { error: rpcError } = await supabase.rpc('register_as_employer', {
+        p_employer_agreements: employerAgreements,
+      });
 
-      if (updateError) {
-        handleSupabaseError(updateError, { operation: '구인자 등록', table: TABLES.USERS });
+      if (rpcError) {
+        handleSupabaseError(rpcError, { operation: '구인자 등록 RPC', table: TABLES.USERS });
       }
 
       // 5. 동의 기록 저장 (별도 테이블)
@@ -476,8 +467,14 @@ export class SupabaseUserRepository implements IUserRepository {
         logger.warn('동의 기록 저장 실패 (비치명적)', { userId, error: consentError.message });
       }
 
-      const profile = toUserProfile(updatedData as Record<string, unknown>);
-      return profile;
+      // 6. 변경된 프로필 재조회
+      const updatedProfile = await this.getById(userId);
+      if (!updatedProfile) {
+        throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
+          userMessage: '프로필 조회 실패',
+        });
+      }
+      return updatedProfile;
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '구인자 등록', table: TABLES.USERS });
@@ -565,49 +562,23 @@ export class SupabaseUserRepository implements IUserRepository {
 
   async permanentlyDeleteWithBatch(userId: string): Promise<void> {
     try {
-      logger.info('계정 완전 삭제', { userId });
+      logger.info('계정 완전 삭제 (RPC)', { userId });
 
-      // 1. 지원 내역 익명화 + 근무 기록 익명화 + 알림 삭제 (병렬)
-      const [appResult, workLogResult, notifResult] = await Promise.all([
-        // 지원 내역 익명화
-        supabase
-          .from(TABLES.APPLICATIONS)
-          .update({
-            applicant_id: '[deleted]',
-            applicant_name: '[탈퇴한 사용자]',
-            applicant_phone: null,
-          })
-          .eq('applicant_id', userId),
-        // 근무 기록 익명화
-        supabase
-          .from(TABLES.WORK_LOGS)
-          .update({
-            staff_id: '[deleted]',
-            staff_name: '[탈퇴한 사용자]',
-          })
-          .eq('staff_id', userId),
-        // 알림 삭제
-        supabase.from(TABLES.NOTIFICATIONS).delete().eq('recipient_id', userId),
-      ]);
+      // 서버사이드 원자적 트랜잭션으로 익명화 + 삭제 처리
+      const { data: result, error: rpcError } = await supabase.rpc('permanently_delete_user', {
+        p_user_id: userId,
+      });
 
-      if (appResult.error) {
-        logger.warn('지원 내역 익명화 실패', { userId, error: appResult.error.message });
-      }
-      if (workLogResult.error) {
-        logger.warn('근무 기록 익명화 실패', { userId, error: workLogResult.error.message });
-      }
-      if (notifResult.error) {
-        logger.warn('알림 삭제 실패', { userId, error: notifResult.error.message });
+      if (rpcError) {
+        handleSupabaseError(rpcError, { operation: '계정 완전 삭제 RPC', table: TABLES.USERS });
       }
 
-      // 2. 사용자 문서 삭제
-      const { error: deleteError } = await supabase.from(TABLES.USERS).delete().eq('id', userId);
-
-      if (deleteError) {
-        handleSupabaseError(deleteError, { operation: '사용자 삭제', table: TABLES.USERS });
-      }
-
-      logger.info('계정 완전 삭제 완료', { userId });
+      logger.info('계정 완전 삭제 완료 (RPC)', {
+        userId,
+        anonymizedApplications: result?.anonymizedApplications,
+        anonymizedWorkLogs: result?.anonymizedWorkLogs,
+        deletedNotifications: result?.deletedNotifications,
+      });
     } catch (error) {
       if (isAppError(error)) throw error;
       logger.error('계정 완전 삭제 실패', toError(error), { userId });

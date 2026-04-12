@@ -43,29 +43,33 @@ export function InquiryCard({
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             <View className="mb-2 flex-row items-center gap-2">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">{categoryLabel}</Text>
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400">
+                {categoryLabel}
+              </Text>
               <InquiryStatusBadge status={inquiry.status} size="sm" />
             </View>
 
             <Text
-              className="mb-1 text-base font-medium text-gray-900 dark:text-gray-100"
+              className="mb-1 text-base font-medium text-secondary-900 dark:text-secondary-100"
               numberOfLines={2}
             >
               {inquiry.subject}
             </Text>
 
             {showAuthor && (
-              <Text className="mb-1 text-sm text-gray-600 dark:text-gray-400">
+              <Text className="mb-1 text-sm text-secondary-600 dark:text-secondary-400">
                 {inquiry.userName} ({inquiry.userEmail})
               </Text>
             )}
 
-            <Text className="text-xs text-gray-400 dark:text-gray-500">{formattedDate}</Text>
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500">
+              {formattedDate}
+            </Text>
 
             {inquiry.status === STATUS.INQUIRY.CLOSED && inquiry.response && (
               <View className="mt-2 flex-row items-center">
-                <View className="mr-1 h-2 w-2 rounded-sm bg-green-500" />
-                <Text className="text-xs text-green-600 dark:text-green-400">응답 완료</Text>
+                <View className="mr-1 h-2 w-2 rounded-sm bg-success-500" />
+                <Text className="text-xs text-success-600 dark:text-success-400">응답 완료</Text>
               </View>
             )}
           </View>

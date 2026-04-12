@@ -21,7 +21,7 @@ export default function BoardListScreen() {
 
   if (!isValidBoardType) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="게시판" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -35,14 +35,14 @@ export default function BoardListScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader
         title={BOARD_TYPE_LABELS[boardType]}
         rightAction={
           isWritable ? (
             <Pressable
               onPress={() => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)}
-              className="rounded-sm p-2 active:bg-gray-100 dark:active:bg-surface"
+              className="rounded-sm p-2 active:bg-secondary-100 dark:active:bg-surface"
               accessibilityRole="button"
               accessibilityLabel="글쓰기"
             >
@@ -77,7 +77,7 @@ export default function BoardListScreen() {
           ListEmptyComponent={
             isLoading ? (
               <View className="flex-1 items-center justify-center py-20">
-                <Text className="text-sm text-gray-500 dark:text-gray-400">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400">
                   게시글을 불러오는 중이에요...
                 </Text>
               </View>

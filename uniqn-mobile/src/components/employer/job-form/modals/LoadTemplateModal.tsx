@@ -64,14 +64,20 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
     : null;
 
   return (
-    <View className="mb-3 rounded-md border border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
+    <View className="mb-3 rounded-md border border-secondary-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface">
       <View className="mb-2 flex-row items-start justify-between">
         <View className="mr-2 flex-1">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
+          <Text
+            className="text-base font-semibold text-secondary-900 dark:text-white"
+            numberOfLines={1}
+          >
             {name}
           </Text>
           {description ? (
-            <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400" numberOfLines={1}>
+            <Text
+              className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400"
+              numberOfLines={1}
+            >
               {description}
             </Text>
           ) : null}
@@ -99,13 +105,13 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       </View>
 
       <View className="mb-3 flex-row flex-wrap gap-2">
-        <View className="rounded-md bg-gray-100 px-2.5 py-1 dark:bg-surface">
-          <Text className="text-xs text-gray-600 dark:text-gray-300">{location}</Text>
+        <View className="rounded-md bg-secondary-100 px-2.5 py-1 dark:bg-surface">
+          <Text className="text-xs text-secondary-600 dark:text-secondary-300">{location}</Text>
         </View>
 
         {salaryText ? (
-          <View className="rounded-md bg-green-100 px-2.5 py-1 dark:bg-green-900/40">
-            <Text className="text-xs text-green-700 dark:text-green-300">{salaryText}</Text>
+          <View className="rounded-md bg-success-50 px-2.5 py-1 dark:bg-success-900/40">
+            <Text className="text-xs text-success-700 dark:text-success-300">{salaryText}</Text>
           </View>
         ) : null}
 
@@ -117,22 +123,22 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       </View>
 
       {isUnsupported ? (
-        <View className="mb-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/30">
-          <Text className="text-xs text-amber-700 dark:text-amber-300">
+        <View className="mb-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
+          <Text className="text-xs text-warning-700 dark:text-warning-300">
             fixed 템플릿은 V3 canonical 전환 동안 불러올 수 없습니다.
           </Text>
         </View>
       ) : null}
 
-      <View className="flex-row items-center justify-between border-t border-gray-100 pt-2 dark:border-surface-overlay">
-        <Text className="text-xs text-gray-400 dark:text-gray-500">
+      <View className="flex-row items-center justify-between border-t border-secondary-100 pt-2 dark:border-surface-overlay">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500">
           {formatDate(createdAt)} 생성 {usageCount ? `/ ${usageCount}회 사용` : ''}
         </Text>
         <Pressable
           onPress={onLoad}
           disabled={isLoading || isUnsupported}
           className={`rounded-lg px-4 py-2 ${
-            isLoading || isUnsupported ? 'bg-gray-300' : 'bg-primary-600'
+            isLoading || isUnsupported ? 'bg-secondary-300' : 'bg-primary-600'
           }`}
           accessibilityRole="button"
           accessibilityLabel="템플릿 불러오기"
@@ -153,10 +159,10 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
 function EmptyState() {
   return (
     <View className="items-center justify-center py-12">
-      <Text className="mb-2 text-center text-gray-500 dark:text-gray-400">
+      <Text className="mb-2 text-center text-secondary-500 dark:text-secondary-400">
         저장한 템플릿이 없습니다
       </Text>
-      <Text className="text-center text-sm text-gray-400 dark:text-gray-500">
+      <Text className="text-center text-sm text-secondary-400 dark:text-secondary-500">
         공고 작성 후 템플릿으로 저장해 보세요
       </Text>
     </View>
@@ -205,7 +211,9 @@ export function LoadTemplateModal({
         {templatesLoading ? (
           <View className="items-center justify-center py-12">
             <ActivityIndicator size="large" color="#D4AF37" />
-            <Text className="mt-3 text-gray-500 dark:text-gray-400">템플릿을 불러오는 중...</Text>
+            <Text className="mt-3 text-secondary-500 dark:text-secondary-400">
+              템플릿을 불러오는 중...
+            </Text>
           </View>
         ) : null}
 
@@ -229,8 +237,8 @@ export function LoadTemplateModal({
               nestedScrollEnabled
             />
 
-            <View className="mt-3 rounded-lg bg-amber-50 p-3 dark:bg-amber-900/30">
-              <Text className="text-center text-xs text-amber-700 dark:text-amber-300">
+            <View className="mt-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
+              <Text className="text-center text-xs text-warning-700 dark:text-warning-300">
                 템플릿을 불러온 뒤에는 날짜를 다시 설정해 주세요.
               </Text>
             </View>

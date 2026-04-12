@@ -119,7 +119,7 @@ function WebTimePicker({
             className={`text-lg ${
               isSelected
                 ? 'text-primary-600 dark:text-primary-400 font-bold'
-                : 'text-gray-700 dark:text-gray-300'
+                : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
             {hour.toString().padStart(2, '0')}
@@ -152,7 +152,7 @@ function WebTimePicker({
             className={`text-lg ${
               isSelected
                 ? 'text-primary-600 dark:text-primary-400 font-bold'
-                : 'text-gray-700 dark:text-gray-300'
+                : 'text-secondary-700 dark:text-secondary-300'
             }`}
           >
             {minute.toString().padStart(2, '0')}
@@ -198,11 +198,11 @@ function WebTimePicker({
   return (
     <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
-          <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
           <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
             확인
@@ -213,11 +213,13 @@ function WebTimePicker({
       {/* 라벨 */}
       <View className="flex-row px-4 pt-3">
         <View className="flex-1 items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 font-medium">시간</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-medium">
+            시간
+          </Text>
         </View>
         <View className="w-8" />
         <View className="flex-1 items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 font-medium">분</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-medium">분</Text>
         </View>
       </View>
 
@@ -238,7 +240,7 @@ function WebTimePicker({
 
         {/* 구분자 */}
         <View className="w-8 items-center justify-center">
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">:</Text>
+          <Text className="text-2xl font-bold text-secondary-900 dark:text-white">:</Text>
         </View>
 
         {/* 분 리스트 */}
@@ -370,11 +372,11 @@ function NativeWheelPicker({
   return (
     <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-secondary-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
-          <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
           <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
             확인
@@ -389,7 +391,7 @@ function NativeWheelPicker({
       >
         {/* 선택 영역 하이라이트 */}
         <View
-          className="absolute left-4 right-4 bg-gray-100 dark:bg-surface rounded-lg"
+          className="absolute left-4 right-4 bg-secondary-100 dark:bg-surface rounded-lg"
           style={{
             top: ITEM_HEIGHT * 2,
             height: ITEM_HEIGHT,
@@ -435,8 +437,8 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-gray-900 dark:text-white'
-                        : 'text-gray-400 dark:text-gray-500'
+                        ? 'font-bold text-secondary-900 dark:text-white'
+                        : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
                     {hour.toString().padStart(2, '0')}
@@ -453,7 +455,7 @@ function NativeWheelPicker({
         </View>
 
         {/* 구분자 */}
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mx-2">:</Text>
+        <Text className="text-2xl font-bold text-secondary-900 dark:text-white mx-2">:</Text>
 
         {/* 분 휠 */}
         <View className="flex-1" style={{ height: PICKER_HEIGHT }}>
@@ -492,8 +494,8 @@ function NativeWheelPicker({
                   <Text
                     className={`text-xl ${
                       isSelected
-                        ? 'font-bold text-gray-900 dark:text-white'
-                        : 'text-gray-400 dark:text-gray-500'
+                        ? 'font-bold text-secondary-900 dark:text-white'
+                        : 'text-secondary-400 dark:text-secondary-500'
                     }`}
                   >
                     {minute.toString().padStart(2, '0')}

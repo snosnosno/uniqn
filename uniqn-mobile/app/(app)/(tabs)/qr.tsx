@@ -72,11 +72,13 @@ export default function QRScreen() {
   const actionLabel = selectedAction === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <View className="bg-white px-4 py-3 dark:bg-surface">
-        <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">QR 스캔</Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <Text className="text-xl font-bold text-secondary-900 dark:text-secondary-100">
+          QR 스캔
+        </Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
           구인자의 QR 코드를 스캔하여 출퇴근하세요
         </Text>
       </View>
@@ -90,7 +92,9 @@ export default function QRScreen() {
           <View className="flex-row items-center">
             <View
               className={`w-12 h-12 rounded-sm items-center justify-center ${
-                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-surface'
+                isWorking
+                  ? 'bg-success-50 dark:bg-success-900/30'
+                  : 'bg-secondary-100 dark:bg-surface'
               }`}
             >
               {isWorking ? (
@@ -100,12 +104,12 @@ export default function QRScreen() {
               )}
             </View>
             <View className="ml-4 flex-1">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">현재 상태</Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">현재 상태</Text>
               <Text
                 className={`text-lg font-semibold ${
                   isWorking
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-gray-600 dark:text-gray-300'
+                    ? 'text-success-600 dark:text-success-400'
+                    : 'text-secondary-600 dark:text-secondary-300'
                 }`}
               >
                 {isWorking ? '근무 중' : '출근 전'}
@@ -114,14 +118,14 @@ export default function QRScreen() {
             <View
               className={`px-3 py-1.5 rounded-sm ${
                 isWorking
-                  ? 'bg-green-100 dark:bg-green-900/30'
+                  ? 'bg-success-50 dark:bg-success-900/30'
                   : 'bg-primary-100 dark:bg-primary-900/30'
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
                   isWorking
-                    ? 'text-green-700 dark:text-green-300'
+                    ? 'text-success-700 dark:text-success-300'
                     : 'text-primary-700 dark:text-primary-300'
                 }`}
               >
@@ -133,15 +137,15 @@ export default function QRScreen() {
 
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
-          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface">
+          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface">
             <ScanIcon size={80} color="#9CA3AF" />
           </View>
 
-          <Text className="text-center text-xl font-bold text-gray-900 dark:text-gray-100">
+          <Text className="text-center text-xl font-bold text-secondary-900 dark:text-secondary-100">
             QR 코드 스캔
           </Text>
 
-          <Text className="mt-3 text-center text-base text-gray-500 dark:text-gray-400 px-4 leading-6">
+          <Text className="mt-3 text-center text-base text-secondary-500 dark:text-secondary-400 px-4 leading-6">
             구인자가 보여주는 QR 코드를 스캔하여{'\n'}
             {actionLabel}을 완료하세요
           </Text>
@@ -163,7 +167,7 @@ export default function QRScreen() {
 
           {/* 안내 문구 */}
           <View className="mt-6 px-4">
-            <Text className="text-center text-xs text-gray-400 dark:text-gray-500">
+            <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500">
               QR 코드는 구인자가 현장에서 생성합니다.{'\n'}
               스캔 후 자동으로 출퇴근이 처리됩니다.
             </Text>

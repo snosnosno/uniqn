@@ -39,7 +39,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay active:opacity-80"
     >
       {/* Header: Title + Badges */}
       <View className="flex-row items-start justify-between mb-2">
@@ -57,8 +57,10 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           )}
 
           {/* Category Badge */}
-          <View className="px-2 py-0.5 rounded bg-gray-100 dark:bg-surface">
-            <Text className="text-xs text-gray-600 dark:text-gray-400">{categoryLabel}</Text>
+          <View className="px-2 py-0.5 rounded bg-secondary-100 dark:bg-surface">
+            <Text className="text-xs text-secondary-600 dark:text-secondary-400">
+              {categoryLabel}
+            </Text>
           </View>
         </View>
 
@@ -70,14 +72,14 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
       {/* Title */}
       <Text
-        className="text-base font-semibold text-gray-900 dark:text-white mb-1"
+        className="text-base font-semibold text-secondary-900 dark:text-white mb-1"
         numberOfLines={2}
       >
         {announcement.title}
       </Text>
 
       {/* Content Preview */}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3" numberOfLines={2}>
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3" numberOfLines={2}>
         {announcement.content}
       </Text>
 
@@ -87,20 +89,20 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           {/* Author */}
           <View className="flex-row items-center">
             <PersonOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-            <Text className="text-xs text-gray-400 ml-1">{announcement.authorName}</Text>
+            <Text className="text-xs text-secondary-400 ml-1">{announcement.authorName}</Text>
           </View>
 
           {/* View Count */}
           <View className="flex-row items-center">
             <EyeOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-            <Text className="text-xs text-gray-400 ml-1">
+            <Text className="text-xs text-secondary-400 ml-1">
               {announcement.viewCount.toLocaleString()}
             </Text>
           </View>
         </View>
 
         {/* Date */}
-        <Text className="text-xs text-gray-400">
+        <Text className="text-xs text-secondary-400">
           {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && announcement.publishedAt
             ? formatDateKorean(announcement.publishedAt) || '-'
             : announcement.createdAt
@@ -111,9 +113,9 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
       {/* Target Audience Indicator */}
       {announcement.targetAudience.type === 'roles' && (
-        <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
+        <View className="flex-row items-center mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
           <PeopleOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-          <Text className="text-xs text-gray-400 ml-1">
+          <Text className="text-xs text-secondary-400 ml-1">
             대상:{' '}
             {announcement.targetAudience.roles
               ?.map((role) => {

@@ -51,7 +51,7 @@ const SentimentButton = React.memo(function SentimentButton({
       className={`flex-1 items-center rounded-md border-2 px-3 py-4 ${
         isSelected
           ? `${colors.bg} ${colors.border} ${colors.darkBg}`
-          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+          : 'border-secondary-200 bg-white dark:border-secondary-700 dark:bg-secondary-800'
       }`}
       accessibilityLabel={SENTIMENT_LABELS[sentiment]}
       accessibilityRole="radio"
@@ -60,7 +60,7 @@ const SentimentButton = React.memo(function SentimentButton({
       <Text className="mb-1 text-2xl">{SENTIMENT_EMOJI[sentiment]}</Text>
       <Text
         className={`text-sm font-medium ${
-          isSelected ? colors.text : 'text-gray-600 dark:text-gray-400'
+          isSelected ? colors.text : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >
         {SENTIMENT_LABELS[sentiment]}

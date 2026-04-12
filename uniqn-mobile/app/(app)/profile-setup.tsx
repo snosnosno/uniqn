@@ -95,10 +95,10 @@ export default function ProfileSetupScreen() {
         <View className="flex-1 p-4">
           {/* 헤더 */}
           <View className="mb-6">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            <Text className="text-2xl font-bold text-secondary-900 dark:text-white mb-2">
               프로필 설정
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
               서비스 이용을 위해 프로필을 완성해주세요.
             </Text>
           </View>

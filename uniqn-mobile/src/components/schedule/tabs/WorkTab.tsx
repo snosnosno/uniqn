@@ -50,11 +50,13 @@ interface TimeBoxProps {
 
 function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
   return (
-    <View className="flex-1 items-center py-3 bg-gray-50 dark:bg-surface/50 rounded-lg">
-      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
+    <View className="flex-1 items-center py-3 bg-secondary-50 dark:bg-surface/50 rounded-lg">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
       <Text
         className={`text-base font-semibold ${
-          isHighlight ? 'text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-white'
+          isHighlight
+            ? 'text-primary-600 dark:text-primary-400'
+            : 'text-secondary-900 dark:text-white'
         }`}
       >
         {value}
@@ -90,8 +92,8 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
       <View className="py-6 items-center">
-        <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-md p-4 w-full">
-          <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
+        <View className="bg-warning-50 dark:bg-warning-900/20 rounded-md p-4 w-full">
+          <Text className="text-sm text-warning-700 dark:text-warning-300 text-center">
             지원이 확정되면 근무 정보를 확인할 수 있습니다.
           </Text>
         </View>
@@ -103,8 +105,8 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-6 items-center">
-        <View className="bg-red-50 dark:bg-red-900/20 rounded-md p-4 w-full">
-          <Text className="text-sm text-red-600 dark:text-red-400 text-center">
+        <View className="bg-error-50 dark:bg-error-900/20 rounded-md p-4 w-full">
+          <Text className="text-sm text-error-600 dark:text-error-400 text-center">
             취소된 스케줄입니다.
           </Text>
         </View>
@@ -128,10 +130,12 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       <View className="mb-5">
         <View className="flex-row items-center mb-2">
           <BriefcaseIcon size={18} color="#6B7280" />
-          <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">역할</Text>
+          <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
+            역할
+          </Text>
         </View>
         <View className="ml-6">
-          <Text className="text-base text-gray-900 dark:text-white font-medium">
+          <Text className="text-base text-secondary-900 dark:text-white font-medium">
             {getRoleDisplayName(schedule.role, schedule.customRole)}
           </Text>
         </View>
@@ -142,7 +146,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
             <PhoneIcon size={18} color="#6B7280" />
-            <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
               구인자 연락처
             </Text>
           </View>
@@ -166,7 +170,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center">
             <ClockIcon size={18} color="#6B7280" />
-            <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            <Text className="ml-2 text-sm font-semibold text-secondary-700 dark:text-secondary-300">
               출퇴근 기록
             </Text>
           </View>
@@ -206,7 +210,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'}
           />
           <Text
-            className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}
+            className={`ml-2 font-semibold ${isWorking ? 'text-secondary-900 dark:text-secondary-100' : 'text-white'}`}
           >
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>

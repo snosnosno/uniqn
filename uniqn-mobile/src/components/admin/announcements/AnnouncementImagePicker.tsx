@@ -118,7 +118,7 @@ export function AnnouncementImagePicker({
             marginBottom: IMAGE_GAP,
           }}
         >
-          <View className="w-full h-full rounded-md overflow-hidden border-2 border-gray-200 dark:border-surface-overlay">
+          <View className="w-full h-full rounded-md overflow-hidden border-2 border-secondary-200 dark:border-surface-overlay">
             {/* 이미지 */}
             <Image
               source={{ uri: item.url }}
@@ -206,11 +206,13 @@ export function AnnouncementImagePicker({
             height: imageSize,
             marginBottom: IMAGE_GAP,
           }}
-          className="rounded-md border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
+          className="rounded-md border-2 border-dashed border-secondary-300 dark:border-surface-overlay items-center justify-center bg-secondary-50 dark:bg-surface/50 active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="이미지 추가"
         >
           <AddIcon size={32} color="#9CA3AF" />
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">이미지 추가</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+            이미지 추가
+          </Text>
         </Pressable>
       ) : null,
     [canAddMore, imageSize, onAddImages]
@@ -220,10 +222,10 @@ export function AnnouncementImagePicker({
     <View className="w-full">
       {/* 안내 텍스트 */}
       <View className="mb-3 px-1">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {images.length}/{MAX_ANNOUNCEMENT_IMAGES}장 · 권장 1200x675px (16:9)
         </Text>
-        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-0.5">
           자동으로 1200px로 리사이징 · 최대 5MB · ↑↓ 버튼으로 순서 변경
         </Text>
       </View>
@@ -250,8 +252,8 @@ export function AnnouncementImagePicker({
             items-center justify-center
             ${
               disabled || isUploading
-                ? 'bg-gray-100 dark:bg-surface border-gray-300 dark:border-surface-overlay'
-                : 'bg-gray-50 dark:bg-surface/50 border-gray-300 dark:border-surface-overlay active:bg-gray-100 dark:active:bg-gray-700'
+                ? 'bg-secondary-100 dark:bg-surface border-secondary-300 dark:border-surface-overlay'
+                : 'bg-secondary-50 dark:bg-surface/50 border-secondary-300 dark:border-surface-overlay active:bg-secondary-100 dark:active:bg-secondary-700'
             }
           `}
             accessibilityLabel="이미지 선택"
@@ -259,19 +261,19 @@ export function AnnouncementImagePicker({
             {isUploading ? (
               <View className="items-center">
                 <ActivityIndicator size="large" color="#D4AF37" />
-                <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-2 text-sm text-secondary-500 dark:text-secondary-400">
                   업로드 중... {uploadProgress}%
                 </Text>
               </View>
             ) : (
               <View className="items-center">
-                <View className="w-14 h-14 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center mb-2">
+                <View className="w-14 h-14 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-2">
                   <ImagesOutlineIcon size={28} color="#9CA3AF" />
                 </View>
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
                   이미지를 선택하세요
                 </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
                   최대 {MAX_ANNOUNCEMENT_IMAGES}장 · JPG, PNG
                 </Text>
               </View>
@@ -283,7 +285,7 @@ export function AnnouncementImagePicker({
       {/* 업로드 진행률 바 */}
       {isUploading && uploadProgress > 0 && (
         <View className="mt-2">
-          <View className="h-1.5 bg-gray-200 dark:bg-surface rounded-sm overflow-hidden">
+          <View className="h-1.5 bg-secondary-200 dark:bg-surface rounded-sm overflow-hidden">
             <View
               className="h-full bg-primary-600 rounded-sm"
               style={{ width: `${uploadProgress}%` }}

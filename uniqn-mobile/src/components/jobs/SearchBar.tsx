@@ -46,7 +46,7 @@ export const SearchBar = memo(function SearchBar({
 
   return (
     <View className="bg-white px-4 pb-2 dark:bg-surface" accessibilityRole="search">
-      <View className="flex-row items-center rounded-lg bg-gray-100 px-3 dark:bg-surface-elevated">
+      <View className="flex-row items-center rounded-lg bg-secondary-100 px-3 dark:bg-surface-elevated">
         <SearchIcon size={20} color={placeholderColor} />
 
         <TextInput
@@ -59,7 +59,7 @@ export const SearchBar = memo(function SearchBar({
           autoCorrect={false}
           autoCapitalize="none"
           onSubmitEditing={() => Keyboard.dismiss()}
-          className="ml-2 flex-1 py-2.5 text-base text-gray-900 dark:text-gray-100"
+          className="ml-2 flex-1 py-2.5 text-base text-secondary-900 dark:text-secondary-100"
           accessibilityLabel="공고 검색"
           accessibilityHint="제목 또는 장소를 입력하여 공고를 검색합니다"
         />

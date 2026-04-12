@@ -127,18 +127,18 @@ export function QRCodeScanner({
 
     if (!permission.granted) {
       return (
-        <SafeAreaView className="flex-1 bg-gray-900" edges={['top', 'bottom']}>
+        <SafeAreaView className="flex-1 bg-secondary-900" edges={['top', 'bottom']}>
           <View className="flex-1 justify-center items-center p-6">
             <ScanIcon size={64} color="#6B7280" />
             <Text className="text-white text-xl font-bold mt-4 text-center">
               카메라 권한이 필요합니다
             </Text>
-            <Text className="text-gray-400 text-center mt-2 mb-6">
+            <Text className="text-secondary-400 text-center mt-2 mb-6">
               QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
             </Text>
             <Button onPress={requestPermission}>권한 허용하기</Button>
             <Pressable onPress={onClose} className="mt-4">
-              <Text className="text-gray-400">닫기</Text>
+              <Text className="text-secondary-400">닫기</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -162,7 +162,7 @@ export function QRCodeScanner({
             className="w-10 h-10 items-center justify-center rounded-sm"
             accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
           >
-            <Text className={flashEnabled ? 'text-yellow-400' : 'text-white'}>
+            <Text className={flashEnabled ? 'text-warning-400' : 'text-white'}>
               {flashEnabled ? '' : ''}
             </Text>
           </Pressable>
@@ -214,11 +214,11 @@ export function QRCodeScanner({
             {/* 안내 문구 / 에러 표시 */}
             {scanError ? (
               <View className="mt-6 px-8 items-center">
-                <View className="bg-red-900/80 rounded-md p-4 w-full">
-                  <Text className="text-red-300 text-center font-semibold mb-1">스캔 실패</Text>
+                <View className="bg-error-900/80 rounded-md p-4 w-full">
+                  <Text className="text-error-300 text-center font-semibold mb-1">스캔 실패</Text>
                   <Text className="text-white text-center text-sm">{scanError.message}</Text>
                   {scanError.isRetryable && (
-                    <Text className="text-gray-400 text-center text-xs mt-2">
+                    <Text className="text-secondary-400 text-center text-xs mt-2">
                       다시 스캔하거나 새 QR 코드를 요청하세요
                     </Text>
                   )}

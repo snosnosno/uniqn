@@ -85,13 +85,16 @@ export function AccordionItem({
           {icon && <View className="mr-3">{icon}</View>}
           <View className="flex-1">
             <Text
-              className="text-base font-medium text-gray-900 dark:text-gray-100"
+              className="text-base font-medium text-secondary-900 dark:text-secondary-100"
               numberOfLines={2}
             >
               {title}
             </Text>
             {subtitle && (
-              <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400" numberOfLines={1}>
+              <Text
+                className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400"
+                numberOfLines={1}
+              >
                 {subtitle}
               </Text>
             )}
@@ -171,7 +174,7 @@ export function AccordionGroup({
               expanded: isExpanded,
               onToggle: (expanded: boolean) => handleToggle(index, expanded),
             })}
-            {showDivider && !isLast && <View className="h-px bg-gray-200 dark:bg-surface" />}
+            {showDivider && !isLast && <View className="h-px bg-secondary-200 dark:bg-surface" />}
           </View>
         );
       })}

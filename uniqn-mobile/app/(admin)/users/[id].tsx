@@ -39,12 +39,12 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-surface-overlay">
+    <View className="flex-row items-center py-3 border-b border-secondary-100 dark:border-surface-overlay">
       <View className="w-10">{icon}</View>
       <View className="flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">{label}</Text>
         {typeof value === 'string' ? (
-          <Text className="text-base text-gray-900 dark:text-white">{value}</Text>
+          <Text className="text-base text-secondary-900 dark:text-white">{value}</Text>
         ) : (
           value
         )}
@@ -148,16 +148,18 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 정보를 불러오는 중...</Text>
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          사용자 정보를 불러오는 중...
+        </Text>
       </View>
     );
   }
 
   if (error || !user) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <EmptyState
           title="사용자를 찾을 수 없음"
           description="요청하신 사용자 정보를 찾을 수 없습니다."
@@ -170,33 +172,35 @@ export default function AdminUserDetailPage() {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-surface-dark"
+      className="flex-1 bg-secondary-50 dark:bg-surface-dark"
       refreshControl={
         <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#D4AF37" />
       }
     >
       {/* Profile Header */}
-      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-200 dark:border-surface-overlay">
+      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-secondary-200 dark:border-surface-overlay">
         {user.photoURL ? (
           <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
         ) : (
-          <View className="w-20 h-20 rounded-sm bg-gray-200 dark:bg-surface items-center justify-center mb-3">
+          <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
             <UserIcon size={40} color="#9CA3AF" />
           </View>
         )}
-        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">{user.name}</Text>
+        <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-1">
+          {user.name}
+        </Text>
         <View className="flex-row items-center">
           <Badge variant={getRoleBadgeVariant(user.role)} size="md">
             {getRoleLabel(user.role)}
           </Badge>
           {!user.isActive && (
-            <View className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded">
-              <Text className="text-xs text-red-600 dark:text-red-400">비활성</Text>
+            <View className="ml-2 px-2 py-1 bg-error-50 dark:bg-error-900/30 rounded">
+              <Text className="text-xs text-error-600 dark:text-error-400">비활성</Text>
             </View>
           )}
           {user.isVerified && (
-            <View className="ml-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">
-              <Text className="text-xs text-green-600 dark:text-green-400">인증됨</Text>
+            <View className="ml-2 px-2 py-1 bg-success-50 dark:bg-success-900/30 rounded">
+              <Text className="text-xs text-success-600 dark:text-success-400">인증됨</Text>
             </View>
           )}
         </View>
@@ -204,7 +208,7 @@ export default function AdminUserDetailPage() {
 
       {/* Basic Info */}
       <View className="bg-white dark:bg-surface mt-3 px-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           기본 정보
         </Text>
         <InfoRow
@@ -246,10 +250,10 @@ export default function AdminUserDetailPage() {
 
       {/* Role Management */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           역할 관리
         </Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mt-3 mb-3">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3">
           사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
         </Text>
         {ROLE_OPTIONS.map((option) => (
@@ -260,7 +264,7 @@ export default function AdminUserDetailPage() {
               'flex-row items-center p-3 rounded-lg mb-2 border ' +
               ((selectedRole ?? user.role) === option.role
                 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-gray-200 dark:border-surface-overlay')
+                : 'border-secondary-200 dark:border-surface-overlay')
             }
           >
             <View
@@ -268,7 +272,7 @@ export default function AdminUserDetailPage() {
                 'w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ' +
                 ((selectedRole ?? user.role) === option.role
                   ? 'border-primary-500'
-                  : 'border-gray-300 dark:border-surface-overlay')
+                  : 'border-secondary-300 dark:border-surface-overlay')
               }
             >
               {(selectedRole ?? user.role) === option.role && (
@@ -276,10 +280,12 @@ export default function AdminUserDetailPage() {
               )}
             </View>
             <View className="flex-1">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">
+              <Text className="text-base font-medium text-secondary-900 dark:text-white">
                 {option.label}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">{option.description}</Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+                {option.description}
+              </Text>
             </View>
           </Pressable>
         ))}
@@ -296,7 +302,7 @@ export default function AdminUserDetailPage() {
 
       {/* Account Actions */}
       <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
           계정 관리
         </Text>
         <View className="mt-4">
@@ -305,7 +311,9 @@ export default function AdminUserDetailPage() {
             disabled={setActiveMutation.isPending}
             className={
               'py-3 px-4 rounded-lg items-center ' +
-              (user.isActive ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20')
+              (user.isActive
+                ? 'bg-error-50 dark:bg-error-900/20'
+                : 'bg-success-50 dark:bg-success-900/20')
             }
           >
             {setActiveMutation.isPending ? (
@@ -314,15 +322,15 @@ export default function AdminUserDetailPage() {
               <Text
                 className={
                   user.isActive
-                    ? 'text-red-600 dark:text-red-400 font-medium'
-                    : 'text-green-600 dark:text-green-400 font-medium'
+                    ? 'text-error-600 dark:text-error-400 font-medium'
+                    : 'text-success-600 dark:text-success-400 font-medium'
                 }
               >
                 {user.isActive ? '계정 비활성화' : '계정 활성화'}
               </Text>
             )}
           </Pressable>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center">
             {user.isActive
               ? '비활성화하면 사용자가 로그인할 수 없습니다.'
               : '활성화하면 사용자가 다시 로그인할 수 있습니다.'}

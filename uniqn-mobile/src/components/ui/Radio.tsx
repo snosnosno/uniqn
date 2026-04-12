@@ -96,24 +96,24 @@ const RadioItem = memo(function RadioItem({
   // 외부 원 스타일 결정
   const getOuterStyle = () => {
     if (isDisabled) {
-      return 'border-gray-300 dark:border-surface-overlay bg-gray-100 dark:bg-surface';
+      return 'border-secondary-300 dark:border-surface-overlay bg-secondary-100 dark:bg-surface';
     }
     if (error) {
-      return 'border-red-500';
+      return 'border-error-500';
     }
     if (selected) {
       return 'border-indigo-600 dark:border-indigo-500';
     }
-    return 'border-gray-300 dark:border-surface-overlay';
+    return 'border-secondary-300 dark:border-surface-overlay';
   };
 
   // 내부 원 스타일 결정
   const getInnerStyle = () => {
     if (isDisabled) {
-      return 'bg-gray-400 dark:bg-gray-500';
+      return 'bg-secondary-400 dark:bg-secondary-500';
     }
     if (error) {
-      return 'bg-red-500';
+      return 'bg-error-500';
     }
     return 'bg-indigo-600 dark:bg-indigo-500';
   };
@@ -155,7 +155,7 @@ const RadioItem = memo(function RadioItem({
           className={`
             font-medium
             ${config.label}
-            ${isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}
+            ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-white'}
           `}
         >
           {option.label}
@@ -168,8 +168,8 @@ const RadioItem = memo(function RadioItem({
               ${
                 isDisabled
                   ? // P1 접근성: WCAG AA 준수를 위해 대비 개선
-                    'text-gray-500 dark:text-gray-500'
-                  : 'text-gray-600 dark:text-gray-400'
+                    'text-secondary-500 dark:text-secondary-500'
+                  : 'text-secondary-600 dark:text-secondary-400'
               }
             `}
           >
@@ -214,7 +214,9 @@ export const Radio = memo(function Radio({
       accessibilityLabel={label}
       testID={testID}
     >
-      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
+      {label && (
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+      )}
 
       <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
         {options.map((option) => (
@@ -230,7 +232,7 @@ export const Radio = memo(function Radio({
         ))}
       </View>
 
-      {error && errorMessage && <Text className="mt-2 text-sm text-red-600">{errorMessage}</Text>}
+      {error && errorMessage && <Text className="mt-2 text-sm text-error-600">{errorMessage}</Text>}
     </View>
   );
 });

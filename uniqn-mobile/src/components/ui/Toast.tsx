@@ -38,15 +38,15 @@ interface ToastProps {
 
 const TOAST_STYLES = {
   success: {
-    container: 'bg-green-600 dark:bg-green-700',
+    container: 'bg-success-600 dark:bg-success-700',
     IconComponent: CheckCircleIcon,
   },
   error: {
-    container: 'bg-red-600 dark:bg-red-700',
+    container: 'bg-error-600 dark:bg-error-700',
     IconComponent: XCircleIcon,
   },
   warning: {
-    container: 'bg-yellow-500 dark:bg-yellow-600',
+    container: 'bg-warning-500 dark:bg-warning-600',
     IconComponent: ExclamationTriangleIcon,
   },
   info: {

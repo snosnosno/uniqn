@@ -138,17 +138,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <View className={containerClass}>
         <View className="flex-1 items-center justify-center p-6">
           {/* 에러 아이콘 */}
-          <View className="w-20 h-20 rounded-sm bg-red-100 dark:bg-red-900/30 items-center justify-center mb-6">
+          <View className="w-20 h-20 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center mb-6">
             <Text className="text-4xl">{''}</Text>
           </View>
 
           {/* 제목 */}
-          <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+          <Text className="text-xl font-bold text-secondary-900 dark:text-white text-center mb-2">
             문제가 발생했습니다
           </Text>
 
           {/* 설명 */}
-          <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+          <Text className="text-secondary-600 dark:text-secondary-400 text-center mb-6 leading-6">
             {fullScreen
               ? '앱에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
               : '이 기능에 문제가 발생했습니다.'}
@@ -157,15 +157,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           {/* 개발 모드 상세 정보 */}
           {showDetails && error && (
             <ScrollView
-              className="max-h-40 w-full bg-gray-100 dark:bg-surface rounded-md p-4 mb-6"
+              className="max-h-40 w-full bg-secondary-100 dark:bg-surface rounded-md p-4 mb-6"
               showsVerticalScrollIndicator={true}
             >
-              <Text className="text-xs text-red-600 dark:text-red-400 font-mono mb-2">
+              <Text className="text-xs text-error-600 dark:text-error-400 font-mono mb-2">
                 {name && `[${name}] `}
                 {error.name}: {error.message}
               </Text>
               {errorInfo?.componentStack && (
-                <Text className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-mono">
                   {errorInfo.componentStack.slice(0, 500)}
                 </Text>
               )}
@@ -189,18 +189,20 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   // 앱 재시작을 유도하는 UI (실제 재시작은 네이티브에서 처리)
                   this.handleReset();
                 }}
-                className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-md active:bg-gray-300 dark:active:bg-gray-600"
+                className="bg-secondary-200 dark:bg-surface px-6 py-3 rounded-md active:bg-secondary-300 dark:active:bg-secondary-600"
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >
-                <Text className="text-gray-700 dark:text-gray-200 font-semibold">홈으로</Text>
+                <Text className="text-secondary-700 dark:text-secondary-200 font-semibold">
+                  홈으로
+                </Text>
               </Pressable>
             )}
           </View>
 
           {/* 문의 안내 */}
           {fullScreen && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-6 text-center">
+            <Text className="text-xs text-secondary-400 dark:text-secondary-500 mt-6 text-center">
               문제가 계속되면 고객센터에 문의해주세요
             </Text>
           )}

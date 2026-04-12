@@ -120,7 +120,7 @@ const TournamentCard = memo(function TournamentCard({
   }, [posting]);
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md mb-3 overflow-hidden border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md mb-3 overflow-hidden border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <Pressable
         onPress={onViewDetail}
@@ -148,7 +148,7 @@ const TournamentCard = memo(function TournamentCard({
         </View>
 
         <Text
-          className="text-base font-semibold text-gray-900 dark:text-white mb-2"
+          className="text-base font-semibold text-secondary-900 dark:text-white mb-2"
           numberOfLines={2}
         >
           {posting.title}
@@ -156,19 +156,21 @@ const TournamentCard = memo(function TournamentCard({
 
         <View className="flex-row items-center mb-1">
           <LocationOutlineIcon size={14} color="#9CA3AF" />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
             {posting.location.name}
           </Text>
         </View>
 
         <View className="flex-row items-center mb-1">
           <CalendarOutlineIcon size={14} color="#9CA3AF" />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{dateRange}</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+            {dateRange}
+          </Text>
         </View>
 
         <View className="flex-row items-center">
           <PersonOutlineIcon size={14} color="#9CA3AF" />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
             {posting.ownerName ?? '구인자'}
           </Text>
         </View>
@@ -176,11 +178,11 @@ const TournamentCard = memo(function TournamentCard({
 
       {/* 액션 버튼 (pending 상태에서만 표시) */}
       {isPending && (
-        <View className="flex-row border-t border-gray-100 dark:border-surface-overlay">
+        <View className="flex-row border-t border-secondary-100 dark:border-surface-overlay">
           <Pressable
             onPress={onReject}
             disabled={isProcessing}
-            className="flex-1 py-3 flex-row items-center justify-center border-r border-gray-100 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700"
+            className="flex-1 py-3 flex-row items-center justify-center border-r border-secondary-100 dark:border-surface-overlay active:bg-secondary-50 dark:active:bg-secondary-700"
             accessibilityRole="button"
             accessibilityLabel="거부"
           >
@@ -189,14 +191,14 @@ const TournamentCard = memo(function TournamentCard({
             ) : (
               <>
                 <CloseCircleOutlineIcon size={18} color="#EF4444" />
-                <Text className="text-red-500 font-medium ml-1">거부</Text>
+                <Text className="text-error-500 font-medium ml-1">거부</Text>
               </>
             )}
           </Pressable>
           <Pressable
             onPress={onApprove}
             disabled={isProcessing}
-            className="flex-1 py-3 flex-row items-center justify-center active:bg-gray-50 dark:active:bg-gray-700"
+            className="flex-1 py-3 flex-row items-center justify-center active:bg-secondary-50 dark:active:bg-secondary-700"
             accessibilityRole="button"
             accessibilityLabel="승인"
           >
@@ -205,7 +207,7 @@ const TournamentCard = memo(function TournamentCard({
             ) : (
               <>
                 <CheckmarkCircleOutlineIcon size={18} color="#22C55E" />
-                <Text className="text-green-500 font-medium ml-1">승인</Text>
+                <Text className="text-success-500 font-medium ml-1">승인</Text>
               </>
             )}
           </Pressable>
@@ -298,9 +300,9 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
           대회공고 목록을 불러오는 중...
         </Text>
       </View>
@@ -310,7 +312,7 @@ export default function AdminTournamentsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="대회공고 목록을 불러오는 데 실패했습니다."
@@ -324,19 +326,19 @@ export default function AdminTournamentsPage() {
   const displayPostings = postings ?? [];
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
-        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
+        <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-1">
           대회공고 승인 관리
         </Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           대회공고 승인 요청을 검토하고 처리합니다
         </Text>
       </View>
 
       {/* 상태 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {STATUS_TABS.map((tab) => (
             <StatusTab
@@ -354,7 +356,7 @@ export default function AdminTournamentsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {displayPostings.length}개의 대회공고
         </Text>
       </View>

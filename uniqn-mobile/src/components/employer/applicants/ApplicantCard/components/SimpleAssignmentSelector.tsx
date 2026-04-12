@@ -52,7 +52,7 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
     <View className="mb-3">
       {/* 안내 문구 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">
           같은 날짜에는 하나의 역할/시간만 선택 가능합니다
         </Text>
         <Text className="ml-auto text-xs text-primary-500 dark:text-primary-400 font-medium">
@@ -71,8 +71,8 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
               ? 'bg-primary-900 border-primary-700'
               : 'bg-primary-100 border-primary-300'
             : isDark
-              ? 'bg-gray-700 border-gray-600'
-              : 'bg-gray-100 border-gray-200';
+              ? 'bg-secondary-700 border-secondary-600'
+              : 'bg-secondary-100 border-secondary-200';
 
           return (
             <Pressable
@@ -88,8 +88,8 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
                   isChecked
                     ? 'bg-primary-500 border-primary-500'
                     : isDark
-                      ? 'border-gray-500'
-                      : 'border-gray-400'
+                      ? 'border-secondary-500'
+                      : 'border-secondary-400'
                 }
               `}
               >
@@ -102,17 +102,19 @@ export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSele
                 color={isChecked ? iconColors.checked : iconColors.unchecked}
               />
               <Text
-                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
               >
                 {display.formattedDate} {display.timeSlotDisplay}
               </Text>
-              <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+              <View
+                className={`mx-2 h-4 w-px ${isDark ? 'bg-secondary-500' : 'bg-secondary-300'}`}
+              />
               <BriefcaseIcon
                 size={16}
                 color={isChecked ? iconColors.checked : iconColors.unchecked}
               />
               <Text
-                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-secondary-900'}`}
               >
                 {display.roleLabel}
               </Text>

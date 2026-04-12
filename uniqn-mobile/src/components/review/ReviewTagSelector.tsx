@@ -65,7 +65,7 @@ export default function ReviewTagSelector({
         />
       ) : null}
 
-      <Text className="text-xs text-gray-500 dark:text-gray-400">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400">
         {selectedTags.length}/{REVIEW_TAG_LIMITS.MAX}개 선택됨 (최소 {REVIEW_TAG_LIMITS.MIN}개)
       </Text>
     </View>
@@ -91,7 +91,9 @@ const TagGroup = React.memo(function TagGroup({
 
   return (
     <View>
-      <Text className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</Text>
+      <Text className="mb-2 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+        {label}
+      </Text>
       <View className="flex-row flex-wrap gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTags.includes(tag.key);
@@ -102,7 +104,7 @@ const TagGroup = React.memo(function TagGroup({
               className={`rounded-sm border px-3 py-1.5 ${
                 isSelected
                   ? `${colors.bg} ${colors.border} ${colors.darkBg}`
-                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+                  : 'border-secondary-200 bg-white dark:border-secondary-700 dark:bg-secondary-800'
               }`}
               accessibilityLabel={tag.label}
               accessibilityRole="checkbox"
@@ -110,7 +112,7 @@ const TagGroup = React.memo(function TagGroup({
             >
               <Text
                 className={`text-sm ${
-                  isSelected ? colors.text : 'text-gray-700 dark:text-gray-300'
+                  isSelected ? colors.text : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
                 {tag.label}

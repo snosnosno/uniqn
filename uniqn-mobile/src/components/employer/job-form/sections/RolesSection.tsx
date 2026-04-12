@@ -51,7 +51,7 @@ const RoleCard = memo(function RoleCard({
   const isCustom = role.isCustom;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-md border border-gray-200 dark:border-surface-overlay mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-md border border-secondary-200 dark:border-surface-overlay mb-3">
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
         <View className="w-10 h-10 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
@@ -66,10 +66,12 @@ const RoleCard = memo(function RoleCard({
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
               placeholderTextColor="#9CA3AF"
-              className="font-medium text-gray-900 dark:text-white text-base px-0 py-1 border-b border-gray-300 dark:border-surface-overlay"
+              className="font-medium text-secondary-900 dark:text-white text-base px-0 py-1 border-b border-secondary-300 dark:border-surface-overlay"
             />
           ) : (
-            <Text className="font-medium text-gray-900 dark:text-white text-base">{role.name}</Text>
+            <Text className="font-medium text-secondary-900 dark:text-white text-base">
+              {role.name}
+            </Text>
           )}
         </View>
 
@@ -78,7 +80,7 @@ const RoleCard = memo(function RoleCard({
           <Pressable
             onPress={() => onCountChange(-1)}
             disabled={role.count <= 1}
-            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-surface rounded-l-lg ${
+            className={`w-9 h-9 items-center justify-center bg-secondary-100 dark:bg-surface rounded-l-lg ${
               role.count <= 1 ? 'opacity-50' : ''
             }`}
             accessibilityRole="button"
@@ -87,14 +89,14 @@ const RoleCard = memo(function RoleCard({
             <MinusIcon size={18} color="#6B7280" />
           </Pressable>
 
-          <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-gray-200 dark:border-surface-overlay">
-            <Text className="font-bold text-gray-900 dark:text-white">{role.count}</Text>
+          <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-secondary-200 dark:border-surface-overlay">
+            <Text className="font-bold text-secondary-900 dark:text-white">{role.count}</Text>
           </View>
 
           <Pressable
             onPress={() => onCountChange(1)}
             disabled={role.count >= 99}
-            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-surface rounded-r-lg ${
+            className={`w-9 h-9 items-center justify-center bg-secondary-100 dark:bg-surface rounded-r-lg ${
               role.count >= 99 ? 'opacity-50' : ''
             }`}
             accessibilityRole="button"
@@ -108,7 +110,9 @@ const RoleCard = memo(function RoleCard({
             onPress={onDelete}
             disabled={!canDelete}
             className={`ml-2 p-2 rounded-lg ${
-              canDelete ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-surface opacity-50'
+              canDelete
+                ? 'bg-error-50 dark:bg-error-900/20'
+                : 'bg-secondary-100 dark:bg-surface opacity-50'
             }`}
             accessibilityRole="button"
             accessibilityLabel="역할 삭제"
@@ -214,16 +218,18 @@ export const RolesSection = memo(function RolesSection({
       {/* 역할 추가 버튼 */}
       <Pressable
         onPress={() => setShowModal(true)}
-        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-md"
+        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-secondary-300 dark:border-surface-overlay rounded-md"
         accessibilityRole="button"
         accessibilityLabel="역할 추가"
       >
         <PlusIcon size={18} color="#6B7280" />
-        <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium text-sm">역할 추가</Text>
+        <Text className="ml-2 text-secondary-600 dark:text-secondary-400 font-medium text-sm">
+          역할 추가
+        </Text>
       </Pressable>
 
       {/* 에러 메시지 */}
-      {errors.roles && <Text className="mt-2 text-sm text-red-500">{errors.roles}</Text>}
+      {errors.roles && <Text className="mt-2 text-sm text-error-500">{errors.roles}</Text>}
 
       {/* 총 인원 표시 */}
       {totalCount > 0 && (

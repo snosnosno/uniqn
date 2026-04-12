@@ -61,7 +61,7 @@ export const NotificationItem = memo(function NotificationItem({
 
   const content = (
     <View
-      className={`relative border-b border-gray-100 dark:border-surface ${
+      className={`relative border-b border-secondary-100 dark:border-surface ${
         notification.isRead
           ? 'bg-white dark:bg-surface-dark'
           : 'bg-primary-50 dark:bg-primary-900/20'
@@ -72,7 +72,7 @@ export const NotificationItem = memo(function NotificationItem({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={notification.link ? '누르면 관련 페이지로 이동합니다.' : undefined}
-        className="px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
+        className="px-4 py-3 active:bg-secondary-50 dark:active:bg-secondary-800"
       >
         <View className="flex-row items-start">
           <NotificationIcon type={notification.type} className="mr-3" />
@@ -84,19 +84,24 @@ export const NotificationItem = memo(function NotificationItem({
                 numberOfLines={1}
                 className={`flex-1 text-base ${
                   notification.isRead
-                    ? 'font-normal text-gray-700 dark:text-gray-300'
-                    : 'font-semibold text-gray-900 dark:text-white'
+                    ? 'font-normal text-secondary-700 dark:text-secondary-300'
+                    : 'font-semibold text-secondary-900 dark:text-white'
                 }`}
               >
                 {notification.title}
               </Text>
             </View>
 
-            <Text numberOfLines={2} className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <Text
+              numberOfLines={2}
+              className="mt-1 text-sm text-secondary-600 dark:text-secondary-400"
+            >
               {notification.body}
             </Text>
 
-            <Text className="mt-1 text-xs text-gray-400 dark:text-gray-500">{timeAgo}</Text>
+            <Text className="mt-1 text-xs text-secondary-400 dark:text-secondary-500">
+              {timeAgo}
+            </Text>
           </View>
 
           {!showDelete && notification.link ? (
@@ -115,7 +120,7 @@ export const NotificationItem = memo(function NotificationItem({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="알림 삭제"
-          className="absolute right-2 top-3 rounded-sm p-2 active:bg-gray-100 dark:active:bg-gray-800"
+          className="absolute right-2 top-3 rounded-sm p-2 active:bg-secondary-100 dark:active:bg-secondary-800"
         >
           <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
         </Pressable>
@@ -141,17 +146,17 @@ export const NotificationItem = memo(function NotificationItem({
 export function NotificationItemSkeleton() {
   return (
     <View
-      className="border-b border-gray-100 px-4 py-3 dark:border-surface"
+      className="border-b border-secondary-100 px-4 py-3 dark:border-surface"
       accessibilityElementsHidden={true}
     >
       <View className="flex-row items-start">
-        <View className="mr-3 h-10 w-10 animate-pulse rounded-sm bg-gray-200 dark:bg-surface" />
+        <View className="mr-3 h-10 w-10 animate-pulse rounded-sm bg-secondary-200 dark:bg-surface" />
 
         <View className="flex-1">
-          <View className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-surface" />
-          <View className="mt-2 h-3 w-full animate-pulse rounded bg-gray-200 dark:bg-surface" />
-          <View className="mt-1 h-3 w-2/3 animate-pulse rounded bg-gray-200 dark:bg-surface" />
-          <View className="mt-2 h-2 w-16 animate-pulse rounded bg-gray-200 dark:bg-surface" />
+          <View className="h-4 w-3/4 animate-pulse rounded bg-secondary-200 dark:bg-surface" />
+          <View className="mt-2 h-3 w-full animate-pulse rounded bg-secondary-200 dark:bg-surface" />
+          <View className="mt-1 h-3 w-2/3 animate-pulse rounded bg-secondary-200 dark:bg-surface" />
+          <View className="mt-2 h-2 w-16 animate-pulse rounded bg-secondary-200 dark:bg-surface" />
         </View>
       </View>
     </View>

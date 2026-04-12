@@ -83,7 +83,7 @@ export default function JobDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
@@ -93,7 +93,7 @@ export default function JobDetailScreen() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
@@ -109,7 +109,7 @@ export default function JobDetailScreen() {
 
   if (shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
@@ -119,7 +119,7 @@ export default function JobDetailScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <JobDetailHeader
           title={job.title}
@@ -144,7 +144,7 @@ export default function JobDetailScreen() {
     !applicationStatus?.cancellationRequest;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <JobDetailHeader
         title={job.title}
@@ -169,7 +169,7 @@ export default function JobDetailScreen() {
       </ScrollView>
 
       <View
-        className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface"
+        className="absolute bottom-0 left-0 right-0 border-t border-secondary-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface"
         onLayout={(event) => {
           const nextHeight = Math.ceil(event.nativeEvent.layout.height);
           if (nextHeight > 0 && nextHeight !== bottomActionHeight) {
@@ -180,7 +180,7 @@ export default function JobDetailScreen() {
         <SafeAreaView edges={['bottom']}>
           {alreadyApplied ? (
             <View className="items-center">
-              <Text className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400">
                 {getApplicationStatusMessage(applicationStatus?.status)}
               </Text>
               <View className="w-full flex-row">
@@ -211,7 +211,7 @@ export default function JobDetailScreen() {
           ) : (
             <View>
               {!sessionUserId ? (
-                <Text className="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mb-2 text-center text-sm text-secondary-500 dark:text-secondary-400">
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}

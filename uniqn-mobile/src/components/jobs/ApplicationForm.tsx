@@ -38,7 +38,7 @@ function FixedRoleSelector({
 }) {
   return (
     <View className="gap-3">
-      <Text className="text-base font-semibold text-gray-900 dark:text-white">지원 역할</Text>
+      <Text className="text-base font-semibold text-secondary-900 dark:text-white">지원 역할</Text>
       {options.map((option) => {
         const isSelected = selectedRoleId === option.key;
         const isDisabled = disabled || !option.isAvailable;
@@ -51,7 +51,7 @@ function FixedRoleSelector({
             className={`rounded-md border p-4 ${
               isSelected
                 ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/20'
-                : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                : 'border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface'
             } ${isDisabled ? 'opacity-50' : 'active:opacity-80'}`}
           >
             <View className="flex-row items-center justify-between">
@@ -60,12 +60,12 @@ function FixedRoleSelector({
                   className={`text-base font-semibold ${
                     isSelected
                       ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-gray-900 dark:text-white'
+                      : 'text-secondary-900 dark:text-white'
                   }`}
                 >
                   {option.roleLabel}
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
                   모집 {option.count}명 · 남은 자리 {option.remaining}명
                 </Text>
               </View>
@@ -217,17 +217,19 @@ export function ApplicationForm({
       fullHeight
     >
       <View className="px-4">
-        <View className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-surface">
+        <View className="mb-6 rounded-lg bg-secondary-50 p-4 dark:bg-surface">
           {job.postingType && job.postingType !== 'regular' && (
             <View className="mb-2">
               <PostingTypeBadge type={job.postingType as PostingType} size="sm" />
             </View>
           )}
 
-          <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
             {job.title}
           </Text>
-          <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">위치 {locationName}</Text>
+          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400">
+            위치 {locationName}
+          </Text>
 
           <View className="mb-2">
             <RoleSalaryDisplay
@@ -280,8 +282,8 @@ export function ApplicationForm({
         )}
 
         <View className="mb-6">
-          <Text className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
-            자기소개 <Text className="text-gray-400">(선택)</Text>
+          <Text className="mb-2 text-base font-semibold text-secondary-900 dark:text-white">
+            자기소개 <Text className="text-secondary-400">(선택)</Text>
           </Text>
           <TextInput
             value={message}
@@ -292,16 +294,16 @@ export function ApplicationForm({
             numberOfLines={4}
             maxLength={200}
             editable={!isSubmitting}
-            className="min-h-[120px] rounded-lg bg-gray-50 p-4 text-base text-gray-900 dark:bg-surface dark:text-white"
+            className="min-h-[120px] rounded-lg bg-secondary-50 p-4 text-base text-secondary-900 dark:bg-surface dark:text-white"
             textAlignVertical="top"
           />
-          <Text className="mt-1 text-right text-xs text-gray-400 dark:text-gray-500">
+          <Text className="mt-1 text-right text-xs text-secondary-400 dark:text-secondary-500">
             {message.length}/200
           </Text>
         </View>
 
-        <View className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-surface">
-          <Text className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+        <View className="mb-6 rounded-lg bg-secondary-50 p-4 dark:bg-surface">
+          <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400">
             지원 후에는 구인자가 지원서를 확인합니다.
             {'\n'}
             채용 결과는 알림으로 안내됩니다.

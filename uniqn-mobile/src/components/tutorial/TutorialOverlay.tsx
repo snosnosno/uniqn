@@ -214,7 +214,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
         {showCountdown ? (
           <Animated.Text
             entering={FadeIn.duration(300)}
-            className="text-xs text-gray-400 dark:text-gray-500"
+            className="text-xs text-secondary-400 dark:text-secondary-500"
           >
             {remainingSec}초 후 자동으로 닫힙니다
           </Animated.Text>
@@ -230,7 +230,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
             accessibilityRole="button"
             className="py-2 px-3"
           >
-            <Text className="text-base text-gray-500 dark:text-gray-400">건너뛰기</Text>
+            <Text className="text-base text-secondary-500 dark:text-secondary-400">건너뛰기</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -261,7 +261,7 @@ export function TutorialOverlay({ config, onComplete, timeoutMs }: TutorialOverl
       />
 
       {/* H6: 페이지 번호 */}
-      <Text className="text-center text-xs text-gray-400 dark:text-gray-500 mt-1">
+      <Text className="text-center text-xs text-secondary-400 dark:text-secondary-500 mt-1">
         {currentPage + 1} / {totalPages}
       </Text>
 

@@ -152,7 +152,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md mb-3 p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md mb-3 p-4 border border-secondary-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${posting.title} 상세 보기`}
     >
@@ -176,7 +176,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 제목 */}
       <Text
-        className="text-base font-semibold text-gray-900 dark:text-white mb-2"
+        className="text-base font-semibold text-secondary-900 dark:text-white mb-2"
         numberOfLines={2}
       >
         {posting.title}
@@ -185,7 +185,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 장소 */}
       <View className="flex-row items-center mb-1">
         <LocationOutlineIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
           {posting.location?.name || '-'}
         </Text>
       </View>
@@ -193,20 +193,22 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
         <CalendarOutlineIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{getDateRange}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
+          {getDateRange}
+        </Text>
       </View>
 
       {/* 모집 현황 */}
       <View className="flex-row items-center">
         <PeopleOutlineIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1">
           {posting.filledPositions ?? 0}/{posting.totalPositions ?? 0}명 충원
         </Text>
       </View>
 
       {/* 지원자 수 */}
       {(posting.stats?.totalApplicants ?? 0) > 0 && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
+        <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
           <Text className="text-xs text-primary-600 dark:text-primary-400">
             지원자 {posting.stats?.totalApplicants ?? 0}명
           </Text>
@@ -272,9 +274,11 @@ export default function MyPostingsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 목록을 불러오는 중...</Text>
+        <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+          공고 목록을 불러오는 중...
+        </Text>
       </View>
     );
   }
@@ -282,7 +286,7 @@ export default function MyPostingsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="공고 목록을 불러오는 데 실패했습니다."
@@ -294,11 +298,11 @@ export default function MyPostingsPage() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+    <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">내 공고 관리</Text>
+          <Text className="text-xl font-bold text-secondary-900 dark:text-white">내 공고 관리</Text>
           <Pressable
             onPress={handleCreatePress}
             className="bg-primary-600 dark:bg-primary-500 px-4 py-2 rounded-lg flex-row items-center"
@@ -310,13 +314,13 @@ export default function MyPostingsPage() {
             <Text className="text-white font-medium ml-1">새 공고</Text>
           </Pressable>
         </View>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           총 {postings?.length ?? 0}개의 공고
         </Text>
       </View>
 
       {/* 필터 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-secondary-200 dark:border-surface-overlay">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -342,7 +346,7 @@ export default function MyPostingsPage() {
 
       {/* 결과 개수 */}
       <View className="px-4 py-2">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400">
           {filteredPostings.length}개의 공고
         </Text>
       </View>

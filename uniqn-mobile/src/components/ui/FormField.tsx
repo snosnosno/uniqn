@@ -41,8 +41,10 @@ export function FormField({
       {label && (
         <View className="flex-row items-center mb-2">
           {icon && <View className="mr-1.5">{icon}</View>}
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
-          {required && <Text className="text-red-600 ml-0.5">*</Text>}
+          <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
+            {label}
+          </Text>
+          {required && <Text className="text-error-600 ml-0.5">*</Text>}
         </View>
       )}
 
@@ -52,14 +54,14 @@ export function FormField({
       {/* 에러 메시지 */}
       {error ? (
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-red-600 mr-1">{''}</Text>
-          <Text className="text-red-600 text-sm flex-1">{error}</Text>
+          <Text className="text-error-600 mr-1">{''}</Text>
+          <Text className="text-error-600 text-sm flex-1">{error}</Text>
         </View>
       ) : null}
 
       {/* 힌트 텍스트 */}
       {hint && !error && (
-        <Text className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">{hint}</Text>
+        <Text className="text-secondary-500 dark:text-secondary-400 text-sm mt-1.5">{hint}</Text>
       )}
     </View>
   );
@@ -79,10 +81,14 @@ export function FormSection({ title, description, children }: FormSectionProps) 
   return (
     <View className="mb-6">
       {title && (
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{title}</Text>
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white mb-1">
+          {title}
+        </Text>
       )}
       {description && (
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">{description}</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4">
+          {description}
+        </Text>
       )}
       {children}
     </View>

@@ -153,20 +153,22 @@ export function DatePickerModal({
       </View>
 
       {/* 선택된 날짜 목록 */}
-      <View className="mb-4 p-3 bg-gray-50 dark:bg-surface rounded-lg">
+      <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
             선택한 날짜 ({selectedDates.length}개)
           </Text>
           {selectedDates.length > 0 && (
             <Pressable onPress={handleClearAll} accessibilityLabel="전체 해제">
-              <Text className="text-xs text-red-500 dark:text-red-400">전체 해제</Text>
+              <Text className="text-xs text-error-500 dark:text-error-400">전체 해제</Text>
             </Pressable>
           )}
         </View>
 
         {selectedDates.length === 0 ? (
-          <Text className="text-gray-400 dark:text-gray-500">캘린더에서 날짜를 선택하세요</Text>
+          <Text className="text-secondary-400 dark:text-secondary-500">
+            캘린더에서 날짜를 선택하세요
+          </Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
             {sortedSelectedDates.map((date) => (
@@ -205,11 +207,11 @@ export function DatePickerModal({
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
-        <View className="mb-4 p-3 bg-gray-50 dark:bg-surface rounded-lg">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+        <View className="mb-4 p-3 bg-secondary-50 dark:bg-surface rounded-lg">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
             이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
           </Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-300">
+          <Text className="text-sm text-secondary-600 dark:text-secondary-300">
             {existingDates.slice(0, 5).join(', ')}
             {existingDates.length > 5 && ` 외 ${existingDates.length - 5}개`}
           </Text>
@@ -220,12 +222,14 @@ export function DatePickerModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={handleClose}
-          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-md"
+          className="flex-1 bg-secondary-200 dark:bg-surface py-3 rounded-md"
           accessibilityRole="button"
           accessibilityLabel="취소"
           testID="job-posting-date-cancel-button"
         >
-          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">취소</Text>
+          <Text className="text-secondary-700 dark:text-secondary-200 text-center font-medium">
+            취소
+          </Text>
         </Pressable>
         <Pressable
           onPress={handleConfirm}
@@ -233,7 +237,7 @@ export function DatePickerModal({
           className={`flex-1 py-3 rounded-md ${
             canAddMore && selectedDates.length > 0
               ? 'bg-primary-600'
-              : 'bg-gray-300 dark:bg-surface-elevated opacity-50'
+              : 'bg-secondary-300 dark:bg-surface-elevated opacity-50'
           }`}
           accessibilityRole="button"
           accessibilityLabel="확인"

@@ -90,20 +90,22 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
   // 데이터가 없는 경우
   if (!data || data.length === 0) {
     return (
-      <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
+      <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white mb-4">
+          {title}
+        </Text>
         <View className="h-[120px] items-center justify-center">
-          <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
+          <Text className="text-secondary-500 dark:text-secondary-400">데이터가 없습니다</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white">{title}</Text>
         <View className="px-2.5 py-1 rounded-sm" style={{ backgroundColor: `${color}20` }}>
           <Text style={{ color }} className="text-sm font-bold">
             총 {stats.total.toLocaleString()}
@@ -114,18 +116,18 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
 
       {/* 요약 통계 */}
       <View className="flex-row mb-4 gap-2">
-        <View className="flex-1 bg-gray-50 dark:bg-surface-elevated rounded-lg p-3">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">일평균</Text>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-elevated rounded-lg p-3">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">일평균</Text>
+          <Text className="text-lg font-bold text-secondary-900 dark:text-white">
             {stats.average.toLocaleString()}
             {suffix}
           </Text>
         </View>
-        <View className="flex-1 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-          <Text className="text-xs text-green-600 dark:text-green-400 mb-1">
+        <View className="flex-1 bg-success-50 dark:bg-success-900/20 rounded-lg p-3">
+          <Text className="text-xs text-success-600 dark:text-success-400 mb-1">
             최고 ({stats.maxDate})
           </Text>
-          <Text className="text-lg font-bold text-green-700 dark:text-green-300">
+          <Text className="text-lg font-bold text-success-700 dark:text-success-300">
             {stats.max.toLocaleString()}
             {suffix}
           </Text>
@@ -142,8 +144,8 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
       </View>
 
       {/* 일별 데이터 리스트 */}
-      <View className="border-t border-gray-100 dark:border-surface-overlay pt-3">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">일별 추이</Text>
+      <View className="border-t border-secondary-100 dark:border-surface-overlay pt-3">
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2">일별 추이</Text>
         {data.map((item) => {
           const barWidth = stats.max > 0 ? (item.count / stats.max) * 100 : 0;
           const isToday = isDateToday(item.date);
@@ -161,19 +163,19 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
                   className={`text-sm ${
                     isToday
                       ? 'font-semibold text-primary-700 dark:text-primary-300'
-                      : 'text-gray-600 dark:text-gray-400'
+                      : 'text-secondary-600 dark:text-secondary-400'
                   }`}
                 >
                   {formatDate(item.date)}
                 </Text>
-                <Text className="text-xs text-gray-400 dark:text-gray-500">
+                <Text className="text-xs text-secondary-400 dark:text-secondary-500">
                   ({getDayOfWeek(item.date)})
                 </Text>
               </View>
 
               {/* 바 그래프 */}
               <View className="flex-1 mx-3">
-                <View className="h-2 bg-gray-100 dark:bg-surface-overlay rounded-sm overflow-hidden">
+                <View className="h-2 bg-secondary-100 dark:bg-surface-overlay rounded-sm overflow-hidden">
                   <View
                     className="h-full rounded-sm"
                     style={{
@@ -189,7 +191,7 @@ export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: Tren
                 className={`text-sm font-medium w-16 text-right ${
                   isToday
                     ? 'text-primary-700 dark:text-primary-300'
-                    : 'text-gray-700 dark:text-gray-300'
+                    : 'text-secondary-700 dark:text-secondary-300'
                 }`}
               >
                 {item.count.toLocaleString()}

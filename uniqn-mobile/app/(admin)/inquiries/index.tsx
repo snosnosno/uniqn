@@ -79,11 +79,11 @@ export default function AdminInquiriesScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 통계 */}
-      <View className="border-b border-gray-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
+      <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">미답변 문의</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">미답변 문의</Text>
           <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
             {unansweredCount ?? 0}건
           </Text>
@@ -91,7 +91,7 @@ export default function AdminInquiriesScreen() {
       </View>
 
       {/* 필터 탭 */}
-      <View className="border-b border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface">
+      <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -104,12 +104,14 @@ export default function AdminInquiriesScreen() {
                 key={filter.key}
                 onPress={() => setStatusFilter(filter.key)}
                 className={`rounded-sm px-4 py-2 ${
-                  isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
+                  isSelected
+                    ? 'bg-primary-500 dark:bg-primary-600'
+                    : 'bg-secondary-100 dark:bg-surface'
                 }`}
               >
                 <Text
                   className={`text-sm font-medium ${
-                    isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                    isSelected ? 'text-white' : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
                   {filter.label}

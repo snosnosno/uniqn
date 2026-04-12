@@ -48,8 +48,8 @@ const PAYROLL_STATUS_CONFIG: Record<
 > = {
   pending: {
     label: '정산 대기',
-    color: 'text-yellow-700 dark:text-yellow-300',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+    color: 'text-warning-700 dark:text-warning-300',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
   },
   processing: {
     label: '정산 중',
@@ -58,8 +58,8 @@ const PAYROLL_STATUS_CONFIG: Record<
   },
   completed: {
     label: '정산 완료',
-    color: 'text-green-700 dark:text-green-300',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
+    color: 'text-success-700 dark:text-success-300',
+    bgColor: 'bg-success-50 dark:bg-success-900/30',
   },
 };
 
@@ -73,7 +73,7 @@ function formatDate(dateString: string): string {
 
 function WorkLogSkeleton() {
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-gray-100 dark:border-surface-overlay">
+    <View className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between mb-3">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-5 w-16 rounded-sm" />
@@ -114,14 +114,14 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md p-4 mb-3 border border-secondary-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${formatDate(workLog.date)} ${roleLabel} 근무 기록`}
     >
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
           <CalendarIcon size={16} color="#6B7280" />
-          <Text className="ml-2 text-sm font-medium text-gray-900 dark:text-white">
+          <Text className="ml-2 text-sm font-medium text-secondary-900 dark:text-white">
             {formatDate(workLog.date)}
           </Text>
         </View>
@@ -131,11 +131,13 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
           <BriefcaseIcon size={14} color="#9CA3AF" />
-          <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">{roleLabel}</Text>
+          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
+            {roleLabel}
+          </Text>
         </View>
         <View className="flex-row items-center">
           <ClockIcon size={14} color="#9CA3AF" />
-          <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
+          <Text className="ml-1 text-sm text-secondary-600 dark:text-secondary-400">
             {timeInfo.effectiveStart} - {timeInfo.effectiveEnd}
           </Text>
         </View>
@@ -151,8 +153,8 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           <Text
             className={`ml-1 text-sm ${
               isCompleted
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-gray-500 dark:text-gray-400'
+                ? 'text-success-600 dark:text-success-400'
+                : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
             {isCompleted ? workHours : '진행 중'}
@@ -177,8 +179,8 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
       </View>
 
       {workLog.notes && (
-        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={2}>
+        <View className="mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400" numberOfLines={2}>
             {workLog.notes}
           </Text>
         </View>
@@ -283,14 +285,18 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
                     <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                       {stats.completed}
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">완료 건수</Text>
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                      완료 건수
+                    </Text>
                   </View>
                   <View className="w-px bg-primary-200 dark:bg-primary-700" />
                   <View className="items-center">
                     <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                       {formatCurrency(stats.totalEarnings)}
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">총 수입</Text>
+                    <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1">
+                      총 수입
+                    </Text>
                   </View>
                 </View>
               </View>

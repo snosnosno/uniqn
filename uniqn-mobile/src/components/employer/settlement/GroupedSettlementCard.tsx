@@ -64,8 +64,8 @@ const PAYROLL_STATUS_CONFIG: Record<
 > = {
   pending: {
     label: '미정산',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    textColor: 'text-yellow-700 dark:text-yellow-300',
+    bgColor: 'bg-warning-100 dark:bg-warning-900/30',
+    textColor: 'text-warning-700 dark:text-warning-300',
   },
   processing: {
     label: '처리중',
@@ -74,8 +74,8 @@ const PAYROLL_STATUS_CONFIG: Record<
   },
   completed: {
     label: '정산완료',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    textColor: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-success-50 dark:bg-success-900/30',
+    textColor: 'text-success-700 dark:text-success-300',
   },
 };
 
@@ -125,7 +125,7 @@ const DateStatusRow = memo(function DateStatusRow({
     <Pressable
       onPress={handlePress}
       className={`flex-row items-center py-2.5 ${
-        !isLast ? 'border-b border-gray-100 dark:border-surface-overlay/50' : ''
+        !isLast ? 'border-b border-secondary-100 dark:border-surface-overlay/50' : ''
       }`}
       accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${payrollConfig.label}`}
     >
@@ -142,14 +142,14 @@ const DateStatusRow = memo(function DateStatusRow({
 
       {/* 날짜 */}
       <View className="flex-1">
-        <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
+        <Text className="text-sm font-medium text-secondary-800 dark:text-secondary-200">
           {status.formattedDate}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{roleDisplay}</Text>
+        <Text className="text-xs text-secondary-500 dark:text-secondary-400">{roleDisplay}</Text>
       </View>
 
       {/* 금액 */}
-      <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mr-3">
+      <Text className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 mr-3">
         {status.hasValidTimes ? formatCurrency(status.amount) : '-'}
       </Text>
 
@@ -296,10 +296,12 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
           {/* 이름 + 역할 */}
           <View className="flex-1">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+            <Text className="text-base font-semibold text-secondary-900 dark:text-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">{rolesDisplay}</Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+              {rolesDisplay}
+            </Text>
           </View>
 
           {/* 금액/건수 */}
@@ -307,7 +309,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(group.summary.totalAmount)}
             </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400">
               {group.summary.totalCount}건
             </Text>
           </View>
@@ -317,32 +319,34 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
         <CalendarIcon size={14} color="#6B7280" />
-        <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">{dateDisplay}</Text>
+        <Text className="ml-1.5 text-sm text-secondary-600 dark:text-secondary-400">
+          {dateDisplay}
+        </Text>
       </View>
 
       {/* 정산 요약 (미정산/완료 건수) */}
       <View className="flex-row items-center mt-2 flex-wrap gap-2">
         {group.summary.pendingCount > 0 && (
-          <View className="flex-row items-center px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
             <ClockIcon size={12} color="#D97706" />
-            <Text className="ml-1 text-xs text-yellow-700 dark:text-yellow-300">
+            <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300">
               미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)})
             </Text>
           </View>
         )}
         {group.summary.completedCount > 0 && (
-          <View className="flex-row items-center px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
             <CheckCircleIcon size={12} color="#059669" />
-            <Text className="ml-1 text-xs text-green-700 dark:text-green-300">
+            <Text className="ml-1 text-xs text-success-700 dark:text-success-300">
               완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)}
               )
             </Text>
           </View>
         )}
         {group.summary.settlableCount < group.summary.pendingCount && (
-          <View className="flex-row items-center px-2 py-1 bg-gray-50 dark:bg-surface rounded-lg">
+          <View className="flex-row items-center px-2 py-1 bg-secondary-50 dark:bg-surface rounded-lg">
             <ExclamationCircleIcon size={12} color="#6B7280" />
-            <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
+            <Text className="ml-1 text-xs text-secondary-600 dark:text-secondary-400">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
             </Text>
           </View>
@@ -352,10 +356,10 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 펼침/접힘 버튼 */}
       <Pressable
         onPress={toggleExpanded}
-        className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-surface-overlay"
+        className="flex-row items-center justify-center mt-3 py-2 border-t border-secondary-200 dark:border-surface-overlay"
         accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
       >
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">날짜별 상세</Text>
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1">날짜별 상세</Text>
         {isExpanded ? (
           <ChevronUpIcon size={16} color="#6B7280" />
         ) : (
@@ -365,7 +369,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 펼침 상태: 날짜별 정산 상태 */}
       {isExpanded && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
+        <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
           {group.dateStatuses.map((status, index) => {
             const workLog = workLogMap.get(status.workLogId);
             if (!workLog) return null;
@@ -390,7 +394,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
       {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
-        <View className="mt-3 pt-3 border-t border-gray-200 dark:border-surface-overlay">
+        <View className="mt-3 pt-3 border-t border-secondary-200 dark:border-surface-overlay">
           <Pressable
             onPress={handleBulkSettle}
             className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"

@@ -280,7 +280,7 @@ export function ScheduleDetailModal({
     <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
       {/* Handle Bar */}
       <View className="items-center mb-2">
-        <View className="w-10 h-1 rounded-sm bg-gray-300 dark:bg-surface-elevated" />
+        <View className="w-10 h-1 rounded-sm bg-secondary-300 dark:bg-surface-elevated" />
       </View>
 
       {/* 그룹 모드: 날짜 네비게이션 */}
@@ -357,7 +357,10 @@ export function ScheduleDetailModal({
               </View>
             )}
           </View>
-          <Text className="text-lg font-bold text-gray-900 dark:text-gray-100" numberOfLines={2}>
+          <Text
+            className="text-lg font-bold text-secondary-900 dark:text-secondary-100"
+            numberOfLines={2}
+          >
             {schedule.jobPostingName}
           </Text>
         </View>
@@ -379,7 +382,7 @@ export function ScheduleDetailModal({
       </View>
 
       {/* Tab Navigation */}
-      <View className="flex-row bg-gray-100 dark:bg-surface p-1 rounded-md mb-4">
+      <View className="flex-row bg-secondary-100 dark:bg-surface p-1 rounded-md mb-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -429,7 +432,7 @@ export function ScheduleDetailModal({
         </View>
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
-        <View className="pt-4 border-t border-gray-200 dark:border-surface-overlay flex-row gap-3">
+        <View className="pt-4 border-t border-secondary-200 dark:border-surface-overlay flex-row gap-3">
           {/* 지원 취소 버튼 (지원중 상태) */}
           {schedule.type === STATUS.SCHEDULE.APPLIED &&
             onCancelApplication &&
@@ -440,9 +443,11 @@ export function ScheduleDetailModal({
                   variant="outline"
                   size="md"
                   onPress={handleCancelApplication}
-                  className="border-red-300 dark:border-red-700"
+                  className="border-error-300 dark:border-error-700"
                 >
-                  <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
+                  <Text className="text-error-600 dark:text-error-400 font-semibold">
+                    지원 취소
+                  </Text>
                 </Button>
               </View>
             )}
@@ -473,10 +478,10 @@ export function ScheduleDetailModal({
                 variant="outline"
                 size="md"
                 onPress={handleOpenReportModal}
-                className="border-gray-300 dark:border-surface-overlay"
+                className="border-secondary-300 dark:border-surface-overlay"
                 icon={<AlertTriangleIcon size={16} color="#6B7280" />}
               >
-                <Text className="text-gray-600 dark:text-gray-400">신고</Text>
+                <Text className="text-secondary-600 dark:text-secondary-400">신고</Text>
               </Button>
             </View>
           )}

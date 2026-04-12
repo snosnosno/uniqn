@@ -119,27 +119,31 @@ function ReportInfoSection({ report }: { report: Report }) {
       </View>
 
       {/* 신고 유형 */}
-      <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">{typeLabel}</Text>
+      <Text className="text-xl font-bold text-secondary-900 dark:text-white mb-2">{typeLabel}</Text>
 
       {/* 신고자 정보 */}
       <View className="flex-row items-center mb-3">
         <UserIcon size={16} color="#6B7280" />
-        <Text className="text-sm text-gray-600 dark:text-gray-400 ml-2">
-          <Text className="font-medium text-gray-900 dark:text-white">{report.reporterName}</Text>
+        <Text className="text-sm text-secondary-600 dark:text-secondary-400 ml-2">
+          <Text className="font-medium text-secondary-900 dark:text-white">
+            {report.reporterName}
+          </Text>
           <Text> → </Text>
-          <Text className="font-medium text-gray-900 dark:text-white">{report.targetName}</Text>
+          <Text className="font-medium text-secondary-900 dark:text-white">
+            {report.targetName}
+          </Text>
         </Text>
       </View>
 
       {/* 신고자 유형 */}
-      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+      <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-3">
         {report.reporterType === 'employer' ? '구인자가 스태프를 신고' : '구직자가 구인자를 신고'}
       </Text>
 
       {/* 생성 시간 */}
       <View className="flex-row items-center">
         <ClockIcon size={14} color="#9CA3AF" />
-        <Text className="text-xs text-gray-400 dark:text-gray-500 ml-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-1">
           {formatTimestamp(report.createdAt)} ({formatTimeAgo(report.createdAt)})
         </Text>
       </View>
@@ -155,35 +159,37 @@ function ReportContentSection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <DocumentIcon size={18} color="#D4AF37" />
-        <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
           신고 내용
         </Text>
       </View>
 
-      <Text className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+      <Text className="text-sm text-secondary-700 dark:text-secondary-300 leading-relaxed">
         {report.description}
       </Text>
 
       {/* 관련 공고 */}
       {report.jobPostingTitle && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">관련 공고</Text>
-          <Text className="text-sm text-gray-900 dark:text-white">{report.jobPostingTitle}</Text>
+        <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">관련 공고</Text>
+          <Text className="text-sm text-secondary-900 dark:text-white">
+            {report.jobPostingTitle}
+          </Text>
         </View>
       )}
 
       {/* 근무 날짜 (구인자→스태프 신고만) */}
       {report.workDate && (
         <View className="mt-3">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">근무 날짜</Text>
-          <Text className="text-sm text-gray-900 dark:text-white">{report.workDate}</Text>
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">근무 날짜</Text>
+          <Text className="text-sm text-secondary-900 dark:text-white">{report.workDate}</Text>
         </View>
       )}
 
       {/* 증거 자료 */}
       {report.evidenceUrls && report.evidenceUrls.length > 0 && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        <View className="mt-4 pt-4 border-t border-secondary-100 dark:border-surface-overlay">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-2">
             첨부 자료 ({report.evidenceUrls.length}개)
           </Text>
           {report.evidenceUrls.map((url, index) => (
@@ -211,23 +217,25 @@ function ReviewHistorySection({ report }: { report: Report }) {
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color="#10B981" />
-        <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
           처리 이력
         </Text>
       </View>
 
       <View className="space-y-3">
         <View>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">처리 상태</Text>
-          <Text className="text-sm font-medium text-gray-900 dark:text-white">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">처리 상태</Text>
+          <Text className="text-sm font-medium text-secondary-900 dark:text-white">
             {REPORT_STATUS_LABELS[report.status]}
           </Text>
         </View>
 
         {report.reviewedAt && (
           <View className="mt-3">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">처리 일시</Text>
-            <Text className="text-sm text-gray-900 dark:text-white">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
+              처리 일시
+            </Text>
+            <Text className="text-sm text-secondary-900 dark:text-white">
               {formatTimestamp(report.reviewedAt)}
             </Text>
           </View>
@@ -235,8 +243,12 @@ function ReviewHistorySection({ report }: { report: Report }) {
 
         {report.reviewerNotes && (
           <View className="mt-3">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">처리 메모</Text>
-            <Text className="text-sm text-gray-700 dark:text-gray-300">{report.reviewerNotes}</Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1">
+              처리 메모
+            </Text>
+            <Text className="text-sm text-secondary-700 dark:text-secondary-300">
+              {report.reviewerNotes}
+            </Text>
           </View>
         )}
       </View>
@@ -270,13 +282,13 @@ function ReviewFormSection({
     <View className="bg-white dark:bg-surface rounded-md p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color="#F59E0B" />
-        <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
+        <Text className="text-base font-semibold text-secondary-900 dark:text-white ml-2">
           신고 처리
         </Text>
       </View>
 
       {/* 상태 선택 */}
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
         처리 결과 선택
       </Text>
       <View className="space-y-2 mb-4">
@@ -287,19 +299,19 @@ function ReviewFormSection({
             className={`p-3 rounded-lg border-2 ${
               selectedStatus === option.value
                 ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-gray-200 dark:border-surface-overlay'
+                : 'border-secondary-200 dark:border-surface-overlay'
             }`}
           >
             <Text
               className={`font-medium ${
                 selectedStatus === option.value
                   ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-gray-900 dark:text-white'
+                  : 'text-secondary-900 dark:text-white'
               }`}
             >
               {option.label}
             </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5">
               {option.description}
             </Text>
           </Pressable>
@@ -307,7 +319,7 @@ function ReviewFormSection({
       </View>
 
       {/* 처리 메모 */}
-      <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
         처리 메모 (선택)
       </Text>
       <TextInput
@@ -317,7 +329,7 @@ function ReviewFormSection({
         placeholderTextColor="#9CA3AF"
         multiline
         numberOfLines={4}
-        className="bg-gray-100 dark:bg-surface rounded-lg p-3 text-sm text-gray-900 dark:text-white mb-4"
+        className="bg-secondary-100 dark:bg-surface rounded-lg p-3 text-sm text-secondary-900 dark:text-white mb-4"
         style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 
@@ -382,7 +394,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
       </>
@@ -404,7 +416,7 @@ export default function AdminReportDetailPage() {
             ),
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+        <View className="flex-1 bg-secondary-50 dark:bg-surface-dark">
           <EmptyState
             title="신고를 찾을 수 없습니다"
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
@@ -430,7 +442,7 @@ export default function AdminReportDetailPage() {
           ),
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-secondary-50 dark:bg-surface-dark">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"

@@ -118,10 +118,10 @@ function getPostFallbackHref(boardType?: string | null) {
 
 function MetaPill({ icon, label }: { icon?: ReactNode; label: string }) {
   return (
-    <View className="flex-row items-center rounded-sm bg-gray-100 px-3 py-1.5 dark:bg-surface-elevated">
+    <View className="flex-row items-center rounded-sm bg-secondary-100 px-3 py-1.5 dark:bg-surface-elevated">
       {icon ? <View>{icon}</View> : null}
       <Text
-        className={`${icon ? 'ml-1.5' : ''} text-xs font-medium text-gray-600 dark:text-gray-300`}
+        className={`${icon ? 'ml-1.5' : ''} text-xs font-medium text-secondary-600 dark:text-secondary-300`}
       >
         {label}
       </Text>
@@ -149,13 +149,13 @@ function ActionChip({
       ? 'bg-primary-50 dark:bg-primary-900/20'
       : variant === 'danger'
         ? 'bg-error-50 dark:bg-error-900/20'
-        : 'bg-gray-100 dark:bg-surface-elevated';
+        : 'bg-secondary-100 dark:bg-surface-elevated';
   const textClass =
     variant === 'primary'
       ? 'text-primary-700 dark:text-primary-300'
       : variant === 'danger'
         ? 'text-error-600 dark:text-error-400'
-        : 'text-gray-600 dark:text-gray-300';
+        : 'text-secondary-600 dark:text-secondary-300';
 
   return (
     <Pressable
@@ -180,7 +180,7 @@ function BoardPostDetailSkeleton() {
       contentContainerStyle={{ padding: 16, paddingBottom: LAYOUT.TAB_BAR_HEIGHT + 32 }}
       showsVerticalScrollIndicator={false}
     >
-      <Text className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+      <Text className="mb-4 text-sm text-secondary-500 dark:text-secondary-400">
         게시글을 불러오는 중이에요.
       </Text>
 
@@ -190,7 +190,7 @@ function BoardPostDetailSkeleton() {
         <Skeleton width={56} height={28} borderRadius={14} />
       </View>
 
-      <Card className="mb-4 border border-gray-100 dark:border-surface-overlay">
+      <Card className="mb-4 border border-secondary-100 dark:border-surface-overlay">
         <Skeleton width="72%" height={28} className="mb-3" />
         <View className="mb-5 flex-row flex-wrap gap-2">
           <Skeleton width={84} height={16} />
@@ -214,7 +214,7 @@ function BoardPostDetailSkeleton() {
       {[1, 2].map((item) => (
         <Card
           key={item}
-          className="mb-3 border border-gray-100 bg-white dark:border-surface-overlay dark:bg-surface"
+          className="mb-3 border border-secondary-100 bg-white dark:border-surface-overlay dark:bg-surface"
         >
           <View className="mb-3 flex-row items-center gap-2">
             <Skeleton width={88} height={18} />
@@ -229,7 +229,7 @@ function BoardPostDetailSkeleton() {
         </Card>
       ))}
 
-      <Card className="border border-gray-100 dark:border-surface-overlay">
+      <Card className="border border-secondary-100 dark:border-surface-overlay">
         <Skeleton width={80} height={20} className="mb-3" />
         <Skeleton width="100%" height={138} borderRadius={16} className="mb-4" />
         <View className="flex-row gap-3">
@@ -246,7 +246,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
     return (
       <View className="mb-3 mt-3 flex-row items-center gap-2">
         <PinIcon size={16} color="#F59E0B" />
-        <Text className="text-sm font-semibold uppercase tracking-[0.8px] text-gray-700 dark:text-gray-200">
+        <Text className="text-sm font-semibold uppercase tracking-[0.8px] text-secondary-700 dark:text-secondary-200">
           {item.title}
         </Text>
       </View>
@@ -255,7 +255,7 @@ function CommentSectionHeader({ item }: { item: BoardDetailSectionItem }) {
 
   return (
     <View className="mb-3 mt-3 flex-row items-center justify-between">
-      <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <Text className="text-lg font-semibold text-secondary-900 dark:text-secondary-100">
         {item.title} {item.count ?? 0}
       </Text>
       {item.isLocked ? (
@@ -899,34 +899,34 @@ export default function BoardPostDetailScreen() {
           ) : null}
         </View>
 
-        <Card className="mb-4 border border-gray-100 dark:border-surface-overlay">
-          <Text className="text-2xl font-bold leading-9 text-gray-900 dark:text-gray-100">
+        <Card className="mb-4 border border-secondary-100 dark:border-surface-overlay">
+          <Text className="text-2xl font-bold leading-9 text-secondary-900 dark:text-secondary-100">
             {post.title}
           </Text>
 
           <View className="mt-3 flex-row flex-wrap items-center gap-2">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            <Text className="text-sm font-medium text-secondary-700 dark:text-secondary-200">
               {post.authorName}
             </Text>
             {postCreatedAtLabel ? (
               <>
-                <View className="h-1 w-1 rounded-sm bg-gray-300 dark:bg-gray-600" />
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                   {postCreatedAtLabel}
                 </Text>
               </>
             ) : null}
             {postLastActivityLabel ? (
               <>
-                <View className="h-1 w-1 rounded-sm bg-gray-300 dark:bg-gray-600" />
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                   최근 활동 {postLastActivityLabel}
                 </Text>
               </>
             ) : null}
           </View>
 
-          <Text className="mt-5 text-base leading-8 text-gray-700 dark:text-gray-300">
+          <Text className="mt-5 text-base leading-8 text-secondary-700 dark:text-secondary-300">
             {post.body}
           </Text>
 
@@ -937,21 +937,21 @@ export default function BoardPostDetailScreen() {
 
           {post.jobSummary ? (
             <View className="mt-5 rounded-lg border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-              <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <Text className="text-sm font-semibold text-secondary-900 dark:text-secondary-100">
                 일정 요약
               </Text>
               <View className="mt-3 gap-2">
-                <Text className="text-sm text-gray-600 dark:text-gray-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
                   날짜: {post.jobSummary.workDates?.join(', ') || post.jobSummary.workDate}
                 </Text>
-                <Text className="text-sm text-gray-600 dark:text-gray-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
                   장소: {post.jobSummary.locationName || '미정'}
                 </Text>
-                <Text className="text-sm text-gray-600 dark:text-gray-300">
+                <Text className="text-sm text-secondary-600 dark:text-secondary-300">
                   인원: {post.jobSummary.filledPositions ?? 0}/{post.jobSummary.totalPositions ?? 0}
                 </Text>
                 {post.jobSummary.compensationLabel ? (
-                  <Text className="text-sm text-gray-600 dark:text-gray-300">
+                  <Text className="text-sm text-secondary-600 dark:text-secondary-300">
                     급여: {post.jobSummary.compensationLabel}
                   </Text>
                 ) : null}
@@ -974,8 +974,8 @@ export default function BoardPostDetailScreen() {
           </View>
 
           {post.boardType !== 'notice' ? (
-            <View className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-gray-500 dark:text-gray-400">
+            <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
+              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 반응
               </Text>
               <View className="mt-3 flex-row flex-wrap gap-2">
@@ -1009,8 +1009,8 @@ export default function BoardPostDetailScreen() {
           ) : null}
 
           {showActionBar ? (
-            <View className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-gray-500 dark:text-gray-400">
+            <View className="mt-5 rounded-lg bg-secondary-50 p-4 dark:bg-surface-elevated">
+              <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
                 게시글 작업
               </Text>
               <View className="mt-3 flex-row flex-wrap gap-2">
@@ -1086,7 +1086,7 @@ export default function BoardPostDetailScreen() {
 
       if (item.type === 'empty') {
         return (
-          <Card className="mb-3 border border-dashed border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface">
+          <Card className="mb-3 border border-dashed border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
             <EmptyState title={item.title} description={item.description} />
           </Card>
         );
@@ -1139,7 +1139,7 @@ export default function BoardPostDetailScreen() {
 
   if (!postId) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref="/(app)/(tabs)/board" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1154,7 +1154,7 @@ export default function BoardPostDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <BoardPostDetailSkeleton />
       </SafeAreaView>
@@ -1163,7 +1163,7 @@ export default function BoardPostDetailScreen() {
 
   if (error || !post || !data) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1177,7 +1177,7 @@ export default function BoardPostDetailScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <StackHeader title={BOARD_TYPE_LABELS[post.boardType]} fallbackHref={postFallbackHref} />
 
       <KeyboardAvoidingView

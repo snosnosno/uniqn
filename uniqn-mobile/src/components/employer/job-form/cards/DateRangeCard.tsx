@@ -118,27 +118,27 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
   const canAddTimeSlot = group.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="mb-4 bg-white dark:bg-surface rounded-md border border-gray-200 dark:border-surface-overlay overflow-hidden shadow-sm">
+    <View className="mb-4 bg-white dark:bg-surface rounded-md border border-secondary-200 dark:border-surface-overlay overflow-hidden shadow-sm">
       {/* 헤더 - 날짜 범위 표시 */}
-      <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-surface-overlay">
+      <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-secondary-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
-            <View className="w-10 h-10 rounded-sm bg-amber-100 dark:bg-amber-900/30 items-center justify-center mr-3">
+            <View className="w-10 h-10 rounded-sm bg-warning-100 dark:bg-warning-900/30 items-center justify-center mr-3">
               <CalendarIcon size={20} color="#F59E0B" />
             </View>
             <View className="flex-1">
-              <Text className="text-base font-bold text-gray-900 dark:text-white">
+              <Text className="text-base font-bold text-secondary-900 dark:text-white">
                 {dateRangeLabel}
               </Text>
               <View className="flex-row items-center mt-0.5">
                 {!isSingle && (
-                  <View className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-sm mr-2">
-                    <Text className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                  <View className="px-2 py-0.5 bg-warning-100 dark:bg-warning-900/30 rounded-sm mr-2">
+                    <Text className="text-xs font-medium text-warning-700 dark:text-warning-300">
                       {dayCount}일간
                     </Text>
                   </View>
                 )}
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400">
                   {group.timeSlots.length}개 시간대 | 총 {totalHeadcount}명
                 </Text>
               </View>
@@ -149,7 +149,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
           {canRemove && (
             <Pressable
               onPress={() => onRemove(index)}
-              className="p-2 rounded-sm bg-red-50 dark:bg-red-900/20"
+              className="p-2 rounded-sm bg-error-50 dark:bg-error-900/20"
               accessibilityRole="button"
               accessibilityLabel="일정 삭제"
             >
@@ -181,7 +181,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
           className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
             canAddTimeSlot
               ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
-              : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
+              : 'border-secondary-300 dark:border-surface-overlay bg-secondary-50 dark:bg-surface opacity-50'
           }`}
           accessibilityRole="button"
           accessibilityLabel="시간대 추가"
@@ -193,7 +193,7 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
             className={`text-sm font-medium ${
               canAddTimeSlot
                 ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-400 dark:text-gray-600'
+                : 'text-secondary-400 dark:text-secondary-600'
             }`}
           >
             시간대 추가 {canAddTimeSlot && `(${group.timeSlots.length}/${MAX_TIME_SLOTS_PER_DATE})`}
@@ -203,8 +203,8 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
 
       {/* 하단 정보 - 여러 날짜인 경우 안내 */}
       {!isSingle && (
-        <View className="px-4 py-2 bg-gray-50 dark:bg-surface/50 border-t border-gray-200 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
+        <View className="px-4 py-2 bg-secondary-50 dark:bg-surface/50 border-t border-secondary-200 dark:border-surface-overlay">
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center">
             위 시간대와 인원은 {dayCount}일 모든 날짜에 동일하게 적용됩니다
           </Text>
         </View>

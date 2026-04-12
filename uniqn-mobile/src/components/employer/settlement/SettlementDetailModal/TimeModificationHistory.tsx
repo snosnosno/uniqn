@@ -39,18 +39,18 @@ export function TimeModificationHistory({
   }
 
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
+    <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
         className="flex-row items-center justify-between active:opacity-70"
       >
         <View className="flex-row items-center">
           <DocumentIcon size={18} color="#6B7280" />
-          <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
+          <Text className="ml-2 text-base font-semibold text-secondary-900 dark:text-white">
             시간 수정 이력
           </Text>
-          <View className="ml-2 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-sm">
-            <Text className="text-xs text-yellow-700 dark:text-yellow-300">
+          <View className="ml-2 px-2 py-0.5 bg-warning-100 dark:bg-warning-900/30 rounded-sm">
+            <Text className="text-xs text-warning-700 dark:text-warning-300">
               {modificationHistory.length}회
             </Text>
           </View>
@@ -63,7 +63,7 @@ export function TimeModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
+        <View className="mt-3 bg-secondary-50 dark:bg-surface rounded-lg p-3">
           {modificationHistory.map((mod, idx) => (
             <ModificationHistoryItem key={idx} modification={mod} index={idx} />
           ))}

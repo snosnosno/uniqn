@@ -27,13 +27,15 @@ interface StatsHeaderProps {
 
 function StatsHeader({ pendingCount }: StatsHeaderProps) {
   return (
-    <View className="flex-row justify-between border-b border-gray-100 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
+    <View className="flex-row justify-between border-b border-secondary-100 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
       <View className="flex-row items-center">
         <Badge variant="warning" size="sm" dot>
           대기 {pendingCount}
         </Badge>
       </View>
-      <Text className="text-sm text-gray-500 dark:text-gray-400">검토 대기 요청만 표시됩니다</Text>
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400">
+        검토 대기 요청만 표시됩니다
+      </Text>
     </View>
   );
 }
@@ -116,10 +118,12 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingPosting) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+            공고 정보를 불러오는 중...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -127,7 +131,7 @@ export default function CancellationRequestsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 취소 요청 관리를 지원하지 않습니다."
@@ -138,10 +142,12 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">취소 요청을 불러오는 중...</Text>
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400">
+            취소 요청을 불러오는 중...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -149,7 +155,7 @@ export default function CancellationRequestsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="취소 요청을 불러올 수 없습니다"
           message={error.message}
@@ -160,7 +166,7 @@ export default function CancellationRequestsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['bottom']}>
       <StatsHeader pendingCount={pendingCount} />
 
       {cancellationRequests.length === 0 ? (
@@ -210,10 +216,10 @@ export default function CancellationRequestsScreen() {
             className="w-full max-w-sm rounded-lg bg-white p-5 dark:bg-surface"
             onPress={(e) => e.stopPropagation()}
           >
-            <Text className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+            <Text className="mb-2 text-lg font-semibold text-secondary-900 dark:text-white">
               취소 요청 승인
             </Text>
-            <Text className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mb-6 text-sm text-secondary-500 dark:text-secondary-400">
               이 취소 요청을 승인하시겠습니까?
               {'\n'}
               승인 시 해당 스태프의 확정은 취소됩니다.
@@ -226,7 +232,7 @@ export default function CancellationRequestsScreen() {
               <Button
                 onPress={handleConfirmApprove}
                 variant="primary"
-                className="flex-1 bg-red-500"
+                className="flex-1 bg-error-500"
                 disabled={isReviewingCancellation}
               >
                 {isReviewingCancellation ? '처리 중...' : '승인'}

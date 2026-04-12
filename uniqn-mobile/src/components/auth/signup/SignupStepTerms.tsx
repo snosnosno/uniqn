@@ -94,7 +94,7 @@ function Checkbox({
             ${
               checked
                 ? 'border-primary-500 bg-primary-500'
-                : 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface'
+                : 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface'
             }
             ${disabled ? 'opacity-50' : ''}
           `}
@@ -105,15 +105,15 @@ function Checkbox({
           {required ? (
             <Text className="mr-1 text-error-500">[필수]</Text>
           ) : (
-            <Text className="mr-1 text-gray-400">[선택]</Text>
+            <Text className="mr-1 text-secondary-400">[선택]</Text>
           )}
-          <Text className="text-gray-900 dark:text-white">{label}</Text>
+          <Text className="text-secondary-900 dark:text-white">{label}</Text>
         </View>
       </Pressable>
 
       {onViewContent ? (
         <Pressable onPress={onViewContent} className="px-2" testID={viewContentTestID}>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">보기</Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">보기</Text>
         </Pressable>
       ) : null}
     </View>
@@ -191,7 +191,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         accessibilityState={{ checked: allChecked, disabled: isLoading }}
         accessibilityLabel="전체 동의하기"
         className={`
-          flex-row items-center rounded-lg bg-gray-50 p-4 dark:bg-surface
+          flex-row items-center rounded-lg bg-secondary-50 p-4 dark:bg-surface
           ${isLoading ? 'opacity-50' : ''}
         `}
       >
@@ -201,16 +201,16 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
             ${
               allChecked
                 ? 'border-primary-500 bg-primary-500'
-                : 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface'
+                : 'border-secondary-300 bg-white dark:border-surface-overlay dark:bg-surface'
             }
           `}
         >
           {allChecked && <Text className="text-sm font-bold text-white">{''}</Text>}
         </View>
-        <Text className="font-semibold text-gray-900 dark:text-white">전체 동의하기</Text>
+        <Text className="font-semibold text-secondary-900 dark:text-white">전체 동의하기</Text>
       </Pressable>
 
-      <View className="h-px bg-gray-200 dark:bg-surface" />
+      <View className="h-px bg-secondary-200 dark:bg-surface" />
 
       <View className="px-2">
         {TERMS.map((term) => (
@@ -266,7 +266,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
       >
         <View className="px-4">
           {isContentLoading ? (
-            <Text className="leading-6 text-gray-700 dark:text-gray-300">
+            <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
               {TERM_CONTENT_LOADING_MESSAGE}
             </Text>
           ) : contentLoadError ? (
@@ -288,7 +288,9 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
               </Button>
             </View>
           ) : (
-            <Text className="leading-6 text-gray-700 dark:text-gray-300">{modalText}</Text>
+            <Text className="leading-6 text-secondary-700 dark:text-secondary-300">
+              {modalText}
+            </Text>
           )}
         </View>
       </SheetModal>

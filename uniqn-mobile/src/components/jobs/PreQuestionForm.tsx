@@ -64,7 +64,7 @@ const SelectOption = memo(function SelectOption({
       className={`px-4 py-3 rounded-lg border mb-2 ${
         isSelected
           ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20 dark:border-primary-400'
-          : 'bg-white border-gray-200 dark:bg-surface dark:border-surface-overlay'
+          : 'bg-white border-secondary-200 dark:bg-surface dark:border-surface-overlay'
       } ${disabled ? 'opacity-50' : 'active:opacity-80'}`}
     >
       <View className="flex-row items-center">
@@ -72,7 +72,7 @@ const SelectOption = memo(function SelectOption({
           className={`w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ${
             isSelected
               ? 'border-primary-500 bg-primary-500'
-              : 'border-gray-300 dark:border-surface-overlay'
+              : 'border-secondary-300 dark:border-surface-overlay'
           }`}
         >
           {isSelected && <View className="w-2 h-2 rounded-sm bg-white" />}
@@ -81,7 +81,7 @@ const SelectOption = memo(function SelectOption({
           className={`text-sm ${
             isSelected
               ? 'text-primary-700 dark:text-primary-300 font-medium'
-              : 'text-gray-700 dark:text-gray-300'
+              : 'text-secondary-700 dark:text-secondary-300'
           }`}
         >
           {option}
@@ -116,18 +116,18 @@ const QuestionItem = memo(function QuestionItem({
   );
 
   const borderColor = hasError
-    ? 'border-red-500 dark:border-red-400'
-    : 'border-gray-200 dark:border-surface-overlay';
+    ? 'border-error-500 dark:border-error-400'
+    : 'border-secondary-200 dark:border-surface-overlay';
 
   return (
     <View className="mb-6">
       {/* 질문 헤더 */}
       <View className="flex-row items-start mb-2">
-        <Text className="text-base font-medium text-gray-900 dark:text-white flex-1">
+        <Text className="text-base font-medium text-secondary-900 dark:text-white flex-1">
           {question.question}
-          {question.required && <Text className="text-red-500"> *</Text>}
+          {question.required && <Text className="text-error-500"> *</Text>}
         </Text>
-        <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 ml-2">
           {PRE_QUESTION_TYPE_LABELS[question.type]}
         </Text>
       </View>
@@ -141,7 +141,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor="#9CA3AF"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-white`}
         />
       )}
 
@@ -156,7 +156,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white min-h-[100px]`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-secondary-900 dark:text-white min-h-[100px]`}
         />
       )}
 
@@ -176,14 +176,14 @@ const QuestionItem = memo(function QuestionItem({
 
       {/* 에러 메시지 */}
       {hasError && (
-        <Text className="text-sm text-red-500 dark:text-red-400 mt-1">
+        <Text className="text-sm text-error-500 dark:text-error-400 mt-1">
           필수 질문입니다. 답변을 입력해주세요.
         </Text>
       )}
 
       {/* 글자 수 표시 (textarea) */}
       {question.type === 'textarea' && answer.answer.length > 0 && (
-        <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
+        <Text className="text-xs text-secondary-400 dark:text-secondary-500 text-right mt-1">
           {answer.answer.length}/1000자
         </Text>
       )}
@@ -239,18 +239,18 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     <View className="bg-white dark:bg-surface rounded-md p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">사전질문</Text>
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-white">사전질문</Text>
         {requiredCount > 0 && (
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400">
             필수 {answeredRequiredCount}/{requiredCount}
           </Text>
         )}
       </View>
 
       {/* 안내 텍스트 */}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-4">
         구인자가 지원자에게 미리 물어보는 질문입니다.
-        <Text className="text-red-500"> *</Text> 표시는 필수 항목입니다.
+        <Text className="text-error-500"> *</Text> 표시는 필수 항목입니다.
       </Text>
 
       {/* 질문 목록 */}

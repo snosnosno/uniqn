@@ -76,7 +76,9 @@ export function InquiryResponseForm({
 
   return (
     <View className="rounded-md bg-white p-4 dark:bg-surface">
-      <Text className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">답변 작성</Text>
+      <Text className="mb-4 text-lg font-semibold text-secondary-900 dark:text-secondary-100">
+        답변 작성
+      </Text>
 
       {/* 답변 내용 */}
       <FormField label="답변 내용" required error={errors.response} className="mb-4">
@@ -94,14 +96,14 @@ export function InquiryResponseForm({
           multiline
           numberOfLines={6}
           textAlignVertical="top"
-          className={`min-h-[150px] rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
+          className={`min-h-[150px] rounded-lg border px-4 py-3 text-base text-secondary-900 dark:text-secondary-100 ${
             errors.response
               ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-              : 'border-gray-300 bg-gray-50 dark:border-surface-overlay dark:bg-surface'
+              : 'border-secondary-300 bg-secondary-50 dark:border-surface-overlay dark:bg-surface'
           }`}
           maxLength={2000}
         />
-        <Text className="mt-1 text-right text-xs text-gray-400">{response.length}/2000</Text>
+        <Text className="mt-1 text-right text-xs text-secondary-400">{response.length}/2000</Text>
       </FormField>
 
       {/* 상태 선택 */}

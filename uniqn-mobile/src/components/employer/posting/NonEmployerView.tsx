@@ -15,16 +15,16 @@ import { BriefcaseIcon } from '@/components/icons';
 
 export function NonEmployerView() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-secondary-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface">
           <BriefcaseIcon size={48} color="#9CA3AF" />
         </View>
-        <Text className="mb-2 text-center text-xl font-bold text-gray-900 dark:text-white">
+        <Text className="mb-2 text-center text-xl font-bold text-secondary-900 dark:text-white">
           구인자 전용 기능입니다
         </Text>
-        <Text className="mb-8 text-center text-base text-gray-500 dark:text-gray-400">
+        <Text className="mb-8 text-center text-base text-secondary-500 dark:text-secondary-400">
           구인자로 등록하면 공고를 등록하고{'\n'}스태프를 모집할 수 있습니다.
         </Text>
         <Button

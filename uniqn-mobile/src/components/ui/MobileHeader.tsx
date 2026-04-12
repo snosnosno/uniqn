@@ -299,9 +299,9 @@ export function HeaderAction({ icon, onPress, label, disabled = false, badge }: 
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text className="text-xl text-gray-700 dark:text-gray-300">{icon}</Text>
+      <Text className="text-xl text-secondary-700 dark:text-secondary-300">{icon}</Text>
       {badge !== undefined && badge > 0 ? (
-        <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-red-500 px-1">
+        <View className="absolute -right-0.5 -top-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-error-500 px-1">
           <Text className="text-xs font-bold text-white">{badge > 99 ? '99+' : badge}</Text>
         </View>
       ) : null}

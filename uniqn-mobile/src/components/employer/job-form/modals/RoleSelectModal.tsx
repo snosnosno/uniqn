@@ -76,7 +76,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
           key={item.key}
           onPress={() => handleSelectRole(item)}
           disabled={isExisting && !isOther}
-          className={`flex-row items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-surface-overlay ${
+          className={`flex-row items-center justify-between px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay ${
             isExisting && !isOther ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
@@ -88,8 +88,8 @@ export const RoleSelectModal = memo(function RoleSelectModal({
             <Text
               className={`text-base ${
                 isExisting && !isOther
-                  ? 'text-gray-400 dark:text-gray-500'
-                  : 'text-gray-900 dark:text-white'
+                  ? 'text-secondary-400 dark:text-secondary-500'
+                  : 'text-secondary-900 dark:text-white'
               }`}
             >
               {item.name}
@@ -108,7 +108,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
       <View className="-mx-5 -mb-5">
         {showCustomInput ? (
           <View className="p-4">
-            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <Text className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">
               역할 이름을 입력해 주세요.
             </Text>
             <TextInput
@@ -117,7 +117,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               placeholder="예: 플로어 매니저"
               placeholderTextColor="#9CA3AF"
               autoFocus
-              className="border-2 border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white bg-white dark:bg-surface"
+              className="border-2 border-secondary-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-secondary-900 dark:text-white bg-white dark:bg-surface"
             />
             <View className="flex-row gap-3 mt-4">
               <Pressable
@@ -125,9 +125,9 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                   setShowCustomInput(false);
                   setCustomRoleName('');
                 }}
-                className="flex-1 py-3 rounded-lg bg-gray-100 dark:bg-surface"
+                className="flex-1 py-3 rounded-lg bg-secondary-100 dark:bg-surface"
               >
-                <Text className="text-center font-medium text-gray-700 dark:text-gray-300">
+                <Text className="text-center font-medium text-secondary-700 dark:text-secondary-300">
                   취소
                 </Text>
               </Pressable>
@@ -135,12 +135,16 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 onPress={handleAddCustomRole}
                 disabled={!customRoleName.trim()}
                 className={`flex-1 py-3 rounded-lg ${
-                  customRoleName.trim() ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-surface-elevated'
+                  customRoleName.trim()
+                    ? 'bg-indigo-500'
+                    : 'bg-secondary-300 dark:bg-surface-elevated'
                 }`}
               >
                 <Text
                   className={`text-center font-medium ${
-                    customRoleName.trim() ? 'text-white' : 'text-gray-500 dark:text-gray-400'
+                    customRoleName.trim()
+                      ? 'text-white'
+                      : 'text-secondary-500 dark:text-secondary-400'
                   }`}
                 >
                   추가

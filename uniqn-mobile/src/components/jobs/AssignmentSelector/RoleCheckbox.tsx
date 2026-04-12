@@ -28,8 +28,8 @@ export const RoleCheckbox = memo(function RoleCheckbox({
           isSelected
             ? 'border-primary-500 bg-primary-500'
             : isFilled
-              ? 'border-gray-300 bg-gray-200 dark:border-surface-overlay dark:bg-surface'
-              : 'border-gray-300 dark:border-surface-overlay'
+              ? 'border-secondary-300 bg-secondary-200 dark:border-surface-overlay dark:bg-surface'
+              : 'border-secondary-300 dark:border-surface-overlay'
         }`}
       >
         {isSelected && <CheckIcon size={12} color="#FFFFFF" />}
@@ -38,10 +38,10 @@ export const RoleCheckbox = memo(function RoleCheckbox({
       <Text
         className={`text-sm ${
           isFilled
-            ? 'text-gray-400 line-through dark:text-gray-500'
+            ? 'text-secondary-400 line-through dark:text-secondary-500'
             : isSelected
               ? 'font-medium text-primary-700 dark:text-primary-300'
-              : 'text-gray-700 dark:text-gray-300'
+              : 'text-secondary-700 dark:text-secondary-300'
         }`}
       >
         {roleLabel}({role.filledCount}/{role.requiredCount})

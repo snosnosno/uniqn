@@ -96,7 +96,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
       onPress={() => onSelect(item.value)}
       className={`
         flex-row items-center justify-between px-4 py-4
-        border-b border-gray-100 dark:border-surface-overlay
+        border-b border-secondary-100 dark:border-surface-overlay
         ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''}
       `}
       accessibilityRole="button"
@@ -107,7 +107,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
         className={`text-base ${
           isSelected
             ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
-            : 'text-gray-900 dark:text-white'
+            : 'text-secondary-900 dark:text-white'
         }`}
       >
         {item.label}
@@ -177,12 +177,12 @@ export const TimePicker = memo(function TimePicker({
   const getInputStyle = () => {
     const base = 'flex-row items-center px-4 py-3 rounded-lg border-2';
     if (disabled) {
-      return `${base} bg-gray-100 dark:bg-surface border-gray-200 dark:border-surface-overlay`;
+      return `${base} bg-secondary-100 dark:bg-surface border-secondary-200 dark:border-surface-overlay`;
     }
     if (error) {
-      return `${base} bg-white dark:bg-surface border-red-500`;
+      return `${base} bg-white dark:bg-surface border-error-500`;
     }
-    return `${base} bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay`;
+    return `${base} bg-white dark:bg-surface border-secondary-300 dark:border-surface-overlay`;
   };
 
   // FlatList renderItem
@@ -209,7 +209,9 @@ export const TimePicker = memo(function TimePicker({
   return (
     <View className={className} testID={testID}>
       {/* 레이블 */}
-      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
+      {label && (
+        <Text className="mb-2 font-medium text-secondary-900 dark:text-white">{label}</Text>
+      )}
 
       {/* 트리거 버튼 */}
       <Pressable
@@ -224,10 +226,10 @@ export const TimePicker = memo(function TimePicker({
         <Text
           className={`flex-1 ${value ? 'text-base' : 'text-sm'} ${
             disabled
-              ? 'text-gray-400 dark:text-gray-500'
+              ? 'text-secondary-400 dark:text-secondary-500'
               : value
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
+                ? 'text-secondary-900 dark:text-white'
+                : 'text-secondary-400 dark:text-secondary-500'
           }`}
         >
           {displayText}
@@ -236,7 +238,7 @@ export const TimePicker = memo(function TimePicker({
       </Pressable>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && <Text className="mt-2 text-sm text-red-600">{errorMessage}</Text>}
+      {error && errorMessage && <Text className="mt-2 text-sm text-error-600">{errorMessage}</Text>}
 
       {/* 모달 */}
       <Modal
@@ -260,8 +262,8 @@ export const TimePicker = memo(function TimePicker({
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
           <View className="bg-white dark:bg-surface rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
                 출근 시간 선택
               </Text>
               <Pressable

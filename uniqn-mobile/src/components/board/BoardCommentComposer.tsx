@@ -77,10 +77,12 @@ export function BoardCommentComposer({
   return (
     <Card>
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</Text>
+        <Text className="text-base font-semibold text-secondary-900 dark:text-secondary-100">
+          {title}
+        </Text>
         {onCancel ? (
           <Pressable onPress={onCancel} className="active:opacity-70">
-            <Text className="text-sm text-gray-500 dark:text-gray-400">취소</Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400">취소</Text>
           </Pressable>
         ) : null}
       </View>
@@ -104,7 +106,9 @@ export function BoardCommentComposer({
 
       {canSelectMentions ? (
         <View className="mt-3">
-          <Text className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">멘션</Text>
+          <Text className="mb-2 text-xs font-medium text-secondary-500 dark:text-secondary-400">
+            멘션
+          </Text>
           <View className="flex-row flex-wrap gap-2">
             {mentionCandidates.map((candidate) => {
               const isSelected = selectedMentionIds.includes(candidate.userId);
@@ -116,10 +120,10 @@ export function BoardCommentComposer({
                   className={`rounded-sm px-3 py-1.5 ${
                     isSelected
                       ? 'bg-primary-100 dark:bg-primary-900/30'
-                      : 'bg-gray-100 dark:bg-surface-elevated'
+                      : 'bg-secondary-100 dark:bg-surface-elevated'
                   }`}
                 >
-                  <Text className="text-xs text-gray-700 dark:text-gray-200">
+                  <Text className="text-xs text-secondary-700 dark:text-secondary-200">
                     @{candidate.displayName}
                   </Text>
                 </Pressable>

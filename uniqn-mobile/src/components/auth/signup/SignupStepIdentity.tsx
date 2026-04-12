@@ -164,7 +164,7 @@ export function SignupStepIdentity({
   return (
     <View className="w-full flex-col gap-5">
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
           이름 (실명)
         </Text>
         <Controller
@@ -183,8 +183,8 @@ export function SignupStepIdentity({
           )}
         />
         {isAppleUser && !initialData?.name && (
-          <View className="mt-2 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
-            <Text className="text-xs text-blue-700 dark:text-blue-300">
+          <View className="mt-2 rounded-lg bg-info-50 p-3 dark:bg-info-900/20">
+            <Text className="text-xs text-info-700 dark:text-info-300">
               Apple은 최초 로그인 시에만 이름을 제공합니다. 이전에 이름 공유를 거부했거나 삭제한
               경우 직접 입력해주세요.
             </Text>
@@ -193,7 +193,9 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">생년월일</Text>
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          생년월일
+        </Text>
         <Controller
           control={control}
           name="birthDate"
@@ -211,7 +213,9 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">성별</Text>
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
+          성별
+        </Text>
         <Controller
           control={control}
           name="gender"
@@ -229,7 +233,7 @@ export function SignupStepIdentity({
       </View>
 
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <Text className="mb-2 text-sm font-medium text-secondary-700 dark:text-secondary-300">
           {usePortOneIdentity ? '본인인증' : '전화번호 인증'}
         </Text>
         {usePortOneIdentity ? (

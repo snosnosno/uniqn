@@ -163,13 +163,15 @@ function WebSheetModal({
             className={`bg-white dark:bg-surface-dark w-full ${fullHeight ? 'h-full' : 'rounded-t-3xl'}`}
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
+              <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+                {title}
+              </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={handleRequestClose}
                   disabled={isLoading}
-                  className="w-8 h-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -191,7 +193,7 @@ function WebSheetModal({
 
             {/* Footer */}
             {footer && (
-              <View className="px-4 py-4 border-t border-gray-200 dark:border-surface-overlay pb-8">
+              <View className="px-4 py-4 border-t border-secondary-200 dark:border-surface-overlay pb-8">
                 {footer}
               </View>
             )}
@@ -324,13 +326,15 @@ function NativeSheetModal({
               className={`bg-white dark:bg-surface-dark ${fullHeight ? '' : 'rounded-t-3xl'}`}
             >
               {/* Header */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-secondary-200 dark:border-surface-overlay">
+                <Text className="text-lg font-semibold text-secondary-900 dark:text-white">
+                  {title}
+                </Text>
                 {showCloseButton && (
                   <Pressable
                     onPress={handleRequestClose}
                     disabled={isLoading}
-                    className="w-8 h-8 items-center justify-center rounded-sm bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                    className="w-8 h-8 items-center justify-center rounded-sm bg-secondary-100 dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -353,7 +357,7 @@ function NativeSheetModal({
 
               {/* Footer */}
               {footer && (
-                <View className="px-4 py-4 border-t border-gray-200 dark:border-surface-overlay">
+                <View className="px-4 py-4 border-t border-secondary-200 dark:border-surface-overlay">
                   {footer}
                 </View>
               )}

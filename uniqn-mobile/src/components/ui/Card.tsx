@@ -25,8 +25,8 @@ export interface CardProps extends ViewProps {
 
 const variantStyles: Record<CardVariant, string> = {
   elevated: 'bg-white dark:bg-surface-elevated shadow-md',
-  outlined: 'bg-white dark:bg-surface border border-gray-200 dark:border-surface-overlay',
-  filled: 'bg-gray-50 dark:bg-surface',
+  outlined: 'bg-white dark:bg-surface border border-secondary-200 dark:border-surface-overlay',
+  filled: 'bg-secondary-50 dark:bg-surface',
 };
 
 const paddingStyles: Record<CardPadding, string> = {
