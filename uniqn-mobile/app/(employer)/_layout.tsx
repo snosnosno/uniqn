@@ -40,6 +40,7 @@ export default function EmployerLayout() {
         },
         headerTintColor: getLayoutColor(isDark, 'headerTint'),
         headerTitleStyle: {
+          fontFamily: 'Outfit_600SemiBold',
           fontWeight: '600',
         },
         animation: 'slide_from_right',

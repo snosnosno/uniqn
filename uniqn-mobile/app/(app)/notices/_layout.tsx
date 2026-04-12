@@ -19,6 +19,7 @@ export default function NoticesLayout() {
         },
         headerTintColor: getLayoutColor(isDark, 'headerTint'),
         headerTitleStyle: {
+          fontFamily: 'Outfit_600SemiBold',
           fontWeight: '600',
         },
         headerLeft: () => (

@@ -30,6 +30,7 @@ export default function AdminLayout() {
         },
         headerTintColor: getLayoutColor(isDark, 'headerTint'),
         headerTitleStyle: {
+          fontFamily: 'Outfit_600SemiBold',
           fontWeight: '600',
         },
         headerLeft: () => (
