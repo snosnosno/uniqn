@@ -666,10 +666,10 @@ export function getCalendarMarkedDates(
     {};
 
   const colorMap: Record<ScheduleType, string> = {
-    applied: '#D4A017', // yellow-500
-    confirmed: '#22c55e', // green-500
-    completed: '#D4AF37', // primary-500
-    cancelled: '#ef4444', // red-500
+    applied: '#D4AF37', // primary (gold)
+    confirmed: '#22C55E', // success
+    completed: '#8B5CF6', // completed (purple)
+    cancelled: '#EF4444', // error
   };
 
   schedules.forEach((schedule) => {

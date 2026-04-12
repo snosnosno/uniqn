@@ -183,8 +183,8 @@ export const REPORT_SEVERITY_COLORS: Record<
     text: 'text-warning-600 dark:text-warning-300',
   },
   medium: {
-    bg: 'bg-orange-100 dark:bg-orange-900/30',
-    text: 'text-orange-600 dark:text-orange-300',
+    bg: 'bg-warning-100 dark:bg-warning-900/30',
+    text: 'text-warning-600 dark:text-warning-300',
   },
   high: {
     bg: 'bg-error-100 dark:bg-error-900/30',

@@ -399,10 +399,10 @@ export const BUBBLE_SCORE_COLORS: BubbleScoreColorRange[] = [
   {
     min: 30,
     max: 45,
-    bg: 'bg-orange-500',
-    darkBg: 'dark:bg-orange-400',
+    bg: 'bg-warning-500',
+    darkBg: 'dark:bg-warning-400',
     text: 'text-white',
-    hex: '#F97316',
+    hex: '#D4A017',
     label: '보통 이하',
   },
   {
