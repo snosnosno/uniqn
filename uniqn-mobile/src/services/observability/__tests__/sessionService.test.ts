@@ -184,10 +184,24 @@ describe('sessionService', () => {
     mockAuthStoreState.status = 'authenticated';
     mockAuthStoreState.bootstrapSource = 'server';
     mockAuthStoreState.suppressedSessionUserId = null;
+    mockAuthStoreState.user = { uid: 'test-user-id', email: 'test@example.com' };
     mockAuthStoreState.reset.mockReset();
     mockAuthStoreState.checkAuthState.mockResolvedValue(undefined);
     mockToastAddToast.mockReset();
     mockTokenExpiry(30);
+    // clearAllMocks는 구현을 지우므로 기본값 명시적 복원
+    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
+      supabase: {
+        auth: {
+          getUser: jest.Mock;
+          onAuthStateChange: jest.Mock;
+        };
+      };
+    };
+    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSupa.auth.onAuthStateChange.mockImplementation(() => ({
+      data: { subscription: { unsubscribe: jest.fn() } },
+    }));
     mockRefreshSession.mockResolvedValue({
       data: { session: { access_token: 'new-token' } },
       error: null,
@@ -242,16 +256,106 @@ describe('sessionService', () => {
     expect(sessionService.isSessionActive()).toBe(false);
   });
 
-  // TODO: Supabase 전환 후 auth restore guard 로직이 변경됨.
-  // supabase.auth.getUser()와 onAuthStateChange 콜백을 통한 복원 시나리오로 재작성 필요.
-  it.skip('ignores a transient null auth event while Supabase restores the session', async () => {
-    // Needs rewrite for Supabase auth restore pattern
+  it('ignores a transient null auth event while Supabase restores the session', async () => {
+    // Arrange: guard가 활성화되는 조건 — cache 부트스트랩 + 인증 상태 + user 없음
+    setAuthStoreState({
+      status: 'authenticated',
+      bootstrapSource: 'cache',
+      user: null,
+    });
+
+    // getUser()는 null 반환 (아직 복원 중)
+    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
+      supabase: {
+        auth: {
+          getUser: jest.Mock;
+          onAuthStateChange: jest.Mock;
+        };
+      };
+    };
+    const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
+    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    // waitForRestoredAuthUser 내 임시 onAuthStateChange가 복원된 user 전달
+    let restoreCallback:
+      | ((event: string, session: { user: typeof restoredUser } | null) => void)
+      | undefined;
+    let mainAuthCallback:
+      | ((event: string, session: { user: typeof restoredUser } | null) => void)
+      | undefined;
+    const restoreUnsubscribe = jest.fn();
+
+    mockSupa.auth.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
+        if (!mainAuthCallback) {
+          // 첫 번째 호출 = initialize()의 메인 구독
+          mainAuthCallback = callback;
+          return { data: { subscription: { unsubscribe: jest.fn() } } };
+        }
+        // 두 번째 호출 = waitForRestoredAuthUser 내 임시 구독
+        restoreCallback = callback;
+        return { data: { subscription: { unsubscribe: restoreUnsubscribe } } };
+      }
+    );
+
+    sessionService.initialize();
+
+    // Act: 메인 콜백에 null 이벤트 전달 (transient null)
+    const handlePromise = mainAuthCallback?.('INITIAL_SESSION', null);
+
+    // 임시 구독이 복원된 user를 전달
+    await Promise.resolve();
+    restoreCallback?.('SIGNED_IN', { user: restoredUser });
+
+    await handlePromise;
+    await jest.runOnlyPendingTimersAsync();
+
+    // Assert: null이 아닌 복원된 user로 checkAuthState가 호출됨
+    expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(restoredUser);
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
   });
 
-  // TODO: Supabase 전환 후 auth restore guard 로직이 변경됨.
-  // supabase.auth.getUser()와 onAuthStateChange 콜백을 통한 동기 초기 null 처리로 재작성 필요.
-  it.skip('ignores a synchronous initial null auth snapshot while Supabase restores the session', async () => {
-    // Needs rewrite for Supabase auth restore pattern
+  it('ignores a synchronous initial null auth snapshot while Supabase restores the session', async () => {
+    // Arrange: guard 활성화 조건 — cache 부트스트랩 + 인증 상태 + user 없음
+    setAuthStoreState({
+      status: 'authenticated',
+      bootstrapSource: 'cache',
+      user: null,
+    });
+
+    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
+      supabase: {
+        auth: {
+          getUser: jest.Mock;
+          onAuthStateChange: jest.Mock;
+        };
+      };
+    };
+    const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
+
+    // getUser()가 즉시 복원된 user를 반환 (동기 초기 null 처리)
+    mockSupa.auth.getUser.mockResolvedValue({ data: { user: restoredUser }, error: null });
+
+    let mainAuthCallback:
+      | ((event: string, session: { user: typeof restoredUser } | null) => void)
+      | undefined;
+    mockSupa.auth.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
+        mainAuthCallback = callback;
+        return { data: { subscription: { unsubscribe: jest.fn() } } };
+      }
+    );
+
+    sessionService.initialize();
+
+    // Act: null 이벤트 전달 (초기 null 스냅샷)
+    const handlePromise = mainAuthCallback?.('INITIAL_SESSION', null);
+    await handlePromise;
+    await jest.runOnlyPendingTimersAsync();
+
+    // Assert: getUser()가 반환한 복원된 user로 checkAuthState 호출
+    expect(mockAuthStoreState.checkAuthState).toHaveBeenCalledWith(restoredUser);
+    expect(mockAuthStoreState.checkAuthState).not.toHaveBeenCalledWith(null);
   });
 
   it('does not delay a real null auth event after startup restore guard is absent', async () => {
@@ -274,10 +378,60 @@ describe('sessionService', () => {
     await nullEventPromise;
   });
 
-  // TODO: Supabase 전환 후 fallback restore listener 패턴이 제거됨.
-  // Supabase는 getUser() + onAuthStateChange로 단일 경로 복원. 재작성 필요.
-  it.skip('cleans up the fallback restore listener after a synchronous auth callback', async () => {
-    // Needs rewrite for Supabase auth restore pattern
+  it('cleans up the temporary restore listener after waitForRestoredAuthUser resolves', async () => {
+    // Arrange: guard 활성화 조건 — cache 부트스트랩 + 인증 상태 + user 없음
+    setAuthStoreState({
+      status: 'authenticated',
+      bootstrapSource: 'cache',
+      user: null,
+    });
+
+    const { supabase: mockSupa } = jest.requireMock('@/lib/supabase') as {
+      supabase: {
+        auth: {
+          getUser: jest.Mock;
+          onAuthStateChange: jest.Mock;
+        };
+      };
+    };
+    const restoredUser = { id: 'test-user-id', email: 'test@example.com' };
+
+    // getUser()는 null 반환 — waitForRestoredAuthUser가 임시 onAuthStateChange 구독으로 진입
+    mockSupa.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    let mainAuthCallback:
+      | ((event: string, session: { user: typeof restoredUser } | null) => void)
+      | undefined;
+    let restoreCallback:
+      | ((event: string, session: { user: typeof restoredUser } | null) => void)
+      | undefined;
+    const restoreUnsubscribe = jest.fn();
+
+    mockSupa.auth.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: { user: typeof restoredUser } | null) => void) => {
+        if (!mainAuthCallback) {
+          mainAuthCallback = callback;
+          return { data: { subscription: { unsubscribe: jest.fn() } } };
+        }
+        restoreCallback = callback;
+        return { data: { subscription: { unsubscribe: restoreUnsubscribe } } };
+      }
+    );
+
+    sessionService.initialize();
+
+    // Act: null 이벤트 → waitForRestoredAuthUser 진입 → 임시 구독 생성
+    const handlePromise = mainAuthCallback?.('INITIAL_SESSION', null);
+
+    await Promise.resolve();
+    // 임시 구독이 복원된 user 전달 → Promise resolve
+    restoreCallback?.('SIGNED_IN', { user: restoredUser });
+
+    await handlePromise;
+    await jest.runOnlyPendingTimersAsync();
+
+    // Assert: 임시 restore 구독이 settled 후 해제됨
+    expect(restoreUnsubscribe).toHaveBeenCalled();
   });
 
   it('starts session timers after suppressed session becomes authenticated again', async () => {

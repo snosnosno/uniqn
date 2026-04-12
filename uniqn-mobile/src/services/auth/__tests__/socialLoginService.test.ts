@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-import { BusinessError, ERROR_CODES } from '@/errors';
+import { BusinessError, ERROR_CODES, NetworkError } from '@/errors';
 
 const mockSignInWithCredential = jest.fn();
 const mockSignInWithEmailAndPassword = jest.fn();
@@ -242,20 +242,111 @@ describe('socialLoginService signInWithApple', () => {
     expect(result.profile.phoneVerified).toBe(false);
   });
 
-  // TODO: withTimeout mock 시퀀스가 Supabase 전환 후 변경됨.
-  // signInWithIdToken의 반환 형식 변경 + withTimeout 호출 순서 재매핑 필요.
-  it.skip('retries profile creation once after a timeout and completes the Apple login flow', async () => {
-    // Needs rewrite: withTimeout call sequence changed after Supabase migration
+  // 그룹 A: withTimeout 시퀀스 재매핑
+  it('retries profile creation once after a timeout and completes the Apple login flow', async () => {
+    // 신규 유저: profile lookup → null, 1차 createOrMerge 타임아웃, verify 후 없음, 2차 createOrMerge 성공
+    const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
+    });
+
+    mockGetUserProfile.mockResolvedValue(null);
+
+    // withTimeout 호출 순서:
+    // call 1: signInWithIdToken → 통과 (기본값)
+    // call 2: getUserProfile (lookup) → null 반환
+    // call 3: createOrMerge (1차) → 타임아웃 에러
+    // call 4: getUserProfile (verify, 1회) → null
+    // call 5: getUserProfile (verify, 2회) → null
+    // call 6: createOrMerge (2차 재시도) → 성공
+    mockWithTimeout
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 1: signInWithIdToken
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 2: getUserProfile lookup
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // call 3: createOrMerge 타임아웃
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 4: verify getUserProfile 1회
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 5: verify getUserProfile 2회
+      .mockImplementationOnce((promise: Promise<unknown>) => promise); // call 6: createOrMerge 재시도 성공
+
+    const { signInWithApple } = loadModule();
+
+    const result = await signInWithApple();
+
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
   });
 
-  it.skip('continues the Apple login flow when the profile becomes visible after a timed out write', async () => {
-    // Needs rewrite: withTimeout call sequence changed after Supabase migration
+  it('continues the Apple login flow when the profile becomes visible after a timed out write', async () => {
+    // 신규 유저: 1차 createOrMerge 타임아웃 후 verify에서 프로필 발견 → 재시도 없이 계속
+    const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
+    });
+
+    const resolvedProfile = {
+      uid: 'firebase-user',
+      email: 'apple@example.com',
+      role: 'staff' as const,
+      socialProvider: 'apple',
+      phoneVerified: false,
+      isActive: true,
+    };
+
+    // call 1: signInWithIdToken → 통과
+    // call 2: getUserProfile (lookup) → null (신규)
+    // call 3: createOrMerge (1차) → 타임아웃
+    // call 4: getUserProfile (verify, 1회) → 프로필 발견 → 재시도 불필요
+    mockWithTimeout
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 1: signInWithIdToken
+      .mockImplementationOnce(() => Promise.resolve(null)) // call 2: getUserProfile lookup → null
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // call 3: createOrMerge 타임아웃
+      .mockImplementationOnce(() => Promise.resolve(resolvedProfile)); // call 4: verify → 발견
+
+    const { signInWithApple } = loadModule();
+
+    const result = await signInWithApple();
+
+    // verify에서 프로필을 발견했으므로 createOrMerge는 1번만 시도
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(1);
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
   });
 
-  // TODO: withTimeout mock 시퀀스가 Supabase 전환 후 변경됨.
-  // signInWithIdToken의 반환 형식 변경 + withTimeout 호출 순서 재매핑 필요.
-  it.skip('falls back to the social signup flow when profile creation keeps timing out', async () => {
-    // Needs rewrite: withTimeout call sequence changed after Supabase migration
+  it('falls back to the social signup flow when profile creation keeps timing out', async () => {
+    // 신규 유저: 1차 타임아웃 → verify 실패 → 2차 타임아웃 → verify 실패 → protectAuthFlow 호출
+    const timeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 후 프로필 생성이 지연되고 있습니다.',
+    });
+
+    // call 1: signInWithIdToken → 통과
+    // call 2: getUserProfile (lookup) → null
+    // call 3: createOrMerge (1차) → 타임아웃
+    // call 4: getUserProfile (verify1, 1회) → null
+    // call 5: getUserProfile (verify1, 2회) → null
+    // call 6: createOrMerge (2차) → 타임아웃
+    // call 7: getUserProfile (verify2, 1회) → null
+    // call 8: getUserProfile (verify2, 2회) → null
+    mockWithTimeout
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 1: signInWithIdToken
+      .mockImplementationOnce(() => Promise.resolve(null)) // call 2: getUserProfile lookup → null
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // call 3: createOrMerge 1차 타임아웃
+      .mockImplementationOnce(() => Promise.resolve(null)) // call 4: verify1 attempt1 → null
+      .mockImplementationOnce(() => Promise.resolve(null)) // call 5: verify1 attempt2 → null
+      .mockImplementationOnce(() => Promise.reject(timeoutError)) // call 6: createOrMerge 2차 타임아웃
+      .mockImplementationOnce(() => Promise.resolve(null)) // call 7: verify2 attempt1 → null
+      .mockImplementationOnce(() => Promise.resolve(null)); // call 8: verify2 attempt2 → null
+
+    const { signInWithApple } = loadModule();
+
+    const result = await signInWithApple();
+
+    // 2번 createOrMerge 시도, 모두 타임아웃이지만 social_signup 보호 후 최소 프로필 반환
+    expect(mockCreateOrMerge).toHaveBeenCalledTimes(2);
+    expect(mockProtectAuthFlow).toHaveBeenCalledWith(
+      'firebase-user',
+      'social_signup',
+      expect.any(Number)
+    );
+    expect(result.profile.socialProvider).toBe('apple');
+    expect(result.profile.phoneVerified).toBe(false);
   });
 
   it('rethrows a cancel event without signing out', async () => {
@@ -292,10 +383,28 @@ describe('socialLoginService signInWithApple', () => {
     expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
-  // TODO: Supabase 전환 후 account-conflict 에러 코드 매핑이 변경됨.
-  // Supabase는 동일 에러를 다른 방식으로 처리. Supabase 에러 코드로 재작성 필요.
-  it.skip('surfaces account-conflict errors with the dedicated Apple error code', async () => {
-    // Firebase auth/account-exists-with-different-credential → Supabase equivalent needed
+  // 그룹 B: account-conflict 에러
+  it('surfaces account-conflict errors with the dedicated Apple error code', async () => {
+    // Supabase signInWithIdToken이 error 필드에 account-conflict를 담아 반환
+    mockSignInWithCredential.mockResolvedValue({
+      data: { user: null, session: null },
+      error: {
+        message: 'User already registered',
+        code: 'user_already_exists',
+        name: 'AuthApiError',
+        status: 422,
+      },
+    });
+
+    const { signInWithApple } = loadModule();
+
+    const caughtError = await signInWithApple().catch((e: unknown) => e);
+
+    expect(caughtError).toMatchObject({
+      name: 'AuthError',
+      code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+    });
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
   it('maps operation-not-allowed to an Apple-disabled auth error', async () => {
@@ -324,18 +433,99 @@ describe('socialLoginService signInWithApple', () => {
     expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
-  // TODO: jest.isolateModules로 인한 클래스 인스턴스 불일치 문제.
-  // NetworkError가 isolatedModule의 isAppError에서 인식되지 않아 generic AuthError로 래핑됨.
-  // 모듈 격리 전략 변경 또는 에러 프로퍼티 기반 검증으로 재작성 필요.
-  it.skip('retries once after a Supabase timeout and preserves the network error', async () => {
-    // Needs rewrite: class identity mismatch across jest.isolateModules boundary
+  // 그룹 C: jest.isolateModules 경계를 넘는 에러 검증
+  //
+  // isolateModules 환경에서 모듈별로 클래스 인스턴스가 달라 instanceof가 실패할 수 있음.
+  // isAppError는 __isAppError 브랜드 속성(=true)으로도 판별하므로,
+  // 테스트 파일의 import에서 직접 생성한 NetworkError는 __isAppError 브랜드가 붙어
+  // 프로덕션의 isAppError(error) → true → 그대로 rethrow됨.
+  // 검증은 __isAppError, code, category 등 에러 프로퍼티 기반으로 수행.
+  it('retries once after a Supabase timeout and preserves the network error', async () => {
+    jest.useFakeTimers();
+
+    const networkTimeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 서버 인증이 지연되고 있습니다.',
+    });
+
+    // withTimeout이 signInWithIdToken을 두 번 모두 NetworkError로 reject
+    mockWithTimeout
+      .mockImplementationOnce(() => Promise.reject(networkTimeoutError)) // call 1: 1차 시도
+      .mockImplementationOnce(() => Promise.reject(networkTimeoutError)); // call 2: 재시도
+
+    const { signInWithApple } = loadModule();
+
+    const signInPromise = signInWithApple().catch((e: unknown) => e);
+
+    // 재시도 딜레이(1초) 통과
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(1500);
+
+    const caughtError = await signInPromise;
+
+    // NetworkError(__isAppError=true) → isAppError 통과 → 그대로 rethrow
+    expect(caughtError).toMatchObject({
+      __isAppError: true,
+      code: ERROR_CODES.NETWORK_TIMEOUT,
+      category: 'network',
+    });
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it.skip('surfaces a timed out profile lookup instead of hanging', async () => {
-    // Needs rewrite: class identity mismatch across jest.isolateModules boundary
+  it('surfaces a timed out profile lookup instead of hanging', async () => {
+    // signInWithIdToken 성공 후 profile lookup withTimeout이 NetworkError 던짐
+    const lookupTimeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 처리 중 사용자 정보를 확인하는 데 시간이 오래 걸리고 있습니다.',
+    });
+
+    // call 1: signInWithIdToken → 성공
+    // call 2: getUserProfile (lookup) → 타임아웃 에러
+    mockWithTimeout
+      .mockImplementationOnce((promise: Promise<unknown>) => promise) // call 1
+      .mockImplementationOnce(() => Promise.reject(lookupTimeoutError)); // call 2
+
+    const { signInWithApple } = loadModule();
+
+    const caughtError = await signInWithApple().catch((e: unknown) => e);
+
+    // NetworkError(__isAppError=true) → isAppError 통과 → 그대로 rethrow
+    expect(caughtError).toMatchObject({
+      __isAppError: true,
+      code: ERROR_CODES.NETWORK_TIMEOUT,
+      category: 'network',
+    });
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it.skip('surfaces a timed out token refresh for an existing Apple user', async () => {
-    // Needs rewrite: class identity mismatch across jest.isolateModules boundary
+  it('surfaces a timed out token refresh for an existing Apple user', async () => {
+    // 기존 인증 사용자의 토큰 갱신 지연: signInWithIdToken 두 번 모두 NetworkError
+    jest.useFakeTimers();
+
+    const tokenTimeoutError = new NetworkError(ERROR_CODES.NETWORK_TIMEOUT, {
+      userMessage: 'Apple 로그인 서버 인증이 지연되고 있습니다.',
+    });
+
+    mockWithTimeout
+      .mockImplementationOnce(() => Promise.reject(tokenTimeoutError)) // call 1: 1차
+      .mockImplementationOnce(() => Promise.reject(tokenTimeoutError)); // call 2: 재시도
+
+    const { signInWithApple } = loadModule();
+
+    const signInPromise = signInWithApple().catch((e: unknown) => e);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(1500);
+
+    const caughtError = await signInPromise;
+
+    // NetworkError(__isAppError=true) → isAppError 통과 → 그대로 rethrow
+    expect(caughtError).toMatchObject({
+      __isAppError: true,
+      code: ERROR_CODES.NETWORK_TIMEOUT,
+      category: 'network',
+    });
+    // catch 블록에서 signOut 호출
+    expect(mockSyncSignOut).toHaveBeenCalledTimes(1);
   });
 });
