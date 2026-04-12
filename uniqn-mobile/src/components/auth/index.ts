@@ -25,8 +25,5 @@ export {
 // Social Login
 export { SocialLoginButtons } from './SocialLoginButtons';
 
-// Phone Verification
-export { PhoneVerification } from './PhoneVerification';
-
 // Biometric
 export { BiometricButton } from './BiometricButton';
