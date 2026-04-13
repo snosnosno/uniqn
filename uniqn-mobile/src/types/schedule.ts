@@ -118,9 +118,9 @@ export interface ScheduleEvent extends FirebaseDocument {
   // ?쒓컙 ?뺣낫
   startTime: Date | null;
   endTime: Date | null;
-  /** ?ㅼ젣 異쒓렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
+  /** 실제 출근 시간 (QR 스캔 또는 관리자 설정) */
   checkInTime?: TimeInput;
-  /** ?ㅼ젣 ?닿렐 ?쒓컙 (QR ?ㅼ틪 ?먮뒗 愿由ъ옄 ?섏젙) */
+  /** 실제 퇴근 시간 (QR 스캔 또는 관리자 설정) */
   checkOutTime?: TimeInput;
 
   // 怨듦퀬 ?뺣낫
@@ -133,7 +133,7 @@ export interface ScheduleEvent extends FirebaseDocument {
 
   // ??븷 ?뺣낫
   role: string;
-  /** 而ㅼ뒪? ??븷紐?(role??'other'???? */
+  /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
   status: AttendanceStatus;
 
@@ -178,7 +178,7 @@ export interface ScheduleEvent extends FirebaseDocument {
   // JobCard ?뚮뜑留곸슜 ?곗씠??(?ㅼ?以???뿉???ъ슜)
   postingProjection?: SchedulePostingProjection;
 
-  /** ?쒓컙? 臾몄옄??(?? "18:00~02:00") - ?쒓컙 ?쒖떆 ?대갚??*/
+  /** 시간대 문자열 (예: "18:00~02:00") - 시간 표시 포맷 */
   timeSlot?: string;
   isFixedPosting?: boolean;
 }
@@ -204,7 +204,7 @@ export interface ScheduleStats {
   completedSchedules: number;
   /** ?뺤젙???ㅼ?以?(誘몃옒, type === 'confirmed') */
   confirmedSchedules: number;
-  /** 吏??以묒씤 ?ㅼ?以?(誘몃옒, type === 'applied') */
+  /** 대기 중인 스케줄 수 (지원됨, type === 'applied') */
   upcomingSchedules: number;
   totalEarnings: number;
   thisMonthEarnings: number;
@@ -261,7 +261,7 @@ export interface GroupedScheduleEvent {
   /** 怨좎쑀 ID: "grouped_{applicationId}" */
   id: string;
 
-  /** ?ㅼ?以????(applied, confirmed, completed, cancelled) */
+  /** 스케줄 타입 (applied, confirmed, completed, cancelled) */
   type: ScheduleType;
 
   /** 怨듦퀬 ID */
@@ -304,7 +304,7 @@ export interface GroupedScheduleEvent {
    */
   customRoles?: (string | undefined)[];
 
-  /** ?쒓컙? 臾몄옄??(?? "19:00 ~ 02:00") */
+  /** 시간대 문자열 (예: "19:00 ~ 02:00") */
   timeSlot: string;
 
   /**
@@ -315,7 +315,7 @@ export interface GroupedScheduleEvent {
   /** ?먮낯 ScheduleEvent 諛곗뿴 */
   originalEvents: ScheduleEvent[];
 
-  /** 吏?먯꽌 ID (applicationId) */
+  /** 지원서 ID (applicationId) */
   applicationId?: string;
 
   /** JobPostingCard ?뺣낫 (UI ?뚮뜑留곸슜) */
@@ -569,7 +569,7 @@ export interface EventQRCode {
   createdAt: Date;
   /** 留뚮즺 ?쒓컙 */
   expiresAt: Date;
-  /** ?쒖꽦???щ? (留뚮즺 ?쒓컙?쇰줈 愿由? isUsed ????ъ슜) */
+  /** 활성 여부 (만료 시간으로 판단, isUsed 대신 사용) */
   isActive: boolean;
 }
 

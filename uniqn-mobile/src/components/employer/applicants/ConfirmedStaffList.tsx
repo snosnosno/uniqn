@@ -67,7 +67,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       }`}
     >
       <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#6366F1' : SECONDARY_PALETTE[500]} />
+        <CalendarIcon size={18} color={group.isToday ? '#D4AF37' : SECONDARY_PALETTE[500]} />
         <Text
           className={`ml-2 text-base font-sans-semibold ${
             group.isToday
@@ -288,7 +288,7 @@ export function ConfirmedStaffList({
               <RefreshControl
                 refreshing={isRefreshing ?? false}
                 onRefresh={onRefresh}
-                tintColor="#6366F1"
+                tintColor="#D4AF37"
               />
             ) : undefined
           }

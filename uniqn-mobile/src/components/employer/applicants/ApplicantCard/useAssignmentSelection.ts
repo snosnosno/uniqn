@@ -16,7 +16,7 @@ import type { AssignmentDisplay, GroupedAssignmentDisplay } from './types';
 // ============================================================================
 
 export interface UseAssignmentSelectionProps {
-  /** 吏?먯옄??assignments 諛곗뿴 */
+  /** 지원자의 assignments 배열 */
   assignments?: Assignment[];
   /** 怨좎젙怨듦퀬 紐⑤뱶 (?쇱젙 ?좏깮 鍮꾪솢?깊솕) */
   isFixedMode?: boolean;

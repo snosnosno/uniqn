@@ -148,7 +148,7 @@ export default function AdminStatsScreen() {
               value={stats?.activeJobPostings}
               isLoading={isLoading && !stats}
               icon={DocumentTextOutlineIcon}
-              iconColor="#9333ea"
+              iconColor="#D4AF37"
               iconBgColor="bg-primary-100 dark:bg-primary-900/20"
             />
           </View>
