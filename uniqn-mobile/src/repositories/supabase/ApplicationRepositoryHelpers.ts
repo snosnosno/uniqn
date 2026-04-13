@@ -65,7 +65,11 @@ export function rowsToApplications(rows: Record<string, unknown>[]): Application
 
 export function toJobPosting(row: Record<string, unknown>): JobPosting | null {
   const camel = toCamelCase<Record<string, unknown>>(row);
-  return parseJobPostingDocument({ ...camel, id: row.id });
+  // Supabase는 없는 JSONB/optional 필드를 null로 반환 → undefined로 변환해서 Zod optional 처리
+  const cleaned = Object.fromEntries(
+    Object.entries(camel).map(([k, v]) => [k, v === null ? undefined : v])
+  );
+  return parseJobPostingDocument({ ...cleaned, id: row.id });
 }
 
 export function createEmptyApplicationStats(): ApplicationStats {

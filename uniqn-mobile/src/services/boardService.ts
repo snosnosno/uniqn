@@ -279,7 +279,7 @@ function buildScheduleSyncMembers(jobPosting: JobPosting, workLogs: WorkLog[]): 
   const memberMap = new Map<string, BoardMembership>();
   const baseDate = jobPosting.workDate || jobPosting.workDates?.[0] || '';
   const postId = buildScheduleBoardPostId(jobPosting.id);
-  const lastActivityAt = jobPosting.updatedAt ?? jobPosting.createdAt ?? null;
+  const lastActivityAt = toDate(jobPosting.updatedAt ?? jobPosting.createdAt ?? null);
 
   memberMap.set(jobPosting.ownerId, {
     id: `${postId}_${jobPosting.ownerId}`,
@@ -327,7 +327,7 @@ function buildScheduleSyncMembers(jobPosting: JobPosting, workLogs: WorkLog[]): 
         title: jobPosting.title,
         workDate: workLog.date || baseDate,
         authorId: jobPosting.ownerId,
-        lastActivityAt: workLog.updatedAt ?? workLog.createdAt ?? lastActivityAt,
+        lastActivityAt: toDate(workLog.updatedAt ?? workLog.createdAt ?? lastActivityAt),
         createdAt: undefined,
         updatedAt: undefined,
       });
