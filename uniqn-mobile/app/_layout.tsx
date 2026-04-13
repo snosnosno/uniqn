@@ -99,6 +99,10 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .bg-surface-card     { background-color: var(--color-surface-card) !important; }
       .border-divider      { border-color: var(--color-divider) !important; }
       .text-divider        { color: var(--color-divider) !important; }
+
+      /* placeholder 색상 (NativeWind가 var() 룰 미생성) */
+      .placeholder\\:text-content-placeholder::placeholder { color: var(--color-content-placeholder) !important; }
+      input::placeholder, textarea::placeholder           { color: var(--color-content-placeholder); }
     `;
     document.head.appendChild(style);
   }
