@@ -3,7 +3,7 @@
 > 언어: 한글 | 작업 디렉토리: uniqn-mobile/ | 배포 전: `npm run quality`
 
 ## 프로젝트
-포커룸 스태프 관리 앱 — Expo 54 / RN 0.81.5 / TS strict / NativeWind 4.2 / Supabase
+포커룸 스태프 관리 앱 — Expo 55 / RN 0.83.4 / React 19.2 / TS strict / NativeWind 4.2 / Supabase
 
 ## 핵심 규칙
 | 항목 | 필수 | 금지 |
@@ -16,7 +16,7 @@
 | 리스트 | FlashList (대형) / FlatList (소형) | 대형에 FlatList |
 | 이미지 | expo-image | RN `<Image>` |
 
-예외: `functions/*.js` CLI/운영 스크립트는 `console.log()` 허용
+예외: `functions/**/*.ts` Cloudflare Pages Functions는 `console.log()` 허용
 
 ## 아키텍처
 ```
@@ -57,4 +57,4 @@ Skill 요청 시 Skill tool 먼저 호출 (직접 답하지 말 것):
 PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고→`/retro`
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
 
-*2026-04-13 업데이트 — Supabase 이전 완료, Black & Gold 디자인 시스템 완료*
+*2026-04-13 업데이트 — Expo 55/RN 0.83.4 업그레이드, Supabase 이전 완료, Black & Gold 완료*

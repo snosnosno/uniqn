@@ -92,11 +92,29 @@ export async function executeConfirmWithHistory(
 
     const historyEntry = createHistoryEntry(assignmentsToConfirm, ownerId);
     const confirmationHistory = [...(applicationData.confirmationHistory ?? []), historyEntry];
+
+    // Assignment v3(dates[], roleIds[]) → RPC가 기대하는 flat 형식 변환
+    // RPC는 {groupId, date, timeSlot, role, customRole} 구조를 기대함
+    const flatAssignments = assignmentsToConfirm.flatMap((a) =>
+      a.dates.flatMap((date) =>
+        a.roleIds.map((roleId) => {
+          const { role, customRole } = normalizeAssignmentRole(roleId);
+          return {
+            groupId: a.groupId ?? null,
+            date,
+            timeSlot: a.timeSlot,
+            role: role === 'other' ? 'staff' : role,
+            customRole: customRole ?? null,
+          };
+        })
+      )
+    );
+
     // 서버사이드 원자적 트랜잭션으로 확정 처리
     const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_application', {
       p_application_id: applicationId,
       p_owner_id: ownerId,
-      p_assignments: assignmentsToConfirm,
+      p_assignments: flatAssignments,
       p_original_application: originalApplication,
       p_confirmation_history: confirmationHistory,
       p_notes: notes ?? null,

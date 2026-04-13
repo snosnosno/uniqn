@@ -1,14 +1,16 @@
 # 푸시 알림 테스트 체크리스트
 
-최종 업데이트: 2026-03-30  
+최종 업데이트: 2026-04-13  
 기준 코드: `src/services/notifications/pushNotificationService.ts`, `src/components/notifications/NotificationSettings.tsx`
 
 ## 사전 준비
 
 - 실제 Android/iOS 기기
 - EAS 빌드된 앱
-- Firebase Functions 배포
+- Supabase Edge Functions 배포 완료
 - 테스트 계정: `staff`, `employer`, 필요 시 `admin`
+
+> **주의**: QA/테스트 계정은 반드시 GoTrue `/auth/v1/signup` API로 생성. SQL 직접 INSERT 금지.
 
 ## 권한
 
@@ -73,7 +75,7 @@
 
 ## 관련 확인 포인트
 
-- `functions/src/utils/notificationUtils.ts`
-- `functions/src/notifications/`
-- `src/hooks/useDeepLink.ts`
+- `src/services/notifications/pushNotificationService.ts`
 - `src/services/notifications/notificationService.ts`
+- `src/services/notifications/notificationSyncService.ts`
+- `src/hooks/useDeepLink.ts`

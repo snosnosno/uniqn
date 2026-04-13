@@ -51,7 +51,11 @@ export const JOB_POSTING_COLUMNS =
 
 export function toApplication(row: Record<string, unknown>): Application | null {
   const camel = toCamelCase<Record<string, unknown>>(row);
-  return parseApplicationDocument({ ...camel, id: row.id });
+  // Supabase는 없는 optional 필드를 null로 반환 → undefined로 변환해서 Zod optional 처리
+  const cleaned = Object.fromEntries(
+    Object.entries(camel).map(([k, v]) => [k, v === null ? undefined : v])
+  );
+  return parseApplicationDocument({ ...cleaned, id: row.id });
 }
 
 export function rowsToApplications(rows: Record<string, unknown>[]): Application[] {

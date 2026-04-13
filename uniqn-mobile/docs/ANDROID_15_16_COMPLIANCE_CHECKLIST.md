@@ -1,13 +1,13 @@
 # Android 15/16 Compliance Checklist
 
-Last updated: 2026-03-30  
+Last updated: 2026-04-13  
 Source of truth: `uniqn-mobile/app.config.ts`, `uniqn-mobile/app/_layout.tsx`, `uniqn-mobile/src/hooks/useAndroidOrientationPolicy.ts`, `uniqn-mobile/src/components/ui/Modal.tsx`
 
 This checklist tracks the current shipping posture for Android 15 edge-to-edge and Android 16 large-screen orientation handling.
 
 ## Scope
 
-- 현재 저장소는 이미 Expo SDK 55 기준입니다.
+- 현재 저장소: Expo SDK 55 / React Native 0.83.4 기준
 - 이 문서는 Expo 55 이후에도 유지해야 하는 Android 15 edge-to-edge와 Android 16 대화면 대응 상태를 점검합니다.
 
 ## Applied app changes
