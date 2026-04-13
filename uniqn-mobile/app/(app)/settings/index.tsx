@@ -249,7 +249,7 @@ export default function SettingsScreen() {
               onPress={handleRequestPermission}
               className="mb-3 p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg flex-row items-center"
             >
-              <BellIcon size={20} color="#D97706" />
+              <BellIcon size={20} color="#D4A017" />
               <Text className="flex-1 ml-2 text-warning-700 dark:text-warning-300 text-sm font-sans">
                 푸시 알림이 꺼져있습니다. 탭하여 허용해주세요.
               </Text>

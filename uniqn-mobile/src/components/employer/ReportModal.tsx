@@ -366,7 +366,7 @@ export function ReportModal({
 
         {/* 안내 메시지 */}
         <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
-          <AlertCircleIcon size={14} color="#D97706" />
+          <AlertCircleIcon size={14} color="#D4A017" />
           <View className="ml-2 flex-1">
             <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300 mb-0.5">
               신고 시 유의사항

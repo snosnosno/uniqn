@@ -116,7 +116,7 @@ export function BoardImagePicker({
           >
             {isUploading ? (
               <View className="items-center px-2">
-                <ActivityIndicator size="small" color="#6366F1" />
+                <ActivityIndicator size="small" color="#D4AF37" />
                 <Text className="mt-2 text-center text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   업로드 중
                 </Text>

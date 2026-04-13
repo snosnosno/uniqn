@@ -216,7 +216,7 @@ export function StaffManagementTab({
       options.push({
         label: '근무 완료 처리',
         value: STATUS.WORK_LOG.COMPLETED,
-        icon: <CheckCircleIcon size={20} color="#059669" />,
+        icon: <CheckCircleIcon size={20} color="#22C55E" />,
       });
     }
 

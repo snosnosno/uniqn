@@ -120,7 +120,7 @@ export default function AnnouncementDetailPage() {
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
         <View className="flex-1 bg-surface-page items-center justify-center px-8">
-          <AlertCircleOutlineIcon size={64} color="#EF4444" />
+          <AlertCircleOutlineIcon size={64} color="#DC2626" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
           </Text>

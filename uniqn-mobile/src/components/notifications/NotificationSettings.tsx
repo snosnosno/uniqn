@@ -189,7 +189,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           onPress={onRequestPermission}
           className="mb-4 p-4 bg-warning-100 dark:bg-warning-900/30 rounded-md flex-row items-center"
         >
-          <DevicePhoneMobileIcon size={24} color="#D97706" />
+          <DevicePhoneMobileIcon size={24} color="#D4A017" />
           <View className="flex-1 ml-3">
             <Text className="text-warning-800 dark:text-warning-200 font-sans-medium">
               푸시 알림이 꺼져있습니다

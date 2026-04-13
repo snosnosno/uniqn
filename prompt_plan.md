@@ -274,9 +274,20 @@ Phase 5 → commit → quality ✓
 
 ## 완료 기준
 
-- [ ] `src/types/` 에서 `firebase` import 0건
-- [ ] `src/repositories/interfaces/` 에서 `firebase` import 0건
-- [ ] `src/services/` (auth 제외)에서 `firebase/firestore` import 0건
-- [ ] 레거시 코드 정리 완료
-- [ ] `npm run quality` 통과
-- [ ] `npm test` 통과
+- [x] `src/types/` 에서 `firebase` import 0건 ✅ (2026-04-13 확인)
+- [x] `src/repositories/interfaces/` 에서 `firebase` import 0건 ✅ (2026-04-13 확인)
+- [x] `src/services/` (auth 제외)에서 `firebase/firestore` import 0건 ✅ (2026-04-13 확인)
+- [ ] 레거시 코드 정리 완료 — `variant === 'legacy'` 13곳 잔존 (Phase 5 미완료)
+- [x] `npm run quality` 통과 ✅
+- [x] `npm test` 통과 ✅
+
+## 이전 현황 (2026-04-13)
+
+Phase 0~4 완료. Repository 구현체가 `supabase/` 디렉토리로 전면 교체됨.
+Phase 5 (레거시 정리) 미완: `variant === 'legacy'` 패턴이 아래 파일에 잔존:
+- `src/components/jobs/shared/PostingCardSurface.tsx`
+- `src/components/jobs/shared/PostingScheduleContent.tsx`
+- `src/components/jobs/shared/postingSurfaceModel.ts`
+- `src/domains/job-posting/facts.ts`, `projections.ts`, `selectors.ts`
+- `src/types/jobPosting.ts`
+- 관련 테스트 파일 4곳

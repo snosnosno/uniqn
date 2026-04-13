@@ -93,7 +93,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
       label: '저하',
       color: 'text-warning-600',
       bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-      iconColor: '#D97706',
+      iconColor: '#D4A017',
     },
     down: {
       label: '장애',

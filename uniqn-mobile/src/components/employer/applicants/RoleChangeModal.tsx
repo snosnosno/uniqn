@@ -260,7 +260,7 @@ export function RoleChangeModal({
 
         {/* 안내 메시지 */}
         <View className="flex-row items-start p-2.5 bg-warning-50 dark:bg-warning-900/20 rounded-lg mb-3">
-          <AlertCircleIcon size={14} color="#D97706" />
+          <AlertCircleIcon size={14} color="#D4A017" />
           <Text className="ml-2 text-xs text-warning-700 dark:text-warning-300 flex-1 font-sans">
             역할 변경 시 해당 역할의 시급이 적용되며, 스태프에게 알림이 발송됩니다.
           </Text>

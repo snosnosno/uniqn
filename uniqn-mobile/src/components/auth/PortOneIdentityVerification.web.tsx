@@ -210,7 +210,7 @@ export function PortOneIdentityVerification({
       ) : (
         <View className="rounded-md border border-secondary-200 bg-surface-page p-4 dark:border-surface-overlay dark:bg-surface-elevated">
           <View className="mb-3 flex-row items-center">
-            <ShieldCheckIcon size={20} color="#4f46e5" />
+            <ShieldCheckIcon size={20} color="#2563EB" />
             <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">
               이니시스 본인인증
             </Text>

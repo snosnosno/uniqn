@@ -568,7 +568,7 @@ export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
   try {
     const permission = await checkPermission();
     if (!permission.granted) {
-      logger.warn('?몄떆 ?뚮┝ 沅뚰븳???놁뼱 ?좏겙??媛?몄삱 ???놁뒿?덈떎');
+      logger.warn('푸시 알림 권한이 없어 토큰을 가져올 수 없습니다');
       return null;
     }
 

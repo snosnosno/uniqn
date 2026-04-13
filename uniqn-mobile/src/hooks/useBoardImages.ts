@@ -27,7 +27,7 @@ export function useBoardImages({ initialImages = [] }: UseBoardImagesOptions = {
     if (remainingSlots <= 0) {
       addToast({
         type: 'warning',
-        message: `?대?吏??理쒕? ${MAX_BOARD_POST_IMAGES}?κ퉴吏 泥⑤??????덉뒿?덈떎`,
+        message: `이미지는 최대 ${MAX_BOARD_POST_IMAGES}개까지 첨부할 수 있습니다`,
       });
       return;
     }

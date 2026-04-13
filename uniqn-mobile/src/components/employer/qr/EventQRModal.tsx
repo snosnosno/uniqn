@@ -501,7 +501,7 @@ export function EventQRModal({
         style={{ width: qrSize, height: qrSize }}
         className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
       >
-        <AlertCircleIcon size={48} color="#6366F1" />
+        <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
           QR을 생성할 날짜 슬롯을 선택하세요.
         </Text>

@@ -331,7 +331,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       <View className="flex-row items-center mt-2 flex-wrap gap-2">
         {group.summary.pendingCount > 0 && (
           <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-            <ClockIcon size={12} color="#D97706" />
+            <ClockIcon size={12} color="#D4A017" />
             <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300 font-sans">
               미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)})
             </Text>
@@ -339,7 +339,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         )}
         {group.summary.completedCount > 0 && (
           <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
-            <CheckCircleIcon size={12} color="#059669" />
+            <CheckCircleIcon size={12} color="#22C55E" />
             <Text className="ml-1 text-xs text-success-700 dark:text-success-300 font-sans">
               완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)}
               )

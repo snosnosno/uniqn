@@ -339,7 +339,7 @@ export default function DeleteAccountScreen() {
               className="border-error-500"
             >
               {isSubmitting ? (
-                <ActivityIndicator size="small" color="#EF4444" />
+                <ActivityIndicator size="small" color="#DC2626" />
               ) : (
                 <Text className="text-error-600 dark:text-error-400 font-sans-semibold">
                   네, 탈퇴하겠습니다
