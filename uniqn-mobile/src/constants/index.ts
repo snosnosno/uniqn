@@ -31,32 +31,7 @@ export {
 // ============================================================================
 // ATTENDANCE_STATUS, AttendanceStatusType은 statusConfig.ts에서 export됨
 
-// ============================================================================
-// Firestore 필드명
-// ============================================================================
-
-export { FIELDS } from './firestoreFields';
 export { STATUS } from './statusValues';
-
-// ============================================================================
-// Firebase 컬렉션
-// ============================================================================
-
-export const COLLECTIONS = {
-  USERS: 'users',
-  STAFF: 'staff',
-  WORK_LOGS: 'workLogs',
-  JOB_POSTINGS: 'jobPostings',
-  APPLICATIONS: 'applications',
-  NOTIFICATIONS: 'notifications',
-  INQUIRIES: 'inquiries',
-  ANNOUNCEMENTS: 'announcements',
-  REPORTS: 'reports',
-  REPORT_PENDING_LOCKS: 'reportPendingLocks',
-  EVENT_QR_CODES: 'eventQRCodes',
-  TEMPLATES: 'mobileJobPostingTemplates',
-  REVIEWS: 'reviews',
-} as const;
 
 // ============================================================================
 // 정규식
