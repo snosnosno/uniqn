@@ -306,7 +306,7 @@ export function SettlementList({
     selectedIds.size === selectableWorkLogs.length && selectableWorkLogs.length > 0;
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-surface-page dark:bg-surface">
       {/* 요약 카드 */}
       <SettlementSummaryCard {...summaryInfo} onOpenSettings={onOpenSettings} />
 

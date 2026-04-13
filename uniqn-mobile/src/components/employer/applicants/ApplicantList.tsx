@@ -152,7 +152,7 @@ export function ApplicantList({
   }
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-surface-page dark:bg-surface">
       {/* 필터 탭 */}
       <FilterTabs
         options={filterOptions}

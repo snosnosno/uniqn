@@ -81,7 +81,7 @@ export function JobList({
   }
 
   return (
-    <View className="flex-1">
+    <View className="flex-1 bg-surface-page dark:bg-surface">
       {error && jobs.length > 0 ? (
         <PostingSurfaceState
           mode="partial"
