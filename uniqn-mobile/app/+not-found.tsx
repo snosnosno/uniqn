@@ -11,7 +11,7 @@ export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: '페이지를 찾을 수 없습니다' }} />
-      <View className="flex-1 items-center justify-center bg-surface-page px-6 dark:bg-surface-dark">
+      <View className="flex-1 items-center justify-center bg-surface-page px-6">
         <Text className="mb-2 text-6xl font-sans-bold text-secondary-300 dark:text-secondary-700">
           404
         </Text>

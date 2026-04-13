@@ -67,7 +67,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       }
 
       /* text-content-* 유틸리티 클래스 (NativeWind가 var() 룰 미생성) */
-      .text-content-primary   { color: var(--color-content-primary) !important; }
+      .text-content-primary     { color: var(--color-content-primary) !important; }
       .text-content-secondary { color: var(--color-content-secondary) !important; }
       .text-content-muted     { color: var(--color-content-muted) !important; }
       .text-content-placeholder { color: var(--color-content-placeholder) !important; }
@@ -93,6 +93,12 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .dark\\:text-secondary-700:is(.dark *) { color: #4A4A52 !important; }
       .dark\\:text-secondary-800:is(.dark *) { color: #2A2A30 !important; }
       .dark\\:text-secondary-900:is(.dark *) { color: #18181E !important; }
+
+      /* bg-surface-*/border-divider 유틸리티 (NativeWind가 var() 룰 미생성) */
+      .bg-surface-page     { background-color: var(--color-surface-page) !important; }
+      .bg-surface-card     { background-color: var(--color-surface-card) !important; }
+      .border-divider      { border-color: var(--color-divider) !important; }
+      .text-divider        { color: var(--color-divider) !important; }
     `;
     document.head.appendChild(style);
   }

@@ -26,7 +26,6 @@ import {
   REPORT_COLUMNS,
   toBoardMembership,
   toBoardReport,
-  getMembershipId,
 } from './BoardRepositoryHelpers';
 
 // ============================================================================
@@ -109,7 +108,8 @@ export async function executeGetMembership(
     const { data, error } = await supabase
       .from(TABLES.BOARD_MEMBERSHIPS)
       .select(MEMBERSHIP_COLUMNS)
-      .eq('id', getMembershipId(postId, userId))
+      .eq('post_id', postId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (error) {
@@ -136,10 +136,10 @@ export async function executeReplaceScheduleMemberships(
   try {
     const now = new Date().toISOString();
 
-    // 기존 멤버십 조회
+    // 기존 멤버십 조회 (user_id 기준 비교)
     const { data: existingData, error: fetchError } = await supabase
       .from(TABLES.BOARD_MEMBERSHIPS)
-      .select('id')
+      .select('user_id')
       .eq('post_id', postId)
       .eq('board_type', 'schedule');
 
@@ -150,18 +150,19 @@ export async function executeReplaceScheduleMemberships(
       });
     }
 
-    const existingIds = new Set(
-      ((existingData ?? []) as Record<string, unknown>[]).map((row) => row.id as string)
+    const existingUserIds = new Set(
+      ((existingData ?? []) as Record<string, unknown>[]).map((row) => row.user_id as string)
     );
-    const incomingIds = new Set(members.map((m) => getMembershipId(postId, m.userId)));
+    const incomingUserIds = new Set(members.map((m) => m.userId));
 
     // 삭제 대상 (기존에 있지만 새 목록에 없는 것)
-    const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
-    if (toDelete.length > 0) {
+    const toDeleteUserIds = [...existingUserIds].filter((uid) => !incomingUserIds.has(uid));
+    if (toDeleteUserIds.length > 0) {
       const { error: deleteError } = await supabase
         .from(TABLES.BOARD_MEMBERSHIPS)
         .delete()
-        .in('id', toDelete);
+        .eq('post_id', postId)
+        .in('user_id', toDeleteUserIds);
 
       if (deleteError) {
         handleSupabaseError(deleteError, {
@@ -171,10 +172,9 @@ export async function executeReplaceScheduleMemberships(
       }
     }
 
-    // Upsert 새 멤버십
+    // Upsert 새 멤버십 (user_id, post_id unique constraint 기반)
     if (members.length > 0) {
       const rows = members.map((member) => ({
-        id: getMembershipId(postId, member.userId),
         board_type: 'schedule',
         user_id: member.userId,
         post_id: postId,
@@ -192,7 +192,7 @@ export async function executeReplaceScheduleMemberships(
 
       const { error: upsertError } = await supabase
         .from(TABLES.BOARD_MEMBERSHIPS)
-        .upsert(rows, { onConflict: 'id' });
+        .upsert(rows, { onConflict: 'user_id,post_id' });
 
       if (upsertError) {
         handleSupabaseError(upsertError, {

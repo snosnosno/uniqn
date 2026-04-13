@@ -76,20 +76,20 @@ export function useBoardImages({ initialImages = [] }: UseBoardImagesOptions = {
         if (uploadedImages.length === selectedCount) {
           addToast({
             type: 'success',
-            message: `${uploadedImages.length}?μ쓽 ?대?吏媛 ?낅줈?쒕릺?덉뒿?덈떎`,
+            message: `${uploadedImages.length}개의 이미지가 업로드됐습니다`,
           });
         } else {
           addToast({
             type: 'warning',
-            message: `${uploadedImages.length}/${selectedCount}???낅줈???꾨즺 (?쇰? ?ㅽ뙣)`,
+            message: `${uploadedImages.length}/${selectedCount}개 업로드 완료 (일부 실패)`,
           });
         }
       } else {
-        addToast({ type: 'error', message: '?대?吏 ?낅줈?쒖뿉 ?ㅽ뙣?덉뒿?덈떎' });
+        addToast({ type: 'error', message: '이미지 업로드에 실패했습니다' });
       }
     } catch (error) {
       logger.error('Board image upload failed', error as Error);
-      addToast({ type: 'error', message: '?대?吏 ?낅줈?쒖뿉 ?ㅽ뙣?덉뒿?덈떎' });
+      addToast({ type: 'error', message: '이미지 업로드에 실패했습니다' });
     } finally {
       setUploadingIndex(null);
       setUploadProgress(0);

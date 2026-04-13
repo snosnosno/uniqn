@@ -27,7 +27,7 @@ function LoadingState() {
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6">
       <Text className="mb-4 text-4xl font-sans">!</Text>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         오류가 발생했습니다
@@ -44,7 +44,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
-    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6">
       <Text className="mb-4 text-4xl font-sans">이미</Text>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         이미 지원한 공고입니다
@@ -71,7 +71,7 @@ function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
 
 function UnsupportedPostingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-surface-page p-6 dark:bg-surface-dark">
+    <View className="flex-1 items-center justify-center bg-surface-page p-6">
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         현재 지원할 수 없는 공고입니다
       </Text>

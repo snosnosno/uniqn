@@ -93,7 +93,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`mb-3 rounded-md border-2 p-4 ${
             selectedOption === 'group'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'group' }}
@@ -133,7 +133,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
           className={`rounded-md border-2 p-4 ${
             selectedOption === 'individual'
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay dark:bg-surface-dark'
+              : 'border-secondary-200 bg-surface-page dark:border-surface-overlay'
           }`}
           accessibilityRole="radio"
           accessibilityState={{ checked: selectedOption === 'individual' }}

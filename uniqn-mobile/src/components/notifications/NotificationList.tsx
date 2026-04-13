@@ -121,7 +121,7 @@ export const NotificationList = memo(function NotificationList({
     return (
       <View
         accessibilityRole="alert"
-        className={`flex-1 items-center justify-center bg-surface-page p-4 dark:bg-surface-dark ${className}`}
+        className={`flex-1 items-center justify-center bg-surface-page p-4 ${className}`}
       >
         <Text className="text-center text-error-600 dark:text-error-400 font-sans">
           알림을 불러오지 못했습니다.
@@ -146,7 +146,7 @@ export const NotificationList = memo(function NotificationList({
   return (
     <View className={`flex-1 bg-surface-page ${className}`}>
       {showHeader && notifications.length > 0 && (
-        <View className="flex-row items-center justify-between border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface dark:bg-surface-dark">
+        <View className="flex-row items-center justify-between border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
@@ -196,7 +196,7 @@ export const NotificationList = memo(function NotificationList({
             </View>
           ) : null
         }
-        contentContainerClassName="bg-white dark:bg-surface-dark"
+        contentContainerClassName="bg-white"
       />
     </View>
   );

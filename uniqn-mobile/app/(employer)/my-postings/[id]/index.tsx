@@ -474,8 +474,8 @@ export default function JobPostingDetailScreen() {
           <View className="px-4 pb-4">
             <ActionCard
               icon={<EditIcon size={24} color={SECONDARY_PALETTE[500]} />}
-              title="怨듦퀬 ?섏젙"
-              description="怨듦퀬 ?댁슜怨??곹깭瑜??섏젙?⑸땲??"
+              title="공고 수정"
+              description="공고 내용과 상태를 수정합니다"
               displayTitle="Edit Posting"
               displayDescription="Update this fixed posting."
               onPress={handleEdit}

@@ -1,7 +1,7 @@
 /**
- * UNIQN Mobile - InquiryStatusBadge 而댄룷?뚰듃
+ * UNIQN Mobile - InquiryStatusBadge 컴포넌트
  *
- * @description 臾몄쓽 ?곹깭瑜??쒖떆?섎뒗 諛곗?
+ * @description 문의 상태를 표시하는 배지
  * @version 1.0.0
  */
 
@@ -38,7 +38,7 @@ export function InquiryStatusBadge({
   return (
     <View
       className={`rounded-sm ${config.bgColor} ${sizeStyle.container} ${className}`}
-      accessibilityLabel={`?곹깭: ${config.label}`}
+      accessibilityLabel={`상태: ${config.label}`}
     >
       <Text className={`font-sans-medium ${config.color} ${sizeStyle.text}`}>{config.label}</Text>
     </View>
