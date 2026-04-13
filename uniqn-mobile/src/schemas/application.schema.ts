@@ -205,7 +205,8 @@ const confirmationHistoryEntrySchema = z
   })
   .passthrough();
 
-const cancellationRequestTimestampSchema = timestampSchema.or(z.string());
+// string이 먼저 매칭되어야 ISO string이 그대로 유지됨 (timestampSchema가 먼저면 TimestampLike로 변환)
+const cancellationRequestTimestampSchema = z.string().or(timestampSchema);
 
 const cancellationRequestDocumentSchema = z.discriminatedUnion('status', [
   z.object({

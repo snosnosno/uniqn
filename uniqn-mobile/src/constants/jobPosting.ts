@@ -60,12 +60,6 @@ export const MAX_HEADCOUNT = 200;
 export const MIN_HEADCOUNT = 1;
 
 /**
- * 스태프 역할 키 타입 (StaffRole과 동일)
- *
- * @deprecated StaffRole 타입 직접 사용 권장 (types/role.ts)
- */
-
-/**
  * 스태프 역할 옵션 인터페이스
  */
 export interface StaffRoleOption {
@@ -99,10 +93,6 @@ export const ROLE_ICONS: Record<string, string> = Object.fromEntries(
  * 기본 역할 아이콘
  */
 export const DEFAULT_ROLE_ICON = '👤';
-
-/**
- * @deprecated STAFF_ROLES 사용 권장
- */
 
 /**
  * 기본 시작 시간
