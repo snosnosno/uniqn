@@ -13,7 +13,7 @@ import {
   AlreadyCheckedInError,
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
-import { handleSupabaseError, assertUpdated } from '@/utils/supabase';
+import { handleSupabaseError } from '@/utils/supabase';
 import { TimeNormalizer } from '@/shared/time';
 import { STATUS } from '@/constants';
 import type { PayrollStatus, QRCodeAction } from '@/types';
@@ -181,13 +181,78 @@ export async function executeUpdatePayrollStatus(
 // ============================================================================
 // processQRCheckInOutTransaction
 // ============================================================================
+// T-B4+B5: SELECT FOR UPDATE 기반 단일 트랜잭션으로 race window 제거.
+// read-validate-write 분리 → process_qr_checkin_atomically RPC 단일 호출.
+
+interface QRCheckinRpcResult {
+  success: boolean;
+  action?: QRCodeAction;
+  check_in_time?: string;
+  check_out_time?: string;
+  work_duration?: number;
+  error?: string;
+}
+
+function mapQRCheckinErrorToException(errorCode: string, workLogId: string): never {
+  switch (errorCode) {
+    case 'already_settled':
+      throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+        userMessage: '이미 정산 완료된 근무는 출퇴근 처리할 수 없습니다',
+      });
+    case 'already_checked_in':
+      throw new AlreadyCheckedInError({
+        message: '이미 출근 처리되었습니다',
+        userMessage: '이미 출근 처리가 완료되었습니다',
+        workLogId,
+      });
+    case 'not_checked_in':
+      throw new NotCheckedInError({
+        message: '먼저 출근 처리가 필요합니다',
+        userMessage: '출근 처리 후 퇴근할 수 있습니다',
+      });
+    case 'work_log_not_found':
+      throw new InvalidQRCodeError({
+        message: '근무 기록이 존재하지 않습니다',
+        userMessage: '근무 기록을 찾을 수 없습니다',
+      });
+    case 'job_posting_not_found':
+      throw new InvalidQRCodeError({
+        message: '공고가 존재하지 않습니다',
+        userMessage: '공고를 찾을 수 없습니다',
+      });
+    case 'job_posting_inactive':
+      throw new InvalidQRCodeError({
+        message: '공고 상태가 활성 아닙니다',
+        userMessage: '활성 상태가 아닌 공고입니다',
+      });
+    case 'staff_id_mismatch':
+      throw new InvalidQRCodeError({
+        message: 'WorkLog staffId 불일치',
+        userMessage: '권한이 없는 근무 기록입니다',
+      });
+    case 'job_posting_id_mismatch':
+      throw new InvalidQRCodeError({
+        message: 'WorkLog jobPostingId 불일치',
+        userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
+      });
+    case 'date_mismatch':
+      throw new InvalidQRCodeError({
+        message: 'QR date와 WorkLog date 불일치',
+        userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
+      });
+    default:
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: `출퇴근 처리 실패: ${errorCode}`,
+      });
+  }
+}
 
 export async function executeProcessQRCheckInOut(
   workLogId: string,
   staffId: string,
   jobPostingId: string,
   action: QRCodeAction,
-  _checkTime: Date,
+  checkTime: Date,
   date: string
 ): Promise<{
   action: QRCodeAction;
@@ -195,152 +260,37 @@ export async function executeProcessQRCheckInOut(
   workDuration: number;
 }> {
   try {
-    logger.info('QR 체크인/아웃', { workLogId, staffId, action });
+    logger.info('QR 체크인/아웃 (RPC)', { workLogId, staffId, action });
 
-    // 1. 근무 기록 + 공고 조회 (병렬)
-    const [workLogResult, jobPostingResult] = await Promise.all([
-      supabase.from(TABLE).select(TABLE_COLUMNS).eq('id', workLogId).maybeSingle(),
-      supabase
-        .from('job_postings')
-        .select('id, status, owner_id')
-        .eq('id', jobPostingId)
-        .maybeSingle(),
-    ]);
+    const { data, error } = await supabase.rpc('process_qr_checkin_atomically', {
+      p_work_log_id: workLogId,
+      p_staff_id: staffId,
+      p_job_posting_id: jobPostingId,
+      p_action: action,
+      p_check_time: checkTime.toISOString(),
+      p_expected_date: date ?? null,
+    });
 
-    if (workLogResult.error)
-      handleSupabaseError(workLogResult.error, { operation: 'QR 근무 기록 조회', table: TABLE });
-    if (!workLogResult.data) {
-      throw new InvalidQRCodeError({
-        message: '근무 기록이 존재하지 않습니다',
-        userMessage: '근무 기록을 찾을 수 없습니다',
+    if (error) {
+      handleSupabaseError(error, { operation: 'QR 체크인/아웃 RPC', table: TABLE });
+    }
+
+    const result = data as QRCheckinRpcResult | null;
+    if (!result) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: 'QR 처리 응답이 비었습니다',
       });
     }
 
-    const workLog = toWorkLog(workLogResult.data as Record<string, unknown>);
-    if (!workLog) {
-      throw new InvalidQRCodeError({
-        message: '근무 기록 데이터가 유효하지 않습니다',
-        userMessage: '근무 기록을 처리할 수 없습니다',
-      });
+    if (!result.success) {
+      mapQRCheckinErrorToException(result.error ?? 'unknown', workLogId);
     }
 
-    // 공고 상태 확인
-    if (jobPostingResult.error || !jobPostingResult.data) {
-      throw new InvalidQRCodeError({
-        message: '공고가 존재하지 않습니다',
-        userMessage: '공고를 찾을 수 없습니다',
-      });
-    }
-
-    const jpData = jobPostingResult.data as Record<string, unknown>;
-    if (jpData.status !== 'active') {
-      throw new InvalidQRCodeError({
-        message: `공고 상태가 ${jpData.status as string}입니다`,
-        userMessage: '활성 상태가 아닌 공고입니다',
-      });
-    }
-
-    // 방어적 검증
-    if (workLog.staffId !== staffId) {
-      throw new InvalidQRCodeError({
-        message: 'WorkLog staffId 불일치',
-        userMessage: '권한이 없는 근무 기록입니다',
-      });
-    }
-
-    if (workLog.jobPostingId !== jobPostingId) {
-      throw new InvalidQRCodeError({
-        message: 'WorkLog jobPostingId 불일치',
-        userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
-      });
-    }
-
-    if (!workLog.isFixedPosting && workLog.date !== date) {
-      throw new InvalidQRCodeError({
-        message: `QR date(${date})와 WorkLog date(${workLog.date}) 불일치`,
-        userMessage: 'QR 코드의 날짜가 근무 날짜와 일치하지 않습니다',
-      });
-    }
-
-    if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-        userMessage: '이미 정산 완료된 근무는 출퇴근 처리할 수 없습니다',
-      });
-    }
-
-    const now = new Date().toISOString();
-
-    if (action === 'checkIn') {
-      if (
-        workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
-        workLog.status === STATUS.WORK_LOG.CHECKED_OUT
-      ) {
-        throw new AlreadyCheckedInError({
-          message: '이미 출근 처리되었습니다',
-          userMessage: '이미 출근 처리가 완료되었습니다',
-          workLogId,
-        });
-      }
-
-      const { data: updatedCheckIn, error } = await supabase
-        .from(TABLE)
-        .update({
-          status: STATUS.WORK_LOG.CHECKED_IN,
-          check_in_time: now,
-          updated_at: now,
-        })
-        .eq('id', workLogId)
-        .select('id');
-
-      if (error) handleSupabaseError(error, { operation: 'QR 출근 처리', table: TABLE });
-      assertUpdated(updatedCheckIn, { operation: 'QR 출근 처리', table: TABLE, id: workLogId });
-
-      return {
-        action: 'checkIn' as const,
-        hasExistingCheckInTime: !!workLog.checkInTime,
-        workDuration: 0,
-      };
-    } else {
-      if (workLog.status !== STATUS.WORK_LOG.CHECKED_IN) {
-        throw new NotCheckedInError({
-          message: '먼저 출근 처리가 필요합니다',
-          userMessage: '출근 처리 후 퇴근할 수 있습니다',
-        });
-      }
-
-      let workDuration = 0;
-      const checkInSource = workLog.checkInTime;
-      if (checkInSource) {
-        const startTime = TimeNormalizer.parseTime(checkInSource);
-        if (startTime) {
-          const nowDate = new Date(now);
-          const durationMinutes = Math.round(
-            (nowDate.getTime() - startTime.getTime()) / (1000 * 60)
-          );
-          workDuration = Math.round((durationMinutes / 60) * 100) / 100;
-        }
-      }
-
-      const { data: updatedCheckOut, error } = await supabase
-        .from(TABLE)
-        .update({
-          status: STATUS.WORK_LOG.CHECKED_OUT,
-          check_out_time: now,
-          work_duration: workDuration,
-          updated_at: now,
-        })
-        .eq('id', workLogId)
-        .select('id');
-
-      if (error) handleSupabaseError(error, { operation: 'QR 퇴근 처리', table: TABLE });
-      assertUpdated(updatedCheckOut, { operation: 'QR 퇴근 처리', table: TABLE, id: workLogId });
-
-      return {
-        action: 'checkOut' as const,
-        hasExistingCheckInTime: false,
-        workDuration,
-      };
-    }
+    return {
+      action: result.action ?? action,
+      hasExistingCheckInTime: false,
+      workDuration: result.work_duration ?? 0,
+    };
   } catch (error) {
     if (isAppError(error)) throw error;
     rethrowOrHandle(error, 'QR 체크인/아웃 (Transaction)', { workLogId, staffId, action });
