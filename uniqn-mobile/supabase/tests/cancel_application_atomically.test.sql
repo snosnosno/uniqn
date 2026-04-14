@@ -3,29 +3,30 @@
 -- ============================================================
 -- 목적: PR 머지 후 마이그레이션 적용 시 수동/CI 실행하여 RPC 동작 검증.
 --
--- ⚠️ 환경 요구사항 (PRODUCTION 실행 금지):
---   - public.users.id → auth.users(id) FK가 존재하므로
---     fixture가 작동하려면 auth.users seed가 필요함.
---   - 본 테스트는 로컬 supabase 환경 또는 dedicated test branch 전용:
---     1) supabase db reset                 (clean slate)
---     2) auth seed via Supabase admin API  (또는 supabase/seed.sql)
---     3) supabase db psql -f supabase/tests/cancel_application_atomically.test.sql
---   - production에서 실행하면 FK violation 또는 운영 데이터 오염 위험.
+-- 사용법:
+--   psql "$SUPABASE_DB_URL" -f supabase/tests/cancel_application_atomically.test.sql
+--   기대 결과: 마지막에 'CANCEL_TEST_PASSED' 1행 반환, 에러 0건
+--
+-- 안전장치:
+--   - 마커 이메일(__sql_fixture_*@test.local)로 production에서도 격리 가능
+--   - auth.users INSERT 시 handle_new_user 트리거가 public.users 자동 생성
+--   - 종료 직전 cleanup: work_logs → applications → job_postings → auth.users 역순
+--     (auth.users CASCADE는 public.users만 cover, FK 의존 테이블은 별도 삭제)
+--   - 실행 도중 예외 발생 시 PostgreSQL 묵시적 트랜잭션이 전체 롤백
 --
 -- 시나리오:
---   1. staff_initiates happy path: confirmed → applied
---   2. staff_approves_cancel_request happy path: cancellation_pending → cancelled
---   3. idempotency: 재호출 시 success+idempotent
---   4. unauthorized actor: 권한 없음 에러
---   5. invalid_status: 상태 불일치 에러
+--   S1. staff_initiates happy: confirmed → applied
+--   S3. idempotency: 재호출 시 success+idempotent
+--   S4. unauthorized actor
+--   S5. invalid_status_for_cancellation
+--   S2. staff_approves_cancel_request happy: cancellation_pending → cancelled
 --
--- BEGIN/ROLLBACK 트랜잭션으로 격리 (테스트 데이터 잔존 방지).
---
--- 스키마 의존: users(name NOT NULL), job_postings, applications, work_logs.
--- 컬럼 mismatch 시 즉시 ERROR로 노출 — 실제 컬럼명에 맞춰 보정 필요.
+-- 스키마 의존:
+--   - public.users(id, email, name NOT NULL, role) ← auth.users FK
+--   - applications(applicant_name NOT NULL)
+--   - job_postings(title NOT NULL)
+--   - work_logs(staff_id, job_posting_id, date, role NOT NULL)
 -- ============================================================
-
-BEGIN;
 
 DO $$
 DECLARE
@@ -37,149 +38,111 @@ DECLARE
   v_work_log_id uuid := gen_random_uuid();
   v_result jsonb;
 BEGIN
-  -- ----------------------------------------------------------
-  -- 0. 픽스처 INSERT
-  -- ----------------------------------------------------------
-  -- NOTE: public.users.id → auth.users(id) FK 존재. 로컬/test 환경에서는
-  --       supabase auth admin API로 사전 seed 필요. 이 INSERT 자체는 FK 위반.
-  INSERT INTO public.users (id, email, name, role, created_at, updated_at)
+  -- ============================================================
+  -- 0. auth.users seed (트리거가 public.users 자동 생성)
+  -- ============================================================
+  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   VALUES
-    (v_owner_id, format('owner-%s@test.local', v_owner_id), 'OWNER', 'employer', now(), now()),
-    (v_staff_id, format('staff-%s@test.local', v_staff_id), 'STAFF', 'staff', now(), now()),
-    (v_other_user_id, format('other-%s@test.local', v_other_user_id), 'OTHER', 'staff', now(), now());
+    (v_owner_id,      '__sql_fixture_owner@test.local', '{"role":"employer"}'::jsonb, '{"name":"OWNER"}'::jsonb, now(), now()),
+    (v_staff_id,      '__sql_fixture_staff@test.local', '{"role":"staff"}'::jsonb,    '{"name":"STAFF"}'::jsonb, now(), now()),
+    (v_other_user_id, '__sql_fixture_other@test.local', '{"role":"staff"}'::jsonb,    '{"name":"OTHER"}'::jsonb, now(), now());
 
   INSERT INTO public.job_postings (
     id, owner_id, title, total_positions, filled_positions, status, created_at, updated_at
   )
-  VALUES (v_job_id, v_owner_id, 'TEST 공고 - cancel atomicity', 5, 1, 'active', now(), now());
+  VALUES (v_job_id, v_owner_id, '__sql_fixture: cancel atomicity', 5, 1, 'active', now(), now());
 
   INSERT INTO public.applications (
-    id, job_posting_id, applicant_id, status, confirmation_history, created_at, updated_at
+    id, job_posting_id, applicant_id, applicant_name, status, confirmation_history, created_at, updated_at
   )
   VALUES (
-    v_app_id, v_job_id, v_staff_id, 'confirmed',
+    v_app_id, v_job_id, v_staff_id, 'STAFF', 'confirmed',
     jsonb_build_array(jsonb_build_object(
-      'assignments', jsonb_build_array(
-        jsonb_build_object('dates', jsonb_build_array('2026-05-01'))
-      ),
+      'assignments', jsonb_build_array(jsonb_build_object('dates', jsonb_build_array('2026-05-01'))),
       'cancelled_at', NULL,
       'confirmed_at', now()::text
     )),
     now(), now()
   );
 
-  INSERT INTO public.work_logs (id, application_id, status, created_at, updated_at)
-  VALUES (v_work_log_id, v_app_id, 'scheduled', now(), now());
+  INSERT INTO public.work_logs (
+    id, application_id, staff_id, job_posting_id, date, status, role, created_at, updated_at
+  )
+  VALUES (v_work_log_id, v_app_id, v_staff_id, v_job_id, '2026-05-01', 'scheduled', 'staff', now(), now());
 
-  -- ----------------------------------------------------------
+  -- ============================================================
   -- 시나리오 1: staff_initiates happy path
-  -- 기대: success=true, new_status='applied', deleted_work_log_count>=1
-  -- ----------------------------------------------------------
-  v_result := public.cancel_application_atomically(
-    p_application_id := v_app_id,
-    p_actor_type := 'staff_initiates',
-    p_actor_id := v_staff_id,
-    p_cancel_reason := '개인 사정'
-  );
-  ASSERT (v_result->>'success')::bool = true,
-    format('S1 expected success=true, got: %s', v_result);
-  ASSERT v_result->>'new_status' = 'applied',
-    format('S1 expected new_status=applied, got: %s', v_result);
-  ASSERT (v_result->>'deleted_work_log_count')::int >= 1,
-    format('S1 expected deleted_work_log_count>=1, got: %s', v_result);
+  -- ============================================================
+  v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id, '개인 사정');
+  IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S1 fail: %', v_result; END IF;
+  IF v_result->>'new_status' != 'applied' THEN RAISE EXCEPTION 'S1 status: %', v_result; END IF;
+  IF (v_result->>'deleted_work_log_count')::int < 1 THEN RAISE EXCEPTION 'S1 delete: %', v_result; END IF;
+  IF (SELECT status::text FROM public.applications WHERE id = v_app_id) != 'applied' THEN
+    RAISE EXCEPTION 'S1 side: applications.status';
+  END IF;
+  IF (SELECT filled_positions FROM public.job_postings WHERE id = v_job_id) != 0 THEN
+    RAISE EXCEPTION 'S1 side: filled_positions';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.work_logs WHERE application_id = v_app_id AND status = 'scheduled') THEN
+    RAISE EXCEPTION 'S1 side: scheduled work_logs not deleted';
+  END IF;
 
-  -- 사이드이펙트 검증
-  ASSERT (SELECT status FROM public.applications WHERE id = v_app_id) = 'applied',
-    'S1 applications.status expected applied';
-  ASSERT (SELECT filled_positions FROM public.job_postings WHERE id = v_job_id) = 0,
-    'S1 job_postings.filled_positions expected 0';
-  ASSERT NOT EXISTS (
-    SELECT 1 FROM public.work_logs
-    WHERE application_id = v_app_id AND status = 'scheduled'
-  ), 'S1 expected scheduled work_logs to be deleted';
-
-  -- ----------------------------------------------------------
+  -- ============================================================
   -- 시나리오 3: idempotency (시나리오 1 직후 재호출)
-  -- 기대: success=true, idempotent=true
-  -- ----------------------------------------------------------
-  v_result := public.cancel_application_atomically(
-    p_application_id := v_app_id,
-    p_actor_type := 'staff_initiates',
-    p_actor_id := v_staff_id
-  );
-  ASSERT (v_result->>'success')::bool = true
-    AND (v_result->>'idempotent')::bool = true,
-    format('S3 expected idempotent=true, got: %s', v_result);
+  -- ============================================================
+  v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id);
+  IF NOT ((v_result->>'success')::bool AND (v_result->>'idempotent')::bool) THEN
+    RAISE EXCEPTION 'S3 fail: %', v_result;
+  END IF;
 
-  -- ----------------------------------------------------------
+  -- ============================================================
   -- 시나리오 4: unauthorized actor
-  -- 사전 조건: status를 confirmed로 되돌림 (idempotency 가지 회피)
-  -- 기대: success=false, error='unauthorized'
-  -- ----------------------------------------------------------
+  -- ============================================================
   UPDATE public.applications SET status = 'confirmed' WHERE id = v_app_id;
+  v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_other_user_id);
+  IF (v_result->>'success')::bool OR v_result->>'error' != 'unauthorized' THEN
+    RAISE EXCEPTION 'S4 fail: %', v_result;
+  END IF;
 
-  v_result := public.cancel_application_atomically(
-    p_application_id := v_app_id,
-    p_actor_type := 'staff_initiates',
-    p_actor_id := v_other_user_id  -- ≠ applicant
-  );
-  ASSERT (v_result->>'success')::bool = false
-    AND v_result->>'error' = 'unauthorized',
-    format('S4 expected unauthorized, got: %s', v_result);
-
-  -- ----------------------------------------------------------
+  -- ============================================================
   -- 시나리오 5: invalid_status_for_cancellation
-  -- 사전 조건: 종결 상태 'cancelled'에서 staff_initiates 시도
-  -- ----------------------------------------------------------
+  -- ============================================================
   UPDATE public.applications SET status = 'cancelled' WHERE id = v_app_id;
+  v_result := public.cancel_application_atomically(v_app_id, 'staff_initiates', v_staff_id);
+  IF (v_result->>'success')::bool OR v_result->>'error' != 'invalid_status_for_cancellation' THEN
+    RAISE EXCEPTION 'S5 fail: %', v_result;
+  END IF;
 
-  v_result := public.cancel_application_atomically(
-    p_application_id := v_app_id,
-    p_actor_type := 'staff_initiates',
-    p_actor_id := v_staff_id
-  );
-  ASSERT (v_result->>'success')::bool = false
-    AND v_result->>'error' = 'invalid_status_for_cancellation',
-    format('S5 expected invalid_status_for_cancellation, got: %s', v_result);
-
-  -- ----------------------------------------------------------
+  -- ============================================================
   -- 시나리오 2: staff_approves_cancel_request happy path
-  -- 사전 조건: status='cancellation_pending' + cancellation_request.status='pending'
-  -- ----------------------------------------------------------
+  -- ============================================================
   UPDATE public.applications SET
     status = 'cancellation_pending',
-    cancellation_request = jsonb_build_object(
-      'status', 'pending',
-      'requested_at', now()::text,
-      'reason', '스태프 요청'
-    ),
+    cancellation_request = jsonb_build_object('status', 'pending', 'requested_at', now()::text, 'reason', '스태프 요청'),
     confirmation_history = jsonb_build_array(jsonb_build_object(
-      'assignments', jsonb_build_array(
-        jsonb_build_object('dates', jsonb_build_array('2026-05-01'))
-      ),
+      'assignments', jsonb_build_array(jsonb_build_object('dates', jsonb_build_array('2026-05-01'))),
       'cancelled_at', NULL
     ))
   WHERE id = v_app_id;
   UPDATE public.job_postings SET filled_positions = 1 WHERE id = v_job_id;
 
-  v_result := public.cancel_application_atomically(
-    p_application_id := v_app_id,
-    p_actor_type := 'staff_approves_cancel_request',
-    p_actor_id := v_owner_id
-  );
-  ASSERT (v_result->>'success')::bool = true,
-    format('S2 expected success=true, got: %s', v_result);
-  ASSERT v_result->>'new_status' = 'cancelled',
-    format('S2 expected new_status=cancelled, got: %s', v_result);
-  ASSERT (SELECT status FROM public.applications WHERE id = v_app_id) = 'cancelled',
-    'S2 applications.status expected cancelled';
-  ASSERT (
-    SELECT (cancellation_request->>'status')
-    FROM public.applications WHERE id = v_app_id
-  ) = 'approved',
-    'S2 cancellation_request.status expected approved';
+  v_result := public.cancel_application_atomically(v_app_id, 'staff_approves_cancel_request', v_owner_id);
+  IF NOT ((v_result->>'success')::bool) THEN RAISE EXCEPTION 'S2 fail: %', v_result; END IF;
+  IF v_result->>'new_status' != 'cancelled' THEN RAISE EXCEPTION 'S2 status: %', v_result; END IF;
+  IF (SELECT status::text FROM public.applications WHERE id = v_app_id) != 'cancelled' THEN
+    RAISE EXCEPTION 'S2 side: applications.status';
+  END IF;
+  IF (SELECT cancellation_request->>'status' FROM public.applications WHERE id = v_app_id) != 'approved' THEN
+    RAISE EXCEPTION 'S2 side: cancellation_request.status';
+  END IF;
 
-  RAISE NOTICE 'cancel_application_atomically tests: ALL PASS (S1-S5)';
+  -- ============================================================
+  -- Cleanup (역순)
+  -- ============================================================
+  DELETE FROM public.work_logs WHERE application_id = v_app_id;
+  DELETE FROM public.applications WHERE id = v_app_id;
+  DELETE FROM public.job_postings WHERE id = v_job_id;
+  DELETE FROM auth.users WHERE id IN (v_owner_id, v_staff_id, v_other_user_id);
 END $$;
 
-ROLLBACK;
+SELECT 'CANCEL_TEST_PASSED' AS result;
