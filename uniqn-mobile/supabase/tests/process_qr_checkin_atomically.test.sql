@@ -1,0 +1,107 @@
+-- =============================================================================
+-- T-B6: process_qr_checkin_atomically SQL 회귀 테스트
+-- =============================================================================
+-- 사용법: 마이그레이션 적용 후 운영 DB에 fixture 채워 실행
+-- 모든 시나리오는 BEGIN/ROLLBACK으로 격리되어 데이터 변화 없음
+-- =============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 1: check-in happy path
+-- 기대: scheduled → checked_in, check_in_time 설정, work_duration=0
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   -- fixture: scheduled work_log + active job_posting
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkIn',
+--     now(),
+--     '2026-04-14'
+--   );
+--   -- assert: result->>'success' = 'true'
+--   -- assert: SELECT status FROM work_logs WHERE id=... = 'checked_in'
+-- ROLLBACK;
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 2: check-out happy path
+-- 기대: checked_in → checked_out, work_duration > 0
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   -- fixture: checked_in work_log with check_in_time = now() - interval '2 hours'
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkOut',
+--     now(),
+--     '2026-04-14'
+--   );
+--   -- assert: result->>'success' = 'true'
+--   -- assert: (result->>'work_duration')::numeric > 1.5 AND < 2.5
+--   -- assert: SELECT status FROM work_logs WHERE id=... = 'checked_out'
+-- ROLLBACK;
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 3: payroll completed → already_settled error
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   -- fixture: work_log with payroll_status='completed'
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkIn',
+--     now(),
+--     NULL
+--   );
+--   -- assert: result->>'success' = 'false'
+--   -- assert: result->>'error' = 'already_settled'
+-- ROLLBACK;
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 4: staff_id mismatch
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<wrong_staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkIn',
+--     now(),
+--     NULL
+--   );
+--   -- assert: result->>'error' = 'staff_id_mismatch'
+-- ROLLBACK;
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 5: 이미 checked_in 상태에서 다시 checkIn → already_checked_in
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   -- fixture: work_log with status='checked_in'
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkIn',
+--     now(),
+--     NULL
+--   );
+--   -- assert: result->>'error' = 'already_checked_in'
+-- ROLLBACK;
+
+-- ----------------------------------------------------------------------------
+-- 시나리오 6: scheduled 상태에서 checkOut → not_checked_in
+-- ----------------------------------------------------------------------------
+-- BEGIN;
+--   -- fixture: work_log with status='scheduled'
+--   SELECT public.process_qr_checkin_atomically(
+--     '<work_log_id>'::uuid,
+--     '<staff_id>'::uuid,
+--     '<job_posting_id>'::uuid,
+--     'checkOut',
+--     now(),
+--     NULL
+--   );
+--   -- assert: result->>'error' = 'not_checked_in'
+-- ROLLBACK;
