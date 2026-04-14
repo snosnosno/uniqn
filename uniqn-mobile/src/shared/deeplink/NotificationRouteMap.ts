@@ -13,11 +13,26 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.jobPostingId
       ? { name: 'employer/applicants', params: { jobId: data.jobPostingId } }
       : { name: 'employer/my-postings' },
-  [NotificationType.APPLICATION_CONFIRMED]: () => ({ name: 'schedule' }),
-  [NotificationType.CONFIRMATION_CANCELLED]: () => ({ name: 'schedule' }),
-  [NotificationType.APPLICATION_REJECTED]: () => ({ name: 'schedule' }),
-  [NotificationType.CANCELLATION_APPROVED]: () => ({ name: 'schedule' }),
-  [NotificationType.CANCELLATION_REJECTED]: () => ({ name: 'schedule' }),
+  [NotificationType.APPLICATION_CONFIRMED]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
+  [NotificationType.CONFIRMATION_CANCELLED]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
+  [NotificationType.APPLICATION_REJECTED]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
+  [NotificationType.CANCELLATION_APPROVED]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
+  [NotificationType.CANCELLATION_REJECTED]: (data) =>
+    data?.applicationId
+      ? { name: 'schedule', params: { applicationId: data.applicationId } }
+      : { name: 'schedule' },
 
   [NotificationType.STAFF_CHECKED_IN]: (data) =>
     data?.jobPostingId

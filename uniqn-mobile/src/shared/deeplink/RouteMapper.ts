@@ -27,8 +27,18 @@ export class RouteMapper {
 
       case 'notifications':
         return EXPO_ROUTES.notifications;
-      case 'schedule':
-        return EXPO_ROUTES.schedule;
+      case 'schedule': {
+        const query: string[] = [];
+        if (route.params?.applicationId) {
+          query.push(`applicationId=${encodeURIComponent(route.params.applicationId)}`);
+        }
+        if (route.params?.cancelApplicationId) {
+          query.push(`cancelApplicationId=${encodeURIComponent(route.params.cancelApplicationId)}`);
+        }
+        return query.length > 0
+          ? `${EXPO_ROUTES.schedule}?${query.join('&')}`
+          : EXPO_ROUTES.schedule;
+      }
       case 'board':
         return EXPO_ROUTES.board;
       case 'board/post':

@@ -3,23 +3,34 @@
  * 내 스케줄 화면
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
 import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
+import { CancellationRequestForm } from '@/components/applications';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useThemeStore } from '@/stores/themeStore';
+import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
-import type { ScheduleEvent, GroupedScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
+import { STATUS } from '@/constants';
+import { getApplicationById } from '@/services/jobs/applicationService';
+import { logger } from '@/utils/logger';
+import type {
+  Application,
+  ScheduleEvent,
+  GroupedScheduleEvent,
+  QRCodeScanResult,
+  QRCodeAction,
+} from '@/types';
 import { isGroupedScheduleEvent } from '@/types/schedule';
 
 // ============================================================================
@@ -39,20 +50,6 @@ function formatMonthTitle(year: number, month: number): string {
 // ============================================================================
 // Sub Components
 // ============================================================================
-
-/**
- * 스케줄 아이템 컴포넌트
- * - 상태별로 다른 정보를 표시하는 ScheduleCard 사용
- * - 클릭 시 3탭 모달 오픈
- */
-interface ScheduleItemProps {
-  schedule: ScheduleEvent;
-  onPress: () => void;
-}
-
-function ScheduleItem({ schedule, onPress }: ScheduleItemProps) {
-  return <ScheduleCard schedule={schedule} onPress={onPress} />;
-}
 
 interface MonthNavigatorProps {
   year: number;
@@ -222,6 +219,13 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
 export default function ScheduleScreen() {
   const isDark = useThemeStore((s) => s.isDarkMode);
+  const addToast = useToastStore((state) => state.addToast);
+
+  // URL 파라미터 (알림 딥링크 — applicationId, cancelApplicationId)
+  const searchParams = useLocalSearchParams<{
+    applicationId?: string;
+    cancelApplicationId?: string;
+  }>();
 
   // 스태프 정산 튜토리얼
 
@@ -235,6 +239,9 @@ export default function ScheduleScreen() {
     useState<GroupedScheduleEvent | null>(null);
   const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
 
+  // 취소 요청 바텀시트 상태 (confirmed 지원 취소)
+  const [cancellationApp, setCancellationApp] = useState<Application | null>(null);
+
   // QR 스캐너 상태
   const [isQRScannerVisible, setIsQRScannerVisible] = useState(false);
   const [qrScanAction, setQRScanAction] = useState<QRCodeAction | undefined>();
@@ -246,7 +253,7 @@ export default function ScheduleScreen() {
   const { pendingCount } = usePendingReviews();
 
   // 지원 취소 훅
-  const { cancelApplication } = useApplications();
+  const { cancelApplication, requestCancellation, isRequestingCancellation } = useApplications();
 
   const {
     schedules,
@@ -301,10 +308,111 @@ export default function ScheduleScreen() {
     [cancelApplication, refresh]
   );
 
-  // 취소 요청 핸들러 (confirmed 상태)
-  const handleRequestCancellation = useCallback((applicationId: string) => {
-    router.push(`/(app)/applications/${applicationId}/cancel`);
+  // 취소 요청 핸들러 (confirmed 상태) — 인라인 바텀시트로 표시
+  const handleRequestCancellation = useCallback(
+    async (applicationId: string) => {
+      try {
+        const application = await getApplicationById(applicationId);
+
+        if (!application) {
+          addToast({ type: 'error', message: '지원서를 찾을 수 없습니다' });
+          return;
+        }
+
+        if (application.recruitmentType === 'fixed') {
+          addToast({
+            type: 'warning',
+            message: '고정공고는 1차 범위에서 취소 요청을 지원하지 않습니다.',
+          });
+          return;
+        }
+
+        if (
+          application.status !== STATUS.APPLICATION.CONFIRMED &&
+          application.status !== STATUS.APPLICATION.CANCELLATION_PENDING
+        ) {
+          addToast({ type: 'warning', message: '확정된 지원만 취소 요청이 가능합니다' });
+          return;
+        }
+
+        if (
+          application.status === STATUS.APPLICATION.CANCELLATION_PENDING ||
+          application.cancellationRequest?.status === 'pending'
+        ) {
+          addToast({ type: 'warning', message: '이미 취소 요청이 진행 중입니다' });
+          return;
+        }
+
+        if (application.cancellationRequest?.status === 'rejected') {
+          addToast({
+            type: 'warning',
+            message: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
+          });
+          return;
+        }
+
+        setCancellationApp(application);
+      } catch (error) {
+        logger.error('지원서 조회 실패', error as Error, { applicationId });
+        addToast({ type: 'error', message: '지원서를 불러오는 중 오류가 발생했습니다' });
+      }
+    },
+    [addToast]
+  );
+
+  // 취소 요청 제출 핸들러
+  const handleSubmitCancellation = useCallback(
+    (applicationId: string, reason: string) => {
+      requestCancellation(
+        { applicationId, reason },
+        {
+          onSuccess: () => {
+            setCancellationApp(null);
+            refresh();
+          },
+        }
+      );
+    },
+    [requestCancellation, refresh]
+  );
+
+  const handleCloseCancellationSheet = useCallback(() => {
+    setCancellationApp(null);
   }, []);
+
+  // 알림 딥링크 → 자동 액션 (한 번만 실행)
+  // - applicationId: 해당 스케줄 상세 모달 자동 오픈
+  // - cancelApplicationId: 취소 요청 바텀시트 자동 오픈 (cancel.tsx 호환성)
+  const [didHandleSearchParam, setDidHandleSearchParam] = useState(false);
+  useEffect(() => {
+    if (didHandleSearchParam) return;
+
+    const targetApplicationId = searchParams.applicationId;
+    const targetCancelApplicationId = searchParams.cancelApplicationId;
+
+    if (!targetApplicationId && !targetCancelApplicationId) return;
+
+    if (targetCancelApplicationId) {
+      setDidHandleSearchParam(true);
+      void handleRequestCancellation(targetCancelApplicationId);
+      return;
+    }
+
+    if (targetApplicationId && schedules.length > 0) {
+      const targetSchedule = schedules.find((s) => s.applicationId === targetApplicationId);
+      if (targetSchedule) {
+        setDidHandleSearchParam(true);
+        setSelectedSchedule(targetSchedule);
+        setIsDetailSheetVisible(true);
+      }
+    }
+  }, [
+    didHandleSearchParam,
+    handleRequestCancellation,
+    schedules,
+    searchParams.applicationId,
+    searchParams.cancelApplicationId,
+  ]);
 
   // 단일 스케줄 상세 시트 열기
   const handleOpenDetailSheet = useCallback((schedule: ScheduleEvent) => {
@@ -492,10 +600,12 @@ export default function ScheduleScreen() {
                   }
                   // 단일 스케줄: ScheduleCard 사용
                   return (
-                    <ScheduleItem
+                    <ScheduleCard
                       key={item.id}
                       schedule={item}
                       onPress={() => handleOpenDetailSheet(item)}
+                      onCancelApplication={handleCancelApplication}
+                      onRequestCancellation={handleRequestCancellation}
                     />
                   );
                 })}
@@ -551,16 +661,29 @@ export default function ScheduleScreen() {
                 }
                 // 단일 스케줄: ScheduleCard 사용
                 return (
-                  <ScheduleItem
+                  <ScheduleCard
                     key={item.id}
                     schedule={item}
                     onPress={() => handleOpenDetailSheet(item)}
+                    onCancelApplication={handleCancelApplication}
+                    onRequestCancellation={handleRequestCancellation}
                   />
                 );
               })}
             </View>
           )}
         </ScrollView>
+      )}
+
+      {/* 취소 요청 바텀시트 (confirmed → 인라인) */}
+      {cancellationApp && (
+        <CancellationRequestForm
+          application={cancellationApp}
+          visible={!!cancellationApp}
+          isSubmitting={isRequestingCancellation}
+          onSubmit={handleSubmitCancellation}
+          onClose={handleCloseCancellationSheet}
+        />
       )}
 
       {/* 스케줄 상세 모달 (3탭 + 그룹 모드 지원) */}

@@ -42,9 +42,18 @@ import type { ScheduleEvent } from '@/types';
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
+  /** applied 상태에서 "지원 취소" 액션 (applicationId 필요) */
+  onCancelApplication?: (applicationId: string) => void;
+  /** confirmed 상태에서 "취소 요청" 액션 (applicationId 필요) */
+  onRequestCancellation?: (applicationId: string) => void;
 }
 
-export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
+export const ScheduleCard = memo(function ScheduleCard({
+  schedule,
+  onPress,
+  onCancelApplication,
+  onRequestCancellation,
+}: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
   const ownerName = schedule.postingProjection?.ownerName;
@@ -243,6 +252,36 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </View>
           </View>
         )}
+
+        {/* 인라인 액션 버튼 — applied/confirmed 상태에서 직접 취소 가능 */}
+        {schedule.applicationId &&
+          !hasPendingCancellation &&
+          !isCancelled &&
+          ((schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication) ||
+            (schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation)) && (
+            <View className="mt-3 flex-row justify-end">
+              <Pressable
+                onPress={(event) => {
+                  event.stopPropagation();
+                  if (!schedule.applicationId) return;
+                  if (schedule.type === STATUS.SCHEDULE.APPLIED) {
+                    onCancelApplication?.(schedule.applicationId);
+                  } else if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
+                    onRequestCancellation?.(schedule.applicationId);
+                  }
+                }}
+                className="rounded-md border border-secondary-200 px-3 py-1.5 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
+                accessibilityRole="button"
+                accessibilityLabel={
+                  schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'
+                }
+              >
+                <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-300">
+                  {schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
 
         {hasPendingCancellation && (
           <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">

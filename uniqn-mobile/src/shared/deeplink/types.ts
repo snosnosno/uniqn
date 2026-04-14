@@ -6,7 +6,7 @@ export type DeepLinkRoute =
   | { name: 'signup' }
   | { name: 'forgot-password' }
   | { name: 'notifications' }
-  | { name: 'schedule' }
+  | { name: 'schedule'; params?: { applicationId?: string; cancelApplicationId?: string } }
   | { name: 'board' }
   | { name: 'board/post'; params: { postId: string } }
   | { name: 'profile' }
