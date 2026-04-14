@@ -10,6 +10,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
+import { AlertTriangleIcon } from '@/components/icons';
 import { isAppError } from '@/errors';
 import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
@@ -139,7 +140,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <View className="flex-1 items-center justify-center p-6">
           {/* 에러 아이콘 */}
           <View className="w-20 h-20 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center mb-6">
-            <Text className="text-4xl font-sans">{''}</Text>
+            <AlertTriangleIcon size={40} color="#DC2626" />
           </View>
 
           {/* 제목 */}

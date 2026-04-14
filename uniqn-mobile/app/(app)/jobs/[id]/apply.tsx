@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
+import { AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@/components/icons';
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
@@ -28,7 +29,9 @@ function LoadingState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <View className="flex-1 items-center justify-center bg-surface-page p-6">
-      <Text className="mb-4 text-4xl font-sans">!</Text>
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-error-50 dark:bg-error-900/30">
+        <AlertTriangleIcon size={40} color="#DC2626" />
+      </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         오류가 발생했습니다
       </Text>
@@ -45,24 +48,25 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function AlreadyAppliedState({ isFixed }: { isFixed: boolean }) {
   return (
     <View className="flex-1 items-center justify-center bg-surface-page p-6">
-      <Text className="mb-4 text-4xl font-sans">이미</Text>
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30">
+        <InformationCircleIcon size={40} color="#B8962E" />
+      </View>
       <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
         이미 지원한 공고입니다
       </Text>
       <Text className="mb-6 text-center text-secondary-500 dark:text-secondary-400 font-sans">
-        {isFixed
-          ? '지원 현황은 프로필에서 확인할 수 있습니다.'
-          : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}
+        공고 상세 화면에서 지원 상태를 확인하실 수 있어요.
       </Text>
       <View className="w-full max-w-xs gap-3">
+        <Button onPress={() => router.back()} fullWidth>
+          공고 상세로 돌아가기
+        </Button>
         <Button
           onPress={() => router.push(isFixed ? '/(app)/(tabs)/profile' : '/(app)/(tabs)/schedule')}
+          variant="outline"
           fullWidth
         >
           {isFixed ? '프로필 보기' : '내 일정 보기'}
-        </Button>
-        <Button onPress={() => router.back()} variant="outline" fullWidth>
-          돌아가기
         </Button>
       </View>
     </View>
@@ -253,23 +257,21 @@ export default function ApplyScreen() {
           }}
         />
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="mb-4 text-6xl font-sans">완료</Text>
+          <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-success-50 dark:bg-success-900/30">
+            <CheckCircleIcon size={56} color="#22C55E" />
+          </View>
           <Text className="mb-2 text-center text-xl font-display text-content-primary dark:text-off-white">
             지원이 완료되었습니다
           </Text>
           <Text className="mb-8 text-center text-secondary-500 dark:text-secondary-400 font-sans">
-            {isFixed
-              ? '지원 결과는 프로필에서 확인할 수 있습니다.'
-              : '지원 현황은 일정 탭에서 확인할 수 있습니다.'}
-            {'\n'}
-            지금 바로 다음 행동을 선택해 주세요.
+            공고 상세 화면에서 지원 상태를 확인하실 수 있어요.
           </Text>
           <View className="w-full max-w-xs gap-3">
-            <Button onPress={handleViewPostSubmitTarget} fullWidth>
-              {isFixed ? '프로필 보기' : '내 일정 보기'}
-            </Button>
-            <Button onPress={handleReturnToJob} variant="outline" fullWidth>
+            <Button onPress={handleReturnToJob} fullWidth>
               공고 상세로 돌아가기
+            </Button>
+            <Button onPress={handleViewPostSubmitTarget} variant="outline" fullWidth>
+              {isFixed ? '프로필 보기' : '내 일정 보기'}
             </Button>
           </View>
         </View>

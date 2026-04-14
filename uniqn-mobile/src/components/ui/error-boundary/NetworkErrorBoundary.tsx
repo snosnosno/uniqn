@@ -12,6 +12,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { AlertCircleIcon } from '@/components/icons';
 import { isAppError } from '@/errors';
 import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
@@ -40,7 +41,7 @@ function NetworkErrorFallback({
   return (
     <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
       <View className="w-20 h-20 rounded-sm bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl font-sans">{isOffline ? '' : ''}</Text>
+        <AlertCircleIcon size={40} color="#EA580C" />
       </View>
 
       <Text className="text-xl font-display text-content-primary dark:text-off-white text-center mb-2">

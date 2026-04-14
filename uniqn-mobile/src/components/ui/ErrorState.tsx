@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { AlertTriangleIcon } from '@/components/icons';
 import { isAppError, type AppError } from '@/errors';
 import { Button } from './Button';
 
@@ -66,7 +67,9 @@ export function ErrorState({
   if (compact) {
     return (
       <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 px-4 py-3 rounded-md">
-        <Text className="text-error-600 dark:text-error-400 text-lg mr-3 font-sans">{''}</Text>
+        <View className="mr-3">
+          <AlertTriangleIcon size={20} color="#DC2626" />
+        </View>
         <Text className="text-error-700 dark:text-error-300 text-sm flex-1 font-sans">
           {errorMessage}
         </Text>
@@ -90,7 +93,7 @@ export function ErrorState({
     <View className="flex-1 items-center justify-center p-8">
       {/* 에러 아이콘 */}
       <View className="w-20 h-20 rounded-sm bg-error-50 dark:bg-error-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl font-sans">{''}</Text>
+        <AlertTriangleIcon size={40} color="#DC2626" />
       </View>
 
       {/* 제목 */}

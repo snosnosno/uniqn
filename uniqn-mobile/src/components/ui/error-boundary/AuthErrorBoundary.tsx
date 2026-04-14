@@ -12,6 +12,7 @@
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { LockIcon } from '@/components/icons';
 import { isAppError } from '@/errors';
 import { sentryService } from '@/services/observability';
 import { logger } from '@/utils/logger';
@@ -38,7 +39,7 @@ function AuthErrorFallback({
   return (
     <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
       <View className="w-20 h-20 rounded-sm bg-warning-100 dark:bg-warning-900/30 items-center justify-center mb-6">
-        <Text className="text-4xl font-sans">{''}</Text>
+        <LockIcon size={40} color="#B8962E" />
       </View>
 
       <Text className="text-xl font-display text-content-primary dark:text-off-white text-center mb-2">
