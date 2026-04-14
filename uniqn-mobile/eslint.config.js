@@ -142,6 +142,7 @@ module.exports = [
       'coverage/',
       'playwright-report/',
       'functions/',
+      'supabase/functions/',
       'scripts/',
       'e2e/',
     ],
