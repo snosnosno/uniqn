@@ -23,6 +23,7 @@ const corsHeaders = {
 
 const BATCH_SIZE = 10;
 const MAX_RETRY = 3;
+const SLACK_WEBHOOK = Deno.env.get('SLACK_OUTBOX_ALERT_WEBHOOK');
 
 interface OutboxRow {
   id: string;
@@ -120,6 +121,31 @@ async function markRetryOrFailed(
   return reachedLimit ? 'failed_retry_limit' : 'retry';
 }
 
+// T-B11: failed_retry_limit 행 발생 시 Slack 알림.
+// SLACK_OUTBOX_ALERT_WEBHOOK 환경변수 미설정 시 silent skip — 시스템은 정상 동작.
+async function sendSlackAlert(failed: ProcessResult[]): Promise<void> {
+  if (!SLACK_WEBHOOK || failed.length === 0) return;
+
+  const lines = failed.map(
+    (r) => `• \`${r.id}\` (job_posting=${r.job_posting_id}): ${r.error ?? 'unknown'}`
+  );
+  const text = [
+    `:rotating_light: *outbox failed_retry_limit* (${failed.length}건)`,
+    ...lines,
+    `_check: SELECT * FROM schedule_board_sync_outbox WHERE status = 'failed_retry_limit';_`,
+  ].join('\n');
+
+  try {
+    await fetch(SLACK_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+  } catch (err) {
+    console.error('slack alert failed', err);
+  }
+}
+
 async function processRow(client: SupabaseClient, row: OutboxRow): Promise<ProcessResult> {
   try {
     await markProcessing(client, row.id);
@@ -181,6 +207,12 @@ Deno.serve(async (req: Request) => {
       failed: results.filter((r) => r.outcome === 'failed_retry_limit').length,
       results,
     };
+
+    // T-B11: failed_retry_limit 행 발생 시 Slack 알림 (webhook 미설정 시 silent)
+    const failedRows = results.filter((r) => r.outcome === 'failed_retry_limit');
+    if (failedRows.length > 0) {
+      await sendSlackAlert(failedRows);
+    }
 
     return new Response(JSON.stringify(summary), {
       status: 200,
