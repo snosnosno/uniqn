@@ -16,9 +16,21 @@ function readStringEnv(name: string, fallback: string): string {
   return value && value.length > 0 ? value : fallback;
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} is required for E2E tests. Set it in e2e/.env.test`);
+  }
+  return value;
+}
+
 const webPort = readNumberEnv('E2E_WEB_PORT', DEFAULT_WEB_PORT);
 const baseUrl = readStringEnv('E2E_BASE_URL', `http://localhost:${webPort}`);
 const artifactDir = readStringEnv('E2E_ARTIFACT_DIR', DEFAULT_ARTIFACT_DIR);
+
+const supabaseUrl = requireEnv('EXPO_PUBLIC_SUPABASE_URL');
+const supabaseAnonKey = requireEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+const supabaseProjectRef = new URL(supabaseUrl).hostname.split('.')[0];
 
 export const E2E_CONFIG = {
   runtime: {
@@ -28,11 +40,9 @@ export const E2E_CONFIG = {
   },
 
   supabase: {
-    url: 'https://ygfxukhktpqymahfrvbz.supabase.co',
-    anonKey:
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZnh1a2hrdHBxeW1haGZydmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDI1MTcsImV4cCI6MjA5MTM3ODUxN30.LYqgEEb_HQPoBdJeYg_fDCO9CNeEaYZbDEFbRqQeJLs',
-    projectRef: 'ygfxukhktpqymahfrvbz',
-    authStorageKey: 'sb-ygfxukhktpqymahfrvbz-auth-token',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+    projectRef: supabaseProjectRef,
+    authStorageKey: `sb-${supabaseProjectRef}-auth-token`,
   },
 } as const;

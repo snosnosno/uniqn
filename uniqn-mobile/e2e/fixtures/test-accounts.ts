@@ -12,7 +12,9 @@ export interface TestAccount {
   readonly phoneNumber: string;
 }
 
-export const TEST_ACCOUNTS: Record<string, TestAccount> = {
+type TestAccountKey = 'staff' | 'employer' | 'admin';
+
+export const TEST_ACCOUNTS: Readonly<Record<TestAccountKey, TestAccount>> = {
   staff: {
     uid: '4365e1ad-c9fb-416f-addb-d1b18b2a5ec8',
     email: 'qa-staff@uniqn.test',
