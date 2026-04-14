@@ -1,10 +1,26 @@
 #!/usr/bin/env node
 
-const { spawnSync } = require('child_process');
+const { spawnSync, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const repoRoot = path.resolve(__dirname, '..', '..');
+// Resolve repoRoot from the active git working tree (cwd), not from __dirname.
+// Git invokes hooks with cwd = worktree top, so `git rev-parse --show-toplevel`
+// returns the correct worktree path even when this script lives in main repo.
+function resolveRepoRoot() {
+  try {
+    const top = execSync('git rev-parse --show-toplevel', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (top) return path.normalize(top);
+  } catch {
+    // fall through
+  }
+  return process.cwd();
+}
+
+const repoRoot = resolveRepoRoot();
 const uniqnMobileDir = path.join(repoRoot, 'uniqn-mobile');
 const functionsDir = path.join(repoRoot, 'functions');
 
