@@ -29,7 +29,7 @@ import {
   resetLoginAttempts,
 } from '@/services/observability/sessionService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
-import { type UserProfile, type AuthResult } from './authTypes';
+import { type UserProfile, type AuthResult, callVerifyAndSaveProfile } from './authTypes';
 import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
 
@@ -240,15 +240,11 @@ export async function checkNicknameExists(nickname: string, excludeUid?: string)
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
     const identityVerificationId = data.identityVerificationId;
-    if (!identityVerificationId) {
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-        userMessage: '본인인증 정보가 누락되었습니다. 다시 시도해주세요.',
-      });
-    }
 
     logger.info('회원가입 시도', {
       email: maskEmail(data.email),
       platform: Platform.OS,
+      identityMode: identityVerificationId ? 'portone' : 'direct',
     });
 
     // 1. Supabase Auth 계정 생성
@@ -270,16 +266,52 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     const user = signUpData.user;
     protectAuthFlow(user.id, 'email_signup');
 
+    // functions.invoke는 functions.headers.Authorization을 사용하는데,
+    // SupabaseClient v2에서 onAuthStateChange가 functions.setAuth를 호출하지 않아
+    // signUp 직후 항상 anon key로 요청됨 → 명시적으로 access token 전달 필요.
+    // signUpData.session이 null인 경우(이미 가입된 이메일 재시도 등)는 signIn으로 fallback.
+    let accessToken = signUpData.session?.access_token;
+    if (!accessToken) {
+      const { data: signInData } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      accessToken = signInData.session?.access_token;
+    }
+
     try {
       // 2. Edge Function 호출: 서버사이드 검증 + DB 저장 + role 설정
-      await callVerifyAndSavePortOneProfile({
-        identityVerificationId,
-        termsAgreed: data.termsAgreed,
-        privacyAgreed: data.privacyAgreed,
-        marketingAgreed: data.marketingAgreed,
-        email: data.email,
-        mode: 'signup',
-      });
+      // TODO: KG이니시스 심사 통과 후 직접 입력 분기 제거 (featureFlags.ts 참고)
+      if (identityVerificationId) {
+        // PortOne 이니시스 본인인증 경로 (정식 서비스)
+        await callVerifyAndSavePortOneProfile(
+          {
+            identityVerificationId,
+            termsAgreed: data.termsAgreed,
+            privacyAgreed: data.privacyAgreed,
+            marketingAgreed: data.marketingAgreed,
+            email: data.email,
+            mode: 'signup',
+          },
+          accessToken
+        );
+      } else {
+        // 전화번호 직접 입력 경로 (본인인증 심사 준비 중)
+        await callVerifyAndSaveProfile(
+          {
+            verifiedPhone: data.verifiedPhone,
+            name: data.name,
+            birthDate: data.birthDate,
+            gender: data.gender ?? 'male',
+            termsAgreed: data.termsAgreed,
+            privacyAgreed: data.privacyAgreed,
+            marketingAgreed: data.marketingAgreed,
+            email: data.email,
+            mode: 'signup',
+          },
+          accessToken
+        );
+      }
 
       // 3. 저장된 프로필 조회
       const profile = await getUserProfile(user.id);

@@ -22,6 +22,7 @@ import {
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
+import { IDENTITY_VERIFICATION_ENABLED } from '@/constants/featureFlags';
 
 interface SignupStepIdentityProps {
   onNext: (data: SignUpIdentityData) => void;
@@ -66,7 +67,8 @@ export function SignupStepIdentity({
   isAppleUser = false,
   submitLabel = '다음',
 }: SignupStepIdentityProps) {
-  const usePortOneIdentity = isPortOneInicisIdentityConfigured();
+  // IDENTITY_VERIFICATION_ENABLED=false 이면 portOne 전체 비활성화
+  const usePortOneIdentity = IDENTITY_VERIFICATION_ENABLED && isPortOneInicisIdentityConfigured();
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
@@ -135,6 +137,19 @@ export function SignupStepIdentity({
       setValue('verifiedPhone', linkedPhone, { shouldValidate: true });
     });
   }, [phoneMode, setValue, usePortOneIdentity]);
+
+  /** 수동 전화번호 입력 핸들러 (본인인증 비활성화 시 사용) */
+  const handleManualPhoneChange = useCallback(
+    (text: string) => {
+      const cleaned = text.replace(/[-\s]/g, '');
+      const isValid = /^\+82[0-9]{9,10}$/.test(cleaned) || /^01[0-9]{8,9}$/.test(cleaned);
+      // cleaned(대시 제거) 값을 저장해야 edge function과 DB 포맷이 일치
+      setValue('verifiedPhone', cleaned, { shouldValidate: true });
+      setValue('phoneVerified', isValid, { shouldValidate: true });
+      if (isValid) setVerifiedPhone(cleaned);
+    },
+    [setValue]
+  );
 
   const onSubmit = useCallback(
     (data: SignUpIdentityData) => {
@@ -210,17 +225,44 @@ export function SignupStepIdentity({
 
       <View>
         <Text className="mb-2 text-sm font-sans-medium text-content-secondary">본인인증</Text>
-        <PortOneIdentityVerification
-          onVerified={handlePortOneVerified}
-          onError={(error) =>
-            logger.error('PortOne identity verification error', error, {
-              component: 'SignupStepIdentity',
-            })
-          }
-          initialIdentity={portOneIdentity}
-          disabled={isLoading}
-          customerFullName={watchedName || undefined}
-        />
+
+        {IDENTITY_VERIFICATION_ENABLED ? (
+          /* PortOne 이니시스 통합인증 (정식 서비스) */
+          <PortOneIdentityVerification
+            onVerified={handlePortOneVerified}
+            onError={(error) =>
+              logger.error('PortOne identity verification error', error, {
+                component: 'SignupStepIdentity',
+              })
+            }
+            initialIdentity={portOneIdentity}
+            disabled={isLoading}
+            customerFullName={watchedName || undefined}
+          />
+        ) : (
+          /* 전화번호 직접 입력 (본인인증 심사 준비 중) */
+          <View className="rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-900/40 dark:bg-warning-900/10">
+            <Text className="mb-3 text-sm leading-5 text-warning-700 dark:text-warning-400 font-sans">
+              현재 본인인증 서비스 준비 중입니다. 전화번호를 직접 입력해주세요.
+            </Text>
+            <Controller
+              control={control}
+              name="verifiedPhone"
+              render={({ field: { onBlur, value } }) => (
+                <Input
+                  placeholder="010-1234-5678"
+                  value={value}
+                  onChangeText={handleManualPhoneChange}
+                  onBlur={onBlur}
+                  keyboardType="phone-pad"
+                  editable={!isLoading}
+                  accessibilityLabel="전화번호 입력"
+                  error={errors.verifiedPhone?.message}
+                />
+              )}
+            />
+          </View>
+        )}
       </View>
 
       {errors.phoneVerified && !verifiedPhone && (

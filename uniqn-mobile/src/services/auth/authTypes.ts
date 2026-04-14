@@ -7,6 +7,7 @@
 
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { getEnv } from '@/lib/env';
 import { logger } from '@/utils/logger';
 import { isRetryableError } from '@/errors';
 import type { FirestoreUserProfile } from '@/types';
@@ -85,12 +86,50 @@ export interface VerifyAndSavePayload {
  *
  * 네트워크 에러에 한해 1회 재시도 (2초 대기).
  */
-export async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<void> {
+export async function callVerifyAndSaveProfile(
+  payload: VerifyAndSavePayload,
+  accessToken?: string
+): Promise<void> {
+  // supabase.functions.invoke는 signUp 직후 onAuthStateChange 타이밍 이슈로
+  // functions.headers.Authorization이 anon key로 고정될 수 있어 raw fetch 사용
   const invoke = async () => {
-    const { error } = await supabase.functions.invoke('verify-and-save-profile', {
-      body: payload,
+    const env = getEnv();
+    const token = accessToken ?? (await supabase.auth.getSession()).data.session?.access_token;
+
+    logger.info('callVerifyAndSaveProfile 호출', {
+      component: 'authService',
+      hasToken: Boolean(token),
+      tokenPrefix: token ? token.substring(0, 20) + '...' : 'NONE',
     });
-    if (error) throw error;
+
+    const res = await fetch(
+      `${env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/verify-and-save-profile`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${token ?? env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!res.ok) {
+      let body = '';
+      try {
+        body = await res.text();
+      } catch {
+        body = '(response body unavailable)';
+      }
+      logger.error('verify-and-save-profile 실패', new Error(`${res.status}: ${body}`), {
+        component: 'authService',
+        status: res.status,
+        body,
+        hasToken: Boolean(token),
+      });
+      throw new Error(body || `HTTP ${res.status}`);
+    }
   };
 
   try {

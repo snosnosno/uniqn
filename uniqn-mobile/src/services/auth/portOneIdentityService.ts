@@ -255,12 +255,17 @@ export async function callVerifyPortOneIdentity(
 }
 
 export async function callVerifyAndSavePortOneProfile(
-  payload: VerifyAndSavePortOneProfilePayload
+  payload: VerifyAndSavePortOneProfilePayload,
+  accessToken?: string
 ): Promise<VerifyAndSavePortOneProfileResult> {
   const invoke = async () => {
     const { data, error } = await supabase.functions.invoke<VerifyAndSavePortOneProfileResult>(
       'verify-and-save-portone-profile',
-      { body: payload }
+      {
+        body: payload,
+        // signUp 직후 AsyncStorage 미동기화 대비: 토큰 명시 전달
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      }
     );
     if (error) throw error;
     return data!;
