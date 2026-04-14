@@ -40,13 +40,17 @@ function main() {
     return;
   }
 
+  const path = require('path');
+
   const eslintTargets = mobileFiles
     .filter((file) => matchesExtension(file, ESLINT_EXTENSIONS))
-    .map((file) => relativeTo(uniqnMobileDir, file));
+    .map((file) => relativeTo(uniqnMobileDir, file))
+    .filter((rel) => fileExists(path.join(uniqnMobileDir, rel)));
 
   const prettierTargets = mobileFiles
     .filter((file) => matchesExtension(file, PRETTIER_EXTENSIONS))
-    .map((file) => relativeTo(uniqnMobileDir, file));
+    .map((file) => relativeTo(uniqnMobileDir, file))
+    .filter((rel) => fileExists(path.join(uniqnMobileDir, rel)));
 
   if (eslintTargets.length > 0) {
     console.log(`[hook] pre-commit: ESLint --fix (${eslintTargets.length}개 파일)`);
