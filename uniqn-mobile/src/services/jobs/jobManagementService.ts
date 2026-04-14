@@ -1,11 +1,7 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
-import {
-  archiveScheduleBoard,
-  syncScheduleBoardByJobPostingId,
-  syncScheduleBoardForJobPosting,
-} from '@/services/boardService';
+import { supabase } from '@/lib/supabase';
 import type { TaxSettings } from '@/utils/settlement';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
@@ -17,17 +13,38 @@ import type {
 
 export type { CreateJobPostingResult, JobPostingStats };
 
-async function syncScheduleBoardSafely(
-  task: () => Promise<unknown>,
-  context: Record<string, unknown>
-) {
-  try {
-    await task();
-  } catch (error) {
-    logger.warn('Schedule board sync failed', {
+// =============================================================================
+// T-B7+B8: schedule_board_sync_outbox 패턴
+// =============================================================================
+// fire-and-forget syncScheduleBoardSafely 제거. 모든 board sync 의도를
+// outbox 테이블에 영속화하고 sync-schedule-board-outbox Edge Function이
+// poll → sync_schedule_board RPC 호출 → status 업데이트로 처리.
+// =============================================================================
+
+type ScheduleBoardSyncAction = 'create' | 'update' | 'delete' | 'close' | 'reopen';
+
+async function enqueueScheduleBoardSync(
+  jobPostingId: string,
+  action: ScheduleBoardSyncAction,
+  payload: Record<string, unknown> = {}
+): Promise<void> {
+  const { error } = await supabase.from('schedule_board_sync_outbox').insert({
+    job_posting_id: jobPostingId,
+    action,
+    payload,
+    status: 'pending',
+    retry_count: 0,
+  });
+
+  if (error) {
+    // outbox insert 실패는 main mutation을 롤백시키지 않음.
+    // 사용자 경험 보호 차원에서 warn 로그만 남기고, outbox failed_retry_limit
+    // 모니터링 + 수동 백필이 안전망. 이는 아키텍처 결정.
+    logger.warn('Schedule board sync enqueue 실패', {
       component: 'jobManagementService',
-      ...context,
-      error: error instanceof Error ? error.message : String(error),
+      jobPostingId,
+      action,
+      error: error.message,
     });
   }
 }
@@ -50,10 +67,9 @@ export async function createJobPosting(
 ): Promise<CreateJobPostingResult> {
   try {
     const result = await createSinglePosting(input, ownerId, ownerName);
-    await syncScheduleBoardSafely(() => syncScheduleBoardForJobPosting(result.jobPosting), {
+    await enqueueScheduleBoardSync(result.id, 'create', {
       jobPostingId: result.id,
       ownerId,
-      action: 'create',
     });
     return result;
   } catch (error) {
@@ -74,11 +90,7 @@ export async function updateJobPosting(
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
     const result = await jobPostingRepository.updateWithTransaction(jobPostingId, input, ownerId);
-    await syncScheduleBoardSafely(() => syncScheduleBoardForJobPosting(result), {
-      jobPostingId,
-      ownerId,
-      action: 'update',
-    });
+    await enqueueScheduleBoardSync(jobPostingId, 'update', { jobPostingId, ownerId });
 
     logger.info('공고 수정 완료', { jobPostingId });
     return result;
@@ -95,11 +107,7 @@ export async function deleteJobPosting(jobPostingId: string, ownerId: string): P
   try {
     logger.info('공고 삭제 시작', { jobPostingId, ownerId });
     await jobPostingRepository.deleteWithTransaction(jobPostingId, ownerId);
-    await syncScheduleBoardSafely(() => archiveScheduleBoard(jobPostingId), {
-      jobPostingId,
-      ownerId,
-      action: 'delete',
-    });
+    await enqueueScheduleBoardSync(jobPostingId, 'delete', { jobPostingId, ownerId });
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -114,11 +122,7 @@ export async function closeJobPosting(jobPostingId: string, ownerId: string): Pr
   try {
     logger.info('공고 마감 시작', { jobPostingId, ownerId });
     await jobPostingRepository.closeWithTransaction(jobPostingId, ownerId);
-    await syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
-      jobPostingId,
-      ownerId,
-      action: 'close',
-    });
+    await enqueueScheduleBoardSync(jobPostingId, 'close', { jobPostingId, ownerId });
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -133,11 +137,7 @@ export async function reopenJobPosting(jobPostingId: string, ownerId: string): P
   try {
     logger.info('공고 재오픈 시작', { jobPostingId, ownerId });
     await jobPostingRepository.reopenWithTransaction(jobPostingId, ownerId);
-    await syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
-      jobPostingId,
-      ownerId,
-      action: 'reopen',
-    });
+    await enqueueScheduleBoardSync(jobPostingId, 'reopen', { jobPostingId, ownerId });
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
     throw handleServiceError(error, {
@@ -163,6 +163,23 @@ export async function getMyJobPostingStats(ownerId: string): Promise<JobPostingS
   }
 }
 
+/**
+ * bulkUpdateJobPostingStatus의 status별 outbox action 매핑.
+ *
+ * outbox CHECK 제약(create/update/delete/close/reopen)이 'bulk-status'를 허용하지
+ * 않으므로 status 값으로 분기:
+ * - closed → close
+ * - active → reopen (재오픈 의도)
+ * - 그 외 → update (단순 상태 변경)
+ *
+ * 처리 자체는 sync_schedule_board RPC가 현재 DB 상태로부터 멱등하게 수행.
+ */
+function bulkActionFor(status: JobPostingStatus): ScheduleBoardSyncAction {
+  if (status === 'closed') return 'close';
+  if (status === 'active') return 'reopen';
+  return 'update';
+}
+
 export async function bulkUpdateJobPostingStatus(
   jobPostingIds: string[],
   status: JobPostingStatus,
@@ -176,14 +193,11 @@ export async function bulkUpdateJobPostingStatus(
       status,
       ownerId
     );
+
+    const action = bulkActionFor(status);
     await Promise.all(
       jobPostingIds.map((jobPostingId) =>
-        syncScheduleBoardSafely(() => syncScheduleBoardByJobPostingId(jobPostingId), {
-          jobPostingId,
-          ownerId,
-          action: 'bulk-status',
-          status,
-        })
+        enqueueScheduleBoardSync(jobPostingId, action, { jobPostingId, status, ownerId })
       )
     );
 
