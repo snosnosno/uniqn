@@ -103,6 +103,8 @@ export async function executeConfirmWithHistory(
             groupId: a.groupId ?? null,
             date,
             timeSlot: a.timeSlot,
+            // RPC confirm_application은 'other'를 알 수 없는 역할로 처리 → 'staff'로 전달
+            // customRole 필드에 실제 역할명이 담겨 있음 (normalizeAssignmentRole 참고)
             role: role === 'other' ? 'staff' : role,
             customRole: customRole ?? null,
           };

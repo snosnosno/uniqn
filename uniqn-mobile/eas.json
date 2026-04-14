@@ -32,7 +32,8 @@
       "channel": "staging",
       "env": {
         "APP_ENV": "staging",
-        "EXPO_PUBLIC_RELEASE_CHANNEL": "staging"
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "staging",
+        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -47,7 +48,8 @@
       "channel": "production",
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_RELEASE_CHANNEL": "production"
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
       },
       "ios": {
         "resourceClass": "m-medium"
