@@ -102,16 +102,6 @@ describe('templateService', () => {
       expect(result).toEqual([]);
     });
 
-    it('권한 에러 시 빈 배열을 반환해야 한다', async () => {
-      const permissionError = new Error('permission denied') as Error & { code?: string };
-      permissionError.code = 'permission-denied';
-      mockRepo.getTemplates.mockRejectedValue(permissionError);
-
-      const result = await getTemplates('new-user');
-
-      expect(result).toEqual([]);
-    });
-
     it('기타 에러 시 handleServiceError를 호출해야 한다', async () => {
       const genericError = new Error('Unknown error');
       mockRepo.getTemplates.mockRejectedValue(genericError);

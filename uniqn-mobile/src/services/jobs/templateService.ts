@@ -25,11 +25,6 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
   try {
     return await templateRepository.getTemplates(userId);
   } catch (error) {
-    // 권한 에러는 빈 배열 반환 (사용자 경험 개선)
-    const firebaseError = error as { code?: string };
-    if (firebaseError.code === 'permission-denied') {
-      return [];
-    }
     throw handleServiceError(error, {
       operation: '템플릿 목록 조회',
       component: 'templateService',

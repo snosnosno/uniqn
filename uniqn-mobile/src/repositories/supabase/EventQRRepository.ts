@@ -25,7 +25,7 @@ const TABLES = {
   EVENT_QR_CODES: 'event_qr_codes',
 } as const;
 const TABLE_COLUMNS =
-  'id,code,created_at,expires_at,is_active,job_posting_id,type,user_id,work_date' as const;
+  'id,code,created_at,expires_at,is_active,job_posting_id,type,user_id,work_date,assignment_group_id,time_slot' as const;
 
 // ============================================================================
 // Helpers
