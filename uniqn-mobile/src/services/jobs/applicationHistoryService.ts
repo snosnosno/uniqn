@@ -11,7 +11,7 @@ import { confirmApplicationSchema } from '@/schemas';
 import type { Application, Assignment } from '@/types';
 import { findActiveConfirmation } from '@/domains/application';
 import { applicationRepository } from '@/repositories';
-import { syncScheduleBoardByApplicationId } from '@/services/boardService';
+import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
 import type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
 
 // Re-export from domain for backward compatibility.
@@ -20,11 +20,27 @@ export { updateDateSpecificRequirementsFilled } from '@/domains/application';
 // Re-export types from repository interfaces for backward compatibility.
 export type { CancelConfirmationResult, ConfirmWithHistoryResult } from '@/repositories';
 
+// T-B12: 직접 sync 호출 → outbox enqueue로 전환.
+// jobPostingId는 application 조회로 획득. enqueue 실패는 main mutation을 롤백시키지 않음
+// (warn 로그 + outbox failed_retry_limit 모니터링 + 수동 백필이 안전망).
 async function syncScheduleBoardSafely(applicationId: string, action: 'confirm' | 'cancel') {
   try {
-    await syncScheduleBoardByApplicationId(applicationId);
+    const app = await applicationRepository.getById(applicationId);
+    if (!app?.jobPostingId) {
+      logger.warn('Schedule board enqueue skipped: jobPostingId missing', {
+        component: 'applicationHistoryService',
+        applicationId,
+        action,
+      });
+      return;
+    }
+    await enqueueScheduleBoardSync(app.jobPostingId, 'update', {
+      jobPostingId: app.jobPostingId,
+      applicationId,
+      reason: action,
+    });
   } catch (error) {
-    logger.warn('Schedule board sync failed', {
+    logger.warn('Schedule board enqueue failed', {
       component: 'applicationHistoryService',
       applicationId,
       action,

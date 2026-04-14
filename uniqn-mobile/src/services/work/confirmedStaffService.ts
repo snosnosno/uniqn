@@ -4,7 +4,7 @@ import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { confirmedStaffRepository, userRepository, workLogRepository } from '@/repositories';
 import { requireCurrentUser } from '@/services/auth/authCoreService';
 import { cancelConfirmation } from '@/services/jobs/applicationHistoryService';
-import { syncScheduleBoardByJobPostingId } from '@/services/boardService';
+import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
 import { workLogToConfirmedStaff, groupStaffByDate, calculateStaffStats } from '@/domains/staff';
 import type {
   ConfirmedStaff,
@@ -201,9 +201,16 @@ export async function updateStaffStatus(workLogId: string, status: WorkLogStatus
 
   if (workLog?.jobPostingId) {
     try {
-      await syncScheduleBoardByJobPostingId(workLog.jobPostingId);
+      // T-B12: 직접 sync 호출 → outbox enqueue로 전환
+      await enqueueScheduleBoardSync(workLog.jobPostingId, 'update', {
+        jobPostingId: workLog.jobPostingId,
+        workLogId,
+        reason: 'confirmed_staff_status_update',
+        status,
+      });
     } catch (error) {
-      logger.warn('Schedule board sync failed after confirmed staff status update', {
+      logger.warn('Schedule board enqueue failed after confirmed staff status update', {
+        component: 'confirmedStaffService',
         workLogId,
         jobPostingId: workLog.jobPostingId,
         status,

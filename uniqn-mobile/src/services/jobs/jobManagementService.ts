@@ -21,9 +21,9 @@ export type { CreateJobPostingResult, JobPostingStats };
 // poll → sync_schedule_board RPC 호출 → status 업데이트로 처리.
 // =============================================================================
 
-type ScheduleBoardSyncAction = 'create' | 'update' | 'delete' | 'close' | 'reopen';
+export type ScheduleBoardSyncAction = 'create' | 'update' | 'delete' | 'close' | 'reopen';
 
-async function enqueueScheduleBoardSync(
+export async function enqueueScheduleBoardSync(
   jobPostingId: string,
   action: ScheduleBoardSyncAction,
   payload: Record<string, unknown> = {}
