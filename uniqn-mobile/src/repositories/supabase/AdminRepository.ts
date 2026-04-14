@@ -34,7 +34,7 @@ const TABLES = {
   REPORTS: 'reports',
 } as const;
 const USER_COLUMNS =
-  'id,name,email,role,phone,photo_url,created_at,updated_at,is_active,phone_verified' as const;
+  'id,name,email,role,phone,photo_url,created_at,updated_at,is_active,phone_verified,last_login_at' as const;
 
 // ============================================================================
 // Helpers
