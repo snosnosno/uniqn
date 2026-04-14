@@ -224,8 +224,8 @@ export default function StaffSettlementsScreen() {
 
   // 튜토리얼
 
-  // 탭 상태
-  const [activeTab, setActiveTab] = useState<TabType>('settlement');
+  // 탭 상태 (진입 동기 대부분이 "누가 왔나 확인" — 정산은 근무 종료 후 업무)
+  const [activeTab, setActiveTab] = useState<TabType>('staff');
 
   // 공고 정보 (시급 포함)
   const { job: posting, refresh: refreshJobDetail } = useJobDetail(jobPostingId || '');

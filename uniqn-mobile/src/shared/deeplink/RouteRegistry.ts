@@ -33,7 +33,6 @@ export const EXPO_ROUTES = {
   supportMyInquiries: '/(app)/support/my-inquiries',
   supportInquiryDetail: '/(app)/support/inquiry/[id]',
 
-  myPostings: '/(employer)/my-postings',
   postingCreate: '/(employer)/my-postings/create',
   postingDetail: '/(employer)/my-postings/[id]',
   postingEdit: '/(employer)/my-postings/[id]/edit',
@@ -97,7 +96,6 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'jobApply',
   'applicationCancel',
   'employerRegister',
-  'myPostings',
   'postingCreate',
   'postingDetail',
   'postingEdit',
@@ -109,7 +107,6 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
 ];
 
 export const EMPLOYER_REQUIRED_ROUTES: ExpoRouteName[] = [
-  'myPostings',
   'postingCreate',
   'postingDetail',
   'postingEdit',
