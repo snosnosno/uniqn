@@ -1,13 +1,14 @@
 /**
  * 인증 픽스처 — storageState 파일 검증
  *
- * storageState는 global-setup.ts에서 Firebase Auth REST API로 생성된다.
+ * storageState는 global-setup.ts에서 Supabase Auth REST API로 생성된다.
  * 이 setup은 storageState 파일이 올바르게 생성되었는지 확인만 수행한다.
  */
 import { test as setup, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { TEST_ACCOUNTS } from './test-accounts';
+import { E2E_CONFIG } from '../config';
 
 const STORAGE_STATES_DIR = path.join(__dirname, 'storage-states');
 
@@ -19,7 +20,7 @@ for (const [roleName] of Object.entries(TEST_ACCOUNTS)) {
     expect(
       fs.existsSync(storageStatePath),
       `storageState 파일이 없습니다: ${storageStatePath}\n` +
-      `global-setup.ts에서 생성되어야 합니다.`
+        `global-setup.ts에서 생성되어야 합니다.`
     ).toBe(true);
 
     // JSON 파싱 검증
@@ -28,13 +29,14 @@ for (const [roleName] of Object.entries(TEST_ACCOUNTS)) {
     expect(content.origins).toHaveLength(1);
     expect(content.origins[0].localStorage.length).toBeGreaterThan(0);
 
-    // Firebase Auth 엔트리 존재 확인
+    // Supabase Auth 엔트리 존재 확인 (sb-{projectRef}-auth-token)
     const authEntry = content.origins[0].localStorage.find(
-      (item: { name: string }) => item.name.startsWith('firebase:authUser:')
+      (item: { name: string }) => item.name === E2E_CONFIG.supabase.authStorageKey
     );
     expect(
       authEntry,
-      `Firebase Auth localStorage 엔트리가 없습니다 (${roleName})`
+      `Supabase Auth localStorage 엔트리가 없습니다 (${roleName}): ` +
+        `키 '${E2E_CONFIG.supabase.authStorageKey}'`
     ).toBeDefined();
   });
 }
