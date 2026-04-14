@@ -103,6 +103,25 @@ module.exports = [
     },
   },
 
+  // 4b. T-B12: boardService direct sync 함수 외부 호출 차단
+  // 모든 schedule_board sync는 jobManagementService.enqueueScheduleBoardSync 경유 필수.
+  // boardService.ts 자체와 outbox Edge Function은 예외.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/services/boardService.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportSpecifier[imported.name=/^syncScheduleBoard(ForJobPosting|ByJobPostingId|ByApplicationId)$/]',
+          message:
+            'T-B12: outbox enqueue를 사용하세요. enqueueScheduleBoardSync from "@/services/jobs/jobManagementService"',
+        },
+      ],
+    },
+  },
+
   // 5. 테스트 파일 오버라이드
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],

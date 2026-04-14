@@ -1594,6 +1594,22 @@ export async function reviewBoardReport(
   }
 }
 
+/**
+ * @deprecated T-B12 — 직접 호출 금지. 대신 `enqueueScheduleBoardSync`를
+ * 사용하여 outbox 패턴(`schedule_board_sync_outbox` 테이블 + Edge Function)을
+ * 거칠 것. 본 함수는 outbox Edge Function 내부 또는 데이터 마이그레이션 스크립트
+ * 에서만 사용해야 하며, 다음 마이너 릴리스에서 export 제거 예정.
+ *
+ * 마이그레이션 가이드:
+ * ```typescript
+ * // BEFORE
+ * await syncScheduleBoardForJobPosting(jobPosting);
+ *
+ * // AFTER
+ * import { enqueueScheduleBoardSync } from '@/services/jobs/jobManagementService';
+ * await enqueueScheduleBoardSync(jobPosting.id, 'update', { jobPostingId: jobPosting.id });
+ * ```
+ */
 export async function syncScheduleBoardForJobPosting(jobPosting: JobPosting): Promise<string> {
   try {
     const postId = await boardRepository.upsertSchedulePost({
@@ -1640,6 +1656,10 @@ export async function syncScheduleBoardForJobPosting(jobPosting: JobPosting): Pr
   }
 }
 
+/**
+ * @deprecated T-B12 — 직접 호출 금지. `enqueueScheduleBoardSync(jobPostingId, 'update', ...)`
+ * 사용. 본 함수는 outbox Edge Function 내부에서만 호출되어야 함.
+ */
 export async function syncScheduleBoardByJobPostingId(
   jobPostingId: string
 ): Promise<string | null> {
@@ -1660,6 +1680,11 @@ export async function syncScheduleBoardByJobPostingId(
   }
 }
 
+/**
+ * @deprecated T-B12 — 직접 호출 금지. application의 jobPostingId를 조회한 뒤
+ * `enqueueScheduleBoardSync(jobPostingId, 'update', ...)`를 사용. 본 함수는
+ * outbox Edge Function 내부에서만 호출되어야 함.
+ */
 export async function syncScheduleBoardByApplicationId(
   applicationId: string
 ): Promise<string | null> {
