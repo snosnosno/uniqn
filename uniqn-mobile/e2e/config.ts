@@ -21,23 +21,18 @@ const baseUrl = readStringEnv('E2E_BASE_URL', `http://localhost:${webPort}`);
 const artifactDir = readStringEnv('E2E_ARTIFACT_DIR', DEFAULT_ARTIFACT_DIR);
 
 export const E2E_CONFIG = {
-  projectId: 'tholdem-ebc18',
-
   runtime: {
     webPort,
     baseUrl,
     artifactDir,
-    useEmulator:
-      process.env.E2E_USE_EMULATOR === 'false'
-        ? false
-        : process.env.EXPO_PUBLIC_USE_EMULATOR === 'true' ||
-          process.env.E2E_USE_EMULATOR === 'true',
   },
 
-  emulator: {
-    authHost: 'localhost:9099',
-    firestoreHost: 'localhost:8080',
-    functionsHost: 'localhost:5001',
-    storageHost: 'localhost:9199',
+  supabase: {
+    url: 'https://ygfxukhktpqymahfrvbz.supabase.co',
+    anonKey:
+      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnZnh1a2hrdHBxeW1haGZydmJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4MDI1MTcsImV4cCI6MjA5MTM3ODUxN30.LYqgEEb_HQPoBdJeYg_fDCO9CNeEaYZbDEFbRqQeJLs',
+    projectRef: 'ygfxukhktpqymahfrvbz',
+    authStorageKey: 'sb-ygfxukhktpqymahfrvbz-auth-token',
   },
 } as const;

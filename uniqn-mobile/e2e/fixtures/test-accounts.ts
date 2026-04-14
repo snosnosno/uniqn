@@ -1,6 +1,6 @@
 /**
  * E2E 테스트용 계정 정의
- * Firebase Emulator에서 생성될 테스트 계정
+ * Supabase에 pre-seeded된 테스트 계정
  */
 
 export interface TestAccount {
@@ -14,49 +14,27 @@ export interface TestAccount {
 
 export const TEST_ACCOUNTS: Record<string, TestAccount> = {
   staff: {
-    uid: 'test-staff-uid-001',
-    email: 'staff@test.com',
+    uid: '4365e1ad-c9fb-416f-addb-d1b18b2a5ec8',
+    email: 'qa-staff@uniqn.test',
     password: 'TestPass1!',
-    displayName: '테스트스태프',
+    displayName: 'QA스태프',
     role: 'staff',
     phoneNumber: '+82101234567',
   },
   employer: {
-    uid: 'test-employer-uid-001',
-    email: 'employer@test.com',
+    uid: '9cf771e9-0e67-413d-8395-5b1d573ae64d',
+    email: 'qa-employer@uniqn.test',
     password: 'TestPass1!',
-    displayName: '테스트구인자',
+    displayName: 'QA구인자',
     role: 'employer',
     phoneNumber: '+82109876543',
   },
   admin: {
-    uid: 'test-admin-uid-001',
-    email: 'admin@test.com',
+    uid: '95337a77-9700-427e-8ff3-bc7a14abb90e',
+    email: 'qa-admin@uniqn.test',
     password: 'TestPass1!',
-    displayName: '테스트관리자',
+    displayName: 'QA관리자',
     role: 'admin',
     phoneNumber: '+82105555555',
   },
 } as const;
-
-/**
- * 테스트 계정의 Firestore 프로필 데이터 생성
- */
-export function createTestProfile(account: TestAccount) {
-  return {
-    uid: account.uid,
-    email: account.email,
-    name: account.displayName,
-    nickname: account.displayName,
-    displayName: account.displayName,
-    role: account.role,
-    status: 'active' as const,
-    isActive: true,
-    phoneNumber: account.phoneNumber,
-    phoneVerified: true,
-    profileCompleted: true,
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
