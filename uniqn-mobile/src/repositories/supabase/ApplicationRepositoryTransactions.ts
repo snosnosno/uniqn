@@ -12,11 +12,8 @@ import { handleSupabaseError } from '@/utils/supabase';
 import {
   createHistoryEntry,
   findActiveConfirmation,
-  addCancellationToEntry,
-  updatePostingScheduleFilled,
   validateAssignmentSlotCapacity,
 } from '@/domains/application';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { normalizeAssignmentRole } from '@/types/assignment';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, JobPosting, ReviewCancellationInput } from '@/types';
@@ -26,8 +23,6 @@ import {
   rethrowOrHandle,
   loadApplication,
   loadAndVerifyJobPostingOwner,
-  countAssignmentDates,
-  fetchRelatedWorkLogIds,
 } from './ApplicationRepositoryHelpers';
 
 // ============================================================================
@@ -194,7 +189,7 @@ export async function executeReviewCancellation(
     const now = new Date().toISOString();
 
     if (input.approved) {
-      await executeApproveCancellation(applicationData, jobData, reviewerId, now, input);
+      await executeApproveCancellation(input.applicationId, reviewerId);
     } else {
       await executeRejectCancellation(applicationData, reviewerId, now, input);
     }
@@ -215,90 +210,90 @@ export async function executeReviewCancellation(
 // cancelConfirmationTransaction
 // ============================================================================
 
+/**
+ * 스태프 자체 확정 취소 (T-B1+B2: cancel_application_atomically RPC 호출)
+ *
+ * @description 기존 3단계 분리 write(applications/job_postings/work_logs)를
+ *              단일 PL/pgSQL RPC로 원자화. SELECT FOR UPDATE + SECURITY DEFINER
+ *              + 수동 권한 검사로 race condition 제거.
+ * @param applicationId - 취소할 지원서 ID
+ * @param actorId - 액션 수행자 (스태프 본인의 user.uid)
+ * @param cancelReason - 취소 사유 (선택)
+ * @see docs/qa/2026-04-14/team-b-atomicity-spec.md §2
+ */
 export async function executeCancelConfirmation(
   applicationId: string,
-  ownerId: string,
+  actorId: string,
   cancelReason?: string
 ): Promise<CancelConfirmationResult> {
   try {
-    logger.info('확정 취소 시작', { applicationId, ownerId });
+    logger.info('확정 취소 시작 (RPC)', { applicationId, actorId });
 
-    const applicationData = await loadApplication(applicationId);
+    const { data, error } = await supabase.rpc('cancel_application_atomically', {
+      p_application_id: applicationId,
+      p_actor_type: 'staff_initiates',
+      p_actor_id: actorId,
+      p_cancel_reason: cancelReason ?? null,
+      p_rejection_reason: null,
+    });
 
-    if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '확정된 지원만 취소할 수 있습니다.',
+    if (error) {
+      handleSupabaseError(error, {
+        operation: '확정 취소 RPC',
+        table: TABLES.APPLICATIONS,
       });
     }
 
-    const jobData = await loadAndVerifyJobPostingOwner(
-      applicationData.jobPostingId,
-      ownerId,
-      '확정 취소'
-    );
-
-    if (jobData.schedule.kind === 'fixed') {
+    const result = data as Record<string, unknown> | null;
+    if (!result || result.success !== true) {
+      const errorCode = (result?.error as string | undefined) ?? 'unknown';
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '고정공고는 1차 범위에서 확정 취소를 지원하지 않습니다.',
+        userMessage: mapCancelErrorToMessage(errorCode),
+        metadata: { errorCode, rpc: 'cancel_application_atomically' },
       });
     }
 
-    const confirmationHistory = applicationData.confirmationHistory ?? [];
-    const activeConfirmation = findActiveConfirmation(confirmationHistory);
+    logger.info('확정 취소 성공 (RPC)', {
+      applicationId,
+      idempotent: result.idempotent === true,
+      deletedWorkLogCount: result.deleted_work_log_count,
+    });
 
-    if (!activeConfirmation) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '취소할 확정 이력이 없습니다.',
-      });
-    }
-
-    // 확정 이력에 취소 정보 추가
-    const activeIndex = confirmationHistory.findIndex((entry) => !entry.cancelledAt);
-    const updatedHistory = confirmationHistory.map((entry, index) =>
-      index === activeIndex ? addCancellationToEntry(entry, cancelReason, ownerId) : entry
-    );
-
-    const restoredAssignments =
-      applicationData.originalApplication?.assignments ?? applicationData.assignments;
-    const now = new Date().toISOString();
-
-    // 지원서 업데이트: 상태를 applied로 복원
-    const { error: appError } = await supabase
-      .from(TABLES.APPLICATIONS)
-      .update({
-        status: STATUS.APPLICATION.APPLIED,
-        assignments: restoredAssignments,
-        confirmation_history: updatedHistory,
-        cancelled_at: now,
-        updated_at: now,
-      })
-      .eq('id', applicationId)
-      .eq('status', STATUS.APPLICATION.CONFIRMED);
-
-    if (appError)
-      handleSupabaseError(appError, { operation: '확정 취소', table: TABLES.APPLICATIONS });
-
-    // 공고 정원 업데이트
-    await updateJobPostingCapacity(
-      applicationData.jobPostingId,
-      jobData,
-      activeConfirmation.assignments,
-      'decrement',
-      now
-    );
-
-    // 관련 WorkLog 삭제 (scheduled 상태만)
-    await deleteScheduledWorkLogs(applicationData.applicantId, applicationData.jobPostingId);
-
-    logger.info('확정 취소 성공', { applicationId });
-
+    const cancelledAtRaw = result.cancelled_at as string | undefined;
     return {
       applicationId,
-      cancelledAt: new Date(),
+      cancelledAt: cancelledAtRaw ? new Date(cancelledAtRaw) : new Date(),
       restoredStatus: 'applied',
     };
   } catch (error) {
     rethrowOrHandle(error, '확정 취소 트랜잭션', { applicationId });
+  }
+}
+
+/**
+ * RPC 에러 코드를 사용자 메시지로 매핑
+ * @internal
+ */
+function mapCancelErrorToMessage(errorCode: string): string {
+  switch (errorCode) {
+    case 'application_not_found':
+      return '지원서를 찾을 수 없습니다.';
+    case 'job_posting_not_found':
+      return '공고를 찾을 수 없습니다.';
+    case 'invalid_status_for_cancellation':
+      return '확정된 지원만 취소할 수 있습니다.';
+    case 'invalid_status_for_approval':
+      return '검토 대기중인 취소 요청이 없습니다.';
+    case 'no_pending_cancellation_request':
+      return '유효한 취소 요청이 없습니다.';
+    case 'no_active_confirmation':
+      return '취소할 확정 이력이 없습니다.';
+    case 'unauthorized':
+      return '취소 권한이 없습니다.';
+    case 'invalid_actor_type':
+      return '취소 액션 유형이 올바르지 않습니다.';
+    default:
+      return '확정 취소에 실패했습니다.';
   }
 }
 
@@ -404,140 +399,50 @@ export async function createWorkLogsForConfirmation(
   return ((wlData ?? []) as Record<string, unknown>[]).map((row) => row.id as string);
 }
 
-async function updateJobPostingCapacity(
-  jobPostingId: string,
-  jobData: JobPosting,
-  assignments: Assignment[],
-  direction: 'increment' | 'decrement',
-  now: string
-): Promise<void> {
-  const assignmentCount = countAssignmentDates(assignments);
-  const updatedSchedule = updatePostingScheduleFilled(jobData.schedule, assignments, direction);
-
-  const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-
-  const newFilledPositions =
-    direction === 'increment'
-      ? Math.max(0, jobData.filledPositions + assignmentCount)
-      : Math.max(0, currentFilled - assignmentCount);
-
-  const shouldClose =
-    direction === 'increment' &&
-    jobData.totalPositions > 0 &&
-    newFilledPositions >= jobData.totalPositions;
-
-  const shouldReopen =
-    direction === 'decrement' &&
-    jobData.status === STATUS.JOB_POSTING.CLOSED &&
-    newFilledPositions < totalPositions;
-
-  const jobUpdateData: Record<string, unknown> = {
-    filled_positions: newFilledPositions,
-    schedule: updatedSchedule,
-    updated_at: now,
-  };
-
-  if (shouldClose && jobData.status !== STATUS.JOB_POSTING.CLOSED) {
-    jobUpdateData.status = STATUS.JOB_POSTING.CLOSED;
-  }
-  if (shouldReopen) {
-    jobUpdateData.status = STATUS.JOB_POSTING.ACTIVE;
-  }
-
-  const { error: jobError } = await supabase
-    .from(TABLES.JOB_POSTINGS)
-    .update(jobUpdateData)
-    .eq('id', jobPostingId);
-
-  if (jobError) {
-    logger.warn('공고 정원 업데이트 실패 (비치명적)', {
-      jobPostingId,
-      error: jobError.message,
-    });
-  }
-}
-
-async function deleteScheduledWorkLogs(applicantId: string, jobPostingId: string): Promise<void> {
-  const workLogIds = await fetchRelatedWorkLogIds(applicantId, jobPostingId);
-  if (workLogIds.length > 0) {
-    const { error: wlError } = await supabase
-      .from(TABLES.WORK_LOGS)
-      .delete()
-      .in('id', workLogIds)
-      .eq('status', STATUS.WORK_LOG.SCHEDULED);
-
-    if (wlError) {
-      logger.warn('WorkLog 삭제 실패 (비치명적)', { error: wlError.message });
-    }
-  }
-}
-
+/**
+ * 구인자 취소요청 승인 (T-B1+B2: cancel_application_atomically RPC 호출)
+ *
+ * @description 기존 다단계 분리 write를 단일 RPC로 원자화.
+ *              actor_type='staff_approves_cancel_request' 로 호출.
+ * @param applicationId - 취소 승인 대상 지원서 ID
+ * @param reviewerId - 승인 액션 수행자 (구인자 owner_id, RPC 내부에서 검증)
+ * @see docs/qa/2026-04-14/team-b-atomicity-spec.md §2
+ */
 async function executeApproveCancellation(
-  applicationData: Application,
-  jobData: JobPosting,
-  reviewerId: string,
-  now: string,
-  input: ReviewCancellationInput
+  applicationId: string,
+  reviewerId: string
 ): Promise<void> {
-  const confirmationHistory = applicationData.confirmationHistory ?? [];
-  const activeConfirmation = findActiveConfirmation(confirmationHistory);
+  logger.info('취소 요청 승인 RPC 호출', { applicationId, reviewerId });
 
-  if (!activeConfirmation) {
-    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: '취소할 확정 이력이 없습니다.',
-    });
-  }
+  const { data, error } = await supabase.rpc('cancel_application_atomically', {
+    p_application_id: applicationId,
+    p_actor_type: 'staff_approves_cancel_request',
+    p_actor_id: reviewerId,
+    p_cancel_reason: null,
+    p_rejection_reason: null,
+  });
 
-  // 확정 이력에 취소 정보 추가
-  const activeIndex = confirmationHistory.findIndex((entry) => !entry.cancelledAt);
-  const updatedHistory = confirmationHistory.map((entry, index) =>
-    index === activeIndex
-      ? addCancellationToEntry(entry, applicationData.cancellationRequest?.reason, reviewerId)
-      : entry
-  );
-
-  const restoredAssignments =
-    applicationData.originalApplication?.assignments ?? applicationData.assignments;
-
-  const approvedCancellationRequest = {
-    requestedAt: applicationData.cancellationRequest!.requestedAt,
-    reason: applicationData.cancellationRequest!.reason,
-    reviewedAt: now,
-    reviewedBy: reviewerId,
-    status: STATUS.CANCELLATION_REQUEST.APPROVED,
-  };
-
-  // 지원서 업데이트
-  const { error: appError } = await supabase
-    .from(TABLES.APPLICATIONS)
-    .update({
-      status: STATUS.APPLICATION.CANCELLED,
-      assignments: restoredAssignments,
-      confirmation_history: updatedHistory,
-      cancellation_request: approvedCancellationRequest,
-      cancelled_at: now,
-      updated_at: now,
-    })
-    .eq('id', input.applicationId)
-    .eq('status', STATUS.APPLICATION.CANCELLATION_PENDING);
-
-  if (appError)
-    handleSupabaseError(appError, {
-      operation: '취소 요청 승인',
+  if (error) {
+    handleSupabaseError(error, {
+      operation: '취소 요청 승인 RPC',
       table: TABLES.APPLICATIONS,
     });
+  }
 
-  // 공고 정원 업데이트
-  await updateJobPostingCapacity(
-    applicationData.jobPostingId,
-    jobData,
-    activeConfirmation.assignments,
-    'decrement',
-    now
-  );
+  const result = data as Record<string, unknown> | null;
+  if (!result || result.success !== true) {
+    const errorCode = (result?.error as string | undefined) ?? 'unknown';
+    throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+      userMessage: mapCancelErrorToMessage(errorCode),
+      metadata: { errorCode, rpc: 'cancel_application_atomically' },
+    });
+  }
 
-  // 관련 WorkLog 삭제
-  await deleteScheduledWorkLogs(applicationData.applicantId, applicationData.jobPostingId);
+  logger.info('취소 요청 승인 성공 (RPC)', {
+    applicationId,
+    idempotent: result.idempotent === true,
+    deletedWorkLogCount: result.deleted_work_log_count,
+  });
 }
 
 async function executeRejectCancellation(
