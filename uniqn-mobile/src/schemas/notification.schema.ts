@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { logger } from '@/utils/logger';
+import { xssValidation } from '@/utils/security';
 import { timestampSchema, optionalTimestampSchema, metadataSchema } from './common';
 import type { NotificationData, NotificationSettings } from '@/types';
 import {
@@ -53,12 +54,17 @@ export const createNotificationSchema = z.object({
   title: z
     .string()
     .min(1, { message: '제목은 필수입니다' })
-    .max(100, { message: '제목은 100자를 초과할 수 없습니다' }),
+    .max(100, { message: '제목은 100자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
   body: z
     .string()
     .min(1, { message: '본문은 필수입니다' })
-    .max(500, { message: '본문은 500자를 초과할 수 없습니다' }),
-  link: z.string().optional(),
+    .max(500, { message: '본문은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+  link: z
+    .string()
+    .refine((v) => !v || xssValidation(v), { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
   data: z.record(z.string(), z.string()).optional(),
   priority: notificationPrioritySchema.optional(),
 });
