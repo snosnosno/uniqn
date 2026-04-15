@@ -135,7 +135,7 @@ jobs:
             const fs = require('fs');
             const bundleReport = fs.readFileSync('bundle-size-report.txt', 'utf8');
 
-            const body = `## 📦 Bundle Size Report\n\n${bundleReport}\n\n**Target**: < 500KB (gzip)`;
+            const body = `## 📦 Bundle Size Report\n\n${bundleReport}\n\n**Target**: < 2MB (gzip)`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
