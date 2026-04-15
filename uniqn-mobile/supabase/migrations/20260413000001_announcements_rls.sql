@@ -10,6 +10,7 @@ ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 -- 인증된 사용자: published 상태 공지 읽기 가능
 -- admin: 모든 status 읽기 가능
+DROP POLICY IF EXISTS "announcements_select_published" ON public.announcements;
 CREATE POLICY "announcements_select_published"
   ON public.announcements FOR SELECT TO authenticated
   USING (
@@ -18,17 +19,20 @@ CREATE POLICY "announcements_select_published"
   );
 
 -- admin만 INSERT
+DROP POLICY IF EXISTS "announcements_insert_admin" ON public.announcements;
 CREATE POLICY "announcements_insert_admin"
   ON public.announcements FOR INSERT TO authenticated
   WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- admin만 UPDATE
+DROP POLICY IF EXISTS "announcements_update_admin" ON public.announcements;
 CREATE POLICY "announcements_update_admin"
   ON public.announcements FOR UPDATE TO authenticated
   USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
   WITH CHECK ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- admin만 DELETE
+DROP POLICY IF EXISTS "announcements_delete_admin" ON public.announcements;
 CREATE POLICY "announcements_delete_admin"
   ON public.announcements FOR DELETE TO authenticated
   USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');

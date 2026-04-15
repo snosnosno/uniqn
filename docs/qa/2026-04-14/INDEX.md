@@ -1,9 +1,11 @@
 # UNIQN 종합 검증 & 5팀 병렬 분석 — 인덱스
 
 > 작성일: 2026-04-14
+> **✅ 전체 완료: 2026-04-15** — 7 wave / 21 PR (#11~#31 + wave6-3) / Phase 0 10/10 해결
 > 출발점: 사용자가 작성한 19개 워크플로우 분석 + 10개 고위험 공백
 > 산출물: 본 디렉토리 (`docs/qa/2026-04-14/`)
 > 플랜 원본: `C:\Users\user\.claude\plans\tranquil-bouncing-acorn.md`
+> 회고: `CLOSED.md`
 
 ---
 
@@ -80,24 +82,24 @@
 
 | 발견 | Team | 우선순위 | 영향 워크플로우 | 핵심 영향 파일 | EXECUTION-PLAN task |
 |------|------|---------|-----------------|----------------|---------------------|
-| 14+ Edge/RPC 미정의 (confirm_application, register_as_employer 등) | A | P0 | WF-02, WF-04, WF-06, WF-07 | 14+ 호출 site | T-A1~A8 |
-| `cancel_application_atomically` 부재 → 부분 실패 시 capacity 깨짐 | B | P0 | WF-08 | `ApplicationRepositoryTransactions.ts:218-303,475-541` | T-B1~B3 |
-| `process_qr_checkin_atomically` 부재 | B | P0 | WF-10 | `WorkLogRepositoryTransactions.ts:185-348` | T-B4~B6 |
-| board sync 실패 silently swallow | B | P1 | WF-09, WF-14 | `jobManagementService.ts:20-111` | T-B7~B10 |
-| Announcements RLS targetAudience 미강제 | E | P0 | WF-16 | `AnnouncementRepository.ts:145-153` + announcements_rls.sql | T-E1, T-E2 |
-| EventQR scope 컬럼 누락 | C | P0 | WF-10 | `EventQRRepository.ts:28` | T-C1 |
-| Admin last_login_at 누락 | C | P0 | WF-17 | `AdminRepository.ts:37` | T-C2 |
-| templateService dead Firebase 분기 | C | P0 | WF-19 | `templateService.ts:29-31` | T-C3 |
-| notification.schema XSS 누락 | E | P1 | WF-12 | `notification.schema.ts:53-62` | T-E3 |
-| is_active 강제 부재 | E | P1 | WF-01, WF-04 | users RLS, critical RPC | T-E4 |
-| revoke-apple-token Edge Function 부재 | A | P0 | WF-18 | `accountDeletionService.ts:54` | T-A2 |
-| e2e 6/32 Firebase 차단 | C/D | P1 | WF-02, WF-05~07, WF-10~12 | `e2e/global-setup.ts` 외 | T-D1~D3 |
-| WF-08 취소 e2e 0건 | D | P0 | WF-08 | - | T-D4 |
-| WF-18 deletion grace e2e 0건 | D | P0 | WF-18 | - | T-D5 |
-| WF-06 capacity race 미검증 | D | P0 | WF-06 | - | T-D6 |
-| work_logs payroll 컬럼 raw update 위험 | E | P2 | WF-11 | `WorkLogRepository*.ts` | T-E5 |
-| RPC rate limiting 부재 | E | P2 | WF-06, WF-15 | - | T-E6 |
-| swallow 패턴 monitoring 부재 | C | P2 | WF-09, WF-12, WF-19 | 다수 | T-C4 |
+| 14+ Edge/RPC 미정의 (confirm_application, register_as_employer 등) | A | P0 | WF-02, WF-04, WF-06, WF-07 | 14+ 호출 site | T-A1~A8 | ✅ PR #20~#22 |
+| `cancel_application_atomically` 부재 → 부분 실패 시 capacity 깨짐 | B | P0 | WF-08 | `ApplicationRepositoryTransactions.ts:218-303,475-541` | T-B1~B3 | ✅ PR #25 |
+| `process_qr_checkin_atomically` 부재 | B | P0 | WF-10 | `WorkLogRepositoryTransactions.ts:185-348` | T-B4~B6 | ✅ PR #25 |
+| board sync 실패 silently swallow | B | P1 | WF-09, WF-14 | `jobManagementService.ts:20-111` | T-B7~B10 | ✅ PR #26 |
+| Announcements RLS targetAudience 미강제 | E | P0 | WF-16 | `AnnouncementRepository.ts:145-153` + announcements_rls.sql | T-E1, T-E2 | ✅ PR #19 |
+| EventQR scope 컬럼 누락 | C | P0 | WF-10 | `EventQRRepository.ts:28` | T-C1 | ✅ PR #17 |
+| Admin last_login_at 누락 | C | P0 | WF-17 | `AdminRepository.ts:37` | T-C2 | ✅ PR #17 |
+| templateService dead Firebase 분기 | C | P0 | WF-19 | `templateService.ts:29-31` | T-C3 | ✅ PR #17 |
+| notification.schema XSS 누락 | E | P1 | WF-12 | `notification.schema.ts:53-62` | T-E3 | ✅ PR #29 |
+| is_active 강제 부재 | E | P1 | WF-01, WF-04 | users RLS, critical RPC | T-E4 | ✅ PR #30 |
+| revoke-apple-token Edge Function 부재 | A | P0 | WF-18 | `accountDeletionService.ts:54` | T-A2 | ✅ PR #21 |
+| e2e 6/32 Firebase 차단 | C/D | P1 | WF-02, WF-05~07, WF-10~12 | `e2e/global-setup.ts` 외 | T-D1~D3 | ✅ PR #26 (Firebase 제거 완료) |
+| WF-08 취소 e2e 0건 | D | P0 | WF-08 | - | T-D4 | ✅ PR #29 |
+| WF-18 deletion grace e2e 0건 | D | P0 | WF-18 | - | T-D5 | ✅ PR #28 |
+| WF-06 capacity race 미검증 | D | P0 | WF-06 | - | T-D6 | ✅ PR #28 |
+| work_logs payroll 컬럼 raw update 위험 | E | P2 | WF-11 | `WorkLogRepository*.ts` | T-E5 | ✅ PR #31 (payroll trigger) |
+| RPC rate limiting 부재 | E | P2 | WF-06, WF-15 | - | T-E6 | 🔲 Sprint 4 백로그 |
+| swallow 패턴 monitoring 부재 | C | P2 | WF-09, WF-12, WF-19 | 다수 | T-C4 | ✅ PR #31 (observability) |
 
 ---
 
@@ -129,25 +131,29 @@
 
 ## 6. 발견사항 우선순위 요약
 
-| 우선순위 | 개수 | 즉시 가능 | RPC/SQL 작업 | 테스트 작업 |
-|---------|------|----------|-------------|-------------|
-| **P0** | 12 | 3 (T-C1, T-C2, T-C3) | 5 (T-A1, T-B1, T-B4, T-E1) | 4 (T-D4, T-D5, T-D6, T-D7) |
-| **P1** | 7 | 2 | 2 | 3 |
-| **P2** | 4 | 1 | 1 | 2 |
-| **합계** | **23** | **6** | **8** | **9** |
+| 우선순위 | 개수 | 완료 | 백로그 |
+|---------|------|------|--------|
+| **P0** | 12 | **12/12 ✅** | 0 |
+| **P1** | 7 | **7/7 ✅** | 0 |
+| **P2** | 4 | **3/4** | T-E6 1건 |
+| **합계** | **23** | **22/23 (96%)** | **1건** |
 
 ---
 
-## 7. Bottom Line
+## 7. ✅ Completed — 2026-04-15
 
-1. **사용자 분석은 정확** — 10/10 사실 확인. 추가 sweep으로 위험 발견사항 13개 확장 (총 23개).
-2. **가장 시급한 5건**:
-   - confirm_application RPC 회수 (T-A1) — WF-06, WF-07 핵심
-   - cancel_application_atomically 신규 (T-B1) — WF-08
-   - process_qr_checkin_atomically 신규 (T-B4) — WF-10
-   - Announcement RLS 강화 (T-E1) — WF-16
-   - 3개 1-line bug fix (T-C1/C2/C3) — 5분 작업
-3. **차단 해제 필요**: e2e Firebase 이주 (T-D2) — WF-02/05/06/07/10/11/12 7개 워크플로우 모든 e2e 작성을 가로막음
-4. **권장 진행 순서**: T-C → T-E1 → T-A → T-B → T-D2 → T-D 시나리오 → T-D 차단 해제 후 e2e
+**Phase 0 10/10 사실 확인 → 7 wave → 21 PR → 23 task 22/23 완료**
 
-EXECUTION-PLAN.md가 task 단위 분해 + 의존성 그래프 + 검증 명령을 제공.
+| 항목 | 결과 |
+|------|------|
+| Phase 0 원본 10개 주장 | 100% 해결 |
+| P0 발견사항 (12개) | 12/12 완료 |
+| P1 발견사항 (7개) | 7/7 완료 |
+| P2 발견사항 (4개) | 3/4 완료 (T-E6 백로그) |
+| 신규 마이그레이션 | 12개 추가 |
+| 신규 테스트 | 30+ 단위/통합/e2e |
+| Docker Supabase 인프라 | config.toml + seed.sql + base schema 구축 완료 |
+
+**잔여 Sprint 4 백로그**: T-E6 (RPC rate limiting), T-D2 CI 검증 (Docker Supabase 첫 실행)
+
+자세한 회고: `CLOSED.md`
