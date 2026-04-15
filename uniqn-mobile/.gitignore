@@ -29,6 +29,7 @@ ios/
 .env
 .env.local
 .env.*.local
+e2e/.env.test
 
 # Firebase config
 # google-services.json, GoogleService-Info.plist는 EAS Build에 필요하므로 git에 포함
