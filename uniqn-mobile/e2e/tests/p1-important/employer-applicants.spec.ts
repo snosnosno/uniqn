@@ -1,11 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import {
-  createConfirmedApplication,
-  createRejectedApplication,
-  createTestApplication,
-  createTestJob,
-} from '../../factories';
-import { deleteDocument, seedDocument } from '../../helpers/firebase-admin';
+import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
 
 async function waitForReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
@@ -39,23 +33,144 @@ async function expectAnyVisible(locators: Locator[], timeout = 10_000): Promise<
   throw new Error('Expected at least one locator to become visible');
 }
 
-// TODO(T-W5): firebase-admin stub no-op 제거 후 Supabase seedSupabase 기반으로 재작성하며 .skip 해제
-test.describe.skip('구인자 지원자 관리', () => {
+async function seedJobPosting(title: string): Promise<string> {
+  const admin = getAdminClient();
+  if (!admin)
+    throw new Error('E2E_SUPABASE_SERVICE_ROLE_KEY 미설정 — 시딩에 service_role이 필요합니다.');
+
+  const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+
+  const { data, error } = await admin
+    .from('job_postings')
+    .insert({
+      title,
+      status: 'active',
+      owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+      owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
+      posting_type: 'regular',
+      work_date: workDate,
+      work_dates: [workDate],
+      total_positions: 3,
+      filled_positions: 0,
+      view_count: 0,
+      schema_version: 3,
+      description: `${title} 설명`,
+      contact_phone: '+82101234567',
+      location: {
+        name: '테스트포커룸',
+        district: '강남구',
+        detailedAddress: '테스트로 123',
+      },
+      schedule: {
+        kind: 'dated',
+        primaryDate: workDate,
+        allDates: [workDate],
+        requirements: [
+          {
+            date: workDate,
+            timeSlots: [
+              {
+                startTime: '18:00',
+                roles: [
+                  { role: 'dealer', count: 2, filled: 0 },
+                  { role: 'floor', count: 1, filled: 0 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      role_catalog: [
+        { role: 'dealer', salary: { type: 'daily', amount: 150000 } },
+        { role: 'floor', salary: { type: 'daily', amount: 150000 } },
+      ],
+      role_keys: ['dealer', 'floor'],
+      compensation: {
+        mode: 'shared',
+        defaultSalary: { type: 'daily', amount: 150000 },
+      },
+      stats: {
+        totalApplicants: 0,
+        activeApplicants: 0,
+        confirmedApplicants: 0,
+        cancellationPendingApplicants: 0,
+        filledPositions: 0,
+      },
+      questions: { items: [] },
+    })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(`job_postings INSERT 실패: ${error.message}`);
+  return (data as Record<string, unknown>).id as string;
+}
+
+async function seedApplication(
+  jobPostingId: string,
+  applicantId: string,
+  status: string,
+  extra: Record<string, unknown> = {}
+): Promise<string> {
+  const admin = getAdminClient();
+  if (!admin)
+    throw new Error('E2E_SUPABASE_SERVICE_ROLE_KEY 미설정 — 시딩에 service_role이 필요합니다.');
+
+  const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+
+  const { data, error } = await admin
+    .from('applications')
+    .insert({
+      job_posting_id: jobPostingId,
+      applicant_id: applicantId,
+      applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
+      applicant_phone: '+82101234567',
+      applicant_role: 'dealer',
+      job_posting_title: '지원자관리 테스트공고',
+      status,
+      assignments: [
+        {
+          roleIds: ['dealer'],
+          timeSlot: '18:00',
+          dates: [workDate],
+          isGrouped: false,
+        },
+      ],
+      is_read: false,
+      recruitment_type: 'dated',
+      ...extra,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(`applications INSERT 실패: ${error.message}`);
+  return (data as Record<string, unknown>).id as string;
+}
+
+async function cleanupJobPosting(id: string): Promise<void> {
+  const admin = getAdminClient();
+  if (admin) await admin.from('job_postings').delete().eq('id', id);
+}
+
+async function cleanupApplication(id: string): Promise<void> {
+  const admin = getAdminClient();
+  if (admin) await admin.from('applications').delete().eq('id', id);
+}
+
+test.describe('구인자 지원자 관리', () => {
   test.setTimeout(60_000);
 
-  let testJob: ReturnType<typeof createTestJob>;
+  let testJobId: string;
 
   test.beforeAll(async () => {
-    testJob = createTestJob({ title: '지원자관리 테스트공고', status: 'active' });
-    await seedDocument('jobPostings', testJob.id, testJob);
+    testJobId = await seedJobPosting('지원자관리 테스트공고');
   });
 
   test.afterAll(async () => {
-    await deleteDocument('jobPostings', testJob.id);
+    await cleanupJobPosting(testJobId);
   });
 
   test('공고 상세에서 지원자 관리로 이동한다', async ({ page }) => {
-    await page.goto(`/my-postings/${testJob.id}`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/my-postings/${testJobId}`, { waitUntil: 'domcontentloaded' });
     await waitForReady(page);
 
     const applicantsAction = page.locator('button:visible', { hasText: /지원자 관리/ }).first();
@@ -65,11 +180,14 @@ test.describe.skip('구인자 지원자 관리', () => {
   });
 
   test('지원자 목록 페이지는 필터 탭과 카드 UI를 보여준다', async ({ page }) => {
-    const application = createTestApplication({ jobPostingId: testJob.id, status: 'applied' });
-    await seedDocument('applications', application.id, application);
+    const applicationId = await seedApplication(
+      testJobId,
+      SUPABASE_QA_ACCOUNTS.staff.id,
+      'applied'
+    );
 
     try {
-      await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${testJobId}/applicants`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
 
       await expect(page.getByRole('tab', { name: /전체 필터/ }).first()).toBeVisible();
@@ -83,16 +201,19 @@ test.describe.skip('구인자 지원자 관리', () => {
         15_000
       );
     } finally {
-      await deleteDocument('applications', application.id);
+      await cleanupApplication(applicationId);
     }
   });
 
   test('지원자가 있으면 상태 액션 또는 상세 토글을 노출한다', async ({ page }) => {
-    const application = createTestApplication({ jobPostingId: testJob.id, status: 'applied' });
-    await seedDocument('applications', application.id, application);
+    const applicationId = await seedApplication(
+      testJobId,
+      SUPABASE_QA_ACCOUNTS.staff.id,
+      'applied'
+    );
 
     try {
-      await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${testJobId}/applicants`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
 
       const expandButton = page.getByRole('button', { name: /지원 상세 열기/ }).first();
@@ -111,16 +232,23 @@ test.describe.skip('구인자 지원자 관리', () => {
         10_000
       );
     } finally {
-      await deleteDocument('applications', application.id);
+      await cleanupApplication(applicationId);
     }
   });
 
   test('확정된 지원자는 확정 상태를 유지한다', async ({ page }) => {
-    const application = createConfirmedApplication({ jobPostingId: testJob.id });
-    await seedDocument('applications', application.id, application);
+    const applicationId = await seedApplication(
+      testJobId,
+      SUPABASE_QA_ACCOUNTS.staff.id,
+      'confirmed',
+      {
+        confirmed_at: new Date().toISOString(),
+        confirmed_by: SUPABASE_QA_ACCOUNTS.employer.id,
+      }
+    );
 
     try {
-      await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${testJobId}/applicants`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
       await expectAnyVisible(
         [
@@ -131,16 +259,24 @@ test.describe.skip('구인자 지원자 관리', () => {
         10_000
       );
     } finally {
-      await deleteDocument('applications', application.id);
+      await cleanupApplication(applicationId);
     }
   });
 
   test('거절된 지원자는 거절 상태나 사유를 보여준다', async ({ page }) => {
-    const application = createRejectedApplication({ jobPostingId: testJob.id });
-    await seedDocument('applications', application.id, application);
+    const applicationId = await seedApplication(
+      testJobId,
+      SUPABASE_QA_ACCOUNTS.staff.id,
+      'rejected',
+      {
+        rejection_reason: '다른 지원자를 먼저 선발했습니다.',
+        processed_at: new Date().toISOString(),
+        processed_by: SUPABASE_QA_ACCOUNTS.employer.id,
+      }
+    );
 
     try {
-      await page.goto(`/my-postings/${testJob.id}/applicants`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${testJobId}/applicants`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
       await expectAnyVisible(
         [
@@ -151,7 +287,7 @@ test.describe.skip('구인자 지원자 관리', () => {
         10_000
       );
     } finally {
-      await deleteDocument('applications', application.id);
+      await cleanupApplication(applicationId);
     }
   });
 });

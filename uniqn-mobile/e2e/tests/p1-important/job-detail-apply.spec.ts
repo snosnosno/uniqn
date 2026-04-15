@@ -3,27 +3,97 @@
  */
 import { expect, test } from '@playwright/test';
 import path from 'path';
-import { createClosedJob, createTestApplication, createTestJob } from '../../factories';
-import { deleteDocument, seedDocument } from '../../helpers/firebase-admin';
 import { JobDetailPage } from '../../pages/app/job-detail.page';
+import { getAdminClient, SUPABASE_QA_ACCOUNTS } from '../../helpers/supabase-admin';
 
 const staffState = path.join(__dirname, '../../fixtures/storage-states/staff.json');
 const employerState = path.join(__dirname, '../../fixtures/storage-states/employer.json');
 const TEST_JOB_TITLE = '상세테스트공고';
 const ERROR_TEXT = /오류가 발생했습니다|문제가 발생했습니다|공고를 찾을 수 없습니다/;
 
-// TODO(T-W5): firebase-admin stub no-op 제거 후 Supabase seedSupabase 기반으로 재작성하며 .skip 해제
-test.describe.skip('공고 상세와 지원 흐름', () => {
+test.describe('공고 상세와 지원 흐름', () => {
   let testJobId: string;
 
   test.beforeAll(async () => {
-    const testJob = createTestJob({ title: TEST_JOB_TITLE });
-    testJobId = testJob.id;
-    await seedDocument('jobPostings', testJob.id, testJob);
+    const admin = getAdminClient();
+    if (!admin) {
+      throw new Error(
+        'E2E_SUPABASE_SERVICE_ROLE_KEY 미설정 — job-detail-apply 테스트는 service_role이 필요합니다.'
+      );
+    }
+
+    const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+
+    const { data, error } = await admin
+      .from('job_postings')
+      .insert({
+        title: TEST_JOB_TITLE,
+        status: 'active',
+        owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+        owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
+        posting_type: 'regular',
+        work_date: workDate,
+        work_dates: [workDate],
+        total_positions: 3,
+        filled_positions: 0,
+        view_count: 0,
+        schema_version: 3,
+        description: '상세테스트공고 설명',
+        contact_phone: '+82101234567',
+        location: {
+          name: '테스트포커룸',
+          district: '강남구',
+          detailedAddress: '테스트로 123',
+        },
+        schedule: {
+          kind: 'dated',
+          primaryDate: workDate,
+          allDates: [workDate],
+          requirements: [
+            {
+              date: workDate,
+              timeSlots: [
+                {
+                  startTime: '18:00',
+                  roles: [
+                    { role: 'dealer', count: 2, filled: 0 },
+                    { role: 'floor', count: 1, filled: 0 },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        role_catalog: [
+          { role: 'dealer', salary: { type: 'daily', amount: 150000 } },
+          { role: 'floor', salary: { type: 'daily', amount: 150000 } },
+        ],
+        role_keys: ['dealer', 'floor'],
+        compensation: {
+          mode: 'shared',
+          defaultSalary: { type: 'daily', amount: 150000 },
+        },
+        stats: {
+          totalApplicants: 0,
+          activeApplicants: 0,
+          confirmedApplicants: 0,
+          cancellationPendingApplicants: 0,
+          filledPositions: 0,
+        },
+        questions: { items: [] },
+      })
+      .select('id')
+      .single();
+
+    if (error) throw new Error(`job_postings INSERT 실패: ${error.message}`);
+    testJobId = (data as Record<string, unknown>).id as string;
   });
 
   test.afterAll(async () => {
-    await deleteDocument('jobPostings', testJobId);
+    const admin = getAdminClient();
+    if (admin && testJobId) {
+      await admin.from('job_postings').delete().eq('id', testJobId);
+    }
   });
 
   test('인증된 사용자는 공고 상세 헤더를 본다', async ({ browser }) => {
@@ -72,15 +142,67 @@ test.describe.skip('공고 상세와 지원 흐름', () => {
   });
 
   test('마감 공고에는 비활성 상태 버튼이 보인다', async ({ browser }) => {
-    const closedJob = createClosedJob({ title: '마감상세테스트공고' });
-    await seedDocument('jobPostings', closedJob.id, closedJob);
+    const admin = getAdminClient();
+    if (!admin) {
+      test.skip();
+      return;
+    }
+
+    const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+    const { data: closedData, error: closedError } = await admin
+      .from('job_postings')
+      .insert({
+        title: '마감상세테스트공고',
+        status: 'closed',
+        owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+        owner_name: SUPABASE_QA_ACCOUNTS.employer.name,
+        posting_type: 'regular',
+        work_date: workDate,
+        work_dates: [workDate],
+        total_positions: 1,
+        filled_positions: 0,
+        view_count: 0,
+        schema_version: 3,
+        description: '마감 테스트 공고',
+        contact_phone: '+82101234567',
+        location: { name: '테스트포커룸', district: '강남구', detailedAddress: '테스트로 123' },
+        schedule: {
+          kind: 'dated',
+          primaryDate: workDate,
+          allDates: [workDate],
+          requirements: [
+            {
+              date: workDate,
+              timeSlots: [{ startTime: '18:00', roles: [{ role: 'dealer', count: 1, filled: 0 }] }],
+            },
+          ],
+        },
+        role_catalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
+        role_keys: ['dealer'],
+        compensation: { mode: 'shared', defaultSalary: { type: 'daily', amount: 150000 } },
+        stats: {
+          totalApplicants: 0,
+          activeApplicants: 0,
+          confirmedApplicants: 0,
+          cancellationPendingApplicants: 0,
+          filledPositions: 0,
+        },
+        questions: { items: [] },
+        closed_at: new Date().toISOString(),
+        closed_reason: 'manual',
+      })
+      .select('id')
+      .single();
+
+    if (closedError) throw new Error(`마감공고 INSERT 실패: ${closedError.message}`);
+    const closedJobId = (closedData as Record<string, unknown>).id as string;
 
     try {
       const context = await browser.newContext({ storageState: staffState });
       const page = await context.newPage();
       const jobDetailPage = new JobDetailPage(page);
 
-      await jobDetailPage.gotoAuthenticated(closedJob.id);
+      await jobDetailPage.gotoAuthenticated(closedJobId);
 
       const contentOrError = jobDetailPage.closedButton.or(jobDetailPage.errorMessage);
       await expect(contentOrError.first()).toBeVisible({ timeout: 15_000 });
@@ -92,7 +214,7 @@ test.describe.skip('공고 상세와 지원 흐름', () => {
 
       await context.close();
     } finally {
-      await deleteDocument('jobPostings', closedJob.id);
+      await admin.from('job_postings').delete().eq('id', closedJobId);
     }
   });
 
@@ -133,16 +255,38 @@ test.describe.skip('공고 상세와 지원 흐름', () => {
   });
 
   test('이미 지원한 공고는 중복 지원 안내가 보인다', async ({ browser }) => {
-    const applicationId = `${testJobId}_test-staff-uid-001`;
-    const testApplication = {
-      ...createTestApplication({
-        jobPostingId: testJobId,
-        applicantId: 'test-staff-uid-001',
+    const admin = getAdminClient();
+    if (!admin) {
+      test.skip();
+      return;
+    }
+
+    const { data: appData, error: appError } = await admin
+      .from('applications')
+      .insert({
+        job_posting_id: testJobId,
+        applicant_id: SUPABASE_QA_ACCOUNTS.staff.id,
+        applicant_name: SUPABASE_QA_ACCOUNTS.staff.name,
+        applicant_phone: '+82101234567',
+        applicant_role: 'dealer',
+        job_posting_title: TEST_JOB_TITLE,
         status: 'applied',
-      }),
-      id: applicationId,
-    };
-    await seedDocument('applications', applicationId, testApplication);
+        assignments: [
+          {
+            roleIds: ['dealer'],
+            timeSlot: '18:00',
+            dates: [new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10)],
+            isGrouped: false,
+          },
+        ],
+        is_read: false,
+        recruitment_type: 'dated',
+      })
+      .select('id')
+      .single();
+
+    if (appError) throw new Error(`applications INSERT 실패: ${appError.message}`);
+    const applicationId = (appData as Record<string, unknown>).id as string;
 
     try {
       const context = await browser.newContext({ storageState: staffState });
@@ -159,7 +303,7 @@ test.describe.skip('공고 상세와 지원 흐름', () => {
 
       await context.close();
     } finally {
-      await deleteDocument('applications', applicationId);
+      await admin.from('applications').delete().eq('id', applicationId);
     }
   });
 
