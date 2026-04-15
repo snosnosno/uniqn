@@ -42,10 +42,9 @@ jest.mock('@/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-jest.mock(
-  'C:/Users/user/Desktop/T-HOLDEM-w5-d5/uniqn-mobile/src/services/auth/appleAuthService',
-  () => ({ requestAppleAuthorization: jest.fn() })
-);
+jest.mock('@/services/auth/appleAuthService', () => ({
+  requestAppleAuthorization: jest.fn(),
+}));
 
 jest.mock('@/utils/date', () => ({
   toDate: jest.fn((d: unknown) => d),
