@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
@@ -340,11 +341,23 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { error } = await supabase.rpc('increment_view_count', { posting_id: jobPostingId });
       if (error) {
         logger.warn('공고 조회수 증가 실패', { jobPostingId, error: error.message });
+        Sentry.addBreadcrumb({
+          category: 'swallow',
+          level: 'warning',
+          message: '공고 조회수 증가 RPC 실패 — 무시됨',
+          data: { jobPostingId, error: error.message },
+        });
         return;
       }
       logger.debug('공고 조회수 증가', { jobPostingId });
     } catch (error) {
       logger.warn('공고 조회수 증가 실패', { jobPostingId, error: toError(error) });
+      Sentry.addBreadcrumb({
+        category: 'swallow',
+        level: 'warning',
+        message: '공고 조회수 증가 예외 — 무시됨',
+        data: { jobPostingId, error: String(error) },
+      });
     }
   }
 
