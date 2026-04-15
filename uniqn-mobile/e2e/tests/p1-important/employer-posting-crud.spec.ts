@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { createClosedJob, createTestJob } from '../../factories';
-import { deleteDocument, seedDocument } from '../../helpers/firebase-admin';
+import { getAdminClient } from '../../helpers/supabase-admin';
+import { TEST_ACCOUNTS } from '../../fixtures/test-accounts';
 
 async function waitForReady(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
@@ -12,15 +12,87 @@ function visibleByTestId(page: Page, testId: string): Locator {
   return page.locator(`[data-testid="${testId}"]:visible`).first();
 }
 
-// TODO(T-W5): firebase-admin stub no-op 제거 후 Supabase seedSupabase 기반으로 재작성하며 .skip 해제
-test.describe.skip('Employer posting CRUD', () => {
+async function seedJobPosting(
+  title: string,
+  status: 'active' | 'closed' | 'cancelled' = 'active'
+): Promise<string> {
+  const admin = getAdminClient();
+  if (!admin) throw new Error('E2E_SUPABASE_SERVICE_ROLE_KEY 필요 — job_postings 시드 불가');
+
+  const workDate = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+
+  const { data, error } = await admin
+    .from('job_postings')
+    .insert({
+      title,
+      status,
+      owner_id: TEST_ACCOUNTS.employer.uid,
+      owner_name: TEST_ACCOUNTS.employer.displayName,
+      work_date: workDate,
+      work_dates: [workDate],
+      posting_type: 'regular',
+      total_positions: 2,
+      filled_positions: 0,
+      view_count: 0,
+      schema_version: 3,
+      description: `E2E 테스트 공고 — ${title}`,
+      contact_phone: '+82101234567',
+      location: {
+        name: '테스트포커룸',
+        district: '강남구',
+        detailedAddress: '테스트로 123',
+      },
+      schedule: {
+        kind: 'dated',
+        primaryDate: workDate,
+        allDates: [workDate],
+        requirements: [
+          {
+            date: workDate,
+            timeSlots: [
+              {
+                startTime: '18:00',
+                roles: [{ role: 'dealer', count: 2, filled: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+      role_catalog: [{ role: 'dealer', salary: { type: 'daily', amount: 150000 } }],
+      compensation: { mode: 'shared', defaultSalary: { type: 'daily', amount: 150000 } },
+      questions: { items: [] },
+      stats: {
+        totalApplicants: 0,
+        activeApplicants: 0,
+        confirmedApplicants: 0,
+        cancellationPendingApplicants: 0,
+        filledPositions: 0,
+      },
+      ...(status === 'closed'
+        ? {
+            closed_at: new Date().toISOString(),
+            closed_reason: 'manual',
+          }
+        : {}),
+    })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(`job_postings INSERT 실패: ${error.message}`);
+  return data.id as string;
+}
+
+async function cleanupJobPosting(id: string): Promise<void> {
+  const admin = getAdminClient();
+  await admin?.from('job_postings').delete().eq('id', id);
+}
+
+test.describe('Employer posting CRUD', () => {
   test.setTimeout(60_000);
 
   test('shows seeded postings and filter tabs on the list page', async ({ page }) => {
-    const activeJob = createTestJob({ title: 'crud-list-active', status: 'active' });
-    const closedJob = createClosedJob({ title: 'crud-list-closed' });
-    await seedDocument('jobPostings', activeJob.id, activeJob);
-    await seedDocument('jobPostings', closedJob.id, closedJob);
+    const activeId = await seedJobPosting('crud-list-active', 'active');
+    const closedId = await seedJobPosting('crud-list-closed', 'closed');
 
     try {
       await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
@@ -38,8 +110,8 @@ test.describe.skip('Employer posting CRUD', () => {
       const tabCount = await page.getByRole('tab').count();
       expect(tabCount).toBeGreaterThanOrEqual(3);
     } finally {
-      await deleteDocument('jobPostings', activeJob.id);
-      await deleteDocument('jobPostings', closedJob.id);
+      await cleanupJobPosting(activeId);
+      await cleanupJobPosting(closedId);
     }
   });
 
@@ -75,11 +147,10 @@ test.describe.skip('Employer posting CRUD', () => {
   });
 
   test('shows management actions on the detail page', async ({ page }) => {
-    const job = createTestJob({ title: 'crud-detail-actions' });
-    await seedDocument('jobPostings', job.id, job);
+    const jobId = await seedJobPosting('crud-detail-actions', 'active');
 
     try {
-      await page.goto(`/my-postings/${job.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${jobId}`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
 
       await expect(visibleByTestId(page, 'job-posting-manage-applicants')).toBeVisible({
@@ -88,23 +159,22 @@ test.describe.skip('Employer posting CRUD', () => {
       await expect(visibleByTestId(page, 'job-posting-manage-settlements')).toBeVisible();
       await expect(visibleByTestId(page, 'job-posting-edit-button')).toBeVisible();
     } finally {
-      await deleteDocument('jobPostings', job.id);
+      await cleanupJobPosting(jobId);
     }
   });
 
   test('shows the delete action on the detail page', async ({ page }) => {
-    const job = createTestJob({ title: 'crud-delete-modal' });
-    await seedDocument('jobPostings', job.id, job);
+    const jobId = await seedJobPosting('crud-delete-modal', 'active');
 
     try {
-      await page.goto(`/my-postings/${job.id}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/my-postings/${jobId}`, { waitUntil: 'domcontentloaded' });
       await waitForReady(page);
 
       await expect(visibleByTestId(page, 'job-posting-delete-button')).toBeVisible({
         timeout: 10_000,
       });
     } finally {
-      await deleteDocument('jobPostings', job.id);
+      await cleanupJobPosting(jobId);
     }
   });
 });
