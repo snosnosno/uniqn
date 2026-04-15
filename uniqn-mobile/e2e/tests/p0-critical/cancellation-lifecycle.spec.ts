@@ -23,8 +23,8 @@ const EMPLOYER_STATE = path.join(__dirname, '../../fixtures/storage-states/emplo
 // ---------------------------------------------------------------------------
 // 헬퍼: 고유 테스트 ID 생성
 // ---------------------------------------------------------------------------
-function uniqueId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+function uniqueId(_prefix: string): string {
+  return crypto.randomUUID();
 }
 
 // ---------------------------------------------------------------------------
