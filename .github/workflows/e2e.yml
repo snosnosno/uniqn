@@ -23,8 +23,7 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    continue-on-error: true  # T-D2 seedSupabase.ts 완료 전까지 — PR block 방지. 완료 후 제거.
+    timeout-minutes: 45
     permissions:
       contents: read
       issues: write
@@ -33,6 +32,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Export Supabase env vars
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATUS_OUT=$(supabase status -o env)
+          # supabase status -o env 출력 예시:
+          #   API_URL="http://127.0.0.1:54321"
+          #   ANON_KEY="eyJhbGciOi..."
+          #   SERVICE_ROLE_KEY="eyJhbGciOi..."
+          SUPA_URL=$(echo "$STATUS_OUT" | grep -E '^API_URL=' | sed -E 's/^API_URL="?([^"]+)"?/\1/')
+          SUPA_ANON=$(echo "$STATUS_OUT" | grep -E '^ANON_KEY=' | sed -E 's/^ANON_KEY="?([^"]+)"?/\1/')
+          SUPA_SR=$(echo "$STATUS_OUT" | grep -E '^SERVICE_ROLE_KEY=' | sed -E 's/^SERVICE_ROLE_KEY="?([^"]+)"?/\1/')
+
+          if [ -z "$SUPA_URL" ] || [ -z "$SUPA_ANON" ] || [ -z "$SUPA_SR" ]; then
+            echo "Failed to parse supabase status output:" >&2
+            echo "$STATUS_OUT" >&2
+            exit 1
+          fi
+
+          echo "EXPO_PUBLIC_SUPABASE_URL=${SUPA_URL}" >> "$GITHUB_ENV"
+          echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPA_ANON}" >> "$GITHUB_ENV"
+          echo "E2E_SUPABASE_SERVICE_ROLE_KEY=${SUPA_SR}" >> "$GITHUB_ENV"
+          echo "Local Supabase ready: ${SUPA_URL}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,27 +79,32 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Create .env.test for E2E
+        shell: bash
         run: |
-          cat <<'EOF' > e2e/.env.test
+          cat <<EOF > e2e/.env.test
           EXPO_PUBLIC_RELEASE_CHANNEL=development
-          EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SUPABASE_URL=${EXPO_PUBLIC_SUPABASE_URL}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY=${EXPO_PUBLIC_SUPABASE_ANON_KEY}
           EOF
 
       - name: Build Web
         run: npm run build:web
         env:
           EXPO_PUBLIC_RELEASE_CHANNEL: 'development'
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ env.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ env.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Run E2E Tests
         run: npm run e2e
         env:
           CI: 'true'
-          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ env.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ env.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          E2E_SUPABASE_SERVICE_ROLE_KEY: ${{ env.E2E_SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
