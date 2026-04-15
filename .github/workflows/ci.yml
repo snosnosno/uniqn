@@ -129,11 +129,12 @@ jobs:
 
       - name: Comment Bundle Size on PR
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const bundleReport = fs.readFileSync('bundle-size-report.txt', 'utf8');
+            const bundleReport = fs.readFileSync('uniqn-mobile/bundle-size-report.txt', 'utf8');
 
             const body = `## 📦 Bundle Size Report\n\n${bundleReport}\n\n**Target**: < 2MB (gzip)`;
 

@@ -83,6 +83,7 @@ jobs:
           EXPO_PUBLIC_FIREBASE_REGION: asia-northeast3
 
       - name: Start Firebase Emulator
+        continue-on-error: true  # W5 Supabase 이전 완료 전까지 non-blocking
         run: |
           # Must match e2e/config.ts E2E_CONFIG.projectId
           firebase emulators:start --only auth,firestore,functions,storage --project tholdem-ebc18 &
