@@ -142,18 +142,11 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
 
       const rows = ((data ?? []) as Record<string, unknown>[]).map(toAnnouncement);
 
-      // 역할 기반 필터링 (클라이언트 사이드)
-      const filtered = rows.filter((announcement) => {
-        const targetAudience = announcement.targetAudience ?? { type: 'all' };
-        if (targetAudience.type === 'all') return true;
-        if (targetAudience.type === 'roles' && targetAudience.roles && userRole) {
-          return targetAudience.roles.includes(userRole);
-        }
-        return false;
-      });
-
-      const hasMore = filtered.length > pageSize;
-      const items = hasMore ? filtered.slice(0, pageSize) : filtered;
+      // 역할 기반 필터링은 DB RLS에서 강제됨
+      // (migration 20260415140000_strengthen_announcements_rls_target_audience.sql)
+      // 클라이언트 필터 제거: REVIEW-2026-04-15 P0 Finding-1
+      const hasMore = rows.length > pageSize;
+      const items = hasMore ? rows.slice(0, pageSize) : rows;
       const lastItem = items.length > 0 ? items[items.length - 1] : null;
 
       logger.info('발행된 공지사항 조회 완료', {
