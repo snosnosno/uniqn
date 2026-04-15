@@ -79,7 +79,7 @@ export function PostingCardSurface({
         </Text>
 
         <View className="flex-row">
-          <View className="flex-1 pr-3">
+          <View className="flex-1 pr-2">
             <PostingScheduleContent
               display="card"
               workflow={card.workflow}
@@ -93,7 +93,9 @@ export function PostingCardSurface({
             />
           </View>
 
-          <View className="flex-1 border-l border-secondary-100 pl-3 dark:border-surface-overlay">
+          <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
+
+          <View className="flex-1 pl-2">
             <PostingCompensationContent
               display="card"
               salaryDisplay={card.salaryDisplay}

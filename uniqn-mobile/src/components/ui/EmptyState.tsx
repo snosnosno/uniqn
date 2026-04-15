@@ -29,6 +29,8 @@ export interface EmptyStateProps {
   actionLabel?: string;
   onAction?: () => void;
   variant?: 'search' | 'content' | 'error';
+  /** 컴팩트 모드: Card 안에 삽입 시 높이 축소 (flex-1, py-12 → py-6) */
+  compact?: boolean;
 }
 
 export function EmptyState({
@@ -38,6 +40,7 @@ export function EmptyState({
   actionLabel,
   onAction,
   variant = 'content',
+  compact = false,
 }: EmptyStateProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const defaultIconColor = isDarkMode ? ICON_COLORS.default.dark : ICON_COLORS.default.light;
@@ -63,7 +66,7 @@ export function EmptyState({
   };
 
   return (
-    <View className="flex-1 items-center justify-center px-6 py-12">
+    <View className={`items-center justify-center px-6 ${compact ? 'py-6' : 'flex-1 py-12'}`}>
       <View className="mb-4">{renderIcon()}</View>
 
       <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-secondary-100">

@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
 import { subDays, addDays, isToday, isYesterday, format, isSameDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 
@@ -191,25 +191,42 @@ export const DateSlider = memo(function DateSlider({
     <View
       className={`bg-white dark:bg-surface border-t border-secondary-100 dark:border-surface-overlay ${className}`}
     >
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="px-4 py-3 gap-2"
-      >
-        {/* 전체 버튼 */}
-        <AllChip isSelected={selectedDate === null} onPress={() => handleDatePress(null)} />
+      <View style={{ position: 'relative' }}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="px-4 py-3 gap-2"
+        >
+          {/* 전체 버튼 */}
+          <AllChip isSelected={selectedDate === null} onPress={() => handleDatePress(null)} />
 
-        {/* 날짜 버튼들 */}
-        {dates.map((date) => (
-          <DateChip
-            key={date.toISOString()}
-            date={date}
-            isSelected={selectedDate !== null && isSameDay(date, selectedDate)}
-            onPress={() => handleDatePress(date)}
+          {/* 날짜 버튼들 */}
+          {dates.map((date) => (
+            <DateChip
+              key={date.toISOString()}
+              date={date}
+              isSelected={selectedDate !== null && isSameDay(date, selectedDate)}
+              onPress={() => handleDatePress(date)}
+            />
+          ))}
+        </ScrollView>
+        {/* 우측 스크롤 힌트 (웹 전용 — 네이티브에서는 스크롤 인디케이터로 충분) */}
+        {Platform.OS === 'web' && (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: 32,
+              // @ts-ignore — web-only CSS gradient
+              background: 'linear-gradient(to right, transparent, white)',
+            }}
           />
-        ))}
-      </ScrollView>
+        )}
+      </View>
     </View>
   );
 });

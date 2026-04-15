@@ -53,7 +53,7 @@ function BoardSection({ title, emptyTitle, posts }: BoardSectionProps) {
 
       {posts.length === 0 ? (
         <Card>
-          <EmptyState title={emptyTitle} description="아직 표시할 게시글이 없어요." />
+          <EmptyState title={emptyTitle} description="아직 표시할 게시글이 없어요." compact />
         </Card>
       ) : (
         posts.map((post) => (

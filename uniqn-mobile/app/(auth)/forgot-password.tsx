@@ -64,7 +64,7 @@ export default function ForgotPasswordScreen() {
         className="flex-1"
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-start', paddingTop: 40 }}
           className="px-6 py-8"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}

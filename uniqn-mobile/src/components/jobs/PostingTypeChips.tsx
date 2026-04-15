@@ -46,7 +46,7 @@ const ChipItem = memo(function ChipItem({ chip, count, isSelected, onPress }: Ch
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isSelected }}
-      className={`flex-row items-center rounded-sm px-4 py-2 ${
+      className={`flex-row items-center rounded-sm px-3 py-2 ${
         isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-secondary-100 dark:bg-surface'
       }`}
     >

@@ -119,6 +119,7 @@ const SUPPRESSED_WARNINGS = [
   'props.pointerEvents is deprecated',
   'Image: style.tintColor is deprecated',
   'SafeAreaView has been deprecated',
+  'Unexpected text node',
 ];
 const TOUCH_THROTTLE_MS = 5_000;
 const AuthenticatedRuntime = lazy(() => import('@/components/app/AuthenticatedRuntime'));
