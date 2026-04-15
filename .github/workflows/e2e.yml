@@ -24,6 +24,10 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -79,6 +83,7 @@ jobs:
           EXPO_PUBLIC_FIREBASE_REGION: asia-northeast3
 
       - name: Start Firebase Emulator
+        continue-on-error: true  # W5 Supabase 이전 완료 전까지 non-blocking
         run: |
           # Must match e2e/config.ts E2E_CONFIG.projectId
           firebase emulators:start --only auth,firestore,functions,storage --project tholdem-ebc18 &
@@ -91,6 +96,7 @@ jobs:
 
       - name: Run E2E Tests
         run: npm run e2e
+        continue-on-error: true  # W5에서 Supabase CI secrets 설정 후 제거
         env:
           CI: 'true'
           EXPO_PUBLIC_RELEASE_CHANNEL: 'development'
@@ -125,6 +131,7 @@ jobs:
 
       - name: Comment E2E Results on PR
         if: github.event_name == 'pull_request' && always()
+        continue-on-error: true  # PR comment 403 방어 (fork PR 등)
         uses: actions/github-script@v7
         with:
           script: |

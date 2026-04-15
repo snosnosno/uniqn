@@ -42,6 +42,10 @@ jest.mock('@/services/jobs/applicationHistoryService', () => ({
   cancelConfirmation: jest.fn(),
 }));
 
+jest.mock('@/services/jobs/jobManagementService', () => ({
+  enqueueScheduleBoardSync: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),

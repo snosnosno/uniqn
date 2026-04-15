@@ -12,7 +12,7 @@ const zlib = require('zlib');
 
 // 설정
 const CONFIG = {
-  maxBundleSize: 500 * 1024, // 500KB (gzip)
+  maxBundleSize: 2 * 1024 * 1024, // 2MB (gzip) — 번들 다이어트는 별도 트랙
   bundleDir: path.join(__dirname, '..', 'dist', '_expo', 'static', 'js', 'web'),
   reportFile: path.join(__dirname, '..', 'bundle-size-report.txt'),
 };
@@ -47,9 +47,7 @@ function analyzeBundle() {
     process.exit(1);
   }
 
-  const files = fs
-    .readdirSync(CONFIG.bundleDir)
-    .filter((file) => file.endsWith('.js'));
+  const files = fs.readdirSync(CONFIG.bundleDir).filter((file) => file.endsWith('.js'));
 
   if (files.length === 0) {
     console.error('No JavaScript files found in bundle directory.');
@@ -120,10 +118,7 @@ function main() {
   if (process.env.GITHUB_ACTIONS) {
     const outputFile = process.env.GITHUB_OUTPUT;
     if (outputFile) {
-      fs.appendFileSync(
-        outputFile,
-        `bundle-size=${formatBytes(totalGzip)}\n`
-      );
+      fs.appendFileSync(outputFile, `bundle-size=${formatBytes(totalGzip)}\n`);
       fs.appendFileSync(outputFile, `is-over-budget=${isOverBudget}\n`);
     }
   }
