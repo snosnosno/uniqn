@@ -205,7 +205,7 @@ describe('useAppInitialize — role change JWT 무효화 (T-D7)', () => {
 
       const result = await resolveSession({
         authUser,
-        authResolutionSource: 'event',
+        authResolutionSource: 'ready',
         autoLoginEnabled: true,
       });
 
@@ -230,7 +230,7 @@ describe('useAppInitialize — role change JWT 무효화 (T-D7)', () => {
 
       const result = await resolveSession({
         authUser,
-        authResolutionSource: 'event',
+        authResolutionSource: 'ready',
         autoLoginEnabled: true,
       });
 
@@ -249,7 +249,7 @@ describe('useAppInitialize — role change JWT 무효화 (T-D7)', () => {
 
       const result = await resolveSession({
         authUser,
-        authResolutionSource: 'event',
+        authResolutionSource: 'ready',
         autoLoginEnabled: true,
       });
 
@@ -272,7 +272,7 @@ describe('useAppInitialize — role change JWT 무효화 (T-D7)', () => {
 
       await resolveSession({
         authUser,
-        authResolutionSource: 'event',
+        authResolutionSource: 'ready',
         autoLoginEnabled: true,
       });
 
@@ -299,7 +299,7 @@ describe('useAppInitialize — role change JWT 무효화 (T-D7)', () => {
 
       await resolveSession({
         authUser,
-        authResolutionSource: 'event',
+        authResolutionSource: 'ready',
         autoLoginEnabled: true,
       });
 

@@ -116,7 +116,7 @@ jest.mock('@/errors', () => {
 
 // ── 헬퍼 타입 ────────────────────────────────────────────────────────────────
 
-type MockFn = jest.MockedFunction<(...args: unknown[]) => unknown>;
+type MockFn = jest.Mock<any, any>;
 
 // ── 픽스처 헬퍼 ──────────────────────────────────────────────────────────────
 
