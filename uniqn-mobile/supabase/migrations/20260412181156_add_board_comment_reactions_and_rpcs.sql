@@ -16,15 +16,19 @@ CREATE TABLE IF NOT EXISTS public.board_comment_reactions (
 
 ALTER TABLE public.board_comment_reactions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "reaction_select" ON public.board_comment_reactions;
 CREATE POLICY "reaction_select" ON public.board_comment_reactions
   FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "reaction_insert" ON public.board_comment_reactions;
 CREATE POLICY "reaction_insert" ON public.board_comment_reactions
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "reaction_update" ON public.board_comment_reactions;
 CREATE POLICY "reaction_update" ON public.board_comment_reactions
   FOR UPDATE USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "reaction_delete" ON public.board_comment_reactions;
 CREATE POLICY "reaction_delete" ON public.board_comment_reactions
   FOR DELETE USING (user_id = auth.uid());
 

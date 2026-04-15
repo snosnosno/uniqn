@@ -10,14 +10,17 @@ CREATE TABLE IF NOT EXISTS public.notification_counters (
 
 ALTER TABLE public.notification_counters ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own unread counter" ON public.notification_counters;
 CREATE POLICY "Users can view own unread counter"
   ON public.notification_counters FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own unread counter" ON public.notification_counters;
 CREATE POLICY "Users can update own unread counter"
   ON public.notification_counters FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role full access" ON public.notification_counters;
 CREATE POLICY "Service role full access"
   ON public.notification_counters FOR ALL
   USING (auth.role() = 'service_role');
