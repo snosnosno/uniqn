@@ -10,6 +10,7 @@
  * 3. 사용 통계 업데이트
  */
 
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
@@ -131,6 +132,12 @@ export class SupabaseTemplateRepository implements ITemplateRepository {
         .then(({ error: rpcError }) => {
           if (rpcError) {
             logger.warn('템플릿 사용 통계 업데이트 실패', { templateId, error: rpcError });
+            Sentry.addBreadcrumb({
+              category: 'swallow',
+              level: 'warning',
+              message: '템플릿 사용 통계 업데이트 실패 — 무시됨',
+              data: { templateId, error: String(rpcError) },
+            });
           }
         });
 

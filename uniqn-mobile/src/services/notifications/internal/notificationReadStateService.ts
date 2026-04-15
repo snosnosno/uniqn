@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
@@ -45,6 +46,12 @@ async function resetUnreadCounterWithRetry(
     userId,
     attempts: MAX_RETRIES,
   });
+  Sentry.addBreadcrumb({
+    category: 'swallow',
+    level: 'warning',
+    message: '미읽음 카운터 리셋 최종 실패 — 무시됨',
+    data: { userId, attempts: MAX_RETRIES },
+  });
   return false;
 }
 
@@ -60,6 +67,12 @@ async function decrementUnreadCounterWithRetry(delta: number): Promise<boolean> 
     logger.warn('미읽음 카운터 감소 실패 - onSnapshot/foreground sync에서 보정 예정', {
       delta,
       error: toError(counterError).message,
+    });
+    Sentry.addBreadcrumb({
+      category: 'swallow',
+      level: 'warning',
+      message: '미읽음 카운터 감소 실패 — 무시됨',
+      data: { delta, error: String(counterError) },
     });
     return false;
   }
@@ -85,6 +98,12 @@ export async function syncUnreadCounterFromServer(
   } catch (error) {
     logger.warn('카운터 동기화 실패', {
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.addBreadcrumb({
+      category: 'swallow',
+      level: 'warning',
+      message: '카운터 동기화 실패 — 무시됨',
+      data: { userId, error: String(error) },
     });
     return null;
   }
