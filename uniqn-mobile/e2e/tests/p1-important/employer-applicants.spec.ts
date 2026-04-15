@@ -136,7 +136,7 @@ async function seedApplication(
         },
       ],
       is_read: false,
-      recruitment_type: 'dated',
+      recruitment_type: 'event',
       ...extra,
     })
     .select('id')
@@ -243,7 +243,6 @@ test.describe('구인자 지원자 관리', () => {
       'confirmed',
       {
         confirmed_at: new Date().toISOString(),
-        confirmed_by: SUPABASE_QA_ACCOUNTS.employer.id,
       }
     );
 

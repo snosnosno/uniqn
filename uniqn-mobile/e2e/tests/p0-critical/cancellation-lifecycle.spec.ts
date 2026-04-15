@@ -23,8 +23,8 @@ const EMPLOYER_STATE = path.join(__dirname, '../../fixtures/storage-states/emplo
 // ---------------------------------------------------------------------------
 // 헬퍼: 고유 테스트 ID 생성
 // ---------------------------------------------------------------------------
-function uniqueId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+function uniqueId(_prefix: string): string {
+  return crypto.randomUUID();
 }
 
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ async function seedConfirmedApplication(
     applicant_email: SUPABASE_QA_ACCOUNTS.staff.email,
     job_posting_id: jobId,
     job_posting_title: '취소 라이프사이클 테스트 공고',
-    job_posting_owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+    recruitment_type: 'event',
     status: applicationStatus,
     assignments: [
       {
