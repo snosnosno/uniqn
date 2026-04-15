@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
@@ -13,29 +13,28 @@ import {
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { useBoardHome } from '@/hooks/useBoard';
 import { useAuth } from '@/hooks/useAuth';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import type { BoardPost, BoardType } from '@/types';
 
 interface BoardEntryCardProps {
   title: string;
-  description: string;
   icon: ReactNode;
   boardType: BoardType;
 }
 
-function BoardEntryCard({ title, description, icon, boardType }: BoardEntryCardProps) {
+function BoardEntryCard({ title, icon, boardType }: BoardEntryCardProps) {
   return (
-    <Card
-      className="min-h-[132px] flex-1"
+    <Pressable
+      className="flex-1 items-center rounded-md border border-secondary-200 bg-white py-4 px-2 active:opacity-70 dark:border-surface-overlay dark:bg-surface-elevated"
       onPress={() => router.push(`/(app)/(tabs)/board/${boardType}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`${title} 게시판으로 이동`}
     >
-      <View className="mb-3">{icon}</View>
-      <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
+      <View className="mb-2">{icon}</View>
+      <Text className="text-center text-xs font-sans-semibold text-content-primary dark:text-secondary-100">
         {title}
       </Text>
-      <Text className="text-sm leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
-        {description}
-      </Text>
-    </Card>
+    </Pressable>
   );
 }
 
@@ -73,12 +72,6 @@ export default function BoardHomeScreen() {
   const { role, isAdmin } = useAuth();
   const { data, isLoading, error, refetch, isRefetching } = useBoardHome();
 
-  const scheduleDescription = isAdmin
-    ? '전체 일정 게시판을 관리하고 최근 활동을 확인해요.'
-    : role === 'employer'
-      ? '내 공고별 운영 글과 최근 댓글을 한 번에 확인해요.'
-      : '확정된 내 일정 게시판만 모아서 확인해요.';
-
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <TabHeader title="게시판" />
@@ -103,29 +96,25 @@ export default function BoardHomeScreen() {
           contentContainerClassName="p-4 pb-8"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         >
-          <View className="mb-6 flex-row flex-wrap gap-3">
+          <View className="mb-6 flex-row gap-2">
             <BoardEntryCard
               title="공지사항"
-              description="운영 공지와 업데이트 내용을 확인해요."
-              icon={<DocumentTextOutlineIcon size={28} color="#8A7228" />}
+              icon={<DocumentTextOutlineIcon size={28} color={PRIMARY_COLORS[700]} />}
               boardType="notice"
             />
             <BoardEntryCard
-              title="내 일정게시판"
-              description={scheduleDescription}
+              title="일정게시판"
               icon={<CalendarIcon size={28} color="#0F766E" />}
               boardType="schedule"
             />
             <BoardEntryCard
               title="자유게시판"
-              description="일반 이야기와 소식을 자유롭게 나눠요."
-              icon={<MessageIcon size={28} color="#8A7228" />}
+              icon={<MessageIcon size={28} color={PRIMARY_COLORS[700]} />}
               boardType="free"
             />
             <BoardEntryCard
               title="TDA 토론"
-              description="규정, 운영, 핸드 리뷰를 주제로 토론해요."
-              icon={<HashtagIcon size={28} color="#CA8A04" />}
+              icon={<HashtagIcon size={28} color={PRIMARY_COLORS[500]} />}
               boardType="tda"
             />
           </View>

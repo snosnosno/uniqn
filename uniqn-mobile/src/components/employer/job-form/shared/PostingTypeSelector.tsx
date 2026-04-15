@@ -32,7 +32,7 @@ const TypeCard = memo(function TypeCard({
       onPress={onPress}
       disabled={disabled}
       className={`
-        flex-1 rounded-md border p-3
+        w-[48%] rounded-md border p-3
         ${
           isSelected
             ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
@@ -90,18 +90,16 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
         공고 타입<Text className="text-error-500 font-sans">*</Text>
       </Text>
 
-      <View className="gap-2">
-        <View className="flex-row gap-2">
-          {AVAILABLE_POSTING_TYPES.map((type) => (
-            <TypeCard
-              key={type}
-              type={type}
-              isSelected={value === type}
-              disabled={disabled}
-              onPress={() => handlePress(type)}
-            />
-          ))}
-        </View>
+      <View className="flex-row flex-wrap gap-2">
+        {AVAILABLE_POSTING_TYPES.map((type) => (
+          <TypeCard
+            key={type}
+            type={type}
+            isSelected={value === type}
+            disabled={disabled}
+            onPress={() => handlePress(type)}
+          />
+        ))}
       </View>
 
       {value === 'tournament' && (
