@@ -126,7 +126,6 @@ async function seedWorkLog(
       staff_name: staffName,
       owner_id: TEST_ACCOUNTS.employer.uid,
       date: workDate,
-      work_date: workDate,
       check_in_time: `${workDate}T18:00:00+09:00`,
       check_out_time: `${workDate}T23:00:00+09:00`,
       status: payrollStatus === 'completed' ? 'completed' : 'checked_out',

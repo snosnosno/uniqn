@@ -280,7 +280,7 @@ test.describe('공고 상세와 지원 흐름', () => {
           },
         ],
         is_read: false,
-        recruitment_type: 'dated',
+        recruitment_type: 'event',
       })
       .select('id')
       .single();

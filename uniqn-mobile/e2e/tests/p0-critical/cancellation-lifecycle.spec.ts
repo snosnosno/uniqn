@@ -117,7 +117,7 @@ async function seedConfirmedApplication(
     applicant_email: SUPABASE_QA_ACCOUNTS.staff.email,
     job_posting_id: jobId,
     job_posting_title: '취소 라이프사이클 테스트 공고',
-    job_posting_owner_id: SUPABASE_QA_ACCOUNTS.employer.id,
+    recruitment_type: 'event',
     status: applicationStatus,
     assignments: [
       {
