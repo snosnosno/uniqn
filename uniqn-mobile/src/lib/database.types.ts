@@ -37,7 +37,7 @@ export type Database = {
       };
       announcements: {
         Row: {
-          author_id: string;
+          author_id: string | null;
           author_name: string;
           category: Database['public']['Enums']['announcement_category'];
           content: string;
@@ -56,7 +56,7 @@ export type Database = {
           view_count: number | null;
         };
         Insert: {
-          author_id: string;
+          author_id?: string | null;
           author_name: string;
           category?: Database['public']['Enums']['announcement_category'];
           content: string;
@@ -75,7 +75,7 @@ export type Database = {
           view_count?: number | null;
         };
         Update: {
-          author_id?: string;
+          author_id?: string | null;
           author_name?: string;
           category?: Database['public']['Enums']['announcement_category'];
           content?: string;
@@ -235,9 +235,58 @@ export type Database = {
           },
         ];
       };
+      board_comment_reactions: {
+        Row: {
+          comment_id: string;
+          created_at: string;
+          id: string;
+          post_id: string;
+          type: string;
+          user_id: string;
+        };
+        Insert: {
+          comment_id: string;
+          created_at?: string;
+          id?: string;
+          post_id: string;
+          type: string;
+          user_id: string;
+        };
+        Update: {
+          comment_id?: string;
+          created_at?: string;
+          id?: string;
+          post_id?: string;
+          type?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'board_comment_reactions_comment_id_fkey';
+            columns: ['comment_id'];
+            isOneToOne: false;
+            referencedRelation: 'board_comments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'board_comment_reactions_post_id_fkey';
+            columns: ['post_id'];
+            isOneToOne: false;
+            referencedRelation: 'board_posts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'board_comment_reactions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       board_comments: {
         Row: {
-          author_id: string;
+          author_id: string | null;
           author_name: string;
           author_role: string;
           body: string;
@@ -255,7 +304,7 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
-          author_id: string;
+          author_id?: string | null;
           author_name: string;
           author_role: string;
           body: string;
@@ -273,7 +322,7 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
-          author_id?: string;
+          author_id?: string | null;
           author_name?: string;
           author_role?: string;
           body?: string;
@@ -393,7 +442,7 @@ export type Database = {
       board_posts: {
         Row: {
           announcement_category: Database['public']['Enums']['announcement_category'] | null;
-          author_id: string;
+          author_id: string | null;
           author_name: string;
           author_role: string;
           board_type: Database['public']['Enums']['board_type'];
@@ -421,7 +470,7 @@ export type Database = {
         };
         Insert: {
           announcement_category?: Database['public']['Enums']['announcement_category'] | null;
-          author_id: string;
+          author_id?: string | null;
           author_name: string;
           author_role: string;
           board_type?: Database['public']['Enums']['board_type'];
@@ -449,7 +498,7 @@ export type Database = {
         };
         Update: {
           announcement_category?: Database['public']['Enums']['announcement_category'] | null;
-          author_id?: string;
+          author_id?: string | null;
           author_name?: string;
           author_role?: string;
           board_type?: Database['public']['Enums']['board_type'];
@@ -499,7 +548,7 @@ export type Database = {
           id: string;
           post_id: string;
           reason: string;
-          reporter_id: string;
+          reporter_id: string | null;
           resolved_at: string | null;
           resolved_by: string | null;
           status: string | null;
@@ -513,7 +562,7 @@ export type Database = {
           id?: string;
           post_id: string;
           reason: string;
-          reporter_id: string;
+          reporter_id?: string | null;
           resolved_at?: string | null;
           resolved_by?: string | null;
           status?: string | null;
@@ -527,7 +576,7 @@ export type Database = {
           id?: string;
           post_id?: string;
           reason?: string;
-          reporter_id?: string;
+          reporter_id?: string | null;
           resolved_at?: string | null;
           resolved_by?: string | null;
           status?: string | null;
@@ -657,7 +706,7 @@ export type Database = {
           subject: string;
           updated_at: string | null;
           user_email: string | null;
-          user_id: string;
+          user_id: string | null;
           user_name: string | null;
         };
         Insert: {
@@ -674,7 +723,7 @@ export type Database = {
           subject: string;
           updated_at?: string | null;
           user_email?: string | null;
-          user_id: string;
+          user_id?: string | null;
           user_name?: string | null;
         };
         Update: {
@@ -691,7 +740,7 @@ export type Database = {
           subject?: string;
           updated_at?: string | null;
           user_email?: string | null;
-          user_id?: string;
+          user_id?: string | null;
           user_name?: string | null;
         };
         Relationships: [
@@ -711,6 +760,7 @@ export type Database = {
           name: string;
           template_data: Json;
           updated_at: string | null;
+          usage_count: number;
           user_id: string;
         };
         Insert: {
@@ -719,6 +769,7 @@ export type Database = {
           name: string;
           template_data?: Json;
           updated_at?: string | null;
+          usage_count?: number;
           user_id: string;
         };
         Update: {
@@ -727,6 +778,7 @@ export type Database = {
           name?: string;
           template_data?: Json;
           updated_at?: string | null;
+          usage_count?: number;
           user_id?: string;
         };
         Relationships: [
@@ -754,7 +806,7 @@ export type Database = {
           last_work_date: string | null;
           location: Json;
           og_image_url: string | null;
-          owner_id: string;
+          owner_id: string | null;
           owner_name: string | null;
           posting_type: Database['public']['Enums']['posting_type'] | null;
           questions: Json | null;
@@ -789,7 +841,7 @@ export type Database = {
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
-          owner_id: string;
+          owner_id?: string | null;
           owner_name?: string | null;
           posting_type?: Database['public']['Enums']['posting_type'] | null;
           questions?: Json | null;
@@ -824,7 +876,7 @@ export type Database = {
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
-          owner_id?: string;
+          owner_id?: string | null;
           owner_name?: string | null;
           posting_type?: Database['public']['Enums']['posting_type'] | null;
           questions?: Json | null;
@@ -850,6 +902,65 @@ export type Database = {
             foreignKeyName: 'job_postings_owner_id_fkey';
             columns: ['owner_id'];
             isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notification_counters: {
+        Row: {
+          unread_count: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          unread_count?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          unread_count?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      notification_settings: {
+        Row: {
+          categories: Json | null;
+          created_at: string | null;
+          enabled: boolean;
+          id: string;
+          push_enabled: boolean;
+          quiet_hours: Json | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          categories?: Json | null;
+          created_at?: string | null;
+          enabled?: boolean;
+          id?: string;
+          push_enabled?: boolean;
+          quiet_hours?: Json | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          categories?: Json | null;
+          created_at?: string | null;
+          enabled?: boolean;
+          id?: string;
+          push_enabled?: boolean;
+          quiet_hours?: Json | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_settings_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
             referencedRelation: 'users';
             referencedColumns: ['id'];
           },
@@ -940,7 +1051,7 @@ export type Database = {
           id: string;
           job_posting_id: string;
           job_posting_title: string | null;
-          reporter_id: string;
+          reporter_id: string | null;
           reporter_name: string;
           reporter_type: string;
           reviewed_at: string | null;
@@ -962,7 +1073,7 @@ export type Database = {
           id?: string;
           job_posting_id: string;
           job_posting_title?: string | null;
-          reporter_id: string;
+          reporter_id?: string | null;
           reporter_name: string;
           reporter_type: string;
           reviewed_at?: string | null;
@@ -984,7 +1095,7 @@ export type Database = {
           id?: string;
           job_posting_id?: string;
           job_posting_title?: string | null;
-          reporter_id?: string;
+          reporter_id?: string | null;
           reporter_name?: string;
           reporter_type?: string;
           reviewed_at?: string | null;
@@ -1031,9 +1142,9 @@ export type Database = {
           id: string;
           job_posting_id: string;
           job_posting_title: string | null;
-          reviewee_id: string;
+          reviewee_id: string | null;
           reviewee_name: string;
-          reviewer_id: string;
+          reviewer_id: string | null;
           reviewer_name: string;
           reviewer_type: string;
           sentiment: Database['public']['Enums']['review_sentiment'];
@@ -1048,9 +1159,9 @@ export type Database = {
           id?: string;
           job_posting_id: string;
           job_posting_title?: string | null;
-          reviewee_id: string;
+          reviewee_id?: string | null;
           reviewee_name: string;
-          reviewer_id: string;
+          reviewer_id?: string | null;
           reviewer_name: string;
           reviewer_type: string;
           sentiment: Database['public']['Enums']['review_sentiment'];
@@ -1065,9 +1176,9 @@ export type Database = {
           id?: string;
           job_posting_id?: string;
           job_posting_title?: string | null;
-          reviewee_id?: string;
+          reviewee_id?: string | null;
           reviewee_name?: string;
-          reviewer_id?: string;
+          reviewer_id?: string | null;
           reviewer_name?: string;
           reviewer_type?: string;
           sentiment?: Database['public']['Enums']['review_sentiment'];
@@ -1105,6 +1216,42 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      schedule_board_sync_outbox: {
+        Row: {
+          action: string;
+          created_at: string;
+          error_message: string | null;
+          id: string;
+          job_posting_id: string;
+          payload: Json;
+          retry_count: number;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          job_posting_id: string;
+          payload?: Json;
+          retry_count?: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          job_posting_id?: string;
+          payload?: Json;
+          retry_count?: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       user_consents: {
         Row: {
@@ -1290,6 +1437,7 @@ export type Database = {
           status: Database['public']['Enums']['work_log_status'];
           time_slot: string | null;
           updated_at: string | null;
+          work_duration: number | null;
         };
         Insert: {
           application_id?: string | null;
@@ -1325,6 +1473,7 @@ export type Database = {
           status?: Database['public']['Enums']['work_log_status'];
           time_slot?: string | null;
           updated_at?: string | null;
+          work_duration?: number | null;
         };
         Update: {
           application_id?: string | null;
@@ -1360,6 +1509,7 @@ export type Database = {
           status?: Database['public']['Enums']['work_log_status'];
           time_slot?: string | null;
           updated_at?: string | null;
+          work_duration?: number | null;
         };
         Relationships: [
           {
@@ -1397,6 +1547,44 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      _build_schedule_board_body: {
+        Args: { p_jp: Database['public']['Tables']['job_postings']['Row'] };
+        Returns: string;
+      };
+      _format_compensation_label: {
+        Args: { p_compensation: Json };
+        Returns: string;
+      };
+      apply_with_capacity_check: {
+        Args: {
+          p_applicant_email?: string;
+          p_applicant_id: string;
+          p_applicant_name: string;
+          p_applicant_nickname?: string;
+          p_applicant_phone?: string;
+          p_applicant_photo_url?: string;
+          p_applicant_role?: string;
+          p_assignments?: Json;
+          p_custom_role?: string;
+          p_job_posting_date?: string;
+          p_job_posting_id: string;
+          p_job_posting_title?: string;
+          p_message?: string;
+          p_pre_question_answers?: Json;
+          p_recruitment_type?: string;
+        };
+        Returns: Json;
+      };
+      cancel_application_atomically: {
+        Args: {
+          p_actor_id: string;
+          p_actor_type: string;
+          p_application_id: string;
+          p_cancel_reason?: string;
+          p_rejection_reason?: string;
+        };
+        Returns: Json;
+      };
       check_email_exists: { Args: { p_email: string }; Returns: boolean };
       check_ip_rate_limit: {
         Args: {
@@ -1428,17 +1616,79 @@ export type Database = {
         };
         Returns: Json;
       };
+      confirm_application: {
+        Args: {
+          p_application_id: string;
+          p_assignments?: Json;
+          p_confirmation_history?: Json;
+          p_is_fixed_posting?: boolean;
+          p_notes?: string;
+          p_original_application?: Json;
+          p_owner_id: string;
+        };
+        Returns: Json;
+      };
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      get_job_posting_stats: {
+        Args: { p_owner_id: string };
+        Returns: {
+          active: number;
+          cancelled: number;
+          closed: number;
+          total: number;
+          total_applications: number;
+          total_views: number;
+        }[];
+      };
       get_my_role: { Args: never; Returns: string };
       get_unread_notification_count: {
         Args: { p_user_id: string };
         Returns: number;
       };
+      increment_announcement_view_count: {
+        Args: { p_announcement_id: string };
+        Returns: undefined;
+      };
+      increment_board_post_view_count: {
+        Args: { p_post_id: string };
+        Returns: undefined;
+      };
+      increment_template_usage: {
+        Args: { p_template_id: string };
+        Returns: undefined;
+      };
+      increment_view_count: { Args: { posting_id: string }; Returns: undefined };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
+      permanently_delete_user: { Args: { p_user_id: string }; Returns: Json };
+      process_qr_checkin_atomically: {
+        Args: {
+          p_action: string;
+          p_check_time?: string;
+          p_expected_date?: string;
+          p_job_posting_id: string;
+          p_staff_id: string;
+          p_work_log_id: string;
+        };
+        Returns: Json;
+      };
+      register_as_employer: {
+        Args: { p_employer_agreements?: Json };
+        Returns: Json;
+      };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
+      sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
+      toggle_comment_reaction: {
+        Args: {
+          p_comment_id: string;
+          p_post_id: string;
+          p_reaction_type: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       announcement_category: 'notice' | 'update' | 'event' | 'maintenance';
@@ -1450,7 +1700,7 @@ export type Database = {
         | 'cancelled'
         | 'completed'
         | 'cancellation_pending';
-      board_type: 'notice' | 'schedule' | 'free' | 'tda';
+      board_type: 'notice' | 'schedule' | 'free' | 'tda' | 'substitute';
       inquiry_status: 'open' | 'in_progress' | 'closed';
       notification_category:
         | 'application'
@@ -1617,7 +1867,7 @@ export const Constants = {
         'completed',
         'cancellation_pending',
       ],
-      board_type: ['notice', 'schedule', 'free', 'tda'],
+      board_type: ['notice', 'schedule', 'free', 'tda', 'substitute'],
       inquiry_status: ['open', 'in_progress', 'closed'],
       notification_category: [
         'application',
