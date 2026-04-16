@@ -9,6 +9,7 @@ import {
   DocumentTextOutlineIcon,
   HashtagIcon,
   MessageIcon,
+  UsersIcon,
 } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
 import { useBoardHome } from '@/hooks/useBoard';
@@ -96,27 +97,37 @@ export default function BoardHomeScreen() {
           contentContainerClassName="p-4 pb-8"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         >
-          <View className="mb-6 flex-row gap-2">
-            <BoardEntryCard
-              title="공지사항"
-              icon={<DocumentTextOutlineIcon size={28} color={PRIMARY_COLORS[700]} />}
-              boardType="notice"
-            />
-            <BoardEntryCard
-              title="일정게시판"
-              icon={<CalendarIcon size={28} color="#0F766E" />}
-              boardType="schedule"
-            />
-            <BoardEntryCard
-              title="자유게시판"
-              icon={<MessageIcon size={28} color={PRIMARY_COLORS[700]} />}
-              boardType="free"
-            />
-            <BoardEntryCard
-              title="TDA 토론"
-              icon={<HashtagIcon size={28} color={PRIMARY_COLORS[500]} />}
-              boardType="tda"
-            />
+          <View className="mb-6 gap-2">
+            <View className="flex-row gap-2">
+              <BoardEntryCard
+                title="공지사항"
+                icon={<DocumentTextOutlineIcon size={28} color={PRIMARY_COLORS[700]} />}
+                boardType="notice"
+              />
+              <BoardEntryCard
+                title="일정게시판"
+                icon={<CalendarIcon size={28} color="#0F766E" />}
+                boardType="schedule"
+              />
+              <BoardEntryCard
+                title="자유게시판"
+                icon={<MessageIcon size={28} color={PRIMARY_COLORS[700]} />}
+                boardType="free"
+              />
+            </View>
+            <View className="flex-row gap-2">
+              <BoardEntryCard
+                title="TDA 토론"
+                icon={<HashtagIcon size={28} color={PRIMARY_COLORS[500]} />}
+                boardType="tda"
+              />
+              <BoardEntryCard
+                title="대타 구인"
+                icon={<UsersIcon size={28} color={PRIMARY_COLORS[500]} />}
+                boardType="substitute"
+              />
+              <View className="flex-1" />
+            </View>
           </View>
 
           <BoardSection

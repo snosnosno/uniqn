@@ -11,7 +11,7 @@ import { useBoardPosts } from '@/hooks/useBoard';
 import { useThemeStore } from '@/stores/themeStore';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 
-const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda'];
+const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda', 'substitute'];
 
 export default function BoardListScreen() {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -91,7 +91,9 @@ export default function BoardListScreen() {
                 description={
                   boardType === 'schedule'
                     ? '접근 가능한 일정 게시판이 아직 없어요.'
-                    : '첫 게시글을 등록해 보세요.'
+                    : boardType === 'substitute'
+                      ? '현재 대타 구인 글이 없어요.'
+                      : '첫 게시글을 등록해 보세요.'
                 }
                 actionLabel={isWritable ? '글쓰기' : undefined}
                 onAction={
