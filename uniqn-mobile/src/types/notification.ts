@@ -92,6 +92,20 @@ export const NotificationType = {
   NEW_INQUIRY: 'new_inquiry',
   /** 대회공고 승인 요청 (관리자에게) */
   TOURNAMENT_APPROVAL_REQUEST: 'tournament_approval_request',
+  /**
+   * ⚠️ 아래 EMPLOYER_APP_* / NEW_EMPLOYER_APPLICATION 값은
+   * supabase/migrations/20260416190000_employer_application_notifications.sql 의
+   * 트리거 함수에서 문자열로 하드코딩되어 INSERT됩니다. 값 변경 시 반드시 새
+   * 마이그레이션으로 트리거 함수도 함께 수정해야 합니다.
+   */
+  /** 구인자 신청 접수 (신청자에게) */
+  EMPLOYER_APP_SUBMITTED: 'employer_app_submitted',
+  /** 구인자 신청 승인 (신청자에게) */
+  EMPLOYER_APP_APPROVED: 'employer_app_approved',
+  /** 구인자 신청 거부 (신청자에게) */
+  EMPLOYER_APP_REJECTED: 'employer_app_rejected',
+  /** 새 구인자 신청 접수 (관리자에게) */
+  NEW_EMPLOYER_APPLICATION: 'new_employer_application',
 
   // === 리뷰/평가 관련 ===
   /** 평가 요청 (근무 완료 후 양쪽에게) */
@@ -184,6 +198,10 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.NEW_REPORT]: NotificationCategory.ADMIN,
   [NotificationType.NEW_INQUIRY]: NotificationCategory.ADMIN,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: NotificationCategory.ADMIN,
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: NotificationCategory.SYSTEM,
+  [NotificationType.EMPLOYER_APP_APPROVED]: NotificationCategory.SYSTEM,
+  [NotificationType.EMPLOYER_APP_REJECTED]: NotificationCategory.SYSTEM,
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: NotificationCategory.ADMIN,
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: NotificationCategory.REVIEW,
@@ -251,6 +269,10 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.NEW_REPORT]: 'high',
   [NotificationType.NEW_INQUIRY]: 'normal',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: 'high',
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: 'normal',
+  [NotificationType.EMPLOYER_APP_APPROVED]: 'high',
+  [NotificationType.EMPLOYER_APP_REJECTED]: 'normal',
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: 'high',
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: 'normal',
@@ -418,6 +440,10 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.NEW_REPORT]: AndroidChannelId.DEFAULT,
   [NotificationType.NEW_INQUIRY]: AndroidChannelId.DEFAULT,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: AndroidChannelId.DEFAULT,
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: AndroidChannelId.DEFAULT,
+  [NotificationType.EMPLOYER_APP_APPROVED]: AndroidChannelId.DEFAULT,
+  [NotificationType.EMPLOYER_APP_REJECTED]: AndroidChannelId.DEFAULT,
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: AndroidChannelId.DEFAULT,
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: AndroidChannelId.DEFAULT,
@@ -478,6 +504,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.NEW_REPORT]: '새 신고',
   [NotificationType.NEW_INQUIRY]: '새 문의',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '대회 승인 요청',
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: '구인자 신청 접수',
+  [NotificationType.EMPLOYER_APP_APPROVED]: '구인자 신청 승인',
+  [NotificationType.EMPLOYER_APP_REJECTED]: '구인자 신청 거부',
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: '새 구인자 신청',
 
   // 리뷰/평가 관련
   [NotificationType.REVIEW_REQUEST]: '평가 요청',

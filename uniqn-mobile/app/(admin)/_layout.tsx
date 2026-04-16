@@ -60,6 +60,8 @@ export default function AdminLayout() {
       <Stack.Screen name="announcements/[id]/index" options={{ title: '공지사항 상세' }} />
       <Stack.Screen name="announcements/[id]/edit" options={{ title: '공지사항 수정' }} />
       <Stack.Screen name="tournaments/index" options={{ title: '대회공고 검토' }} />
+      <Stack.Screen name="employer-applications/index" options={{ title: '구인자 신청' }} />
+      <Stack.Screen name="employer-applications/[id]" options={{ title: '구인자 신청 상세' }} />
     </Stack>
   );
 }

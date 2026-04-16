@@ -35,6 +35,7 @@ import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
+import { EmployerApplicationStatusBanner } from '@/components/employer-application';
 
 interface MenuItemProps {
   icon: ReactNode;
@@ -137,6 +138,7 @@ export default function ProfileScreen() {
       <TabHeader title="프로필" showSettings />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
+        {profile?.role === 'staff' && <EmployerApplicationStatusBanner />}
         <Card className="mb-4">
           <Pressable
             onPress={() => router.push('/(app)/settings/profile')}

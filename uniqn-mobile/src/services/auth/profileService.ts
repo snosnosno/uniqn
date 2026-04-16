@@ -7,16 +7,14 @@
 
 import { supabase } from '@/lib/supabase';
 import { invalidateQueries } from '@/lib/queryClient';
-import { userRepository } from '@/repositories';
+import { userRepository, employerApplicationRepository } from '@/repositories';
+import type { RegisterAsEmployerResult } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { isSafeUrl } from '@/utils/security';
-import { setUserProperties } from '@/services/observability/analyticsService';
 import type { EditableProfileFields } from '@/types';
-import type { UserProfile } from './authTypes';
 import { requireCurrentUser } from './authCoreService';
-import type { EmployerRegistrationInput } from '@/repositories/interfaces/IUserRepository';
 
 // ============================================================================
 // Profile Management
@@ -157,17 +155,20 @@ export async function changePassword(currentPassword: string, newPassword: strin
 // ============================================================================
 
 /**
- * 구인자로 등록 (staff → employer 역할 변경)
+ * 구인자 등록 신청 (staff → pending 신청 생성)
  *
  * @description
- * - 본인인증이 완료된 staff만 구인자로 등록 가능
- * - 이용약관 및 서약서 동의 필수
- * - 즉시 승인 (관리자 승인 불필요)
- * - Transaction으로 Race Condition 방지
+ * - 기존: 즉시 role='employer' 변경
+ * - 변경: employer_applications 테이블에 pending 신청 생성 → 관리자 승인 대기
+ * - 본인인증 완료된 staff만 신청 가능 (RPC 내부 검증)
+ * - 이미 pending 신청 있으면 EmployerAppPendingExistsError 발생
  *
- * @returns 업데이트된 프로필 (Timestamp 타입)
+ * @param agreementsSnapshot 약관/서약 동의 스냅샷 (신청 당시 버전 고정)
+ * @returns 신청 결과 (applicationId, status='pending', submittedAt)
  */
-export async function registerAsEmployer(input: EmployerRegistrationInput): Promise<UserProfile> {
+export async function registerAsEmployer(
+  agreementsSnapshot: Record<string, unknown>
+): Promise<RegisterAsEmployerResult> {
   try {
     const {
       data: { user },
@@ -179,23 +180,22 @@ export async function registerAsEmployer(input: EmployerRegistrationInput): Prom
       });
     }
 
-    logger.info('구인자 등록 시도', { uid: user.id });
+    logger.info('구인자 등록 신청', { uid: user.id });
 
-    // Repository를 통한 Transaction 처리
-    const updatedProfile = await userRepository.registerAsEmployer(user.id, input);
+    const result = await employerApplicationRepository.register(agreementsSnapshot);
 
-    logger.info('구인자 등록 성공', { uid: user.id });
+    void invalidateQueries.user();
 
-    // Analytics 이벤트
-    setUserProperties({
-      user_role: 'employer',
+    logger.info('구인자 등록 신청 완료 — 관리자 승인 대기', {
+      uid: user.id,
+      applicationId: result.applicationId,
     });
 
-    return updatedProfile as UserProfile;
+    return result;
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '구인자 등록',
-      component: 'authService',
+      operation: '구인자 등록 신청',
+      component: 'profileService',
     });
   }
 }

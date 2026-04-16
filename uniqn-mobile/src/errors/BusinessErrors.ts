@@ -358,6 +358,118 @@ export class InvalidWorkLogError extends AppError {
 }
 
 // ============================================================================
+// 구인자 등록 신청 관련 에러
+// ============================================================================
+
+/**
+ * 이미 심사 중인 신청 있음 에러
+ */
+export class EmployerAppPendingExistsError extends AppError {
+  constructor(options?: Partial<{ message: string; userMessage: string }>) {
+    super({
+      code: ERROR_CODES.BUSINESS_EMPLOYER_APP_PENDING_EXISTS,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+    });
+    this.name = 'EmployerAppPendingExistsError';
+    Object.setPrototypeOf(this, EmployerAppPendingExistsError.prototype);
+  }
+}
+
+/**
+ * 이미 처리된 신청 에러 (동시성 충돌)
+ */
+export class EmployerAppAlreadyProcessedError extends AppError {
+  constructor(options?: Partial<{ message: string; userMessage: string; applicationId?: string }>) {
+    super({
+      code: ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: { applicationId: options?.applicationId },
+    });
+    this.name = 'EmployerAppAlreadyProcessedError';
+    Object.setPrototypeOf(this, EmployerAppAlreadyProcessedError.prototype);
+  }
+}
+
+/**
+ * 본인 신청 직접 처리 시도 에러
+ */
+export class EmployerAppSelfApproveError extends AppError {
+  constructor(options?: Partial<{ message: string; userMessage: string }>) {
+    super({
+      code: ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+    });
+    this.name = 'EmployerAppSelfApproveError';
+    Object.setPrototypeOf(this, EmployerAppSelfApproveError.prototype);
+  }
+}
+
+/**
+ * 신청 내역 없음 에러
+ */
+export class EmployerAppNotFoundError extends AppError {
+  constructor(options?: Partial<{ message: string; userMessage: string; applicationId?: string }>) {
+    super({
+      code: ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: { applicationId: options?.applicationId },
+    });
+    this.name = 'EmployerAppNotFoundError';
+    Object.setPrototypeOf(this, EmployerAppNotFoundError.prototype);
+  }
+}
+
+// Type Guards — 구인자 등록 신청 관련
+export const isEmployerAppPendingExistsError = (
+  error: unknown
+): error is EmployerAppPendingExistsError => {
+  return (
+    error instanceof EmployerAppPendingExistsError ||
+    hasErrorName(error, 'EmployerAppPendingExistsError')
+  );
+};
+
+export const isEmployerAppAlreadyProcessedError = (
+  error: unknown
+): error is EmployerAppAlreadyProcessedError => {
+  return (
+    error instanceof EmployerAppAlreadyProcessedError ||
+    hasErrorName(error, 'EmployerAppAlreadyProcessedError')
+  );
+};
+
+export const isEmployerAppSelfApproveError = (
+  error: unknown
+): error is EmployerAppSelfApproveError => {
+  return (
+    error instanceof EmployerAppSelfApproveError ||
+    hasErrorName(error, 'EmployerAppSelfApproveError')
+  );
+};
+
+export const isEmployerAppNotFoundError = (error: unknown): error is EmployerAppNotFoundError => {
+  return (
+    error instanceof EmployerAppNotFoundError || hasErrorName(error, 'EmployerAppNotFoundError')
+  );
+};
+
+// ============================================================================
 // Type Guards
 // ============================================================================
 

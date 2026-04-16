@@ -137,6 +137,13 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
   [NotificationType.NEW_INQUIRY]: (data) =>
     data?.inquiryId ? `/admin/inquiries/${data.inquiryId}` : '/admin/inquiries',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: () => '/admin/tournaments',
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: () => '/employer-application-status',
+  [NotificationType.EMPLOYER_APP_APPROVED]: () => '/employer-application-status',
+  [NotificationType.EMPLOYER_APP_REJECTED]: () => '/employer-application-status',
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: (data) =>
+    data?.applicationId
+      ? `/admin/employer-applications/${data.applicationId}`
+      : '/admin/employer-applications',
 
   // === 리뷰/평가 관련 ===
   [NotificationType.REVIEW_REQUEST]: (data) =>

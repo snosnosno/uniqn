@@ -140,6 +140,8 @@ export default function AppLayout() {
             }}
           />
           <Stack.Screen name="settings" />
+          <Stack.Screen name="employer-register" options={{ headerShown: false }} />
+          <Stack.Screen name="employer-application-status" options={{ headerShown: false }} />
           <Stack.Screen
             name="reviews"
             options={{

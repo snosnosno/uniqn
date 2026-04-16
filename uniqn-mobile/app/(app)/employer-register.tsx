@@ -16,7 +16,7 @@ import { Button, Card, Loading } from '@/components';
 import { STATUS_COLORS } from '@/constants/colors';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/authStore';
+import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -106,8 +106,9 @@ function AgreementCheckbox({
 
 export default function EmployerRegisterScreen() {
   const { profile } = useAuth();
-  const setProfile = useAuthStore((state) => state.setProfile);
   const toast = useToast();
+
+  const { data: currentApplication, isLoading: isApplicationLoading } = useEmployerApplication();
 
   // 동의 상태
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -122,12 +123,17 @@ export default function EmployerRegisterScreen() {
   // 모든 동의 완료 여부
   const canSubmit = isVerified && agreeToTerms && agreeToLiability;
 
-  // 이미 구인자인 경우 리다이렉트
+  // 이미 구인자인 경우 또는 pending 신청 중인 경우 리다이렉트
   useEffect(() => {
     if (profile?.role === 'employer' || profile?.role === 'admin') {
       router.replace('/(app)/(tabs)/employer');
+      return;
     }
-  }, [profile?.role]);
+    // pending 중인 신청이 있으면 상태 화면으로 redirect
+    if (!isApplicationLoading && currentApplication?.status === 'pending') {
+      router.replace('/(app)/employer-application-status');
+    }
+  }, [profile?.role, currentApplication?.status, isApplicationLoading]);
 
   // 이용약관 보기 (인앱 화면)
   const handleViewTerms = useCallback(() => {
@@ -139,58 +145,36 @@ export default function EmployerRegisterScreen() {
     router.push('/(app)/settings/liability-waiver');
   }, []);
 
-  // 등록 처리
+  // 등록 신청 처리 (관리자 승인 대기 플로우)
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || isSubmitting) return;
 
     setIsSubmitting(true);
 
     try {
-      // 서비스에서 업데이트된 프로필 반환
-      const updatedProfile = await registerAsEmployer({
+      const now = new Date().toISOString();
+      const agreementsSnapshot = {
         termsVersion: EMPLOYER_TERMS_VERSION,
+        termsAcceptedAt: now,
         liabilityWaiverVersion: EMPLOYER_LIABILITY_WAIVER_VERSION,
-      });
+        liabilityWaiverAcceptedAt: now,
+      };
 
-      // 프로필 저장
-      setProfile({
-        ...updatedProfile,
-        createdAt: updatedProfile.createdAt ?? new Date(),
-        updatedAt: updatedProfile.updatedAt ?? new Date(),
-        identityVerifiedAt: updatedProfile.identityVerifiedAt ?? undefined,
-        identity: updatedProfile.identity
-          ? {
-              ...updatedProfile.identity,
-              verifiedAt: updatedProfile.identity.verifiedAt ?? new Date(),
-            }
-          : undefined,
-        employerAgreements: updatedProfile.employerAgreements
-          ? {
-              termsAgreedAt: updatedProfile.employerAgreements.termsAgreedAt ?? new Date(),
-              liabilityWaiverAgreedAt:
-                updatedProfile.employerAgreements.liabilityWaiverAgreedAt ?? new Date(),
-            }
-          : undefined,
-        employerRegisteredAt: updatedProfile.employerRegisteredAt ?? undefined,
-        bubbleScore: updatedProfile.bubbleScore
-          ? {
-              ...updatedProfile.bubbleScore,
-              lastUpdatedAt: updatedProfile.bubbleScore.lastUpdatedAt ?? new Date(),
-            }
-          : undefined,
-      });
+      await registerAsEmployer(agreementsSnapshot);
 
-      toast.success('구인자로 등록되었습니다');
+      toast.success('구인자 등록 신청이 접수되었습니다. 관리자 승인 후 이용 가능합니다');
 
-      // 내 공고 탭으로 이동
-      router.replace('/(app)/(tabs)/employer');
+      router.replace('/(app)/employer-application-status');
     } catch (error) {
-      logger.error('구인자 등록 실패', error instanceof Error ? error : new Error(String(error)));
-      toast.error(error instanceof Error ? error.message : '구인자 등록에 실패했습니다');
+      logger.error(
+        '구인자 등록 신청 실패',
+        error instanceof Error ? error : new Error(String(error))
+      );
+      toast.error(error instanceof Error ? error.message : '구인자 등록 신청에 실패했습니다');
     } finally {
       setIsSubmitting(false);
     }
-  }, [canSubmit, isSubmitting, setProfile, toast]);
+  }, [canSubmit, isSubmitting, toast]);
 
   // 본인인증 안내 (현재 별도 화면 없음 - 프로필에서 안내)
   // 본인인증 전용 화면 구현 시 경로 변경 필요

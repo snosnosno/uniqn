@@ -48,6 +48,9 @@ export type DeepLinkRoute =
   | { name: 'admin/inquiries' }
   | { name: 'admin/inquiry'; params: { id: string } }
   | { name: 'admin/tournaments' }
+  | { name: 'admin/employer-applications' }
+  | { name: 'admin/employer-application'; params: { id: string } }
+  | { name: 'employer-application-status' }
   | { name: 'reviews/detail'; params: { workLogId: string } }
   | { name: 'reviews/pending' };
 

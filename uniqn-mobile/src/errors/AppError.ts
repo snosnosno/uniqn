@@ -165,6 +165,12 @@ export const ERROR_CODES = {
   BUSINESS_REVIEW_NOT_FOUND: 'E6063',
   BUSINESS_UNAUTHORIZED_REVIEW: 'E6064',
 
+  // 구인자 등록 신청 관련 (E6070~)
+  BUSINESS_EMPLOYER_APP_PENDING_EXISTS: 'E6070', // 이미 심사 중인 신청 있음
+  BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED: 'E6071', // 이미 처리된 신청 (동시성 충돌)
+  BUSINESS_EMPLOYER_APP_SELF_APPROVE: 'E6072', // 본인 신청 직접 처리 시도
+  BUSINESS_EMPLOYER_APP_NOT_FOUND: 'E6073', // 신청 내역 없음
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -258,6 +264,12 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_CANNOT_REVIEW_SELF]: '본인을 평가할 수 없습니다',
   [ERROR_CODES.BUSINESS_REVIEW_NOT_FOUND]: '평가 대상을 찾을 수 없습니다',
   [ERROR_CODES.BUSINESS_UNAUTHORIZED_REVIEW]: '평가 권한이 없습니다',
+
+  // 구인자 등록 신청 관련
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_PENDING_EXISTS]: '이미 심사 중인 구인자 신청이 있습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_ALREADY_PROCESSED]: '다른 관리자가 먼저 처리한 신청입니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_SELF_APPROVE]: '본인 신청을 직접 처리할 수 없습니다',
+  [ERROR_CODES.BUSINESS_EMPLOYER_APP_NOT_FOUND]: '구인자 신청 내역을 찾을 수 없습니다',
 
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',

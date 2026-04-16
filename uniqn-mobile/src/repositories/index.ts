@@ -448,3 +448,19 @@ export const templateRepository = new SupabaseTemplateRepository();
  * Board Repository singleton
  */
 export const boardRepository = new SupabaseBoardRepository();
+
+/**
+ * Employer Application Repository singleton
+ *
+ * @description 구인자 등록 신청 CRUD + RPC (register/approve/reject/getLatest)
+ */
+export { employerApplicationRepository } from './supabase/EmployerApplicationRepository';
+export type {
+  EmployerApplication,
+  EmployerApplicationStatus,
+  EmployerApplicationRejectionCategory,
+  RegisterAsEmployerResult,
+  ApproveRejectResult,
+  FetchApplicationsOptions,
+  FetchApplicationsResult,
+} from './supabase/EmployerApplicationRepository';

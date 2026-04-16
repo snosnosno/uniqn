@@ -13,3 +13,4 @@ export * from './adminService';
 export * from './reportService';
 export * from './tournamentApprovalService';
 export * from './announcementService';
+export * from './employerApplicationService';

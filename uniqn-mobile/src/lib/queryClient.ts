@@ -521,6 +521,16 @@ export const queryKeys = {
   },
 
   // 인앱 메시지
+
+  // 구인자 신청 (Employer Application)
+  employerApplications: {
+    all: ['employerApplications'] as const,
+    myLatest: () => [...queryKeys.employerApplications.all, 'myLatest'] as const,
+    adminList: (status?: string) =>
+      [...queryKeys.employerApplications.all, 'admin', 'list', status] as const,
+    adminDetail: (id: string) =>
+      [...queryKeys.employerApplications.all, 'admin', 'detail', id] as const,
+  },
 } as const;
 
 // ============================================================================
@@ -662,6 +672,9 @@ export const invalidateQueries = {
   boards: () => queryClient.invalidateQueries({ queryKey: queryKeys.boards.all }),
   /** 리뷰/평가 관련 모든 쿼리 무효화 */
   reviews: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all }),
+  /** 구인자 신청 관련 모든 쿼리 무효화 (유저 상태 + admin 목록/상세) */
+  employerApplications: () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.employerApplications.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

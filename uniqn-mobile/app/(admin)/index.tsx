@@ -88,6 +88,14 @@ export default function AdminDashboard() {
       bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
     },
     {
+      title: '구인자 신청',
+      description: '구인자 등록 신청을 검토하고 승인/거부합니다.',
+      icon: PeopleOutlineIcon,
+      iconColor: '#10B981',
+      href: '/(admin)/employer-applications',
+      bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
+    },
+    {
       title: '통계',
       description: '최근 서비스 지표를 확인합니다.',
       icon: RefreshIcon,

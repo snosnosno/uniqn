@@ -92,6 +92,13 @@ export const NOTIFICATION_ROUTE_MAP: Record<
       : { name: 'admin/inquiries' },
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: () => ({ name: 'admin/tournaments' }),
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: () => ({ name: 'admin/dashboard' }),
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: () => ({ name: 'employer-application-status' }),
+  [NotificationType.EMPLOYER_APP_APPROVED]: () => ({ name: 'employer-application-status' }),
+  [NotificationType.EMPLOYER_APP_REJECTED]: () => ({ name: 'employer-application-status' }),
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: (data) =>
+    data?.applicationId
+      ? { name: 'admin/employer-application', params: { id: data.applicationId } }
+      : { name: 'admin/employer-applications' },
 
   [NotificationType.REVIEW_REQUEST]: (data) =>
     data?.workLogId

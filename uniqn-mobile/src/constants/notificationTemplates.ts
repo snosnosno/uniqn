@@ -294,6 +294,35 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '🏆',
   },
 
+  [NotificationType.EMPLOYER_APP_SUBMITTED]: {
+    title: '구인자 신청 접수',
+    body: '구인자 등록 신청이 접수되었습니다. 평균 1-2시간 내 검토 후 결과를 알려드립니다.',
+    link: () => '/employer-application-status',
+    icon: '📋',
+  },
+
+  [NotificationType.EMPLOYER_APP_APPROVED]: {
+    title: '🎉 구인자 신청 승인',
+    body: '구인자 등록 신청이 승인되었습니다. 지금 바로 공고를 등록해보세요!',
+    link: () => '/employer-application-status',
+    icon: '✅',
+  },
+
+  [NotificationType.EMPLOYER_APP_REJECTED]: {
+    title: '구인자 신청 거부',
+    body: (d) =>
+      `구인자 신청이 거부되었습니다.${d.rejectionCategory ? ` 사유: ${d.rejectionCategory}` : ''}`,
+    link: () => '/employer-application-status',
+    icon: '❌',
+  },
+
+  [NotificationType.NEW_EMPLOYER_APPLICATION]: {
+    title: '📋 새 구인자 신청',
+    body: (d) => `새로운 구인자 등록 신청이 접수되었습니다. (신청자 ID: ${d.userId || ''})`,
+    link: (d) => `/admin/employer-applications/${d.applicationId || ''}`,
+    icon: '📋',
+  },
+
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: {
     title: '⚠️ 음수 정산 경고',
     body: (d) => `${d.staffName || '스태프'}님의 정산 금액이 -${d.amount || '0'}원입니다.`,
