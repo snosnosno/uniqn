@@ -7,6 +7,7 @@
 
 import React, { memo, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 import { subDays, addDays, isToday, isYesterday, format, isSameDay } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 
@@ -145,6 +146,7 @@ export const DateSlider = memo(function DateSlider({
   className = '',
 }: DateSliderProps) {
   const scrollRef = useRef<ScrollView>(null);
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   // 날짜 범위 생성 (어제~+14일 = 16일)
   const dates = useMemo(() => {
@@ -222,7 +224,9 @@ export const DateSlider = memo(function DateSlider({
               bottom: 0,
               width: 32,
               // @ts-expect-error — web-only CSS gradient property not in RN types
-              background: 'linear-gradient(to right, transparent, white)',
+              background: isDarkMode
+                ? 'linear-gradient(to right, transparent, #09090B)'
+                : 'linear-gradient(to right, transparent, white)',
             }}
           />
         )}

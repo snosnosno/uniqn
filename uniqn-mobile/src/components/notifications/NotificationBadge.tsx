@@ -22,7 +22,7 @@ export interface NotificationBadgeProps {
 
 const sizeStyles = {
   sm: {
-    container: 'min-w-[16px] h-[14px] px-1',
+    container: 'min-w-[16px] h-[16px] px-1',
     text: 'text-[9px]',
   },
   md: {
