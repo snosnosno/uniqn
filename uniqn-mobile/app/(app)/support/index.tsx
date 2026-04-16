@@ -71,7 +71,7 @@ export default function SupportScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="고객지원" fallbackHref="/(app)/(tabs)/profile" />
+      <StackHeader title="고객센터" fallbackHref="/(app)/(tabs)/profile" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <View className="mb-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">
