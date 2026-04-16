@@ -147,7 +147,7 @@ export function CancellationRequestForm({
             maxLength={500}
             editable={!isSubmitting}
             className={`
-                bg-surface-page rounded-lg p-4
+                bg-surface-page dark:bg-surface-elevated rounded-lg p-4
                 text-content-primary dark:text-off-white text-base font-sans min-h-[140px]
                 ${error ? 'border-2 border-error-500' : 'border border-secondary-200 dark:border-surface-overlay'}
               `}
@@ -161,7 +161,7 @@ export function CancellationRequestForm({
         {/* 대타 구인 게시글 */}
         <Pressable
           onPress={() => setWantsSubstitutePost((prev) => !prev)}
-          className="flex-row items-center bg-surface-page rounded-lg p-4 mt-4"
+          className="flex-row items-center bg-surface-page dark:bg-surface-elevated rounded-lg p-4 mt-4"
           accessibilityRole="checkbox"
           accessibilityState={{ checked: wantsSubstitutePost }}
         >
