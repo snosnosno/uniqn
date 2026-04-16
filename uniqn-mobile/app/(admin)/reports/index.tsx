@@ -17,7 +17,8 @@ import { useState, useMemo, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { STATUS } from '@/constants';
 import { useAdminReports, type ReportFilters } from '@/hooks/useAdminReports';
 import { ReportCard } from '@/components/admin/ReportCard';
@@ -113,30 +114,20 @@ export default function AdminReportsPage() {
   // 로딩 상태
   if (isLoading && !reports) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '신고 관리',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="신고 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   // 에러 상태
   if (error) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '신고 관리',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="신고 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
             title="오류 발생"
@@ -146,169 +137,162 @@ export default function AdminReportsPage() {
             onAction={() => refetch()}
           />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '신고 관리',
-        }}
-      />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
-        {/* 검색바 */}
-        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
-          <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
-            <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="신고자, 피신고자, 공고명 검색"
-              placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="flex-1 ml-2 text-base font-sans text-content-primary dark:text-off-white"
-              returnKeyType="search"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Pressable
-              onPress={() => setShowFilters(!showFilters)}
-              hitSlop={8}
-              accessibilityLabel="필터 토글"
-            >
-              <FilterIcon size={20} color={showFilters ? '#D4AF37' : SECONDARY_PALETTE[400]} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 상태 필터 */}
-        <View className="bg-white dark:bg-surface border-b border-divider">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="px-4 py-2"
-            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+      <StackHeader title="신고 관리" fallbackHref="/(admin)" />
+      {/* 검색바 */}
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
+        <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">
+          <SearchIcon size={20} color={SECONDARY_PALETTE[400]} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="신고자, 피신고자, 공고명 검색"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
+            className="flex-1 ml-2 text-base font-sans text-content-primary dark:text-off-white"
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Pressable
+            onPress={() => setShowFilters(!showFilters)}
+            hitSlop={8}
+            accessibilityLabel="필터 토글"
           >
-            {STATUS_OPTIONS.map((option) => (
+            <FilterIcon size={20} color={showFilters ? '#D4AF37' : SECONDARY_PALETTE[400]} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* 상태 필터 */}
+      <View className="bg-white dark:bg-surface border-b border-divider">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="px-4 py-2"
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <Pressable
+              key={option.value}
+              onPress={() => handleStatusFilter(option.value)}
+              className={`px-4 py-2 rounded-sm ${
+                filters.status === option.value
+                  ? 'bg-primary-600'
+                  : 'bg-secondary-200 dark:bg-surface'
+              }`}
+            >
+              <Text
+                className={`text-sm font-sans-medium ${
+                  filters.status === option.value
+                    ? 'text-surface-dark'
+                    : 'text-secondary-700 dark:text-secondary-300'
+                }`}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* 확장 필터 패널 */}
+      {showFilters && (
+        <View className="px-4 py-3 bg-surface-page border-b border-divider">
+          {/* 심각도 필터 */}
+          <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
+            심각도
+          </Text>
+          <View className="flex-row flex-wrap gap-2 mb-3">
+            {SEVERITY_OPTIONS.map((option) => (
               <Pressable
                 key={option.value}
-                onPress={() => handleStatusFilter(option.value)}
-                className={`px-4 py-2 rounded-sm ${
-                  filters.status === option.value
+                onPress={() => handleSeverityFilter(option.value)}
+                className={`px-3 py-1.5 rounded-sm ${
+                  filters.severity === option.value
                     ? 'bg-primary-600'
                     : 'bg-secondary-200 dark:bg-surface'
                 }`}
               >
                 <Text
-                  className={`text-sm font-sans-medium ${
-                    filters.status === option.value
+                  className={`text-xs font-sans-medium ${
+                    filters.severity === option.value
                       ? 'text-surface-dark'
-                      : 'text-secondary-700 dark:text-secondary-300'
+                      : 'text-secondary-600 dark:text-secondary-300'
                   }`}
                 >
                   {option.label}
                 </Text>
               </Pressable>
             ))}
-          </ScrollView>
-        </View>
-
-        {/* 확장 필터 패널 */}
-        {showFilters && (
-          <View className="px-4 py-3 bg-surface-page border-b border-divider">
-            {/* 심각도 필터 */}
-            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-              심각도
-            </Text>
-            <View className="flex-row flex-wrap gap-2 mb-3">
-              {SEVERITY_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => handleSeverityFilter(option.value)}
-                  className={`px-3 py-1.5 rounded-sm ${
-                    filters.severity === option.value
-                      ? 'bg-primary-600'
-                      : 'bg-secondary-200 dark:bg-surface'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-sans-medium ${
-                      filters.severity === option.value
-                        ? 'text-surface-dark'
-                        : 'text-secondary-600 dark:text-secondary-300'
-                    }`}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* 신고자 유형 필터 */}
-            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-              신고자 유형
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {[
-                { value: 'all' as const, label: '전체' },
-                { value: 'employer' as const, label: '구인자 → 스태프' },
-                { value: 'employee' as const, label: '구직자 → 구인자' },
-              ].map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => handleReporterTypeFilter(option.value)}
-                  className={`px-3 py-1.5 rounded-sm ${
-                    filters.reporterType === option.value
-                      ? 'bg-primary-600'
-                      : 'bg-secondary-200 dark:bg-surface'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-sans-medium ${
-                      filters.reporterType === option.value
-                        ? 'text-surface-dark'
-                        : 'text-secondary-600 dark:text-secondary-300'
-                    }`}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
-        )}
 
-        {/* 결과 개수 */}
-        <View className="px-4 py-2">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            총 {filteredReports.length}건의 신고
+          {/* 신고자 유형 필터 */}
+          <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
+            신고자 유형
           </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {[
+              { value: 'all' as const, label: '전체' },
+              { value: 'employer' as const, label: '구인자 → 스태프' },
+              { value: 'employee' as const, label: '구직자 → 구인자' },
+            ].map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => handleReporterTypeFilter(option.value)}
+                className={`px-3 py-1.5 rounded-sm ${
+                  filters.reporterType === option.value
+                    ? 'bg-primary-600'
+                    : 'bg-secondary-200 dark:bg-surface'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-sans-medium ${
+                    filters.reporterType === option.value
+                      ? 'text-surface-dark'
+                      : 'text-secondary-600 dark:text-secondary-300'
+                  }`}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
+      )}
 
-        {/* 신고 목록 */}
-        <FlashList
-          data={filteredReports}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
-          estimatedItemSize={140}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-20">
-              <AlertTriangleIcon size={48} color={SECONDARY_PALETTE[400]} />
-              <Text className="text-lg font-sans-medium text-content-primary dark:text-off-white mt-4">
-                신고 없음
-              </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center font-sans">
-                해당 조건의 신고가 없습니다.
-              </Text>
-            </View>
-          }
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
-        />
-      </SafeAreaView>
-    </>
+      {/* 결과 개수 */}
+      <View className="px-4 py-2">
+        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          총 {filteredReports.length}건의 신고
+        </Text>
+      </View>
+
+      {/* 신고 목록 */}
+      <FlashList
+        data={filteredReports}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+        estimatedItemSize={140}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+        ListEmptyComponent={
+          <View className="flex-1 items-center justify-center py-20">
+            <AlertTriangleIcon size={48} color={SECONDARY_PALETTE[400]} />
+            <Text className="text-lg font-sans-medium text-content-primary dark:text-off-white mt-4">
+              신고 없음
+            </Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-1 text-center font-sans">
+              해당 조건의 신고가 없습니다.
+            </Text>
+          </View>
+        }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+      />
+    </SafeAreaView>
   );
 }

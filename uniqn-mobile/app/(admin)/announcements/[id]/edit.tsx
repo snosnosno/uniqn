@@ -5,7 +5,9 @@
  */
 
 import { View, ActivityIndicator, Text, Pressable } from 'react-native';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { AlertCircleOutlineIcon } from '@/components/icons';
 import { useAnnouncementDetail, useUpdateAnnouncement } from '@/hooks/useAnnouncement';
 import { AnnouncementForm } from '@/components/admin/announcements';
@@ -33,21 +35,23 @@ export default function EditAnnouncementPage() {
     router.back();
   };
 
+  const fallbackHref = `/(admin)/announcements/${id}`;
+
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen options={{ title: '공지사항 수정' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   if (error || !announcement) {
     return (
-      <>
-        <Stack.Screen options={{ title: '공지사항 수정' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
         <View className="flex-1 bg-surface-page items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#DC2626" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
@@ -60,19 +64,13 @@ export default function EditAnnouncementPage() {
             <Text className="text-surface-dark font-sans-medium">돌아가기</Text>
           </Pressable>
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: '공지사항 수정',
-          headerBackTitle: '취소',
-        }}
-      />
-
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
       <View className="flex-1 bg-surface-page">
         <AnnouncementForm
           initialData={{
@@ -92,6 +90,6 @@ export default function EditAnnouncementPage() {
           submitLabel="수정"
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 }

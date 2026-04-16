@@ -9,6 +9,7 @@ import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
+import { StackHeader } from '@/components/headers';
 import { EmptyState } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
 import { useAllInquiries, useUnansweredCount } from '@/hooks/useInquiry';
@@ -80,7 +81,8 @@ export default function AdminInquiriesScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="문의 관리" fallbackHref="/(admin)" />
       {/* 통계 */}
       <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
         <View className="flex-row items-center justify-between">

@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS_COLORS } from '@/constants/colors';
 import { Link } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import {
   ChatbubbleEllipsesOutlineIcon,
   DocumentTextOutlineIcon,
@@ -114,25 +116,28 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-surface-page">
-      <View className="p-4">
-        <View className="mb-6">
-          <Text className="mb-1 text-2xl font-display text-content-primary dark:text-off-white">
-            관리자
-          </Text>
-          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
-            주요 운영 화면을 한 곳에서 빠르게 확인합니다.
-          </Text>
-        </View>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="관리자" fallbackHref="/(app)/(tabs)" />
+      <ScrollView className="flex-1 bg-surface-page">
+        <View className="p-4">
+          <View className="mb-6">
+            <Text className="mb-1 text-2xl font-display text-content-primary dark:text-off-white">
+              관리자
+            </Text>
+            <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+              주요 운영 화면을 한 곳에서 빠르게 확인합니다.
+            </Text>
+          </View>
 
-        <View className="flex-row flex-wrap gap-3">
-          {menuItems.map((item) => (
-            <View key={item.title} className="w-[48%]">
-              <DashboardCard {...item} />
-            </View>
-          ))}
+          <View className="flex-row flex-wrap gap-3">
+            {menuItems.map((item) => (
+              <View key={item.title} className="w-[48%]">
+                <DashboardCard {...item} />
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

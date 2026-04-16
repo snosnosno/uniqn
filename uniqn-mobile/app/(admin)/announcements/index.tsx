@@ -7,8 +7,10 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
+import { StackHeader } from '@/components/headers';
 import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icons';
 import { useAllAnnouncements, useAnnouncementStats } from '@/hooks/useAnnouncement';
 import { AnnouncementCard } from '@/components/admin/announcements';
@@ -86,17 +88,15 @@ export default function AdminAnnouncementsPage() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: '공지사항 관리',
-          headerBackTitle: '뒤로',
-          headerRight: () => (
-            <Pressable onPress={handleCreate} className="mr-2">
-              <AddCircleOutlineIcon size={24} color="#B8962E" />
-            </Pressable>
-          ),
-        }}
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader
+        title="공지사항 관리"
+        fallbackHref="/(admin)"
+        rightAction={
+          <Pressable onPress={handleCreate} accessibilityLabel="공지사항 작성" hitSlop={8}>
+            <AddCircleOutlineIcon size={24} color="#B8962E" />
+          </Pressable>
+        }
       />
 
       <View className="flex-1 bg-surface-page">
@@ -195,6 +195,6 @@ export default function AdminAnnouncementsPage() {
           </View>
         )}
       </View>
-    </>
+    </SafeAreaView>
   );
 }

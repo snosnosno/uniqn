@@ -2,7 +2,8 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { FlagOutlineIcon, SearchIcon } from '@/components/icons';
 import { Card, EmptyState, Loading } from '@/components/ui';
 import { useAdminBoardReports } from '@/hooks/useAdminBoardReports';
@@ -142,19 +143,19 @@ export default function AdminBoardReportsPage() {
 
   if (isLoading && !data) {
     return (
-      <>
-        <Stack.Screen options={{ title: '게시판 신고' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Stack.Screen options={{ title: '게시판 신고' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
             title="게시판 신고를 불러오지 못했습니다"
@@ -164,86 +165,82 @@ export default function AdminBoardReportsPage() {
             onAction={() => refetch()}
           />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: '게시판 신고' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
-        <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
-          <View className="flex-row items-center rounded-lg bg-surface-card px-3 py-2 dark:bg-surface-elevated">
-            <SearchIcon size={18} color={SECONDARY_PALETTE[400]} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="사유, 신고자, 게시글 검색"
-              placeholderTextColor={SECONDARY_PALETTE[400]}
-              className="ml-2 flex-1 text-base font-sans text-content-primary dark:text-off-white"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+      <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
+      <View className="border-b border-secondary-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
+        <View className="flex-row items-center rounded-lg bg-surface-card px-3 py-2 dark:bg-surface-elevated">
+          <SearchIcon size={18} color={SECONDARY_PALETTE[400]} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="사유, 신고자, 게시글 검색"
+            placeholderTextColor={SECONDARY_PALETTE[400]}
+            className="ml-2 flex-1 text-base font-sans text-content-primary dark:text-off-white"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </View>
+      </View>
 
-        <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="px-4 py-2"
-            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
-          >
-            {STATUS_OPTIONS.map((option) => {
-              const isSelected = option.value === status;
+      <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="px-4 py-2"
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
+          {STATUS_OPTIONS.map((option) => {
+            const isSelected = option.value === status;
 
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setStatus(option.value)}
-                  className={`rounded-sm px-4 py-2 ${
-                    isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => setStatus(option.value)}
+                className={`rounded-sm px-4 py-2 ${
+                  isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-sans-medium ${
+                    isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
-                  <Text
-                    className={`text-sm font-sans-medium ${
-                      isSelected
-                        ? 'text-surface-dark'
-                        : 'text-secondary-700 dark:text-secondary-300'
-                    }`}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
-        >
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            총 {filteredReports.length}건
-          </Text>
-
-          {filteredReports.length === 0 ? (
-            <View className="py-20">
-              <EmptyState
-                title="게시판 신고가 없습니다"
-                description="현재 조건에 맞는 신고가 없습니다."
-                icon={<FlagOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
-              />
-            </View>
-          ) : (
-            filteredReports.map((record) => (
-              <BoardReportCard key={record.report.id} record={record} />
-            ))
-          )}
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
-      </SafeAreaView>
-    </>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+      >
+        <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          총 {filteredReports.length}건
+        </Text>
+
+        {filteredReports.length === 0 ? (
+          <View className="py-20">
+            <EmptyState
+              title="게시판 신고가 없습니다"
+              description="현재 조건에 맞는 신고가 없습니다."
+              icon={<FlagOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
+            />
+          </View>
+        ) : (
+          filteredReports.map((record) => (
+            <BoardReportCard key={record.report.id} record={record} />
+          ))
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

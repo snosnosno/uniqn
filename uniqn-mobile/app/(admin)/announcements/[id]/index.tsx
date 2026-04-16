@@ -7,8 +7,10 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import {
   AlertCircleOutlineIcon,
   ArchiveOutlineIcon,
@@ -106,19 +108,19 @@ export default function AnnouncementDetailPage() {
 
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen options={{ title: '공지사항 상세' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   if (error || !announcement) {
     return (
-      <>
-        <Stack.Screen options={{ title: '공지사항 상세' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#DC2626" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
@@ -131,7 +133,7 @@ export default function AnnouncementDetailPage() {
             <Text className="text-surface-dark font-sans-medium">돌아가기</Text>
           </Pressable>
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
@@ -140,17 +142,15 @@ export default function AnnouncementDetailPage() {
   const categoryLabel = ANNOUNCEMENT_CATEGORY_LABELS[announcement.category];
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: '공지사항 상세',
-          headerBackTitle: '목록',
-          headerRight: () => (
-            <Pressable onPress={handleEdit} className="mr-2">
-              <CreateOutlineIcon size={24} color="#B8962E" />
-            </Pressable>
-          ),
-        }}
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader
+        title="공지사항 상세"
+        fallbackHref="/(admin)/announcements"
+        rightAction={
+          <Pressable onPress={handleEdit} accessibilityLabel="공지사항 수정" hitSlop={8}>
+            <CreateOutlineIcon size={24} color="#B8962E" />
+          </Pressable>
+        }
       />
 
       <ScrollView className="flex-1 bg-surface-page">
@@ -407,6 +407,6 @@ export default function AnnouncementDetailPage() {
           </View>
         </View>
       </ScrollView>
-    </>
+    </SafeAreaView>
   );
 }

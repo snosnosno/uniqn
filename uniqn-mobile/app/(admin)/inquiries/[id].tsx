@@ -8,6 +8,7 @@ import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { Card } from '@/components/ui';
 import { InquiryStatusBadge, InquiryResponseForm } from '@/components/support';
 import { useInquiryDetail, useRespondInquiry } from '@/hooks/useInquiry';
@@ -41,18 +42,24 @@ export default function AdminInquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
-        <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+        </View>
       </SafeAreaView>
     );
   }
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
-        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
-          문의를 찾을 수 없습니다
-        </Text>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+            문의를 찾을 수 없습니다
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -61,7 +68,8 @@ export default function AdminInquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
