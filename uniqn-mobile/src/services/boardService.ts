@@ -1768,6 +1768,39 @@ export async function createSubstitutePost(input: CreateSubstitutePostInput): Pr
   }
 }
 
+export async function archiveSubstitutePostByLinkedPosting(
+  linkedJobPostingId: string,
+  authorId: string
+): Promise<void> {
+  try {
+    const posts = await boardRepository.getPosts({
+      boardTypes: ['substitute'],
+      statuses: ['active'],
+      linkedJobPostingId,
+      authorId,
+      limitCount: 10,
+    });
+
+    for (const post of posts) {
+      await boardRepository.setPostStatus(post.id, 'archived');
+    }
+
+    if (posts.length > 0) {
+      logger.info('Substitute posts archived on cancellation rejection', {
+        count: posts.length,
+        linkedJobPostingId,
+        authorId,
+      });
+    }
+  } catch (error) {
+    logger.warn('Failed to archive substitute posts (non-blocking)', {
+      linkedJobPostingId,
+      authorId,
+      error,
+    });
+  }
+}
+
 export const boardService = {
   fetchBoardPosts,
   getBoardHomeData,
@@ -1776,6 +1809,7 @@ export const boardService = {
   incrementBoardPostViewCount,
   createBoardPost,
   createSubstitutePost,
+  archiveSubstitutePostByLinkedPosting,
   updateBoardPost,
   setBoardPostLock,
   hideBoardPost,

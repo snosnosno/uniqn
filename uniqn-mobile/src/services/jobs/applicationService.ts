@@ -21,7 +21,10 @@ import type {
   ReviewCancellationInput,
 } from '@/types';
 import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
-import { createSubstitutePost } from '@/services/boardService';
+import {
+  archiveSubstitutePostByLinkedPosting,
+  createSubstitutePost,
+} from '@/services/boardService';
 
 export type { ApplicationWithJob } from '@/repositories';
 
@@ -277,6 +280,23 @@ export async function reviewCancellationRequest(
       applicationId: input.applicationId,
       approved: input.approved,
     });
+
+    if (!input.approved) {
+      try {
+        const application = await applicationRepository.getById(input.applicationId);
+        if (application) {
+          await archiveSubstitutePostByLinkedPosting(
+            application.jobPostingId,
+            application.applicantId
+          );
+        }
+      } catch (archiveError) {
+        logger.warn('Substitute post archive failed (non-blocking)', {
+          applicationId: input.applicationId,
+          error: archiveError,
+        });
+      }
+    }
 
     trace.putAttribute('status', 'success');
     trace.stop();
