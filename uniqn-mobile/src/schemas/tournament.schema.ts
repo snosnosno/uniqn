@@ -48,7 +48,7 @@ export const rejectionReasonSchema = z
  * 승인 요청 스키마
  */
 export const approveTournamentSchema = z.object({
-  postingId: z.string().min(1, '공고 ID가 필요합니다'),
+  jobPostingId: z.string().min(1, '공고 ID가 필요합니다'),
 });
 
 export type ApproveTournamentData = z.infer<typeof approveTournamentSchema>;
@@ -57,7 +57,7 @@ export type ApproveTournamentData = z.infer<typeof approveTournamentSchema>;
  * 거부 요청 스키마
  */
 export const rejectTournamentSchema = z.object({
-  postingId: z.string().min(1, '공고 ID가 필요합니다'),
+  jobPostingId: z.string().min(1, '공고 ID가 필요합니다'),
   reason: rejectionReasonSchema,
 });
 
@@ -67,7 +67,7 @@ export type RejectTournamentData = z.infer<typeof rejectTournamentSchema>;
  * 재제출 요청 스키마
  */
 export const resubmitTournamentSchema = z.object({
-  postingId: z.string().min(1, '공고 ID가 필요합니다'),
+  jobPostingId: z.string().min(1, '공고 ID가 필요합니다'),
 });
 
 export type ResubmitTournamentData = z.infer<typeof resubmitTournamentSchema>;

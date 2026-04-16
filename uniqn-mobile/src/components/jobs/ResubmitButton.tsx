@@ -17,7 +17,7 @@ import { useTournamentApproval } from '@/hooks/useTournamentApproval';
 
 interface ResubmitButtonProps {
   /** 공고 ID */
-  postingId: string;
+  jobPostingId: string;
   /** 버튼 크기 */
   size?: 'sm' | 'md' | 'lg';
   /** 전체 너비 사용 */
@@ -33,7 +33,7 @@ interface ResubmitButtonProps {
 // ============================================================================
 
 export function ResubmitButton({
-  postingId,
+  jobPostingId,
   size = 'md',
   fullWidth = false,
   onSuccess,
@@ -71,7 +71,7 @@ export function ResubmitButton({
   // 재제출 확인
   const handleConfirm = useCallback(() => {
     resubmit
-      .mutateAsync({ postingId })
+      .mutateAsync({ jobPostingId })
       .then(() => {
         setShowConfirmModal(false);
         onSuccess?.();
@@ -80,7 +80,7 @@ export function ResubmitButton({
         // 에러는 useTournamentApproval에서 토스트로 처리됨
         setShowConfirmModal(false);
       });
-  }, [postingId, resubmit, onSuccess]);
+  }, [jobPostingId, resubmit, onSuccess]);
 
   // 모달 닫기
   const handleClose = useCallback(() => {
