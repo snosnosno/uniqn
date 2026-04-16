@@ -1,7 +1,9 @@
 import type { UserProfile } from '@/types';
+import { featureFlags } from '@/config/featureFlags';
 
 export const AUTH_ENTRY_ROUTES = {
   appTabs: '/(app)/(tabs)',
+  appHome: (featureFlags.home_dashboard_enabled ? '/(app)/home' : '/(app)/(tabs)') as string,
   signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
   profileSetup: '/(app)/profile-setup',
@@ -69,7 +71,7 @@ export function appendRedirectToRoute(route: string, redirect?: string | null): 
     return route;
   }
 
-  if (route === AUTH_ENTRY_ROUTES.appTabs) {
+  if (route === AUTH_ENTRY_ROUTES.appTabs || route === AUTH_ENTRY_ROUTES.appHome) {
     return normalizedRedirect;
   }
 
@@ -92,7 +94,7 @@ export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams
     return AUTH_ENTRY_ROUTES.profileSetup;
   }
 
-  return AUTH_ENTRY_ROUTES.appTabs;
+  return AUTH_ENTRY_ROUTES.appHome as AuthEntryRoute;
 }
 
 export function getResolvedAuthenticatedRoute(params: ResolvedAuthenticatedRouteParams): string {

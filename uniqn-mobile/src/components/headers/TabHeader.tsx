@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { BellIcon, QrCodeIcon, SettingsIcon } from '@/components/icons';
 import { NotificationBadge } from '@/components/notifications';
 import { getIconColor, getLayoutColor, HEADER_CLASSES } from '@/constants';
@@ -27,17 +27,46 @@ export function TabHeader({
   const headerBackgroundColor = getLayoutColor(isDarkMode, 'header');
   const headerTintColor = getLayoutColor(isDarkMode, 'headerTint');
   const actionColor = getIconColor(isDarkMode, 'primary');
+  const pathname = usePathname();
+
+  const handleLogoPress = () => {
+    if (pathname === '/(app)/home') {
+      return;
+    }
+    router.push('/(app)/home');
+  };
 
   return (
     <View
-      className="flex-row items-center justify-between px-4 py-3"
+      className="h-12 flex-row items-center px-4"
       style={{ backgroundColor: headerBackgroundColor }}
     >
-      <Text className="text-xl font-display" style={{ color: headerTintColor }}>
-        {title}
-      </Text>
+      {/* 중앙 로고 (absolute — 항상 화면 정중앙) */}
+      <Pressable
+        onPress={handleLogoPress}
+        hitSlop={8}
+        className={`absolute left-0 right-0 items-center ${HEADER_CLASSES.actionPressed}`}
+        accessibilityRole="button"
+        accessibilityLabel="UNIQN 홈으로 이동"
+      >
+        <Text className="font-display text-lg font-bold" style={{ color: '#D4AF37' }}>
+          UNIQN
+        </Text>
+      </Pressable>
 
-      <View className="flex-row items-center gap-2">
+      {/* 좌: 탭 제목 */}
+      <View className="flex-1 items-start" style={{ paddingRight: 60 }}>
+        <Text
+          className={`text-base font-semibold ${HEADER_CLASSES.title}`}
+          numberOfLines={1}
+          style={{ color: headerTintColor }}
+        >
+          {title}
+        </Text>
+      </View>
+
+      {/* 우: actions */}
+      <View className="flex-1 flex-row items-center justify-end" style={{ paddingLeft: 60 }}>
         {rightAction}
 
         {showQR ? (

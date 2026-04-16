@@ -27,24 +27,24 @@ describe('getAuthenticatedEntryRoute', () => {
     ).toBe(AUTH_ENTRY_ROUTES.profileSetup);
   });
 
-  it('routes completed users to app tabs', () => {
+  it('routes completed users to app home', () => {
     expect(
       getAuthenticatedEntryRoute({
         socialProvider: 'apple',
         phoneVerified: true,
         profileCompleted: true,
       })
-    ).toBe(AUTH_ENTRY_ROUTES.appTabs);
+    ).toBe(AUTH_ENTRY_ROUTES.appHome);
   });
 
-  it('treats legacy users without profileCompleted as ready for app tabs', () => {
+  it('treats legacy users without profileCompleted as ready for app home', () => {
     expect(
       getAuthenticatedEntryRoute({
         socialProvider: null,
         phoneVerified: null,
         profileCompleted: null,
       })
-    ).toBe(AUTH_ENTRY_ROUTES.appTabs);
+    ).toBe(AUTH_ENTRY_ROUTES.appHome);
   });
 });
 
@@ -99,5 +99,29 @@ describe('getResolvedAuthenticatedRoute', () => {
         redirect: '/(app)/jobs/123/apply',
       })
     ).toBe('/(app)/jobs/123/apply');
+  });
+});
+
+describe('AUTH_ENTRY_ROUTES.appHome with feature flag', () => {
+  afterEach(() => {
+    jest.resetModules();
+  });
+
+  it('returns home route when flag is enabled', () => {
+    jest.mock('@/config/featureFlags', () => ({
+      featureFlags: { home_dashboard_enabled: true },
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AUTH_ENTRY_ROUTES } = require('../authRedirect') as typeof import('../authRedirect');
+    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/home');
+  });
+
+  it('returns legacy tabs route when flag is disabled', () => {
+    jest.mock('@/config/featureFlags', () => ({
+      featureFlags: { home_dashboard_enabled: false },
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AUTH_ENTRY_ROUTES } = require('../authRedirect') as typeof import('../authRedirect');
+    expect(AUTH_ENTRY_ROUTES.appHome).toBe('/(app)/(tabs)');
   });
 });

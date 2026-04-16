@@ -46,8 +46,9 @@ jest.mock('@/hooks/useNotificationHandler', () => ({
 jest.mock('@/shared/navigation/authRedirect', () => ({
   AUTH_ENTRY_ROUTES: {
     appTabs: 'appTabs',
+    appHome: 'appHome',
   },
-  getAuthenticatedEntryRoute: () => 'appTabs',
+  getAuthenticatedEntryRoute: () => 'appHome',
 }));
 
 jest.mock('@/stores/authStore', () => ({
