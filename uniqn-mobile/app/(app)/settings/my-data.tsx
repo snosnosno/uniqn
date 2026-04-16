@@ -6,10 +6,10 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { SURFACE_COLORS, PRIMARY_COLORS } from '@/constants/colors';
+import { PRIMARY_COLORS } from '@/constants/colors';
 import { View, Text, ScrollView, Share, ActivityIndicator, Pressable } from 'react-native';
-import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackHeader } from '@/components/headers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -176,17 +176,8 @@ export default function MyDataScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '내 정보',
-            headerStyle: {
-              backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
-            },
-            headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="내 정보" fallbackHref="/(app)/settings" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator
             size="large"
@@ -201,17 +192,8 @@ export default function MyDataScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '내 정보',
-          headerStyle: {
-            backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
-          },
-          headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="내 정보" fallbackHref="/(app)/settings" />
 
       <ScrollView
         className="flex-1"

@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { StackHeader } from '@/components/headers';
 import { Card, Loading } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,7 +38,8 @@ export default function ProfileEditScreen() {
   // profile이 로드될 때까지 로딩 표시
   if (isLoading || !profile) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="프로필 수정" fallbackHref="/(app)/settings" />
         <Loading />
       </SafeAreaView>
     );
@@ -206,7 +208,8 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="프로필 수정" fallbackHref="/(app)/settings" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

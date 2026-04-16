@@ -11,14 +11,14 @@
 
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { SURFACE_COLORS } from '@/constants/colors';
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackHeader } from '@/components/headers';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
+import { useAuthStore, useToastStore } from '@/stores';
 import {
   requestAccountDeletion,
   retryAppleTokenRevocation,
@@ -81,7 +81,6 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
 }
 
 export default function DeleteAccountScreen() {
-  const { isDarkMode } = useThemeStore();
   useAuthStore(); // Auth state check
   const { addToast } = useToastStore();
 
@@ -217,17 +216,8 @@ export default function DeleteAccountScreen() {
   const canSubmit = selectedReason && (isAppleUser || password.length >= 8);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '회원탈퇴',
-          headerStyle: {
-            backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
-          },
-          headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="회원탈퇴" fallbackHref="/(app)/settings" />
 
       <ScrollView
         className="flex-1"
