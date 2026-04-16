@@ -111,6 +111,10 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
   [NotificationType.JOB_CANCELLED]: () => '/schedule',
   [NotificationType.JOB_CLOSED]: (data) =>
     data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
+  [NotificationType.FIXED_POSTING_EXPIRED]: (data) =>
+    data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
+  [NotificationType.WORK_DATE_EXPIRED]: (data) =>
+    data?.jobPostingId ? `/jobs/${data.jobPostingId}` : '/jobs',
 
   // === 시스템 ===
   [NotificationType.ANNOUNCEMENT]: (data) =>

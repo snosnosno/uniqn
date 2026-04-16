@@ -66,13 +66,13 @@ export type UpdateType = 'none' | 'optional' | 'recommended' | 'required';
 
 /**
  * 업데이트 정책 설정
- * 이 값들은 Firebase Remote Config로 동적 관리 가능
+ * 이 값들은 원격 설정 시스템으로 동적 관리 예정
  */
 export const UPDATE_POLICY = {
   /**
    * 강제 업데이트 필요 최소 버전
    * 이 버전보다 낮으면 앱 사용 불가
-   * 출시 후: Firebase Remote Config에서 동적 관리 가능
+   * 출시 후: 원격 설정 시스템에서 동적 관리 예정
    * @see featureFlagService.ts
    */
   MINIMUM_VERSION: '1.0.0',
@@ -80,7 +80,7 @@ export const UPDATE_POLICY = {
   /**
    * 권장 업데이트 버전
    * 이 버전보다 낮으면 업데이트 권장 팝업 표시
-   * 출시 후: Firebase Remote Config에서 동적 관리 가능
+   * 출시 후: 원격 설정 시스템에서 동적 관리 예정
    * @see featureFlagService.ts
    */
   RECOMMENDED_VERSION: '1.0.0',

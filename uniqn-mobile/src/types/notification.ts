@@ -68,6 +68,10 @@ export const NotificationType = {
   JOB_CANCELLED: 'job_cancelled',
   /** 공고 마감됨 */
   JOB_CLOSED: 'job_closed',
+  /** 고정 공고 만료 (작성자에게) */
+  FIXED_POSTING_EXPIRED: 'fixed_posting_expired',
+  /** 근무일 경과 자동 마감 (작성자에게) */
+  WORK_DATE_EXPIRED: 'work_date_expired',
 
   // === 시스템 ===
   /** 공지사항 */
@@ -182,6 +186,8 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.JOB_UPDATED]: NotificationCategory.JOB,
   [NotificationType.JOB_CANCELLED]: NotificationCategory.JOB,
   [NotificationType.JOB_CLOSED]: NotificationCategory.JOB,
+  [NotificationType.FIXED_POSTING_EXPIRED]: NotificationCategory.JOB,
+  [NotificationType.WORK_DATE_EXPIRED]: NotificationCategory.JOB,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
@@ -253,6 +259,8 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.JOB_UPDATED]: 'low',
   [NotificationType.JOB_CANCELLED]: 'high',
   [NotificationType.JOB_CLOSED]: 'normal',
+  [NotificationType.FIXED_POSTING_EXPIRED]: 'normal',
+  [NotificationType.WORK_DATE_EXPIRED]: 'normal',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: 'normal',
@@ -424,6 +432,8 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.JOB_UPDATED]: AndroidChannelId.ANNOUNCEMENTS,
   [NotificationType.JOB_CANCELLED]: AndroidChannelId.ANNOUNCEMENTS,
   [NotificationType.JOB_CLOSED]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.FIXED_POSTING_EXPIRED]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.WORK_DATE_EXPIRED]: AndroidChannelId.ANNOUNCEMENTS,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
@@ -488,6 +498,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.JOB_UPDATED]: '공고 수정',
   [NotificationType.JOB_CANCELLED]: '공고 취소',
   [NotificationType.JOB_CLOSED]: '공고 마감',
+  [NotificationType.FIXED_POSTING_EXPIRED]: '고정 공고 만료',
+  [NotificationType.WORK_DATE_EXPIRED]: '근무일 경과 마감',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '공지사항',

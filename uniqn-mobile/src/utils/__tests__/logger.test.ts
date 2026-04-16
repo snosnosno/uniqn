@@ -7,7 +7,7 @@
  * - logger.group, logger.groupEnd, logger.table
  * - logger.appError
  * - logger.network
- * - logger.firebase
+ * - logger.supabase
  */
 
 // Mock @/config/env before importing logger
@@ -323,27 +323,27 @@ describe('logger', () => {
   });
 
   // ===========================================================================
-  // firebase
+  // supabase
   // ===========================================================================
-  describe('firebase', () => {
-    it('should log Firebase operations at debug level', () => {
-      logger.firebase('read', 'jobPostings', 'job-1');
+  describe('supabase', () => {
+    it('should log Supabase operations at debug level', () => {
+      logger.supabase('read', 'jobPostings', 'job-1');
 
       expect(consoleDebugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Firebase] READ jobPostings/job-1')
+        expect.stringContaining('[Supabase] READ jobPostings/job-1')
       );
     });
 
     it('should handle operation without docId', () => {
-      logger.firebase('query', 'applications');
+      logger.supabase('query', 'applications');
 
       expect(consoleDebugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Firebase] QUERY applications')
+        expect.stringContaining('[Supabase] QUERY applications')
       );
     });
 
     it('should include context when provided', () => {
-      logger.firebase('write', 'workLogs', 'wl-1', { action: 'checkIn' });
+      logger.supabase('write', 'workLogs', 'wl-1', { action: 'checkIn' });
 
       expect(consoleDebugSpy).toHaveBeenCalledWith(expect.stringContaining('checkIn'));
     });
@@ -352,9 +352,9 @@ describe('logger', () => {
       const operations = ['read', 'write', 'delete', 'query', 'auth', 'storage'] as const;
 
       for (const op of operations) {
-        logger.firebase(op, 'testCollection');
+        logger.supabase(op, 'testCollection');
         expect(consoleDebugSpy).toHaveBeenCalledWith(
-          expect.stringContaining(`[Firebase] ${op.toUpperCase()} testCollection`)
+          expect.stringContaining(`[Supabase] ${op.toUpperCase()} testCollection`)
         );
       }
     });

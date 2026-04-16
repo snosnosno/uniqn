@@ -4,7 +4,7 @@
  * @description 환경별 설정 및 타입 안전한 환경 변수 접근
  * @version 1.1.0
  *
- * NOTE: Firebase 환경변수 검증은 lib/env.ts (Zod 기반)에서 수행
+ * NOTE: Supabase 환경변수 검증은 lib/env.ts (Zod 기반)에서 수행
  * 이 파일은 환경별 Feature Flags, API 설정, 로깅 설정 등을 제공
  */
 
@@ -147,7 +147,7 @@ const loggingConfigs: Record<Environment, LoggingConfig> = {
 /**
  * 전체 환경 설정
  *
- * NOTE: Firebase 설정은 lib/env.ts의 getEnv()로 접근 (Zod 검증)
+ * NOTE: Supabase 설정은 lib/env.ts의 getEnv()로 접근 (Zod 검증)
  */
 export const env: EnvironmentConfig = {
   environment: currentEnvironment,

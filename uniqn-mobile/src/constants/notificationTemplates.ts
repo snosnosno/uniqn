@@ -199,6 +199,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '📋',
   },
 
+  [NotificationType.FIXED_POSTING_EXPIRED]: {
+    title: '⏰ 고정 공고 만료',
+    body: (d) => `"${d.jobTitle}" 고정 공고가 만료되어 자동 마감되었습니다.`,
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
+    icon: '⏰',
+  },
+
+  [NotificationType.WORK_DATE_EXPIRED]: {
+    title: '⏰ 공고 자동 마감',
+    body: (d) => `"${d.jobTitle}" 공고가 근무일 경과로 자동 마감되었습니다.`,
+    link: (d) => (d.jobPostingId ? `/jobs/${d.jobPostingId}` : '/jobs'),
+    icon: '⏰',
+  },
+
   // =========================================================================
   // 시스템
   // =========================================================================
