@@ -184,8 +184,8 @@ export default function EmployerRegisterScreen() {
   }, [toast]);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="구인자 등록" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="구인자 등록" fallbackHref="/(app)/(tabs)" />
 
       <ScrollView
         className="flex-1"

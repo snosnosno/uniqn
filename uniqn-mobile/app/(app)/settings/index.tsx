@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
 import { BellIcon, BellSlashIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
@@ -225,7 +226,8 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="설정" fallbackHref="/(app)/(tabs)/profile" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">

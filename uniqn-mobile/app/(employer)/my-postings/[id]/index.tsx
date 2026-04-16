@@ -11,6 +11,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, ConfirmModal } from '@/components';
+import { StackHeader } from '@/components/headers';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import {
   BanknotesIcon,
   ChevronDownIcon,
@@ -104,6 +106,7 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
   const router = useRouter();
+  const { isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
   const {
     job: posting,
     isLoading,
@@ -183,7 +186,8 @@ export default function JobPostingDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -191,7 +195,8 @@ export default function JobPostingDetailScreen() {
 
   if (error || !posting || !managementView) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -218,7 +223,15 @@ export default function JobPostingDetailScreen() {
   const questionCount = managementView.questions.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader
+        title="공고 상세"
+        titleSuffix={<JobTitleSuffix jobTitle={posting.title} />}
+        fallbackHref="/(app)/(tabs)/employer"
+        rightAction={
+          !(contextIsFixed || isFixed) ? <HeaderQRAction onPress={handleShowQR} /> : null
+        }
+      />
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}

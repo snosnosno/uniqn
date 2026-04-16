@@ -8,7 +8,9 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -153,190 +155,203 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-surface-page items-center justify-center">
-        <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-          사용자 정보를 불러오는 중...
-        </Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
+        <View className="flex-1 bg-surface-page items-center justify-center">
+          <ActivityIndicator size="large" color="#D4AF37" />
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
+            사용자 정보를 불러오는 중...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error || !user) {
     return (
-      <View className="flex-1 bg-surface-page">
-        <EmptyState
-          title="사용자를 찾을 수 없음"
-          description="요청하신 사용자 정보를 찾을 수 없습니다."
-          actionLabel="목록으로"
-          onAction={() => router.back()}
-        />
-      </View>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
+        <View className="flex-1 bg-surface-page">
+          <EmptyState
+            title="사용자를 찾을 수 없음"
+            description="요청하신 사용자 정보를 찾을 수 없습니다."
+            actionLabel="목록으로"
+            onAction={() => router.back()}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-surface-page"
-      refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#D4AF37" />
-      }
-    >
-      {/* Profile Header */}
-      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
-        {user.photoURL ? (
-          <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
-        ) : (
-          <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
-            <UserIcon size={40} color={SECONDARY_PALETTE[400]} />
-          </View>
-        )}
-        <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
-          {user.name}
-        </Text>
-        <View className="flex-row items-center">
-          <Badge variant={getRoleBadgeVariant(user.role)} size="md">
-            {getRoleLabel(user.role)}
-          </Badge>
-          {!user.isActive && (
-            <View className="ml-2 px-2 py-1 bg-error-50 dark:bg-error-900/30 rounded">
-              <Text className="text-xs text-error-600 dark:text-error-400 font-sans">비활성</Text>
-            </View>
-          )}
-          {user.isVerified && (
-            <View className="ml-2 px-2 py-1 bg-success-50 dark:bg-success-900/30 rounded">
-              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
-                인증됨
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Basic Info */}
-      <View className="bg-white dark:bg-surface mt-3 px-4">
-        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
-          기본 정보
-        </Text>
-        <InfoRow
-          icon={<EnvelopeIcon size={20} color={SECONDARY_PALETTE[500]} />}
-          label="이메일"
-          value={user.email}
-        />
-        {user.phone && (
-          <InfoRow
-            icon={<PhoneIcon size={20} color={SECONDARY_PALETTE[500]} />}
-            label="전화번호"
-            value={user.phone}
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
+      <ScrollView
+        className="flex-1 bg-surface-page"
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => refetch()}
+            tintColor="#D4AF37"
           />
-        )}
-        <InfoRow
-          icon={<CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />}
-          label="가입일"
-          value={formatDate(user.createdAt)}
-        />
-        <InfoRow
-          icon={
-            user.isVerified ? (
-              <ShieldCheckIcon size={20} color="#22C55E" />
-            ) : (
-              <XCircleIcon size={20} color="#DC2626" />
-            )
-          }
-          label="본인인증"
-          value={user.isVerified ? '인증 완료' : '미인증'}
-        />
-      </View>
+        }
+      >
+        {/* Profile Header */}
+        <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
+          {user.photoURL ? (
+            <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
+          ) : (
+            <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
+              <UserIcon size={40} color={SECONDARY_PALETTE[400]} />
+            </View>
+          )}
+          <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
+            {user.name}
+          </Text>
+          <View className="flex-row items-center">
+            <Badge variant={getRoleBadgeVariant(user.role)} size="md">
+              {getRoleLabel(user.role)}
+            </Badge>
+            {!user.isActive && (
+              <View className="ml-2 px-2 py-1 bg-error-50 dark:bg-error-900/30 rounded">
+                <Text className="text-xs text-error-600 dark:text-error-400 font-sans">비활성</Text>
+              </View>
+            )}
+            {user.isVerified && (
+              <View className="ml-2 px-2 py-1 bg-success-50 dark:bg-success-900/30 rounded">
+                <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
+                  인증됨
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-      {/* Role Management */}
-      <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
-        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
-          역할 관리
-        </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3 font-sans">
-          사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
-        </Text>
-        {ROLE_OPTIONS.map((option) => (
-          <Pressable
-            key={option.role}
-            onPress={() => setSelectedRole(option.role)}
-            className={
-              'flex-row items-center p-3 rounded-lg mb-2 border ' +
-              ((selectedRole ?? user.role) === option.role
-                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                : 'border-secondary-200 dark:border-surface-overlay')
+        {/* Basic Info */}
+        <View className="bg-white dark:bg-surface mt-3 px-4">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+            기본 정보
+          </Text>
+          <InfoRow
+            icon={<EnvelopeIcon size={20} color={SECONDARY_PALETTE[500]} />}
+            label="이메일"
+            value={user.email}
+          />
+          {user.phone && (
+            <InfoRow
+              icon={<PhoneIcon size={20} color={SECONDARY_PALETTE[500]} />}
+              label="전화번호"
+              value={user.phone}
+            />
+          )}
+          <InfoRow
+            icon={<CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />}
+            label="가입일"
+            value={formatDate(user.createdAt)}
+          />
+          <InfoRow
+            icon={
+              user.isVerified ? (
+                <ShieldCheckIcon size={20} color="#22C55E" />
+              ) : (
+                <XCircleIcon size={20} color="#DC2626" />
+              )
             }
-          >
-            <View
+            label="본인인증"
+            value={user.isVerified ? '인증 완료' : '미인증'}
+          />
+        </View>
+
+        {/* Role Management */}
+        <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+            역할 관리
+          </Text>
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3 font-sans">
+            사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
+          </Text>
+          {ROLE_OPTIONS.map((option) => (
+            <Pressable
+              key={option.role}
+              onPress={() => setSelectedRole(option.role)}
               className={
-                'w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ' +
+                'flex-row items-center p-3 rounded-lg mb-2 border ' +
                 ((selectedRole ?? user.role) === option.role
-                  ? 'border-primary-500'
-                  : 'border-secondary-300 dark:border-surface-overlay')
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-secondary-200 dark:border-surface-overlay')
               }
             >
-              {(selectedRole ?? user.role) === option.role && (
-                <View className="w-2.5 h-2.5 rounded-sm bg-primary-500" />
-              )}
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
-                {option.label}
-              </Text>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                {option.description}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-        {selectedRole && selectedRole !== user.role && (
-          <Button
-            onPress={handleRoleChange}
-            loading={updateRoleMutation.isPending}
-            className="mt-3"
-          >
-            역할 변경
-          </Button>
-        )}
-      </View>
-
-      {/* Account Actions */}
-      <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
-        <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
-          계정 관리
-        </Text>
-        <View className="mt-4">
-          <Pressable
-            onPress={handleToggleActive}
-            disabled={setActiveMutation.isPending}
-            className={
-              'py-3 px-4 rounded-lg items-center ' +
-              (user.isActive
-                ? 'bg-error-50 dark:bg-error-900/20'
-                : 'bg-success-50 dark:bg-success-900/20')
-            }
-          >
-            {setActiveMutation.isPending ? (
-              <ActivityIndicator size="small" color={user.isActive ? '#DC2626' : '#22C55E'} />
-            ) : (
-              <Text
+              <View
                 className={
-                  user.isActive
-                    ? 'text-error-600 dark:text-error-400 font-sans-medium'
-                    : 'text-success-600 dark:text-success-400 font-sans-medium'
+                  'w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ' +
+                  ((selectedRole ?? user.role) === option.role
+                    ? 'border-primary-500'
+                    : 'border-secondary-300 dark:border-surface-overlay')
                 }
               >
-                {user.isActive ? '계정 비활성화' : '계정 활성화'}
-              </Text>
-            )}
-          </Pressable>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center font-sans">
-            {user.isActive
-              ? '비활성화하면 사용자가 로그인할 수 없습니다.'
-              : '활성화하면 사용자가 다시 로그인할 수 있습니다.'}
-          </Text>
+                {(selectedRole ?? user.role) === option.role && (
+                  <View className="w-2.5 h-2.5 rounded-sm bg-primary-500" />
+                )}
+              </View>
+              <View className="flex-1">
+                <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
+                  {option.label}
+                </Text>
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                  {option.description}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+          {selectedRole && selectedRole !== user.role && (
+            <Button
+              onPress={handleRoleChange}
+              loading={updateRoleMutation.isPending}
+              className="mt-3"
+            >
+              역할 변경
+            </Button>
+          )}
         </View>
-      </View>
-    </ScrollView>
+
+        {/* Account Actions */}
+        <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
+          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+            계정 관리
+          </Text>
+          <View className="mt-4">
+            <Pressable
+              onPress={handleToggleActive}
+              disabled={setActiveMutation.isPending}
+              className={
+                'py-3 px-4 rounded-lg items-center ' +
+                (user.isActive
+                  ? 'bg-error-50 dark:bg-error-900/20'
+                  : 'bg-success-50 dark:bg-success-900/20')
+              }
+            >
+              {setActiveMutation.isPending ? (
+                <ActivityIndicator size="small" color={user.isActive ? '#DC2626' : '#22C55E'} />
+              ) : (
+                <Text
+                  className={
+                    user.isActive
+                      ? 'text-error-600 dark:text-error-400 font-sans-medium'
+                      : 'text-success-600 dark:text-success-400 font-sans-medium'
+                  }
+                >
+                  {user.isActive ? '계정 비활성화' : '계정 활성화'}
+                </Text>
+              )}
+            </Pressable>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-2 text-center font-sans">
+              {user.isActive
+                ? '비활성화하면 사용자가 로그인할 수 없습니다.'
+                : '활성화하면 사용자가 다시 로그인할 수 있습니다.'}
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

@@ -23,21 +23,20 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { STATUS, getIconColor } from '@/constants';
+import { STATUS } from '@/constants';
 import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
+import { StackHeader } from '@/components/headers';
 import { EmptyState, Loading, Button } from '@/components/ui';
 import {
-  ChevronLeftIcon,
   AlertTriangleIcon,
   UserIcon,
   DocumentIcon,
   ClockIcon,
   CheckCircleIcon,
 } from '@/components/icons';
-import { useThemeStore } from '@/stores/themeStore';
 import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
@@ -361,7 +360,6 @@ export default function AdminReportDetailPage() {
 
   const { data: report, isLoading, error } = useReportDetail(reportId);
   const { mutateAsync: reviewReport, isPending: isReviewing } = useReviewReport();
-  const { isDarkMode } = useThemeStore();
 
   const handleBack = useCallback(() => {
     router.back();
@@ -387,40 +385,20 @@ export default function AdminReportDetailPage() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '신고 상세',
-            headerLeft: () => (
-              <Pressable onPress={handleBack} hitSlop={8}>
-                <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
-              </Pressable>
-            ),
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   // 에러 상태
   if (error || !report) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '신고 상세',
-            headerLeft: () => (
-              <Pressable onPress={handleBack} hitSlop={8}>
-                <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
-              </Pressable>
-            ),
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
             title="신고를 찾을 수 없습니다"
@@ -430,46 +408,34 @@ export default function AdminReportDetailPage() {
             onAction={handleBack}
           />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '신고 상세',
-          headerLeft: () => (
-            <Pressable onPress={handleBack} hitSlop={8}>
-              <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
-            </Pressable>
-          ),
-        }}
-      />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+      <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 16 }}
         >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 16 }}
-          >
-            {/* 신고 정보 */}
-            <ReportInfoSection report={report} />
+          {/* 신고 정보 */}
+          <ReportInfoSection report={report} />
 
-            {/* 신고 내용 */}
-            <ReportContentSection report={report} />
+          {/* 신고 내용 */}
+          <ReportContentSection report={report} />
 
-            {/* 처리 이력 (이미 처리된 경우) */}
-            <ReviewHistorySection report={report} />
+          {/* 처리 이력 (이미 처리된 경우) */}
+          <ReviewHistorySection report={report} />
 
-            {/* 처리 폼 (pending 상태일 때만) */}
-            <ReviewFormSection report={report} onSubmit={handleReview} isSubmitting={isReviewing} />
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </>
+          {/* 처리 폼 (pending 상태일 때만) */}
+          <ReviewFormSection report={report} onSubmit={handleReview} isSubmitting={isReviewing} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

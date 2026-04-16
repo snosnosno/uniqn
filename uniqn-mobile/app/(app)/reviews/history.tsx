@@ -7,6 +7,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
+import { StackHeader } from '@/components/headers';
 import { EmptyState } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
@@ -49,7 +50,11 @@ export default function ReviewHistoryScreen() {
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-secondary-900" edges={['bottom']}>
+    <SafeAreaView
+      className="flex-1 bg-surface-page dark:bg-secondary-900"
+      edges={['top', 'bottom']}
+    >
+      <StackHeader title="평가 히스토리" fallbackHref="/(app)/(tabs)/profile" />
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}
 

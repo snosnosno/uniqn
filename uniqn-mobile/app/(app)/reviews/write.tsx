@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { ErrorState } from '@/components/ui';
 import { Button } from '@/components/ui/Button';
 import ReviewForm from '@/components/review/ReviewForm';
@@ -72,7 +73,8 @@ export default function ReviewWriteScreen() {
 
   if (!params.workLogId || !params.revieweeId || !params.jobPostingId || !reviewerType) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top', 'bottom']}>
+        <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
         <View className="flex-1">
           <ErrorState
             title="잘못된 접근입니다"
@@ -91,7 +93,8 @@ export default function ReviewWriteScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top', 'bottom']}>
+      <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

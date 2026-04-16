@@ -3,6 +3,7 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-na
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Loading } from '@/components';
+import { StackHeader } from '@/components/headers';
 import {
   SectionCard,
   BasicInfoSection,
@@ -18,6 +19,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 import {
   type SectionErrors,
   validateAllSections,
@@ -40,6 +42,11 @@ export default function EditJobPostingScreen() {
   const { addToast } = useToastStore();
 
   const { job: existingJob, isLoading: isJobLoading, error: jobError } = useJobDetail(id || '');
+  const { job: contextJob, isFixed: contextIsFixed, handleShowQR } = useJobDetailContext();
+  const headerBackHref = `/(employer)/my-postings/${id ?? ''}`;
+  const headerJobTitle = existingJob?.title ?? contextJob?.title ?? null;
+  const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
+  const headerRightAction = !contextIsFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const scrollViewRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState<JobPostingDraft | null>(null);
@@ -184,7 +191,13 @@ export default function EditJobPostingScreen() {
 
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="공고 수정"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -197,7 +210,13 @@ export default function EditJobPostingScreen() {
 
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="공고 수정"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center p-4">
           <Text className="mb-2 text-lg font-display-semibold text-content-primary dark:text-off-white">
             공고를 불러올 수 없습니다
@@ -214,7 +233,13 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader
+        title="공고 수정"
+        titleSuffix={headerTitleSuffix}
+        fallbackHref={headerBackHref}
+        rightAction={headerRightAction}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

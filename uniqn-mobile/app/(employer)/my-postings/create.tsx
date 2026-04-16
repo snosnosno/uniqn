@@ -19,6 +19,7 @@ import {
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
+import { StackHeader } from '@/components/headers';
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
@@ -80,7 +81,8 @@ export default function CreateJobPostingScreen() {
   }, [user, formData.location, formData.postingType, draft, createJobPosting, addToast, router]);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

@@ -1,65 +1,106 @@
 /**
  * UNIQN Mobile - Employer Job Posting Detail Layout
+ *
+ * 하이브리드 레이아웃:
+ * - 데이터(useJobDetail), 소유권 가드, EventQRModal은 레이아웃에서 유지
+ * - 헤더는 각 자식 화면에서 StackHeader로 렌더링 (JobDetailContext 경유)
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { View, Text, Pressable } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { QRCodeIcon } from '@/components/icons';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
-import { HeaderBackButton } from '@/components/navigation';
+import { QRCodeIcon } from '@/components/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
 import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
+import type { JobPosting } from '@/types';
 
-function HeaderQRButton({ tintColor, onPress }: { tintColor: string; onPress: () => void }) {
+// ============================================================================
+// JobDetailContext
+// ============================================================================
+// 자식 화면이 StackHeader 렌더링에 필요한 job / isFixed / handleShowQR 을
+// 공유하기 위한 경량 컨텍스트. 데이터는 레이아웃에서 useJobDetail 로 한 번만 조회.
+
+interface JobDetailContextValue {
+  job: JobPosting | null;
+  isFixed: boolean;
+  handleShowQR: () => void;
+}
+
+const NOOP = () => {
+  // No-op fallback for JobDetailContext consumers rendered outside the provider.
+};
+
+const JobDetailContext = createContext<JobDetailContextValue>({
+  job: null,
+  isFixed: false,
+  handleShowQR: NOOP,
+});
+
+export function useJobDetailContext(): JobDetailContextValue {
+  return useContext(JobDetailContext);
+}
+
+// ============================================================================
+// JobTitleSuffix
+// ============================================================================
+// StackHeader titleSuffix 로 넘겨 "| {jobTitle}" 스타일로 렌더링.
+// 빈 문자열이면 null 반환 (제목 옆에 아무것도 표시 안 함).
+
+/**
+ * StackHeader rightAction 으로 넘기는 헤더 QR 버튼.
+ * isFixed 인 경우 호출부에서 null 을 넘기는 것을 권장.
+ */
+export function HeaderQRAction({ onPress }: { onPress: () => void }) {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+  const tintColor = getLayoutColor(isDark, 'headerTint');
+
   return (
-    <Pressable onPress={onPress} hitSlop={8} className="mr-2 p-2">
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      className="p-2"
+      accessibilityRole="button"
+      accessibilityLabel="QR 코드 표시"
+    >
       <QRCodeIcon size={22} color={tintColor} />
     </Pressable>
   );
 }
 
-function HeaderTitle({
-  screenTitle,
-  jobTitle,
-  isDark,
-}: {
-  screenTitle: string;
-  jobTitle?: string;
-  isDark: boolean;
-}) {
+export function JobTitleSuffix({ jobTitle }: { jobTitle?: string | null }) {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+
+  if (!jobTitle) {
+    return null;
+  }
+
   return (
-    <View className="flex-1 flex-row items-center">
+    <View className="flex-row items-center">
       <Text
-        className="text-base font-sans-semibold"
-        style={{ color: isDark ? '#FFFFFF' : '#09090B' }}
+        className="mx-2 font-sans"
+        style={{ color: isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400] }}
       >
-        {screenTitle}
+        |
       </Text>
-      {jobTitle ? (
-        <>
-          <Text
-            className="mx-2 font-sans"
-            style={{ color: isDark ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[400] }}
-          >
-            |
-          </Text>
-          <Text
-            className="flex-1 text-base font-sans"
-            style={{ color: isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500] }}
-            numberOfLines={1}
-          >
-            {jobTitle}
-          </Text>
-        </>
-      ) : null}
+      <Text
+        className="flex-shrink text-base font-sans"
+        style={{ color: isDark ? SECONDARY_PALETTE[400] : SECONDARY_PALETTE[500] }}
+        numberOfLines={1}
+      >
+        {jobTitle}
+      </Text>
     </View>
   );
 }
+
+// ============================================================================
+// Layout
+// ============================================================================
 
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,7 +108,7 @@ export default function JobPostingDetailLayout() {
   const currentUserId = useAuthStore((state) => state.user?.uid);
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
-  const { job, isLoading } = useJobDetail(id || '', { realtime: true });
+  const { job } = useJobDetail(id || '', { realtime: true });
   const [showQRModal, setShowQRModal] = useState(false);
 
   const isFixed = job?.schedule.kind === 'fixed';
@@ -87,11 +128,6 @@ export default function JobPostingDetailLayout() {
   const handleCloseQR = useCallback(() => {
     setShowQRModal(false);
   }, []);
-
-  const jobTitle = useMemo(() => {
-    if (isLoading) return '';
-    return job?.title || '';
-  }, [isLoading, job?.title]);
 
   useEffect(() => {
     if (!job) {
@@ -118,6 +154,15 @@ export default function JobPostingDetailLayout() {
     router.replace('/(app)/(tabs)/employer');
   }, [addToast, currentUserId, job, router]);
 
+  const contextValue = useMemo<JobDetailContextValue>(
+    () => ({
+      job: job ?? null,
+      isFixed: !!isFixed,
+      handleShowQR,
+    }),
+    [job, isFixed, handleShowQR]
+  );
+
   if (
     job &&
     ((currentUserId && job.ownerId !== currentUserId) || !isEmployerManageablePosting(job))
@@ -126,87 +171,27 @@ export default function JobPostingDetailLayout() {
   }
 
   return (
-    <View className="flex-1 bg-surface-page">
-      <Stack
-        screenOptions={{
-          headerShown: true,
-          headerStyle: {
-            backgroundColor: getLayoutColor(isDark, 'header'),
-          },
-          headerTintColor: getLayoutColor(isDark, 'headerTint'),
-          headerTitleStyle: {
-            fontFamily: 'Outfit_600SemiBold',
-            fontWeight: '600',
-          },
-          animation: 'slide_from_right',
-          contentStyle: {
-            backgroundColor: getLayoutColor(isDark, 'content'),
-          },
-          headerLeft: () => (
-            <HeaderBackButton
-              tintColor={getLayoutColor(isDark, 'headerTint')}
-              fallbackHref="/(app)/(tabs)/employer"
-            />
-          ),
-          headerRight: () =>
-            isFixed ? null : (
-              <HeaderQRButton
-                tintColor={getLayoutColor(isDark, 'headerTint')}
-                onPress={handleShowQR}
-              />
-            ),
-        }}
-      >
-        <Stack.Screen
-          name="index"
-          options={{
-            headerTitle: () => (
-              <HeaderTitle screenTitle="공고 상세" jobTitle={jobTitle} isDark={isDark} />
-            ),
+    <JobDetailContext.Provider value={contextValue}>
+      <View className="flex-1 bg-surface-page">
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            contentStyle: {
+              backgroundColor: getLayoutColor(isDark, 'content'),
+            },
           }}
         />
-        <Stack.Screen
-          name="applicants"
-          options={{
-            headerTitle: () => (
-              <HeaderTitle screenTitle="지원자 관리" jobTitle={jobTitle} isDark={isDark} />
-            ),
-          }}
-        />
-        <Stack.Screen
-          name="settlements"
-          options={{
-            headerTitle: () => (
-              <HeaderTitle screenTitle="정산 관리" jobTitle={jobTitle} isDark={isDark} />
-            ),
-          }}
-        />
-        <Stack.Screen
-          name="edit"
-          options={{
-            headerTitle: () => (
-              <HeaderTitle screenTitle="공고 수정" jobTitle={jobTitle} isDark={isDark} />
-            ),
-          }}
-        />
-        <Stack.Screen
-          name="cancellation-requests"
-          options={{
-            headerTitle: () => (
-              <HeaderTitle screenTitle="취소 요청" jobTitle={jobTitle} isDark={isDark} />
-            ),
-          }}
-        />
-      </Stack>
 
-      {!isFixed && (
-        <EventQRModal
-          visible={showQRModal}
-          onClose={handleCloseQR}
-          jobPostingId={id || ''}
-          jobTitle={job?.title}
-        />
-      )}
-    </View>
+        {!isFixed && (
+          <EventQRModal
+            visible={showQRModal}
+            onClose={handleCloseQR}
+            jobPostingId={id || ''}
+            jobTitle={job?.title}
+          />
+        )}
+      </View>
+    </JobDetailContext.Provider>
   );
 }

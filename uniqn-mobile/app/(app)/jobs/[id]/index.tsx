@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { STATUS } from '@/constants';
-import { getLayoutColor } from '@/constants/colors';
-import { JobDetail, JobDetailHeader } from '@/components/jobs';
+import { HEADER_CLASSES, STATUS } from '@/constants';
+import { getIconColor, getLayoutColor } from '@/constants/colors';
+import { JobDetail } from '@/components/jobs';
+import { StackHeader } from '@/components/headers';
+import { ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, Loading } from '@/components/ui';
 import {
@@ -26,6 +28,7 @@ const DEFAULT_BOTTOM_ACTION_HEIGHT = 116;
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
+  const secondaryTextColor = getIconColor(isDark, 'primary');
   const { user, isInitialized } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
   const { openInstallPrompt } = useInstallPrompt();
@@ -81,11 +84,24 @@ export default function JobDetailScreen() {
     router.push(`/(app)/applications/${application.id}/cancel`);
   }, [getApplicationStatus, id]);
 
+  const shareAction = job ? (
+    <Pressable
+      onPress={handleShare}
+      disabled={isSharing}
+      className={`-mr-2 ml-2 rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      accessibilityLabel="공고 공유하기"
+      accessibilityRole="button"
+    >
+      <ShareIcon size={22} color={secondaryTextColor} />
+    </Pressable>
+  ) : null;
+
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -93,9 +109,9 @@ export default function JobDetailScreen() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
         <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
       </SafeAreaView>
     );
@@ -109,23 +125,29 @@ export default function JobDetailScreen() {
 
   if (shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/(app)/(tabs)" />
+        <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)" />
         <Loading variant="layout" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
   }
 
+  const titleSuffix = job?.title ? (
+    <Text className="text-sm font-sans" style={{ color: secondaryTextColor }} numberOfLines={1}>
+      · {job.title}
+    </Text>
+  ) : null;
+
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader
-          title={job.title}
-          onShare={handleShare}
-          isSharing={isSharing}
+        <StackHeader
+          title="공고 상세"
+          titleSuffix={titleSuffix}
           fallbackHref="/(app)/(tabs)"
+          rightAction={shareAction}
         />
         <ErrorState
           message="이 공고는 현재 앱 내부 상세 화면에서 지원하지 않습니다."
@@ -144,13 +166,13 @@ export default function JobDetailScreen() {
     !applicationStatus?.cancellationRequest;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <JobDetailHeader
-        title={job.title}
-        onShare={handleShare}
-        isSharing={isSharing}
+      <StackHeader
+        title="공고 상세"
+        titleSuffix={titleSuffix}
         fallbackHref="/(app)/(tabs)"
+        rightAction={shareAction}
       />
 
       <ScrollView

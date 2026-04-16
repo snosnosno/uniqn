@@ -112,18 +112,15 @@ export default function AppLayout() {
             },
           }}
         >
-          <Stack.Screen name="(tabs)" />
           <Stack.Screen
             name="home"
             options={{
-              headerShown: false,
               presentation: 'card',
             }}
           />
           <Stack.Screen
             name="profile-setup"
             options={{
-              headerShown: false,
               gestureEnabled: false,
             }}
           />
@@ -131,28 +128,6 @@ export default function AppLayout() {
             name="notifications"
             options={{
               presentation: 'card',
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="notices"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="support"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen name="settings" />
-          <Stack.Screen name="employer-register" options={{ headerShown: false }} />
-          <Stack.Screen name="employer-application-status" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="reviews"
-            options={{
-              headerShown: false,
             }}
           />
         </Stack>

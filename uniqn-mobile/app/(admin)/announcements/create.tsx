@@ -5,7 +5,9 @@
  */
 
 import { View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { useCreateAnnouncement } from '@/hooks/useAnnouncement';
 import { AnnouncementForm } from '@/components/admin/announcements';
 import type { CreateAnnouncementInput } from '@/types';
@@ -28,14 +30,8 @@ export default function CreateAnnouncementPage() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: '공지사항 작성',
-          headerBackTitle: '취소',
-        }}
-      />
-
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="공지사항 작성" fallbackHref="/(admin)/announcements" />
       <View className="flex-1 bg-surface-page">
         <AnnouncementForm
           onSubmit={handleSubmit}
@@ -44,6 +40,6 @@ export default function CreateAnnouncementPage() {
           submitLabel="저장"
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 }

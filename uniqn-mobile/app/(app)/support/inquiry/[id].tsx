@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Card } from '@/components/ui';
 import { InquiryStatusBadge } from '@/components/support';
+import { StackHeader } from '@/components/headers';
 import { useInquiryDetail } from '@/hooks/useInquiry';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 import { toDate } from '@/utils/date';
@@ -21,18 +22,24 @@ export default function InquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
-        <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+        </View>
       </SafeAreaView>
     );
   }
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
-        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
-          문의를 찾을 수 없습니다
-        </Text>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
+            문의를 찾을 수 없습니다
+          </Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -41,7 +48,8 @@ export default function InquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의 정보 */}
         <Card className="mb-4">

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackHeader } from '@/components/headers';
 import {
   CalendarIcon,
   DocumentTextOutlineIcon,
@@ -52,8 +52,8 @@ export default function AdminStatsScreen() {
 
   if (isLoading && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-        <Stack.Screen options={{ title: '서비스 통계' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
         <Loading variant="layout" message="통계 데이터를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -61,8 +61,8 @@ export default function AdminStatsScreen() {
 
   if (error && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-        <Stack.Screen options={{ title: '서비스 통계' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
         <ErrorState
           error={error}
           title="서비스 통계"
@@ -74,8 +74,8 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
-      <Stack.Screen options={{ title: '서비스 통계' }} />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
       <ScrollView
         className="flex-1"
         contentContainerClassName="p-4"

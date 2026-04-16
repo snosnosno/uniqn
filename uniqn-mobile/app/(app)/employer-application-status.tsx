@@ -76,8 +76,8 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
 function NoApplicationScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="구인자 신청" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="구인자 신청" fallbackHref="/(app)/(tabs)" />
       <View className="flex-1 justify-center px-4">
         <Card variant="outlined" padding="lg" className="items-center">
           <Text className="mb-6 text-center text-base text-content-muted dark:text-secondary-400 font-sans">
@@ -98,8 +98,8 @@ function NoApplicationScreen() {
 
 function PendingScreen({ submittedAt }: { submittedAt: string }) {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="구인자 신청 현황" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -144,8 +144,8 @@ function PendingScreen({ submittedAt }: { submittedAt: string }) {
 
 function ApprovedScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="구인자 신청 현황" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -184,8 +184,8 @@ function RejectedScreen({
   rejectionReason: string | null;
 }) {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="구인자 신청 현황" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
@@ -248,8 +248,11 @@ export default function EmployerApplicationStatusScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page" edges={['top']}>
-        <Loading size="large" />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
+        <View className="flex-1 items-center justify-center">
+          <Loading size="large" />
+        </View>
       </SafeAreaView>
     );
   }

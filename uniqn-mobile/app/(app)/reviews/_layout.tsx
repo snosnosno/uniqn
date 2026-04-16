@@ -1,10 +1,8 @@
 /**
- * UNIQN Mobile - Reviews Layout
- * 리뷰/평가 화면 레이아웃
+ * UNIQN Mobile - 리뷰 레이아웃
  */
 
 import { Stack } from 'expo-router';
-import { HeaderBackButton } from '@/components/navigation';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 
@@ -14,18 +12,11 @@ export default function ReviewsLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
+        headerShown: false,
+        contentStyle: {
+          backgroundColor: getLayoutColor(isDark, 'content'),
         },
-        headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerLeft: () => <HeaderBackButton tintColor={getLayoutColor(isDark, 'headerTint')} />,
       }}
-    >
-      <Stack.Screen name="write" options={{ title: '평가 작성' }} />
-      <Stack.Screen name="[workLogId]" options={{ title: '평가 상세' }} />
-      <Stack.Screen name="pending" options={{ title: '미작성 평가' }} />
-      <Stack.Screen name="history" options={{ title: '평가 히스토리' }} />
-    </Stack>
+    />
   );
 }

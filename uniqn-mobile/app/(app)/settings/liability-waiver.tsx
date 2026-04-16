@@ -10,8 +10,8 @@ import { Card } from '@/components/ui';
 
 export default function LiabilityWaiverScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <StackHeader title="서약서" />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="서약서" fallbackHref="/(app)/settings" />
 
       <ScrollView
         className="flex-1"

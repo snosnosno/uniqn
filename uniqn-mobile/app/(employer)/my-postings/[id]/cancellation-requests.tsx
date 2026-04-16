@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { CancellationRequestCard } from '@/components/employer';
 import { EmptyState, ErrorState, Loading } from '@/components';
+import { StackHeader } from '@/components/headers';
 import { InboxIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -21,6 +22,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useThemeStore } from '@/stores';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import type { Application } from '@/types';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 interface StatsHeaderProps {
   pendingCount: number;
@@ -45,6 +47,11 @@ export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode } = useThemeStore();
   const { job: posting, isLoading: isLoadingPosting } = useJobDetail(jobPostingId || '');
+  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
+  const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
+  const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
+  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   const [approveModalVisible, setApproveModalVisible] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
@@ -119,7 +126,13 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingPosting) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="취소 요청"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -132,7 +145,13 @@ export default function CancellationRequestsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="취소 요청"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 취소 요청 관리를 지원하지 않습니다."
@@ -143,7 +162,13 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="취소 요청"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -156,7 +181,13 @@ export default function CancellationRequestsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="취소 요청"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <ErrorState
           title="취소 요청을 불러올 수 없습니다"
           message={error.message}
@@ -167,7 +198,13 @@ export default function CancellationRequestsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader
+        title="취소 요청"
+        titleSuffix={headerTitleSuffix}
+        fallbackHref={headerBackHref}
+        rightAction={headerRightAction}
+      />
       <StatsHeader pendingCount={pendingCount} />
 
       {cancellationRequests.length === 0 ? (

@@ -2,9 +2,10 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Card, EmptyState, Loading } from '@/components/ui';
+import { StackHeader } from '@/components/headers';
 import { PeopleOutlineIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
 import { listEmployerApplications } from '@/services/admin';
@@ -126,19 +127,19 @@ export default function AdminEmployerApplicationsPage() {
 
   if (isLoading && !data) {
     return (
-      <>
-        <Stack.Screen options={{ title: '구인자 신청' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="구인자 신청" fallbackHref="/(admin)" />
         <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="구인자 신청을 불러오는 중..." />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <>
-        <Stack.Screen options={{ title: '구인자 신청' }} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="구인자 신청" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
             title="구인자 신청을 불러오지 못했습니다"
@@ -148,69 +149,65 @@ export default function AdminEmployerApplicationsPage() {
             onAction={() => refetch()}
           />
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: '구인자 신청' }} />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-surface-page">
-        <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="px-4 py-2"
-            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
-          >
-            {STATUS_OPTIONS.map((option) => {
-              const isSelected = option.value === filter;
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+      <StackHeader title="구인자 신청" fallbackHref="/(admin)" />
+      <View className="border-b border-secondary-200 bg-white dark:border-surface-overlay dark:bg-surface">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="px-4 py-2"
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
+          {STATUS_OPTIONS.map((option) => {
+            const isSelected = option.value === filter;
 
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setFilter(option.value)}
-                  className={`rounded-sm px-4 py-2 ${
-                    isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => setFilter(option.value)}
+                className={`rounded-sm px-4 py-2 ${
+                  isSelected ? 'bg-primary-600' : 'bg-secondary-200 dark:bg-surface-elevated'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-sans-medium ${
+                    isSelected ? 'text-surface-dark' : 'text-secondary-700 dark:text-secondary-300'
                   }`}
                 >
-                  <Text
-                    className={`text-sm font-sans-medium ${
-                      isSelected
-                        ? 'text-surface-dark'
-                        : 'text-secondary-700 dark:text-secondary-300'
-                    }`}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
-        >
-          <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            총 {applications.length}건
-          </Text>
-
-          {applications.length === 0 ? (
-            <View className="py-20">
-              <EmptyState
-                title="신청이 없습니다"
-                description="현재 조건에 맞는 신청이 없습니다."
-                icon={<PeopleOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
-              />
-            </View>
-          ) : (
-            applications.map((app) => <ApplicationCard key={app.id} app={app} />)
-          )}
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
-      </SafeAreaView>
-    </>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} />}
+      >
+        <Text className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          총 {applications.length}건
+        </Text>
+
+        {applications.length === 0 ? (
+          <View className="py-20">
+            <EmptyState
+              title="신청이 없습니다"
+              description="현재 조건에 맞는 신청이 없습니다."
+              icon={<PeopleOutlineIcon size={40} color={SECONDARY_PALETTE[400]} />}
+            />
+          </View>
+        ) : (
+          applications.map((app) => <ApplicationCard key={app.id} app={app} />)
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }

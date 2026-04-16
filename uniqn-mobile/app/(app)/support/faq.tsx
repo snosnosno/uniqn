@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button, EmptyState } from '@/components/ui';
 import { FAQCategoryTabs, FAQList, type FAQCategoryFilter } from '@/components/support';
+import { StackHeader } from '@/components/headers';
 import { useFAQ } from '@/hooks/useInquiry';
 
 export default function FAQScreen() {
@@ -24,7 +25,8 @@ export default function FAQScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="자주 묻는 질문" fallbackHref="/(app)/support" />
       {/* 카테고리 탭 */}
       <FAQCategoryTabs
         selectedCategory={selectedCategory}

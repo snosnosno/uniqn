@@ -29,6 +29,19 @@ jest.mock('@/hooks/useAuth', () => ({
 jest.mock('@/components/review/ReviewCard', () => 'ReviewCard');
 jest.mock('@/components/review/ReviewBlindMessage', () => 'ReviewBlindMessage');
 
+jest.mock('@/components/headers', () => {
+  const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
+
+  return {
+    StackHeader: ({ title }: { title: string }) => (
+      <ReactNative.View>
+        <ReactNative.Pressable accessibilityRole="button" accessibilityLabel="뒤로 가기" />
+        <ReactNative.Text>{title}</ReactNative.Text>
+      </ReactNative.View>
+    ),
+  };
+});
+
 describe('ReviewDetailScreen', () => {
   const { useLocalSearchParams } = jest.requireMock('expo-router') as {
     useLocalSearchParams: jest.Mock;

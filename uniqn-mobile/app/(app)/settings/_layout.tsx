@@ -1,10 +1,8 @@
 /**
- * UNIQN Mobile - Settings Layout
- * 설정 화면 레이아웃
+ * UNIQN Mobile - 설정 레이아웃
  */
 
 import { Stack } from 'expo-router';
-import { HeaderBackButton } from '@/components/navigation';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 
@@ -14,27 +12,11 @@ export default function SettingsLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
+        headerShown: false,
+        contentStyle: {
+          backgroundColor: getLayoutColor(isDark, 'content'),
         },
-        headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerLeft: () => (
-          <HeaderBackButton
-            tintColor={getLayoutColor(isDark, 'headerTint')}
-            fallbackHref="/(app)/(tabs)/profile"
-          />
-        ),
       }}
-    >
-      <Stack.Screen name="index" options={{ title: '설정' }} />
-      <Stack.Screen name="profile" options={{ title: '프로필 수정' }} />
-      <Stack.Screen name="change-password" options={{ title: '비밀번호 변경' }} />
-      <Stack.Screen name="delete-account" options={{ title: '계정 삭제' }} />
-      <Stack.Screen name="my-data" options={{ title: '내 데이터' }} />
-      <Stack.Screen name="terms" options={{ title: '이용약관' }} />
-      <Stack.Screen name="privacy" options={{ title: '개인정보처리방침' }} />
-      <Stack.Screen name="business-info" options={{ title: '사업자정보' }} />
-    </Stack>
+    />
   );
 }

@@ -6,7 +6,6 @@
 import { Stack, Redirect } from 'expo-router';
 import { useAuthStore, useHasRole, selectProfile } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
-import { HeaderBackButton } from '@/components/navigation';
 import { Loading } from '@/components/ui';
 import { getLayoutColor } from '@/constants/colors';
 
@@ -34,45 +33,12 @@ export default function EmployerLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
-        },
-        headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerTitleStyle: {
-          fontFamily: 'Outfit_600SemiBold',
-          fontWeight: '600',
-        },
+        headerShown: false,
         animation: 'slide_from_right',
         contentStyle: {
           backgroundColor: getLayoutColor(isDark, 'content'),
         },
-        headerLeft: () => (
-          <HeaderBackButton
-            tintColor={getLayoutColor(isDark, 'headerTint')}
-            fallbackHref="/(app)/(tabs)/employer"
-          />
-        ),
       }}
-    >
-      <Stack.Screen
-        name="my-postings/index"
-        options={{
-          title: '내 공고 관리',
-        }}
-      />
-      <Stack.Screen
-        name="my-postings/create"
-        options={{
-          title: '공고 작성',
-        }}
-      />
-      <Stack.Screen
-        name="my-postings/[id]"
-        options={{
-          headerShown: false,
-        }}
-      />
-    </Stack>
+    />
   );
 }

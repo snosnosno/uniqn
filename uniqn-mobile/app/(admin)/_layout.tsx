@@ -1,5 +1,4 @@
 import { Redirect, Stack } from 'expo-router';
-import { HeaderBackButton } from '@/components/navigation';
 import { Loading } from '@/components/ui';
 import { getLayoutColor } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,44 +23,11 @@ export default function AdminLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
-        },
-        headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerTitleStyle: {
-          fontFamily: 'Outfit_600SemiBold',
-          fontWeight: '600',
-        },
-        headerLeft: () => (
-          <HeaderBackButton
-            tintColor={getLayoutColor(isDark, 'headerTint')}
-            fallbackHref="/(app)/(tabs)"
-          />
-        ),
-        animation: 'slide_from_right',
+        headerShown: false,
         contentStyle: {
           backgroundColor: getLayoutColor(isDark, 'content'),
         },
       }}
-    >
-      <Stack.Screen name="index" options={{ title: '관리자' }} />
-      <Stack.Screen name="stats/index" options={{ title: '통계' }} />
-      <Stack.Screen name="users/index" options={{ title: '사용자 관리' }} />
-      <Stack.Screen name="users/[id]" options={{ title: '사용자 상세' }} />
-      <Stack.Screen name="reports/index" options={{ title: '신고 관리' }} />
-      <Stack.Screen name="reports/[id]" options={{ title: '신고 상세' }} />
-      <Stack.Screen name="board-reports/index" options={{ title: '게시판 신고' }} />
-      <Stack.Screen name="board-reports/[id]" options={{ title: '게시판 신고 상세' }} />
-      <Stack.Screen name="inquiries/index" options={{ title: '문의 관리' }} />
-      <Stack.Screen name="inquiries/[id]" options={{ title: '문의 상세' }} />
-      <Stack.Screen name="announcements/index" options={{ title: '공지사항 관리' }} />
-      <Stack.Screen name="announcements/create" options={{ title: '공지사항 작성' }} />
-      <Stack.Screen name="announcements/[id]/index" options={{ title: '공지사항 상세' }} />
-      <Stack.Screen name="announcements/[id]/edit" options={{ title: '공지사항 수정' }} />
-      <Stack.Screen name="tournaments/index" options={{ title: '대회공고 검토' }} />
-      <Stack.Screen name="employer-applications/index" options={{ title: '구인자 신청' }} />
-      <Stack.Screen name="employer-applications/[id]" options={{ title: '구인자 신청 상세' }} />
-    </Stack>
+    />
   );
 }

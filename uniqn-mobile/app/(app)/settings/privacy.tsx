@@ -6,11 +6,13 @@
 
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StackHeader } from '@/components/headers';
 import { Card } from '@/components/ui';
 
 export default function PrivacyScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="개인정보처리방침" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
           <Text className="mb-4 text-lg font-display text-content-primary dark:text-secondary-100">

@@ -8,8 +8,10 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { createPostingLegacyDateRequirements } from '@/domains/job-posting';
+import { StackHeader } from '@/components/headers';
 import {
   CalendarOutlineIcon,
   CheckmarkCircleOutlineIcon,
@@ -305,33 +307,40 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-surface-page items-center justify-center">
-        <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-          대회공고 목록을 불러오는 중...
-        </Text>
-      </View>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
+        <View className="flex-1 bg-surface-page items-center justify-center">
+          <ActivityIndicator size="large" color="#D4AF37" />
+          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
+            대회공고 목록을 불러오는 중...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-surface-page">
-        <EmptyState
-          title="오류 발생"
-          description="대회공고 목록을 불러오는 데 실패했습니다."
-          actionLabel="다시 시도"
-          onAction={() => refetch()}
-        />
-      </View>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
+        <View className="flex-1 bg-surface-page">
+          <EmptyState
+            title="오류 발생"
+            description="대회공고 목록을 불러오는 데 실패했습니다."
+            actionLabel="다시 시도"
+            onAction={() => refetch()}
+          />
+        </View>
+      </SafeAreaView>
     );
   }
 
   const displayPostings = postings ?? [];
 
   return (
-    <View className="flex-1 bg-surface-page">
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <Text className="text-xl font-display text-content-primary dark:text-off-white mb-1">
@@ -419,6 +428,6 @@ export default function AdminTournamentsPage() {
         onCancel={handleModalCancel}
         isProcessing={approve.isPending || reject.isPending}
       />
-    </View>
+    </SafeAreaView>
   );
 }

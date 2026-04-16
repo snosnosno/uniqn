@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { act, render } from '@testing-library/react-native';
 import PublicJobDetailAliasRoute from '../[id]';
 
-const mockJobDetailHeader = jest.fn((_props?: unknown) => null);
+const mockStackHeader = jest.fn((_props?: unknown) => null);
 const mockOpenInstallPrompt = jest.fn();
 const mockShareJob = jest.fn();
 const mockRefresh = jest.fn();
@@ -19,8 +19,15 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/components/jobs', () => ({
   JobDetail: () => null,
-  JobDetailHeader: (props: unknown) => mockJobDetailHeader(props),
   PostingSurfaceState: () => null,
+}));
+
+jest.mock('@/components/headers', () => ({
+  StackHeader: (props: unknown) => mockStackHeader(props),
+}));
+
+jest.mock('@/components/icons', () => ({
+  ShareIcon: () => null,
 }));
 
 jest.mock('@/components/ui/Button', () => ({
@@ -71,8 +78,9 @@ describe('PublicJobDetailAliasRoute', () => {
   it('passes the public fallback route to the header and adjusts scroll padding after layout', () => {
     const screen = render(<PublicJobDetailAliasRoute />);
 
-    expect(mockJobDetailHeader).toHaveBeenCalledWith(
+    expect(mockStackHeader).toHaveBeenCalledWith(
       expect.objectContaining({
+        title: '공고 상세',
         fallbackHref: '/jobs',
       })
     );
