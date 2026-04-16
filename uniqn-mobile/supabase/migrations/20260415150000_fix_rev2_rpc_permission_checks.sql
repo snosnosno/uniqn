@@ -145,9 +145,9 @@ BEGIN
   RETURN QUERY
   SELECT
     count(*)::bigint,
-    count(*)::bigint FILTER (WHERE jp.status = 'active'),
-    count(*)::bigint FILTER (WHERE jp.status = 'closed'),
-    count(*)::bigint FILTER (WHERE jp.status = 'cancelled'),
+    count(CASE WHEN jp.status = 'active' THEN 1 END)::bigint,
+    count(CASE WHEN jp.status = 'closed' THEN 1 END)::bigint,
+    count(CASE WHEN jp.status = 'cancelled' THEN 1 END)::bigint,
     coalesce(sum((jp.stats->>'totalApplicants')::int), 0)::bigint,
     coalesce(sum(jp.view_count), 0)::bigint
   FROM public.job_postings jp
