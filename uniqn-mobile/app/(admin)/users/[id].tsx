@@ -235,13 +235,6 @@ export default function AdminUserDetailPage() {
           label="가입일"
           value={formatDate(user.createdAt)}
         />
-        {user.lastLoginAt && (
-          <InfoRow
-            icon={<CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />}
-            label="최근 로그인"
-            value={formatDate(user.lastLoginAt)}
-          />
-        )}
         <InfoRow
           icon={
             user.isVerified ? (
