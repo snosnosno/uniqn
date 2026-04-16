@@ -3,7 +3,6 @@
  */
 
 import { Stack } from 'expo-router';
-import { HeaderBackButton } from '@/components/navigation';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 
@@ -13,21 +12,7 @@ export default function NoticesLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: getLayoutColor(isDark, 'header'),
-        },
-        headerTintColor: getLayoutColor(isDark, 'headerTint'),
-        headerTitleStyle: {
-          fontFamily: 'Outfit_600SemiBold',
-          fontWeight: '600',
-        },
-        headerLeft: () => (
-          <HeaderBackButton
-            tintColor={getLayoutColor(isDark, 'headerTint')}
-            fallbackHref="/(app)/(tabs)"
-          />
-        ),
+        headerShown: false,
         contentStyle: {
           backgroundColor: getLayoutColor(isDark, 'content'),
         },
