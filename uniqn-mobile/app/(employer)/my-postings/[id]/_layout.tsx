@@ -40,7 +40,7 @@ function HeaderTitle({
       >
         {screenTitle}
       </Text>
-      {jobTitle && (
+      {jobTitle ? (
         <>
           <Text
             className="mx-2 font-sans"
@@ -56,7 +56,7 @@ function HeaderTitle({
             {jobTitle}
           </Text>
         </>
-      )}
+      ) : null}
     </View>
   );
 }

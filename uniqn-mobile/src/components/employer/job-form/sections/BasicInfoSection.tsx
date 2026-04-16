@@ -6,7 +6,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useState, useCallback, useEffect, memo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Input, FormField } from '@/components';
 import { MapPinIcon, PhoneIcon } from '@/components/icons';
@@ -48,14 +48,28 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   const [locationAddress, setLocationAddress] = useState(getLocationAddressValue(data.location));
 
   // 외부에서 data.location이 변경되면 (템플릿 불러오기 등) 로컬 상태 동기화
+  // 주의: data.location은 draftToFormData() 호출마다 새 객체를 생성하므로 객체 자체가 아닌
+  //       primitive 값(문자열)을 의존성으로 사용해야 무한 루프를 방지할 수 있습니다.
+  const locationNameFromProps = data.location?.name || '';
+  const locationAddressFromProps = getLocationAddressValue(data.location);
   useEffect(() => {
-    setLocationName(data.location?.name || '');
-    setLocationAddress(getLocationAddressValue(data.location));
-  }, [data.location]);
+    setLocationName(locationNameFromProps);
+    setLocationAddress(locationAddressFromProps);
+  }, [locationNameFromProps, locationAddressFromProps]);
+
+  // dataRef: data prop을 매 렌더마다 최신화해 두고, useCallback 의존성 배열은 onUpdate만 유지합니다.
+  // 이 패턴은 stale closure가 아닙니다 — handleUpdateLocation 호출 시점에
+  // dataRef.current는 항상 최신 data를 가리키므로 안전합니다.
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   // 장소 정보 업데이트
   const handleUpdateLocation = useCallback(
-    (name: string, address: string, detailedAddress: string = getDetailedAddressValue(data)) => {
+    (
+      name: string,
+      address: string,
+      detailedAddress: string = getDetailedAddressValue(dataRef.current)
+    ) => {
       if (name.trim()) {
         const location: Location = {
           // Preserve in-progress whitespace while typing. Serialization trims before persistence.
@@ -69,7 +83,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
         onUpdate({ location: null, detailedAddress });
       }
     },
-    [data, onUpdate]
+    [onUpdate]
   );
 
   // 장소명 변경
