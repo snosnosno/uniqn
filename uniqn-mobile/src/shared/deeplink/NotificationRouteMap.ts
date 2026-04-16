@@ -61,6 +61,10 @@ export const NOTIFICATION_ROUTE_MAP: Record<
   [NotificationType.JOB_CANCELLED]: () => ({ name: 'schedule' }),
   [NotificationType.JOB_CLOSED]: (data) =>
     data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+  [NotificationType.FIXED_POSTING_EXPIRED]: (data) =>
+    data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
+  [NotificationType.WORK_DATE_EXPIRED]: (data) =>
+    data?.jobPostingId ? { name: 'job', params: { id: data.jobPostingId } } : { name: 'jobs' },
 
   [NotificationType.ANNOUNCEMENT]: (data) =>
     data?.announcementId
