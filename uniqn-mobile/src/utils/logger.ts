@@ -400,15 +400,15 @@ export const logger = {
   },
 
   /**
-   * Firebase 작업 로깅
+   * Supabase 작업 로깅
    */
-  firebase: (
+  supabase: (
     operation: 'read' | 'write' | 'delete' | 'query' | 'auth' | 'storage',
     collection: string,
     docId?: string,
     context?: LogContext
   ): void => {
-    const message = `[Firebase] ${operation.toUpperCase()} ${collection}${docId ? `/${docId}` : ''}`;
+    const message = `[Supabase] ${operation.toUpperCase()} ${collection}${docId ? `/${docId}` : ''}`;
 
     output(
       'debug',

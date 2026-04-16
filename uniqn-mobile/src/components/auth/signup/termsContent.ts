@@ -234,19 +234,15 @@ export const PRIVACY_POLICY = `개인정보처리방침
 제7조 (개인정보 처리의 위탁)
 회사는 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 위탁하고 있습니다.
 
-1. Google LLC (Firebase)
+1. Supabase, Inc.
 - 위탁 업무: 회원 인증, 데이터베이스 운영, 파일 저장
 - 보유 기간: 위탁 계약 종료 시
 
-2. Google LLC (Firebase Cloud Messaging)
+2. Expo, Inc. (Expo Push Notifications)
 - 위탁 업무: 푸시 알림 발송
 - 보유 기간: 발송 완료 시 즉시 삭제
 
-3. Google LLC (Firebase Analytics)
-- 위탁 업무: 앱 사용 통계 분석
-- 보유 기간: 14개월
-
-4. Google LLC (Firebase Crashlytics)
+3. Functional Software, Inc. (Sentry)
 - 위탁 업무: 앱 오류 수집 및 분석
 - 보유 기간: 90일
 

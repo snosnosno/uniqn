@@ -1,22 +1,23 @@
 /**
- * UNIQN Mobile - Firestore undefined 필드 제거 유틸리티
+ * UNIQN Mobile - undefined 필드 제거 유틸리티
  *
- * @description Firestore는 undefined 값을 허용하지 않으므로 재귀적으로 제거
+ * @description 일부 DB 드라이버는 undefined 값을 허용하지 않으므로 재귀적으로 제거.
+ * Supabase 저장 직전 정제 용도.
  */
 
 /**
- * Firebase 특수 객체 여부 판정
+ * 특수 객체 여부 판정
  *
- * @description Timestamp, Date, FieldValue 등은 일반 객체처럼 재귀 순회하면
+ * @description Date, 커스텀 Timestamp 래퍼 등은 일반 객체처럼 재귀 순회하면
  * 인스턴스가 파괴되므로 그대로 보존해야 함
  */
-function isFirebaseSpecialObject(value: unknown): boolean {
+function isSpecialObject(value: unknown): boolean {
   if (value instanceof Date) return true;
 
   const obj = value as Record<string, unknown>;
-  // Timestamp: toDate() 메서드 보유
+  // Timestamp 래퍼: toDate() 메서드 보유
   if (typeof obj.toDate === 'function') return true;
-  // FieldValue (serverTimestamp, increment 등): isEqual() 메서드 보유
+  // isEqual() 메서드를 노출하는 특수 값
   if (typeof obj.isEqual === 'function') return true;
 
   return false;
@@ -31,7 +32,7 @@ function removeUndefinedValue(value: unknown): unknown {
     return value.filter((v) => v !== undefined).map(removeUndefinedValue);
   }
   if (typeof value !== 'object') return value;
-  if (isFirebaseSpecialObject(value)) return value;
+  if (isSpecialObject(value)) return value;
 
   return removeUndefined(value as Record<string, unknown>);
 }
@@ -39,9 +40,8 @@ function removeUndefinedValue(value: unknown): unknown {
 /**
  * 객체에서 undefined 값을 재귀적으로 제거
  *
- * @description Firestore 문서 저장 시 undefined 필드가 있으면 에러 발생하므로
- * 저장 전에 이 함수로 정제. Firebase 특수 객체(Timestamp, Date, FieldValue)는
- * 재귀하지 않고 그대로 보존.
+ * @description undefined 필드가 있으면 문제가 되는 DB/직렬화 경로(Supabase 저장 등)
+ * 에서 사용. Date / Timestamp 래퍼 같은 특수 객체는 재귀하지 않고 그대로 보존.
  *
  * @param obj - 정제할 객체
  * @returns undefined 필드가 제거된 새 객체
@@ -56,7 +56,7 @@ function removeUndefinedValue(value: unknown): unknown {
  *     detail: undefined,     // 재귀적으로 제거됨
  *   },
  *   tags: ['a', undefined],  // 배열 내부도 처리
- *   createdAt: serverTimestamp(), // Firebase 특수 객체 보존
+ *   createdAt: new Date(),   // 특수 객체 보존
  * });
  * ```
  */

@@ -18,7 +18,7 @@ import Constants from 'expo-constants';
 import { StateStorage } from 'zustand/middleware';
 import { getRandomValues } from 'expo-crypto';
 import { logger } from '@/utils/logger';
-/** Firebase emulatorMode 제거됨 — 웹에서는 항상 session storage 사용 */
+/** 웹에서는 항상 session storage 사용 (로컬 에뮬레이터 모드 미지원) */
 const shouldUseWebAuthStateStorage = (): boolean => false;
 
 // 경고 중복 방지 플래그
@@ -321,7 +321,7 @@ export const mmkvStorage: StateStorage = {
  * behavior because session tokens live outside this adapter.
  *
  * E2E web runs force localStorage so Playwright storageState can preload the
- * authenticated shell alongside Firebase Auth persistence.
+ * authenticated shell alongside Supabase Auth persistence.
  */
 export const authStateStorage: StateStorage = {
   getItem: (name: string): string | null => {
