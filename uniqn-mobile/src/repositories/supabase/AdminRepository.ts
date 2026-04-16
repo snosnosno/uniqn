@@ -34,7 +34,7 @@ const TABLES = {
   REPORTS: 'reports',
 } as const;
 const USER_COLUMNS =
-  'id,name,email,role,phone,photo_url,created_at,updated_at,is_active,phone_verified,last_login_at' as const;
+  'id,name,email,role,phone,photo_url,created_at,updated_at,is_active,phone_verified' as const;
 
 // ============================================================================
 // Helpers
@@ -51,7 +51,6 @@ function rowToAdminUser(row: Record<string, unknown>): AdminUser {
     photoURL: row.photo_url as string | undefined,
     createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
-    lastLoginAt: row.last_login_at ? new Date(row.last_login_at as string) : undefined,
     isActive: row.is_active !== false,
     isVerified: row.phone_verified === true,
   };
