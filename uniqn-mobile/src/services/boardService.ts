@@ -43,6 +43,7 @@ import {
   type FetchBoardPostsInput,
   type UpdateBoardCommentInput,
   type UpdateBoardPostInput,
+  type BoardJobSummary,
 } from '@/types/board';
 import {
   buildScheduleBoardPostId,
@@ -679,7 +680,7 @@ function assertCanManagePost(post: BoardPost, viewer: BoardViewer) {
 }
 
 function assertCanCreatePost(input: CreateBoardPostInput) {
-  if (input.boardType !== 'free' && input.boardType !== 'tda') {
+  if (input.boardType !== 'free' && input.boardType !== 'tda' && input.boardType !== 'substitute') {
     throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
       userMessage: '직접 작성할 수 없는 게시판입니다.',
     });
@@ -1716,6 +1717,57 @@ export async function archiveScheduleBoard(jobPostingId: string): Promise<void> 
   }
 }
 
+export interface CreateSubstitutePostInput {
+  authorId: string;
+  authorName: string;
+  authorRole: BoardAuthorRole;
+  applicationId: string;
+  jobSummary: BoardJobSummary;
+  reason: string;
+}
+
+export async function createSubstitutePost(input: CreateSubstitutePostInput): Promise<string> {
+  await requireMatchingCurrentUser(input.authorId);
+
+  const title = `대타 구해요 · ${input.jobSummary.title}`;
+  const dateInfo = input.jobSummary.workDate || '';
+  const locationInfo = input.jobSummary.locationName || '';
+  const compensationInfo = input.jobSummary.compensationLabel || '';
+
+  const body = [
+    input.reason,
+    '',
+    `📅 ${dateInfo}`,
+    locationInfo ? `📍 ${locationInfo}` : '',
+    compensationInfo ? `💰 ${compensationInfo}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  assertSafeText('title', title, 120);
+  assertSafeText('body', body, 5000);
+
+  try {
+    return await boardRepository.createPost({
+      boardType: 'substitute',
+      title: sanitizeBoardText(title),
+      body: sanitizeBoardText(body),
+      authorId: input.authorId,
+      authorName: input.authorName,
+      authorRole: input.authorRole,
+      imageAttachments: [],
+      linkedJobPostingId: input.jobSummary.jobPostingId,
+      jobSummary: input.jobSummary,
+    });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '대타 구인 글 작성',
+      component: COMPONENT,
+      context: { authorId: input.authorId, applicationId: input.applicationId },
+    });
+  }
+}
+
 export const boardService = {
   fetchBoardPosts,
   getBoardHomeData,
@@ -1723,6 +1775,7 @@ export const boardService = {
   getBoardMentionCandidates,
   incrementBoardPostViewCount,
   createBoardPost,
+  createSubstitutePost,
   updateBoardPost,
   setBoardPostLock,
   hideBoardPost,
