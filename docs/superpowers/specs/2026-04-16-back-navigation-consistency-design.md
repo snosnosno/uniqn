@@ -3,7 +3,7 @@
 - 작성일: 2026-04-16
 - 작성자: Claude (superpowers:brainstorming)
 - 대상 프로젝트: `uniqn-mobile`
-- 상태: 설계 승인 대기
+- 상태: **구현 완료 (2026-04-16)** — 9개 그룹 단위 커밋으로 브랜치 `worktree-back-nav-consistency`에 반영. 전체 Jest 3523 테스트 통과, tsc/eslint 0 에러.
 
 ## 1. 배경
 
@@ -55,9 +55,10 @@ Stack.Screen (Expo Router)
 ### 4.2 예외 (헤더 없음 유지)
 
 - 탭 루트: `(app)/(tabs)/index.tsx`, `employer.tsx`, `qr.tsx`, `schedule.tsx`, `profile.tsx`, `board/index.tsx`, `board/[boardType].tsx`
+- `(app)/home.tsx` — 인증 진입점. `TabHeader`(로고/QR/알림 배지) 유지 (구현 중 발견)
 - `profile-setup.tsx` (강제 온보딩)
 - 인증 화면: `(auth)/login.tsx`, `signup.tsx`, `forgot-password.tsx`
-- 리다이렉트/에일리어스 전용: `app/index.tsx`, `+not-found.tsx`, `admin/index.tsx`, `admin/[...slug].tsx`, `employer/index.tsx`, `employer/[...slug].tsx`, `jobs/index.tsx`, `jobs/[id].tsx`, `applications/[id]/cancel.tsx`
+- 리다이렉트/에일리어스 전용: `app/index.tsx`, `+not-found.tsx`, `admin/index.tsx`, `admin/[...slug].tsx`, `employer/index.tsx`, `employer/[...slug].tsx`, `jobs/index.tsx`, `jobs/[id].tsx`는 실제론 UI 렌더 (에일리어스 아님, 마이그레이션 적용됨), `(public)/jobs/index.tsx` (redirect-only 판명), `applications/[id]/cancel.tsx` (redirect-only 확인)
 
 ### 4.3 `StackHeader` 표준 스펙 (현행 유지)
 
