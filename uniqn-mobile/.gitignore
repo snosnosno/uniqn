@@ -74,3 +74,6 @@ sentry.properties
 
 # EAS
 .eas/
+
+# Supabase CLI
+supabase/.temp/
