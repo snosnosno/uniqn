@@ -89,7 +89,7 @@ function PostingStaffLoader({ posting, onStaff }: PostingStaffLoaderProps) {
 }
 
 export function WeeklyStaffWidget() {
-  const { data, isLoading, error } = useMyJobPostings();
+  const { data, isLoading, error, refetch } = useMyJobPostings();
   const [staffByPosting, setStaffByPosting] = React.useState<Record<string, ConfirmedStaff[]>>({});
 
   const activePostings = React.useMemo(
@@ -106,8 +106,6 @@ export function WeeklyStaffWidget() {
     [activePostings, staffByPosting]
   );
 
-  const hasAnyCapacity = DAY_KEYS.some((day) => weeklySummary[day].capacity > 0);
-
   return (
     <>
       {activePostings.map((posting) => (
@@ -117,7 +115,7 @@ export function WeeklyStaffWidget() {
         title="이번 주 스태프"
         isLoading={isLoading}
         error={error instanceof Error ? error : null}
-        onRetry={() => {}}
+        onRetry={refetch}
         onSeeMore={() => router.push('/(employer)/my-postings')}
         seeMoreLabel="전체 보기"
         emptyState={
@@ -128,32 +126,28 @@ export function WeeklyStaffWidget() {
       >
         {!isLoading && activePostings.length > 0 ? (
           <View className="gap-1 py-1">
-            {DAY_KEYS.filter((day) => weeklySummary[day].capacity > 0 || hasAnyCapacity).map(
-              (day) => {
-                const { confirmed, capacity } = weeklySummary[day];
-                const ratio = capacity > 0 ? confirmed / capacity : 0;
+            {DAY_KEYS.filter((day) => weeklySummary[day].capacity > 0).map((day) => {
+              const { confirmed, capacity } = weeklySummary[day];
+              const ratio = capacity > 0 ? confirmed / capacity : 0;
 
-                return (
-                  <View key={day} className="flex-row items-center gap-2">
-                    <Text className="w-4 text-xs text-neutral-400 dark:text-neutral-400">
-                      {day}
-                    </Text>
-                    <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
-                      <View
-                        className="h-full rounded-sm"
-                        style={{
-                          width: `${Math.round(ratio * 100)}%`,
-                          backgroundColor: '#D4AF37',
-                        }}
-                      />
-                    </View>
-                    <Text className="w-8 text-right text-xs text-neutral-400 dark:text-neutral-400">
-                      {confirmed}/{capacity}
-                    </Text>
+              return (
+                <View key={day} className="flex-row items-center gap-2">
+                  <Text className="w-4 text-xs text-neutral-400 dark:text-neutral-400">{day}</Text>
+                  <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
+                    <View
+                      className="h-full rounded-sm"
+                      style={{
+                        width: `${Math.round(ratio * 100)}%`,
+                        backgroundColor: '#D4AF37',
+                      }}
+                    />
                   </View>
-                );
-              }
-            )}
+                  <Text className="w-8 text-right text-xs text-neutral-400 dark:text-neutral-400">
+                    {confirmed}/{capacity}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         ) : undefined}
       </DashboardWidgetShell>

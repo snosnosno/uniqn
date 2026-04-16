@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Card, SkeletonCard } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/icons';
-import { useThemeStore } from '@/stores/themeStore';
 
 interface EmptyStateConfig {
   message: string;
@@ -35,8 +34,6 @@ export function DashboardWidgetShell({
   onRetry,
   partial = false,
 }: DashboardWidgetShellProps) {
-  const isDarkMode = useThemeStore((s) => s.isDarkMode);
-
   if (isLoading) {
     return <SkeletonCard />;
   }
@@ -51,7 +48,9 @@ export function DashboardWidgetShell({
         </Text>
         {onRetry && (
           <Pressable onPress={onRetry} accessibilityRole="button">
-            <Text className="text-sm font-medium text-gold dark:text-gold">다시 시도</Text>
+            <Text className="text-sm font-medium text-primary-300 dark:text-primary-300">
+              다시 시도
+            </Text>
           </Pressable>
         )}
       </View>
@@ -78,7 +77,7 @@ export function DashboardWidgetShell({
                 accessibilityRole="button"
                 className="mt-2"
               >
-                <Text className="text-sm font-medium text-gold dark:text-gold">
+                <Text className="text-sm font-medium text-primary-300 dark:text-primary-300">
                   {emptyState.cta.label}
                 </Text>
               </Pressable>
@@ -95,8 +94,10 @@ export function DashboardWidgetShell({
           accessibilityRole="button"
           className="flex-row items-center justify-end"
         >
-          <Text className="text-sm font-medium text-gold dark:text-gold mr-1">{seeMoreLabel}</Text>
-          <ChevronRightIcon size={12} color={isDarkMode ? '#C9A84C' : '#C9A84C'} />
+          <Text className="text-sm font-medium text-primary-300 dark:text-primary-300 mr-1">
+            {seeMoreLabel}
+          </Text>
+          <ChevronRightIcon size={12} color="#C9A84C" />
         </Pressable>
       )}
     </Card>

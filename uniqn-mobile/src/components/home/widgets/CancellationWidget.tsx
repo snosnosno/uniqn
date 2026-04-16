@@ -13,7 +13,11 @@ import { getCancellationRequests } from '@/services';
 import type { ApplicationWithJob } from '@/services/jobs/applicationService';
 
 export function CancellationWidget() {
-  const { data: postings, isLoading: isPostingsLoading } = useMyJobPostings();
+  const {
+    data: postings,
+    isLoading: isPostingsLoading,
+    refetch: refetchPostings,
+  } = useMyJobPostings();
   const user = useAuthStore((state) => state.user);
 
   const activePostingIds = React.useMemo(
@@ -37,6 +41,11 @@ export function CancellationWidget() {
   const isQueriesLoading = cancellationQueries.some((q) => q.isLoading);
   const isLoading = isPostingsLoading || isQueriesLoading;
 
+  const handleRetry = React.useCallback(() => {
+    void refetchPostings();
+    cancellationQueries.forEach((q) => void q.refetch());
+  }, [refetchPostings, cancellationQueries]);
+
   const allPending: ApplicationWithJob[] = cancellationQueries.flatMap((q) => {
     const apps = q.data ?? [];
     return apps.filter((app) => app.cancellationRequest?.status === 'pending');
@@ -46,7 +55,7 @@ export function CancellationWidget() {
 
   if (isLoading) {
     return (
-      <DashboardWidgetShell title="취소 요청" isLoading onRetry={() => {}}>
+      <DashboardWidgetShell title="취소 요청" isLoading onRetry={handleRetry}>
         {undefined}
       </DashboardWidgetShell>
     );
@@ -62,7 +71,7 @@ export function CancellationWidget() {
     <DashboardWidgetShell
       title="취소 요청"
       isLoading={false}
-      onRetry={() => {}}
+      onRetry={handleRetry}
       onSeeMore={() => router.push('/(employer)')}
       seeMoreLabel="검토하기"
     >

@@ -5,7 +5,7 @@
  * staff 전용 사용자는 StaffDashboard 고정.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { Loading } from '@/components/ui';
@@ -18,7 +18,15 @@ import { getLayoutColor } from '@/constants/colors';
 export default function HomeDashboard() {
   const { isLoading, isEmployer } = useAuth();
   const canToggle = isEmployer;
-  const [view, setView] = useState<'staff' | 'employer'>(canToggle ? 'employer' : 'staff');
+  const [view, setView] = useState<'staff' | 'employer'>('staff');
+
+  // auth 비동기 로딩 완료 후 적절한 기본 뷰로 동기화
+  // (첫 렌더 시 isEmployer가 false일 수 있으므로 useState 초기값에 의존 불가)
+  useEffect(() => {
+    if (!isLoading) {
+      setView(isEmployer ? 'employer' : 'staff');
+    }
+  }, [isLoading, isEmployer]);
 
   const isDark = useThemeStore((state) => state.isDarkMode);
   const bgColor = getLayoutColor(isDark, 'content');
