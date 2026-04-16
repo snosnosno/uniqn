@@ -14,9 +14,11 @@ import {
   type ConfirmModalAction,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
+import { StackHeader } from '@/components/headers';
 import { useApplicantManagement } from '@/hooks/applicant';
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment } from '@/types';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 // ============================================================================
 // Main Component
@@ -24,6 +26,10 @@ import type { Assignment } from '@/types';
 
 export default function ApplicantsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
+  const { job, isFixed, handleShowQR } = useJobDetailContext();
+  const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
+  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
+  const headerTitleSuffix = <JobTitleSuffix jobTitle={job?.title ?? null} />;
 
   const {
     applicants,
@@ -129,7 +135,13 @@ export default function ApplicantsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="지원자 관리"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -143,7 +155,13 @@ export default function ApplicantsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="지원자 관리"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <ErrorState
           title="지원자 목록을 불러올 수 없습니다"
           message={error.message}
@@ -156,7 +174,13 @@ export default function ApplicantsScreen() {
   const isProcessing = isConfirmingWithHistory || isRejecting;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader
+        title="지원자 관리"
+        titleSuffix={headerTitleSuffix}
+        fallbackHref={headerBackHref}
+        rightAction={headerRightAction}
+      />
       {/* 지원자 목록 */}
       <ApplicantList
         applicants={applicants}

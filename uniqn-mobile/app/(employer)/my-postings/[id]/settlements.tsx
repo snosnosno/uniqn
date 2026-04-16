@@ -33,6 +33,7 @@ import {
 } from '@/components/employer';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { Loading, ErrorState } from '@/components';
+import { StackHeader } from '@/components/headers';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
@@ -53,6 +54,7 @@ import {
 } from '@/domains/settlement';
 import { serializeTaxSettings, type SalaryInfo } from '@/utils/settlement';
 import type { WorkLog, Allowances, CreateReportInput } from '@/types';
+import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
 
 // ============================================================================
 // Constants
@@ -221,6 +223,9 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
 export default function StaffSettlementsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
+  const { job: contextJob, isFixed, handleShowQR } = useJobDetailContext();
+  const headerBackHref = `/(employer)/my-postings/${jobPostingId ?? ''}`;
+  const headerRightAction = !isFixed ? <HeaderQRAction onPress={handleShowQR} /> : null;
 
   // 튜토리얼
 
@@ -229,6 +234,8 @@ export default function StaffSettlementsScreen() {
 
   // 공고 정보 (시급 포함)
   const { job: posting, refresh: refreshJobDetail } = useJobDetail(jobPostingId || '');
+  const headerJobTitle = posting?.title ?? contextJob?.title ?? null;
+  const headerTitleSuffix = <JobTitleSuffix jobTitle={headerJobTitle} />;
   const postingSettlement = useMemo(
     () => (posting ? getPostingSettlementContext(posting) : undefined),
     [posting]
@@ -615,7 +622,13 @@ export default function StaffSettlementsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="정산 관리"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <ErrorState
           title="지원하지 않는 화면입니다"
           message="고정공고는 1차 범위에서 정산과 근무 운영을 지원하지 않습니다."
@@ -627,7 +640,13 @@ export default function StaffSettlementsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="정산 관리"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
@@ -641,7 +660,13 @@ export default function StaffSettlementsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+        <StackHeader
+          title="정산 관리"
+          titleSuffix={headerTitleSuffix}
+          fallbackHref={headerBackHref}
+          rightAction={headerRightAction}
+        />
         <ErrorState
           title="데이터를 불러올 수 없습니다"
           message={error.message}
@@ -658,7 +683,13 @@ export default function StaffSettlementsScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <StackHeader
+        title="정산 관리"
+        titleSuffix={headerTitleSuffix}
+        fallbackHref={headerBackHref}
+        rightAction={headerRightAction}
+      />
       {/* 탭 헤더 */}
       <TabHeader
         activeTab={activeTab}
