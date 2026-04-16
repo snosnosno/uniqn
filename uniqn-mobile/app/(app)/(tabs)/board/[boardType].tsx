@@ -1,20 +1,28 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, RefreshControl, Text, View } from 'react-native';
+import { RefreshControl, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
 import { EmptyState, ErrorState } from '@/components/ui';
-import { AddCircleOutlineIcon, DocumentTextOutlineIcon } from '@/components/icons';
+import { DocumentTextOutlineIcon } from '@/components/icons';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
+import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
+import { BoardWriteFab } from '@/components/board/BoardWriteFab';
 import { useBoardPosts } from '@/hooks/useBoard';
-import { useThemeStore } from '@/stores/themeStore';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
+import { SECONDARY_PALETTE } from '@/constants/colors';
 
 const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda', 'substitute'];
 
+function navigateToTab(tab: BoardTabKey) {
+  if (tab === 'home') {
+    router.replace('/(app)/(tabs)/board');
+    return;
+  }
+  router.replace(`/(app)/(tabs)/board/${tab}`);
+}
+
 export default function BoardListScreen() {
-  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const { boardType: rawBoardType } = useLocalSearchParams<{ boardType: string }>();
   const boardType = rawBoardType as BoardType;
   const isValidBoardType = SUPPORTED_BOARD_TYPES.includes(boardType);
@@ -39,21 +47,8 @@ export default function BoardListScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <TabHeader
-        title={BOARD_TYPE_LABELS[boardType]}
-        rightAction={
-          isWritable ? (
-            <Pressable
-              onPress={() => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)}
-              className="rounded-sm p-2 active:bg-secondary-100 dark:active:bg-surface"
-              accessibilityRole="button"
-              accessibilityLabel="글쓰기"
-            >
-              <AddCircleOutlineIcon size={24} color={isDarkMode ? '#D4AF37' : '#8A7228'} />
-            </Pressable>
-          ) : null
-        }
-      />
+      <TabHeader title={BOARD_TYPE_LABELS[boardType]} />
+      <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} />
 
       {error ? (
         <View className="flex-1 items-center justify-center p-4">
@@ -74,13 +69,13 @@ export default function BoardListScreen() {
           )}
           keyExtractor={(item) => item.id}
           // @ts-expect-error - FlashList 2.x runtime prop is available but project types lag behind
-          estimatedItemSize={164}
-          contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+          estimatedItemSize={72}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: 80 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           ListEmptyComponent={
             isLoading ? (
               <View className="flex-1 items-center justify-center py-20">
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="text-sm font-sans text-secondary-500 dark:text-secondary-400">
                   게시글을 불러오는 중이에요...
                 </Text>
               </View>
@@ -106,6 +101,12 @@ export default function BoardListScreen() {
           }
         />
       )}
+
+      {isWritable ? (
+        <BoardWriteFab
+          onPress={() => router.push(`/(app)/(tabs)/board/write?boardType=${safeBoardType}`)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
