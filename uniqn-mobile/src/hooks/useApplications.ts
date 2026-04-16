@@ -39,6 +39,7 @@ interface SubmitApplicationV2Params {
 interface RequestCancellationParams {
   applicationId: string;
   reason: string;
+  wantsSubstitutePost?: boolean;
 }
 
 const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
@@ -212,7 +213,11 @@ export function useApplications() {
       requireAuth(user?.uid, 'useApplications');
       requireOnlineForMutation('useApplications.requestCancellation');
       return requestCancellationService(
-        { applicationId: params.applicationId, reason: params.reason },
+        {
+          applicationId: params.applicationId,
+          reason: params.reason,
+          wantsSubstitutePost: params.wantsSubstitutePost,
+        },
         user.uid
       );
     },

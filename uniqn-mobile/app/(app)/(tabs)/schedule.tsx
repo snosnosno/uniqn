@@ -362,9 +362,9 @@ export default function ScheduleScreen() {
 
   // 취소 요청 제출 핸들러
   const handleSubmitCancellation = useCallback(
-    (applicationId: string, reason: string) => {
+    (applicationId: string, reason: string, wantsSubstitutePost: boolean) => {
       requestCancellation(
-        { applicationId, reason },
+        { applicationId, reason, wantsSubstitutePost },
         {
           onSuccess: () => {
             setCancellationApp(null);

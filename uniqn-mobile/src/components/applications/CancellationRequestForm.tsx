@@ -7,7 +7,7 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, Pressable } from 'react-native';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
@@ -27,7 +27,7 @@ interface CancellationRequestFormProps {
   /** 제출 중 여부 */
   isSubmitting: boolean;
   /** 취소 요청 제출 */
-  onSubmit: (applicationId: string, reason: string) => void;
+  onSubmit: (applicationId: string, reason: string, wantsSubstitutePost: boolean) => void;
   /** 닫기 */
   onClose: () => void;
 }
@@ -45,6 +45,7 @@ export function CancellationRequestForm({
 }: CancellationRequestFormProps) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [wantsSubstitutePost, setWantsSubstitutePost] = useState(true);
 
   // 제출 가능 여부 (5자 이상)
   const canSubmit = reason.trim().length >= 5 && !isSubmitting;
@@ -55,6 +56,7 @@ export function CancellationRequestForm({
     const result = cancellationRequestSchema.safeParse({
       applicationId: application.id,
       reason: reason.trim(),
+      wantsSubstitutePost,
     });
 
     if (!result.success) {
@@ -64,13 +66,14 @@ export function CancellationRequestForm({
     }
 
     setError(null);
-    onSubmit(application.id, reason.trim());
-  }, [application.id, reason, onSubmit]);
+    onSubmit(application.id, reason.trim(), wantsSubstitutePost);
+  }, [application.id, reason, wantsSubstitutePost, onSubmit]);
 
   // 닫기 핸들러 (상태 초기화)
   const handleClose = useCallback(() => {
     setReason('');
     setError(null);
+    setWantsSubstitutePost(true);
     onClose();
   }, [onClose]);
 
@@ -155,11 +158,38 @@ export function CancellationRequestForm({
           </Text>
         </FormField>
 
+        {/* 대타 구인 게시글 */}
+        <Pressable
+          onPress={() => setWantsSubstitutePost((prev) => !prev)}
+          className="flex-row items-center bg-surface-page rounded-lg p-4 mt-4"
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: wantsSubstitutePost }}
+        >
+          <View
+            className={`w-5 h-5 rounded border mr-3 items-center justify-center ${
+              wantsSubstitutePost
+                ? 'bg-primary-500 border-primary-500'
+                : 'border-secondary-300 dark:border-secondary-600'
+            }`}
+          >
+            {wantsSubstitutePost && <Text className="text-white text-xs font-sans-bold">✓</Text>}
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+              대타 구해요 글 올리기
+            </Text>
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-0.5 font-sans">
+              게시판에 대타 구인 글이 자동으로 올라갑니다
+            </Text>
+          </View>
+        </Pressable>
+
         {/* 주의사항 */}
         <View className="bg-surface-page rounded-lg p-4 mt-4">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 leading-5 font-sans">
-            • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}• 구인자가 거절하면 지원은 유지됩니다.
-            {'\n'}• 무단 취소는 평판에 영향을 줄 수 있습니다.
+            • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}• 승인 시 해당 자리가 공고에 다시
+            노출됩니다.{'\n'}• 구인자가 거절하면 지원은 유지됩니다.{'\n'}• 무단 취소는 평판에 영향을
+            줄 수 있습니다.
           </Text>
         </View>
       </View>
