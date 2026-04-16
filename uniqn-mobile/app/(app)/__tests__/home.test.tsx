@@ -24,6 +24,14 @@ jest.mock('@/components/home/EmployerDashboard', () => ({
   },
 }));
 
+// Mock TabHeader
+jest.mock('@/components/headers', () => ({
+  TabHeader: () => {
+    const { View } = jest.requireActual('react-native') as typeof import('react-native');
+    return <View testID="tab-header" />;
+  },
+}));
+
 // Mock DashboardViewToggle
 jest.mock('@/components/home/DashboardViewToggle', () => ({
   DashboardViewToggle: ({ onChange }: { value: string; onChange: (v: string) => void }) => {

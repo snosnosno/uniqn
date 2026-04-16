@@ -112,7 +112,7 @@ export function WeeklyStaffWidget() {
         <PostingStaffLoader key={posting.id} posting={posting} onStaff={handleStaff} />
       ))}
       <DashboardWidgetShell
-        title="이번 주 스태프"
+        title="이번 주 스태프 현황"
         isLoading={isLoading}
         error={error instanceof Error ? error : null}
         onRetry={refetch}

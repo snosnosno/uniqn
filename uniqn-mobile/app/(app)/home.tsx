@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { Loading } from '@/components/ui';
+import { TabHeader } from '@/components/headers';
 import { StaffDashboard } from '@/components/home/StaffDashboard';
 import { EmployerDashboard } from '@/components/home/EmployerDashboard';
 import { DashboardViewToggle } from '@/components/home/DashboardViewToggle';
@@ -34,6 +35,7 @@ export default function HomeDashboard() {
   if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+        <TabHeader title="" showQR={false} />
         <Loading variant="layout" />
       </SafeAreaView>
     );
@@ -41,6 +43,7 @@ export default function HomeDashboard() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+      <TabHeader title="" showQR={false} />
       {canToggle && (
         <DashboardViewToggle value={view} onChange={(v) => setView(v as 'staff' | 'employer')} />
       )}

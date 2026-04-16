@@ -60,8 +60,15 @@ describe('TabHeader', () => {
     expect(mockPush).toHaveBeenCalledWith('/(app)/home');
   });
 
-  it('does not navigate when already on home screen', () => {
+  it('does not navigate when already on home screen (grouped path)', () => {
     mockPathname.mockReturnValue('/(app)/home');
+    const { getByRole } = render(<TabHeader title="구인구직" />);
+    fireEvent.press(getByRole('button', { name: 'UNIQN 홈으로 이동' }));
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate when already on home screen (web path)', () => {
+    mockPathname.mockReturnValue('/home');
     const { getByRole } = render(<TabHeader title="구인구직" />);
     fireEvent.press(getByRole('button', { name: 'UNIQN 홈으로 이동' }));
     expect(mockPush).not.toHaveBeenCalled();

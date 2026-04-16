@@ -30,7 +30,9 @@ export function TabHeader({
   const pathname = usePathname();
 
   const handleLogoPress = () => {
-    if (pathname === '/(app)/home') {
+    // pathname은 플랫폼에 따라 '/home' 또는 '/(app)/home'로 반환됨
+    const isOnHome = pathname === '/home' || pathname === '/(app)/home';
+    if (isOnHome) {
       return;
     }
     router.push('/(app)/home');
@@ -41,19 +43,6 @@ export function TabHeader({
       className="h-12 flex-row items-center px-4"
       style={{ backgroundColor: headerBackgroundColor }}
     >
-      {/* 중앙 로고 (absolute — 항상 화면 정중앙) */}
-      <Pressable
-        onPress={handleLogoPress}
-        hitSlop={8}
-        className={`absolute left-0 right-0 items-center ${HEADER_CLASSES.actionPressed}`}
-        accessibilityRole="button"
-        accessibilityLabel="UNIQN 홈으로 이동"
-      >
-        <Text className="font-display text-lg font-bold" style={{ color: '#D4AF37' }}>
-          UNIQN
-        </Text>
-      </Pressable>
-
       {/* 좌: 탭 제목 */}
       <View className="flex-1 items-start" style={{ paddingRight: 60 }}>
         <Text
@@ -105,6 +94,32 @@ export function TabHeader({
             <SettingsIcon size={24} color={actionColor} />
           </Pressable>
         ) : null}
+      </View>
+
+      {/* 중앙 로고 (absolute + pointerEvents box-none — 실제 로고만 tap 영역) */}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Pressable
+          onPress={handleLogoPress}
+          hitSlop={8}
+          className={`px-3 py-1 ${HEADER_CLASSES.actionPressed}`}
+          accessibilityRole="button"
+          accessibilityLabel="UNIQN 홈으로 이동"
+        >
+          <Text className="font-display text-lg font-bold" style={{ color: '#D4AF37' }}>
+            UNIQN
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
