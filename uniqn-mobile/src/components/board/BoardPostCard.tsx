@@ -1,6 +1,4 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
-import { Text, View } from 'react-native';
-import { Badge, Card } from '@/components/ui';
+import { Pressable, Text, View } from 'react-native';
 import {
   ChatbubbleEllipsesOutlineIcon,
   CloseCircleOutlineIcon,
@@ -9,7 +7,10 @@ import {
   LockIcon,
   PinIcon,
 } from '@/components/icons';
-import { BOARD_TYPE_LABELS, type BoardPost } from '@/types/board';
+import { BoardTypeBadge } from './BoardTypeBadge';
+import { formatCompactCount } from '@/utils/formatCompactCount';
+import { SECONDARY_PALETTE } from '@/constants/colors';
+import type { BoardPost } from '@/types/board';
 
 interface BoardPostCardProps {
   post: BoardPost;
@@ -18,82 +19,69 @@ interface BoardPostCardProps {
 
 function formatMetaDate(post: BoardPost): string {
   const value = post.lastActivityAt ?? post.createdAt ?? post.updatedAt;
-  if (!value) {
-    return '';
-  }
-
+  if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
-    date.getDate()
-  ).padStart(2, '0')}`;
+  const now = new Date();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  if (date.getFullYear() !== now.getFullYear()) {
+    return `${date.getFullYear()}.${mm}.${dd}`;
+  }
+  return `${mm}.${dd}`;
 }
 
 export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
-  const showEngagementMetrics = post.boardType !== 'notice';
-
   return (
-    <Card onPress={() => onPress(post)} className="mb-3">
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <View className="mb-2 flex-row flex-wrap items-center gap-2">
-            <Badge variant={post.boardType === 'schedule' ? 'primary' : 'secondary'} size="sm">
-              {BOARD_TYPE_LABELS[post.boardType]}
-            </Badge>
-            {post.isPinned ? <PinIcon size={16} color="#D4A017" /> : null}
-            {post.isLocked ? <LockIcon size={16} color="#DC2626" /> : null}
-          </View>
-
-          <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-secondary-100">
-            {post.title}
+    <Pressable
+      onPress={() => onPress(post)}
+      accessibilityRole="button"
+      accessibilityLabel={`${post.title} 게시글 상세 보기`}
+      className="border-b border-secondary-200 dark:border-surface-overlay px-1 py-2.5 active:opacity-70"
+    >
+      <View className="flex-row items-center gap-2 mb-1">
+        <BoardTypeBadge boardType={post.boardType} />
+        {post.isPinned ? <PinIcon size={14} color="#D4AF37" /> : null}
+        {post.isLocked ? <LockIcon size={14} color="#DC2626" /> : null}
+        <Text
+          numberOfLines={1}
+          className="flex-1 text-base font-sans-semibold text-content-primary dark:text-secondary-100"
+        >
+          {post.title}
+        </Text>
+      </View>
+      <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1 pl-1">
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          {post.authorName}
+        </Text>
+        <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
+          {formatMetaDate(post)}
+        </Text>
+        <View className="flex-row items-center">
+          <ChatbubbleEllipsesOutlineIcon size={12} color="#D4AF37" />
+          <Text className="ml-1 text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
+            {formatCompactCount(post.commentCount)}
           </Text>
-          <Text
-            className="mb-3 text-sm text-content-muted dark:text-secondary-400 font-sans"
-            numberOfLines={2}
-          >
-            {post.body}
+        </View>
+        <View className="flex-row items-center">
+          <EyeIcon size={12} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-1 text-xs font-sans text-secondary-500 dark:text-secondary-400">
+            {formatCompactCount(post.viewCount)}
           </Text>
-
-          <View className="flex-row flex-wrap items-center gap-3">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-              {post.authorName}
-            </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-              {formatMetaDate(post)}
-            </Text>
-            {showEngagementMetrics ? (
-              <View className="flex-row items-center">
-                <ChatbubbleEllipsesOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />
-                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  {post.commentCount}
-                </Text>
-              </View>
-            ) : null}
-            {showEngagementMetrics ? (
-              <View className="flex-row items-center">
-                <HeartIcon size={14} color="#16A34A" />
-                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  {post.likeCount}
-                </Text>
-              </View>
-            ) : null}
-            {showEngagementMetrics ? (
-              <View className="flex-row items-center">
-                <CloseCircleOutlineIcon size={14} color="#DC2626" />
-                <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  {post.dislikeCount}
-                </Text>
-              </View>
-            ) : null}
-            <View className="flex-row items-center">
-              <EyeIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                {post.viewCount}
-              </Text>
-            </View>
-          </View>
+        </View>
+        <View className="flex-row items-center">
+          <HeartIcon size={12} color="#16A34A" />
+          <Text className="ml-1 text-xs font-sans text-success-700 dark:text-success-500">
+            {formatCompactCount(post.likeCount)}
+          </Text>
+        </View>
+        <View className="flex-row items-center">
+          <CloseCircleOutlineIcon size={12} color="#DC2626" />
+          <Text className="ml-1 text-xs font-sans text-error-700 dark:text-error-500">
+            {formatCompactCount(post.dislikeCount)}
+          </Text>
         </View>
       </View>
-    </Card>
+    </Pressable>
   );
 }
 

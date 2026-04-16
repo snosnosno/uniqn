@@ -6,17 +6,10 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { useCallback, useMemo, memo, useEffect } from 'react';
+import React, { useCallback, useMemo, memo } from 'react';
 import { View, Text, Switch } from 'react-native';
 import { useAllowances } from '@/hooks';
-import {
-  extractRolesFromPosting,
-  syncRolesWithExtracted,
-  parseCurrency,
-  calculateEstimatedCost,
-  calculateTotalCount,
-} from '@/utils/salary';
-import { shouldPreserveNonFixedDraftRoles } from '@/utils/job-posting/draftRoles';
+import { parseCurrency, calculateEstimatedCost, calculateTotalCount } from '@/utils/salary';
 import type { SalaryType, SalaryInfo, TaxSettings } from '@/types';
 import { TaxSettingsEditor } from '@/components/employer/settlement/TaxSettingsEditor';
 import { DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
@@ -39,37 +32,8 @@ export const SalarySection = memo(function SalarySection({
   onUpdate,
   errors = {},
 }: SalarySectionProps) {
-  // ============================================================================
-  // 역할 추출 로직 (유틸리티 함수 사용)
-  // ============================================================================
-  const extractedRoles = useMemo(
-    () => extractRolesFromPosting(data.postingType, data.roles, data.dateSpecificRequirements),
-    [data.postingType, data.roles, data.dateSpecificRequirements]
-  );
-
-  // ============================================================================
-  // 역할 변경 시 data.roles 동기화
-  // ============================================================================
-  useEffect(() => {
-    // fixed 타입은 이미 data.roles를 직접 사용하므로 동기화 불필요
-    if (data.postingType === 'fixed') return;
-
-    if (extractedRoles.length === 0 && shouldPreserveNonFixedDraftRoles(data)) {
-      return;
-    }
-
-    const updatedRoles = syncRolesWithExtracted(
-      extractedRoles,
-      data.roles,
-      data.useSameSalary ?? false
-    );
-
-    if (updatedRoles) {
-      onUpdate({ roles: updatedRoles });
-    }
-  }, [extractedRoles, data, onUpdate]);
-
-  // 실제 표시할 역할 목록
+  // data.roles는 draftToFormData → buildDatedFormRoles 경로에서 timeSlots로부터 자동 파생되므로
+  // 이 컴포넌트에서 별도 sync effect를 돌리면 draft→formData→effect→patch→draft 무한 루프 발생.
   const roles = data.roles;
 
   // 전체 동일 급여 토글

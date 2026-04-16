@@ -287,10 +287,10 @@ export default function AdminTournamentsPage() {
 
       try {
         if (modalState.mode === 'approve') {
-          await approve.mutateAsync({ postingId: modalState.posting.id });
+          await approve.mutateAsync({ jobPostingId: modalState.posting.id });
         } else {
           if (!reason) return;
-          await reject.mutateAsync({ postingId: modalState.posting.id, reason });
+          await reject.mutateAsync({ jobPostingId: modalState.posting.id, reason });
         }
         setModalState({ visible: false, mode: 'approve', posting: null });
       } catch {

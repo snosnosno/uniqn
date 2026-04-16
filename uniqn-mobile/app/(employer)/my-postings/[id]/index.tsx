@@ -552,7 +552,7 @@ export default function JobPostingDetailScreen() {
                 </Pressable>
                 <View className="ml-2 flex-1">
                   <ResubmitButton
-                    postingId={posting.id}
+                    jobPostingId={posting.id}
                     size="md"
                     fullWidth
                     onSuccess={handleRefresh}

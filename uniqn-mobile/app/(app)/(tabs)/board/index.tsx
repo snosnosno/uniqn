@@ -1,61 +1,45 @@
-import type { ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TabHeader } from '@/components/headers';
-import { Card, EmptyState, ErrorState, SkeletonListItem } from '@/components/ui';
-import {
-  CalendarIcon,
-  DocumentTextOutlineIcon,
-  HashtagIcon,
-  MessageIcon,
-  UsersIcon,
-} from '@/components/icons';
+import { EmptyState, ErrorState, SkeletonListItem } from '@/components/ui';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
+import { BoardTabBar, type BoardTabKey } from '@/components/board/BoardTabBar';
+import { PinnedNoticeBanner } from '@/components/board/PinnedNoticeBanner';
 import { useBoardHome } from '@/hooks/useBoard';
 import { useAuth } from '@/hooks/useAuth';
-import { PRIMARY_COLORS } from '@/constants/colors';
 import type { BoardPost, BoardType } from '@/types';
-
-interface BoardEntryCardProps {
-  title: string;
-  icon: ReactNode;
-  boardType: BoardType;
-}
-
-function BoardEntryCard({ title, icon, boardType }: BoardEntryCardProps) {
-  return (
-    <Pressable
-      className="flex-1 items-center rounded-md border border-secondary-200 bg-white py-4 px-2 active:opacity-70 dark:border-surface-overlay dark:bg-surface-elevated"
-      onPress={() => router.push(`/(app)/(tabs)/board/${boardType}`)}
-      accessibilityRole="button"
-      accessibilityLabel={`${title} 게시판으로 이동`}
-    >
-      <View className="mb-2">{icon}</View>
-      <Text className="text-center text-xs font-sans-semibold text-content-primary dark:text-secondary-100">
-        {title}
-      </Text>
-    </Pressable>
-  );
-}
 
 interface BoardSectionProps {
   title: string;
   emptyTitle: string;
   posts: BoardPost[];
+  moreBoardType?: BoardType;
 }
 
-function BoardSection({ title, emptyTitle, posts }: BoardSectionProps) {
+function BoardSection({ title, emptyTitle, posts, moreBoardType }: BoardSectionProps) {
   return (
-    <View className="mb-6">
-      <Text className="mb-3 text-lg font-display-semibold text-content-primary dark:text-secondary-100">
-        {title}
-      </Text>
+    <View className="mb-4">
+      <View className="mb-2 flex-row items-center justify-between">
+        <Text className="text-xs font-sans-semibold uppercase tracking-wider text-secondary-600 dark:text-secondary-400">
+          {title}
+        </Text>
+        {moreBoardType ? (
+          <Pressable
+            onPress={() => router.replace(`/(app)/(tabs)/board/${moreBoardType}`)}
+            accessibilityRole="button"
+            accessibilityLabel={`${title} 더보기`}
+            className="active:opacity-70"
+          >
+            <Text className="text-xs font-sans text-primary-700 dark:text-primary-300">
+              더보기 ›
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {posts.length === 0 ? (
-        <Card>
-          <EmptyState title={emptyTitle} description="아직 표시할 게시글이 없어요." compact />
-        </Card>
+        <EmptyState title={emptyTitle} description="아직 표시할 게시글이 없어요." compact />
       ) : (
         posts.map((post) => (
           <BoardPostCard
@@ -69,6 +53,11 @@ function BoardSection({ title, emptyTitle, posts }: BoardSectionProps) {
   );
 }
 
+function navigateToTab(tab: BoardTabKey) {
+  if (tab === 'home') return;
+  router.replace(`/(app)/(tabs)/board/${tab}`);
+}
+
 export default function BoardHomeScreen() {
   const { role, isAdmin } = useAuth();
   const { data, isLoading, error, refetch, isRefetching } = useBoardHome();
@@ -76,6 +65,7 @@ export default function BoardHomeScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <TabHeader title="게시판" />
+      <BoardTabBar activeTab="home" onTabPress={navigateToTab} />
 
       {isLoading ? (
         <ScrollView className="flex-1" contentContainerClassName="p-4">
@@ -97,59 +87,28 @@ export default function BoardHomeScreen() {
           contentContainerClassName="p-4 pb-8"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         >
-          <View className="mb-6 gap-2">
-            <View className="flex-row gap-2">
-              <BoardEntryCard
-                title="공지사항"
-                icon={<DocumentTextOutlineIcon size={28} color={PRIMARY_COLORS[700]} />}
-                boardType="notice"
-              />
-              <BoardEntryCard
-                title="일정게시판"
-                icon={<CalendarIcon size={28} color="#0F766E" />}
-                boardType="schedule"
-              />
-              <BoardEntryCard
-                title="자유게시판"
-                icon={<MessageIcon size={28} color={PRIMARY_COLORS[700]} />}
-                boardType="free"
-              />
-            </View>
-            <View className="flex-row gap-2">
-              <BoardEntryCard
-                title="TDA 토론"
-                icon={<HashtagIcon size={28} color={PRIMARY_COLORS[500]} />}
-                boardType="tda"
-              />
-              <BoardEntryCard
-                title="대타 구인"
-                icon={<UsersIcon size={28} color={PRIMARY_COLORS[500]} />}
-                boardType="substitute"
-              />
-              <View className="flex-1" />
-            </View>
-          </View>
+          <PinnedNoticeBanner
+            notices={data?.pinnedNotices ?? []}
+            onPress={(notice) => router.push(`/(app)/(tabs)/board/post/${notice.id}`)}
+          />
 
           <BoardSection
-            title="고정 공지"
-            emptyTitle="등록된 고정 공지가 없어요"
-            posts={data?.pinnedNotices ?? []}
+            title="🔥 인기글"
+            emptyTitle="아직 인기글이 없어요"
+            posts={data?.popularCommunityPosts ?? []}
+            moreBoardType="free"
           />
           <BoardSection
             title={
               isAdmin
-                ? '최근 일정 활동'
+                ? '🕒 최근 일정 활동'
                 : role === 'employer'
-                  ? '내 공고 최근 활동'
-                  : '내 일정 최근 활동'
+                  ? '🕒 내 공고 최근 활동'
+                  : '🕒 내 일정 최근 활동'
             }
             emptyTitle="표시할 일정 활동이 없어요"
             posts={data?.recentSchedulePosts ?? []}
-          />
-          <BoardSection
-            title="커뮤니티 인기글"
-            emptyTitle="아직 인기글이 없어요"
-            posts={data?.popularCommunityPosts ?? []}
+            moreBoardType="schedule"
           />
         </ScrollView>
       )}

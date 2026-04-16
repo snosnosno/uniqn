@@ -7,22 +7,12 @@ test.describe('게시판 사용자 흐름', () => {
     await basePage.waitForReady();
 
     await expect(page.getByText('게시판').first()).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /^공지사항 운영 공지와 업데이트 내용을 확인해요\./ })
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /^내 일정게시판 확정된 내 일정 게시판만 모아서 확인해요\./ })
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /^자유게시판 일반 이야기와 소식을 자유롭게 나눠요\./ })
-    ).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: /^TDA 토론 규정, 운영, 핸드 리뷰를 주제로 토론해요\./ })
-    ).toBeVisible();
+    await expect(page.getByLabel('공지 탭')).toBeVisible();
+    await expect(page.getByLabel('일정 탭')).toBeVisible();
+    await expect(page.getByLabel('자유 탭')).toBeVisible();
+    await expect(page.getByLabel('TDA 탭')).toBeVisible();
 
-    await page
-      .getByRole('button', { name: /^자유게시판 일반 이야기와 소식을 자유롭게 나눠요\./ })
-      .click();
+    await page.getByLabel('자유 탭').click();
     await page.waitForURL(/\/board\/free$/, { timeout: 10_000 });
     await expect(
       page.getByRole('button', { name: /\[seed\] Free board post/ }).first()
@@ -136,5 +126,26 @@ test.describe('게시판 사용자 흐름', () => {
 
     await expect(page.getByText('게시글을 수정할 수 없어요')).toBeVisible();
     await expect(page.getByText('글 작성자나 관리자만 게시글을 수정할 수 있어요.')).toBeVisible();
+  });
+
+  test('상단 탭 바가 홈과 카테고리 화면 모두에서 보인다', async ({ page, basePage }) => {
+    await page.goto('/board', { waitUntil: 'domcontentloaded' });
+    await basePage.waitForReady();
+
+    // 홈에서 탭 바 확인
+    await expect(page.getByLabel('자유 탭')).toBeVisible();
+
+    // 자유 탭 클릭 → 카테고리 화면에서도 탭 바 유지
+    await page.getByLabel('자유 탭').click();
+    await page.waitForURL(/\/board\/free$/, { timeout: 10_000 });
+    await basePage.waitForReady();
+
+    await expect(page.getByLabel('자유 탭')).toBeVisible();
+    await expect(page.getByLabel('TDA 탭')).toBeVisible();
+
+    // 탭이 실제로 상호작용 가능한지 확인 (TDA로 전환)
+    await page.getByLabel('TDA 탭').click();
+    await page.waitForURL(/\/board\/tda$/, { timeout: 10_000 });
+    await basePage.waitForReady();
   });
 });

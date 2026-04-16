@@ -24,7 +24,6 @@ export interface AdminUser {
   photoURL?: string;
   createdAt: Date;
   updatedAt: Date;
-  lastLoginAt?: Date;
   isActive: boolean;
   isVerified: boolean;
 }
@@ -109,7 +108,7 @@ export interface AdminUserFilters {
 /**
  * 정렬 가능 필드
  */
-export type AdminUserSortField = 'name' | 'email' | 'role' | 'createdAt' | 'lastLoginAt';
+export type AdminUserSortField = 'name' | 'email' | 'role' | 'createdAt';
 
 /**
  * 정렬 필드 레이블
@@ -119,7 +118,6 @@ export const ADMIN_USER_SORT_LABELS: Record<AdminUserSortField, string> = {
   email: '이메일',
   role: '역할',
   createdAt: '가입일',
-  lastLoginAt: '최근 로그인',
 };
 
 // ============================================================================

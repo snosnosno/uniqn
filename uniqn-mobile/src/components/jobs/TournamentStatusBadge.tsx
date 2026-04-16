@@ -54,7 +54,7 @@ type TournamentStatusBadgeProps = (
   /** 추가 className */
   className?: string;
   /** 공고 ID (재제출 기능 활성화용) */
-  postingId?: string;
+  jobPostingId?: string;
   /** 재제출 성공 시 콜백 */
   onResubmitSuccess?: () => void;
 };
@@ -132,7 +132,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
     showRejectionReason = true,
     size = 'md',
     className = '',
-    postingId,
+    jobPostingId,
     onResubmitSuccess,
   } = props;
 
@@ -186,11 +186,11 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
 
   // 수정하기 버튼
   const handleEdit = useCallback(() => {
-    if (postingId) {
+    if (jobPostingId) {
       setShowModal(false);
-      router.push(`/(employer)/my-postings/${postingId}/edit`);
+      router.push(`/(employer)/my-postings/${jobPostingId}/edit`);
     }
-  }, [postingId]);
+  }, [jobPostingId]);
 
   // 재제출 버튼 클릭
   const handleResubmitPress = useCallback(() => {
@@ -199,10 +199,10 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
 
   // 재제출 확인
   const handleResubmitConfirm = useCallback(() => {
-    if (!postingId) return;
+    if (!jobPostingId) return;
 
     resubmit
-      .mutateAsync({ postingId })
+      .mutateAsync({ jobPostingId })
       .then(() => {
         setShowConfirmModal(false);
         setShowModal(false);
@@ -211,7 +211,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
       .catch(() => {
         setShowConfirmModal(false);
       });
-  }, [postingId, resubmit, onResubmitSuccess]);
+  }, [jobPostingId, resubmit, onResubmitSuccess]);
 
   // 재제출 확인 모달 닫기
   const handleConfirmClose = useCallback(() => {
@@ -278,8 +278,8 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
               공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
             </Text>
 
-            {/* 액션 버튼 (postingId가 있을 때만 표시) */}
-            {postingId && (
+            {/* 액션 버튼 (jobPostingId가 있을 때만 표시) */}
+            {jobPostingId && (
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}

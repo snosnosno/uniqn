@@ -38,11 +38,15 @@ jest.mock('@/repositories', () => ({
 // ============================================================================
 
 const mockHttpsCallable = jest.fn();
+const mockGetSession = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     functions: {
       invoke: (...args: unknown[]) => mockHttpsCallable(...args),
+    },
+    auth: {
+      getSession: (...args: unknown[]) => mockGetSession(...args),
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -86,28 +90,34 @@ jest.mock('@/constants', () => ({
 describe('TournamentApprovalService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // 기본: 유효한 세션이 있다고 가정
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'test-access-token' } },
+      error: null,
+    });
   });
 
   describe('approveTournamentPosting', () => {
-    const postingId = 'tournament-1';
+    const jobPostingId = 'tournament-1';
     const approvedBy = 'admin-1';
     const approvedAt = '2026-02-12T00:00:00.000Z';
 
     it('성공: 대회공고 승인', async () => {
       const mockResponse = {
         success: true,
-        postingId,
+        jobPostingId,
         approvedBy,
         approvedAt,
       };
 
       mockHttpsCallable.mockResolvedValue({ data: mockResponse });
 
-      const result = await approveTournamentPosting({ postingId });
+      const result = await approveTournamentPosting({ jobPostingId });
 
       expect(result).toEqual(mockResponse);
       expect(mockHttpsCallable).toHaveBeenCalledWith('approve-job-posting', {
-        body: { postingId },
+        body: { jobPostingId: jobPostingId },
+        headers: { Authorization: 'Bearer test-access-token' },
       });
     });
 
@@ -117,7 +127,9 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Unauthenticated', context: { status: 401 } },
       });
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow('로그인이 필요합니다');
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow(
+        '로그인이 필요합니다'
+      );
     });
 
     it('실패: 관리자 권한 없음 (403)', async () => {
@@ -126,7 +138,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Permission denied', context: { status: 403 } },
       });
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow('권한이 없습니다');
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow('권한이 없습니다');
     });
 
     it('실패: 공고를 찾을 수 없음 (404)', async () => {
@@ -135,7 +147,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Document not found', context: { status: 404 } },
       });
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow(
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow(
         '공고를 찾을 수 없습니다'
       );
     });
@@ -149,7 +161,7 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow('Already processed');
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow('Already processed');
     });
 
     it('실패: 잘못된 요청 (422)', async () => {
@@ -161,18 +173,30 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow();
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow();
     });
 
     it('실패: 네트워크 에러', async () => {
       mockHttpsCallable.mockRejectedValue(new Error('Network error'));
 
-      await expect(approveTournamentPosting({ postingId })).rejects.toThrow();
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow();
+    });
+
+    it('실패: 세션 없음 (로그아웃 상태)', async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      await expect(approveTournamentPosting({ jobPostingId })).rejects.toThrow(
+        '로그인이 필요합니다'
+      );
+      expect(mockHttpsCallable).not.toHaveBeenCalled();
     });
   });
 
   describe('rejectTournamentPosting', () => {
-    const postingId = 'tournament-1';
+    const jobPostingId = 'tournament-1';
     const reason = '대회 정보가 부정확합니다. 재제출 시 참가 인원 및 일정을 확인해주세요.';
     const rejectedBy = 'admin-1';
     const rejectedAt = '2026-02-12T00:00:00.000Z';
@@ -180,7 +204,7 @@ describe('TournamentApprovalService', () => {
     it('성공: 대회공고 거부', async () => {
       const mockResponse = {
         success: true,
-        postingId,
+        jobPostingId,
         rejectedBy,
         rejectedAt,
         reason,
@@ -188,11 +212,12 @@ describe('TournamentApprovalService', () => {
 
       mockHttpsCallable.mockResolvedValue({ data: mockResponse });
 
-      const result = await rejectTournamentPosting({ postingId, reason });
+      const result = await rejectTournamentPosting({ jobPostingId, reason });
 
       expect(result).toEqual(mockResponse);
       expect(mockHttpsCallable).toHaveBeenCalledWith('reject-job-posting', {
-        body: { postingId, reason },
+        body: { jobPostingId: jobPostingId, reason },
+        headers: { Authorization: 'Bearer test-access-token' },
       });
     });
 
@@ -200,7 +225,7 @@ describe('TournamentApprovalService', () => {
       const longReason = '거부 사유 내용입니다. '.repeat(30);
       const mockResponse = {
         success: true,
-        postingId,
+        jobPostingId,
         rejectedBy,
         rejectedAt,
         reason: longReason,
@@ -208,7 +233,7 @@ describe('TournamentApprovalService', () => {
 
       mockHttpsCallable.mockResolvedValue({ data: mockResponse });
 
-      const result = await rejectTournamentPosting({ postingId, reason: longReason });
+      const result = await rejectTournamentPosting({ jobPostingId, reason: longReason });
 
       expect(result).toEqual(mockResponse);
     });
@@ -219,7 +244,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Permission denied', context: { status: 403 } },
       });
 
-      await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
+      await expect(rejectTournamentPosting({ jobPostingId, reason })).rejects.toThrow(
         '권한이 없습니다'
       );
     });
@@ -230,7 +255,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Posting not found', context: { status: 404 } },
       });
 
-      await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
+      await expect(rejectTournamentPosting({ jobPostingId, reason })).rejects.toThrow(
         '공고를 찾을 수 없습니다'
       );
     });
@@ -244,7 +269,7 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(rejectTournamentPosting({ postingId, reason })).rejects.toThrow(
+      await expect(rejectTournamentPosting({ jobPostingId, reason })).rejects.toThrow(
         'Already approved'
       );
     });
@@ -258,30 +283,33 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(rejectTournamentPosting({ postingId, reason: 'too short' })).rejects.toThrow();
+      await expect(
+        rejectTournamentPosting({ jobPostingId, reason: 'too short' })
+      ).rejects.toThrow();
     });
   });
 
   describe('resubmitTournamentPosting', () => {
-    const postingId = 'tournament-1';
+    const jobPostingId = 'tournament-1';
     const resubmittedBy = 'employer-1';
     const resubmittedAt = '2026-02-12T00:00:00.000Z';
 
     it('성공: 대회공고 재제출', async () => {
       const mockResponse = {
         success: true,
-        postingId,
+        jobPostingId,
         resubmittedBy,
         resubmittedAt,
       };
 
       mockHttpsCallable.mockResolvedValue({ data: mockResponse });
 
-      const result = await resubmitTournamentPosting({ postingId });
+      const result = await resubmitTournamentPosting({ jobPostingId });
 
       expect(result).toEqual(mockResponse);
       expect(mockHttpsCallable).toHaveBeenCalledWith('resubmit-job-posting', {
-        body: { postingId },
+        body: { jobPostingId: jobPostingId },
+        headers: { Authorization: 'Bearer test-access-token' },
       });
     });
 
@@ -291,7 +319,9 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Unauthenticated', context: { status: 401 } },
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow('로그인이 필요합니다');
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow(
+        '로그인이 필요합니다'
+      );
     });
 
     it('실패: 권한 없음 (공고 소유자가 아님)', async () => {
@@ -300,7 +330,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Not owner', context: { status: 403 } },
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow('권한이 없습니다');
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow('권한이 없습니다');
     });
 
     it('실패: 공고를 찾을 수 없음', async () => {
@@ -309,7 +339,7 @@ describe('TournamentApprovalService', () => {
         error: { message: 'Posting not found', context: { status: 404 } },
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow(
         '공고를 찾을 수 없습니다'
       );
     });
@@ -326,7 +356,7 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow(
         'Not in rejected status'
       );
     });
@@ -340,7 +370,7 @@ describe('TournamentApprovalService', () => {
         },
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow();
+      await expect(resubmitTournamentPosting({ jobPostingId })).rejects.toThrow();
     });
   });
 
@@ -581,11 +611,11 @@ describe('TournamentApprovalService', () => {
   });
 
   describe('getTournamentPostingById', () => {
-    const postingId = 'tournament-1';
+    const jobPostingId = 'tournament-1';
 
     it('성공: 대회공고 조회', async () => {
       const mockPosting: JobPosting = {
-        id: postingId,
+        id: jobPostingId,
         title: '서울 홀덤 토너먼트',
         postingType: 'tournament',
         tournamentConfig: { approvalStatus: 'pending' },
@@ -593,44 +623,44 @@ describe('TournamentApprovalService', () => {
 
       mockGetById.mockResolvedValue(mockPosting);
 
-      const result = await getTournamentPostingById(postingId);
+      const result = await getTournamentPostingById(jobPostingId);
 
       expect(result).toEqual(mockPosting);
-      expect(mockGetById).toHaveBeenCalledWith(postingId);
+      expect(mockGetById).toHaveBeenCalledWith(jobPostingId);
     });
 
     it('성공: 공고를 찾을 수 없음 (null 반환)', async () => {
       mockGetById.mockResolvedValue(null);
 
-      const result = await getTournamentPostingById(postingId);
+      const result = await getTournamentPostingById(jobPostingId);
 
       expect(result).toBeNull();
     });
 
     it('성공: 대회공고가 아닌 경우 (null 반환)', async () => {
       const mockPosting: JobPosting = {
-        id: postingId,
+        id: jobPostingId,
         title: '일반 공고',
         postingType: 'regular',
       } as JobPosting;
 
       mockGetById.mockResolvedValue(mockPosting);
 
-      const result = await getTournamentPostingById(postingId);
+      const result = await getTournamentPostingById(jobPostingId);
 
       expect(result).toBeNull();
     });
 
     it('성공: postingType이 undefined인 경우 (null 반환)', async () => {
       const mockPosting: JobPosting = {
-        id: postingId,
+        id: jobPostingId,
         title: '레거시 공고',
         postingType: undefined,
       } as JobPosting;
 
       mockGetById.mockResolvedValue(mockPosting);
 
-      const result = await getTournamentPostingById(postingId);
+      const result = await getTournamentPostingById(jobPostingId);
 
       expect(result).toBeNull();
     });
@@ -638,25 +668,25 @@ describe('TournamentApprovalService', () => {
     it('실패: Repository 에러', async () => {
       mockGetById.mockRejectedValue(new Error('Database error'));
 
-      await expect(getTournamentPostingById(postingId)).rejects.toThrow();
+      await expect(getTournamentPostingById(jobPostingId)).rejects.toThrow();
     });
   });
 
   describe('Edge Cases', () => {
-    it('approveTournamentPosting: 빈 postingId', async () => {
+    it('approveTournamentPosting: 빈 jobPostingId', async () => {
       mockHttpsCallable.mockRejectedValue({
         code: 'invalid-argument',
         message: 'Empty posting ID',
       });
 
-      await expect(approveTournamentPosting({ postingId: '' })).rejects.toThrow();
+      await expect(approveTournamentPosting({ jobPostingId: '' })).rejects.toThrow();
     });
 
     it('rejectTournamentPosting: 특수문자 포함 사유', async () => {
       const reason = '대회 내용에 <script> 태그가 포함되어 있습니다. 제거 후 재제출해주세요.';
       const mockResponse = {
         success: true,
-        postingId: 'tournament-1',
+        jobPostingId: 'tournament-1',
         rejectedBy: 'admin-1',
         rejectedAt: '2026-02-12T00:00:00.000Z',
         reason,
@@ -664,7 +694,7 @@ describe('TournamentApprovalService', () => {
 
       mockHttpsCallable.mockResolvedValue({ data: mockResponse });
 
-      const result = await rejectTournamentPosting({ postingId: 'tournament-1', reason });
+      const result = await rejectTournamentPosting({ jobPostingId: 'tournament-1', reason });
 
       expect(result.reason).toBe(reason);
     });
