@@ -1,4 +1,4 @@
-import { draftToFormData } from '../draftAdapter';
+import { applyFormDataPatch, draftToFormData } from '../draftAdapter';
 import { INITIAL_JOB_POSTING_DRAFT, type JobPostingDraft } from '@/types/jobPostingDraft';
 
 function createDatedDraft(): JobPostingDraft {
@@ -107,6 +107,79 @@ describe('draftAdapter dated seed handling', () => {
         salary: { type: 'hourly', amount: 13000 },
       },
     ]);
+  });
+
+  it('surfaces a custom timeSlot role in formData.roles after a patch round-trip', () => {
+    const draft = createDatedDraft();
+    const currentFormData = draftToFormData(draft);
+    const requirement = currentFormData.dateSpecificRequirements?.[0];
+    if (!requirement) {
+      throw new Error('expected a dated requirement');
+    }
+
+    const nextRequirements = [
+      {
+        ...requirement,
+        timeSlots: requirement.timeSlots.map((slot) => ({
+          ...slot,
+          roles: [
+            ...slot.roles,
+            {
+              id: 'custom-manager',
+              role: 'other' as const,
+              customRole: '매니저',
+              headcount: 1,
+              filled: 0,
+            },
+          ],
+        })),
+      },
+      ...(currentFormData.dateSpecificRequirements ?? []).slice(1),
+    ];
+
+    const nextDraft = applyFormDataPatch(draft, { dateSpecificRequirements: nextRequirements });
+    const nextFormData = draftToFormData(nextDraft);
+
+    expect(nextFormData.roles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: '매니저', isCustom: true, count: 1 }),
+      ])
+    );
+  });
+
+  it('is idempotent when the same custom role patch is applied twice', () => {
+    const draft = createDatedDraft();
+    const formData = draftToFormData(draft);
+    const requirement = formData.dateSpecificRequirements?.[0];
+    if (!requirement) {
+      throw new Error('expected a dated requirement');
+    }
+
+    const patched = [
+      {
+        ...requirement,
+        timeSlots: requirement.timeSlots.map((slot) => ({
+          ...slot,
+          roles: [
+            ...slot.roles,
+            {
+              id: 'custom-manager',
+              role: 'other' as const,
+              customRole: '매니저',
+              headcount: 1,
+              filled: 0,
+            },
+          ],
+        })),
+      },
+    ];
+
+    const firstDraft = applyFormDataPatch(draft, { dateSpecificRequirements: patched });
+    const firstFormData = draftToFormData(firstDraft);
+    const secondDraft = applyFormDataPatch(firstDraft, { roles: firstFormData.roles });
+    const secondFormData = draftToFormData(secondDraft);
+
+    expect(secondFormData.roles).toEqual(firstFormData.roles);
   });
 
   it('falls back to template seed slots when dated requirements are removed', () => {
