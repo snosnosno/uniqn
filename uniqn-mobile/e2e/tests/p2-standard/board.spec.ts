@@ -132,12 +132,20 @@ test.describe('게시판 사용자 흐름', () => {
     await page.goto('/board', { waitUntil: 'domcontentloaded' });
     await basePage.waitForReady();
 
+    // 홈에서 탭 바 확인
     await expect(page.getByLabel('자유 탭')).toBeVisible();
 
+    // 자유 탭 클릭 → 카테고리 화면에서도 탭 바 유지
     await page.getByLabel('자유 탭').click();
     await page.waitForURL(/\/board\/free$/, { timeout: 10_000 });
+    await basePage.waitForReady();
 
     await expect(page.getByLabel('자유 탭')).toBeVisible();
     await expect(page.getByLabel('TDA 탭')).toBeVisible();
+
+    // 탭이 실제로 상호작용 가능한지 확인 (TDA로 전환)
+    await page.getByLabel('TDA 탭').click();
+    await page.waitForURL(/\/board\/tda$/, { timeout: 10_000 });
+    await basePage.waitForReady();
   });
 });
