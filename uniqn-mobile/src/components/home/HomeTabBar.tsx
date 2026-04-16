@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { View, Pressable, Text } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, MessageIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 import { LAYOUT } from '@/constants';
@@ -17,7 +17,7 @@ import { useThemeStore } from '@/stores/themeStore';
 
 type TabItem = {
   label: string;
-  route: string;
+  route: Href;
   Icon: React.ComponentType<{ color: string; size: number }>;
 };
 
@@ -49,9 +49,8 @@ export function HomeTabBar() {
     >
       {TABS.map(({ label, route, Icon }) => (
         <Pressable
-          key={route}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onPress={() => router.push(route as any)}
+          key={label}
+          onPress={() => router.push(route)}
           accessibilityRole="button"
           accessibilityLabel={`${label} 탭으로 이동`}
           style={{
