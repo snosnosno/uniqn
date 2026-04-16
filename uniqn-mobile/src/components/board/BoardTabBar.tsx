@@ -28,8 +28,9 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerClassName="flex-row gap-1.5 px-4 py-2"
+      contentContainerClassName="flex-row items-center gap-1.5 px-4 py-2"
       className="border-b border-secondary-200 dark:border-surface-overlay"
+      style={{ flexGrow: 0, flexShrink: 0 }}
     >
       {TABS.map(({ key, label }) => {
         const isActive = activeTab === key;
@@ -40,7 +41,7 @@ export function BoardTabBar({ activeTab, onTabPress }: BoardTabBarProps) {
             accessibilityRole="tab"
             accessibilityLabel={`${label} 탭`}
             accessibilityState={{ selected: isActive }}
-            className={`rounded-xl px-3 py-1.5 ${
+            className={`self-center rounded-xl px-3 py-1.5 ${
               isActive
                 ? 'bg-primary-500 dark:bg-primary-400'
                 : 'bg-secondary-100 dark:bg-surface-elevated'
