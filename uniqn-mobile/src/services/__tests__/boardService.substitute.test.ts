@@ -1,6 +1,6 @@
 import { boardRepository } from '@/repositories';
 import { requireMatchingCurrentUser } from '@/services/auth/authorizationService';
-import { createSubstitutePost } from '../boardService';
+import { createSubstitutePost, archiveSubstitutePostByLinkedPosting } from '../boardService';
 import type { CreateSubstitutePostInput } from '../boardService';
 import type { BoardJobSummary } from '@/types/board';
 
@@ -22,6 +22,7 @@ jest.mock('@/repositories', () => ({
     updatePost: jest.fn(),
     updateComment: jest.fn(),
     setCommentStatus: jest.fn(),
+    setPostStatus: jest.fn(),
     createPost: jest.fn(),
   },
   jobPostingRepository: {},
@@ -170,5 +171,40 @@ describe('createSubstitutePost', () => {
 
     const callArg = (mockBoardRepository.createPost as jest.Mock).mock.calls[0][0];
     expect(callArg.body).toContain('개인 사정으로 출근이 어렵습니다.');
+  });
+});
+
+describe('archiveSubstitutePostByLinkedPosting', () => {
+  it('should call setPostStatus for each post when getPosts returns 2 posts', async () => {
+    const mockPosts = [{ id: 'post-1' }, { id: 'post-2' }];
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue(mockPosts);
+    (mockBoardRepository.setPostStatus as jest.Mock).mockResolvedValue(undefined);
+
+    await archiveSubstitutePostByLinkedPosting('job-123', 'staff-1');
+
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledTimes(2);
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledWith('post-1', 'archived');
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledWith('post-2', 'archived');
+  });
+
+  it('should never call setPostStatus when getPosts returns empty array', async () => {
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue([]);
+
+    await archiveSubstitutePostByLinkedPosting('job-123', 'staff-1');
+
+    expect(mockBoardRepository.setPostStatus).not.toHaveBeenCalled();
+  });
+
+  it('should resolve without rethrowing when setPostStatus throws (error swallowed, logger.warn called)', async () => {
+    const { logger } = jest.requireMock('@/utils/logger');
+    const mockPosts = [{ id: 'post-1' }];
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue(mockPosts);
+    (mockBoardRepository.setPostStatus as jest.Mock).mockRejectedValue(new Error('DB error'));
+
+    await expect(
+      archiveSubstitutePostByLinkedPosting('job-123', 'staff-1')
+    ).resolves.toBeUndefined();
+
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 });

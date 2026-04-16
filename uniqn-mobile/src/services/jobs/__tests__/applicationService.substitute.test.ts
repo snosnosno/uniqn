@@ -1,9 +1,11 @@
-import { requestCancellation } from '../applicationService';
+import { requestCancellation, reviewCancellationRequest } from '../applicationService';
 import { logger } from '@/utils/logger';
 import type { BoardJobSummary } from '@/types/board';
 
 const mockRequestCancellationWithTransaction = jest.fn();
+const mockReviewCancellationWithTransaction = jest.fn();
 const mockCreateSubstitutePost = jest.fn();
+const mockArchiveSubstitutePostByLinkedPosting = jest.fn();
 
 jest.mock('@/repositories', () => ({
   applicationRepository: {
@@ -14,7 +16,8 @@ jest.mock('@/repositories', () => ({
     getStatsByApplicantId: jest.fn(),
     requestCancellationWithTransaction: (...args: unknown[]) =>
       mockRequestCancellationWithTransaction(...args),
-    reviewCancellationWithTransaction: jest.fn(),
+    reviewCancellationWithTransaction: (...args: unknown[]) =>
+      mockReviewCancellationWithTransaction(...args),
     getCancellationRequests: jest.fn(),
   },
 }));
@@ -49,6 +52,8 @@ jest.mock('@/services/observability', () => ({
 // Mock boardService with a dynamic import mock
 jest.mock('@/services/boardService', () => ({
   createSubstitutePost: (...args: unknown[]) => mockCreateSubstitutePost(...args),
+  archiveSubstitutePostByLinkedPosting: (...args: unknown[]) =>
+    mockArchiveSubstitutePostByLinkedPosting(...args),
 }));
 
 function makeJobSummary(overrides: Partial<BoardJobSummary> = {}): BoardJobSummary {
@@ -172,5 +177,62 @@ describe('requestCancellation with substitute post', () => {
     );
 
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('reviewCancellationRequest archive path', () => {
+  const { applicationRepository } = jest.requireMock('@/repositories');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReviewCancellationWithTransaction.mockResolvedValue(undefined);
+    mockArchiveSubstitutePostByLinkedPosting.mockResolvedValue(undefined);
+    (applicationRepository.getById as jest.Mock).mockResolvedValue({
+      jobPostingId: 'job-123',
+      applicantId: 'staff-1',
+    });
+  });
+
+  it('should call archiveSubstitutePostByLinkedPosting with correct ids when approved is false', async () => {
+    await reviewCancellationRequest(
+      {
+        applicationId: 'app-1',
+        approved: false,
+        rejectionReason: '사유가 불충분합니다.',
+      },
+      'employer-1'
+    );
+
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-123', 'staff-1');
+  });
+
+  it('should also call archiveSubstitutePostByLinkedPosting when approved is true', async () => {
+    await reviewCancellationRequest(
+      {
+        applicationId: 'app-1',
+        approved: true,
+      },
+      'employer-1'
+    );
+
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-123', 'staff-1');
+  });
+
+  it('should still resolve when archiveSubstitutePostByLinkedPosting throws (best-effort)', async () => {
+    mockArchiveSubstitutePostByLinkedPosting.mockRejectedValue(new Error('Archive error'));
+
+    await expect(
+      reviewCancellationRequest(
+        {
+          applicationId: 'app-1',
+          approved: true,
+        },
+        'employer-1'
+      )
+    ).resolves.toBeUndefined();
+
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 });
