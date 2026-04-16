@@ -28,6 +28,7 @@ import { buildCurrentUserIdentitySnapshot } from '@/shared/profile/identity';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { STATUS } from '@/constants';
 import type { Application, ApplicationStatus, Assignment, PreQuestionAnswer } from '@/types';
+import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
 
 interface SubmitApplicationV2Params {
   jobPostingId: string;
@@ -40,6 +41,7 @@ interface RequestCancellationParams {
   applicationId: string;
   reason: string;
   wantsSubstitutePost?: boolean;
+  applicantContext?: { name: string; role: BoardAuthorRole; jobSummary: BoardJobSummary };
 }
 
 const APPLICATIONS_CACHE_SCHEMA_VERSION = 2;
@@ -218,7 +220,8 @@ export function useApplications() {
           reason: params.reason,
           wantsSubstitutePost: params.wantsSubstitutePost,
         },
-        user.uid
+        user.uid,
+        params.applicantContext
       );
     },
     onMutate: async ({ applicationId }) => {

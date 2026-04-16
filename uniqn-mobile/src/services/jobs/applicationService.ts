@@ -281,21 +281,21 @@ export async function reviewCancellationRequest(
       approved: input.approved,
     });
 
-    if (!input.approved) {
-      try {
-        const application = await applicationRepository.getById(input.applicationId);
-        if (application) {
-          await archiveSubstitutePostByLinkedPosting(
-            application.jobPostingId,
-            application.applicantId
-          );
-        }
-      } catch (archiveError) {
-        logger.warn('Substitute post archive failed (non-blocking)', {
-          applicationId: input.applicationId,
-          error: archiveError,
-        });
+    // 대타 글 아카이브: 취소 거절 시(대타 불필요) AND 취소 승인 시(슬롯 재오픈, 대타 임무 완료)
+    try {
+      const application = await applicationRepository.getById(input.applicationId);
+      if (application) {
+        await archiveSubstitutePostByLinkedPosting(
+          application.jobPostingId,
+          application.applicantId
+        );
       }
+    } catch (archiveError) {
+      logger.warn('Substitute post archive failed on review (non-blocking)', {
+        applicationId: input.applicationId,
+        approved: input.approved,
+        error: archiveError,
+      });
     }
 
     trace.putAttribute('status', 'success');

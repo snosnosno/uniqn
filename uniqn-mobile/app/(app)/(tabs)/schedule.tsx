@@ -15,6 +15,7 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useThemeStore } from '@/stores/themeStore';
@@ -31,6 +32,7 @@ import type {
   QRCodeScanResult,
   QRCodeAction,
 } from '@/types';
+import type { BoardAuthorRole } from '@/types/board';
 import { isGroupedScheduleEvent } from '@/types/schedule';
 
 // ============================================================================
@@ -220,6 +222,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 export default function ScheduleScreen() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const addToast = useToastStore((state) => state.addToast);
+  const { user, profile } = useAuthStore();
 
   // URL 파라미터 (알림 딥링크 — applicationId, cancelApplicationId)
   const searchParams = useLocalSearchParams<{
@@ -363,8 +366,24 @@ export default function ScheduleScreen() {
   // 취소 요청 제출 핸들러
   const handleSubmitCancellation = useCallback(
     (applicationId: string, reason: string, wantsSubstitutePost: boolean) => {
+      const applicantContext =
+        user && cancellationApp
+          ? {
+              name: profile?.name || profile?.nickname || user.displayName || '익명',
+              role: (profile?.role ?? 'staff') as BoardAuthorRole,
+              jobSummary: {
+                jobPostingId: cancellationApp.jobPostingId,
+                title: cancellationApp.jobPostingTitle ?? cancellationApp.jobPosting?.title ?? '',
+                workDate:
+                  cancellationApp.jobPostingDate ?? cancellationApp.jobPosting?.workDate ?? '',
+                workDates: cancellationApp.jobPosting?.workDates,
+                locationName: cancellationApp.jobPosting?.location?.name,
+              },
+            }
+          : undefined;
+
       requestCancellation(
-        { applicationId, reason, wantsSubstitutePost },
+        { applicationId, reason, wantsSubstitutePost, applicantContext },
         {
           onSuccess: () => {
             setCancellationApp(null);
@@ -373,7 +392,7 @@ export default function ScheduleScreen() {
         }
       );
     },
-    [requestCancellation, refresh]
+    [user, profile, cancellationApp, requestCancellation, refresh]
   );
 
   const handleCloseCancellationSheet = useCallback(() => {
