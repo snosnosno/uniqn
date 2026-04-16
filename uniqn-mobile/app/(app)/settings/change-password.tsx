@@ -85,7 +85,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="비밀번호 변경" fallbackHref="/(app)/settings" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

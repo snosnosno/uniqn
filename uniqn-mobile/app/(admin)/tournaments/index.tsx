@@ -307,7 +307,7 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
@@ -322,7 +322,7 @@ export default function AdminTournamentsPage() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
@@ -339,7 +339,7 @@ export default function AdminTournamentsPage() {
   const displayPostings = postings ?? [];
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">

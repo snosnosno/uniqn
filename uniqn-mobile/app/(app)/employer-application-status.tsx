@@ -76,7 +76,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
 
 function NoApplicationScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="구인자 신청" fallbackHref="/(app)/(tabs)" />
       <View className="flex-1 justify-center px-4">
         <Card variant="outlined" padding="lg" className="items-center">
@@ -98,7 +98,7 @@ function NoApplicationScreen() {
 
 function PendingScreen({ submittedAt }: { submittedAt: string }) {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
@@ -144,7 +144,7 @@ function PendingScreen({ submittedAt }: { submittedAt: string }) {
 
 function ApprovedScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
@@ -184,7 +184,7 @@ function RejectedScreen({
   rejectionReason: string | null;
 }) {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
       <ScrollView
         className="flex-1"
@@ -248,7 +248,7 @@ export default function EmployerApplicationStatusScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="구인자 신청 현황" fallbackHref="/(app)/(tabs)" />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />

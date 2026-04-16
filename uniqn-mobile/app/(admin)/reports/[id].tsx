@@ -385,7 +385,7 @@ export default function AdminReportDetailPage() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
@@ -397,7 +397,7 @@ export default function AdminReportDetailPage() {
   // 에러 상태
   if (error || !report) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
         <View className="flex-1 bg-surface-page">
           <EmptyState

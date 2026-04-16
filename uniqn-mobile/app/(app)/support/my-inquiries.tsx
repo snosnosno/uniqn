@@ -70,7 +70,7 @@ export default function MyInquiriesScreen() {
 
   if (isLoading && inquiries.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
@@ -80,7 +80,7 @@ export default function MyInquiriesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="문의 내역" fallbackHref="/(app)/support" />
       <FlashList
         data={inquiries}

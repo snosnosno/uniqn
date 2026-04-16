@@ -108,7 +108,7 @@ export default function AnnouncementDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" />
@@ -119,7 +119,7 @@ export default function AnnouncementDetailPage() {
 
   if (error || !announcement) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
         <View className="flex-1 bg-surface-page items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#DC2626" />
@@ -142,7 +142,7 @@ export default function AnnouncementDetailPage() {
   const categoryLabel = ANNOUNCEMENT_CATEGORY_LABELS[announcement.category];
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader
         title="공지사항 상세"
         fallbackHref="/(admin)/announcements"

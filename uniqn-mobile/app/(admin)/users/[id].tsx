@@ -155,7 +155,7 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
@@ -169,7 +169,7 @@ export default function AdminUserDetailPage() {
 
   if (error || !user) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
@@ -184,7 +184,7 @@ export default function AdminUserDetailPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
       <ScrollView
         className="flex-1 bg-surface-page"

@@ -77,7 +77,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (!resolvedId) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState
@@ -91,7 +91,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
@@ -101,7 +101,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState
@@ -117,7 +117,7 @@ export default function PublicJobDetailAliasRoute() {
 
   if (!isCanonicalDatedPosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader
           title="공고 상세"
@@ -136,7 +136,7 @@ export default function PublicJobDetailAliasRoute() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <StackHeader
         title="공고 상세"

@@ -73,7 +73,7 @@ export default function ReviewWriteScreen() {
 
   if (!params.workLogId || !params.revieweeId || !params.jobPostingId || !reviewerType) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top', 'bottom']}>
         <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
         <View className="flex-1">
           <ErrorState
@@ -93,7 +93,7 @@ export default function ReviewWriteScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark" edges={['top', 'bottom']}>
       <StackHeader title="평가 작성" fallbackHref="/(app)/reviews/pending" />
       <KeyboardAvoidingView
         className="flex-1"

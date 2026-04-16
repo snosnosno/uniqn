@@ -116,7 +116,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="관리자" fallbackHref="/(app)/(tabs)" />
       <ScrollView className="flex-1 bg-surface-page">
         <View className="p-4">

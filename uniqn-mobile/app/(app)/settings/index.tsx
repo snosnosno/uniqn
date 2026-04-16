@@ -226,7 +226,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="설정" fallbackHref="/(app)/(tabs)/profile" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}

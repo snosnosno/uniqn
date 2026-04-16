@@ -13,7 +13,7 @@ import { Card } from '@/components/ui';
 
 export default function TermsScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="이용약관" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">

@@ -31,7 +31,7 @@ export default function CreateInquiryScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="1:1 문의하기" fallbackHref="/(app)/support" />
       <InquiryForm onSubmit={handleSubmit} isSubmitting={isPending} onCancel={handleCancel} />
     </SafeAreaView>

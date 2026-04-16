@@ -66,7 +66,7 @@ export default function BusinessInfoScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="사업자정보" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">

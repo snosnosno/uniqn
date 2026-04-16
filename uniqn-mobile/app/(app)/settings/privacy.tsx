@@ -11,7 +11,7 @@ import { Card } from '@/components/ui';
 
 export default function PrivacyScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="개인정보처리방침" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">

@@ -203,7 +203,7 @@ export default function ApplyScreen() {
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <LoadingState />
@@ -213,7 +213,7 @@ export default function ApplyScreen() {
 
   if (jobError || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
@@ -223,7 +223,7 @@ export default function ApplyScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <UnsupportedPostingState />
@@ -235,7 +235,7 @@ export default function ApplyScreen() {
 
   if (hasApplied(job.id) || hasAppliedDirect) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <AlreadyAppliedState isFixed={isFixed} />
@@ -245,7 +245,7 @@ export default function ApplyScreen() {
 
   if (!showForm) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <Stack.Screen options={{ headerShown: false }} />
         <StackHeader title="지원 완료" fallbackHref={fallbackHref} />
         <View className="flex-1 items-center justify-center p-6">
@@ -272,7 +272,7 @@ export default function ApplyScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <StackHeader title="지원하기" fallbackHref={fallbackHref} />
       <ApplicationForm

@@ -143,7 +143,7 @@ export default function AdminBoardReportsPage() {
 
   if (isLoading && !data) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="게시판 신고를 불러오는 중..." />
@@ -154,7 +154,7 @@ export default function AdminBoardReportsPage() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="게시판 신고" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState

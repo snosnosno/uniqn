@@ -88,7 +88,7 @@ export default function AdminAnnouncementsPage() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader
         title="공지사항 관리"
         fallbackHref="/(admin)"

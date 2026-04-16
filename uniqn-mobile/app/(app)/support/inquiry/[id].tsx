@@ -22,7 +22,7 @@ export default function InquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
@@ -33,7 +33,7 @@ export default function InquiryDetailScreen() {
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
         <View className="flex-1 items-center justify-center">
           <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
@@ -48,7 +48,7 @@ export default function InquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의 정보 */}

@@ -84,7 +84,7 @@ export default function ReviewDetailScreen() {
 
   if (!workLogId) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <ErrorState
           title="잘못된 접근입니다"
@@ -98,7 +98,7 @@ export default function ReviewDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <Loading variant="layout" message="리뷰 정보를 불러오는 중..." />
       </SafeAreaView>
@@ -107,7 +107,7 @@ export default function ReviewDetailScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <View className="flex-1">
           <ErrorState
@@ -130,7 +130,7 @@ export default function ReviewDetailScreen() {
   const hasMyReview = Boolean(data?.myReview);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-4">
         <View>

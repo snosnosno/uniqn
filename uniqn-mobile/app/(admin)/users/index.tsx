@@ -190,7 +190,7 @@ export default function AdminUsersPage() {
 
   if (isLoading && !data) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
@@ -204,7 +204,7 @@ export default function AdminUsersPage() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
@@ -222,7 +222,7 @@ export default function AdminUsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">

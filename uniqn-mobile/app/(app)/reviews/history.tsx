@@ -50,7 +50,10 @@ export default function ReviewHistoryScreen() {
   const keyExtractor = useCallback((item: Review) => `${item.workLogId}_${item.reviewerType}`, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page dark:bg-secondary-900" edges={['top']}>
+    <SafeAreaView
+      className="flex-1 bg-surface-page dark:bg-secondary-900"
+      edges={['top', 'bottom']}
+    >
       <StackHeader title="평가 히스토리" fallbackHref="/(app)/(tabs)/profile" />
       {/* 버블 점수 요약 카드 */}
       {bubbleScore && <ScoreSummary bubbleScore={bubbleScore} />}

@@ -176,7 +176,7 @@ export default function MyDataScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="내 정보" fallbackHref="/(app)/settings" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator
@@ -192,7 +192,7 @@ export default function MyDataScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
       <StackHeader title="내 정보" fallbackHref="/(app)/settings" />
 
       <ScrollView

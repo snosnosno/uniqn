@@ -130,7 +130,7 @@ export default function AdminEmployerApplicationDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
         <View className="flex-1 items-center justify-center bg-surface-page">
           <Loading size="large" message="신청 정보를 불러오는 중..." />
@@ -141,7 +141,7 @@ export default function AdminEmployerApplicationDetailPage() {
 
   if (error || !app) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
         <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
         <View className="flex-1 bg-surface-page">
           <EmptyState
