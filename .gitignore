@@ -186,3 +186,6 @@ app2/ios/App/App/capacitor.config.json
 # ========================================
 SHRIMP/
 claude-forge/
+
+# Brainstorming visual companion
+.superpowers/
