@@ -974,91 +974,93 @@ export default function BoardPostDetailScreen() {
             ) : null}
           </View>
 
-          {post.boardType !== 'notice' ? (
-            <View className="mt-5 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
-                반응
-              </Text>
-              <View className="mt-3 flex-row flex-wrap gap-2">
-                <Button
-                  variant={data.myVote === 'like' ? 'primary' : 'outline'}
-                  size="sm"
-                  icon={
-                    <HeartIcon size={16} color={data.myVote === 'like' ? '#FFFFFF' : '#16A34A'} />
-                  }
-                  onPress={() => voteMutation.mutate('like')}
-                  disabled={!canInteract || isVoteSubmitting}
-                >
-                  좋아요 {post.likeCount}
-                </Button>
-                <Button
-                  variant={data.myVote === 'dislike' ? 'danger' : 'outline'}
-                  size="sm"
-                  icon={
-                    <CloseCircleOutlineIcon
-                      size={16}
-                      color={data.myVote === 'dislike' ? '#FFFFFF' : '#DC2626'}
-                    />
-                  }
-                  onPress={() => voteMutation.mutate('dislike')}
-                  disabled={!canInteract || isVoteSubmitting}
-                >
-                  싫어요 {post.dislikeCount}
-                </Button>
-              </View>
-            </View>
-          ) : null}
-
-          {showActionBar ? (
-            <View className="mt-5 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
-              <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
-                게시글 작업
-              </Text>
-              <View className="mt-3 flex-row flex-wrap gap-2">
-                {canManagePost && post.boardType !== 'schedule' && !post.isLocked ? (
-                  <ActionChip
-                    testID={`board-post-edit-${post.id}`}
-                    accessibilityLabel="게시글 수정"
-                    label="수정"
-                    variant="primary"
-                    onPress={() => router.push(`/(app)/(tabs)/board/edit/${post.id}`)}
-                  />
-                ) : null}
-                {canManagePost ? (
-                  <ActionChip
-                    testID={`board-post-lock-${post.id}`}
-                    accessibilityLabel={post.isLocked ? '게시글 잠금 해제' : '게시글 잠금'}
-                    label={post.isLocked ? '잠금 해제' : '잠금'}
-                    disabled={isPostActionPending}
-                    onPress={handleTogglePostLock}
-                  />
-                ) : null}
-                {isAdmin && post.boardType !== 'notice' ? (
-                  <ActionChip
-                    testID={`board-post-hide-${post.id}`}
-                    accessibilityLabel="게시글 숨김"
-                    label="숨김"
-                    variant="danger"
-                    disabled={isPostActionPending}
-                    onPress={handleHidePost}
-                  />
-                ) : null}
-                {canReportPost ? (
-                  <ActionChip
-                    testID={`board-post-report-${post.id}`}
-                    accessibilityLabel="게시글 신고"
-                    label="신고"
-                    onPress={() =>
-                      setReportTarget({
-                        targetType: 'post',
-                        targetId: post.id,
-                      })
+          <View className="mt-5 flex-row flex-wrap gap-3">
+            {post.boardType !== 'notice' ? (
+              <View className="min-w-[180px] flex-1 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
+                <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
+                  반응
+                </Text>
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  <Button
+                    variant={data.myVote === 'like' ? 'primary' : 'outline'}
+                    size="sm"
+                    icon={
+                      <HeartIcon size={16} color={data.myVote === 'like' ? '#FFFFFF' : '#16A34A'} />
                     }
-                  />
-                ) : null}
+                    onPress={() => voteMutation.mutate('like')}
+                    disabled={!canInteract || isVoteSubmitting}
+                  >
+                    좋아요 {post.likeCount}
+                  </Button>
+                  <Button
+                    variant={data.myVote === 'dislike' ? 'danger' : 'outline'}
+                    size="sm"
+                    icon={
+                      <CloseCircleOutlineIcon
+                        size={16}
+                        color={data.myVote === 'dislike' ? '#FFFFFF' : '#DC2626'}
+                      />
+                    }
+                    onPress={() => voteMutation.mutate('dislike')}
+                    disabled={!canInteract || isVoteSubmitting}
+                  >
+                    싫어요 {post.dislikeCount}
+                  </Button>
+                </View>
               </View>
-            </View>
-          ) : null}
+            ) : null}
+
+            {showActionBar ? (
+              <View className="min-w-[180px] flex-1 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
+                <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
+                  게시글 작업
+                </Text>
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  {canManagePost && post.boardType !== 'schedule' && !post.isLocked ? (
+                    <ActionChip
+                      testID={`board-post-edit-${post.id}`}
+                      accessibilityLabel="게시글 수정"
+                      label="수정"
+                      variant="primary"
+                      onPress={() => router.push(`/(app)/(tabs)/board/edit/${post.id}`)}
+                    />
+                  ) : null}
+                  {canManagePost ? (
+                    <ActionChip
+                      testID={`board-post-lock-${post.id}`}
+                      accessibilityLabel={post.isLocked ? '게시글 잠금 해제' : '게시글 잠금'}
+                      label={post.isLocked ? '잠금 해제' : '잠금'}
+                      disabled={isPostActionPending}
+                      onPress={handleTogglePostLock}
+                    />
+                  ) : null}
+                  {isAdmin && post.boardType !== 'notice' ? (
+                    <ActionChip
+                      testID={`board-post-hide-${post.id}`}
+                      accessibilityLabel="게시글 숨김"
+                      label="숨김"
+                      variant="danger"
+                      disabled={isPostActionPending}
+                      onPress={handleHidePost}
+                    />
+                  ) : null}
+                  {canReportPost ? (
+                    <ActionChip
+                      testID={`board-post-report-${post.id}`}
+                      accessibilityLabel="게시글 신고"
+                      label="신고"
+                      onPress={() =>
+                        setReportTarget({
+                          targetType: 'post',
+                          targetId: post.id,
+                        })
+                      }
+                    />
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+          </View>
         </Card>
       </View>
     );
