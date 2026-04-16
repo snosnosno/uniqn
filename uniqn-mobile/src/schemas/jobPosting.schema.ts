@@ -474,7 +474,7 @@ export const jobPostingDocumentSchema = z
     updatedAt: timestampSchema,
     searchIndex: z.array(z.string()).optional(),
     closedAt: optionalTimestampSchema,
-    closedReason: z.enum(['manual', 'expired', 'expired_by_work_date']).optional(),
+    closedReason: z.enum(['manual', 'expired', 'expired_by_work_date', 'filled']).optional(),
     tags: z.array(z.string()).optional(),
     contactPhone: z.string().optional(),
     location: postingLocationSchema,

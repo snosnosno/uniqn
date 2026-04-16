@@ -35,7 +35,7 @@ export type JobPostingStatus =
   | 'cancelled'
   | 'expired'
   | 'rejected';
-export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date';
+export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date' | 'filled';
 export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 
 export interface SalaryInfo {

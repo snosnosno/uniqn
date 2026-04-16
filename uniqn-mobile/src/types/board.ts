@@ -11,7 +11,7 @@ import type { FirebaseDocument } from './common';
 import type { Announcement, AnnouncementCategory, AnnouncementImage } from './announcement';
 import type { UserRole } from './role';
 
-export type BoardType = 'notice' | 'schedule' | 'free' | 'tda';
+export type BoardType = 'notice' | 'schedule' | 'free' | 'tda' | 'substitute';
 export type BoardSource = 'board' | 'announcement';
 export type BoardVisibility = 'public' | 'participants_only';
 export type BoardPostStatus = 'active' | 'locked' | 'hidden' | 'archived';
@@ -158,13 +158,15 @@ export interface FetchBoardPostsInput {
 }
 
 export interface CreateBoardPostInput {
-  boardType: Extract<BoardType, 'free' | 'tda'>;
+  boardType: Extract<BoardType, 'free' | 'tda' | 'substitute'>;
   title: string;
   body: string;
   authorId: string;
   authorName: string;
   authorRole: BoardAuthorRole;
   imageAttachments?: BoardImageAttachment[];
+  jobSummary?: BoardJobSummary;
+  linkedJobPostingId?: string;
 }
 
 export interface UpdateBoardPostInput {
@@ -234,6 +236,7 @@ export const BOARD_TYPE_LABELS: Record<BoardType, string> = {
   schedule: '일정게시판',
   free: '자유게시판',
   tda: 'TDA 토론',
+  substitute: '대타 구인',
 };
 
 export const COMMENT_REACTION_LABELS: Record<CommentReactionType, string> = {
