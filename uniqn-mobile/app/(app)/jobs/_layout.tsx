@@ -1,18 +1,22 @@
 /**
- * UNIQN Mobile - Jobs Layout (Authenticated)
- * 인증 필요한 구인 관련 화면 레이아웃
- *
- * @version 1.0.0
+ * UNIQN Mobile - 공고 레이아웃
  */
 
 import { Stack } from 'expo-router';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 
 export default function JobsLayout() {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
+        contentStyle: {
+          backgroundColor: getLayoutColor(isDark, 'content'),
+        },
       }}
     />
   );

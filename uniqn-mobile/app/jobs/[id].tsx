@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { STATUS } from '@/constants';
-import { getLayoutColor } from '@/constants/colors';
-import { JobDetail, JobDetailHeader, PostingSurfaceState } from '@/components/jobs';
+import { HEADER_CLASSES, STATUS } from '@/constants';
+import { getIconColor, getLayoutColor } from '@/constants/colors';
+import { JobDetail, PostingSurfaceState } from '@/components/jobs';
+import { StackHeader } from '@/components/headers';
+import { ShareIcon } from '@/components/icons';
 import { Button } from '@/components/ui/Button';
 import { useInstallPrompt, useJobDetail, useShare } from '@/hooks';
 import { trackJobView } from '@/services/observability';
@@ -14,6 +16,7 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 export default function PublicJobDetailAliasRoute() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const isDark = useThemeStore((state) => state.isDarkMode);
+  const secondaryTextColor = getIconColor(isDark, 'primary');
   const { openInstallPrompt } = useInstallPrompt();
   const { shareJob, isSharing } = useShare();
   const [bottomActionHeight, setBottomActionHeight] = useState(116);
@@ -53,11 +56,30 @@ export default function PublicJobDetailAliasRoute() {
     });
   }, [job, shareJob]);
 
+  const shareAction = job ? (
+    <Pressable
+      onPress={handleShare}
+      disabled={isSharing}
+      className={`-mr-2 ml-2 rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      accessibilityLabel="공고 공유하기"
+      accessibilityRole="button"
+    >
+      <ShareIcon size={22} color={secondaryTextColor} />
+    </Pressable>
+  ) : null;
+
+  const titleSuffix = job?.title ? (
+    <Text className="text-sm font-sans" style={{ color: secondaryTextColor }} numberOfLines={1}>
+      · {job.title}
+    </Text>
+  ) : null;
+
   if (!resolvedId) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/jobs" />
+        <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -71,7 +93,7 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/jobs" />
+        <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
     );
@@ -81,7 +103,7 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader fallbackHref="/jobs" />
+        <StackHeader title="공고 상세" fallbackHref="/jobs" />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -97,11 +119,11 @@ export default function PublicJobDetailAliasRoute() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <JobDetailHeader
-          title={job.title}
-          onShare={handleShare}
-          isSharing={isSharing}
+        <StackHeader
+          title="공고 상세"
+          titleSuffix={titleSuffix}
           fallbackHref="/jobs"
+          rightAction={shareAction}
         />
         <PostingSurfaceState
           mode="error"
@@ -116,11 +138,11 @@ export default function PublicJobDetailAliasRoute() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <JobDetailHeader
-        title={job.title}
-        onShare={handleShare}
-        isSharing={isSharing}
+      <StackHeader
+        title="공고 상세"
+        titleSuffix={titleSuffix}
         fallbackHref="/jobs"
+        rightAction={shareAction}
       />
 
       <ScrollView

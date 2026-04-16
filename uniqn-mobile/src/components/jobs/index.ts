@@ -11,7 +11,6 @@
 export { JobCard, type ApplicationStatusType } from './JobCard';
 export { JobList } from './JobList';
 export { JobDetail } from './JobDetail';
-export { JobDetailHeader } from './JobDetailHeader';
 export { JobFilters } from './JobFilters';
 export { ApplicationForm } from './ApplicationForm';
 

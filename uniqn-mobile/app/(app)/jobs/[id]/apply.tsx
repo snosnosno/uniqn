@@ -8,15 +8,15 @@ import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApplicationForm } from '@/components/jobs';
+import { StackHeader } from '@/components/headers';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui';
 import { AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon } from '@/components/icons';
 import { useJobDetail, useApplications, useHasAppliedToJob } from '@/hooks';
 import { resolveSessionUserId } from '@/hooks/internal/sessionUserId';
 import { getJobDetailQueryOptions } from '@/hooks/useJobDetail';
-import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
+import { useAuthStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
-import { SURFACE_COLORS } from '@/constants/colors';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { isSupportedReleasePosting } from '@/utils/jobPostingVisibility';
 import { logger } from '@/utils/logger';
@@ -94,7 +94,6 @@ export default function ApplyScreen() {
   const storeUserId = useAuthStore((state) => state.user?.uid);
   const isAuthInitialized = useAuthStore((state) => state.isInitialized);
   const userId = resolveSessionUserId(storeUserId, isAuthInitialized);
-  const { isDarkMode } = useThemeStore();
   const { addToast } = useToastStore();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(true);
@@ -200,19 +199,13 @@ export default function ApplyScreen() {
     router.replace(`/(app)/jobs/${id}`);
   }, [id]);
 
-  const stackOptions = {
-    headerShown: true,
-    title: '지원하기',
-    headerStyle: {
-      backgroundColor: isDarkMode ? SURFACE_COLORS.DEFAULT : '#FFFFFF',
-    },
-    headerTintColor: isDarkMode ? '#FFFFFF' : SURFACE_COLORS.DEFAULT,
-  } as const;
+  const fallbackHref = id ? (`/(app)/jobs/${id}` as const) : ('/(app)/(tabs)' as const);
 
   if (isLoadingJob || shouldBlockForExistingApplicationCheck) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen options={stackOptions} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <LoadingState />
       </SafeAreaView>
     );
@@ -220,8 +213,9 @@ export default function ApplyScreen() {
 
   if (jobError || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen options={stackOptions} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <ErrorState message={jobError?.message ?? '공고를 찾을 수 없습니다'} onRetry={refreshJob} />
       </SafeAreaView>
     );
@@ -229,8 +223,9 @@ export default function ApplyScreen() {
 
   if (!isSupportedReleasePosting(job)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen options={stackOptions} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <UnsupportedPostingState />
       </SafeAreaView>
     );
@@ -240,8 +235,9 @@ export default function ApplyScreen() {
 
   if (hasApplied(job.id) || hasAppliedDirect) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen options={stackOptions} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원하기" fallbackHref={fallbackHref} />
         <AlreadyAppliedState isFixed={isFixed} />
       </SafeAreaView>
     );
@@ -249,13 +245,9 @@ export default function ApplyScreen() {
 
   if (!showForm) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page">
-        <Stack.Screen
-          options={{
-            ...stackOptions,
-            title: '지원 완료',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <StackHeader title="지원 완료" fallbackHref={fallbackHref} />
         <View className="flex-1 items-center justify-center p-6">
           <View className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-success-50 dark:bg-success-900/30">
             <CheckCircleIcon size={56} color="#22C55E" />
@@ -280,12 +272,9 @@ export default function ApplyScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page">
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <StackHeader title="지원하기" fallbackHref={fallbackHref} />
       <ApplicationForm
         job={job}
         visible={showForm}
