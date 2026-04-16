@@ -5,9 +5,13 @@ import { PostingOverviewWidget } from '@/components/home/widgets/PostingOverview
 import { CancellationWidget } from '@/components/home/widgets/CancellationWidget';
 import { RecentNoticesWidget } from '@/components/home/widgets/RecentNoticesWidget';
 
-export function EmployerDashboard() {
+interface EmployerDashboardProps {
+  bottomPadding?: number;
+}
+
+export function EmployerDashboard({ bottomPadding = 0 }: EmployerDashboardProps) {
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 16 + bottomPadding }}>
       <WeeklyStaffWidget />
       <PostingOverviewWidget />
       <CancellationWidget />
