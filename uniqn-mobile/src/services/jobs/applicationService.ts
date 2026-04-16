@@ -20,6 +20,8 @@ import type {
   RequestCancellationInput,
   ReviewCancellationInput,
 } from '@/types';
+import type { BoardAuthorRole, BoardJobSummary } from '@/types/board';
+import { createSubstitutePost } from '@/services/boardService';
 
 export type { ApplicationWithJob } from '@/repositories';
 
@@ -175,7 +177,8 @@ export async function applyToJobV2(
 
 export async function requestCancellation(
   input: RequestCancellationInput,
-  applicantId: string
+  applicantId: string,
+  applicantContext?: { name: string; role: BoardAuthorRole; jobSummary: BoardJobSummary }
 ): Promise<void> {
   const trace = startApiTrace('requestCancellation');
   trace.putAttribute('applicationId', input.applicationId);
@@ -202,10 +205,33 @@ export async function requestCancellation(
 
     logger.info('Cancellation request completed', { applicationId: input.applicationId });
 
+    // 대타 글 생성 (best-effort: 실패해도 취소 요청은 유지)
+    if (validationResult.data.wantsSubstitutePost && applicantContext) {
+      try {
+        await createSubstitutePost({
+          authorId: applicantId,
+          authorName: applicantContext.name,
+          authorRole: applicantContext.role,
+          applicationId: input.applicationId,
+          jobSummary: applicantContext.jobSummary,
+          reason: validationResult.data.reason,
+        });
+        logger.info('Substitute post created', { applicationId: input.applicationId });
+      } catch (substituteError) {
+        logger.warn('Substitute post creation failed (non-blocking)', {
+          applicationId: input.applicationId,
+          error: substituteError,
+        });
+      }
+    }
+
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    trackEvent('cancellation_request', { application_id: input.applicationId });
+    trackEvent('cancellation_request', {
+      application_id: input.applicationId,
+      wants_substitute: validationResult.data.wantsSubstitutePost,
+    });
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();

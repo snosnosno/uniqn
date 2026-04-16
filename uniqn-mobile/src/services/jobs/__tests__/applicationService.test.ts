@@ -33,6 +33,10 @@ jest.mock('@/repositories', () => ({
   },
 }));
 
+jest.mock('@/services/boardService', () => ({
+  createSubstitutePost: jest.fn().mockResolvedValue('mock-post-id'),
+}));
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -152,7 +156,11 @@ describe('applicationService', () => {
       ).resolves.toBeUndefined();
 
       expect(mockRequestCancellationWithTransaction).toHaveBeenCalledWith(
-        { applicationId: 'app-1', reason: 'Need to cancel due to illness' },
+        {
+          applicationId: 'app-1',
+          reason: 'Need to cancel due to illness',
+          wantsSubstitutePost: true,
+        },
         'user-1'
       );
     });

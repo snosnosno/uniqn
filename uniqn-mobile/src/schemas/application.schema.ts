@@ -114,6 +114,7 @@ export const cancellationRequestSchema = z.object({
     .min(5, { message: '취소 사유는 최소 5자 이상 입력해주세요' })
     .max(500, { message: '취소 사유는 500자를 초과할 수 없습니다' })
     .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+  wantsSubstitutePost: z.boolean().optional().default(true),
 });
 
 export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;

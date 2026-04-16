@@ -160,6 +160,7 @@ export const APPLICATION_STATUS_COLORS: Record<
 export interface RequestCancellationInput {
   applicationId: string;
   reason: string;
+  wantsSubstitutePost?: boolean;
 }
 
 export interface ReviewCancellationInput {
