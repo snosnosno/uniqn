@@ -9,6 +9,7 @@ import { useCallback } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { usePendingReviews } from '@/hooks/useReviews';
 import type { PendingReviewItem } from '@/hooks/useReviews';
@@ -103,7 +104,8 @@ export default function PendingReviewsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="미작성 평가" fallbackHref="/(app)/(tabs)/profile" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {isLoading ? (
           <View>

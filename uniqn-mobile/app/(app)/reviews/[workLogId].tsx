@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { StackHeader } from '@/components/headers';
 import { Loading, ErrorState } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import ReviewBlindMessage from '@/components/review/ReviewBlindMessage';
@@ -83,7 +84,8 @@ export default function ReviewDetailScreen() {
 
   if (!workLogId) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <ErrorState
           title="잘못된 접근입니다"
           message="리뷰 정보를 확인할 수 없습니다."
@@ -95,12 +97,18 @@ export default function ReviewDetailScreen() {
   }
 
   if (isLoading) {
-    return <Loading variant="layout" message="리뷰 정보를 불러오는 중..." />;
+    return (
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
+        <Loading variant="layout" message="리뷰 정보를 불러오는 중..." />
+      </SafeAreaView>
+    );
   }
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
         <View className="flex-1">
           <ErrorState
             title="리뷰를 불러올 수 없습니다"
@@ -122,7 +130,8 @@ export default function ReviewDetailScreen() {
   const hasMyReview = Boolean(data?.myReview);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="평가 상세" fallbackHref="/(app)/reviews/history" />
       <ScrollView className="flex-1" contentContainerClassName="gap-4 p-4">
         <View>
           <Text className="mb-2 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
