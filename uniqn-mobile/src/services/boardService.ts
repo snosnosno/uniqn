@@ -1737,7 +1737,7 @@ export async function createSubstitutePost(input: CreateSubstitutePostInput): Pr
   const body = [
     input.reason,
     '',
-    `📅 ${dateInfo}`,
+    dateInfo ? `📅 ${dateInfo}` : '',
     locationInfo ? `📍 ${locationInfo}` : '',
     compensationInfo ? `💰 ${compensationInfo}` : '',
   ]

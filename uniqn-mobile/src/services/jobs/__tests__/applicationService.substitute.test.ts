@@ -1,4 +1,5 @@
 import { requestCancellation } from '../applicationService';
+import { logger } from '@/utils/logger';
 import type { BoardJobSummary } from '@/types/board';
 
 const mockRequestCancellationWithTransaction = jest.fn();
@@ -148,6 +149,8 @@ describe('requestCancellation with substitute post', () => {
 
     // Cancellation still succeeded despite substitute post failure
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
+    // logger.warn이 non-blocking 실패를 기록했는지 확인
+    expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 
   it('should call cancellation transaction even when wantsSubstitutePost is true', async () => {
