@@ -10,10 +10,11 @@
 --   기대 결과: 마지막에 'EXPIRED_GUARD_TEST_PASSED' 1행 반환, 에러 0건
 --
 -- 안전장치:
+--   - 전체 실행이 BEGIN/ROLLBACK으로 래핑되어 assertion 실패 시에도 fixture 잔류 없음
 --   - 마커 이메일(__sql_fixture_eg_*@test.local)로 production에서도 격리 가능
 --   - auth.users INSERT 시 handle_new_user 트리거가 public.users 자동 생성
---   - 종료 직전 cleanup: work_logs → applications → job_postings → auth.users 역순
---   - 실행 도중 예외 발생 시 PostgreSQL 묵시적 트랜잭션이 전체 롤백
+--   - 종료 직전 cleanup: applications → job_postings → auth.users 역순
+--   - ROLLBACK이 최종 안전망이므로 cleanup 실패 시에도 데이터 잔류 없음
 --
 -- 시나리오:
 --   S1. closed_reason = 'manual' 공고 → 취소 승인 시 'active'로 재오픈
@@ -26,6 +27,8 @@
 --   - job_postings(title NOT NULL, closed_reason text)
 --   - work_logs(staff_id, job_posting_id, date, role NOT NULL)
 -- ============================================================
+
+BEGIN;
 
 DO $$
 DECLARE
@@ -49,10 +52,10 @@ BEGIN
   -- ============================================================
   -- 0. auth.users seed (트리거가 public.users 자동 생성)
   -- ============================================================
-  INSERT INTO auth.users (id, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+  INSERT INTO auth.users (id, email, aud, role, encrypted_password, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   VALUES
-    (v_owner_id, '__sql_fixture_eg_owner@test.local', '{"role":"employer"}'::jsonb, '{"name":"EG_OWNER"}'::jsonb, now(), now()),
-    (v_staff_id, '__sql_fixture_eg_staff@test.local', '{"role":"staff"}'::jsonb,    '{"name":"EG_STAFF"}'::jsonb, now(), now());
+    (v_owner_id, '__sql_fixture_eg_owner@test.local', 'authenticated', 'authenticated', '', '{"role":"employer"}'::jsonb, '{"name":"EG_OWNER"}'::jsonb, now(), now()),
+    (v_staff_id, '__sql_fixture_eg_staff@test.local', 'authenticated', 'authenticated', '', '{"role":"staff"}'::jsonb,    '{"name":"EG_STAFF"}'::jsonb, now(), now());
 
   -- ============================================================
   -- S1 fixture: closed + closed_reason = 'manual', filled=1, total=3
@@ -186,3 +189,4 @@ BEGIN
 END $$;
 
 SELECT 'EXPIRED_GUARD_TEST_PASSED' AS result;
+ROLLBACK;

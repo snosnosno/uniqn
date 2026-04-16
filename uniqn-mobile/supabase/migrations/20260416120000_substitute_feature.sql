@@ -131,6 +131,7 @@ BEGIN
     status = CASE
       WHEN status = 'closed'
         AND v_new_filled < total_positions
+        -- NULL closed_reason means manual close; safe to reopen
         AND COALESCE(closed_reason, '') NOT IN ('expired', 'expired_by_work_date')
       THEN 'active'::posting_status
       ELSE status
