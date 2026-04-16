@@ -44,7 +44,7 @@ import type {
  */
 interface ApprovalResponse {
   success: boolean;
-  postingId: string;
+  jobPostingId: string;
   approvedBy?: string;
   approvedAt?: string;
   rejectedBy?: string;
@@ -109,6 +109,28 @@ async function mapEdgeFunctionError(error: unknown): Promise<Error> {
 }
 
 // ============================================================================
+// Auth Helper
+// ============================================================================
+
+/**
+ * 현재 세션의 access token 획득
+ *
+ * @description Supabase JS v2의 FunctionsClient는 onAuthStateChange 시
+ * 자동으로 Authorization 헤더를 갱신하지 않아, 세션이 stale이면 anon key로
+ * 폴백되어 Edge Function이 401을 반환함. 명시적으로 세션 토큰을 꺼내 헤더에
+ * 주입해야 함. authCoreService.ts / portOneIdentityService.ts 참고.
+ */
+async function getAccessTokenOrThrow(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session?.access_token) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '로그인이 필요합니다',
+    });
+  }
+  return data.session.access_token;
+}
+
+// ============================================================================
 // Approval Actions
 // ============================================================================
 
@@ -122,23 +144,27 @@ export async function approveTournamentPosting(
   data: ApproveTournamentData
 ): Promise<ApprovalResponse> {
   try {
-    logger.info('대회공고 승인 요청', { postingId: data.postingId });
+    logger.info('대회공고 승인 요청', { jobPostingId: data.jobPostingId });
 
+    const accessToken = await getAccessTokenOrThrow();
     const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
       'approve-job-posting',
-      { body: data }
+      {
+        body: data,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
     );
     if (error) throw error;
 
     logger.info('대회공고 승인 완료', {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
       approvedBy: result?.approvedBy,
     });
 
     return result!;
   } catch (error) {
     logger.error('대회공고 승인 실패', toError(error), {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
     });
     throw await mapEdgeFunctionError(error);
   }
@@ -148,7 +174,7 @@ export async function approveTournamentPosting(
  * 대회공고 거부 (관리자 전용)
  *
  * @description Edge Function 'reject-job-posting' 호출
- * @param data.postingId - 공고 ID
+ * @param data.jobPostingId - 공고 ID
  * @param data.reason - 거부 사유 (최소 10자)
  * @throws BusinessError - 권한 없음, 공고 없음, 이미 처리됨, 사유 부족
  */
@@ -157,25 +183,29 @@ export async function rejectTournamentPosting(
 ): Promise<ApprovalResponse> {
   try {
     logger.info('대회공고 거부 요청', {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
       reasonLength: data.reason.length,
     });
 
+    const accessToken = await getAccessTokenOrThrow();
     const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
       'reject-job-posting',
-      { body: data }
+      {
+        body: data,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
     );
     if (error) throw error;
 
     logger.info('대회공고 거부 완료', {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
       rejectedBy: result?.rejectedBy,
     });
 
     return result!;
   } catch (error) {
     logger.error('대회공고 거부 실패', toError(error), {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
     });
     throw await mapEdgeFunctionError(error);
   }
@@ -185,30 +215,34 @@ export async function rejectTournamentPosting(
  * 대회공고 재제출 (구인자 전용)
  *
  * @description Edge Function 'resubmit-job-posting' 호출
- * @param data.postingId - 거부된 공고 ID
+ * @param data.jobPostingId - 거부된 공고 ID
  * @throws BusinessError - 권한 없음, 공고 없음, rejected 상태 아님
  */
 export async function resubmitTournamentPosting(
   data: ResubmitTournamentData
 ): Promise<ApprovalResponse> {
   try {
-    logger.info('대회공고 재제출 요청', { postingId: data.postingId });
+    logger.info('대회공고 재제출 요청', { jobPostingId: data.jobPostingId });
 
+    const accessToken = await getAccessTokenOrThrow();
     const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
       'resubmit-job-posting',
-      { body: data }
+      {
+        body: data,
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
     );
     if (error) throw error;
 
     logger.info('대회공고 재제출 완료', {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
       resubmittedBy: result?.resubmittedBy,
     });
 
     return result!;
   } catch (error) {
     logger.error('대회공고 재제출 실패', toError(error), {
-      postingId: data.postingId,
+      jobPostingId: data.jobPostingId,
     });
     throw await mapEdgeFunctionError(error);
   }

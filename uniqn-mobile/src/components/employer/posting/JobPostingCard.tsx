@@ -60,7 +60,7 @@ export const JobPostingCard = memo(function JobPostingCard({
                 <TournamentStatusBadge
                   status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
                   rejectionReason={posting.tournamentConfig.rejectionReason}
-                  postingId={posting.id}
+                  jobPostingId={posting.id}
                   size="sm"
                 />
               ) : null}

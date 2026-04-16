@@ -44,22 +44,22 @@ interface UseTournamentApprovalReturn {
 
   // 승인 mutation
   approve: {
-    mutate: (postingId: string) => void;
-    mutateAsync: (data: { postingId: string }) => Promise<unknown>;
+    mutate: (jobPostingId: string) => void;
+    mutateAsync: (data: { jobPostingId: string }) => Promise<unknown>;
     isPending: boolean;
   };
 
   // 거부 mutation
   reject: {
-    mutate: (data: { postingId: string; reason: string }) => void;
-    mutateAsync: (data: { postingId: string; reason: string }) => Promise<unknown>;
+    mutate: (data: { jobPostingId: string; reason: string }) => void;
+    mutateAsync: (data: { jobPostingId: string; reason: string }) => Promise<unknown>;
     isPending: boolean;
   };
 
   // 재제출 mutation
   resubmit: {
-    mutate: (postingId: string) => void;
-    mutateAsync: (data: { postingId: string }) => Promise<unknown>;
+    mutate: (jobPostingId: string) => void;
+    mutateAsync: (data: { jobPostingId: string }) => Promise<unknown>;
     isPending: boolean;
   };
 
@@ -119,44 +119,44 @@ export function useTournamentApproval(
 
   // 승인 뮤테이션
   const approveMutation = useMutation({
-    mutationFn: (postingId: string) => tournamentApprovalService.approve({ postingId }),
-    onSuccess: (_, postingId) => {
+    mutationFn: (jobPostingId: string) => tournamentApprovalService.approve({ jobPostingId }),
+    onSuccess: (_, jobPostingId) => {
       toast.success('대회공고가 승인되었습니다');
       invalidateQueries.tournamentApproval();
-      logger.info('대회공고 승인 완료', { postingId });
+      logger.info('대회공고 승인 완료', { jobPostingId });
     },
-    onError: (error: Error, postingId) => {
+    onError: (error: Error, jobPostingId) => {
       toast.error(extractErrorMessage(error, '승인에 실패했습니다'));
-      logger.error('대회공고 승인 실패', error, { postingId });
+      logger.error('대회공고 승인 실패', error, { jobPostingId });
     },
   });
 
   // 거부 뮤테이션
   const rejectMutation = useMutation({
-    mutationFn: ({ postingId, reason }: { postingId: string; reason: string }) =>
-      tournamentApprovalService.reject({ postingId, reason }),
-    onSuccess: (_, { postingId }) => {
+    mutationFn: ({ jobPostingId, reason }: { jobPostingId: string; reason: string }) =>
+      tournamentApprovalService.reject({ jobPostingId, reason }),
+    onSuccess: (_, { jobPostingId }) => {
       toast.success('대회공고가 거부되었습니다');
       invalidateQueries.tournamentApproval();
-      logger.info('대회공고 거부 완료', { postingId });
+      logger.info('대회공고 거부 완료', { jobPostingId });
     },
-    onError: (error: Error, { postingId }) => {
+    onError: (error: Error, { jobPostingId }) => {
       toast.error(extractErrorMessage(error, '거부에 실패했습니다'));
-      logger.error('대회공고 거부 실패', error, { postingId });
+      logger.error('대회공고 거부 실패', error, { jobPostingId });
     },
   });
 
   // 재제출 뮤테이션
   const resubmitMutation = useMutation({
-    mutationFn: (postingId: string) => tournamentApprovalService.resubmit({ postingId }),
-    onSuccess: (_, postingId) => {
+    mutationFn: (jobPostingId: string) => tournamentApprovalService.resubmit({ jobPostingId }),
+    onSuccess: (_, jobPostingId) => {
       toast.success('대회공고가 재제출되었습니다');
       invalidateQueries.tournamentApproval();
-      logger.info('대회공고 재제출 완료', { postingId });
+      logger.info('대회공고 재제출 완료', { jobPostingId });
     },
-    onError: (error: Error, postingId) => {
+    onError: (error: Error, jobPostingId) => {
       toast.error(extractErrorMessage(error, '재제출에 실패했습니다'));
-      logger.error('대회공고 재제출 실패', error, { postingId });
+      logger.error('대회공고 재제출 실패', error, { jobPostingId });
     },
   });
 
@@ -165,22 +165,22 @@ export function useTournamentApproval(
   // ============================================================================
 
   const approve = useCallback(
-    (postingId: string) => {
-      approveMutation.mutate(postingId);
+    (jobPostingId: string) => {
+      approveMutation.mutate(jobPostingId);
     },
     [approveMutation]
   );
 
   const reject = useCallback(
-    (data: { postingId: string; reason: string }) => {
+    (data: { jobPostingId: string; reason: string }) => {
       rejectMutation.mutate(data);
     },
     [rejectMutation]
   );
 
   const resubmit = useCallback(
-    (postingId: string) => {
-      resubmitMutation.mutate(postingId);
+    (jobPostingId: string) => {
+      resubmitMutation.mutate(jobPostingId);
     },
     [resubmitMutation]
   );
@@ -205,8 +205,8 @@ export function useTournamentApproval(
     // 승인 mutation
     approve: {
       mutate: approve,
-      mutateAsync: async (data: { postingId: string }) => {
-        return approveMutation.mutateAsync(data.postingId);
+      mutateAsync: async (data: { jobPostingId: string }) => {
+        return approveMutation.mutateAsync(data.jobPostingId);
       },
       isPending: approveMutation.isPending,
     },
@@ -221,8 +221,8 @@ export function useTournamentApproval(
     // 재제출 mutation
     resubmit: {
       mutate: resubmit,
-      mutateAsync: async (data: { postingId: string }) => {
-        return resubmitMutation.mutateAsync(data.postingId);
+      mutateAsync: async (data: { jobPostingId: string }) => {
+        return resubmitMutation.mutateAsync(data.jobPostingId);
       },
       isPending: resubmitMutation.isPending,
     },
