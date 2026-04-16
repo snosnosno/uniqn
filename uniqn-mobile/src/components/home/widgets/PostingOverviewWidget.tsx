@@ -9,7 +9,7 @@ import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 
 export function PostingOverviewWidget() {
-  const { data, isLoading, error } = useMyJobPostings();
+  const { data, isLoading, error, refetch } = useMyJobPostings();
 
   const postings = data ?? [];
   const activePostings = postings.filter((p) => p.status === 'active' || p.status === 'approved');
@@ -27,7 +27,7 @@ export function PostingOverviewWidget() {
       title="공고 현황"
       isLoading={isLoading}
       error={error instanceof Error ? error : null}
-      onRetry={() => {}}
+      onRetry={refetch}
       onSeeMore={() => router.push('/(employer)/my-postings')}
       seeMoreLabel="전체 보기"
       emptyState={

@@ -45,7 +45,7 @@ function ScheduleCard({ schedule }: ScheduleCardProps) {
 
   return (
     <Pressable
-      onPress={() => router.push(`/(app)/schedules/${schedule.id}`)}
+      onPress={() => router.push('/(app)/(tabs)/schedule')}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
     >
@@ -62,19 +62,21 @@ function ScheduleCard({ schedule }: ScheduleCardProps) {
 
       <View className="flex-row items-center gap-1 mb-1">
         <CalendarIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-foreground dark:text-foreground">
+        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
           {formatDate(schedule.date)}
         </Text>
       </View>
 
       <View className="flex-row items-center gap-1 mb-1">
         <MapPinIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-foreground dark:text-foreground">{schedule.location}</Text>
+        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
+          {schedule.location}
+        </Text>
       </View>
 
       <View className="flex-row items-center gap-1">
         <ClockIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-foreground dark:text-foreground">
+        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
           {formatRole(schedule.role)}
         </Text>
       </View>

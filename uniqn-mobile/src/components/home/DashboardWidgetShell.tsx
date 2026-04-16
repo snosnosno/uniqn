@@ -62,7 +62,9 @@ export function DashboardWidgetShell({
   return (
     <Card variant="elevated" padding="md">
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-lg font-semibold text-foreground dark:text-foreground">{title}</Text>
+        <Text className="text-lg font-semibold text-secondary-900 dark:text-secondary-50">
+          {title}
+        </Text>
       </View>
 
       <View className="mb-3">

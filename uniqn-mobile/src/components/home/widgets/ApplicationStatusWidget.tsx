@@ -11,7 +11,10 @@ interface CountCardProps {
 function CountCard({ count, label }: CountCardProps) {
   return (
     <View className="flex-1 items-center py-2">
-      <Text className="font-bold text-foreground dark:text-foreground" style={{ fontSize: 22 }}>
+      <Text
+        className="font-bold text-secondary-900 dark:text-secondary-50"
+        style={{ fontSize: 22 }}
+      >
         {count}
       </Text>
       <Text className="text-secondary-500 dark:text-secondary-400" style={{ fontSize: 12 }}>

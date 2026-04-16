@@ -53,22 +53,6 @@ jest.mock('@/hooks/useConfirmedStaff', () => ({
 const mockUseMyJobPostings = useMyJobPostings as jest.MockedFunction<typeof useMyJobPostings>;
 const mockUseConfirmedStaff = useConfirmedStaff as jest.MockedFunction<typeof useConfirmedStaff>;
 
-const makePosting = (id: string) => ({
-  id,
-  status: 'active' as const,
-  title: `공고 ${id}`,
-  workDate: '2026-04-20',
-  totalPositions: 6,
-  filledPositions: 0,
-  ownerId: 'owner-1',
-  location: { address: '서울', latitude: 37.5, longitude: 127.0 },
-  schedule: { kind: 'dated' as const, primaryDate: '2026-04-20', allDates: [], requirements: [] },
-  roleCatalog: [],
-  compensation: { mode: 'shared' as const },
-  questions: { items: [] },
-  schemaVersion: 3 as const,
-});
-
 const makeStaffReturn = (staff: { date: string }[]) => ({
   staff: staff.map((s, i) => ({
     id: `staff-${i}`,
@@ -112,7 +96,7 @@ describe('WeeklyStaffWidget', () => {
       isLoading: true,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     mockUseConfirmedStaff.mockReturnValue(makeStaffReturn([]));
 
@@ -127,7 +111,7 @@ describe('WeeklyStaffWidget', () => {
       isLoading: false,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     mockUseConfirmedStaff.mockReturnValue(makeStaffReturn([]));
 

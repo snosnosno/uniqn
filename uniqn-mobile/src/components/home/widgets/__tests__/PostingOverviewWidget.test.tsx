@@ -77,7 +77,7 @@ describe('PostingOverviewWidget', () => {
       isLoading: true,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     render(<PostingOverviewWidget />);
 
@@ -90,7 +90,7 @@ describe('PostingOverviewWidget', () => {
       isLoading: false,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     render(<PostingOverviewWidget />);
 
@@ -104,7 +104,7 @@ describe('PostingOverviewWidget', () => {
       isLoading: false,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     render(<PostingOverviewWidget />);
 

@@ -84,7 +84,15 @@ describe('MonthSummaryWidget', () => {
 
   it('확정 근무 수, 수익, 미작성 리뷰 수를 표시한다', () => {
     mockUseScheduleStats.mockReturnValue({
-      stats: { confirmedSchedules: 5, thisMonthEarnings: 300000 },
+      stats: {
+        confirmedSchedules: 5,
+        thisMonthEarnings: 300000,
+        totalSchedules: 5,
+        completedSchedules: 0,
+        upcomingSchedules: 5,
+        totalEarnings: 300000,
+        hoursWorked: 0,
+      },
       isLoading: false,
       error: null,
       refetch: jest.fn(),
@@ -121,7 +129,15 @@ describe('MonthSummaryWidget', () => {
 
   it('pendingReviews 로딩 중이면 partial=true이고 리뷰 수를 —으로 표시한다', () => {
     mockUseScheduleStats.mockReturnValue({
-      stats: { confirmedSchedules: 2, thisMonthEarnings: 120000 },
+      stats: {
+        confirmedSchedules: 2,
+        thisMonthEarnings: 120000,
+        totalSchedules: 2,
+        completedSchedules: 0,
+        upcomingSchedules: 2,
+        totalEarnings: 120000,
+        hoursWorked: 0,
+      },
       isLoading: false,
       error: null,
       refetch: jest.fn(),

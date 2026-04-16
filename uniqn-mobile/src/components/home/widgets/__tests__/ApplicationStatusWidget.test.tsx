@@ -62,7 +62,7 @@ describe('ApplicationStatusWidget', () => {
       myApplications: [],
       isLoading: true,
       error: null,
-    } as ReturnType<typeof useApplications>);
+    } as unknown as ReturnType<typeof useApplications>);
 
     render(<ApplicationStatusWidget />);
 
@@ -80,7 +80,7 @@ describe('ApplicationStatusWidget', () => {
       ],
       isLoading: false,
       error: null,
-    } as ReturnType<typeof useApplications>);
+    } as unknown as ReturnType<typeof useApplications>);
 
     render(<ApplicationStatusWidget />);
 
@@ -96,7 +96,7 @@ describe('ApplicationStatusWidget', () => {
       myApplications: [],
       isLoading: false,
       error: null,
-    } as ReturnType<typeof useApplications>);
+    } as unknown as ReturnType<typeof useApplications>);
 
     render(<ApplicationStatusWidget />);
 
@@ -109,7 +109,7 @@ describe('ApplicationStatusWidget', () => {
       myApplications: [],
       isLoading: false,
       error: new Error('fetch error'),
-    } as ReturnType<typeof useApplications>);
+    } as unknown as ReturnType<typeof useApplications>);
 
     render(<ApplicationStatusWidget />);
 

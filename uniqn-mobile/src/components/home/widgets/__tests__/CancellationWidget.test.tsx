@@ -104,7 +104,7 @@ describe('CancellationWidget', () => {
       isLoading: false,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     mockUseQueries.mockReturnValue([
       { data: [makeCancellationApp('app-1')], isLoading: false, isError: false },
@@ -121,7 +121,7 @@ describe('CancellationWidget', () => {
       isLoading: false,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     mockUseQueries.mockReturnValue([{ data: [], isLoading: false, isError: false }] as ReturnType<
       typeof useQueries
@@ -138,7 +138,7 @@ describe('CancellationWidget', () => {
       isLoading: true,
       error: null,
       isError: false,
-    } as ReturnType<typeof useMyJobPostings>);
+    } as unknown as ReturnType<typeof useMyJobPostings>);
 
     mockUseQueries.mockReturnValue([] as ReturnType<typeof useQueries>);
 

@@ -58,7 +58,7 @@ const makeSchedule = (overrides = {}) => ({
   jobPostingName: '딜러 공고',
   role: 'dealer',
   type: 'confirmed' as const,
-  status: 'scheduled' as const,
+  status: 'not_started' as const,
   jobPostingId: 'job-1',
   sourceCollection: 'workLogs' as const,
   sourceId: 'src-1',

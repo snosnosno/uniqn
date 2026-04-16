@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react-native';
 import { RecentNoticesWidget } from '../RecentNoticesWidget';
 
 import { usePublishedAnnouncements } from '@/hooks/useAnnouncement';
+import type { Announcement } from '@/types/announcement';
 
 jest.mock('@/components/home/DashboardWidgetShell', () => ({
   DashboardWidgetShell: ({
@@ -50,15 +51,15 @@ const mockUsePublishedAnnouncements = usePublishedAnnouncements as jest.MockedFu
   typeof usePublishedAnnouncements
 >;
 
-const makeNotice = (id: string, title: string) => ({
+const makeNotice = (id: string, title: string): Announcement => ({
   id,
   title,
   content: '공지 내용',
-  category: 'general' as const,
-  status: 'published' as const,
-  priority: 0 as const,
+  category: 'notice',
+  status: 'published',
+  priority: 0,
   isPinned: false,
-  targetAudience: 'all' as const,
+  targetAudience: { type: 'all' },
   authorId: 'author-1',
   authorName: '관리자',
   viewCount: 0,
@@ -97,13 +98,13 @@ describe('RecentNoticesWidget', () => {
         data: {
           pages: [
             {
-              items: [
+              announcements: [
                 makeNotice('n1', '4월 운영 공지'),
                 makeNotice('n2', '포커룸 안전 수칙'),
                 makeNotice('n3', '세 번째 공지 — 보이면 안됨'),
               ],
               hasMore: false,
-              lastDoc: undefined,
+              lastDoc: null,
             },
           ],
           pageParams: [undefined],
@@ -122,7 +123,7 @@ describe('RecentNoticesWidget', () => {
     mockUsePublishedAnnouncements.mockReturnValue(
       makeQueryResult({
         data: {
-          pages: [{ items: [], hasMore: false, lastDoc: undefined }],
+          pages: [{ announcements: [], hasMore: false, lastDoc: null }],
           pageParams: [undefined],
         },
       })

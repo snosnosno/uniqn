@@ -8,9 +8,9 @@ import type { Announcement } from '@/types/announcement';
 const MAX_NOTICES = 2;
 
 export function RecentNoticesWidget() {
-  const { data, isLoading, error } = usePublishedAnnouncements();
+  const { data, isLoading, error, refetch } = usePublishedAnnouncements();
 
-  const notices: Announcement[] = data?.pages?.[0]?.items?.slice(0, MAX_NOTICES) ?? [];
+  const notices: Announcement[] = data?.pages?.[0]?.announcements?.slice(0, MAX_NOTICES) ?? [];
   const hasNotices = notices.length > 0;
 
   return (
@@ -18,7 +18,7 @@ export function RecentNoticesWidget() {
       title="최근 공지"
       isLoading={isLoading}
       error={error as Error | null}
-      onRetry={() => void 0}
+      onRetry={refetch}
       emptyState={!hasNotices ? { message: '새 공지가 없습니다' } : undefined}
       onSeeMore={() => router.push('/(app)/notices')}
       seeMoreLabel="전체 공지 보기"
@@ -28,7 +28,7 @@ export function RecentNoticesWidget() {
           {notices.map((notice) => (
             <View key={notice.id} className="py-1.5">
               <Text
-                className="text-sm font-medium text-foreground dark:text-foreground"
+                className="text-sm font-medium text-secondary-900 dark:text-secondary-50"
                 numberOfLines={2}
               >
                 {notice.title}

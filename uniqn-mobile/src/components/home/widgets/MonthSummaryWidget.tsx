@@ -34,20 +34,20 @@ export function MonthSummaryWidget() {
       {hasStats ? (
         <View accessibilityLabel={accessibilityLabel}>
           <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-foreground dark:text-foreground">확정 근무</Text>
-            <Text className="text-sm font-medium text-foreground dark:text-foreground">
+            <Text className="text-sm text-secondary-900 dark:text-secondary-50">확정 근무</Text>
+            <Text className="text-sm font-medium text-secondary-900 dark:text-secondary-50">
               {confirmedSchedules}일
             </Text>
           </View>
           <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-foreground dark:text-foreground">이번 달 수익</Text>
+            <Text className="text-sm text-secondary-900 dark:text-secondary-50">이번 달 수익</Text>
             <Text className="text-sm font-semibold" style={{ color: '#D4AF37' }}>
               ₩{thisMonthEarnings.toLocaleString()}
             </Text>
           </View>
           <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-foreground dark:text-foreground">미작성 리뷰</Text>
-            <Text className="text-sm font-medium text-foreground dark:text-foreground">
+            <Text className="text-sm text-secondary-900 dark:text-secondary-50">미작성 리뷰</Text>
+            <Text className="text-sm font-medium text-secondary-900 dark:text-secondary-50">
               {pendingLabel}
             </Text>
           </View>
