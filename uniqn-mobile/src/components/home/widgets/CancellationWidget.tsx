@@ -72,7 +72,7 @@ export function CancellationWidget() {
       title="취소 요청"
       isLoading={false}
       onRetry={handleRetry}
-      onSeeMore={() => router.push('/(employer)')}
+      onSeeMore={() => router.push('/(app)/(tabs)/employer')}
       seeMoreLabel="검토하기"
     >
       <View className="gap-2 py-1">

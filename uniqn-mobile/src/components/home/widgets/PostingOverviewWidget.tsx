@@ -28,7 +28,7 @@ export function PostingOverviewWidget() {
       isLoading={isLoading}
       error={error instanceof Error ? error : null}
       onRetry={refetch}
-      onSeeMore={() => router.push('/(employer)/my-postings')}
+      onSeeMore={() => router.push('/(app)/(tabs)/employer')}
       seeMoreLabel="전체 보기"
       emptyState={
         hasPostings
@@ -37,7 +37,7 @@ export function PostingOverviewWidget() {
               message: '진행 중인 공고가 없습니다. 공고를 작성해볼까요?',
               cta: {
                 label: '공고 작성',
-                onPress: () => router.push('/(employer)'),
+                onPress: () => router.push('/(employer)/my-postings/create'),
               },
             }
       }

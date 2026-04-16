@@ -116,7 +116,7 @@ export function WeeklyStaffWidget() {
         isLoading={isLoading}
         error={error instanceof Error ? error : null}
         onRetry={refetch}
-        onSeeMore={() => router.push('/(employer)/my-postings')}
+        onSeeMore={() => router.push('/(app)/(tabs)/employer')}
         seeMoreLabel="전체 보기"
         emptyState={
           !isLoading && activePostings.length === 0

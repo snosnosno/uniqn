@@ -15,6 +15,8 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
         }`}
         onPress={() => onChange('employer')}
         accessibilityRole="tab"
+        accessibilityState={{ selected: value === 'employer' }}
+        accessibilityLabel="내 업무 대시보드"
       >
         <Text
           className={`text-sm font-medium ${
@@ -31,6 +33,8 @@ export function DashboardViewToggle({ value, onChange }: DashboardViewToggleProp
         }`}
         onPress={() => onChange('staff')}
         accessibilityRole="tab"
+        accessibilityState={{ selected: value === 'staff' }}
+        accessibilityLabel="스태프 대시보드"
       >
         <Text
           className={`text-sm font-medium ${
