@@ -4,6 +4,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
+import { StackHeader } from '@/components/headers';
 import {
   ChevronRightIcon,
   DocumentTextOutlineIcon,
@@ -69,7 +70,8 @@ export default function SupportScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="고객지원" fallbackHref="/(app)/(tabs)/profile" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <View className="mb-4 rounded-md bg-primary-50 p-4 dark:bg-primary-900/20">
           <Text className="text-sm text-primary-700 dark:text-primary-300 font-sans">

@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { EmptyState, Button } from '@/components/ui';
 import { InquiryCard } from '@/components/support';
+import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
 
@@ -69,14 +70,18 @@ export default function MyInquiriesScreen() {
 
   if (isLoading && inquiries.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-surface-page">
-        <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+        <StackHeader title="내 문의 내역" fallbackHref="/(app)/support" />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <StackHeader title="내 문의 내역" fallbackHref="/(app)/support" />
       <FlashList
         data={inquiries}
         renderItem={renderItem}
