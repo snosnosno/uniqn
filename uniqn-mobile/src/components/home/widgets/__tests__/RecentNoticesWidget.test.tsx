@@ -92,7 +92,7 @@ describe('RecentNoticesWidget', () => {
     expect(screen.getByTestId('loading')).toBeTruthy();
   });
 
-  it('공지 2건의 제목을 표시한다', () => {
+  it('공지 최대 3건의 제목을 표시한다', () => {
     mockUsePublishedAnnouncements.mockReturnValue(
       makeQueryResult({
         data: {
@@ -101,7 +101,8 @@ describe('RecentNoticesWidget', () => {
               announcements: [
                 makeNotice('n1', '4월 운영 공지'),
                 makeNotice('n2', '포커룸 안전 수칙'),
-                makeNotice('n3', '세 번째 공지 — 보이면 안됨'),
+                makeNotice('n3', '신규 기능 업데이트'),
+                makeNotice('n4', '네 번째 공지 — 보이면 안됨'),
               ],
               hasMore: false,
               lastDoc: null,
@@ -116,7 +117,8 @@ describe('RecentNoticesWidget', () => {
 
     expect(screen.getByText('4월 운영 공지')).toBeTruthy();
     expect(screen.getByText('포커룸 안전 수칙')).toBeTruthy();
-    expect(screen.queryByText('세 번째 공지 — 보이면 안됨')).toBeNull();
+    expect(screen.getByText('신규 기능 업데이트')).toBeTruthy();
+    expect(screen.queryByText('네 번째 공지 — 보이면 안됨')).toBeNull();
   });
 
   it('공지가 없으면 빈 상태를 표시한다', () => {

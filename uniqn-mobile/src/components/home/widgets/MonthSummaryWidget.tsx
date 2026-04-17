@@ -4,7 +4,10 @@ import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { useScheduleStats } from '@/hooks/useSchedules';
 import { usePendingReviews } from '@/hooks/useReviews';
-import { formatCurrency } from '@/utils/formatters';
+// `@/utils/formatters` 는 flat 파일(src/utils/formatters.ts)로 resolve 되어
+// 레거시 settlement 포맷("N원")을 돌려주므로, canonical 배럴의 currency 서브패스를
+// 직접 참조해 "₩N" 포맷(impeccable v2 §19)을 보장한다.
+import { formatCurrency } from '@/utils/formatters/currency';
 
 export function MonthSummaryWidget() {
   const scheduleStats = useScheduleStats();
