@@ -5,6 +5,20 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
+## [0.0.1.0] - 2026-04-17
+
+### Changed
+- CI 파이프라인에서 Firebase 레거시 설정 제거 (Supabase 환경변수로 교체, `functions-build` job 제거)
+- 홈 위젯(취소 요청·공고 현황·주간 스태프) 라이트 모드 텍스트 색상을 더 어둡게 조정 — WCAG 접근성 기준 충족
+
+### Fixed
+- `pushNotificationService` 모지바케 로그 메시지 2건 (`getTokenWithRecovery` 내부) 한국어로 복원
+- `NotificationRouteMap` 테스트에서 `NotificationType` 개수 기대값을 실제 값(43)에 맞게 수정
+
+### Removed
+- `pushNotificationService`의 중복 `getToken` 함수 본문 제거 — `getTokenWithRecovery`의 alias로 대체
+- Codecov 커버리지 업로드 CI 단계 제거
+
 ## [1.0.0] - 2026-02-01
 
 ### 🚀 모바일앱 중심 전환 및 RevenueCat 연동 (Production Ready)
