@@ -1729,6 +1729,16 @@ export interface CreateSubstitutePostInput {
 export async function createSubstitutePost(input: CreateSubstitutePostInput): Promise<string> {
   await requireMatchingCurrentUser(input.authorId);
 
+  // 대타 글은 원 공고 연결이 필수 (아카이브 필터링 + 지원자 네비게이션에 사용).
+  // 타입상 BoardJobSummary.jobPostingId는 string이지만 런타임 undefined/empty
+  // 유입 방지를 위한 이중 가드.
+  if (!input.jobSummary?.jobPostingId) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      field: 'jobSummary.jobPostingId',
+      userMessage: '대타 구인 글 작성 시 원 공고 연결이 필수입니다.',
+    });
+  }
+
   const title = `대타 구해요 · ${input.jobSummary.title}`;
   const dateInfo = input.jobSummary.workDate || '';
   const locationInfo = input.jobSummary.locationName || '';
@@ -1781,13 +1791,31 @@ export async function archiveSubstitutePostByLinkedPosting(
       limitCount: 10,
     });
 
-    for (const post of posts) {
-      await boardRepository.setPostStatus(post.id, 'archived');
+    // Promise.allSettled: 각 post의 아카이브 시도는 독립적이어야 한다.
+    // 순차 await 사용 시 N번째 실패가 N+1번째 시도를 막아 partial state가 남는다.
+    const results = await Promise.allSettled(
+      posts.map((post) => boardRepository.setPostStatus(post.id, 'archived'))
+    );
+
+    const failed = results
+      .map((result, idx) => ({ result, postId: posts[idx].id }))
+      .filter(({ result }) => result.status === 'rejected');
+    const succeeded = results.length - failed.length;
+
+    for (const { result, postId } of failed) {
+      logger.warn('Substitute post archive failed for single post (non-blocking)', {
+        postId,
+        linkedJobPostingId,
+        authorId,
+        error: (result as PromiseRejectedResult).reason,
+      });
     }
 
     if (posts.length > 0) {
-      logger.info('Substitute posts archived on cancellation rejection', {
-        count: posts.length,
+      logger.info('Substitute posts archive result', {
+        total: posts.length,
+        succeeded,
+        failed: failed.length,
         linkedJobPostingId,
         authorId,
       });

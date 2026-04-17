@@ -95,6 +95,8 @@ export {
   confirmApplicationSchema,
   rejectApplicationSchema,
   cancelApplicationSchema,
+  // JSONB 저장 스키마 (v2.1)
+  cancellationRequestStoredSchema,
   // 문서 파서 (v2.0)
   applicationDocumentSchema,
   parseApplicationDocument,
@@ -110,6 +112,7 @@ export type {
   RejectApplicationData,
   CancelApplicationData,
   ApplicationDocumentData,
+  CancellationRequestStored,
 } from './application.schema';
 
 // Assignment v3.0 스키마
@@ -328,3 +331,8 @@ export type {
   ReviewReportInputData,
   ReportDocumentData,
 } from './report.schema';
+
+// 게시판 메타데이터 스키마
+export { BoardJobSummarySchema, BoardPostMetadataSchema } from './boardMetadata.schema';
+
+export type { BoardJobSummarySchemaData, BoardPostMetadata } from './boardMetadata.schema';

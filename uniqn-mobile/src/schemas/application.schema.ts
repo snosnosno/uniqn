@@ -209,7 +209,19 @@ const confirmationHistoryEntrySchema = z
 // string이 먼저 매칭되어야 ISO string이 그대로 유지됨 (timestampSchema가 먼저면 TimestampLike로 변환)
 const cancellationRequestTimestampSchema = z.string().or(timestampSchema);
 
-const cancellationRequestDocumentSchema = z.discriminatedUnion('status', [
+/**
+ * applications.cancellation_request JSONB 필드 Zod 스키마.
+ *
+ * 입력 검증용(cancellationRequestSchema)과 달리 DB 저장 시점의
+ * 메타데이터(requestedAt / reviewedAt / status / reviewedBy 등)를 포함한
+ * discriminated union. applicationDocumentSchema 경유로 읽기 경로에서
+ * safeParse 됨.
+ *
+ * 과거 이슈: 6e24a4868 — cancellationRequest timestamp 스키마 순서 버그.
+ *   string이 먼저 매칭되지 않으면 ISO string이 TimestampLike로 변환됨.
+ *   safeParse 기반이므로 실패 시 해당 레코드만 drop.
+ */
+export const cancellationRequestStoredSchema = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('pending'),
     requestedAt: cancellationRequestTimestampSchema,
@@ -231,6 +243,10 @@ const cancellationRequestDocumentSchema = z.discriminatedUnion('status', [
     rejectionReason: z.string(),
   }),
 ]);
+
+export type CancellationRequestStored = z.infer<typeof cancellationRequestStoredSchema>;
+
+const cancellationRequestDocumentSchema = cancellationRequestStoredSchema;
 
 export const applicationDocumentSchema = z
   .object({

@@ -153,7 +153,7 @@ describe('applicationService', () => {
           { applicationId: 'app-1', reason: 'Need to cancel due to illness' },
           'user-1'
         )
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({ substitutePost: 'skipped' });
 
       expect(mockRequestCancellationWithTransaction).toHaveBeenCalledWith(
         {

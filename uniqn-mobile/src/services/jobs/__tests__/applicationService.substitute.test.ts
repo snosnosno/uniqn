@@ -150,7 +150,7 @@ describe('requestCancellation with substitute post', () => {
         'staff-1',
         applicantContext
       )
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ substitutePost: 'failed' });
 
     // Cancellation still succeeded despite substitute post failure
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
@@ -177,6 +177,79 @@ describe('requestCancellation with substitute post', () => {
     );
 
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('requestCancellation - substitute post result reporting', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRequestCancellationWithTransaction.mockResolvedValue(undefined);
+    mockCreateSubstitutePost.mockResolvedValue('sub-post-id');
+  });
+
+  it('returns substitutePost: "created" on success', async () => {
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '갑자기 몸이 아파서 출근이 어렵습니다.',
+        wantsSubstitutePost: true,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'created' });
+  });
+
+  it('returns substitutePost: "failed" when createSubstitutePost throws', async () => {
+    mockCreateSubstitutePost.mockRejectedValue(new Error('Board service error'));
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '갑자기 몸이 아파서 출근이 어렵습니다.',
+        wantsSubstitutePost: true,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'failed' });
+  });
+
+  it('returns substitutePost: "skipped" when wantsSubstitutePost=false', async () => {
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '개인 사정으로 취소합니다.',
+        wantsSubstitutePost: false,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'skipped' });
+    expect(mockCreateSubstitutePost).not.toHaveBeenCalled();
   });
 });
 
@@ -234,5 +307,52 @@ describe('reviewCancellationRequest archive path', () => {
     ).resolves.toBeUndefined();
 
     expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('reviewCancellationRequest - substitute post archive behavior (regression lock-in)', () => {
+  // 현재 구현은 승인/거절 모두에서 대타글을 아카이브함 (spec 승인된 동작).
+  // 향후 "거절 시만 아카이브"로 축소 시 아래 테스트가 실패하여 의도 변경을 강제함.
+  const { applicationRepository } = jest.requireMock('@/repositories');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReviewCancellationWithTransaction.mockResolvedValue(undefined);
+    mockArchiveSubstitutePostByLinkedPosting.mockResolvedValue(undefined);
+  });
+
+  it('archives substitute post when cancellation is approved', async () => {
+    // Arrange
+    (applicationRepository.getById as jest.Mock).mockResolvedValue({
+      id: 'app-1',
+      jobPostingId: 'job-1',
+      applicantId: 'user-1',
+    });
+
+    // Act
+    await reviewCancellationRequest({ applicationId: 'app-1', approved: true }, 'reviewer-1');
+
+    // Assert
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-1', 'user-1');
+  });
+
+  it('archives substitute post when cancellation is rejected', async () => {
+    // Arrange
+    (applicationRepository.getById as jest.Mock).mockResolvedValue({
+      id: 'app-2',
+      jobPostingId: 'job-2',
+      applicantId: 'user-2',
+    });
+
+    // Act
+    await reviewCancellationRequest(
+      { applicationId: 'app-2', approved: false, rejectionReason: '거절 사유' },
+      'reviewer-2'
+    );
+
+    // Assert: 거절도 동일하게 archive (spec 결정)
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-2', 'user-2');
   });
 });
