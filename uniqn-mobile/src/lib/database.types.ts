@@ -45,6 +45,7 @@ export type Database = {
           id: string;
           image_storage_path: string | null;
           image_url: string | null;
+          image_url_blurhash: string | null;
           images: Json | null;
           is_pinned: boolean | null;
           priority: number | null;
@@ -64,6 +65,7 @@ export type Database = {
           id?: string;
           image_storage_path?: string | null;
           image_url?: string | null;
+          image_url_blurhash?: string | null;
           images?: Json | null;
           is_pinned?: boolean | null;
           priority?: number | null;
@@ -83,6 +85,7 @@ export type Database = {
           id?: string;
           image_storage_path?: string | null;
           image_url?: string | null;
+          image_url_blurhash?: string | null;
           images?: Json | null;
           is_pinned?: boolean | null;
           priority?: number | null;
@@ -132,6 +135,7 @@ export type Database = {
           applicant_nickname: string | null;
           applicant_phone: string | null;
           applicant_photo_url: string | null;
+          applicant_photo_url_blurhash: string | null;
           applicant_role: Database['public']['Enums']['staff_role'] | null;
           assignments: Json | null;
           cancellation_request: Json | null;
@@ -163,6 +167,7 @@ export type Database = {
           applicant_nickname?: string | null;
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
+          applicant_photo_url_blurhash?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -194,6 +199,7 @@ export type Database = {
           applicant_nickname?: string | null;
           applicant_phone?: string | null;
           applicant_photo_url?: string | null;
+          applicant_photo_url_blurhash?: string | null;
           applicant_role?: Database['public']['Enums']['staff_role'] | null;
           assignments?: Json | null;
           cancellation_request?: Json | null;
@@ -640,36 +646,106 @@ export type Database = {
           },
         ];
       };
+      employer_applications: {
+        Row: {
+          agreements_snapshot: Json;
+          created_at: string | null;
+          id: string;
+          rejection_category: string | null;
+          rejection_reason: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          status: string;
+          submitted_at: string;
+          supersedes_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          agreements_snapshot: Json;
+          created_at?: string | null;
+          id?: string;
+          rejection_category?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status: string;
+          submitted_at?: string;
+          supersedes_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          agreements_snapshot?: Json;
+          created_at?: string | null;
+          id?: string;
+          rejection_category?: string | null;
+          rejection_reason?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          status?: string;
+          submitted_at?: string;
+          supersedes_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'employer_applications_reviewed_by_fkey';
+            columns: ['reviewed_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'employer_applications_supersedes_id_fkey';
+            columns: ['supersedes_id'];
+            isOneToOne: false;
+            referencedRelation: 'employer_applications';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'employer_applications_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       event_qr_codes: {
         Row: {
+          assignment_group_id: string | null;
           code: string;
           created_at: string | null;
           expires_at: string | null;
           id: string;
           is_active: boolean | null;
           job_posting_id: string;
+          time_slot: string | null;
           type: string;
           user_id: string;
           work_date: string | null;
         };
         Insert: {
+          assignment_group_id?: string | null;
           code: string;
           created_at?: string | null;
           expires_at?: string | null;
           id?: string;
           is_active?: boolean | null;
           job_posting_id: string;
+          time_slot?: string | null;
           type: string;
           user_id: string;
           work_date?: string | null;
         };
         Update: {
+          assignment_group_id?: string | null;
           code?: string;
           created_at?: string | null;
           expires_at?: string | null;
           id?: string;
           is_active?: boolean | null;
           job_posting_id?: string;
+          time_slot?: string | null;
           type?: string;
           user_id?: string;
           work_date?: string | null;
@@ -684,6 +760,41 @@ export type Database = {
           },
           {
             foreignKeyName: 'event_qr_codes_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      fcm_tokens: {
+        Row: {
+          last_refreshed_at: string;
+          platform: string;
+          registered_at: string;
+          token: string;
+          type: string;
+          user_id: string;
+        };
+        Insert: {
+          last_refreshed_at?: string;
+          platform: string;
+          registered_at?: string;
+          token: string;
+          type: string;
+          user_id: string;
+        };
+        Update: {
+          last_refreshed_at?: string;
+          platform?: string;
+          registered_at?: string;
+          token?: string;
+          type?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fcm_tokens_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users';
@@ -806,6 +917,7 @@ export type Database = {
           last_work_date: string | null;
           location: Json;
           og_image_url: string | null;
+          og_image_url_blurhash: string | null;
           owner_id: string | null;
           owner_name: string | null;
           posting_type: Database['public']['Enums']['posting_type'] | null;
@@ -841,6 +953,7 @@ export type Database = {
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
+          og_image_url_blurhash?: string | null;
           owner_id?: string | null;
           owner_name?: string | null;
           posting_type?: Database['public']['Enums']['posting_type'] | null;
@@ -876,6 +989,7 @@ export type Database = {
           last_work_date?: string | null;
           location?: Json;
           og_image_url?: string | null;
+          og_image_url_blurhash?: string | null;
           owner_id?: string | null;
           owner_name?: string | null;
           posting_type?: Database['public']['Enums']['posting_type'] | null;
@@ -1319,6 +1433,7 @@ export type Database = {
           phone: string | null;
           phone_verified: boolean | null;
           photo_url: string | null;
+          photo_url_blurhash: string | null;
           privacy_agreed: boolean | null;
           profile_completed: boolean | null;
           region: string | null;
@@ -1355,6 +1470,7 @@ export type Database = {
           phone?: string | null;
           phone_verified?: boolean | null;
           photo_url?: string | null;
+          photo_url_blurhash?: string | null;
           privacy_agreed?: boolean | null;
           profile_completed?: boolean | null;
           region?: string | null;
@@ -1391,6 +1507,7 @@ export type Database = {
           phone?: string | null;
           phone_verified?: boolean | null;
           photo_url?: string | null;
+          photo_url_blurhash?: string | null;
           privacy_agreed?: boolean | null;
           profile_completed?: boolean | null;
           region?: string | null;
@@ -1434,6 +1551,7 @@ export type Database = {
           staff_name: string | null;
           staff_nickname: string | null;
           staff_photo_url: string | null;
+          staff_photo_url_blurhash: string | null;
           status: Database['public']['Enums']['work_log_status'];
           time_slot: string | null;
           updated_at: string | null;
@@ -1470,6 +1588,7 @@ export type Database = {
           staff_name?: string | null;
           staff_nickname?: string | null;
           staff_photo_url?: string | null;
+          staff_photo_url_blurhash?: string | null;
           status?: Database['public']['Enums']['work_log_status'];
           time_slot?: string | null;
           updated_at?: string | null;
@@ -1506,6 +1625,7 @@ export type Database = {
           staff_name?: string | null;
           staff_nickname?: string | null;
           staff_photo_url?: string | null;
+          staff_photo_url_blurhash?: string | null;
           status?: Database['public']['Enums']['work_log_status'];
           time_slot?: string | null;
           updated_at?: string | null;
@@ -1551,6 +1671,7 @@ export type Database = {
         Args: { p_jp: Database['public']['Tables']['job_postings']['Row'] };
         Returns: string;
       };
+      _fmt_worklog_time: { Args: { v: Json }; Returns: string };
       _format_compensation_label: {
         Args: { p_compensation: Json };
         Returns: string;
@@ -1573,6 +1694,10 @@ export type Database = {
           p_pre_question_answers?: Json;
           p_recruitment_type?: string;
         };
+        Returns: Json;
+      };
+      approve_employer_application: {
+        Args: { p_app_id: string };
         Returns: Json;
       };
       cancel_application_atomically: {
@@ -1632,6 +1757,11 @@ export type Database = {
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      fn_cleanup_expired_fcm_tokens: { Args: never; Returns: number };
+      fn_cleanup_rate_limits: { Args: never; Returns: number };
+      fn_expire_by_last_work_date: { Args: never; Returns: number };
+      fn_expire_fixed_postings_batch: { Args: never; Returns: number };
+      fn_send_review_reminders: { Args: never; Returns: number };
       get_job_posting_stats: {
         Args: { p_owner_id: string };
         Returns: {
@@ -1642,6 +1772,10 @@ export type Database = {
           total_applications: number;
           total_views: number;
         }[];
+      };
+      get_latest_employer_application: {
+        Args: { p_user_id?: string };
+        Returns: Json;
       };
       get_my_role: { Args: never; Returns: string };
       get_unread_notification_count: {
@@ -1677,6 +1811,10 @@ export type Database = {
       };
       register_as_employer: {
         Args: { p_employer_agreements?: Json };
+        Returns: Json;
+      };
+      reject_employer_application: {
+        Args: { p_app_id: string; p_category?: string; p_reason?: string };
         Returns: Json;
       };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
