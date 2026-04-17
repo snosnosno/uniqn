@@ -9,4 +9,4 @@ export { formatTime, formatTimeRange, calculateDuration, formatDate } from './ti
 
 export { getRoleSalaryFromProjection, formatSalaryDisplay } from './salaryHelpers';
 
-export { statusConfig, attendanceConfig } from './statusConfig';
+export { statusConfig, attendanceConfig, SCHEDULE_STATUS_STRIPE_TONE } from './statusConfig';

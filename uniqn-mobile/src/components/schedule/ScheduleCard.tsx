@@ -5,7 +5,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Card, Badge } from '@/components/ui';
+import { CardStripe, Badge } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
@@ -33,6 +33,7 @@ import {
   getRoleSalaryFromProjection,
   statusConfig,
   attendanceConfig,
+  SCHEDULE_STATUS_STRIPE_TONE,
 } from './helpers';
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
@@ -128,6 +129,8 @@ export const ScheduleCard = memo(function ScheduleCard({
     schedule.location ? `, ${schedule.location}` : ''
   }`;
 
+  const stripeTone = SCHEDULE_STATUS_STRIPE_TONE[schedule.type];
+
   return (
     <Pressable
       onPress={onPress}
@@ -135,170 +138,176 @@ export const ScheduleCard = memo(function ScheduleCard({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
     >
-      <Card className={`mb-3 ${isCancelled ? 'opacity-60' : ''}`}>
-        <View className="mb-2 flex-row items-start justify-between">
-          <View className="flex-1 flex-row flex-wrap items-center">
-            <Badge variant={status.variant} dot>
-              {status.label}
-            </Badge>
-
-            {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
-              <View className={`ml-2 rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>
-                <Text className={`text-xs font-sans-medium ${attendance.textColor}`}>
-                  {attendance.label}
-                </Text>
-              </View>
-            )}
-
-            {hasPendingCancellation && (
-              <View className="ml-2">
-                <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
-              </View>
-            )}
-          </View>
-
-          {schedule.type === STATUS.SCHEDULE.COMPLETED && completedAmount && (
-            <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(completedAmount)}
-            </Text>
-          )}
-        </View>
-
-        <Text
-          className={`mb-2 text-base font-sans-semibold ${
-            isCancelled
-              ? 'text-secondary-400 dark:text-secondary-500 line-through'
-              : 'text-secondary-900 dark:text-off-white'
+      <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
+        <View
+          className={`bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3 ${
+            isCancelled ? 'opacity-60' : ''
           }`}
-          numberOfLines={1}
         >
-          {schedule.jobPostingName}
-        </Text>
+          <View className="mb-2 flex-row items-start justify-between">
+            <View className="flex-1 flex-row flex-wrap items-center">
+              <Badge variant="chip" dot>
+                {status.label}
+              </Badge>
 
-        {schedule.location && (
-          <View className="mb-2 flex-row items-center">
-            <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
-            <Text
-              className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-              numberOfLines={1}
-            >
-              {schedule.location}
-            </Text>
-          </View>
-        )}
+              {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
+                <View className={`ml-2 rounded-sm px-2 py-0.5 ${attendance.bgColor}`}>
+                  <Text className={`text-xs font-sans-medium ${attendance.textColor}`}>
+                    {attendance.label}
+                  </Text>
+                </View>
+              )}
 
-        {schedule.type === STATUS.SCHEDULE.APPLIED ? (
-          <View>
-            <View className="flex-row items-center">
-              <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {formatDate(schedule.date)}
-              </Text>
-              <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {formatTime(schedule.startTime)}
-              </Text>
+              {hasPendingCancellation && (
+                <View className="ml-2">
+                  <Badge variant="warning">{APPLICATION_STATUS_LABELS.cancellation_pending}</Badge>
+                </View>
+              )}
             </View>
 
-            <View className="mt-2 flex-row flex-wrap items-center">
-              <View className="mr-3 flex-row items-center">
+            {schedule.type === STATUS.SCHEDULE.COMPLETED && completedAmount && (
+              <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
+                {formatCurrency(completedAmount)}
+              </Text>
+            )}
+          </View>
+
+          <Text
+            className={`mb-2 text-base font-sans-semibold ${
+              isCancelled
+                ? 'text-secondary-400 dark:text-secondary-500 line-through'
+                : 'text-secondary-900 dark:text-off-white'
+            }`}
+            numberOfLines={1}
+          >
+            {schedule.jobPostingName}
+          </Text>
+
+          {schedule.location && (
+            <View className="mb-2 flex-row items-center">
+              <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
+              <Text
+                className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
+                numberOfLines={1}
+              >
+                {schedule.location}
+              </Text>
+            </View>
+          )}
+
+          {schedule.type === STATUS.SCHEDULE.APPLIED ? (
+            <View>
+              <View className="flex-row items-center">
+                <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                  {formatDate(schedule.date)}
+                </Text>
+                <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
+                <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                  {formatTime(schedule.startTime)}
+                </Text>
+              </View>
+
+              <View className="mt-2 flex-row flex-wrap items-center">
+                <View className="mr-3 flex-row items-center">
+                  <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
+                  <Text className="ml-1.5 text-sm text-content-secondary font-sans">
+                    {getRoleDisplayName(schedule.role, schedule.customRole)}
+                  </Text>
+                </View>
+
+                {salaryDisplay && (
+                  <View className="mr-3 flex-row items-center">
+                    <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
+                    <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
+                      {salaryDisplay}
+                    </Text>
+                  </View>
+                )}
+
+                {ownerName && (
+                  <View className="flex-row items-center">
+                    <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
+                    <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                      {ownerName}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View>
+              <View className="flex-row items-center">
+                <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                  {formatDate(schedule.date)}
+                </Text>
+                <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
+                <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
+                <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+                  {schedule.type === STATUS.SCHEDULE.COMPLETED
+                    ? timeDisplayInfo.duration
+                    : confirmedTimeDisplay}
+                </Text>
+              </View>
+
+              <View className="mt-2 flex-row items-center">
                 <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
                 <Text className="ml-1.5 text-sm text-content-secondary font-sans">
                   {getRoleDisplayName(schedule.role, schedule.customRole)}
                 </Text>
               </View>
-
-              {salaryDisplay && (
-                <View className="mr-3 flex-row items-center">
-                  <BanknotesIcon size={14} color={SECONDARY_PALETTE[500]} />
-                  <Text className="ml-1.5 text-sm font-sans-medium text-content-secondary">
-                    {salaryDisplay}
-                  </Text>
-                </View>
-              )}
-
-              {ownerName && (
-                <View className="flex-row items-center">
-                  <UserIcon size={14} color={SECONDARY_PALETTE[400]} />
-                  <Text className="ml-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                    {ownerName}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        ) : (
-          <View>
-            <View className="flex-row items-center">
-              <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {formatDate(schedule.date)}
-              </Text>
-              <View className="mx-2 h-3 w-px bg-secondary-300 dark:bg-surface-elevated" />
-              <ClockIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-                {schedule.type === STATUS.SCHEDULE.COMPLETED
-                  ? timeDisplayInfo.duration
-                  : confirmedTimeDisplay}
-              </Text>
-            </View>
-
-            <View className="mt-2 flex-row items-center">
-              <BriefcaseIcon size={14} color={SECONDARY_PALETTE[500]} />
-              <Text className="ml-1.5 text-sm text-content-secondary font-sans">
-                {getRoleDisplayName(schedule.role, schedule.customRole)}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* 인라인 액션 버튼 — applied/confirmed 상태에서 직접 취소 가능 */}
-        {schedule.applicationId &&
-          !hasPendingCancellation &&
-          !isCancelled &&
-          ((schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication) ||
-            (schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation)) && (
-            <View className="mt-3 flex-row justify-end">
-              <Pressable
-                onPress={(event) => {
-                  event.stopPropagation();
-                  if (!schedule.applicationId) return;
-                  if (schedule.type === STATUS.SCHEDULE.APPLIED) {
-                    onCancelApplication?.(schedule.applicationId);
-                  } else if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
-                    onRequestCancellation?.(schedule.applicationId);
-                  }
-                }}
-                className="rounded-md border border-secondary-200 px-3 py-1.5 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
-                accessibilityRole="button"
-                accessibilityLabel={
-                  schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'
-                }
-              >
-                <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-300">
-                  {schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'}
-                </Text>
-              </Pressable>
             </View>
           )}
 
-        {hasPendingCancellation && (
-          <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
-            <Text className="text-center text-xs text-warning-700 dark:text-warning-400 font-sans">
-              취소 요청 검토 중입니다.
-            </Text>
-          </View>
-        )}
+          {/* 인라인 액션 버튼 — applied/confirmed 상태에서 직접 취소 가능 */}
+          {schedule.applicationId &&
+            !hasPendingCancellation &&
+            !isCancelled &&
+            ((schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication) ||
+              (schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation)) && (
+              <View className="mt-3 flex-row justify-end">
+                <Pressable
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    if (!schedule.applicationId) return;
+                    if (schedule.type === STATUS.SCHEDULE.APPLIED) {
+                      onCancelApplication?.(schedule.applicationId);
+                    } else if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
+                      onRequestCancellation?.(schedule.applicationId);
+                    }
+                  }}
+                  className="rounded-md border border-secondary-200 px-3 py-1.5 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'
+                  }
+                >
+                  <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-300">
+                    {schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
 
-        {isCancelled && (
-          <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
-            <Text className="text-center text-xs text-error-600 dark:text-error-400 font-sans">
-              이 일정이 취소되었습니다.
-            </Text>
-          </View>
-        )}
-      </Card>
+          {hasPendingCancellation && (
+            <View className="mt-3 rounded-lg bg-warning-50 px-3 py-2 dark:bg-warning-900/20">
+              <Text className="text-center text-xs text-warning-700 dark:text-warning-400 font-sans">
+                취소 요청 검토 중입니다.
+              </Text>
+            </View>
+          )}
+
+          {isCancelled && (
+            <View className="mt-3 rounded-lg bg-error-50 px-3 py-2 dark:bg-error-900/20">
+              <Text className="text-center text-xs text-error-600 dark:text-error-400 font-sans">
+                이 일정이 취소되었습니다.
+              </Text>
+            </View>
+          )}
+        </View>
+      </CardStripe>
     </Pressable>
   );
 });
