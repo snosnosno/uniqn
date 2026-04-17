@@ -2,17 +2,20 @@
  * UNIQN Mobile - Skeleton 컴포넌트
  *
  * @description 로딩 스켈레톤 플레이스홀더
- * @version 2.0.0 - Reanimated 마이그레이션
+ * @version 3.0.0 - impeccable v2 §16 준수 (shimmer 1.2s / opacity 0.3↔0.5 /
+ *                 reduce motion / progressbar a11y)
+ *
+ * 룰 근거: `.claude/rules/impeccable-design.md` §16 Skeleton > Spinner
  */
 
-import React, { useEffect } from 'react';
-import { View, type ViewStyle, type DimensionValue } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AccessibilityInfo, View, type ViewStyle, type DimensionValue } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
-  withSequence,
   withTiming,
+  cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
 
@@ -26,6 +29,15 @@ interface SkeletonProps {
   borderRadius?: number;
   style?: ViewStyle;
   className?: string;
+  /**
+   * 접근성 노드로 노출할지. 반복 Skeleton이 composer로 묶여 있다면
+   * `false`를 전달해 VoiceOver 중복 announce 방지.
+   * @default true
+   */
+  accessible?: boolean;
+  /** @default "로딩 중" */
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 interface SkeletonTextProps {
@@ -40,6 +52,46 @@ interface SkeletonCardProps {
 }
 
 // ============================================================================
+// Reduce Motion 감지 훅 (impeccable v2 §16)
+// ============================================================================
+
+/**
+ * OS 의 Reduce Motion 설정을 구독한다.
+ * 활성 시 shimmer 루프 대신 정적 fade(단일 opacity) 만 표시.
+ */
+function useReduceMotion(): boolean {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    AccessibilityInfo.isReduceMotionEnabled().then((value) => {
+      if (mounted) setEnabled(value);
+    });
+
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (value: boolean) => {
+      if (mounted) setEnabled(value);
+    });
+
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
+
+  return enabled;
+}
+
+// ============================================================================
+// Shimmer 상수 (impeccable v2 §16 스펙)
+// ============================================================================
+
+const SHIMMER_HALF_DURATION = 600; // 0.3 → 0.5 = 600ms, 루프 총 1.2s
+const OPACITY_MIN = 0.3;
+const OPACITY_MAX = 0.5;
+const REDUCED_OPACITY = 0.4; // reduce motion 시 정적
+
+// ============================================================================
 // Base Skeleton Component
 // ============================================================================
 
@@ -49,20 +101,34 @@ export function Skeleton({
   borderRadius = 4,
   style,
   className,
+  accessible = true,
+  accessibilityLabel = '로딩 중',
+  testID,
 }: SkeletonProps) {
-  const opacity = useSharedValue(0.3);
+  const reduceMotion = useReduceMotion();
+  const opacity = useSharedValue(reduceMotion ? REDUCED_OPACITY : OPACITY_MIN);
 
   useEffect(() => {
-    // Shimmer 애니메이션: 0.3 → 0.7 → 0.3 반복
+    if (reduceMotion) {
+      cancelAnimation(opacity);
+      opacity.value = REDUCED_OPACITY;
+      return;
+    }
+
+    opacity.value = OPACITY_MIN;
     opacity.value = withRepeat(
-      withSequence(
-        withTiming(0.7, { duration: 1000, easing: Easing.ease }),
-        withTiming(0.3, { duration: 1000, easing: Easing.ease })
-      ),
+      withTiming(OPACITY_MAX, {
+        duration: SHIMMER_HALF_DURATION,
+        easing: Easing.inOut(Easing.ease),
+      }),
       -1, // 무한 반복
-      false // reverse 없음
+      true // auto-reverse → 총 1.2s 루프 (0.3→0.5→0.3)
     );
-  }, [opacity]);
+
+    return () => {
+      cancelAnimation(opacity);
+    };
+  }, [reduceMotion, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -70,6 +136,10 @@ export function Skeleton({
 
   return (
     <Animated.View
+      testID={testID}
+      accessible={accessible}
+      accessibilityRole={accessible ? 'progressbar' : undefined}
+      accessibilityLabel={accessible ? accessibilityLabel : undefined}
       className={`bg-secondary-200 dark:bg-surface ${className || ''}`}
       style={[
         {
@@ -165,6 +235,34 @@ interface SkeletonAvatarProps {
 
 export function SkeletonAvatar({ size = 48 }: SkeletonAvatarProps) {
   return <Skeleton width={size} height={size} borderRadius={size / 2} />;
+}
+
+// ============================================================================
+// SkeletonCircle — impeccable v2 §16 프리미티브
+// ============================================================================
+//
+// 타임라인 도트, 프로그레스 도트 등 진짜 원형 shape가 필요한 비-아바타 용도용.
+// 아바타는 DESIGN.md("rounded-full 아바타 포함 금지") 이유로 `SkeletonAvatar`
+// 또는 `Skeleton borderRadius=8` 을 사용할 것.
+
+interface SkeletonCircleProps {
+  size?: number;
+  style?: ViewStyle;
+  testID?: string;
+  accessible?: boolean;
+}
+
+export function SkeletonCircle({ size = 40, style, testID, accessible }: SkeletonCircleProps) {
+  return (
+    <Skeleton
+      width={size}
+      height={size}
+      borderRadius={size / 2}
+      style={style}
+      testID={testID}
+      {...(accessible !== undefined ? { accessible } : {})}
+    />
+  );
 }
 
 // ============================================================================

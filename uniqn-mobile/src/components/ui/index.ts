@@ -111,6 +111,7 @@ export {
   SkeletonCard,
   SkeletonListItem,
   SkeletonAvatar,
+  SkeletonCircle,
   SkeletonButton,
   SkeletonJobCard,
   SkeletonScheduleCard,
