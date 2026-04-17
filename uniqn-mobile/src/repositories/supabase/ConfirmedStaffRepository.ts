@@ -357,6 +357,11 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
   ): UnsubscribeFn {
     logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    void this.getByJobPostingId(jobPostingId)
+      .then((workLogs) => callbacks.onUpdate(workLogs))
+      .catch((error) => callbacks.onError?.(toError(error)));
+
     return createRealtimeSubscription(TABLE, `job_posting_id=eq.${jobPostingId}`, (_payload) => {
       try {
         // 변경 이벤트 발생 시 전체 목록 재조회
