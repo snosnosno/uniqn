@@ -9,18 +9,16 @@ import { SALARY_TYPE_LABELS, JOB_STATUS_LABELS } from '@/constants';
 import { getRoleDisplayName } from '@/types/unified';
 import type { StaffRole, UserRole } from '@/types';
 import type { JobPostingStatus, SalaryType } from '@/types/jobPosting';
-
-// 정산 유틸리티에서 통화 포맷 함수 import 및 re-export
 import { formatCurrency } from '@/utils/settlement';
+import { formatNumber } from '@/utils/formatters/currency';
+
+// 정산 유틸리티에서 통화 포맷 함수 re-export
 export { formatCurrency };
 
-/**
- * 숫자에 천 단위 콤마 추가
- */
-export const formatNumber = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '0';
-  return value.toLocaleString('ko-KR');
-};
+// impeccable v2 §19 — `formatNumber` canonical 구현(`@/utils/formatters/currency`)
+// 으로 위임. 출력 동일(ko-KR 구분자), null/undefined/NaN 입력에 "0" 반환.
+// 기존 호출부 시그니처 완전 보존.
+export { formatNumber };
 
 /**
  * 금액 간략 표시 (만원 단위)
