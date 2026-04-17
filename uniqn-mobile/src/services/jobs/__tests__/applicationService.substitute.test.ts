@@ -236,3 +236,50 @@ describe('reviewCancellationRequest archive path', () => {
     expect(logger.warn).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('reviewCancellationRequest - substitute post archive behavior (regression lock-in)', () => {
+  // 현재 구현은 승인/거절 모두에서 대타글을 아카이브함 (spec 승인된 동작).
+  // 향후 "거절 시만 아카이브"로 축소 시 아래 테스트가 실패하여 의도 변경을 강제함.
+  const { applicationRepository } = jest.requireMock('@/repositories');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReviewCancellationWithTransaction.mockResolvedValue(undefined);
+    mockArchiveSubstitutePostByLinkedPosting.mockResolvedValue(undefined);
+  });
+
+  it('archives substitute post when cancellation is approved', async () => {
+    // Arrange
+    (applicationRepository.getById as jest.Mock).mockResolvedValue({
+      id: 'app-1',
+      jobPostingId: 'job-1',
+      applicantId: 'user-1',
+    });
+
+    // Act
+    await reviewCancellationRequest({ applicationId: 'app-1', approved: true }, 'reviewer-1');
+
+    // Assert
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-1', 'user-1');
+  });
+
+  it('archives substitute post when cancellation is rejected', async () => {
+    // Arrange
+    (applicationRepository.getById as jest.Mock).mockResolvedValue({
+      id: 'app-2',
+      jobPostingId: 'job-2',
+      applicantId: 'user-2',
+    });
+
+    // Act
+    await reviewCancellationRequest(
+      { applicationId: 'app-2', approved: false, rejectionReason: '거절 사유' },
+      'reviewer-2'
+    );
+
+    // Assert: 거절도 동일하게 archive (spec 결정)
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledTimes(1);
+    expect(mockArchiveSubstitutePostByLinkedPosting).toHaveBeenCalledWith('job-2', 'user-2');
+  });
+});
