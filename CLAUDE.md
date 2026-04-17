@@ -57,4 +57,6 @@ Skill 요청 시 Skill tool 먼저 호출 (직접 답하지 말 것):
 PR→`/pr` | 배포→`/deploy` | 보안→`/cso` | 품질→`/health` | 회고→`/retro`
 디자인→`/design-review` | 타입에러→`/type-check` | 테스트→`/test`
 
+*2026-04-17 업데이트 — Firebase 레거시 규칙/스펙 archive 완료 (docs/archive/firebase-legacy/2026-04/), Firebase MCP 제거. 유지: google-services/GoogleService-Info (EAS 네이티브 빌드용), storageService firebasestorage URL 파싱 (마이그레이션 호환성)*
+
 *2026-04-13 업데이트 — Expo 55/RN 0.83.4 업그레이드, Supabase 이전 완료, Black & Gold 완료*

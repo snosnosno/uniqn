@@ -142,7 +142,8 @@ nul
 */nul
 debug-*.html
 *.html.debug
-docs/archive/
+docs/archive/*
+!docs/archive/firebase-legacy/
 
 # ========================================
 # CAPACITOR & MOBILE (모바일 네이티브 파일들)
