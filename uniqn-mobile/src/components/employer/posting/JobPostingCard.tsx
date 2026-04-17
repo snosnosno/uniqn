@@ -2,12 +2,30 @@ import React, { memo, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { PostingCardSurface } from '@/components/jobs/shared/PostingCardSurface';
-import { PostingStatusBadge } from '@/components/jobs/shared/PostingStatusBadge';
 import { QrCodeIcon, UsersIcon } from '@/components/icons';
-import { Card } from '@/components/ui/Card';
+import { Badge, type CardStripeTone } from '@/components/ui';
 import { STATUS } from '@/constants';
 import { toJobPostingCard } from '@/domains/job-posting';
-import type { JobPosting, TournamentApprovalStatus } from '@/types';
+import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
+import type { JobPosting, JobPostingStatus, TournamentApprovalStatus } from '@/types';
+
+/**
+ * Job posting status → stripe tone.
+ * gold: active (live) · approved (ready to publish)
+ * muted: draft · closed · cancelled · expired
+ * warning: pending (awaiting approval)
+ * error: rejected
+ */
+const POSTING_STRIPE_TONE: Record<JobPostingStatus, CardStripeTone> = {
+  draft: 'muted',
+  pending: 'warning',
+  approved: 'gold',
+  active: 'gold',
+  closed: 'muted',
+  cancelled: 'muted',
+  expired: 'muted',
+  rejected: 'error',
+};
 
 export interface JobPostingCardProps {
   posting: JobPosting;
@@ -29,19 +47,26 @@ export const JobPostingCard = memo(function JobPostingCard({
   isReopening,
 }: JobPostingCardProps) {
   const card = useMemo(() => toJobPostingCard(posting), [posting]);
+  const stripeTone = POSTING_STRIPE_TONE[posting.status];
+  const statusLabel = getPostingStatusMeta(posting.status).label;
 
   return (
-    <Card variant="elevated" padding="none" className="mx-4 mb-3 overflow-hidden">
+    <View className="mx-4 mb-3">
       <PostingCardSurface
         card={card}
         onPress={() => onPress(posting)}
         pressableClassName="p-4"
         accessibilityLabel={`${posting.title} 공고 상세보기`}
+        stripeTone={stripeTone}
+        containerClassName="overflow-hidden"
         footer={
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
               <UsersIcon size={14} color="#B8962E" />
-              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+              <Text
+                className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
                 지원자 {posting.stats?.totalApplicants ?? 0}
               </Text>
             </View>
@@ -65,7 +90,9 @@ export const JobPostingCard = memo(function JobPostingCard({
                 />
               ) : null}
 
-              <PostingStatusBadge status={posting.status} size="sm" />
+              <Badge variant="chip" size="sm">
+                {statusLabel}
+              </Badge>
 
               {posting.status === STATUS.JOB_POSTING.ACTIVE ? (
                 <Pressable
@@ -102,7 +129,7 @@ export const JobPostingCard = memo(function JobPostingCard({
           </View>
         }
       />
-    </Card>
+    </View>
   );
 });
 
