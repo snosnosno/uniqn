@@ -385,14 +385,20 @@ export default function ScheduleScreen() {
       requestCancellation(
         { applicationId, reason, wantsSubstitutePost, applicantContext },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
             setCancellationApp(null);
             refresh();
+            if (result?.substitutePost === 'failed') {
+              addToast({
+                type: 'warning',
+                message: '대타 구인 글 생성에 실패했습니다. 게시판에서 수동으로 작성해 주세요.',
+              });
+            }
           },
         }
       );
     },
-    [user, profile, cancellationApp, requestCancellation, refresh]
+    [user, profile, cancellationApp, requestCancellation, refresh, addToast]
   );
 
   const handleCloseCancellationSheet = useCallback(() => {
