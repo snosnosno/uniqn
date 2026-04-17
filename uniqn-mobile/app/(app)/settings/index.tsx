@@ -159,8 +159,9 @@ export default function SettingsScreen() {
     refresh: refreshBiometricState,
   } = useBiometricAuth();
 
-  // 푸시 알림 토글
+  // 푸시 알림 토글 (§17 — Light)
   const handlePushToggle = (value: boolean) => {
+    void triggerHaptic('light');
     if (notificationSettings) {
       saveSettings({
         ...notificationSettings,
@@ -175,8 +176,9 @@ export default function SettingsScreen() {
     setTheme(value ? 'dark' : 'light');
   };
 
-  // 자동 로그인 토글
+  // 자동 로그인 토글 (§17 — Light)
   const handleAutoLoginToggle = async (value: boolean) => {
+    void triggerHaptic('light');
     try {
       await setAutoLoginEnabled(value);
       await refreshBiometricState();
@@ -185,8 +187,9 @@ export default function SettingsScreen() {
     }
   };
 
-  // 생체 인증 토글
+  // 생체 인증 토글 (§17 — Light)
   const handleBiometricToggle = async (value: boolean) => {
+    void triggerHaptic('light');
     await setBiometricEnabled(value);
   };
 
@@ -197,10 +200,11 @@ export default function SettingsScreen() {
     });
   };
 
-  // 마케팅 정보 수신 토글 핸들러
+  // 마케팅 정보 수신 토글 핸들러 (§17 — Light)
   const handleMarketingConsentChange = async (value: boolean) => {
     if (!user?.uid || !profile) return;
 
+    void triggerHaptic('light');
     setIsMarketingUpdating(true);
     try {
       await updateMarketingConsent(user.uid, value);
