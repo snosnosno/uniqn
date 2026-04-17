@@ -172,6 +172,30 @@ describe('createSubstitutePost', () => {
     const callArg = (mockBoardRepository.createPost as jest.Mock).mock.calls[0][0];
     expect(callArg.body).toContain('개인 사정으로 출근이 어렵습니다.');
   });
+
+  it('rejects creation when jobSummary.jobPostingId is missing', async () => {
+    const input = {
+      authorId: 'staff-1',
+      authorName: '홍길동',
+      authorRole: 'staff' as const,
+      applicationId: 'app-1',
+      reason: '갑자기 몸이 아파서 대타를 구합니다.',
+      jobSummary: {
+        // jobPostingId 의도적 누락
+        title: 'Bar Shift',
+        workDate: '2026-04-20',
+        locationName: 'Pub',
+        compensationLabel: '80000원',
+      } as unknown as BoardJobSummary,
+    };
+
+    await expect(createSubstitutePost(input)).rejects.toMatchObject({
+      name: 'ValidationError',
+      code: expect.stringMatching(/^E3/),
+    });
+
+    expect(mockBoardRepository.createPost).not.toHaveBeenCalled();
+  });
 });
 
 describe('archiveSubstitutePostByLinkedPosting', () => {

@@ -1729,6 +1729,16 @@ export interface CreateSubstitutePostInput {
 export async function createSubstitutePost(input: CreateSubstitutePostInput): Promise<string> {
   await requireMatchingCurrentUser(input.authorId);
 
+  // 대타 글은 원 공고 연결이 필수 (아카이브 필터링 + 지원자 네비게이션에 사용).
+  // 타입상 BoardJobSummary.jobPostingId는 string이지만 런타임 undefined/empty
+  // 유입 방지를 위한 이중 가드.
+  if (!input.jobSummary?.jobPostingId) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      field: 'jobSummary.jobPostingId',
+      userMessage: '대타 구인 글 작성 시 원 공고 연결이 필수입니다.',
+    });
+  }
+
   const title = `대타 구해요 · ${input.jobSummary.title}`;
   const dateInfo = input.jobSummary.workDate || '';
   const locationInfo = input.jobSummary.locationName || '';
