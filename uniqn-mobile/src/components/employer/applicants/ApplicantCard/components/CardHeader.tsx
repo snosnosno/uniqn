@@ -12,7 +12,6 @@ import { Avatar, Badge } from '@/components/ui';
 import { ChevronUpIcon, ChevronDownIcon } from '@/components/icons';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import type { ApplicationStatus } from '@/types';
-import { STATUS_BADGE_VARIANT } from '../constants';
 import { getIconColor } from '@/constants';
 
 // ============================================================================
@@ -79,7 +78,7 @@ export const CardHeader = React.memo(function CardHeader({
             )}
           </View>
         </View>
-        <Badge variant={STATUS_BADGE_VARIANT[status]} size="sm" dot>
+        <Badge variant="chip" size="sm" dot>
           {APPLICATION_STATUS_LABELS[status]}
         </Badge>
       </Pressable>
