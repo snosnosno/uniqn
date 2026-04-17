@@ -62,6 +62,8 @@ module.exports = {
           secondary: 'var(--color-content-secondary)',
           muted: 'var(--color-content-muted)',
           placeholder: 'var(--color-content-placeholder)',
+          // 골드 배경 위의 전경 텍스트 (고정 다크 — 다크모드 무관)
+          onGold: '#09090B',
         },
         'surface-page': 'var(--color-surface-page)',
         'surface-card': 'var(--color-surface-card)',

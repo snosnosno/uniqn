@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
-import { CalendarIcon, MapPinIcon, ClockIcon } from '@/components/icons';
 import { useUpcomingSchedules } from '@/hooks/useSchedules';
+import { formatTimeOfDay } from '@/utils/formatters/date';
 import type { ScheduleEvent } from '@/types/schedule';
 
 function computeDayDiff(dateStr: string): number {
@@ -34,52 +35,60 @@ function formatRole(role: string): string {
   return map[role] ?? role;
 }
 
-interface ScheduleCardProps {
+function formatScheduleTimeRange(schedule: ScheduleEvent): string {
+  if (!schedule.startTime) return '';
+  const start = formatTimeOfDay(schedule.startTime);
+  if (!schedule.endTime) return start;
+  const end = formatTimeOfDay(schedule.endTime);
+  return `${start} ~ ${end}`;
+}
+
+interface HeroScheduleCardProps {
   schedule: ScheduleEvent;
 }
 
-function ScheduleCard({ schedule }: ScheduleCardProps) {
+function HeroScheduleCard({ schedule }: HeroScheduleCardProps) {
   const diffDays = computeDayDiff(schedule.date);
   const badge = formatBadge(diffDays);
-  const accessibilityLabel = `다음 근무, ${badge}, ${schedule.location}에서 ${formatRole(schedule.role)}로 근무, ${formatDate(schedule.date)}, 탭하여 상세 보기`;
+  const timeRange = formatScheduleTimeRange(schedule);
+  const roleLabel = formatRole(schedule.role);
+  const dateLabel = formatDate(schedule.date);
+  const subtitleParts = [dateLabel, timeRange, roleLabel].filter(Boolean);
+  const accessibilityLabel = `다음 근무 ${badge}, ${schedule.location}, 탭하면 스케줄 이동`;
 
   return (
     <Pressable
       onPress={() => router.push('/(app)/(tabs)/schedule')}
-      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
-      <View className="flex-row items-center justify-between mb-2">
-        <View
-          className="rounded px-2 py-0.5"
-          style={{ backgroundColor: '#D4AF37', borderRadius: 4 }}
-        >
-          <Text className="text-xs font-semibold" style={{ color: '#000000' }}>
+      <View className="flex-row items-center gap-2 mb-1">
+        <View className="bg-primary-500 rounded px-2 py-0.5" style={{ borderRadius: 4 }}>
+          <Text
+            className="font-sans-bold text-content-onGold"
+            style={{
+              fontSize: 14,
+              fontVariant: ['tabular-nums'],
+            }}
+          >
             {badge}
           </Text>
         </View>
-      </View>
-
-      <View className="flex-row items-center gap-1 mb-1">
-        <CalendarIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
-          {formatDate(schedule.date)}
-        </Text>
-      </View>
-
-      <View className="flex-row items-center gap-1 mb-1">
-        <MapPinIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
+        <Text
+          className="text-content-primary font-sans-bold"
+          style={{ fontSize: 20, letterSpacing: -0.5 }}
+          numberOfLines={1}
+        >
           {schedule.location}
         </Text>
       </View>
-
-      <View className="flex-row items-center gap-1">
-        <ClockIcon size={14} color="#9CA3AF" />
-        <Text className="text-sm text-secondary-900 dark:text-secondary-50">
-          {formatRole(schedule.role)}
-        </Text>
-      </View>
+      <Text
+        className="text-content-secondary text-xs mt-1"
+        style={{ fontVariant: ['tabular-nums'] }}
+        numberOfLines={1}
+      >
+        {subtitleParts.join(' · ')}
+      </Text>
     </Pressable>
   );
 }
@@ -100,13 +109,37 @@ export function NextWorkWidget() {
 
   return (
     <DashboardWidgetShell
+      variant="hero"
       title="다음 근무"
       isLoading={isLoading}
       emptyState={nextSchedule ? undefined : emptyState}
       error={error}
       onRetry={refetch}
     >
-      {nextSchedule ? <ScheduleCard schedule={nextSchedule} /> : null}
+      {nextSchedule ? (
+        /*
+         * Gradient bleed contract:
+         * - marginHorizontal: -16 cancels DashboardWidgetShell hero variant's
+         *   horizontal px-4 padding so the gradient reaches the card edges.
+         * - Shell's vertical py-4 is intentionally preserved (no negative
+         *   marginVertical) for breathing room between hero and adjacent widgets.
+         * - borderRadius: 12 is retained for future cases where the shell adds
+         *   horizontal inset; at full bleed it's a cosmetic no-op.
+         */
+        <LinearGradient
+          colors={['#1A1710', '#09090B']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{
+            borderRadius: 12,
+            marginHorizontal: -16,
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+          }}
+        >
+          <HeroScheduleCard schedule={nextSchedule} />
+        </LinearGradient>
+      ) : null}
     </DashboardWidgetShell>
   );
 }
