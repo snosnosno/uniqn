@@ -87,6 +87,10 @@ module.exports = [
               name: '@expo/vector-icons',
               message: 'Use @/components/icons instead.',
             },
+            {
+              name: 'lucide-react-native',
+              message: '아이콘은 @/components/icons 에서 import 하세요 (stroke·색 일관성).',
+            },
           ],
           patterns: [
             {
@@ -119,6 +123,14 @@ module.exports = [
             'T-B12: outbox enqueue를 사용하세요. enqueueScheduleBoardSync from "@/services/jobs/jobManagementService"',
         },
       ],
+    },
+  },
+
+  // 4c. 아이콘 래핑 레이어 — lucide-react-native 직접 import 허용 (유일한 경로)
+  {
+    files: ['src/components/icons/index.tsx'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 

@@ -41,7 +41,7 @@ import { useSettlementModals } from '@/hooks/useSettlementModals';
 import { useToastStore } from '@/stores/toastStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
-import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
+import { UsersIcon, CurrencyWonIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
@@ -182,7 +182,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
         accessibilityLabel="정산"
         accessibilityState={{ selected: activeTab === 'settlement' }}
       >
-        <CurrencyYenIcon
+        <CurrencyWonIcon
           size={20}
           color={activeTab === 'settlement' ? primaryColor : inactiveColor}
         />
