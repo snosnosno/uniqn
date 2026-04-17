@@ -615,7 +615,7 @@ export function subscribeToSchedules(
         onUpdate(schedules.filter((schedule) => hasScheduleDate(schedule.date)));
       } catch (error) {
         if (hasErrored || emissionId !== latestEmissionId) return;
-        logger.error('?ㅼ?以?援щ룆 泥섎━ ?ㅽ뙣', toError(error));
+        logger.error('스케줄 구독 처리 실패', toError(error));
         onError?.(toError(error));
       }
     };
@@ -624,13 +624,25 @@ export function subscribeToSchedules(
       if (hasErrored) return;
       hasErrored = true;
 
-      logger.error('?ㅼ?以?援щ룆 ?먮윭', error);
+      logger.error('스케줄 구독 에러', error);
       onError?.(error);
+    };
+
+    /**
+     * 새 스냅샷 도착 = 구독 정상 동작 증거.
+     * Realtime 채널이 CHANNEL_ERROR 후 Phoenix 재연결로 복구되면 Repository가
+     * 'RECOVERED' 신호를 받아 데이터를 재조회하고 onData로 전달한다. 이때
+     * hasErrored가 true로 고정되어 있으면 emitSchedules가 영원히 차단되므로,
+     * 새 데이터 수신을 복구 증거로 삼아 플래그를 리셋한다.
+     */
+    const markRecoveredOnSnapshot = () => {
+      hasErrored = false;
     };
 
     const workLogUnsubscribe = workLogRepository.subscribeByStaffId(
       staffId,
       (workLogs: WorkLog[]) => {
+        markRecoveredOnSnapshot();
         currentWorkLogs = workLogs;
         hasReceivedInitialWorkLogSnapshot = true;
         void emitSchedules();
@@ -642,6 +654,7 @@ export function subscribeToSchedules(
       staffId,
       ACTIVE_SCHEDULE_APPLICATION_STATUSES,
       (applications: Application[]) => {
+        markRecoveredOnSnapshot();
         currentApplications = applications;
         hasReceivedInitialApplicationSnapshot = true;
         void emitSchedules();

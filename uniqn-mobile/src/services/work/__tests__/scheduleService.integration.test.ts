@@ -621,6 +621,87 @@ describe('scheduleService', () => {
       expect(mockWorkLogUnsub).toHaveBeenCalled();
       expect(mockAppUnsub).toHaveBeenCalled();
     });
+
+    it('should resume emissions after CHANNEL_ERROR followed by recovery snapshot', async () => {
+      // Regression: 이전에는 hasErrored 플래그가 영구 true로 고정되어
+      // Phoenix 자동 재연결 후 Repository가 재조회한 데이터를 onData로 전달해도
+      // emitSchedules가 `if (hasErrored) return;` 로 차단되어 UI가 복구되지 않았다.
+      // 수정 후: 새 스냅샷 도착 = 복구 증거로 간주하여 플래그를 리셋한다.
+      const onUpdate = jest.fn();
+      const onError = jest.fn();
+
+      // Capture the onData/onError callbacks passed into each repo subscribe
+      let workLogOnData: (workLogs: WorkLog[]) => void = () => undefined;
+      let appOnData: (apps: Application[]) => void = () => undefined;
+      let appOnError: (error: Error) => void = () => undefined;
+
+      mockWorkLogRepoSubscribeByStaffId.mockImplementation(((
+        _staffId: string,
+        onData: (workLogs: WorkLog[]) => void
+      ) => {
+        workLogOnData = onData;
+        return jest.fn();
+      }) as never);
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockImplementation(((
+        _staffId: string,
+        _statuses: unknown,
+        onData: (apps: Application[]) => void,
+        onErr: (error: Error) => void
+      ) => {
+        appOnData = onData;
+        appOnError = onErr;
+        return jest.fn();
+      }) as never);
+
+      subscribeToSchedules('staff-123', onUpdate, onError);
+
+      // 1) 초기 스냅샷 도착 → 정상 emit
+      workLogOnData([]);
+      appOnData([]);
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+      onUpdate.mockClear();
+
+      // 2) CHANNEL_ERROR 발생 → onError 호출, hasErrored=true 고정
+      appOnError(new Error('Realtime 채널 에러: applications'));
+      expect(onError).toHaveBeenCalledTimes(1);
+
+      // 3) Phoenix 재연결 후 Repository가 RECOVERED → 재조회 → onData 호출
+      const recoveredApps: Application[] = [];
+      appOnData(recoveredApps);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // 4) 수정 전에는 여기서 onUpdate가 절대 호출되지 않음 (hasErrored 고착)
+      //    수정 후에는 새 스냅샷이 에러 상태를 해제하고 emitSchedules가 재개됨
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not re-fire onError on repeated transient errors while already in error state', async () => {
+      const onUpdate = jest.fn();
+      const onError = jest.fn();
+
+      let appOnError: (error: Error) => void = () => undefined;
+
+      mockWorkLogRepoSubscribeByStaffId.mockReturnValue(jest.fn());
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockImplementation(((
+        _staffId: string,
+        _statuses: unknown,
+        _onData: unknown,
+        onErr: (error: Error) => void
+      ) => {
+        appOnError = onErr;
+        return jest.fn();
+      }) as never);
+
+      subscribeToSchedules('staff-123', onUpdate, onError);
+
+      appOnError(new Error('first'));
+      appOnError(new Error('second'));
+      appOnError(new Error('third'));
+
+      // 같은 에러 상태에서 반복 호출되어도 onError는 1회만 발화
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('getScheduleStats', () => {

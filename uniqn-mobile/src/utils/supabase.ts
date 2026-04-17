@@ -406,6 +406,11 @@ interface RealtimeChannelEntry {
   subscribers: ((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void)[];
   errorHandlers: ((status: string) => void)[];
   refCount: number;
+  /**
+   * 이 채널이 직전에 CHANNEL_ERROR/TIMED_OUT을 겪었는지 여부.
+   * Phoenix 자동 재연결 후 SUBSCRIBED 복귀 시 'RECOVERED' 상태를 발행하기 위한 플래그.
+   */
+  hadError: boolean;
 }
 
 const realtimeChannelRegistry = new Map<string, RealtimeChannelEntry>();
@@ -419,7 +424,10 @@ const realtimeChannelRegistry = new Map<string, RealtimeChannelEntry>();
  * @param table - 구독할 테이블 이름
  * @param filter - PostgREST 필터 (예: 'user_id=eq.abc'). undefined면 전체
  * @param callback - 변경 이벤트 핸들러
- * @param onError - 채널 에러 핸들러 (선택)
+ * @param onError - 채널 상태 변경 핸들러 (선택). 다음 상태를 전달받는다:
+ *                  - 'CHANNEL_ERROR': heartbeat 타임아웃 등 일시 장애 (Phoenix 자동 재시도)
+ *                  - 'TIMED_OUT': 구독 타임아웃 (Phoenix 자동 재시도)
+ *                  - 'RECOVERED': 직전 에러 후 자동 재연결로 복구됨 — 상위에서 데이터 재동기화 트리거 권장
  * @returns 구독 해제 함수 (UnsubscribeFn)
  *
  * @note Supabase Realtime postgres_changes는 컬럼 필터링을 지원하지 않는다.
@@ -498,6 +506,7 @@ export function createRealtimeSubscription(
     subscribers: [callback],
     errorHandlers: onError ? [onError] : [],
     refCount: 1,
+    hadError: false,
   };
 
   const fanOutCallback = (
@@ -519,11 +528,24 @@ export function createRealtimeSubscription(
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        logger.info('Realtime 구독 시작', { table, filter });
+        const current = realtimeChannelRegistry.get(channelName);
+        if (current?.hadError) {
+          // 직전 에러 후 Phoenix 자동 재연결로 복구됨 → 'RECOVERED' 전파
+          current.hadError = false;
+          logger.info('Realtime 채널 복구', { table, filter });
+          for (const handler of current.errorHandlers) {
+            handler('RECOVERED');
+          }
+        } else {
+          logger.info('Realtime 구독 시작', { table, filter });
+        }
       } else if (status === 'CHANNEL_ERROR') {
-        logger.error('Realtime 채널 에러', new Error(`CHANNEL_ERROR: ${table}`), { table, filter });
+        // heartbeat 타임아웃 등 일시적 원인으로도 자주 발생하며 Phoenix가 자동 재시도.
+        // 영구 장애가 아닌 경우가 대부분이므로 warn 수준으로 기록하고 상태는 전파한다.
+        logger.warn('Realtime 채널 에러 (자동 재시도 중)', { table, filter });
         const current = realtimeChannelRegistry.get(channelName);
         if (current) {
+          current.hadError = true;
           for (const handler of current.errorHandlers) {
             handler('CHANNEL_ERROR');
           }
@@ -533,6 +555,7 @@ export function createRealtimeSubscription(
         logger.info('Realtime 구독 타임아웃 (Phoenix 자동 재시도)', { table, filter });
         const current = realtimeChannelRegistry.get(channelName);
         if (current) {
+          current.hadError = true;
           for (const handler of current.errorHandlers) {
             handler('TIMED_OUT');
           }
