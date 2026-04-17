@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: posting, error: fetchError } = await supabase
       .from('job_postings')
-      .select('id, type, owner_id, tournament_config')
+      .select('id, posting_type, owner_id, tournament_config')
       .eq('id', jobPostingId)
       .single();
 
@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (posting.type !== 'tournament') {
+    if (posting.posting_type !== 'tournament') {
       return new Response(JSON.stringify({ error: '토너먼트 공고만 재제출할 수 있습니다' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

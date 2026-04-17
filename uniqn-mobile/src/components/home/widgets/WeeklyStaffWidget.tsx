@@ -5,9 +5,11 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { router } from 'expo-router';
+import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
-import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+import { getConfirmedStaff } from '@/services';
+import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import type { JobPosting } from '@/types/jobPosting';
 import type { ConfirmedStaff } from '@/types/confirmedStaff';
 
@@ -73,85 +75,70 @@ function buildWeeklySummary(
   return summary;
 }
 
-interface PostingStaffLoaderProps {
-  posting: JobPosting;
-  onStaff: (postingId: string, staff: ConfirmedStaff[]) => void;
-}
-
-function PostingStaffLoader({ posting, onStaff }: PostingStaffLoaderProps) {
-  const { staff } = useConfirmedStaff(posting.id);
-
-  React.useEffect(() => {
-    onStaff(posting.id, staff);
-  }, [staff, posting.id, onStaff]);
-
-  return null;
-}
-
 export function WeeklyStaffWidget() {
   const { data, isLoading, error, refetch } = useMyJobPostings();
-  const [staffByPosting, setStaffByPosting] = React.useState<Record<string, ConfirmedStaff[]>>({});
 
   const activePostings = React.useMemo(
     () => (data ?? []).filter((p) => p.status === 'active' || p.status === 'approved').slice(0, 3),
     [data]
   );
 
-  const handleStaff = React.useCallback((postingId: string, staff: ConfirmedStaff[]) => {
-    setStaffByPosting((prev) => ({ ...prev, [postingId]: staff }));
-  }, []);
+  const staffQueries = useQueries({
+    queries: activePostings.map((posting) => ({
+      queryKey: queryKeys.confirmedStaff.byJobPosting(posting.id),
+      queryFn: () => getConfirmedStaff(posting.id),
+      staleTime: cachingPolicies.frequent,
+      enabled: !!posting.id,
+    })),
+  });
 
-  const weeklySummary = React.useMemo(
-    () => buildWeeklySummary(activePostings, staffByPosting),
-    [activePostings, staffByPosting]
-  );
+  const staffByPosting: Record<string, ConfirmedStaff[]> = {};
+  activePostings.forEach((posting, idx) => {
+    staffByPosting[posting.id] = staffQueries[idx]?.data?.staff ?? [];
+  });
+  const weeklySummary = buildWeeklySummary(activePostings, staffByPosting);
 
   return (
-    <>
-      {activePostings.map((posting) => (
-        <PostingStaffLoader key={posting.id} posting={posting} onStaff={handleStaff} />
-      ))}
-      <DashboardWidgetShell
-        title="이번 주 스태프 현황"
-        isLoading={isLoading}
-        error={error instanceof Error ? error : null}
-        onRetry={refetch}
-        onSeeMore={() => router.push('/(app)/(tabs)/employer')}
-        seeMoreLabel="전체 보기"
-        emptyState={
-          !isLoading && activePostings.length === 0
-            ? { message: '이번 주 스케줄된 공고가 없습니다' }
-            : undefined
-        }
-      >
-        {!isLoading && activePostings.length > 0 ? (
-          <View className="gap-1 py-1">
-            {DAY_KEYS.filter((day) => weeklySummary[day].capacity > 0).map((day) => {
-              const { confirmed, capacity } = weeklySummary[day];
-              const ratio = capacity > 0 ? confirmed / capacity : 0;
+    <DashboardWidgetShell
+      title="이번 주 스태프 현황"
+      isLoading={isLoading}
+      error={error instanceof Error ? error : null}
+      onRetry={refetch}
+      onSeeMore={() => router.push('/(app)/(tabs)/employer')}
+      seeMoreLabel="전체 보기"
+      emptyState={
+        !isLoading && activePostings.length === 0
+          ? { message: '이번 주 스케줄된 공고가 없습니다' }
+          : undefined
+      }
+    >
+      {!isLoading && activePostings.length > 0 ? (
+        <View className="gap-1 py-1">
+          {DAY_KEYS.filter((day) => weeklySummary[day].capacity > 0).map((day) => {
+            const { confirmed, capacity } = weeklySummary[day];
+            const ratio = capacity > 0 ? confirmed / capacity : 0;
 
-              return (
-                <View key={day} className="flex-row items-center gap-2">
-                  <Text className="w-4 text-xs text-neutral-500 dark:text-neutral-400">{day}</Text>
-                  <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
-                    <View
-                      className="h-full rounded-sm"
-                      style={{
-                        width: `${Math.round(ratio * 100)}%`,
-                        backgroundColor: '#D4AF37',
-                      }}
-                    />
-                  </View>
-                  <Text className="w-8 text-right text-xs text-neutral-500 dark:text-neutral-400">
-                    {confirmed}/{capacity}
-                  </Text>
+            return (
+              <View key={day} className="flex-row items-center gap-2">
+                <Text className="w-4 text-xs text-neutral-500 dark:text-neutral-400">{day}</Text>
+                <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
+                  <View
+                    className="h-full rounded-sm"
+                    style={{
+                      width: `${Math.round(ratio * 100)}%`,
+                      backgroundColor: '#D4AF37',
+                    }}
+                  />
                 </View>
-              );
-            })}
-          </View>
-        ) : undefined}
-      </DashboardWidgetShell>
-    </>
+                <Text className="w-8 text-right text-xs text-neutral-500 dark:text-neutral-400">
+                  {confirmed}/{capacity}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : undefined}
+    </DashboardWidgetShell>
   );
 }
 
