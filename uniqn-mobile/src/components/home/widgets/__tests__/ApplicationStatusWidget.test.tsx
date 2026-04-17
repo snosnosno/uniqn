@@ -84,11 +84,11 @@ describe('ApplicationStatusWidget', () => {
 
     render(<ApplicationStatusWidget />);
 
-    // 대기중 2, 확정 1, 거절 1
+    // 대기중 2, 확정 1, 거절 1, 취소 1
     expect(screen.getByText('2')).toBeTruthy();
-    // "1"이 확정·거절 2개이므로 getAllByText 사용
+    // "1"이 확정·거절·취소 3개이므로 getAllByText 사용
     const ones = screen.getAllByText('1');
-    expect(ones).toHaveLength(2);
+    expect(ones).toHaveLength(3);
   });
 
   it('지원 내역이 없으면 emptyState를 표시한다', () => {
