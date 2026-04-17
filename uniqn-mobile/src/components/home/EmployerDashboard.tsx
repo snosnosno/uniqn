@@ -11,9 +11,9 @@ interface EmployerDashboardProps {
 
 export function EmployerDashboard({ bottomPadding = 0 }: EmployerDashboardProps) {
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 16 + bottomPadding }}>
-      <WeeklyStaffWidget />
+    <ScrollView contentContainerStyle={{ paddingBottom: 16 + bottomPadding }}>
       <PostingOverviewWidget />
+      <WeeklyStaffWidget />
       <CancellationWidget />
       <RecentNoticesWidget />
     </ScrollView>

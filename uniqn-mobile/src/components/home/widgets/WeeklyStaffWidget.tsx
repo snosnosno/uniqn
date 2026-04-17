@@ -3,7 +3,7 @@
  * 이번 주 (월~일) 요일별 확정 스태프 현황 위젯
  */
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
@@ -100,16 +100,25 @@ export function WeeklyStaffWidget() {
 
   return (
     <DashboardWidgetShell
-      title="이번 주 스태프 현황"
+      variant="section"
+      title="이번 주 스태프"
       isLoading={isLoading}
       error={error instanceof Error ? error : null}
       onRetry={refetch}
-      onSeeMore={() => router.push('/(app)/(tabs)/employer')}
-      seeMoreLabel="전체 보기"
       emptyState={
         !isLoading && activePostings.length === 0
           ? { message: '이번 주 스케줄된 공고가 없습니다' }
           : undefined
+      }
+      action={
+        <Pressable
+          onPress={() => router.push('/(app)/(tabs)/employer')}
+          accessibilityRole="button"
+          accessibilityLabel="이번 주 스태프 현황 전체 보기"
+          hitSlop={8}
+        >
+          <Text className="text-primary-500 text-[10px] font-sans-bold">전체 →</Text>
+        </Pressable>
       }
     >
       {!isLoading && activePostings.length > 0 ? (
@@ -120,17 +129,19 @@ export function WeeklyStaffWidget() {
 
             return (
               <View key={day} className="flex-row items-center gap-2">
-                <Text className="w-4 text-xs text-neutral-500 dark:text-neutral-400">{day}</Text>
-                <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
+                <Text className="w-4 text-xs text-content-muted">{day}</Text>
+                <View className="h-1 flex-1 overflow-hidden rounded-sm bg-surface-overlay">
                   <View
-                    className="h-full rounded-sm"
+                    className="h-full rounded-sm bg-primary-500"
                     style={{
                       width: `${Math.round(ratio * 100)}%`,
-                      backgroundColor: '#D4AF37',
                     }}
                   />
                 </View>
-                <Text className="w-8 text-right text-xs text-neutral-500 dark:text-neutral-400">
+                <Text
+                  className="w-10 text-right text-xs text-content-secondary"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
                   {confirmed}/{capacity}
                 </Text>
               </View>

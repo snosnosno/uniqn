@@ -3,7 +3,7 @@
  * pending 취소 요청 현황 위젯 (0건이면 null 반환)
  */
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
@@ -55,7 +55,7 @@ export function CancellationWidget() {
 
   if (isLoading) {
     return (
-      <DashboardWidgetShell title="취소 요청" isLoading onRetry={handleRetry}>
+      <DashboardWidgetShell variant="section" title="취소 요청" isLoading onRetry={handleRetry}>
         {undefined}
       </DashboardWidgetShell>
     );
@@ -69,26 +69,35 @@ export function CancellationWidget() {
 
   return (
     <DashboardWidgetShell
+      variant="section"
       title="취소 요청"
       isLoading={false}
       onRetry={handleRetry}
-      onSeeMore={() => router.push('/(app)/(tabs)/employer')}
-      seeMoreLabel="검토하기"
+      action={
+        <Pressable
+          onPress={() => router.push('/(app)/(tabs)/employer')}
+          accessibilityRole="button"
+          accessibilityLabel={`취소 요청 ${pendingCount}건 검토하기`}
+          hitSlop={8}
+        >
+          <Text className="text-primary-500 text-[10px] font-sans-bold">검토 →</Text>
+        </Pressable>
+      }
     >
       <View className="gap-2 py-1">
+        <Text
+          className="text-xs font-sans-bold text-warning"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
+          ⚠ {pendingCount}건 대기 중
+        </Text>
         {recentTwo.map((req) => (
-          <View
-            key={req.id}
-            className="border-l-2 border-warning/40 bg-warning/10 px-2 py-1 dark:border-warning/40 dark:bg-warning/10"
-          >
-            <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+          <View key={req.id} className="border-l-2 border-warning/40 bg-warning/10 px-2 py-1">
+            <Text className="text-xs text-content-secondary">
               {req.applicantName} · {req.jobPostingDate ?? ''} 근무 취소
             </Text>
           </View>
         ))}
-        <Text className="text-xs font-semibold text-warning dark:text-warning">
-          ⚠ {pendingCount}건 대기 중
-        </Text>
       </View>
     </DashboardWidgetShell>
   );
