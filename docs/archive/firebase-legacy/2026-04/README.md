@@ -39,10 +39,9 @@ Firebase `onSchedule` 함수 8개는 `pg_cron`으로 전환됨. 매핑:
 
 다음은 **아카이브하지 않고 유지** — EAS 네이티브 빌드 또는 마이그레이션 호환성에 필요:
 
-- `uniqn-mobile/google-services.json` (Android)
-- `uniqn-mobile/android/app/google-services.json` (Android, 중복)
+- `uniqn-mobile/google-services.json` (Android — Expo managed workflow)
 - `uniqn-mobile/GoogleService-Info.plist` (iOS)
-- `uniqn-mobile/src/services/storage/storageService.ts:164,189` (firebasestorage.googleapis.com URL 파싱, 마이그레이션 호환성)
+- `uniqn-mobile/src/services/auth/storageService.ts:164` (firebasestorage.googleapis.com URL 파싱, 마이그레이션 호환성)
 
 ## 복구 필요 시
 
