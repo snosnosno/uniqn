@@ -515,51 +515,6 @@ export async function requestPermission(): Promise<NotificationPermissionStatus>
 // Token Management
 // ============================================================================
 
-/**
- * 푸시 토큰 가져오기
- */
-export async function getToken(): Promise<PushTokenResult | null> {
-  return getTokenWithRecovery();
-
-  /*
-  try {
-    // 권한 확인
-    const permission = await checkPermission();
-    if (!permission.granted) {
-      logger.warn('푸시 알림 권한이 없어 토큰을 가져올 수 없습니다');
-      return null;
-    }
-
-    // Expo Push Token - Expo Push API 경유로 iOS(APNs)/Android(FCM) 자동 라우팅
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) {
-      logger.error('EAS projectId를 찾을 수 없습니다');
-      return null;
-    }
-
-    const expoPushToken = await getExpoPushTokenWithRetry(projectId);
-
-    currentToken = expoPushToken;
-    logger.info('Expo Push Token 발급', {
-      tokenLength: expoPushToken.length,
-      type: 'expo',
-      platform: Platform.OS,
-    });
-
-    return {
-      token: expoPushToken,
-      type: 'expo',
-    };
-  } catch (error) {
-    logger.error('푸시 토큰 발급 실패', toError(error));
-    return null;
-  }
-  */
-}
-
-/**
- * 사용자에게 토큰 등록
- */
 export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
   if (Platform.OS === 'web' || !Notifications) {
     return null;
@@ -574,14 +529,14 @@ export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
 
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     if (!projectId) {
-      logger.error('EAS projectId瑜?李얠쓣 ???놁뒿?덈떎');
+      logger.error('EAS projectId를 찾을 수 없습니다');
       return null;
     }
 
     const expoPushToken = await getExpoPushTokenWithRetry(projectId);
 
     currentToken = expoPushToken;
-    logger.info('Expo Push Token 諛쒓툒', {
+    logger.info('Expo Push Token 발급', {
       tokenLength: expoPushToken.length,
       type: 'expo',
       platform: Platform.OS,
@@ -611,7 +566,7 @@ export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
       return null;
     }
 
-    logger.error('?몄떆 ?좏겙 諛쒓툒 ?ㅽ뙣', normalizedError, {
+    logger.error('푸시 토큰 발급 실패', normalizedError, {
       component: 'pushNotificationService',
       action: 'getToken',
     });
@@ -658,6 +613,9 @@ export async function unregisterToken(userId: string): Promise<boolean> {
     return false;
   }
 }
+
+/** @alias getTokenWithRecovery — 하위 호환용 */
+export const getToken = getTokenWithRecovery;
 
 /**
  * 현재 토큰 가져오기

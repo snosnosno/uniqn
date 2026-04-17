@@ -10,7 +10,7 @@ describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    expect(allNotificationTypes.length).toBe(41);
+    expect(allNotificationTypes.length).toBe(43);
 
     allNotificationTypes.forEach((type) => {
       expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();

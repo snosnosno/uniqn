@@ -64,6 +64,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('@/stores/themeStore', () => ({
@@ -71,10 +72,12 @@ jest.mock('@/stores/themeStore', () => ({
 }));
 
 jest.mock('@/constants', () => ({
+  ...jest.requireActual('@/constants'),
   getLayoutColor: () => '#000000',
 }));
 
 jest.mock('@/constants/colors', () => ({
+  ...jest.requireActual('@/constants/colors'),
   getLayoutColor: () => '#000000',
 }));
 
