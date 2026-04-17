@@ -288,6 +288,13 @@ export function ApplicationForm({
           <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
             자기소개 <Text className="text-content-placeholder font-sans">(선택)</Text>
           </Text>
+          {/*
+            키보드 UX 주석 (Impeccable §20):
+            - 키보드 회피 / keyboardShouldPersistTaps / keyboardDismissMode 는 부모 SheetModal 이
+              KeyboardAvoidingView + ScrollView 로 이미 처리한다 (중복 래핑 금지).
+            - 단일 선택(자기소개) multiline 필드이므로 returnKeyType 체인 불필요.
+            - autoFocus 미사용 (스크롤 점프 / 키보드 경합 방지).
+          */}
           <TextInput
             value={message}
             onChangeText={setMessage}
@@ -297,6 +304,8 @@ export function ApplicationForm({
             numberOfLines={4}
             maxLength={200}
             editable={!isSubmitting}
+            returnKeyType="default"
+            blurOnSubmit={false}
             className="min-h-[120px] rounded-lg bg-surface-page p-4 text-base font-sans text-content-primary dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
