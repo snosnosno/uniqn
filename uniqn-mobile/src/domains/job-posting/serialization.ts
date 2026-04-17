@@ -191,40 +191,14 @@ function buildPostingLocation(input: CreateJobPostingInput): JobPostingDocumentV
 
 function calculateTotalsFromSchedule(schedule: PostingSchedule): {
   totalPositions: number;
-  filledPositions: number;
   workDate: string;
   workDates?: string[];
 } {
-  if (schedule.kind === 'fixed') {
-    const totalPositions = calculateTotalPositionsFromSchedule(schedule);
-    const filledPositions = (schedule.roleRequirements ?? []).reduce(
-      (sum, role) => sum + (role.filled ?? 0),
-      0
-    );
-
-    return {
-      totalPositions,
-      filledPositions,
-      ...deriveWorkDateFieldsFromSchedule(schedule),
-    };
-  }
-
-  // totalPositions는 사람 단위 peak 합(HANDOFF Phase 6), filledPositions는 worktree 1 책임으로 기존 슬롯 합산 유지
-  const totalPositions = calculateTotalPositionsFromSchedule(schedule);
-
-  const filledPositions = schedule.requirements.reduce(
-    (dateSum, requirement) =>
-      dateSum +
-      requirement.timeSlots.reduce(
-        (slotSum, slot) => slotSum + slot.roles.reduce((sum, role) => sum + (role.filled ?? 0), 0),
-        0
-      ),
-    0
-  );
-
+  // filledPositions는 RPC(confirm/cancel)가 job_postings.filled_positions 컬럼에
+  // 직접 쓰는 사람 단위 진실원이다. schedule의 slot-level role.filled는 dead counter라
+  // 추론하지 않는다. 신규 공고의 filledPositions는 serializeJobPostingV3에서 0으로 초기화.
   return {
-    totalPositions,
-    filledPositions,
+    totalPositions: calculateTotalPositionsFromSchedule(schedule),
     ...deriveWorkDateFieldsFromSchedule(schedule),
   };
 }
@@ -239,7 +213,8 @@ export function serializeJobPostingV3(
   const schedule = normalizeSchedule(input.schedule);
   const compensation = normalizeCompensation(input.compensation);
   const totals = calculateTotalsFromSchedule(schedule);
-  const authoritativeFilledPositions = current?.filledPositions ?? totals.filledPositions;
+  // 신규 공고는 0, 편집 공고는 DB(RPC 관리)에서 온 값 그대로. schedule 추론 금지.
+  const authoritativeFilledPositions = current?.filledPositions ?? 0;
   const stats = normalizePostingAggregateStats(current?.stats, schedule, {
     authoritativeFilledPositions,
   });
