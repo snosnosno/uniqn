@@ -123,6 +123,9 @@ export interface Announcement extends FirebaseDocument {
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
 
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18, 단일 이미지 placeholder) */
+  imageUrlBlurhash?: string | null;
+
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }
@@ -145,6 +148,8 @@ export interface CreateAnnouncementInput {
   imageUrl?: string | null;
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18) */
+  imageUrlBlurhash?: string | null;
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }
@@ -163,6 +168,8 @@ export interface UpdateAnnouncementInput {
   imageUrl?: string | null;
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18) */
+  imageUrlBlurhash?: string | null;
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }

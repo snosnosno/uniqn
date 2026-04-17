@@ -9,6 +9,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { ValidationError, AppError, ERROR_CODES, toError, isAppError } from '@/errors';
+import { computeBlurhash } from '@/utils/blurhash';
 import type { AnnouncementImage } from '@/types';
 
 // ============================================================================
@@ -37,11 +38,29 @@ const SIGNED_URL_EXPIRY = 31536000;
 export interface UploadResult {
   downloadURL: string;
   path: string;
+  /**
+   * impeccable v2 §18 — blurhash placeholder 해시(~30자).
+   * 계산 실패 시 null(업로드 자체는 성공). 소비자는 optional 로 취급.
+   */
+  blurhash: string | null;
 }
 
 interface ImageResizeOptions {
   width: number;
   height?: number;
+}
+
+/**
+ * impeccable v2 §18 — 업로드와 병렬로 blurhash 계산.
+ * 실패 시 null 로 fallback(업로드는 막지 않음).
+ */
+async function computeBlurhashSafe(uri: string): Promise<string | null> {
+  try {
+    return await computeBlurhash(uri);
+  } catch (error) {
+    logger.warn('blurhash 계산 실패 — null fallback', { error: toError(error).message });
+    return null;
+  }
 }
 
 // ============================================================================
@@ -91,7 +110,7 @@ async function uploadToStorage(
   filePath: string,
   blob: Blob,
   isPublicBucket: boolean
-): Promise<UploadResult> {
+): Promise<Pick<UploadResult, 'downloadURL' | 'path'>> {
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(filePath, blob, { contentType: 'image/jpeg', upsert: false });
@@ -217,11 +236,18 @@ export async function uploadProfileImage(userId: string, uri: string): Promise<U
     const timestamp = Date.now();
     const filePath = `${userId}/${timestamp}.jpg`;
 
-    const result = await uploadToStorage('profile-images', filePath, blob, true);
+    const [result, blurhash] = await Promise.all([
+      uploadToStorage('profile-images', filePath, blob, true),
+      computeBlurhashSafe(uri),
+    ]);
 
-    logger.info('프로필 이미지 업로드 성공', { userId, path: result.path });
+    logger.info('프로필 이미지 업로드 성공', {
+      userId,
+      path: result.path,
+      hasBlurhash: !!blurhash,
+    });
 
-    return result;
+    return { ...result, blurhash };
   } catch (error) {
     logger.error('프로필 이미지 업로드 실패', toError(error), { userId });
 
@@ -274,7 +300,7 @@ export async function replaceProfileImage(
   userId: string,
   newImageUri: string,
   oldImageUrl?: string | null
-): Promise<string> {
+): Promise<UploadResult> {
   // 1. 새 이미지 업로드 먼저 (실패 시 이전 이미지 보존)
   const result = await uploadProfileImage(userId, newImageUri);
 
@@ -283,7 +309,7 @@ export async function replaceProfileImage(
     await deleteProfileImage(oldImageUrl);
   }
 
-  return result.downloadURL;
+  return result;
 }
 
 // ============================================================================
@@ -314,12 +340,19 @@ export async function uploadAnnouncementImage(
     const filePath = `${userId}/${timestamp}.jpg`;
     onProgress?.(50);
 
-    const result = await uploadToStorage('announcements', filePath, blob, true);
+    const [result, blurhash] = await Promise.all([
+      uploadToStorage('announcements', filePath, blob, true),
+      computeBlurhashSafe(uri),
+    ]);
     onProgress?.(100);
 
-    logger.info('공지사항 이미지 업로드 성공', { userId, path: result.path });
+    logger.info('공지사항 이미지 업로드 성공', {
+      userId,
+      path: result.path,
+      hasBlurhash: !!blurhash,
+    });
 
-    return result;
+    return { ...result, blurhash };
   } catch (error) {
     logger.error('공지사항 이미지 업로드 실패', toError(error), { userId });
 
@@ -417,6 +450,7 @@ export async function uploadMultipleAnnouncementImages(
         url: result.downloadURL,
         storagePath: result.path,
         order: i,
+        blurhash: result.blurhash,
       });
     } catch (error) {
       logger.error('다중 이미지 업로드 중 실패', toError(error), { userId, index: i });
@@ -471,12 +505,19 @@ export async function uploadBoardImage(
     const filePath = `${userId}/${timestamp}.jpg`;
     onProgress?.(50);
 
-    const result = await uploadToStorage('boards', filePath, blob, false);
+    const [result, blurhash] = await Promise.all([
+      uploadToStorage('boards', filePath, blob, false),
+      computeBlurhashSafe(uri),
+    ]);
     onProgress?.(100);
 
-    logger.info('게시판 이미지 업로드 성공', { userId, path: result.path });
+    logger.info('게시판 이미지 업로드 성공', {
+      userId,
+      path: result.path,
+      hasBlurhash: !!blurhash,
+    });
 
-    return result;
+    return { ...result, blurhash };
   } catch (error) {
     logger.error('게시판 이미지 업로드 실패', toError(error), { userId });
 
@@ -544,6 +585,7 @@ export async function uploadMultipleBoardImages(
         url: result.downloadURL,
         storagePath: result.path,
         order: i,
+        blurhash: result.blurhash,
       });
     } catch (error) {
       logger.error('게시판 다중 이미지 업로드 중 실패', toError(error), { userId, index: i });

@@ -41,7 +41,7 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 };
 
 const TABLE_COLUMNS =
-  'id,author_id,author_name,category,content,created_at,image_storage_path,image_url,images,is_pinned,priority,published_at,status,target_audience,title,updated_at,view_count' as const;
+  'id,author_id,author_name,category,content,created_at,image_storage_path,image_url,image_url_blurhash,images,is_pinned,priority,published_at,status,target_audience,title,updated_at,view_count' as const;
 
 // ============================================================================
 // Helpers
@@ -67,6 +67,7 @@ function toAnnouncement(row: Record<string, unknown>): Announcement {
     createdAt: row.created_at ? new Date(row.created_at as string) : undefined,
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : undefined,
     imageUrl: (row.image_url as string) ?? null,
+    imageUrlBlurhash: (row.image_url_blurhash as string) ?? null,
     imageStoragePath: (row.image_storage_path as string) ?? null,
     images: (row.images as Announcement['images']) ?? [],
   };
@@ -271,6 +272,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
           author_name: authorName,
           view_count: 0,
           image_url: input.imageUrl ?? null,
+          image_url_blurhash: input.imageUrlBlurhash ?? null,
           image_storage_path: input.imageStoragePath ?? null,
           images: input.images ?? [],
           created_at: now,
@@ -343,6 +345,7 @@ export class SupabaseAnnouncementRepository implements IAnnouncementRepository {
       if (input.isPinned !== undefined) updates.is_pinned = input.isPinned;
       if (input.targetAudience !== undefined) updates.target_audience = input.targetAudience;
       if (input.imageUrl !== undefined) updates.image_url = input.imageUrl;
+      if (input.imageUrlBlurhash !== undefined) updates.image_url_blurhash = input.imageUrlBlurhash;
       if (input.imageStoragePath !== undefined) updates.image_storage_path = input.imageStoragePath;
       if (input.images !== undefined) updates.images = input.images;
 

@@ -130,6 +130,7 @@ export const createAnnouncementSchema = z.object({
     .optional()
     .nullable(),
   imageStoragePath: z.string().optional().nullable(),
+  imageUrlBlurhash: z.string().optional().nullable(),
   images: z
     .array(announcementImageSchema)
     .max(10, '이미지는 최대 10장까지 첨부할 수 있습니다')
@@ -159,6 +160,7 @@ export const updateAnnouncementSchema = z.object({
     .optional()
     .nullable(),
   imageStoragePath: z.string().optional().nullable(),
+  imageUrlBlurhash: z.string().optional().nullable(),
   images: z
     .array(announcementImageSchema)
     .max(10, '이미지는 최대 10장까지 첨부할 수 있습니다')

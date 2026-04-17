@@ -135,6 +135,7 @@ export function AnnouncementForm({
       // 단일 이미지 필드 (호환성 유지)
       imageUrl: firstImage?.url ?? null,
       imageStoragePath: firstImage?.storagePath ?? null,
+      imageUrlBlurhash: firstImage?.blurhash ?? null,
       // 다중 이미지 배열
       images: images.length > 0 ? images : undefined,
     };
