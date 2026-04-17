@@ -127,6 +127,8 @@ export {
   SkeletonSettlementRow,
 } from './Skeleton';
 
+export { ScreenSkeleton, type ScreenSkeletonType } from './ScreenSkeleton';
+
 // ============================================================================
 // Image Components
 // ============================================================================
