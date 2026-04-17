@@ -99,12 +99,16 @@ export const announcementContentSchema = z
 
 /**
  * 공지사항 이미지 스키마 (다중 이미지)
+ *
+ * impeccable v2 §18 — `blurhash` 필드는 optional(레거시 호환)이지만 신규 업로드는
+ * 반드시 `computeBlurhash(uri)` 로 선계산해 포함할 것.
  */
 export const announcementImageSchema = z.object({
   id: z.string(),
   url: z.string().url('올바른 이미지 URL이 아닙니다'),
   storagePath: z.string(),
   order: z.number().int().min(0),
+  blurhash: z.string().nullable().optional(),
 });
 
 export type AnnouncementImageSchema = z.infer<typeof announcementImageSchema>;

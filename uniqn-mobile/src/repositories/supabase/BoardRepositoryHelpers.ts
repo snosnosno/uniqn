@@ -51,6 +51,8 @@ const boardImageAttachmentSchema = z.object({
   url: z.string(),
   storagePath: z.string(),
   order: z.number(),
+  // impeccable v2 §18 — blurhash placeholder. 레거시 데이터 호환을 위해 optional.
+  blurhash: z.string().nullable().optional(),
 });
 
 const boardImageAttachmentsSchema = z.array(boardImageAttachmentSchema);
