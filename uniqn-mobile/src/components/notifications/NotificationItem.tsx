@@ -61,7 +61,7 @@ export const NotificationItem = memo(function NotificationItem({
 
   const content = (
     <View
-      className={`relative border-b border-secondary-100 dark:border-surface ${
+      className={`relative border-b border-divider dark:border-surface-overlay ${
         notification.isRead
           ? 'bg-white dark:bg-surface-dark'
           : 'bg-primary-50 dark:bg-primary-900/20'
@@ -78,18 +78,28 @@ export const NotificationItem = memo(function NotificationItem({
           <NotificationIcon type={notification.type} className="mr-3" />
 
           <View className="flex-1">
-            <View className="flex-row items-center">
-              {!notification.isRead && <View className="mr-2 h-2 w-2 rounded-sm bg-primary-500" />}
+            <View className="flex-row items-start">
+              {!notification.isRead && (
+                <View className="mr-2 mt-1.5 h-1.5 w-1.5 rounded-full bg-primary-500" />
+              )}
               <Text
                 numberOfLines={1}
                 className={`flex-1 text-base font-sans ${
                   notification.isRead
                     ? 'font-normal text-content-secondary dark:text-secondary-300'
-                    : 'font-sans-semibold text-content-primary dark:text-off-white'
+                    : 'font-sans-bold text-content-primary dark:text-off-white'
                 }`}
               >
                 {notification.title}
               </Text>
+              {timeAgo ? (
+                <Text
+                  className="ml-2 text-xs text-content-muted font-sans"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {timeAgo}
+                </Text>
+              ) : null}
             </View>
 
             <Text
@@ -98,8 +108,6 @@ export const NotificationItem = memo(function NotificationItem({
             >
               {notification.body}
             </Text>
-
-            <Text className="mt-1 text-xs text-content-placeholder font-sans">{timeAgo}</Text>
           </View>
 
           {!showDelete && notification.link ? (
@@ -144,7 +152,7 @@ export const NotificationItem = memo(function NotificationItem({
 export function NotificationItemSkeleton() {
   return (
     <View
-      className="border-b border-secondary-100 px-4 py-3 dark:border-surface"
+      className="border-b border-divider px-4 py-3 dark:border-surface-overlay"
       accessibilityElementsHidden={true}
     >
       <View className="flex-row items-start">

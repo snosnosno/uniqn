@@ -72,7 +72,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       exiting={FadeOut.duration(200)}
       layout={Layout.duration(200)}
       className={`
-        border-b border-secondary-100 dark:border-surface
+        border-b border-divider dark:border-surface-overlay
         ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-white dark:bg-surface-dark'}
       `}
     >
@@ -91,12 +91,14 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           {/* 컨텐츠 */}
           <View className="flex-1">
             {/* 제목 (그룹 카운트 포함) */}
-            <View className="flex-row items-center">
-              {hasUnread && <View className="w-2 h-2 rounded-sm bg-primary-500 mr-2" />}
+            <View className="flex-row items-start">
+              {hasUnread && (
+                <View className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2 mt-1.5" />
+              )}
               <Text
                 className={`text-base font-sans flex-1 ${
                   hasUnread
-                    ? 'text-secondary-900 dark:text-off-white font-sans-semibold'
+                    ? 'text-secondary-900 dark:text-off-white font-sans-bold'
                     : 'text-secondary-700 dark:text-secondary-300 font-normal'
                 }`}
                 numberOfLines={1}
@@ -106,11 +108,22 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               {/* 읽지 않은 수 배지 */}
               {group.unreadCount > 0 && (
                 <View className="ml-2 min-w-[20px] h-5 px-1.5 bg-error-500 rounded-sm items-center justify-center">
-                  <Text className="text-xs font-sans-bold text-white">
+                  <Text
+                    className="text-xs font-sans-bold text-white"
+                    style={{ fontVariant: ['tabular-nums'] }}
+                  >
                     {group.unreadCount > 99 ? '99+' : group.unreadCount}
                   </Text>
                 </View>
               )}
+              {timeAgo ? (
+                <Text
+                  className="ml-2 text-xs text-content-muted font-sans"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {timeAgo}
+                </Text>
+              ) : null}
             </View>
 
             {/* 컨텍스트 (공고명/이벤트명) */}
@@ -130,9 +143,6 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
             >
               {group.groupBody}
             </Text>
-
-            {/* 시간 */}
-            <Text className="text-xs text-content-placeholder mt-1 font-sans">{timeAgo}</Text>
           </View>
 
           {/* 펼침/접힘 아이콘 */}
@@ -152,9 +162,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           {group.notifications.map((notification, index) => (
             <View
               key={notification.id}
-              className={
-                index > 0 ? 'border-t border-secondary-100 dark:border-surface-overlay/50' : ''
-              }
+              className={index > 0 ? 'border-t border-divider dark:border-surface-overlay/50' : ''}
             >
               <NotificationItem
                 notification={notification}
