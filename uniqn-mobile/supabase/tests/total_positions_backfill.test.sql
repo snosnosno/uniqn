@@ -208,14 +208,37 @@ BEGIN
           THEN 'other:' || COALESCE(role_elem->>'customRole', '')
         ELSE COALESCE(role_elem->>'role', '')
       END AS role_key,
-      MAX(NULLIF(role_elem->>'count', '')::int) AS max_count
+      MAX(
+        CASE
+          WHEN (role_elem->>'count') ~ '^-?[0-9]+$'
+            THEN (role_elem->>'count')::int
+          ELSE NULL
+        END
+      ) AS max_count
     FROM public.job_postings jp
-    CROSS JOIN LATERAL jsonb_array_elements(jp.schedule->'requirements') AS req
-    CROSS JOIN LATERAL jsonb_array_elements(req->'timeSlots') AS slot
-    CROSS JOIN LATERAL jsonb_array_elements(slot->'roles') AS role_elem
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(jp.schedule->'requirements') = 'array'
+          THEN jp.schedule->'requirements'
+        ELSE '[]'::jsonb
+      END
+    ) AS req
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(req->'timeSlots') = 'array'
+          THEN req->'timeSlots'
+        ELSE '[]'::jsonb
+      END
+    ) AS slot
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(slot->'roles') = 'array'
+          THEN slot->'roles'
+        ELSE '[]'::jsonb
+      END
+    ) AS role_elem
     WHERE jp.schedule->>'kind' IS DISTINCT FROM 'fixed'
-      AND jp.schedule ? 'requirements'
-      AND jsonb_typeof(jp.schedule->'requirements') = 'array'
+      AND NULLIF(role_elem->>'role', '') IS NOT NULL
       AND jp.id IN (v_t1, v_t2, v_t3, v_t4, v_t7)
     GROUP BY jp.id, role_key
   ),
@@ -227,9 +250,24 @@ BEGIN
   fixed_totals AS (
     SELECT
       jp.id AS posting_id,
-      COALESCE(SUM(NULLIF(r->>'count', '')::int), 0)::int AS total
+      COALESCE(
+        SUM(
+          CASE
+            WHEN (r->>'count') ~ '^-?[0-9]+$'
+              THEN (r->>'count')::int
+            ELSE 0
+          END
+        ),
+        0
+      )::int AS total
     FROM public.job_postings jp
-    LEFT JOIN LATERAL jsonb_array_elements(jp.schedule->'roleRequirements') AS r ON TRUE
+    LEFT JOIN LATERAL jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(jp.schedule->'roleRequirements') = 'array'
+          THEN jp.schedule->'roleRequirements'
+        ELSE '[]'::jsonb
+      END
+    ) AS r ON TRUE
     WHERE jp.schedule->>'kind' = 'fixed'
       AND jp.id = v_t5
     GROUP BY jp.id
