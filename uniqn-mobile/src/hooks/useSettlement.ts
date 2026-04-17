@@ -27,6 +27,7 @@ import { queryKeys, queryCachingOptions, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { triggerBatchStart, triggerBatchEnd } from '@/utils/haptics';
 import { stableFilters } from '@/utils/queryUtils';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
@@ -234,6 +235,9 @@ export function useBulkSettlement() {
       return bulkSettlement(input, user.uid);
     },
     onMutate: async (input) => {
+      // impeccable v2 §17 — 일괄 액션 시작 Light 햅틱 1회(개별 햅틱 대체)
+      void triggerBatchStart();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
 
@@ -256,6 +260,9 @@ export function useBulkSettlement() {
         totalAmount: result.totalAmount,
       });
 
+      // §17 — 종료 햅틱. 실패 0건이면 success, 일부라도 실패면 warning.
+      void triggerBatchEnd(result.failedCount === 0);
+
       if (result.successCount > 0) {
         addToast({
           type: 'success',
@@ -275,6 +282,8 @@ export function useBulkSettlement() {
     },
     onError: createMutationErrorHandler('정산 처리', addToast, {
       onRollback: (ctx) => {
+        // §17 — 일괄 작업 전체 실패 시 warning 햅틱
+        void triggerBatchEnd(false);
         const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
         previousData?.forEach(([key, data]) => {
           queryClient.setQueryData(key, data);
