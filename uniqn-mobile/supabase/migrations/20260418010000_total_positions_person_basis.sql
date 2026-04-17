@@ -46,6 +46,8 @@ WITH role_max AS (
   WHERE jp.schedule->>'kind' IS DISTINCT FROM 'fixed'
     AND jp.schedule ? 'requirements'
     AND jsonb_typeof(jp.schedule->'requirements') = 'array'
+    -- TS getRoleKey와 동일하게 role 필드가 비어있으면 스킵 (Codex advisor review)
+    AND NULLIF(role_elem->>'role', '') IS NOT NULL
   GROUP BY jp.id, role_key
 ),
 dated_totals AS (
