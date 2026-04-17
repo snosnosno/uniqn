@@ -21,6 +21,18 @@ export interface DashboardWidgetShellProps {
   error?: Error | null;
   onRetry?: () => void;
   partial?: boolean;
+  /**
+   * Visual variant.
+   * - 'card' (default): elevated card with title header — existing behavior.
+   * - 'hero': borderless hero block with gold mini-caps title (Home V2 top slot).
+   * - 'section': section header with divider and optional right-side action.
+   */
+  variant?: 'card' | 'hero' | 'section';
+  /**
+   * Right-side action rendered in the section header (e.g. "전체 보기" link).
+   * Only rendered for variant='section'.
+   */
+  action?: React.ReactNode;
 }
 
 export function DashboardWidgetShell({
@@ -33,6 +45,8 @@ export function DashboardWidgetShell({
   error,
   onRetry,
   partial = false,
+  variant = 'card',
+  action,
 }: DashboardWidgetShellProps) {
   if (isLoading) {
     return <SkeletonCard />;
@@ -59,6 +73,47 @@ export function DashboardWidgetShell({
 
   const isEmpty = children === null || children === undefined;
 
+  const emptyOrChildren =
+    isEmpty && emptyState ? (
+      <View>
+        <Text className="text-sm text-neutral-500 dark:text-neutral-400">{emptyState.message}</Text>
+        {emptyState.cta && (
+          <Pressable onPress={emptyState.cta.onPress} accessibilityRole="button" className="mt-2">
+            <Text className="text-sm font-medium text-primary-300 dark:text-primary-300">
+              {emptyState.cta.label}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    ) : (
+      children
+    );
+
+  if (variant === 'hero') {
+    return (
+      <View className="px-4 py-4 border-b border-divider dark:border-divider">
+        <Text className="text-[10px] uppercase tracking-wider text-primary-500 font-sans-bold mb-2">
+          {title}
+        </Text>
+        {emptyOrChildren}
+      </View>
+    );
+  }
+
+  if (variant === 'section') {
+    return (
+      <View className="px-4 py-3">
+        <View className="flex-row items-center justify-between pb-2 border-b border-divider dark:border-divider mb-2">
+          <Text className="text-[10px] uppercase tracking-wider text-content-secondary font-sans-bold">
+            {title}
+          </Text>
+          {action}
+        </View>
+        {emptyOrChildren}
+      </View>
+    );
+  }
+
   return (
     <Card variant="elevated" padding="md">
       <View className="flex-row justify-between items-center mb-3">
@@ -67,28 +122,7 @@ export function DashboardWidgetShell({
         </Text>
       </View>
 
-      <View className="mb-3">
-        {isEmpty && emptyState ? (
-          <View>
-            <Text className="text-sm text-neutral-500 dark:text-neutral-400">
-              {emptyState.message}
-            </Text>
-            {emptyState.cta && (
-              <Pressable
-                onPress={emptyState.cta.onPress}
-                accessibilityRole="button"
-                className="mt-2"
-              >
-                <Text className="text-sm font-medium text-primary-300 dark:text-primary-300">
-                  {emptyState.cta.label}
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        ) : (
-          children
-        )}
-      </View>
+      <View className="mb-3">{emptyOrChildren}</View>
 
       {onSeeMore && (
         <Pressable
