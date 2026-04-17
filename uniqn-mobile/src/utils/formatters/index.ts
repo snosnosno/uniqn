@@ -10,7 +10,14 @@
 
 export { formatCurrency, formatCurrencyCompact, formatNumber } from './currency';
 
-export { formatISODate, formatRelative, formatShortDate, formatTimeOfDay } from './date';
+export {
+  formatDateLong,
+  formatISODate,
+  formatRelative,
+  formatShortDate,
+  formatTimeOfDay,
+  formatTimeShort,
+} from './date';
 
 export { formatDuration, formatDurationFromMinutes } from './duration';
 

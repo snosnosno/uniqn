@@ -62,15 +62,15 @@ describe('formatSalaryDisplay', () => {
   });
 
   it('formats hourly salary', () => {
-    expect(formatSalaryDisplay({ type: 'hourly', amount: 15000 })).toBe('시급 15,000원');
+    expect(formatSalaryDisplay({ type: 'hourly', amount: 15000 })).toBe('시급 ₩15,000');
   });
 
   it('formats daily salary', () => {
-    expect(formatSalaryDisplay({ type: 'daily', amount: 150000 })).toBe('일급 150,000원');
+    expect(formatSalaryDisplay({ type: 'daily', amount: 150000 })).toBe('일급 ₩150,000');
   });
 
   it('formats monthly salary', () => {
-    expect(formatSalaryDisplay({ type: 'monthly', amount: 3000000 })).toBe('월급 3,000,000원');
+    expect(formatSalaryDisplay({ type: 'monthly', amount: 3000000 })).toBe('월급 ₩3,000,000');
   });
 
   it('returns "협의" for other type', () => {
@@ -79,6 +79,6 @@ describe('formatSalaryDisplay', () => {
 
   it('accepts large amounts', () => {
     const salary: SalaryInfo = { type: 'monthly', amount: 10000000 };
-    expect(formatSalaryDisplay(salary)).toBe('월급 10,000,000원');
+    expect(formatSalaryDisplay(salary)).toBe('월급 ₩10,000,000');
   });
 });

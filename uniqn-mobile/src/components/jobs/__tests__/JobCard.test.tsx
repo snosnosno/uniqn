@@ -84,14 +84,14 @@ function createJobCard(overrides: Partial<JobPostingCard> = {}): JobPostingCard 
       role: 'dealer',
       roleLabel: '딜러',
       salary: { type: 'daily', amount: 150000 },
-      text: '일급 150,000원',
+      text: '일급 ₩150,000',
     },
     {
       key: 'manager-daily-150000',
       role: 'manager',
       roleLabel: '매니저',
       salary: { type: 'daily', amount: 150000 },
-      text: '일급 150,000원',
+      text: '일급 ₩150,000',
     },
   ];
   const useSameSalary = overrides.useSameSalary ?? true;
@@ -208,7 +208,7 @@ describe('JobCard', () => {
   it('renders salary using the shared salary projection', () => {
     const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
-    expect(getByText(/일급 150,000원/)).toBeTruthy();
+    expect(getByText(/일급 ₩150,000/)).toBeTruthy();
   });
 
   it('renders hourly and monthly salary formats', () => {
@@ -222,8 +222,8 @@ describe('JobCard', () => {
     const hourly = render(<JobCard job={hourlyJob} onPress={mockOnPress} />);
     const monthly = render(<JobCard job={monthlyJob} onPress={mockOnPress} />);
 
-    expect(hourly.getByText(/시급 15,000원/)).toBeTruthy();
-    expect(monthly.getByText(/월급 3,000,000원/)).toBeTruthy();
+    expect(hourly.getByText(/시급 ₩15,000/)).toBeTruthy();
+    expect(monthly.getByText(/월급 ₩3,000,000/)).toBeTruthy();
   });
 
   it('renders role counts from the schedule projection', () => {
@@ -382,7 +382,7 @@ describe('JobCard role labels', () => {
           role,
           roleLabel: role,
           salary: { type: 'daily', amount: 150000 },
-          text: '일급 150,000원',
+          text: '일급 ₩150,000',
         },
       ],
     });
@@ -452,7 +452,7 @@ describe('JobCard accessibility', () => {
         role: 'dealer',
         roleLabel: '딜러',
         salary: { type: 'daily', amount: 150000 },
-        text: '일급 150,000원',
+        text: '일급 ₩150,000',
       },
     ],
   });
