@@ -116,11 +116,11 @@ describe('formatRelative', () => {
 
 describe('formatShortDate / formatISODate', () => {
   it('formats "M월 D일"', () => {
-    expect(formatShortDate(new Date('2026-04-13T00:00:00+09:00'))).toBe('4월 13일');
+    expect(formatShortDate(new Date(2026, 3, 13))).toBe('4월 13일');
   });
 
   it('formats "YYYY-MM-DD"', () => {
-    expect(formatISODate(new Date('2026-04-13T00:00:00+09:00'))).toBe('2026-04-13');
+    expect(formatISODate(new Date(2026, 3, 13))).toBe('2026-04-13');
   });
 
   it('returns empty string for invalid input', () => {
