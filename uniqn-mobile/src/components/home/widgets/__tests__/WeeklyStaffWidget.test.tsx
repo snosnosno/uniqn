@@ -1,9 +1,21 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WeeklyStaffWidget } from '../WeeklyStaffWidget';
 
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+  return ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
 jest.mock('@/components/home/DashboardWidgetShell', () => ({
   DashboardWidgetShell: ({
@@ -100,7 +112,7 @@ describe('WeeklyStaffWidget', () => {
 
     mockUseConfirmedStaff.mockReturnValue(makeStaffReturn([]));
 
-    render(<WeeklyStaffWidget />);
+    render(<WeeklyStaffWidget />, { wrapper: createWrapper() });
 
     expect(screen.getByTestId('loading')).toBeTruthy();
   });
@@ -115,7 +127,7 @@ describe('WeeklyStaffWidget', () => {
 
     mockUseConfirmedStaff.mockReturnValue(makeStaffReturn([]));
 
-    render(<WeeklyStaffWidget />);
+    render(<WeeklyStaffWidget />, { wrapper: createWrapper() });
 
     expect(screen.getByTestId('empty-state')).toBeTruthy();
     expect(screen.getByText(/이번 주 스케줄된 공고가 없습니다/)).toBeTruthy();
