@@ -160,6 +160,15 @@ module.exports = {
         xl: '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)',
         none: 'none',
       },
+      // 자간 (디자인 현대화 v3.1 - 카드 타이틀 타이트닝 + 칩 UPPERCASE)
+      letterSpacing: {
+        'card-title': '-0.02em',
+        chip: '0.06em',
+      },
+      // 숫자 정렬 (가변→고정폭 전환 — 금액/시간 표시용)
+      fontVariantNumeric: {
+        tabular: 'tabular-nums',
+      },
     },
   },
   plugins: [],
