@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Divider } from '@/components/ui';
 import { BiometricButton, LoginForm, SocialLoginButtons } from '@/components/auth';
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { markCurrentAutoLoginSession } from '@/lib/autoLoginSession';
@@ -37,6 +38,7 @@ export default function LoginScreen() {
   const autoLoginPreferenceRef = useRef(true);
   const { addToast } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
+  const isMountedRef = useIsMounted();
   const { autoLoginEnabled: storedAutoLoginEnabled, setAutoLoginEnabled } = useAutoLogin();
   const {
     isEnabled: isBiometricEnabled,
@@ -154,15 +156,19 @@ export default function LoginScreen() {
         }
       } catch (error) {
         logger.error('로그인 실패', error as Error);
-        addToast({
-          type: 'error',
-          message: extractErrorMessage(error, '로그인에 실패했습니다.'),
-        });
+        if (isMountedRef.current) {
+          addToast({
+            type: 'error',
+            message: extractErrorMessage(error, '로그인에 실패했습니다.'),
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMountedRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [addToast, handleLoginSuccess]
+    [addToast, handleLoginSuccess, isMountedRef]
   );
 
   const handleAppleLogin = useCallback(async () => {
@@ -191,14 +197,16 @@ export default function LoginScreen() {
       await handleLoginSuccess(result, 'Apple');
     } catch (error) {
       const userMessage = (error as { userMessage?: string })?.userMessage;
-      if (userMessage !== '') {
+      if (userMessage !== '' && isMountedRef.current) {
         logger.error('Apple 로그인 실패', error as Error);
         addToast({ type: 'error', message: userMessage || 'Apple 로그인에 실패했습니다.' });
       }
     } finally {
-      setLoadingProvider(null);
+      if (isMountedRef.current) {
+        setLoadingProvider(null);
+      }
     }
-  }, [addToast, handleLoginSuccess, postAuthRedirect, setProfile, setUser]);
+  }, [addToast, handleLoginSuccess, isMountedRef, postAuthRedirect, setProfile, setUser]);
 
   const authActionDisabled = !hasLoadedAutoLoginPreference;
   const isSocialLoading = loadingProvider !== null;
