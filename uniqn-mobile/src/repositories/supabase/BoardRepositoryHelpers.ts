@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { safeParseJson } from '@/utils/supabase';
+import { BoardJobSummarySchema } from '@/schemas/boardMetadata.schema';
 import type {
   BoardAuthorRole,
   BoardComment,
@@ -56,17 +57,9 @@ const boardImageAttachmentsSchema = z.array(boardImageAttachmentSchema);
 
 const reactionCountsSchema = z.record(z.string(), z.number());
 
-const boardJobSummarySchema = z.object({
-  jobPostingId: z.string(),
-  title: z.string(),
-  workDate: z.string(),
-  workDates: z.array(z.string()).optional(),
-  locationName: z.string().optional(),
-  totalPositions: z.number().optional(),
-  filledPositions: z.number().optional(),
-  compensationLabel: z.string().optional(),
-  jobPostingStatus: z.string().optional(),
-});
+// board_posts.job_summary JSONB 필드 Zod 스키마
+// (외부에서 재사용 가능하도록 @/schemas/boardMetadata.schema로 추출)
+const boardJobSummarySchema = BoardJobSummarySchema;
 
 // ============================================================================
 // Mapping Functions

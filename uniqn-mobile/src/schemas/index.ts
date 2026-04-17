@@ -328,3 +328,8 @@ export type {
   ReviewReportInputData,
   ReportDocumentData,
 } from './report.schema';
+
+// 게시판 메타데이터 스키마
+export { BoardJobSummarySchema, BoardPostMetadataSchema } from './boardMetadata.schema';
+
+export type { BoardJobSummarySchemaData, BoardPostMetadata } from './boardMetadata.schema';
