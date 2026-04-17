@@ -1620,6 +1620,7 @@ export type Database = {
         Args: {
           p_application_id: string;
           p_assignments?: Json;
+          p_assignments_v3?: Json;
           p_confirmation_history?: Json;
           p_is_fixed_posting?: boolean;
           p_notes?: string;
