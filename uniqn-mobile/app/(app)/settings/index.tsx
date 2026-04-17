@@ -36,6 +36,7 @@ import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks'
 import { updateMarketingConsent } from '@/services/auth';
 import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
+import { triggerHaptic } from '@/utils/haptics';
 
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({
@@ -168,8 +169,9 @@ export default function SettingsScreen() {
     }
   };
 
-  // 다크모드 토글
+  // 다크모드 토글 (impeccable v2 §17 — 토글은 Light 햅틱)
   const handleDarkModeToggle = (value: boolean) => {
+    void triggerHaptic('light');
     setTheme(value ? 'dark' : 'light');
   };
 
