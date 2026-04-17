@@ -32,6 +32,29 @@
 --   - src/domains/job-posting/stats.ts (TS 영역 동일 알고리즘)
 -- ============================================================================
 
+-- ----------------------------------------------------------------------------
+-- Precondition: 선행 마이그레이션 20260418000000 이 적용되어야 함
+-- ----------------------------------------------------------------------------
+-- 20260418000000_person_basis_filled_positions은 filled_positions을 사람 단위로
+-- 전환한다. 본 마이그레이션이 단독 적용되면 total=사람, filled=슬롯 미스매치가
+-- 남아 auto-close 로직이 계속 오작동하므로 의존성을 강제한다.
+--
+-- 단독 배포(worktree 1 미머지)를 가드: Supabase가 적용 이력을 저장하는
+-- supabase_migrations.schema_migrations에 선행 버전이 없으면 RAISE EXCEPTION.
+-- ----------------------------------------------------------------------------
+DO $precondition$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM supabase_migrations.schema_migrations
+    WHERE version = '20260418000000'
+  ) THEN
+    RAISE EXCEPTION
+      'MIGRATION_DEPENDENCY_MISSING: 20260418010000_total_positions_person_basis requires 20260418000000_person_basis_filled_positions to be applied first. Merge fix/confirmed-count-sync (worktree 1) before deploying this migration.';
+  END IF;
+END
+$precondition$;
+
 DO $$
 DECLARE
   v_updated_main int;
