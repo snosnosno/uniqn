@@ -22,7 +22,10 @@ export function PostingCompensationContent({
               <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {row.roleLabel}
               </Text>
-              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+              <Text
+                className="text-sm font-sans-medium text-content-primary dark:text-off-white"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
                 {row.text}
               </Text>
             </View>
@@ -33,7 +36,10 @@ export function PostingCompensationContent({
 
     return (
       <View className="py-1">
-        <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
+        <Text
+          className="text-lg font-display text-primary-600 dark:text-primary-400"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
           {compensation.primaryText}
         </Text>
       </View>
@@ -47,12 +53,16 @@ export function PostingCompensationContent({
           <Text
             key={row.key}
             className="text-sm text-content-primary dark:text-off-white font-sans"
+            style={{ fontVariant: ['tabular-nums'] }}
           >
             {row.roleLabel}: {row.text}
           </Text>
         ))
       ) : (
-        <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+        <Text
+          className="text-sm font-sans-medium text-content-primary dark:text-off-white"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
           {compensation.primaryText}
         </Text>
       )}

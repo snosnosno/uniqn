@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, CardStripe, type CardStripeTone } from '@/components/ui';
 import type { PostingCardViewModel } from '@/types';
 import { PostingCompensationContent } from './PostingCompensationContent';
 import { PostingScheduleContent } from './PostingScheduleContent';
@@ -23,6 +23,7 @@ interface PostingCardSurfaceProps {
   pressableClassName?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  stripeTone?: CardStripeTone;
 }
 
 export function PostingCardSurface({
@@ -36,6 +37,7 @@ export function PostingCardSurface({
   pressableClassName,
   accessibilityLabel,
   accessibilityHint,
+  stripeTone,
 }: PostingCardSurfaceProps) {
   const schedule = buildPostingScheduleModel(card);
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
@@ -43,74 +45,79 @@ export function PostingCardSurface({
     accessibilityLabel || buildAccessibilityLabel(card, schedule, compensation.primaryText);
 
   return (
-    <View className={containerClassName}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={resolvedAccessibilityLabel}
-        accessibilityHint={accessibilityHint}
-        className={pressableClassName}
+    <CardStripe tone={stripeTone ?? 'gold'} style={{ marginBottom: 8 }}>
+      <View
+        className={`bg-surface-card dark:bg-surface-elevated rounded-md pl-4 ${containerClassName ?? ''}`.trim()}
       >
-        {topStatus ? <View className="mb-2">{topStatus}</View> : null}
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={resolvedAccessibilityLabel}
+          accessibilityHint={accessibilityHint}
+          className={pressableClassName}
+        >
+          {topStatus ? <View className="mb-2">{topStatus}</View> : null}
 
-        <View className="mb-2 flex-row items-start justify-between">
-          <View className="flex-1 flex-row flex-wrap items-center">
-            {card.postingType && card.postingType !== 'regular' ? (
-              <PostingTypeBadge type={card.postingType} size="sm" className="mr-2" />
-            ) : null}
-            {shouldShowUrgentBadge(card.postingType, card.isUrgent) ? (
-              <Badge variant="error" size="sm" className="mr-2">
-                긴급
-              </Badge>
-            ) : null}
-            <Text
-              className="flex-1 text-base font-sans-semibold text-content-primary dark:text-off-white"
-              numberOfLines={1}
-            >
-              {card.title}
-            </Text>
+          <View className="mb-2 flex-row items-start justify-between">
+            <View className="flex-1 flex-row flex-wrap items-center">
+              {card.postingType && card.postingType !== 'regular' ? (
+                <PostingTypeBadge type={card.postingType} size="sm" className="mr-2" />
+              ) : null}
+              {shouldShowUrgentBadge(card.postingType, card.isUrgent) ? (
+                <Badge variant="error" size="sm" className="mr-2">
+                  긴급
+                </Badge>
+              ) : null}
+              <Text
+                className="flex-1 text-base font-sans-bold text-content-primary dark:text-off-white"
+                style={{ letterSpacing: -0.32 }}
+                numberOfLines={1}
+              >
+                {card.title}
+              </Text>
+            </View>
+
+            {titleAccessory}
           </View>
 
-          {titleAccessory}
-        </View>
+          <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            {card.location}
+          </Text>
 
-        <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-          {card.location}
-        </Text>
+          <View className="flex-row">
+            <View className="flex-1 pr-2">
+              <PostingScheduleContent
+                display="card"
+                workflow={card.workflow}
+                scheduleDisplay={card.scheduleDisplay}
+                workDate={card.workDate}
+                timeSlot={card.timeSlot}
+                daysPerWeek={card.daysPerWeek}
+                startTime={card.startTime}
+                requiredRolesWithCount={card.requiredRolesWithCount}
+                displayContext={card.displayContext}
+              />
+            </View>
 
-        <View className="flex-row">
-          <View className="flex-1 pr-2">
-            <PostingScheduleContent
-              display="card"
-              workflow={card.workflow}
-              scheduleDisplay={card.scheduleDisplay}
-              workDate={card.workDate}
-              timeSlot={card.timeSlot}
-              daysPerWeek={card.daysPerWeek}
-              startTime={card.startTime}
-              requiredRolesWithCount={card.requiredRolesWithCount}
-              displayContext={card.displayContext}
-            />
+            <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
+
+            <View className="flex-1 pl-2">
+              <PostingCompensationContent
+                display="card"
+                salaryDisplay={card.salaryDisplay}
+                defaultSalary={card.defaultSalary}
+                allowanceLabels={card.allowanceLabels}
+                taxLabel={card.taxLabel}
+              />
+            </View>
           </View>
 
-          <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
+          {bodyFooter}
+        </Pressable>
 
-          <View className="flex-1 pl-2">
-            <PostingCompensationContent
-              display="card"
-              salaryDisplay={card.salaryDisplay}
-              defaultSalary={card.defaultSalary}
-              allowanceLabels={card.allowanceLabels}
-              taxLabel={card.taxLabel}
-            />
-          </View>
-        </View>
-
-        {bodyFooter}
-      </Pressable>
-
-      {footer}
-    </View>
+        {footer}
+      </View>
+    </CardStripe>
   );
 }
 
