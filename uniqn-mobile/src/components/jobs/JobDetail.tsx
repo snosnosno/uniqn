@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/Badge';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { buildPostingFacts, projectPostingSurface } from '@/domains/job-posting';
 import { useAuthStore } from '@/stores';
-import type { JobPosting, PostingDetailViewModel, PostingType } from '@/types';
-import { PostingTypeBadge } from './PostingTypeBadge';
+import type { JobPosting, PostingDetailViewModel } from '@/types';
+import { POSTING_TYPE_LABELS } from '@/types/postingConfig';
 import {
   PostingCompensationContent,
   PostingScheduleContent,
@@ -16,6 +16,14 @@ import {
 
 interface JobDetailProps {
   job: JobPosting;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+      {children}
+    </Text>
+  );
 }
 
 function InfoRow({
@@ -28,10 +36,10 @@ function InfoRow({
   icon: string;
 }) {
   return (
-    <View className="flex-row items-start border-b border-secondary-100 py-3 dark:border-surface-overlay">
+    <View className="flex-row items-start border-b border-divider py-3">
       <Text className="mr-3 text-lg font-sans">{icon}</Text>
       <View className="flex-1">
-        <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
           {label}
         </Text>
         {typeof value === 'string' ? (
@@ -69,25 +77,39 @@ export function JobDetail({ job }: JobDetailProps) {
     }
   };
 
+  const showPostingTypeChip = Boolean(detail.postingType && detail.postingType !== 'regular');
+  const showUrgentChip = shouldShowUrgentBadge(detail.postingType, detail.isUrgent);
+  const postingTypeLabel = detail.postingType ? POSTING_TYPE_LABELS[detail.postingType] : null;
+
   return (
     <View className="bg-white dark:bg-surface-dark">
-      <View className="bg-surface-page p-4 dark:bg-surface">
-        <View className="mb-2 flex-row flex-wrap items-center">
-          {detail.postingType && detail.postingType !== 'regular' ? (
-            <PostingTypeBadge type={detail.postingType as PostingType} size="sm" className="mr-2" />
+      {/* Hero */}
+      <View className="bg-surface-elevated dark:bg-surface-elevated px-4 py-4 border-b border-divider">
+        <View className="flex-row flex-wrap items-center gap-1 mb-2">
+          {showPostingTypeChip && postingTypeLabel ? (
+            <Badge variant="chip">{postingTypeLabel}</Badge>
           ) : null}
-          {shouldShowUrgentBadge(detail.postingType, detail.isUrgent) ? (
-            <Badge variant="error" size="sm" className="mr-2">
-              긴급
-            </Badge>
-          ) : null}
+          {showUrgentChip ? <Badge variant="chip">긴급</Badge> : null}
           <PostingStatusBadge status={detail.status} size="sm" />
         </View>
 
-        <Text className="mb-3 text-xl font-display text-content-primary dark:text-off-white">
+        <Text
+          className="text-content-primary dark:text-off-white text-lg font-sans-bold"
+          style={{ letterSpacing: -0.5, lineHeight: 24 }}
+        >
           {detail.title || '제목 없음'}
         </Text>
 
+        {detail.locationLabel ? (
+          <Text className="text-primary-500 text-xs mt-1 font-sans-semibold">
+            ◦ {detail.locationLabel}
+          </Text>
+        ) : null}
+      </View>
+
+      {/* 급여 */}
+      <View className="px-4 py-3 border-b border-divider">
+        <SectionLabel>급여</SectionLabel>
         <PostingCompensationContent
           display="detail"
           salaryDisplay={detail.salaryDisplay}
@@ -97,29 +119,27 @@ export function JobDetail({ job }: JobDetailProps) {
         />
       </View>
 
+      {/* 상세 설명 */}
       {detail.description ? (
-        <View className="p-4">
-          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
-            상세 설명
-          </Text>
+        <View className="px-4 py-3 border-b border-divider">
+          <SectionLabel>상세 설명</SectionLabel>
           <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
             {detail.description}
           </Text>
         </View>
       ) : null}
 
-      <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-        <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
-          근무 정보
-        </Text>
+      {/* 근무 정보 */}
+      <View className="px-4 py-3 border-b border-divider">
+        <SectionLabel>근무 정보</SectionLabel>
 
         <InfoRow icon="" label="근무지" value={detail.locationLabel || '위치 정보 없음'} />
 
-        <View className="border-b border-secondary-100 py-3 dark:border-surface-overlay">
+        <View className="border-b border-divider py-3">
           <View className="flex-row items-start">
             <Text className="mr-3 text-lg font-sans">{''}</Text>
             <View className="flex-1">
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="mb-2 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
                 근무 일정
               </Text>
               <PostingScheduleContent
@@ -145,11 +165,11 @@ export function JobDetail({ job }: JobDetailProps) {
         ) : null}
 
         {detail.allowanceLabels.length > 0 ? (
-          <View className="border-b border-secondary-100 py-3 dark:border-surface-overlay">
+          <View className="border-b border-divider py-3">
             <View className="flex-row items-start">
               <Text className="mr-3 text-lg font-sans">{''}</Text>
               <View className="flex-1">
-                <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                <Text className="mb-1 text-[10px] uppercase tracking-wider text-content-muted font-sans-bold">
                   추가 수당
                 </Text>
                 <View className="flex-row flex-wrap">
@@ -170,11 +190,10 @@ export function JobDetail({ job }: JobDetailProps) {
         {detail.taxLabel ? <InfoRow icon="" label="세금" value={detail.taxLabel} /> : null}
       </View>
 
+      {/* 사전질문 */}
       {detail.questions.length > 0 ? (
-        <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
-            사전질문 ({detail.questions.length}개)
-          </Text>
+        <View className="px-4 py-3 border-b border-divider">
+          <SectionLabel>사전질문 ({detail.questions.length}개)</SectionLabel>
           <View className="rounded-lg bg-surface-page p-3 dark:bg-surface">
             {detail.questions.slice(0, 3).map((question, index) => (
               <View key={`${question.id || index}`} className="mb-2">
@@ -193,29 +212,25 @@ export function JobDetail({ job }: JobDetailProps) {
         </View>
       ) : null}
 
+      {/* 구인처 */}
       {detail.ownerName || ownerProfile?.bubbleScore ? (
-        <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
-          <View className="flex-row items-center">
-            <Text className="mr-3 text-lg font-sans">{''}</Text>
-            <View className="flex-1">
-              <Text className="mb-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                구인처
-              </Text>
-              <View className="flex-row items-center gap-2">
-                <Text className="text-sm text-content-primary dark:text-off-white font-sans">
-                  {detail.ownerName ?? '구인처'}
-                </Text>
-                {ownerProfile?.bubbleScore ? (
-                  <BubbleScoreBadge score={ownerProfile.bubbleScore.score} size="sm" />
-                ) : null}
-              </View>
-            </View>
+        <View className="px-4 py-3 border-b border-divider">
+          <SectionLabel>구인처</SectionLabel>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-sm text-content-primary dark:text-off-white font-sans">
+              {detail.ownerName ?? '구인처'}
+            </Text>
+            {ownerProfile?.bubbleScore ? (
+              <BubbleScoreBadge score={ownerProfile.bubbleScore.score} size="sm" />
+            ) : null}
           </View>
         </View>
       ) : null}
 
+      {/* 통계 */}
       {typeof detail.viewCount === 'number' || typeof detail.totalApplicants === 'number' ? (
-        <View className="border-t border-secondary-100 p-4 dark:border-surface-overlay">
+        <View className="px-4 py-3 border-b border-divider">
+          <SectionLabel>통계</SectionLabel>
           <View className="flex-row">
             {typeof detail.viewCount === 'number' ? (
               <Text className="mr-4 text-xs text-content-placeholder font-sans">
