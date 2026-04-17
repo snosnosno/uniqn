@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     // 공고 조회 + 검증
     const { data: posting, error: fetchError } = await supabase
       .from('job_postings')
-      .select('id, type, tournament_config')
+      .select('id, posting_type, tournament_config')
       .eq('id', jobPostingId)
       .single();
 
@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (posting.type !== 'tournament') {
+    if (posting.posting_type !== 'tournament') {
       return new Response(JSON.stringify({ error: '토너먼트 공고만 승인할 수 있습니다' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

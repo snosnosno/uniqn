@@ -69,3 +69,31 @@ inspector_port = 8083
 
 [analytics]
 enabled = false
+
+# Edge Functions 개별 설정
+#
+# verify_jwt = false 이유: Supabase 플랫폼 게이트웨이가 ES256 비대칭 JWT를 지원하지
+# 않아(2026-04 기준) user JWT 요청이 401로 거부됨(에러: UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM).
+# 함수 내부에서 Authorization 헤더 검사 + auth.getUser()로 Auth 서버 위임 검증 → 보안 동일.
+# Supabase 게이트웨이가 ES256 정식 지원하면 제거하고 기본값(true)으로 돌릴 것.
+
+[functions.approve-job-posting]
+verify_jwt = false
+
+[functions.reject-job-posting]
+verify_jwt = false
+
+[functions.resubmit-job-posting]
+verify_jwt = false
+
+[functions.revoke-apple-token]
+verify_jwt = false
+
+[functions.verify-portone-identity]
+verify_jwt = false
+
+[functions.reset-unread-counter]
+verify_jwt = false
+
+[functions.decrement-unread-counter]
+verify_jwt = false
