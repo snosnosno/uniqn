@@ -269,4 +269,29 @@ describe('archiveSubstitutePostByLinkedPosting', () => {
 
     expect(logger.warn).toHaveBeenCalledTimes(1);
   });
+
+  // 케이스 7: partial failure — 중간 post 실패해도 나머지 계속 시도, 각 실패는 개별 warn
+  it('partial failure: succeeds on some posts, logs per-post warn for rejections', async () => {
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue([
+      { id: 'p1' },
+      { id: 'p2' },
+      { id: 'p3' },
+    ]);
+    (mockBoardRepository.setPostStatus as jest.Mock)
+      .mockResolvedValueOnce(undefined) // p1 OK
+      .mockRejectedValueOnce(new Error('p2 fail')) // p2 fails
+      .mockResolvedValueOnce(undefined); // p3 OK (proves loop continued)
+
+    const { logger } = jest.requireMock('@/utils/logger');
+
+    await archiveSubstitutePostByLinkedPosting('job-X', 'user-X');
+
+    // All 3 attempts made (not stopped by p2 failure)
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledTimes(3);
+    // p2 failure logged specifically
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Substitute post archive failed for single post'),
+      expect.objectContaining({ postId: 'p2' })
+    );
+  });
 });

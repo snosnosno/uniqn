@@ -1791,13 +1791,31 @@ export async function archiveSubstitutePostByLinkedPosting(
       limitCount: 10,
     });
 
-    for (const post of posts) {
-      await boardRepository.setPostStatus(post.id, 'archived');
+    // Promise.allSettled: 각 post의 아카이브 시도는 독립적이어야 한다.
+    // 순차 await 사용 시 N번째 실패가 N+1번째 시도를 막아 partial state가 남는다.
+    const results = await Promise.allSettled(
+      posts.map((post) => boardRepository.setPostStatus(post.id, 'archived'))
+    );
+
+    const failed = results
+      .map((result, idx) => ({ result, postId: posts[idx].id }))
+      .filter(({ result }) => result.status === 'rejected');
+    const succeeded = results.length - failed.length;
+
+    for (const { result, postId } of failed) {
+      logger.warn('Substitute post archive failed for single post (non-blocking)', {
+        postId,
+        linkedJobPostingId,
+        authorId,
+        error: (result as PromiseRejectedResult).reason,
+      });
     }
 
     if (posts.length > 0) {
-      logger.info('Substitute posts archived on cancellation rejection', {
-        count: posts.length,
+      logger.info('Substitute posts archive result', {
+        total: posts.length,
+        succeeded,
+        failed: failed.length,
         linkedJobPostingId,
         authorId,
       });
