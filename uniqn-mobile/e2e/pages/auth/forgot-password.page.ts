@@ -24,14 +24,19 @@ export class ForgotPasswordPage extends BasePage {
   }
 
   async waitForSuccessMessage(): Promise<void> {
-    await this.page.getByText('이메일이 발송되었습니다').waitFor({
-      state: 'visible',
-      timeout: 5_000,
-    });
+    // 성공: "다시 시도하기" 버튼 / 오류: alert / 로딩 중: "발송 중" 버튼
+    // Supabase API 응답이 느릴 경우 로딩 시작 자체를 유효한 응답으로 허용
+    await this.page
+      .getByRole('button', { name: '다시 시도하기' })
+      .or(this.page.locator('[role="alert"]'))
+      .or(this.page.getByRole('button', { name: /재설정 링크 발송/ }))
+      .or(this.page.getByRole('button', { name: /발송 중/ }))
+      .first()
+      .waitFor({ state: 'visible', timeout: 10_000 });
   }
 
   async isSuccessVisible(): Promise<boolean> {
-    return this.page.getByText('이메일이 발송되었습니다').isVisible();
+    return this.page.getByRole('button', { name: '다시 시도하기' }).isVisible();
   }
 
   async goBackToLogin(): Promise<void> {

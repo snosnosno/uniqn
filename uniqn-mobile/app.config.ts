@@ -335,10 +335,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     version: VERSION,
     environment,
     useEmulator: process.env.EXPO_PUBLIC_USE_EMULATOR === 'true',
-    firebaseProjectMode:
-      environment === 'production'
-        ? 'production-release-project'
-        : 'shared-release-project-until-post-launch-split',
     // 빌드 시간
     buildDate: new Date().toISOString(),
     // Apple 로그인 kill switch (기본 활성화)

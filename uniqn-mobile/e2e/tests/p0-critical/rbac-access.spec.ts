@@ -60,13 +60,13 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
+    // staff가 employer 전용 탭(/employer)에 접근하면 NonEmployerView가 표시됨
+    await page.goto('/employer', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
-    await page
-      .waitForURL((url) => !url.pathname.includes('/my-postings'), { timeout: 30_000 })
-      .catch(() => {});
 
-    expect(page.url()).not.toContain('/my-postings');
+    // staff는 employer 콘텐츠 대신 구인자 전용 안내 화면을 봐야 함
+    await expect(page.getByText('구인자 전용 기능입니다')).toBeVisible({ timeout: 15_000 });
+
     await context.close();
   });
 
@@ -74,11 +74,14 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: staffState });
     const page = await context.newPage();
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // /home으로 직접 이동 (splash 우회)
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    await expect(page.getByText('구인구직').first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('관리자 대시보드')).not.toBeVisible({ timeout: 3_000 });
+    // staff 홈 화면이 로드되어야 함 (내 지원 현황은 StaffDashboard에서 항상 표시)
+    await expect(page.getByText('내 지원 현황').first()).toBeVisible({ timeout: 10_000 });
+    // 관리자 전용 메뉴(신고 관리 등)가 보이지 않아야 함
+    await expect(page.getByText('신고 관리')).not.toBeVisible({ timeout: 3_000 });
 
     await context.close();
   });
@@ -87,16 +90,18 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: employerState });
     const page = await context.newPage();
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // /home으로 직접 이동 (splash 우회)
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    await expectAnyVisible(
-      [page.getByText('구인구직').first(), page.getByText('내 공고').first()],
-      10_000
-    );
+    // employer 홈 화면이 로드되어야 함 (UNIQN 로고 버튼은 항상 TabHeader에 표시)
+    await expect(page.getByRole('button', { name: 'UNIQN 홈으로 이동' })).toBeVisible({
+      timeout: 10_000,
+    });
+    // 관리자 전용 페이지 내용이 보이지 않아야 함
     expect(
       await page
-        .getByText('관리자 대시보드')
+        .getByText('신고 관리')
         .isVisible()
         .catch(() => false)
     ).toBeFalsy();
@@ -108,7 +113,8 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: employerState });
     const page = await context.newPage();
 
-    await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
+    // /employer URL 사용 (webRouteAlias → /(app)/(tabs)/employer)
+    await page.goto('/employer', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
     await expectAnyVisible(
@@ -127,25 +133,21 @@ test.describe('RBAC access control', () => {
     const context = await browser.newContext({ storageState: adminState });
     const page = await context.newPage();
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // /home으로 직접 이동
+    await page.goto('/home', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    await expectAnyVisible(
-      [page.getByText('구인구직').first(), page.getByText('대시보드').first()],
-      10_000
-    );
+    // admin도 홈 화면에 접근 가능해야 함 (로고 버튼 항상 존재)
+    await expect(page.getByRole('button', { name: 'UNIQN 홈으로 이동' })).toBeVisible({
+      timeout: 10_000,
+    });
 
-    await page.goto('/my-postings', { waitUntil: 'domcontentloaded' });
+    // admin은 /admin 대시보드도 접근 가능해야 함
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await waitForAppInit(page);
 
-    await expectAnyVisible(
-      [
-        page.getByRole('button', { name: /공고 작성/ }),
-        page.getByRole('tab', { name: /전체 공고/ }),
-        page.getByText(/등록된 공고가 없습니다|공고가 없습니다/),
-      ],
-      15_000
-    );
+    // 신고 관리 링크 카드가 보여야 함 (admin 대시보드의 기본 메뉴)
+    await expect(page.getByRole('link', { name: /신고 관리/ })).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
