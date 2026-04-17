@@ -483,4 +483,105 @@ describe('getClosingStatus', () => {
     expect(result.total).toBe(0);
     expect(result.filled).toBe(0);
   });
+
+  // Phase 6 리뷰 C3: schedule 경로는 사람 단위(person basis)로 total 계산.
+  // filled는 DB 컬럼(filledPositions)만 신뢰.
+  it('schedule.kind=dated인 경우 역할별 peak 합으로 total 계산 (사람 단위)', () => {
+    const jobData = {
+      schedule: {
+        kind: 'dated' as const,
+        primaryDate: '2025-01-10',
+        allDates: ['2025-01-10', '2025-01-11', '2025-01-12'],
+        requirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [{ roles: [{ role: 'dealer' as const, count: 2, filled: 1 }] }],
+          },
+          {
+            date: '2025-01-11',
+            timeSlots: [{ roles: [{ role: 'dealer' as const, count: 2, filled: 1 }] }],
+          },
+          {
+            date: '2025-01-12',
+            timeSlots: [{ roles: [{ role: 'dealer' as const, count: 2, filled: 1 }] }],
+          },
+        ],
+      },
+      filledPositions: 1,
+    };
+
+    const result = getClosingStatus(jobData);
+    // 슬롯 단위라면 6, 사람 단위(peak) 기준 2
+    expect(result.total).toBe(2);
+    expect(result.filled).toBe(1);
+    expect(result.isClosed).toBe(false);
+  });
+
+  it('schedule.kind=dated + filled >= total이면 isClosed: true', () => {
+    const jobData = {
+      schedule: {
+        kind: 'dated' as const,
+        primaryDate: '2025-01-10',
+        allDates: ['2025-01-10'],
+        requirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [
+              {
+                roles: [
+                  { role: 'dealer' as const, count: 2, filled: 2 },
+                  { role: 'floor' as const, count: 1, filled: 1 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      filledPositions: 3,
+    };
+
+    const result = getClosingStatus(jobData);
+    expect(result.total).toBe(3);
+    expect(result.filled).toBe(3);
+    expect(result.isClosed).toBe(true);
+  });
+
+  it('schedule.kind=fixed인 경우 roleRequirements 합으로 total 계산', () => {
+    const jobData = {
+      schedule: {
+        kind: 'fixed' as const,
+        roleRequirements: [
+          { role: 'dealer' as const, count: 2, filled: 0 },
+          { role: 'floor' as const, count: 1, filled: 0 },
+        ],
+      },
+      filledPositions: 0,
+    };
+
+    const result = getClosingStatus(jobData);
+    expect(result.total).toBe(3);
+    expect(result.filled).toBe(0);
+    expect(result.isClosed).toBe(false);
+  });
+
+  it('schedule이 있지만 filledPositions이 undefined이면 filled=0으로 처리', () => {
+    const jobData = {
+      schedule: {
+        kind: 'dated' as const,
+        primaryDate: '2025-01-10',
+        allDates: ['2025-01-10'],
+        requirements: [
+          {
+            date: '2025-01-10',
+            timeSlots: [{ roles: [{ role: 'dealer' as const, count: 2 }] }],
+          },
+        ],
+      },
+    };
+
+    const result = getClosingStatus(jobData);
+    expect(result.total).toBe(2);
+    expect(result.filled).toBe(0);
+    expect(result.isClosed).toBe(false);
+  });
 });
