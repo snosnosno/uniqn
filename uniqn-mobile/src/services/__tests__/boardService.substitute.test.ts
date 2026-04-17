@@ -199,6 +199,19 @@ describe('createSubstitutePost', () => {
 });
 
 describe('archiveSubstitutePostByLinkedPosting', () => {
+  // 케이스 1: 단일 active 대타글 → setPostStatus 1회 호출
+  it('should call setPostStatus once when getPosts returns 1 post', async () => {
+    const mockPosts = [{ id: 'post-1' }];
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue(mockPosts);
+    (mockBoardRepository.setPostStatus as jest.Mock).mockResolvedValue(undefined);
+
+    await archiveSubstitutePostByLinkedPosting('job-123', 'staff-1');
+
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledTimes(1);
+    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledWith('post-1', 'archived');
+  });
+
+  // 케이스 2: 복수 대타글 → N번 호출, 순서대로
   it('should call setPostStatus for each post when getPosts returns 2 posts', async () => {
     const mockPosts = [{ id: 'post-1' }, { id: 'post-2' }];
     (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue(mockPosts);
@@ -207,10 +220,11 @@ describe('archiveSubstitutePostByLinkedPosting', () => {
     await archiveSubstitutePostByLinkedPosting('job-123', 'staff-1');
 
     expect(mockBoardRepository.setPostStatus).toHaveBeenCalledTimes(2);
-    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledWith('post-1', 'archived');
-    expect(mockBoardRepository.setPostStatus).toHaveBeenCalledWith('post-2', 'archived');
+    expect(mockBoardRepository.setPostStatus).toHaveBeenNthCalledWith(1, 'post-1', 'archived');
+    expect(mockBoardRepository.setPostStatus).toHaveBeenNthCalledWith(2, 'post-2', 'archived');
   });
 
+  // 케이스 3: 빈 결과 → no-op (setPostStatus 호출 0회, 에러 없음)
   it('should never call setPostStatus when getPosts returns empty array', async () => {
     (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue([]);
 
@@ -219,6 +233,30 @@ describe('archiveSubstitutePostByLinkedPosting', () => {
     expect(mockBoardRepository.setPostStatus).not.toHaveBeenCalled();
   });
 
+  // 케이스 4: authorId 권한 격리 — getPosts가 정확한 authorId 파라미터 받음
+  it('should pass authorId to getPosts for author isolation', async () => {
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue([]);
+
+    await archiveSubstitutePostByLinkedPosting('job-xyz', 'staff-owner-42');
+
+    expect(mockBoardRepository.getPosts).toHaveBeenCalledTimes(1);
+    const callArg = (mockBoardRepository.getPosts as jest.Mock).mock.calls[0][0];
+    expect(callArg.authorId).toBe('staff-owner-42');
+    expect(callArg.linkedJobPostingId).toBe('job-xyz');
+  });
+
+  // 케이스 5: boardTypes: substitute + statuses: active 필터
+  it('should pass boardTypes: [substitute] and statuses: [active] filters to getPosts', async () => {
+    (mockBoardRepository.getPosts as jest.Mock).mockResolvedValue([]);
+
+    await archiveSubstitutePostByLinkedPosting('job-123', 'staff-1');
+
+    const callArg = (mockBoardRepository.getPosts as jest.Mock).mock.calls[0][0];
+    expect(callArg.boardTypes).toEqual(['substitute']);
+    expect(callArg.statuses).toEqual(['active']);
+  });
+
+  // 케이스 6: Repository 예외 → logger.warn 호출, throw 안됨 (Promise resolves)
   it('should resolve without rethrowing when setPostStatus throws (error swallowed, logger.warn called)', async () => {
     const { logger } = jest.requireMock('@/utils/logger');
     const mockPosts = [{ id: 'post-1' }];
