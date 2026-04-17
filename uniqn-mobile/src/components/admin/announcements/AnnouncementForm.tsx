@@ -194,9 +194,9 @@ export function AnnouncementForm({
             }`}
             maxLength={100}
           />
-          {errors.title && (
+          {errors.title ? (
             <Text className="text-xs text-error-500 mt-1 font-sans">{errors.title}</Text>
-          )}
+          ) : null}
           <Text className="text-xs text-content-placeholder mt-1 text-right font-sans">
             {title.length}/100
           </Text>
@@ -256,9 +256,9 @@ export function AnnouncementForm({
             }`}
             maxLength={5000}
           />
-          {errors.content && (
+          {errors.content ? (
             <Text className="text-xs text-error-500 mt-1 font-sans">{errors.content}</Text>
-          )}
+          ) : null}
           <Text className="text-xs text-content-placeholder mt-1 text-right font-sans">
             {content.length}/5000
           </Text>
