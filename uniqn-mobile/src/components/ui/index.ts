@@ -105,6 +105,8 @@ export { CircularProgress, type CircularProgressProps } from './CircularProgress
 
 export { Loading, type LoadingProps } from './Loading';
 export { LoadingOverlay, InlineLoadingOverlay } from './LoadingOverlay';
+export { OfflineStatusBar } from './OfflineStatusBar';
+
 export {
   Skeleton,
   SkeletonText,
