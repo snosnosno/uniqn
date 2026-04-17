@@ -5,11 +5,12 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 
 import { CheckIcon, XMarkIcon } from '@/components/icons';
+import { triggerHaptic } from '@/utils/haptics';
 
 // ============================================================================
 // Types
@@ -49,11 +50,23 @@ export const AppliedActions = React.memo(function AppliedActions({
       ? `${selectedCount}개 확정`
       : '확정';
 
+  // impeccable v2 §17 — 승인/거절은 결정적 순간이므로 Medium 햅틱 1회.
+  // 200ms throttle 로 중복 탭 보호됨.
+  const handleConfirm = useCallback(() => {
+    void triggerHaptic('medium');
+    onConfirm();
+  }, [onConfirm]);
+
+  const handleReject = useCallback(() => {
+    void triggerHaptic('medium');
+    onReject();
+  }, [onReject]);
+
   return (
     <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
       {/* 거절 버튼 */}
       <Pressable
-        onPress={onReject}
+        onPress={handleReject}
         accessibilityRole="button"
         accessibilityLabel="지원 거절"
         accessibilityHint="지원자를 거절합니다"
@@ -67,7 +80,7 @@ export const AppliedActions = React.memo(function AppliedActions({
 
       {/* 확정 버튼 */}
       <Pressable
-        onPress={onConfirm}
+        onPress={handleConfirm}
         disabled={isConfirmDisabled}
         accessibilityRole="button"
         accessibilityLabel={confirmButtonText}
