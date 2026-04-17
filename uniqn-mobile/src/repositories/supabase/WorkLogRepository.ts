@@ -526,6 +526,11 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
   ): UnsubscribeFn {
     logger.info('단일 근무 기록 구독 시작', { workLogId });
 
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    void this.getById(workLogId)
+      .then(onData)
+      .catch((error) => onError(toError(error)));
+
     return createRealtimeSubscription(TABLE, `id=eq.${workLogId}`, (payload) => {
       try {
         if (payload.eventType === 'DELETE') {

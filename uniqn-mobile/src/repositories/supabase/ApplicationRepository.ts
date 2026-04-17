@@ -197,6 +197,11 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       return () => undefined;
     }
 
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    void this.getByApplicantIdWithStatuses(applicantId, statuses, _pageSize)
+      .then(onData)
+      .catch((error) => onError(toError(error)));
+
     return createRealtimeSubscription(
       TABLES.APPLICATIONS,
       `applicant_id=eq.${applicantId}`,

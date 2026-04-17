@@ -726,6 +726,12 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
 
   subscribeById(jobPostingId: string, callbacks: JobPostingSubscriptionCallbacks): UnsubscribeFn {
     logger.info('공고 상세 실시간 구독 시작', { jobPostingId });
+
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    void this.getById(jobPostingId)
+      .then((jp) => callbacks.onUpdate(jp))
+      .catch((error) => callbacks.onError?.(toError(error)));
+
     return createRealtimeSubscription(TABLE, `id=eq.${jobPostingId}`, (payload) => {
       try {
         if (payload.eventType === 'DELETE') {
