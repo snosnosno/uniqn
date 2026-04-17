@@ -13,7 +13,7 @@ import type {
   UpdateJobPostingInput,
 } from '@/types/jobPosting';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
-import { normalizePostingAggregateStats } from './stats';
+import { calculateTotalPositionsFromSchedule, normalizePostingAggregateStats } from './stats';
 
 interface SerializeJobPostingV3Options {
   ownerId: string;
@@ -196,10 +196,7 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
   workDates?: string[];
 } {
   if (schedule.kind === 'fixed') {
-    const totalPositions = (schedule.roleRequirements ?? []).reduce(
-      (sum, role) => sum + role.count,
-      0
-    );
+    const totalPositions = calculateTotalPositionsFromSchedule(schedule);
     const filledPositions = (schedule.roleRequirements ?? []).reduce(
       (sum, role) => sum + (role.filled ?? 0),
       0
@@ -212,15 +209,8 @@ function calculateTotalsFromSchedule(schedule: PostingSchedule): {
     };
   }
 
-  const totalPositions = schedule.requirements.reduce(
-    (dateSum, requirement) =>
-      dateSum +
-      requirement.timeSlots.reduce(
-        (slotSum, slot) => slotSum + slot.roles.reduce((sum, role) => sum + role.count, 0),
-        0
-      ),
-    0
-  );
+  // totalPositions는 사람 단위 peak 합(HANDOFF Phase 6), filledPositions는 worktree 1 책임으로 기존 슬롯 합산 유지
+  const totalPositions = calculateTotalPositionsFromSchedule(schedule);
 
   const filledPositions = schedule.requirements.reduce(
     (dateSum, requirement) =>
