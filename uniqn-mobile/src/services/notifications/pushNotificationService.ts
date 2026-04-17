@@ -536,7 +536,7 @@ export async function getTokenWithRecovery(): Promise<PushTokenResult | null> {
     const expoPushToken = await getExpoPushTokenWithRetry(projectId);
 
     currentToken = expoPushToken;
-    logger.info('Expo Push Token 諛쒓툒', {
+    logger.info('Expo Push Token 발급', {
       tokenLength: expoPushToken.length,
       type: 'expo',
       platform: Platform.OS,
