@@ -247,6 +247,24 @@ export async function requestCancellation(
   }
 }
 
+/**
+ * 취소 요청 심사 (승인 또는 거절).
+ *
+ * 부수효과:
+ *   - 승인/거절 모두 성공 시 관련 대타 구인 게시글을 archived 상태로 전환
+ *     (동일 jobPostingId + 동일 applicantId의 active 대타글)
+ *
+ * 아카이브 조건 설계 근거:
+ *   - 거절 시: 원 지원자가 계속 참석 → 대타 불필요
+ *   - 승인 시: 슬롯 재오픈 + 정식 지원 루트로 전환 → 대타 임무 완료
+ *   - 양쪽 모두: 취소 요청 라이프사이클 종료 = 대타글 종료
+ *
+ * 동작 변경 시 주의:
+ *   - applicationService.substitute.test.ts의 regression lock-in 테스트가
+ *     의도 변경을 명시적으로 강제함. 분기 로직 추가 시 해당 테스트 업데이트 필요.
+ *
+ * 아카이브는 non-blocking: 실패 시 logger.warn, 심사 자체는 성공 처리.
+ */
 export async function reviewCancellationRequest(
   input: ReviewCancellationInput,
   reviewerId: string
@@ -281,7 +299,11 @@ export async function reviewCancellationRequest(
       approved: input.approved,
     });
 
-    // 대타 글 아카이브: 취소 거절 시(대타 불필요) AND 취소 승인 시(슬롯 재오픈, 대타 임무 완료)
+    // 대타글 아카이브 (승인/거절 공통):
+    //   · 거절 → 원 지원자 계속 참석 → 대타 불필요
+    //   · 승인 → 슬롯 재오픈, 정식 지원 루트 전환 → 대타 임무 완료
+    //   · 분기 추가 시 applicationService.substitute.test.ts 의 regression
+    //     lock-in 테스트 업데이트 필수 (현재 양쪽 동일 동작 고정)
     try {
       const application = await applicationRepository.getById(input.applicationId);
       if (application) {
