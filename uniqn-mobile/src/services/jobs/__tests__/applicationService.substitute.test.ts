@@ -150,7 +150,7 @@ describe('requestCancellation with substitute post', () => {
         'staff-1',
         applicantContext
       )
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ substitutePost: 'failed' });
 
     // Cancellation still succeeded despite substitute post failure
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
@@ -177,6 +177,79 @@ describe('requestCancellation with substitute post', () => {
     );
 
     expect(mockRequestCancellationWithTransaction).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('requestCancellation - substitute post result reporting', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRequestCancellationWithTransaction.mockResolvedValue(undefined);
+    mockCreateSubstitutePost.mockResolvedValue('sub-post-id');
+  });
+
+  it('returns substitutePost: "created" on success', async () => {
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '갑자기 몸이 아파서 출근이 어렵습니다.',
+        wantsSubstitutePost: true,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'created' });
+  });
+
+  it('returns substitutePost: "failed" when createSubstitutePost throws', async () => {
+    mockCreateSubstitutePost.mockRejectedValue(new Error('Board service error'));
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '갑자기 몸이 아파서 출근이 어렵습니다.',
+        wantsSubstitutePost: true,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'failed' });
+  });
+
+  it('returns substitutePost: "skipped" when wantsSubstitutePost=false', async () => {
+    const jobSummary = makeJobSummary();
+    const applicantContext = {
+      name: 'Alice',
+      role: 'staff' as const,
+      jobSummary,
+    };
+
+    const result = await requestCancellation(
+      {
+        applicationId: 'app-1',
+        reason: '개인 사정으로 취소합니다.',
+        wantsSubstitutePost: false,
+      },
+      'user-1',
+      applicantContext
+    );
+
+    expect(result).toEqual({ substitutePost: 'skipped' });
+    expect(mockCreateSubstitutePost).not.toHaveBeenCalled();
   });
 });
 

@@ -28,6 +28,14 @@ import {
 
 export type { ApplicationWithJob } from '@/repositories';
 
+/**
+ * requestCancellation 결과 — 대타 구인 글 생성 부수효과 상태 보고.
+ * Service는 UI 의존성 금지 규칙 준수. UI 레이어에서 이 값을 보고 toast 표시.
+ */
+export type CancellationResult = {
+  substitutePost: 'created' | 'skipped' | 'failed';
+};
+
 function toValidationError(message: string, fieldErrors?: Record<string, string[] | undefined>) {
   const normalizedFieldErrors = fieldErrors
     ? Object.fromEntries(
@@ -182,7 +190,7 @@ export async function requestCancellation(
   input: RequestCancellationInput,
   applicantId: string,
   applicantContext?: { name: string; role: BoardAuthorRole; jobSummary: BoardJobSummary }
-): Promise<void> {
+): Promise<CancellationResult> {
   const trace = startApiTrace('requestCancellation');
   trace.putAttribute('applicationId', input.applicationId);
 
@@ -209,6 +217,7 @@ export async function requestCancellation(
     logger.info('Cancellation request completed', { applicationId: input.applicationId });
 
     // 대타 글 생성 (best-effort: 실패해도 취소 요청은 유지)
+    let substitutePost: CancellationResult['substitutePost'] = 'skipped';
     if (validationResult.data.wantsSubstitutePost && applicantContext) {
       try {
         await createSubstitutePost({
@@ -219,8 +228,10 @@ export async function requestCancellation(
           jobSummary: applicantContext.jobSummary,
           reason: validationResult.data.reason,
         });
+        substitutePost = 'created';
         logger.info('Substitute post created', { applicationId: input.applicationId });
       } catch (substituteError) {
+        substitutePost = 'failed';
         logger.warn('Substitute post creation failed (non-blocking)', {
           applicationId: input.applicationId,
           error: substituteError,
@@ -229,12 +240,16 @@ export async function requestCancellation(
     }
 
     trace.putAttribute('status', 'success');
+    trace.putAttribute('substitute_post', substitutePost);
     trace.stop();
 
     trackEvent('cancellation_request', {
       application_id: input.applicationId,
       wants_substitute: validationResult.data.wantsSubstitutePost,
+      substitute_post: substitutePost,
     });
+
+    return { substitutePost };
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
