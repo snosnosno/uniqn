@@ -132,7 +132,7 @@ export function WeeklyStaffWidget() {
 
               return (
                 <View key={day} className="flex-row items-center gap-2">
-                  <Text className="w-4 text-xs text-neutral-400 dark:text-neutral-400">{day}</Text>
+                  <Text className="w-4 text-xs text-neutral-500 dark:text-neutral-400">{day}</Text>
                   <View className="h-1 flex-1 overflow-hidden rounded-sm bg-neutral-700 dark:bg-neutral-700">
                     <View
                       className="h-full rounded-sm"
@@ -142,7 +142,7 @@ export function WeeklyStaffWidget() {
                       }}
                     />
                   </View>
-                  <Text className="w-8 text-right text-xs text-neutral-400 dark:text-neutral-400">
+                  <Text className="w-8 text-right text-xs text-neutral-500 dark:text-neutral-400">
                     {confirmed}/{capacity}
                   </Text>
                 </View>

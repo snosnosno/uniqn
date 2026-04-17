@@ -44,11 +44,11 @@ export function PostingOverviewWidget() {
     >
       {hasPostings ? (
         <View className="gap-2 py-1">
-          <Text className="text-sm text-neutral-200 dark:text-neutral-200">
+          <Text className="text-sm text-neutral-500 dark:text-neutral-400">
             모집중 {activePostings.length}건 · 마감 {closedPostings.length}건
           </Text>
           {newApplicantCount > 0 && (
-            <Text className="text-sm dark:text-neutral-400">
+            <Text className="text-sm text-neutral-500 dark:text-neutral-400">
               새 지원자:{' '}
               <Text style={{ color: '#D4AF37' }} className="font-semibold">
                 {newApplicantCount}명

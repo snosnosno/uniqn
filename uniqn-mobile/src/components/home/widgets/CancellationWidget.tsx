@@ -81,7 +81,7 @@ export function CancellationWidget() {
             key={req.id}
             className="border-l-2 border-warning/40 bg-warning/10 px-2 py-1 dark:border-warning/40 dark:bg-warning/10"
           >
-            <Text className="text-xs text-neutral-300 dark:text-neutral-300">
+            <Text className="text-xs text-neutral-500 dark:text-neutral-400">
               {req.applicantName} · {req.jobPostingDate ?? ''} 근무 취소
             </Text>
           </View>
