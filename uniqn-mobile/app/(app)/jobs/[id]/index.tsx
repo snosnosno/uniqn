@@ -237,9 +237,16 @@ export default function JobDetailScreen() {
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}
-              <Button onPress={handleApply} fullWidth>
-                지원하기
-              </Button>
+              <Pressable
+                onPress={handleApply}
+                className="bg-primary-500 active:bg-primary-600 rounded-md py-3 min-h-[44px] items-center justify-center"
+                accessibilityRole="button"
+                accessibilityLabel="공고에 지원하기"
+              >
+                <Text className="text-content-onGold text-center font-sans-bold text-base">
+                  지원하기 →
+                </Text>
+              </Pressable>
             </View>
           )}
         </SafeAreaView>
