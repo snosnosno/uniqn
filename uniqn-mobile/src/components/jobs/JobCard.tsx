@@ -11,6 +11,13 @@ import { PostingCardSurface } from './shared/PostingCardSurface';
 
 export type ApplicationStatusType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
 
+const STRIPE_TONE_BY_STATUS: Record<ApplicationStatusType, CardStripeTone> = {
+  applied: 'info',
+  confirmed: 'info',
+  cancelled: 'muted',
+  completed: 'muted',
+};
+
 interface JobCardProps {
   job: JobPostingCard;
   onPress: (jobId: string) => void;
@@ -42,12 +49,9 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     [handleBookmarkPress]
   );
 
-  const stripeTone: CardStripeTone =
-    applicationStatus === 'applied' || applicationStatus === 'confirmed'
-      ? 'info'
-      : applicationStatus === 'cancelled' || applicationStatus === 'completed'
-        ? 'muted'
-        : 'gold';
+  const stripeTone: CardStripeTone = applicationStatus
+    ? STRIPE_TONE_BY_STATUS[applicationStatus]
+    : 'gold';
 
   return (
     <PostingCardSurface
@@ -102,7 +106,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         ) : undefined
       }
       containerClassName="overflow-hidden"
-      pressableClassName="p-4 active:opacity-80"
+      pressableClassName="py-4 pr-4 active:opacity-80"
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
     />
   );
