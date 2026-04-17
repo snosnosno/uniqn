@@ -13,6 +13,7 @@ export { Button, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
 export { Card, type CardProps } from './Card';
 export { CardStripe, type CardStripeTone, type CardStripeProps } from './CardStripe';
+export { PressableCard, type PressableCardProps } from './PressableCard';
 export { Badge, type BadgeProps } from './Badge';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Divider } from './Divider';
