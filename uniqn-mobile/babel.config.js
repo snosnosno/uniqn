@@ -6,7 +6,7 @@ module.exports = function (api) {
         'babel-preset-expo',
         {
           jsxImportSource: 'nativewind',
-          // Firebase SDK의 import.meta 사용을 위해 활성화
+          // Expo 55 winter runtime이 import.meta 사용
           unstable_transformImportMeta: true,
         },
       ],

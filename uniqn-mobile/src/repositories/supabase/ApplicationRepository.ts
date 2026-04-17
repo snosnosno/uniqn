@@ -197,6 +197,11 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       return () => undefined;
     }
 
+    // 초기 데이터 1회 fetch — 변경 이벤트가 오지 않아도 구독자가 빈 상태에서 탈출
+    void this.getByApplicantIdWithStatuses(applicantId, statuses, _pageSize)
+      .then(onData)
+      .catch((error) => onError(toError(error)));
+
     return createRealtimeSubscription(
       TABLES.APPLICATIONS,
       `applicant_id=eq.${applicantId}`,
@@ -214,10 +219,18 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         }
       },
       (status) => {
-        // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
         if (status === 'CHANNEL_ERROR') {
+          // 일시 장애 — 상위에 통지하되, Phoenix가 자동 재연결을 시도한다.
+          // 'RECOVERED' 신호가 오면 데이터를 재동기화한다.
           onError(new Error(`Realtime 채널 에러: ${TABLES.APPLICATIONS}`));
+        } else if (status === 'RECOVERED') {
+          // 재연결 성공 — 끊긴 동안 놓친 변경을 반영하기 위해 전체 목록 재조회.
+          logger.info('Realtime 채널 복구 — 데이터 재동기화', { applicantId });
+          void this.getByApplicantIdWithStatuses(applicantId, statuses, _pageSize)
+            .then(onData)
+            .catch(onError);
         }
+        // TIMED_OUT은 Phoenix가 자동 재시도 — 상위로 전파하지 않음
       }
     );
   }
@@ -456,6 +469,9 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         ...(context.applicantEmail && { applicant_email: context.applicantEmail }),
         ...(context.applicantNickname && { applicant_nickname: context.applicantNickname }),
         ...(context.applicantPhotoURL && { applicant_photo_url: context.applicantPhotoURL }),
+        ...(context.applicantPhotoURLBlurhash && {
+          applicant_photo_url_blurhash: context.applicantPhotoURLBlurhash,
+        }),
         applicant_role: normalizedPrimaryRole.role,
         ...(normalizedPrimaryRole.customRole && { custom_role: normalizedPrimaryRole.customRole }),
         job_posting_id: input.jobPostingId,

@@ -205,8 +205,13 @@ export async function registerAsEmployer(
  *
  * @param uid 사용자 ID
  * @param photoURL 새 프로필 사진 URL (null이면 삭제)
+ * @param photoURLBlurhash impeccable v2 §18 — blurhash placeholder 해시 (선택)
  */
-export async function updateProfilePhotoURL(uid: string, photoURL: string | null): Promise<void> {
+export async function updateProfilePhotoURL(
+  uid: string,
+  photoURL: string | null,
+  photoURLBlurhash: string | null = null
+): Promise<void> {
   const currentUser = await requireCurrentUser();
   if (uid !== currentUser.id) {
     throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
@@ -235,7 +240,10 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
       });
     }
 
-    await userRepository.updateFields(uid, { photoURL: photoURL ?? null });
+    await userRepository.updateFields(uid, {
+      photoURL: photoURL ?? null,
+      photoURLBlurhash: photoURL ? photoURLBlurhash : null,
+    });
 
     void invalidateQueries.user();
     logger.info('프로필 사진 업데이트 성공', { uid });

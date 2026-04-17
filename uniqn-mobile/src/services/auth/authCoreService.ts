@@ -347,6 +347,9 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
 /**
  * 로그아웃
+ *
+ * 세션·Realtime·캐시·Analytics를 정리하지만, 라우터 이동은 수행하지 않는다.
+ * 호출자가 signOut 완료 후 `router.replace('/(auth)/login')` 등 진입 경로를 명시해야 한다.
  */
 export async function signOut(): Promise<void> {
   try {

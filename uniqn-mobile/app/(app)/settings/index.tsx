@@ -20,7 +20,14 @@ import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
-import { BellIcon, BellSlashIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
+import {
+  BellIcon,
+  BellSlashIcon,
+  LockIcon,
+  LogOutIcon,
+  ChevronRightIcon,
+  TrashIcon,
+} from '@/components/icons';
 import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -33,9 +40,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth, AUTO_LOGIN_HELPER_TEXT } from '@/hooks';
-import { updateMarketingConsent } from '@/services/auth';
+import { signOut, updateMarketingConsent } from '@/services/auth';
 import { versionInfo } from '@/constants/version';
 import { logger } from '@/utils/logger';
+import { triggerHaptic } from '@/utils/haptics';
 
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({
@@ -158,8 +166,9 @@ export default function SettingsScreen() {
     refresh: refreshBiometricState,
   } = useBiometricAuth();
 
-  // 푸시 알림 토글
+  // 푸시 알림 토글 (§17 — Light)
   const handlePushToggle = (value: boolean) => {
+    void triggerHaptic('light');
     if (notificationSettings) {
       saveSettings({
         ...notificationSettings,
@@ -168,13 +177,15 @@ export default function SettingsScreen() {
     }
   };
 
-  // 다크모드 토글
+  // 다크모드 토글 (impeccable v2 §17 — 토글은 Light 햅틱)
   const handleDarkModeToggle = (value: boolean) => {
+    void triggerHaptic('light');
     setTheme(value ? 'dark' : 'light');
   };
 
-  // 자동 로그인 토글
+  // 자동 로그인 토글 (§17 — Light)
   const handleAutoLoginToggle = async (value: boolean) => {
+    void triggerHaptic('light');
     try {
       await setAutoLoginEnabled(value);
       await refreshBiometricState();
@@ -183,8 +194,9 @@ export default function SettingsScreen() {
     }
   };
 
-  // 생체 인증 토글
+  // 생체 인증 토글 (§17 — Light)
   const handleBiometricToggle = async (value: boolean) => {
+    void triggerHaptic('light');
     await setBiometricEnabled(value);
   };
 
@@ -195,10 +207,32 @@ export default function SettingsScreen() {
     });
   };
 
-  // 마케팅 정보 수신 토글 핸들러
+  // 로그아웃 핸들러 (impeccable v2 §17 — 결정 확정 시 Warning 햅틱)
+  const handleLogout = useCallback(() => {
+    showConfirm(
+      '로그아웃',
+      '로그아웃 하시겠어요?\n자동 로그인이 켜져 있어도 다시 로그인이 필요합니다.',
+      async () => {
+        try {
+          void triggerHaptic('warning');
+          await signOut();
+          router.replace('/(auth)/login');
+        } catch (error) {
+          logger.error('로그아웃 실패', error as Error);
+          addToast({
+            type: 'error',
+            message: '로그아웃에 실패했어요. 잠시 후 다시 시도해주세요.',
+          });
+        }
+      }
+    );
+  }, [addToast, showConfirm]);
+
+  // 마케팅 정보 수신 토글 핸들러 (§17 — Light)
   const handleMarketingConsentChange = async (value: boolean) => {
     if (!user?.uid || !profile) return;
 
+    void triggerHaptic('light');
     setIsMarketingUpdating(true);
     try {
       await updateMarketingConsent(user.uid, value);
@@ -413,6 +447,17 @@ export default function SettingsScreen() {
             </>
           )}
         </Card>
+
+        {/* 로그아웃 */}
+        {isAuthenticated && (
+          <Card className="mb-4">
+            <SettingItem
+              icon={<LogOutIcon size={22} color={SECONDARY_PALETTE[500]} />}
+              label="로그아웃"
+              onPress={handleLogout}
+            />
+          </Card>
+        )}
 
         {/* 위험 영역 - 계정 삭제 */}
         {isAuthenticated && (

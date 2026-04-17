@@ -110,6 +110,7 @@ export function useApplications() {
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
       const applicantNickname = identity.nickname;
       const applicantPhotoURL = identity.photoURL;
+      const applicantPhotoURLBlurhash = identity.photoURLBlurhash;
 
       return applyToJobV2(
         {
@@ -123,7 +124,8 @@ export function useApplications() {
         applicantPhone,
         undefined,
         applicantNickname,
-        applicantPhotoURL
+        applicantPhotoURL,
+        applicantPhotoURLBlurhash
       );
     },
     onSuccess: (data) => {

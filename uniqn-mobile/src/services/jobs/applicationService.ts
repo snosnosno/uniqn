@@ -137,7 +137,8 @@ export async function applyToJobV2(
   applicantPhone?: string,
   applicantEmail?: string,
   applicantNickname?: string,
-  applicantPhotoURL?: string
+  applicantPhotoURL?: string,
+  applicantPhotoURLBlurhash?: string
 ): Promise<Application> {
   const trace = startApiTrace('applyToJobV2');
   trace.putAttribute('jobPostingId', input.jobPostingId);
@@ -157,6 +158,7 @@ export async function applyToJobV2(
       applicantEmail,
       applicantNickname,
       applicantPhotoURL,
+      applicantPhotoURLBlurhash,
     };
 
     const result = await applicationRepository.applyWithTransaction(input, context);

@@ -30,6 +30,7 @@ import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 import { isWeb } from '@/utils/platform';
 import { WebPortal } from '@/components/ui/WebPortal';
+import { triggerHaptic } from '@/utils/haptics';
 
 // ============================================================================
 // Types
@@ -502,6 +503,8 @@ export function ConfirmModal({
         </Pressable>
         <Pressable
           onPress={() => {
+            // impeccable v2 §17 — 파괴적 확인은 Warning, 일반 확인은 Light.
+            void triggerHaptic(isDestructive ? 'warning' : 'light');
             onConfirm();
             onClose();
           }}

@@ -108,6 +108,8 @@ export async function executeConfirmWithHistory(
     );
 
     // 서버사이드 원자적 트랜잭션으로 확정 처리
+    // p_assignments: work_logs INSERT용 flat 포맷
+    // p_assignments_v3: applications.assignments 컬럼용 v3 canonical 포맷 (덮어쓰기 버그 방지)
     const { data: rpcResult, error: rpcError } = await supabase.rpc('confirm_application', {
       p_application_id: applicationId,
       p_owner_id: ownerId,
@@ -116,6 +118,7 @@ export async function executeConfirmWithHistory(
       p_confirmation_history: confirmationHistory,
       p_notes: notes ?? null,
       p_is_fixed_posting: isFixedPosting,
+      p_assignments_v3: assignmentsToConfirm,
     });
 
     if (rpcError) {

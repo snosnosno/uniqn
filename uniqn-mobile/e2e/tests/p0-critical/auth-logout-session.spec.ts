@@ -48,7 +48,7 @@ test.describe('로그아웃 & 세션', () => {
     const loginOrSplash = page
       .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
-      .or(page.getByText('구인구직').first());
+      .or(page.getByRole('button', { name: 'UNIQN 홈으로 이동' }));
     await expect(loginOrSplash).toBeVisible({ timeout: 15_000 });
   });
 
@@ -96,7 +96,7 @@ test.describe('로그아웃 & 세션', () => {
     const anyContent = page
       .getByPlaceholder('이메일을 입력하세요')
       .or(page.getByText('로그인'))
-      .or(page.getByText('구인구직').first())
+      .or(page.getByRole('button', { name: 'UNIQN 홈으로 이동' }))
       .or(page.getByText('앱 로딩 중...'));
     await expect(anyContent).toBeVisible({ timeout: 10_000 });
 

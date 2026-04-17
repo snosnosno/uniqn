@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useGlobalSearchParams, usePathname, useRouter, useSegments } from 'expo-router';
+import { useIsMounted } from '@/hooks/useIsMounted';
 import { isPhoneOnlySignupAuthUser } from '@/shared/auth/sessionState';
 import {
   AUTH_ENTRY_ROUTES,
@@ -29,6 +30,7 @@ interface RouteConfig {
 }
 
 const PROFILE_RETRY_DELAY_MS = 500;
+const PROFILE_MAX_RETRIES = 3;
 
 const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   '(public)': {
@@ -122,6 +124,8 @@ export function useAuthGuard(): void {
 
   const routerRef = useRef(router);
   routerRef.current = router;
+  const isMountedRef = useIsMounted();
+  const profileRetryCountRef = useRef(0);
 
   useEffect(() => {
     const routeGroup = extractRouteGroup(segments);
@@ -161,6 +165,11 @@ export function useAuthGuard(): void {
       return;
     }
 
+    // 프로필이 정상 로드되면 재시도 카운터 리셋
+    if (profile) {
+      profileRetryCountRef.current = 0;
+    }
+
     if (isAuthenticated && !profile) {
       if (isPhoneOnlySignupAuthUser(user)) {
         const isOnPlainSignup =
@@ -178,15 +187,23 @@ export function useAuthGuard(): void {
         return;
       }
 
-      if (!isLoading) {
-        const retryTimer = setTimeout(() => {
-          void checkAuthState();
-        }, PROFILE_RETRY_DELAY_MS);
-
-        return () => clearTimeout(retryTimer);
+      if (profileRetryCountRef.current >= PROFILE_MAX_RETRIES) {
+        logger.warn('Profile retry limit reached — halting automatic re-check', {
+          component: 'useAuthGuard',
+          retries: profileRetryCountRef.current,
+        });
+        return;
       }
 
-      return;
+      const retryTimer = setTimeout(() => {
+        if (!isMountedRef.current) {
+          return;
+        }
+        profileRetryCountRef.current += 1;
+        void checkAuthState();
+      }, PROFILE_RETRY_DELAY_MS);
+
+      return () => clearTimeout(retryTimer);
     }
 
     if (!routeGroup) {
@@ -321,6 +338,7 @@ export function useAuthGuard(): void {
       });
 
       routerRef.current.replace(isAuthenticated ? authenticatedEntryRoute : '/(auth)/login');
+      return;
     }
 
     return undefined;
@@ -329,6 +347,7 @@ export function useAuthGuard(): void {
     checkAuthState,
     isAuthenticated,
     isLoading,
+    isMountedRef,
     pathname,
     phoneVerified,
     profile,

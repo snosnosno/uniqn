@@ -65,6 +65,12 @@ export interface AnnouncementImage {
   storagePath: string;
   /** 정렬 순서 */
   order: number;
+  /**
+   * blurhash 해시(impeccable v2 §18).
+   * 업로드 시 `computeBlurhash(uri)` 로 선계산, expo-image placeholder 로 사용.
+   * 레거시 데이터 호환을 위해 optional. 신규 업로드는 반드시 포함할 것.
+   */
+  blurhash?: string | null;
 }
 
 /** 최대 이미지 개수 */
@@ -117,6 +123,9 @@ export interface Announcement extends FirebaseDocument {
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
 
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18, 단일 이미지 placeholder) */
+  imageUrlBlurhash?: string | null;
+
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }
@@ -139,6 +148,8 @@ export interface CreateAnnouncementInput {
   imageUrl?: string | null;
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18) */
+  imageUrlBlurhash?: string | null;
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }
@@ -157,6 +168,8 @@ export interface UpdateAnnouncementInput {
   imageUrl?: string | null;
   /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
   imageStoragePath?: string | null;
+  /** 첨부 이미지 blurhash 해시 (impeccable v2 §18) */
+  imageUrlBlurhash?: string | null;
   /** 첨부 이미지 배열 (다중 이미지) */
   images?: AnnouncementImage[];
 }

@@ -24,7 +24,7 @@ describe('ScheduleCard', () => {
 
     const { getByText } = render(<ScheduleCard schedule={schedule} />);
 
-    expect(getByText('시급 12,000원')).toBeTruthy();
+    expect(getByText('시급 ₩12,000')).toBeTruthy();
   });
 
   it('shows a pending-cancellation notice for confirmed schedules under review', () => {

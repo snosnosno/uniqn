@@ -39,7 +39,7 @@ export const ACTIVE_APPLICATION_STATUSES = new Set<ApplicationStatus>([
 
 export const EMPLOYER_REALTIME_LIMIT = 300;
 export const APPLICATION_COLUMNS =
-  'id,applicant_email,applicant_id,applicant_name,applicant_nickname,applicant_phone,applicant_photo_url,applicant_role,assignments,cancellation_request,cancelled_at,confirmation_history,confirmed_at,created_at,custom_role,is_read,job_posting_date,job_posting_id,job_posting_title,message,notes,original_application,pre_question_answers,processed_at,processed_by,recruitment_type,rejection_reason,status,updated_at' as const;
+  'id,applicant_email,applicant_id,applicant_name,applicant_nickname,applicant_phone,applicant_photo_url,applicant_photo_url_blurhash,applicant_role,assignments,cancellation_request,cancelled_at,confirmation_history,confirmed_at,created_at,custom_role,is_read,job_posting_date,job_posting_id,job_posting_title,message,notes,original_application,pre_question_answers,processed_at,processed_by,recruitment_type,rejection_reason,status,updated_at' as const;
 // JobPostingRepository.ts의 TABLE_COLUMNS와 동기화 유지
 // 제거된 컬럼: is_featured, last_work_date, og_image_url, rejection_reason (ISSUE-003)
 export const JOB_POSTING_COLUMNS =

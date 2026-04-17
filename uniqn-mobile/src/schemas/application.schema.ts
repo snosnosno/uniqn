@@ -260,6 +260,7 @@ export const applicationDocumentSchema = z
     applicantNickname: z.string().optional(),
     applicantPhone: z.string().optional(),
     applicantPhotoURL: z.string().optional(),
+    applicantPhotoURLBlurhash: z.string().optional(),
 
     // 지원 내용
     message: z.string().optional(),

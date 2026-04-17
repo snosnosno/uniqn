@@ -41,14 +41,14 @@ describe('Formatters', () => {
   });
 
   describe('formatCurrency', () => {
-    it('should format currency with won suffix', () => {
-      expect(formatCurrency(15000)).toBe('15,000원');
-      expect(formatCurrency(150000)).toBe('150,000원');
-      expect(formatCurrency(1500000)).toBe('1,500,000원');
+    it('should format currency with won prefix (impeccable v2 §19)', () => {
+      expect(formatCurrency(15000)).toBe('₩15,000');
+      expect(formatCurrency(150000)).toBe('₩150,000');
+      expect(formatCurrency(1500000)).toBe('₩1,500,000');
     });
 
     it('should handle zero', () => {
-      expect(formatCurrency(0)).toBe('0원');
+      expect(formatCurrency(0)).toBe('₩0');
     });
   });
 

@@ -45,6 +45,8 @@ export interface ApplyContext {
   applicantEmail?: string;
   applicantNickname?: string;
   applicantPhotoURL?: string;
+  /** impeccable v2 §18 — photoURL 에 대응하는 blurhash 해시. 미러 스냅샷. */
+  applicantPhotoURLBlurhash?: string;
 }
 
 /**

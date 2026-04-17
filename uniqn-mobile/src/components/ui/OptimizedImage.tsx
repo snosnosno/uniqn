@@ -194,42 +194,45 @@ export const ProductImage = memo(function ProductImage(
 // ============================================================================
 
 /**
- * 이미지에서 blurhash 생성 (서버 사이드에서 사용)
+ * blurhash 생성 가이드 (impeccable v2 §18 / D4)
  *
- * @description 이 함수는 클라이언트에서는 사용하지 않음.
- * Firebase Functions 또는 백엔드에서 이미지 업로드 시 생성하여 저장.
+ * **클라이언트 선계산** 방식이 프로젝트 표준.
+ * 업로드 직전 `computeBlurhash(uri)` 로 해시를 생성 → 이미지와 함께 DB 저장.
  *
  * @example
- * // Firebase Functions에서 사용
- * const blurhash = await generateBlurhash(imageBuffer);
- * await updateDoc(ref, { imageUrl, blurhash });
+ * ```tsx
+ * import { computeBlurhash } from '@/utils/blurhash';
+ * import { uploadImage } from '@/services/storage';
+ *
+ * async function uploadProfilePhoto(uri: string, userId: string) {
+ *   // 병렬: 업로드와 해시 계산을 동시에 진행해 UX 지연 최소화
+ *   const [uploadResult, blurhash] = await Promise.all([
+ *     uploadImage(uri),
+ *     computeBlurhash(uri).catch(() => null), // 실패해도 업로드는 진행
+ *   ]);
+ *
+ *   await supabase
+ *     .from('users')
+ *     .update({ photo_url: uploadResult.url, photo_url_blurhash: blurhash })
+ *     .eq('id', userId);
+ * }
+ * ```
+ *
+ * 소비 시:
+ *
+ * ```tsx
+ * <OptimizedImage source={user.photoUrl} blurhash={user.photoUrlBlurhash} />
+ * ```
+ *
+ * `blurhash` 가 null 이면 `blurhashPreset` 의 기본값이 자동 적용.
  */
 export const BLURHASH_GENERATION_NOTE = `
-Blurhash는 서버에서 생성되어야 합니다.
-Firebase Storage 업로드 시 Cloud Functions에서 생성하거나,
-이미지 업로드 API에서 생성하여 Firestore 문서에 저장합니다.
-
-사용 라이브러리: blurhash (npm install blurhash)
-
-Cloud Functions 예시:
-import { encode } from 'blurhash';
-import sharp from 'sharp';
-
-export const generateBlurhash = async (buffer: Buffer): Promise<string> => {
-  const { data, info } = await sharp(buffer)
-    .resize(32, 32, { fit: 'inside' })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  return encode(
-    new Uint8ClampedArray(data),
-    info.width,
-    info.height,
-    4, // componentX
-    3  // componentY
-  );
-};
+Blurhash 는 클라이언트 선계산 (impeccable v2 §18).
+사용 유틸: @/utils/blurhash.computeBlurhash(uri, options?)
+DB 컬럼: {users.photo_url_blurhash, job_postings.og_image_url_blurhash,
+         announcements.image_url_blurhash, applications.applicant_photo_url_blurhash,
+         work_logs.staff_photo_url_blurhash}
+JSON 배열: announcements.images[i].blurhash, board_posts.image_attachments[i].blurhash
 `;
 
 export default OptimizedImage;

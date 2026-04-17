@@ -13,7 +13,7 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
 import { toError, isAppError } from '@/errors';
-import { handleSupabaseError, toCamelCase, toSnakeCase } from '@/utils/supabase';
+import { handleSupabaseError } from '@/utils/supabase';
 import type { EventQRScopeOptions, IEventQRRepository } from '../interfaces/IEventQRRepository';
 import type { EventQRCode, QRCodeAction } from '@/types';
 
@@ -31,13 +31,21 @@ const TABLE_COLUMNS =
 // Helpers
 // ============================================================================
 
+// DB 컬럼 → 앱 필드 매핑 (이름 차이: work_date/type/code/user_id → date/action/securityCode/createdBy)
 function rowToEventQR(row: Record<string, unknown>): EventQRCode {
-  const camel = toCamelCase<Record<string, unknown>>(row);
   return {
-    ...camel,
-    expiresAt: camel.expiresAt ? new Date(camel.expiresAt as string) : new Date(),
-    createdAt: camel.createdAt ? new Date(camel.createdAt as string) : new Date(),
-  } as EventQRCode;
+    id: row.id as string,
+    jobPostingId: row.job_posting_id as string,
+    date: (row.work_date as string) ?? '',
+    assignmentGroupId: (row.assignment_group_id as string | null) ?? null,
+    timeSlot: (row.time_slot as string | null) ?? null,
+    action: row.type as QRCodeAction,
+    securityCode: row.code as string,
+    createdBy: row.user_id as string,
+    isActive: Boolean(row.is_active),
+    createdAt: row.created_at ? new Date(row.created_at as string) : new Date(),
+    expiresAt: row.expires_at ? new Date(row.expires_at as string) : new Date(),
+  };
 }
 
 function matchesScope(
@@ -101,8 +109,8 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
         .from(TABLES.EVENT_QR_CODES)
         .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
-        .eq('date', date)
-        .eq('action', action)
+        .eq('work_date', date)
+        .eq('type', action)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -156,9 +164,9 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
         .from(TABLES.EVENT_QR_CODES)
         .select(TABLE_COLUMNS)
         .eq('job_posting_id', jobPostingId)
-        .eq('date', date)
-        .eq('action', action)
-        .eq('security_code', securityCode)
+        .eq('work_date', date)
+        .eq('type', action)
+        .eq('code', securityCode)
         .eq('is_active', true)
         .limit(1)
         .maybeSingle();
@@ -185,11 +193,23 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
 
   async create(data: Omit<EventQRCode, 'id'>): Promise<string> {
     try {
-      const snakeData = toSnakeCase(data as unknown as Record<string, unknown>);
+      // 앱 필드 → DB 컬럼 명시적 매핑 (date/action/securityCode/createdBy → work_date/type/code/user_id)
+      const insertData = {
+        job_posting_id: data.jobPostingId,
+        work_date: data.date,
+        type: data.action,
+        code: data.securityCode,
+        user_id: data.createdBy,
+        assignment_group_id: data.assignmentGroupId ?? null,
+        time_slot: data.timeSlot ?? null,
+        is_active: data.isActive,
+        created_at: data.createdAt.toISOString(),
+        expires_at: data.expiresAt.toISOString(),
+      };
 
       const { data: inserted, error } = await supabase
         .from(TABLES.EVENT_QR_CODES)
-        .insert(snakeData)
+        .insert(insertData)
         .select('id')
         .single();
 
@@ -240,8 +260,8 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
           .from(TABLES.EVENT_QR_CODES)
           .select(TABLE_COLUMNS)
           .eq('job_posting_id', jobPostingId)
-          .eq('date', date)
-          .eq('action', action)
+          .eq('work_date', date)
+          .eq('type', action)
           .eq('is_active', true);
 
         if (fetchError || !data || data.length === 0) return 0;
@@ -270,8 +290,8 @@ export class SupabaseEventQRRepository implements IEventQRRepository {
         .from(TABLES.EVENT_QR_CODES)
         .update({ is_active: false })
         .eq('job_posting_id', jobPostingId)
-        .eq('date', date)
-        .eq('action', action)
+        .eq('work_date', date)
+        .eq('type', action)
         .eq('is_active', true)
         .select('id');
 

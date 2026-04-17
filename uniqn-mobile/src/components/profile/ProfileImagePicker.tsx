@@ -77,15 +77,16 @@ export function ProfileImagePicker({
       setIsUploading(true);
       logger.info('프로필 이미지 업로드 시작', { uid: user.uid });
 
-      // 1. 이미지 업로드 및 이전 이미지 삭제
-      const newImageUrl = await replaceProfileImage(
+      // 1. 이미지 업로드 및 이전 이미지 삭제 (blurhash 병렬 계산)
+      const uploadResult = await replaceProfileImage(
         user.uid,
         result.assets[0].uri,
         currentImageUrl
       );
+      const newImageUrl = uploadResult.downloadURL;
 
-      // 2. 프로필 URL 업데이트
-      await updateProfilePhotoURL(user.uid, newImageUrl);
+      // 2. 프로필 URL 업데이트 (blurhash 포함)
+      await updateProfilePhotoURL(user.uid, newImageUrl, uploadResult.blurhash);
 
       // 3. 로컬 상태 업데이트
       if (profile) {

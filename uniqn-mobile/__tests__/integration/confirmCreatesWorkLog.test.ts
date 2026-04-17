@@ -226,4 +226,50 @@ describe('executeConfirmWithHistory — confirm_application RPC work_log 원자�
       BusinessError
     );
   });
+
+  // ── 시나리오 5 ──────────────────────────────────────────────────────────────
+  // 회귀 테스트: RPC v3 덮어쓰기 버그(2026-04-17) 재발 방지.
+  // p_assignments_v3 파라미터가 v3 canonical 구조로 전달되는지 검증.
+  // p_assignments(flat)는 work_logs INSERT용, p_assignments_v3(v3)는 applications.assignments 저장용.
+  it('시나리오 5: p_assignments_v3는 v3 canonical 포맷(roleIds/dates/isGrouped), p_assignments는 flat 포맷', async () => {
+    // Arrange
+    mockLoadApplication.mockResolvedValueOnce(MOCK_APPLICATION as never);
+    mockLoadAndVerify.mockResolvedValueOnce(MOCK_JOB as never);
+    mockRpc.mockResolvedValueOnce({
+      data: { workLogIds: ['wl-1'] },
+      error: null,
+    });
+
+    // Act
+    await executeConfirmWithHistory(APPLICATION_ID, undefined, OWNER_ID);
+
+    // Assert — RPC 호출의 두 번째 인자 추출
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    const [, rpcArgs] = mockRpc.mock.calls[0];
+
+    // p_assignments_v3: v3 canonical — roleIds/dates/isGrouped 필드 보존
+    expect(rpcArgs.p_assignments_v3).toBeDefined();
+    expect(Array.isArray(rpcArgs.p_assignments_v3)).toBe(true);
+    expect(rpcArgs.p_assignments_v3[0]).toEqual(
+      expect.objectContaining({
+        roleIds: ['dealer'],
+        dates: ['2026-04-15'],
+        timeSlot: '09:00~18:00',
+      })
+    );
+
+    // p_assignments: flat — date(단수)/role/groupId 필드
+    expect(Array.isArray(rpcArgs.p_assignments)).toBe(true);
+    expect(rpcArgs.p_assignments[0]).toEqual(
+      expect.objectContaining({
+        date: '2026-04-15',
+        role: 'dealer',
+        timeSlot: '09:00~18:00',
+      })
+    );
+    // flat에는 v3 키가 없어야 함 (의도적 분리)
+    expect(rpcArgs.p_assignments[0]).not.toHaveProperty('roleIds');
+    expect(rpcArgs.p_assignments[0]).not.toHaveProperty('dates');
+    expect(rpcArgs.p_assignments[0]).not.toHaveProperty('isGrouped');
+  });
 });

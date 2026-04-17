@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
-import { PRIMARY_COLORS } from '@/constants/colors';
 import { FlashList } from '@shopify/flash-list';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
@@ -100,10 +99,12 @@ export function JobList({
         contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
         showsVerticalScrollIndicator={false}
         refreshControl={
+          // impeccable v2 §24 — 골드 tint(브랜드 일관성)
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            tintColor={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
+            tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
+            colors={['#D4AF37']}
           />
         }
         onEndReached={handleEndReached}

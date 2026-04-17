@@ -226,7 +226,8 @@ describe('StorageService', () => {
 
       expect(mockDeleteObject).toHaveBeenCalled();
       expect(mockUploadBytes).toHaveBeenCalled();
-      expect(result).toBe('https://new-url.jpg');
+      expect(result.downloadURL).toBe('https://new-url.jpg');
+      expect(result.blurhash).toBeNull();
     });
 
     it('이전 이미지가 없으면 바로 업로드해야 함', async () => {
@@ -241,7 +242,8 @@ describe('StorageService', () => {
 
       expect(mockDeleteObject).not.toHaveBeenCalled();
       expect(mockUploadBytes).toHaveBeenCalled();
-      expect(result).toBe('https://new-url.jpg');
+      expect(result.downloadURL).toBe('https://new-url.jpg');
+      expect(result.blurhash).toBeNull();
     });
   });
 
@@ -462,10 +464,18 @@ describe('StorageService', () => {
     });
 
     it('일부 이미지 업로드 실패 시 계속 진행해야 함', async () => {
+      // impeccable v2 §18 — 각 이미지는 prepareImage(upload) + computeBlurhash 로
+      // manipulateAsync 를 2번 호출한다. 2번째 이미지의 prepareImage 단계에서 거부하면
+      // 해당 이미지 업로드 전체 실패로 처리되어 결과 배열에서 제외된다.
       mockManipulateAsync
+        // 이미지 1: prepareImage + computeBlurhash
         .mockResolvedValueOnce({ uri: 'file:///resized1.jpg' })
+        .mockResolvedValueOnce({ uri: 'file:///thumb1.jpg' })
+        // 이미지 2: prepareImage 실패 → 업로드 중단
         .mockRejectedValueOnce(new Error('Resize failed'))
-        .mockResolvedValueOnce({ uri: 'file:///resized3.jpg' });
+        // 이미지 3: prepareImage + computeBlurhash
+        .mockResolvedValueOnce({ uri: 'file:///resized3.jpg' })
+        .mockResolvedValueOnce({ uri: 'file:///thumb3.jpg' });
 
       (global.fetch as jest.Mock).mockResolvedValue({
         blob: () => Promise.resolve(createMockBlob(1024)),
