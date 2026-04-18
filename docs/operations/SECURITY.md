@@ -5,11 +5,11 @@
 
 # 🛡️ UNIQN 보안 가이드라인
 
-**최종 업데이트**: 2026년 3월 14일
+**최종 업데이트**: 2026-04-18
 **상태**: 🚀 **Production Ready**
-**버전**: v1.1.0 (모바일앱 중심)
+**버전**: v2.0.0 (Supabase 이전 반영)
 
-> **참고**: 이 문서는 Firebase 백엔드 및 공통 보안 가이드라인입니다.
+> **참고**: 이 문서는 Supabase 백엔드 및 공통 보안 가이드라인입니다.
 > 모바일앱(uniqn-mobile/) 보안은 [CLAUDE.md](../../CLAUDE.md)의 "보안 규칙" 섹션을 참조하세요.
 >
 > **모바일앱 보안 추가 사항**:
@@ -19,7 +19,7 @@
 ## 📋 목차
 
 1. [보안 개요](#보안-개요)
-2. [Firebase 보안](#firebase-보안)
+2. [Supabase 보안](#supabase-보안)
 3. [인증 및 권한 관리](#인증-및-권한-관리)
 4. [데이터 보호](#데이터-보호)
 5. [네트워크 보안](#네트워크-보안)
@@ -31,10 +31,10 @@
 ## 🎯 보안 개요
 
 ### 보안 원칙 (실제 구현 성과)
-- **Firebase Authentication + 2FA**: 고급 인증 시스템 완전 구현
+- **Supabase Authentication + 2FA**: JWT 기반 인증 시스템 완전 구현
 - **TypeScript Strict Mode**: any 타입 0개로 런타임 보안 취약점 제거
 - **세션 관리**: 안전한 로그인 상태 유지 및 자동 로그아웃
-- **Firebase Security Rules**: 역할 기반 데이터 접근 제어
+- **Supabase RLS (Row Level Security)**: 역할 기반 데이터 접근 제어 (PostgreSQL 수준)
 - **Optimistic Updates**: 안전한 데이터 동기화로 무결성 보장
 
 ### 보안 위험 매트릭스
@@ -45,96 +45,99 @@
 | **Medium** | 계획된 대응 | <7일 | 정보 노출, 세션 관리 |
 | **Low** | 예정된 업데이트 | <30일 | 구성 문제, 로깅 미흡 |
 
-## 🔥 Firebase 보안
+## 🔥 Supabase 보안
 
-### Firestore 보안 규칙
+### Supabase RLS (Row Level Security) 정책
 
-#### 기본 보안 규칙 구조
-```javascript
-// firestore.rules
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // 인증된 사용자만 접근 가능
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // 스태프 컬렉션: 본인 데이터만 수정 가능
-    match /staff/{staffId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                      (request.auth.uid == staffId || 
-                       isAdmin(request.auth));
-    }
-    
-    // 관리자 전용 컬렉션
-    match /admin/{document} {
-      allow read, write: if request.auth != null && 
-                            isAdmin(request.auth);
-    }
-    
-    // 헬퍼 함수: 관리자 권한 확인
-    function isAdmin(auth) {
-      return auth.token.admin == true;
-    }
-    
-    // 본인 데이터 접근 권한 확인
-    function isOwner(auth, userId) {
-      return auth.uid == userId;
-    }
-  }
-}
+#### 기본 RLS 정책 구조
+```sql
+-- PostgreSQL Row Level Security
+-- 모든 테이블에 RLS 활성화 필수
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
+
+-- 스태프 테이블: 본인 데이터 읽기, 본인 또는 admin만 수정
+CREATE POLICY "staff_select" ON staff
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "staff_update" ON staff
+  FOR UPDATE USING (
+    auth.uid() = id
+    OR (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+-- 관리자 전용 테이블
+CREATE POLICY "admin_all" ON admin_settings
+  FOR ALL USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+-- 헬퍼 함수: 관리자 권한 확인
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS boolean AS $$
+  SELECT (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+$$ LANGUAGE sql STABLE;
+
+-- 본인 데이터 확인 함수
+CREATE OR REPLACE FUNCTION is_owner(user_id uuid)
+RETURNS boolean AS $$
+  SELECT auth.uid() = user_id;
+$$ LANGUAGE sql STABLE;
 ```
+
+> **중요**: app role은 `auth.jwt() ->> 'role'`이 아닌 `(auth.jwt() -> 'app_metadata' ->> 'role')` 경로로 조회해야 합니다.
 
 #### 세밀한 권한 제어
-```javascript
-// 구인공고 보안 규칙
-match /jobPostings/{postingId} {
-  allow read: if request.auth != null;
-  allow create: if request.auth != null && 
-                   isAdmin(request.auth);
-  allow update: if request.auth != null && 
-                   (isAdmin(request.auth) || 
-                    isPostingOwner(request.auth, postingId));
-  allow delete: if request.auth != null && 
-                   isAdmin(request.auth);
-}
+```sql
+-- 구인공고 RLS 정책
+CREATE POLICY "job_postings_select" ON job_postings
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
-// 근무 로그 보안 규칙
-match /workLogs/{logId} {
-  allow read: if request.auth != null && 
-                 (isAdmin(request.auth) || 
-                  resource.data.staffId == request.auth.uid);
-  allow create: if request.auth != null && 
-                   validateWorkLog(request.resource.data);
-  allow update: if request.auth != null && 
-                   (isAdmin(request.auth) || 
-                    resource.data.staffId == request.auth.uid) &&
-                   validateWorkLogUpdate(request.resource.data, resource.data);
-}
+CREATE POLICY "job_postings_insert" ON job_postings
+  FOR INSERT WITH CHECK (
+    (auth.jwt() -> 'app_metadata' ->> 'role') IN ('admin', 'employer')
+  );
 
-function validateWorkLog(data) {
-  return data.keys().hasAll(['staffId', 'jobPostingId', 'date']) &&
-         data.staffId is string &&
-         data.jobPostingId is string &&
-         data.date matches /^\d{4}-\d{2}-\d{2}$/;
-}
+CREATE POLICY "job_postings_update" ON job_postings
+  FOR UPDATE USING (
+    is_admin() OR owner_id = auth.uid()
+  );
+
+CREATE POLICY "job_postings_delete" ON job_postings
+  FOR DELETE USING (is_admin());
+
+-- 근무 로그 RLS 정책
+CREATE POLICY "work_logs_select" ON work_logs
+  FOR SELECT USING (
+    is_admin() OR staff_id = auth.uid()
+  );
+
+CREATE POLICY "work_logs_insert" ON work_logs
+  FOR INSERT WITH CHECK (
+    staff_id IS NOT NULL
+    AND job_posting_id IS NOT NULL
+    AND date ~ '^\d{4}-\d{2}-\d{2}$'
+  );
+
+CREATE POLICY "work_logs_update" ON work_logs
+  FOR UPDATE USING (
+    is_admin() OR staff_id = auth.uid()
+  );
 ```
 
-### Firebase Authentication 보안
+### Supabase Authentication 보안
 
 #### 강화된 인증 설정
 ```typescript
 // src/contexts/AuthContext.tsx
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider
-} from 'firebase/auth';
+import { supabase } from '@/lib/supabase';
+
+// Supabase Auth API:
+// - supabase.auth.signInWithPassword
+// - supabase.auth.signUp
+// - supabase.auth.resetPasswordForEmail
+// - supabase.auth.updateUser
+// - supabase.auth.reauthenticate
 
 // 비밀번호 복잡성 검증
 const validatePassword = (password: string): boolean => {
@@ -151,31 +154,36 @@ const validatePassword = (password: string): boolean => {
          hasSpecialChars;
 };
 
-// 안전한 로그인 구현
+// 안전한 로그인 구현 (Supabase Auth)
 const secureSignIn = async (email: string, password: string) => {
   try {
     // 입력값 검증
     if (!email || !password) {
       throw new Error('이메일과 비밀번호를 입력해주세요.');
     }
-    
+
     // 이메일 형식 검증
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error('올바른 이메일 형식이 아닙니다.');
     }
-    
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
     // 로그인 성공 로깅 (개인정보 제외)
     logger.info('User signed in successfully', {
-      uid: userCredential.user.uid,
+      uid: data.user?.id,
       timestamp: new Date().toISOString(),
       ip: await getUserIP() // IP 주소 기록
     });
-    
-    return userCredential;
-    
+
+    return data;
+
   } catch (error) {
     // 로그인 실패 로깅
     logger.warn('Failed sign in attempt', {
@@ -183,7 +191,7 @@ const secureSignIn = async (email: string, password: string) => {
       error: error.message,
       timestamp: new Date().toISOString()
     });
-    
+
     throw error;
   }
 };
@@ -229,59 +237,77 @@ const useSessionManagement = () => {
 };
 ```
 
-### Functions 보안
+### Edge Functions 보안
+
+Supabase Edge Functions는 Deno 런타임에서 실행되며, Supabase Auth JWT verification을 기본 제공합니다.
 
 #### 보안 헤더 및 CORS 설정
-```javascript
-// functions/index.js
-const functions = require('firebase-functions');
-const cors = require('cors')({
-  origin: ['https://uniqn.app', 'https://www.uniqn.app', 'https://uniqn-app.pages.dev'],
-  credentials: true
-});
+```typescript
+// uniqn-mobile/supabase/functions/secure-function/index.ts
+import { serve } from 'https://deno.land/std/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// 보안 헤더 미들웨어
-const securityHeaders = (req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com");
-  next();
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://uniqn.app, https://www.uniqn.app, https://uniqn-app.pages.dev',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
-// 인증 검증 미들웨어
-const authenticateUser = async (req, res, next) => {
-  try {
-    const idToken = req.headers.authorization?.split('Bearer ')[1];
-    
-    if (!idToken) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-    
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
-    next();
-    
-  } catch (error) {
-    console.error('Authentication failed', error);
-    return res.status(401).json({ error: 'Invalid token' });
+const securityHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': "default-src 'self'",
+};
+
+serve(async (req) => {
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
-};
 
-// 보안이 적용된 함수 예시
-exports.secureFunction = functions.https.onRequest((req, res) => {
-  cors(req, res, () => {
-    securityHeaders(req, res, () => {
-      authenticateUser(req, res, () => {
-        // 비즈니스 로직 처리
-        res.json({ success: true });
-      });
-    });
-  });
+  try {
+    // JWT 검증 (Supabase Auth)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, ...securityHeaders } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // getUser로 JWT 자동 검증 (RLS도 자동 적용됨)
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, ...securityHeaders } }
+      );
+    }
+
+    // 비즈니스 로직 처리
+    return new Response(
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, ...securityHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Edge Function error', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, ...securityHeaders } }
+    );
+  }
 });
 ```
+
+> **JWT Verification**: Supabase Edge Functions는 기본적으로 JWT verification을 수행합니다 (`verify_jwt = true`). 공개 엔드포인트가 필요한 경우 `supabase/config.toml`에서 명시적으로 `verify_jwt = false`로 비활성화해야 합니다. Firebase App Check에 해당하는 기능은 Supabase JWT verification + RLS 조합으로 대체됩니다.
 
 ## 🔐 인증 및 권한 관리
 
@@ -557,7 +583,7 @@ export class InputValidator {
                style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                font-src 'self' https://fonts.gstatic.com;
                img-src 'self' data: https: blob:;
-               connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com;
+               connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.googleapis.com;
                frame-src 'none';
                object-src 'none';
                base-uri 'self';">
@@ -582,11 +608,9 @@ class SecureHttpClient {
   }
   
   private async getAuthToken(): Promise<string | null> {
-    const user = auth.currentUser;
-    if (user) {
-      return await user.getIdToken(true); // 강제 토큰 갱신
-    }
-    return null;
+    // Supabase: 현재 세션의 access token 조회 (만료 임박 시 자동 갱신)
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
   }
   
   async secureRequest(url: string, options: RequestInit = {}): Promise<Response> {
@@ -882,14 +906,14 @@ class SecurityMonitor {
   
   // 보안팀 알림
   private alertSecurityTeam(event: SecurityEvent): void {
-    // Firebase Functions를 통한 알림 전송
+    // Supabase Edge Function을 통한 알림 전송
     const alertData = {
       type: 'security_alert',
       event: event,
       urgency: event.severity === 'critical' ? 'immediate' : 'normal'
     };
-    
-    // 알림 전송 (실제 구현에서는 Functions 호출)
+
+    // 알림 전송 (실제 구현에서는 supabase.functions.invoke('security-alert') 호출)
     secureLogger.error('SECURITY ALERT', alertData);
   }
   
@@ -1084,9 +1108,9 @@ const investigateSecurityIncident = async (incidentId: string) => {
 ## 🔒 보안 체크리스트
 
 ### 일일 보안 점검 ✅
-- [ ] Firebase 보안 규칙 상태 확인
-- [ ] 인증 실패 로그 검토 (5회 이상 연속 실패 조사)
-- [ ] 시스템 접근 로그 분석
+- [ ] Supabase RLS 정책 상태 확인 (Dashboard → Database → Policies)
+- [ ] Supabase Auth 실패 로그 검토 (5회 이상 연속 실패 조사)
+- [ ] Edge Functions 로그 분석 (`npx supabase functions logs`)
 - [ ] 의심스러운 활동 패턴 확인
 - [ ] SSL 인증서 유효 기간 확인
 
@@ -1119,7 +1143,8 @@ const investigateSecurityIncident = async (incidentId: string) => {
 - **개발팀**: dev@tholdem.com
 
 **📚 보안 참고 자료**
-- [Firebase Security Rules](https://firebase.google.com/docs/rules)
+- [Supabase Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
+- [Supabase Auth — JWT & Custom Claims](https://supabase.com/docs/guides/auth/jwts)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [React Security Best Practices](https://snyk.io/blog/10-react-security-best-practices/)
 

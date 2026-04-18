@@ -1,10 +1,10 @@
 /**
  * UNIQN Mobile - 공고 템플릿 관리 훅
- * @description 템플릿 목록 조회, 저장, 불러오기, 삭제 기능을 제공합니다.
- * @version 1.0.0
+ * @description 템플릿 목록 조회, 저장, 불러오기, 삭제(옵티미스틱+Undo) 기능 제공.
+ * @version 1.1.0
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteTemplate,
@@ -28,10 +28,7 @@ interface SaveTemplateParams {
   draft: JobPostingDraft;
 }
 
-interface DeleteTemplateParams {
-  templateId: string;
-  templateName: string;
-}
+const UNDO_DELAY_MS = 5000;
 
 /**
  * 템플릿 목록을 조회합니다.
@@ -108,55 +105,30 @@ export function useLoadTemplate() {
 }
 
 /**
- * 템플릿 삭제 뮤테이션입니다.
+ * 템플릿 관련 UI 상태와 액션을 통합 관리합니다.
+ *
+ * 삭제는 Undo 토스트 패턴을 사용합니다:
+ *   1. UI 캐시에서 즉시 제거 (옵티미스틱)
+ *   2. 5초 "되돌리기" 토스트 노출
+ *   3. 5초 경과 시 실제 DELETE 호출
+ *   4. "되돌리기" 탭 시 타이머 취소 + 캐시 복원
  */
-export function useDeleteTemplate() {
+export function useTemplateManager() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
-  return useMutation({
-    mutationFn: (params: DeleteTemplateParams) => {
-      requireAuth(user?.uid, 'useTemplateManager');
-      return deleteTemplate(params.templateId, user.uid);
-    },
-    onSuccess: (_, params) => {
-      logger.info('템플릿 삭제 완료', { templateId: params.templateId });
-      addToast({
-        type: 'success',
-        message: `'${params.templateName}' 템플릿이 삭제되었습니다.`,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.templates.all,
-      });
-    },
-    onError: (error) => {
-      logger.error('템플릿 삭제 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '템플릿 삭제에 실패했습니다.'),
-      });
-    },
-  });
-}
-
-/**
- * 템플릿 관련 UI 상태와 액션을 통합 관리합니다.
- */
-export function useTemplateManager() {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isLoadTemplateModalOpen, setIsLoadTemplateModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
-  const [deleteConfirmTemplate, setDeleteConfirmTemplate] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
 
   const templatesQuery = useTemplates();
   const saveMutation = useSaveTemplate();
   const loadMutation = useLoadTemplate();
-  const deleteMutation = useDeleteTemplate();
+
+  // 진행 중인 삭제 타이머 (Undo 지원)
+  const pendingDeletesRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const openTemplateModal = useCallback(() => {
     setIsTemplateModalOpen(true);
@@ -174,24 +146,43 @@ export function useTemplateManager() {
 
   const closeLoadTemplateModal = useCallback(() => {
     setIsLoadTemplateModalOpen(false);
-    setDeleteConfirmTemplate(null);
   }, []);
 
   const handleSaveTemplate = useCallback(
     async (draft: JobPostingDraft) => {
-      if (!templateName.trim()) {
+      const trimmedName = templateName.trim();
+      if (!trimmedName) {
+        return;
+      }
+
+      // 이름 중복 검증 (대소문자 무시)
+      const duplicate = templatesQuery.data?.find(
+        (t) => t.name.trim().toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (duplicate) {
+        addToast({
+          type: 'error',
+          message: '같은 이름의 템플릿이 이미 있습니다.',
+        });
         return;
       }
 
       await saveMutation.mutateAsync({
-        name: templateName.trim(),
+        name: trimmedName,
         description: templateDescription.trim() || undefined,
         draft,
       });
 
       closeTemplateModal();
     },
-    [closeTemplateModal, saveMutation, templateDescription, templateName]
+    [
+      addToast,
+      closeTemplateModal,
+      saveMutation,
+      templateDescription,
+      templateName,
+      templatesQuery.data,
+    ]
   );
 
   const handleLoadTemplate = useCallback(
@@ -204,47 +195,74 @@ export function useTemplateManager() {
   );
 
   /**
-   * Alert 없이 직접 삭제할 때 사용하는 헬퍼입니다.
+   * Undo 토스트 기반 옵티미스틱 삭제.
+   * UI 캐시에서 즉시 제거하고 5초 후 실제 DELETE 호출.
    */
   const handleDeleteTemplate = useCallback(
-    async (templateId: string, templateNameToDelete: string) => {
-      try {
-        await deleteMutation.mutateAsync({
-          templateId,
-          templateName: templateNameToDelete,
-        });
-        return true;
-      } catch {
+    async (templateId: string, templateNameToDelete: string): Promise<boolean> => {
+      requireAuth(user?.uid, 'useTemplateManager');
+      const userId = user.uid;
+      const listKey = queryKeys.templates.list(userId);
+
+      const previousList = queryClient.getQueryData<JobPostingTemplate[]>(listKey);
+      const deletedTemplate = previousList?.find((t) => t.id === templateId);
+
+      if (!previousList || !deletedTemplate) {
         return false;
       }
-    },
-    [deleteMutation]
-  );
 
-  const handleDeleteTemplateClick = useCallback((id: string, name: string) => {
-    setDeleteConfirmTemplate({ id, name });
-  }, []);
+      // 1. 캐시에서 즉시 제거 (옵티미스틱)
+      queryClient.setQueryData<JobPostingTemplate[]>(
+        listKey,
+        previousList.filter((t) => t.id !== templateId)
+      );
 
-  const handleDeleteTemplateConfirm = useCallback(async () => {
-    if (!deleteConfirmTemplate) {
-      return false;
-    }
+      // 2. 실제 DELETE 스케줄
+      const timer = setTimeout(async () => {
+        pendingDeletesRef.current.delete(templateId);
+        try {
+          await deleteTemplate(templateId, userId);
+          logger.info('템플릿 삭제 완료', { templateId });
+          queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
+        } catch (error) {
+          logger.error('템플릿 삭제 실패', toError(error));
+          // 실패 시 캐시 복원
+          queryClient.setQueryData<JobPostingTemplate[]>(listKey, previousList);
+          addToast({
+            type: 'error',
+            message: extractErrorMessage(error, '템플릿 삭제에 실패했습니다.'),
+          });
+        }
+      }, UNDO_DELAY_MS);
 
-    try {
-      await deleteMutation.mutateAsync({
-        templateId: deleteConfirmTemplate.id,
-        templateName: deleteConfirmTemplate.name,
+      pendingDeletesRef.current.set(templateId, timer);
+
+      // 3. Undo 토스트
+      addToast({
+        type: 'success',
+        message: `'${templateNameToDelete}' 템플릿을 삭제했습니다.`,
+        duration: UNDO_DELAY_MS,
+        action: {
+          label: '되돌리기',
+          onPress: () => {
+            const pending = pendingDeletesRef.current.get(templateId);
+            if (pending) {
+              clearTimeout(pending);
+              pendingDeletesRef.current.delete(templateId);
+            }
+            queryClient.setQueryData<JobPostingTemplate[]>(listKey, previousList);
+            addToast({
+              type: 'info',
+              message: `'${templateNameToDelete}' 템플릿을 복원했습니다.`,
+            });
+          },
+        },
       });
-      setDeleteConfirmTemplate(null);
-      return true;
-    } catch {
-      return false;
-    }
-  }, [deleteConfirmTemplate, deleteMutation]);
 
-  const handleDeleteTemplateCancel = useCallback(() => {
-    setDeleteConfirmTemplate(null);
-  }, []);
+      return true;
+    },
+    [addToast, queryClient, user]
+  );
 
   return {
     templates: templatesQuery.data ?? [],
@@ -268,11 +286,7 @@ export function useTemplateManager() {
     isLoadingTemplate: loadMutation.isPending,
 
     handleDeleteTemplate,
-    deleteConfirmTemplate,
-    handleDeleteTemplateClick,
-    handleDeleteTemplateConfirm,
-    handleDeleteTemplateCancel,
-    isDeletingTemplate: deleteMutation.isPending,
+    isDeletingTemplate: false,
   };
 }
 

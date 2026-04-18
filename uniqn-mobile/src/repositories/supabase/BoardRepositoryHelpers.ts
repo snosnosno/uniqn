@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
-import { safeParseJson } from '@/utils/supabase';
+import { handleSupabaseError, safeParseJson } from '@/utils/supabase';
 import { BoardJobSummarySchema } from '@/schemas/boardMetadata.schema';
 import type {
   BoardAuthorRole,
@@ -196,63 +196,73 @@ export async function togglePostVoteFallback(
   type: BoardVoteType
 ): Promise<BoardVoteType | null> {
   const now = new Date().toISOString();
+  const voteCtx = { operation: '게시글 투표', table: TABLES.BOARD_VOTES };
+  const postCtx = { operation: '게시글 카운트', table: TABLES.BOARD_POSTS };
 
-  // 기존 투표 조회
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from(TABLES.BOARD_VOTES)
     .select('type')
     .eq('post_id', postId)
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (selectError) handleSupabaseError(selectError, voteCtx);
+
   const previousType = existing
     ? ((existing as Record<string, unknown>).type as BoardVoteType)
     : null;
 
   if (previousType === type) {
-    // 동일 투표 → 취소
-    await supabase.from(TABLES.BOARD_VOTES).delete().eq('post_id', postId).eq('user_id', userId);
+    const { error: deleteError } = await supabase
+      .from(TABLES.BOARD_VOTES)
+      .delete()
+      .eq('post_id', postId)
+      .eq('user_id', userId);
+    if (deleteError) handleSupabaseError(deleteError, voteCtx);
 
-    const { data: postData } = await supabase
+    const { data: postData, error: postSelectError } = await supabase
       .from(TABLES.BOARD_POSTS)
       .select('like_count, dislike_count')
       .eq('id', postId)
       .single();
+    if (postSelectError) handleSupabaseError(postSelectError, postCtx);
 
     if (postData) {
       const row = postData as Record<string, unknown>;
       const countField = type === 'like' ? 'like_count' : 'dislike_count';
-      await supabase
+      const { error: postUpdateError } = await supabase
         .from(TABLES.BOARD_POSTS)
         .update({
           [countField]: Math.max(0, ((row[countField] as number) ?? 0) - 1),
           updated_at: now,
         })
         .eq('id', postId);
+      if (postUpdateError) handleSupabaseError(postUpdateError, postCtx);
     }
 
     return null;
   }
 
   if (previousType) {
-    // 다른 투표 → 변경
-    await supabase
+    const { error: updateError } = await supabase
       .from(TABLES.BOARD_VOTES)
-      .update({ type, updated_at: now })
+      .update({ type })
       .eq('post_id', postId)
       .eq('user_id', userId);
+    if (updateError) handleSupabaseError(updateError, voteCtx);
 
-    const { data: postData } = await supabase
+    const { data: postData, error: postSelectError } = await supabase
       .from(TABLES.BOARD_POSTS)
       .select('like_count, dislike_count')
       .eq('id', postId)
       .single();
+    if (postSelectError) handleSupabaseError(postSelectError, postCtx);
 
     if (postData) {
       const row = postData as Record<string, unknown>;
       const prevField = previousType === 'like' ? 'like_count' : 'dislike_count';
       const newField = type === 'like' ? 'like_count' : 'dislike_count';
-      await supabase
+      const { error: postUpdateError } = await supabase
         .from(TABLES.BOARD_POSTS)
         .update({
           [prevField]: Math.max(0, ((row[prevField] as number) ?? 0) - 1),
@@ -260,33 +270,35 @@ export async function togglePostVoteFallback(
           updated_at: now,
         })
         .eq('id', postId);
+      if (postUpdateError) handleSupabaseError(postUpdateError, postCtx);
     }
   } else {
-    // 새 투표
-    await supabase.from(TABLES.BOARD_VOTES).insert({
+    const { error: insertError } = await supabase.from(TABLES.BOARD_VOTES).insert({
       post_id: postId,
       user_id: userId,
       type,
       created_at: now,
-      updated_at: now,
     });
+    if (insertError) handleSupabaseError(insertError, voteCtx);
 
-    const { data: postData } = await supabase
+    const { data: postData, error: postSelectError } = await supabase
       .from(TABLES.BOARD_POSTS)
       .select('like_count, dislike_count')
       .eq('id', postId)
       .single();
+    if (postSelectError) handleSupabaseError(postSelectError, postCtx);
 
     if (postData) {
       const row = postData as Record<string, unknown>;
       const countField = type === 'like' ? 'like_count' : 'dislike_count';
-      await supabase
+      const { error: postUpdateError } = await supabase
         .from(TABLES.BOARD_POSTS)
         .update({
           [countField]: ((row[countField] as number) ?? 0) + 1,
           updated_at: now,
         })
         .eq('id', postId);
+      if (postUpdateError) handleSupabaseError(postUpdateError, postCtx);
     }
   }
 
@@ -304,40 +316,43 @@ export async function toggleCommentReactionFallback(
   type: CommentReactionType
 ): Promise<CommentReactionType | null> {
   const now = new Date().toISOString();
+  const reactionCtx = { operation: '댓글 감정표현', table: TABLES.BOARD_COMMENT_REACTIONS };
+  const commentCtx = { operation: '댓글 카운트', table: TABLES.BOARD_COMMENTS };
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from(TABLES.BOARD_COMMENT_REACTIONS)
     .select('type')
     .eq('post_id', postId)
     .eq('comment_id', commentId)
     .eq('user_id', userId)
     .maybeSingle();
+  if (selectError) handleSupabaseError(selectError, reactionCtx);
 
   const previousType = existing
     ? ((existing as Record<string, unknown>).type as CommentReactionType)
     : null;
 
-  // 댓글의 reaction_counts 조회
-  const { data: commentData } = await supabase
+  const { data: commentData, error: commentSelectError } = await supabase
     .from(TABLES.BOARD_COMMENTS)
     .select('reaction_counts')
     .eq('id', commentId)
     .single();
+  if (commentSelectError) handleSupabaseError(commentSelectError, commentCtx);
 
   const reactionCounts = commentData
     ? (((commentData as Record<string, unknown>).reaction_counts as Record<string, number>) ?? {})
     : {};
 
   if (previousType === type) {
-    // 동일 리액션 → 취소
-    await supabase
+    const { error: deleteError } = await supabase
       .from(TABLES.BOARD_COMMENT_REACTIONS)
       .delete()
       .eq('post_id', postId)
       .eq('comment_id', commentId)
       .eq('user_id', userId);
+    if (deleteError) handleSupabaseError(deleteError, reactionCtx);
 
-    await supabase
+    const { error: commentUpdateError } = await supabase
       .from(TABLES.BOARD_COMMENTS)
       .update({
         reaction_counts: {
@@ -347,20 +362,21 @@ export async function toggleCommentReactionFallback(
         updated_at: now,
       })
       .eq('id', commentId);
+    if (commentUpdateError) handleSupabaseError(commentUpdateError, commentCtx);
 
     return null;
   }
 
   if (previousType) {
-    // 다른 리액션 → 변경
-    await supabase
+    const { error: updateError } = await supabase
       .from(TABLES.BOARD_COMMENT_REACTIONS)
-      .update({ type, updated_at: now })
+      .update({ type })
       .eq('post_id', postId)
       .eq('comment_id', commentId)
       .eq('user_id', userId);
+    if (updateError) handleSupabaseError(updateError, reactionCtx);
 
-    await supabase
+    const { error: commentUpdateError } = await supabase
       .from(TABLES.BOARD_COMMENTS)
       .update({
         reaction_counts: {
@@ -371,18 +387,18 @@ export async function toggleCommentReactionFallback(
         updated_at: now,
       })
       .eq('id', commentId);
+    if (commentUpdateError) handleSupabaseError(commentUpdateError, commentCtx);
   } else {
-    // 새 리액션
-    await supabase.from(TABLES.BOARD_COMMENT_REACTIONS).insert({
+    const { error: insertError } = await supabase.from(TABLES.BOARD_COMMENT_REACTIONS).insert({
       post_id: postId,
       comment_id: commentId,
       user_id: userId,
       type,
       created_at: now,
-      updated_at: now,
     });
+    if (insertError) handleSupabaseError(insertError, reactionCtx);
 
-    await supabase
+    const { error: commentUpdateError } = await supabase
       .from(TABLES.BOARD_COMMENTS)
       .update({
         reaction_counts: {
@@ -392,6 +408,7 @@ export async function toggleCommentReactionFallback(
         updated_at: now,
       })
       .eq('id', commentId);
+    if (commentUpdateError) handleSupabaseError(commentUpdateError, commentCtx);
   }
 
   return type;

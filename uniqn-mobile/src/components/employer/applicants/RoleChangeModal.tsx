@@ -90,11 +90,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         <Text
           className={`
             ml-3 text-base font-sans-medium
-            ${
-              isSelected
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-secondary-900 dark:text-off-white'
-            }
+            ${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-content-primary'}
           `}
         >
           {roleDisplayName}

@@ -109,10 +109,23 @@ module.exports = [
 
   // 4b. T-B12: boardService direct sync 함수 외부 호출 차단
   // 모든 schedule_board sync는 jobManagementService.enqueueScheduleBoardSync 경유 필수.
-  // boardService.ts 자체와 outbox Edge Function은 예외.
+  // 4d에 통합되어 있어 이 블록은 더 이상 필요하지 않음.
+
+  // 4c. 아이콘 래핑 레이어 — lucide-react-native 직접 import 허용 (유일한 경로)
   {
-    files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/services/boardService.ts'],
+    files: ['src/components/icons/index.tsx'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
+  // 4d. NativeWind 동적 className 가드레일 — dark:text-off-white 재발 방지
+  // 2026-04-19 전체 sweep: 삼항/템플릿 리터럴/함수 반환 내 `dark:text-off-white` 는
+  // 정적 추출 실패로 다크모드에서 텍스트가 안 보이는 버그를 반복 유발.
+  // CSS var 토큰(`text-content-primary`)은 `.dark` 클래스로 자동 스왑되므로
+  // 동적 컨텍스트에서는 반드시 토큰을 사용한다.
+  {
+    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -122,15 +135,32 @@ module.exports = [
           message:
             'T-B12: outbox enqueue를 사용하세요. enqueueScheduleBoardSync from "@/services/jobs/jobManagementService"',
         },
+        {
+          selector: 'ConditionalExpression > Literal[value=/dark:(text|bg|border)-off-white/]',
+          message:
+            '삼항 분기 내 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용 (NativeWind 정적 추출 실패 방지).',
+        },
+        {
+          selector: 'LogicalExpression > Literal[value=/dark:(text|bg|border)-off-white/]',
+          message:
+            '&& / || 분기 내 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용.',
+        },
+        {
+          selector: 'TemplateLiteral TemplateElement[value.raw=/dark:(text|bg|border)-off-white/]',
+          message:
+            '템플릿 리터럴 내 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용 (NativeWind 정적 추출 실패 방지).',
+        },
+        {
+          selector: 'ReturnStatement > Literal[value=/dark:(text|bg|border)-off-white/]',
+          message:
+            '함수 반환 className에 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용.',
+        },
+        {
+          selector: 'ArrowFunctionExpression > Literal[value=/dark:(text|bg|border)-off-white/]',
+          message:
+            'Arrow 함수 반환 className에 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용.',
+        },
       ],
-    },
-  },
-
-  // 4c. 아이콘 래핑 레이어 — lucide-react-native 직접 import 허용 (유일한 경로)
-  {
-    files: ['src/components/icons/index.tsx'],
-    rules: {
-      'no-restricted-imports': 'off',
     },
   },
 

@@ -8,19 +8,17 @@
 /**
  * 특수 객체 여부 판정
  *
- * @description Date, 커스텀 Timestamp 래퍼 등은 일반 객체처럼 재귀 순회하면
- * 인스턴스가 파괴되므로 그대로 보존해야 함
+ * @description Date 인스턴스만 재귀 순회하지 않고 그대로 보존.
+ * Firebase TimestampLike({toDate}) 또는 {seconds, nanoseconds} 같은 객체가
+ * 이 함수에 도달하면 schema 우회 경로의 버그. 재귀 순회하여 플래튼되면서
+ * 런타임에 문제가 드러나게 둔다 (silent leak 보다 낫다).
+ *
+ * 과거 동작: toDate() / isEqual() 메서드를 가진 객체를 보존 → schema 우회 시
+ * JSON.stringify가 {seconds, nanoseconds} 직렬화를 emit → Supabase 22007 재발.
+ * adversarial review HIGH 2에 따라 escape hatch 제거 (2026-04-19).
  */
 function isSpecialObject(value: unknown): boolean {
-  if (value instanceof Date) return true;
-
-  const obj = value as Record<string, unknown>;
-  // Timestamp 래퍼: toDate() 메서드 보유
-  if (typeof obj.toDate === 'function') return true;
-  // isEqual() 메서드를 노출하는 특수 값
-  if (typeof obj.isEqual === 'function') return true;
-
-  return false;
+  return value instanceof Date;
 }
 
 /**

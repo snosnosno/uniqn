@@ -312,7 +312,7 @@ function ReviewFormSection({
               className={`font-sans-medium ${
                 selectedStatus === option.value
                   ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-secondary-900 dark:text-off-white'
+                  : 'text-content-primary'
               }`}
             >
               {option.label}

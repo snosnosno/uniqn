@@ -60,7 +60,7 @@ export function TemplateModal({
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor={SECONDARY_PALETTE[400]}
-          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-content-primary dark:text-off-white ${
+          className={`bg-secondary-50 dark:bg-surface border rounded-md px-4 py-3 text-content-primary ${
             isTooShort
               ? 'border-error-400 dark:border-error-500'
               : 'border-secondary-200 dark:border-surface-overlay'

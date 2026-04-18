@@ -28,11 +28,6 @@ interface CacheWriteOptions {
 const OFFLINE_CACHE_VERSION = 1;
 const OFFLINE_CACHE_PREFIX = 'critical-offline-cache';
 
-type SerializedTimestamp = {
-  seconds: number;
-  nanoseconds: number;
-};
-
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -41,32 +36,16 @@ function isDate(value: unknown): value is Date {
   return value instanceof Date;
 }
 
-function isTimestampLike(value: unknown): value is { toDate: () => Date } {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'toDate' in value &&
-    typeof (value as { toDate?: unknown }).toDate === 'function'
-  );
-}
-
+/**
+ * MMKV 직렬화 — Date → ISO string으로 저장. 다음 read 시 timestampSchema가 string을
+ * 그대로 통과시킴 (이미 string이라 정규화 작업 없음, fast path).
+ *
+ * 기존 사용자 디바이스의 {seconds, nanoseconds} 형태 캐시는 다음 read 시 변경된
+ * timestampSchema가 자동으로 ISO string으로 정규화하므로 마이그레이션 불필요.
+ */
 function serializeValue(value: unknown): unknown {
-  if (value === null || value === undefined) {
-    return value;
-  }
-
-  if (isDate(value)) {
-    return value.toISOString();
-  }
-
-  if (isTimestampLike(value)) {
-    const date = value.toDate();
-    const milliseconds = date.getTime();
-    const seconds = Math.floor(milliseconds / 1000);
-    const nanoseconds = (milliseconds % 1000) * 1_000_000;
-    const serialized: SerializedTimestamp = { seconds, nanoseconds };
-    return serialized;
-  }
+  if (value === null || value === undefined) return value;
+  if (isDate(value)) return value.toISOString();
 
   if (Array.isArray(value)) {
     return value.map((item) => serializeValue(item));
@@ -74,10 +53,7 @@ function serializeValue(value: unknown): unknown {
 
   if (isPlainObject(value)) {
     return Object.entries(value).reduce<Record<string, unknown>>((acc, [key, entryValue]) => {
-      if (typeof entryValue === 'function' || entryValue === undefined) {
-        return acc;
-      }
-
+      if (typeof entryValue === 'function' || entryValue === undefined) return acc;
       acc[key] = serializeValue(entryValue);
       return acc;
     }, {});

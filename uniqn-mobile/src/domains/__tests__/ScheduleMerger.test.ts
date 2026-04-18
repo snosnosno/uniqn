@@ -7,24 +7,10 @@
 
 import { ScheduleMerger } from '../schedule/ScheduleMerger';
 import type { ScheduleEvent } from '@/types';
-import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Test Helpers
 // ============================================================================
-
-function createMockTimestamp(date: Date): Timestamp {
-  const seconds = Math.floor(date.getTime() / 1000);
-  return {
-    toDate: () => date,
-    seconds,
-    nanoseconds: 0,
-    toMillis: () => date.getTime(),
-    isEqual: () => false,
-    valueOf: () => '',
-    toJSON: () => ({ seconds, nanoseconds: 0, type: 'timestamp' }),
-  } as Timestamp;
-}
 
 function createMockScheduleEvent(
   overrides: Partial<ScheduleEvent> & { id: string; date: string; jobPostingId: string }
@@ -32,14 +18,14 @@ function createMockScheduleEvent(
   const baseDate = new Date('2025-01-20');
   return {
     type: 'confirmed',
-    startTime: createMockTimestamp(baseDate),
-    endTime: createMockTimestamp(new Date(baseDate.getTime() + 8 * 60 * 60 * 1000)),
+    startTime: baseDate,
+    endTime: new Date(baseDate.getTime() + 8 * 60 * 60 * 1000),
     jobPostingName: '테스트 이벤트',
     location: '서울',
     role: 'dealer',
     status: 'not_started',
-    createdAt: createMockTimestamp(baseDate),
-    updatedAt: createMockTimestamp(baseDate),
+    createdAt: baseDate,
+    updatedAt: baseDate,
     ...overrides,
   } as ScheduleEvent;
 }

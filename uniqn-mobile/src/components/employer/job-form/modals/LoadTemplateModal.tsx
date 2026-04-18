@@ -1,7 +1,8 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, TouchableOpacity, View } from 'react-native';
-import { STATUS_COLORS, PRIMARY_COLORS } from '@/constants/colors';
-import { Modal, ConfirmModal } from '@/components/ui/Modal';
+import { STATUS_COLORS } from '@/constants/colors';
+import { Modal } from '@/components/ui/Modal';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { TrashIcon } from '@/components/icons';
 import { toDate, type DateInput } from '@/utils/date';
 import { logger } from '@/utils/logger';
@@ -161,15 +162,37 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
   );
 }
 
-function EmptyState() {
+function EmptyState({ onClose }: { onClose: () => void }) {
   return (
     <View className="items-center justify-center py-12">
-      <Text className="mb-2 text-center text-secondary-500 dark:text-secondary-400 font-sans">
-        저장한 템플릿이 없습니다
+      <Text className="mb-2 text-center text-base font-sans-semibold text-content-primary dark:text-off-white">
+        아직 저장한 템플릿이 없어요
       </Text>
-      <Text className="text-center text-sm text-content-placeholder font-sans">
-        공고 작성 후 템플릿으로 저장해 보세요
+      <Text className="mb-4 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        공고를 작성하고 하단 &quot;템플릿 저장&quot;으로 저장해 보세요.
       </Text>
+      <Pressable
+        onPress={onClose}
+        className="rounded-md bg-primary-600 px-6 py-3"
+        accessibilityRole="button"
+        accessibilityLabel="공고 작성 화면으로 돌아가기"
+      >
+        <Text className="text-sm font-sans-semibold text-surface-dark">공고 작성으로 돌아가기</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <View
+      className="gap-3 py-3"
+      accessibilityRole="progressbar"
+      accessibilityLabel="템플릿 목록 로딩 중"
+    >
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
     </View>
   );
 }
@@ -185,7 +208,6 @@ export function LoadTemplateModal({
   isDeletingTemplate = false,
 }: LoadTemplateModalProps) {
   const [loadingId, setLoadingId] = React.useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; name: string } | null>(null);
 
   const handleLoad = async (template: JobPostingTemplate) => {
     setLoadingId(template.id);
@@ -196,72 +218,43 @@ export function LoadTemplateModal({
     }
   };
 
-  const handleDeleteClick = (id: string, name: string) => {
-    logger.info('템플릿 삭제 확인 모달 열기', { templateId: id, templateName: name });
-    setDeleteTarget({ id, name });
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    await onDeleteTemplate(deleteTarget.id, deleteTarget.name);
-    setDeleteTarget(null);
+  const handleDelete = async (id: string, name: string) => {
+    logger.info('템플릿 삭제 요청', { templateId: id, templateName: name });
+    await onDeleteTemplate(id, name);
   };
 
   return (
-    <>
-      <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
-        {templatesLoading ? (
-          <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
-            <Text className="mt-3 text-secondary-500 dark:text-secondary-400 font-sans">
-              템플릿을 불러오는 중...
+    <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
+      {templatesLoading ? <LoadingSkeleton /> : null}
+
+      {!templatesLoading && templates.length === 0 ? <EmptyState onClose={onClose} /> : null}
+
+      {!templatesLoading && templates.length > 0 ? (
+        <View style={{ height: 400 }}>
+          <FlatList
+            data={templates}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TemplateCard
+                template={item}
+                onLoad={() => handleLoad(item)}
+                onDelete={() => handleDelete(item.id, item.name)}
+                isLoading={loadingId === item.id || isLoadingTemplate}
+                isDeleting={isDeletingTemplate}
+              />
+            )}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+          />
+
+          <View className="mt-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
+            <Text className="text-center text-xs text-warning-700 dark:text-warning-300 font-sans">
+              템플릿을 불러온 뒤에는 날짜를 다시 설정해 주세요.
             </Text>
           </View>
-        ) : null}
-
-        {!templatesLoading && templates.length === 0 ? <EmptyState /> : null}
-
-        {!templatesLoading && templates.length > 0 ? (
-          <View style={{ height: 400 }}>
-            <FlatList
-              data={templates}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TemplateCard
-                  template={item}
-                  onLoad={() => handleLoad(item)}
-                  onDelete={() => handleDeleteClick(item.id, item.name)}
-                  isLoading={loadingId === item.id || isLoadingTemplate}
-                  isDeleting={isDeletingTemplate}
-                />
-              )}
-              showsVerticalScrollIndicator={false}
-              nestedScrollEnabled
-            />
-
-            <View className="mt-3 rounded-lg bg-warning-50 p-3 dark:bg-warning-900/30">
-              <Text className="text-center text-xs text-warning-700 dark:text-warning-300 font-sans">
-                템플릿을 불러온 뒤에는 날짜를 다시 설정해 주세요.
-              </Text>
-            </View>
-          </View>
-        ) : null}
-      </Modal>
-
-      <ConfirmModal
-        visible={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        title="템플릿 삭제"
-        message={`'${deleteTarget?.name ?? ''}' 템플릿을 삭제하시겠습니까?`}
-        confirmText="삭제"
-        cancelText="취소"
-        isDestructive
-      />
-    </>
+        </View>
+      ) : null}
+    </Modal>
   );
 }
 

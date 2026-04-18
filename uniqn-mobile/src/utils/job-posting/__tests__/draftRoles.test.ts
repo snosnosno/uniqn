@@ -65,9 +65,11 @@ function createFormData(overrides: Partial<JobPostingFormData> = {}): JobPosting
 function createTemplate(formData: JobPostingFormData): JobPostingTemplate {
   return {
     id: 'template-1',
+    userId: 'user-1',
     name: 'Dated Template',
-    createdBy: 'user-1',
-    createdAt: new Date() as never,
+    createdAt: '2026-04-18T00:00:00Z',
+    updatedAt: '2026-04-18T00:00:00Z',
+    usageCount: 0,
     templateData: extractTemplateData(formData),
   };
 }

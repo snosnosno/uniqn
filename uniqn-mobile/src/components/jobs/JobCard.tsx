@@ -53,6 +53,37 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     ? STRIPE_TONE_BY_STATUS[applicationStatus]
     : 'gold';
 
+  const bookmarkButton =
+    Platform.OS === 'web' ? (
+      <View
+        // @ts-expect-error React Native Web supports onClick on View
+        onClick={handleBookmarkClick}
+        className="-my-1 p-1"
+        style={{ cursor: 'pointer' }}
+        accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
+      >
+        {bookmarked ? (
+          <HeartFilledIcon size={20} color={STATUS_COLORS.error} />
+        ) : (
+          <HeartOutlineIcon size={20} />
+        )}
+      </View>
+    ) : (
+      <Pressable
+        onPress={handleBookmarkClick}
+        hitSlop={HIT_SLOP.medium}
+        className="-my-1 p-1"
+        accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
+        accessibilityRole="button"
+      >
+        {bookmarked ? (
+          <HeartFilledIcon size={20} color={STATUS_COLORS.error} />
+        ) : (
+          <HeartOutlineIcon size={20} />
+        )}
+      </Pressable>
+    );
+
   return (
     <PostingCardSurface
       card={job}
@@ -65,45 +96,16 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           </Badge>
         ) : undefined
       }
-      titleAccessory={
-        Platform.OS === 'web' ? (
-          <View
-            // @ts-expect-error React Native Web supports onClick on View
-            onClick={handleBookmarkClick}
-            className="ml-2 p-1"
-            style={{ cursor: 'pointer' }}
-            accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
-          >
-            {bookmarked ? (
-              <HeartFilledIcon size={22} color={STATUS_COLORS.error} />
-            ) : (
-              <HeartOutlineIcon size={22} />
-            )}
-          </View>
-        ) : (
-          <Pressable
-            onPress={handleBookmarkClick}
-            hitSlop={HIT_SLOP.medium}
-            className="ml-2 p-1"
-            accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
-            accessibilityRole="button"
-          >
-            {bookmarked ? (
-              <HeartFilledIcon size={22} color={STATUS_COLORS.error} />
-            ) : (
-              <HeartOutlineIcon size={22} />
-            )}
-          </Pressable>
-        )
-      }
       bodyFooter={
-        job.ownerName ? (
-          <View className="mt-2 border-t border-secondary-100 pt-2 dark:border-surface-overlay">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-              구인처 {job.ownerName}
-            </Text>
-          </View>
-        ) : undefined
+        <View className="mt-1.5 flex-row items-center justify-between border-t border-secondary-100 pt-1.5 dark:border-surface-overlay">
+          <Text
+            className="flex-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+            numberOfLines={1}
+          >
+            {job.ownerName ? `구인처 ${job.ownerName}` : ''}
+          </Text>
+          {bookmarkButton}
+        </View>
       }
       containerClassName="overflow-hidden"
       pressableClassName="py-4 pr-4 active:opacity-80"

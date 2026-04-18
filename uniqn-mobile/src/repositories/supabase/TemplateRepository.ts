@@ -2,12 +2,16 @@
  * UNIQN Mobile - Supabase Template Repository
  *
  * @description Supabase PostgREST 기반 Template Repository 구현
- * @version 1.0.0
+ * @version 1.1.0
  *
  * 책임:
  * 1. 템플릿 CRUD 작업
  * 2. 권한 검증 (사용자 스코프)
  * 3. 사용 통계 업데이트
+ *
+ * 권한 모델: owner-only.
+ *   RLS 정책 `templates_{select|insert|update|delete}_own` — user_id = auth.uid().
+ *   관리자 글로벌 접근 불가 (20260414015707 마이그레이션에서 의도적 제거).
  */
 
 import * as Sentry from '@sentry/react-native';
@@ -28,7 +32,8 @@ import type { ITemplateRepository } from '../interfaces/ITemplateRepository';
 const TABLES = {
   TEMPLATES: 'job_posting_templates',
 } as const;
-const TABLE_COLUMNS = 'id,created_at,name,template_data,updated_at,user_id' as const;
+const TABLE_COLUMNS =
+  'id,created_at,description,name,template_data,updated_at,usage_count,user_id' as const;
 
 // ============================================================================
 // Helpers

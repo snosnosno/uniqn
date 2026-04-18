@@ -61,9 +61,7 @@ function FixedRoleSelector({
               <View className="flex-1">
                 <Text
                   className={`text-base font-sans-semibold ${
-                    isSelected
-                      ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-secondary-900 dark:text-off-white'
+                    isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-content-primary'
                   }`}
                 >
                   {option.roleLabel}

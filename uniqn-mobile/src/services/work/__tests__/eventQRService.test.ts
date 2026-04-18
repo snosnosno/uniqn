@@ -6,7 +6,6 @@
  */
 
 import type { EventQRCode, WorkLog, EventQRDisplayData } from '@/types';
-import { Timestamp } from '@/shared/time';
 
 // Import after mocks
 import {
@@ -181,8 +180,8 @@ function createMockWorkLog(overrides?: Partial<WorkLog>): WorkLog {
     date: '2025-01-15',
     status: STATUS.WORK_LOG.SCHEDULED,
     role: '딜러',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as WorkLog;
 }
@@ -470,7 +469,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: Timestamp.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
+      checkInTime: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
@@ -719,7 +718,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: Timestamp.fromMillis(checkInMs),
+      checkInTime: new Date(checkInMs).toISOString(),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(

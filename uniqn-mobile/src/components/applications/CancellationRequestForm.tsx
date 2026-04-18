@@ -186,7 +186,7 @@ export function CancellationRequestForm({
               blurOnSubmit={false}
               className={`
                 bg-surface-page dark:bg-surface-elevated rounded-lg p-4
-                text-content-primary dark:text-off-white text-base font-sans min-h-[140px]
+                text-content-primary text-base font-sans min-h-[140px]
                 ${error ? 'border-2 border-error-500' : 'border border-divider'}
               `}
               textAlignVertical="top"

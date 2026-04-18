@@ -11,7 +11,7 @@
 import { logger } from '@/utils/logger';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { WorkLogCreator } from '@/domains/schedule';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
+import { toDateString } from '@/utils/date';
 import type { Assignment, DateSpecificRequirement, PostingSchedule } from '@/types';
 
 /**
@@ -66,8 +66,8 @@ export function updateDateSpecificRequirementsFilled(
 
       // 해당 날짜의 requirement 찾기
       const dateReq = updatedRequirements.find((req) => {
-        // getDateString으로 다양한 형식 (string | Timestamp | { seconds }) 통합 처리
-        const reqDateStr = getDateString(req.date);
+        // toDateString으로 string | Date 통합 처리 (Firebase 레거시는 상류 timestampSchema에서 이미 정규화됨)
+        const reqDateStr = toDateString(req.date);
         return reqDateStr === date;
       });
 

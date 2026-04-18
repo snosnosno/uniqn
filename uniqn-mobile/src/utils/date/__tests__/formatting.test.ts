@@ -4,8 +4,6 @@
  * @description 날짜 포맷팅 유틸리티 함수들의 단위 테스트
  */
 
-import { Timestamp } from '@/shared/time';
-
 import {
   formatDateKorean,
   formatDateShort,
@@ -35,9 +33,9 @@ describe('formatDateKorean', () => {
     expect(formatDateKorean('2025-01-28')).toBe('2025년 1월 28일');
   });
 
-  it('Timestamp를 한국식 날짜로 포맷한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28));
-    expect(formatDateKorean(ts)).toBe('2025년 1월 28일');
+  it('epoch milliseconds(number)를 한국식 날짜로 포맷한다', () => {
+    const ms = new Date(2025, 0, 28).getTime();
+    expect(formatDateKorean(ms)).toBe('2025년 1월 28일');
   });
 
   it('null이면 빈 문자열을 반환한다', () => {
@@ -104,9 +102,9 @@ describe('formatDateTime', () => {
     expect(formatDateTime(date)).toBe('2025.01.28 18:00');
   });
 
-  it('Timestamp를 전체 날짜/시간으로 포맷한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28, 9, 30));
-    expect(formatDateTime(ts)).toBe('2025.01.28 09:30');
+  it('ISO string(2025-01-28T09:30:00)을 전체 날짜/시간으로 포맷한다', () => {
+    const date = new Date(2025, 0, 28, 9, 30);
+    expect(formatDateTime(date.toISOString())).toBe('2025.01.28 09:30');
   });
 
   it('ISO 문자열을 전체 날짜/시간으로 포맷한다', () => {
@@ -129,9 +127,9 @@ describe('formatTime', () => {
     expect(formatTime(date)).toBe('18:30');
   });
 
-  it('Timestamp에서 시간만 추출한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28, 9, 5));
-    expect(formatTime(ts)).toBe('09:05');
+  it('ISO string에서 시간만 추출한다', () => {
+    const date = new Date(2025, 0, 28, 9, 5);
+    expect(formatTime(date.toISOString())).toBe('09:05');
   });
 
   it('null이면 빈 문자열을 반환한다', () => {
@@ -263,9 +261,9 @@ describe('formatDate', () => {
     expect(formatDate(date)).toBe('2025.01.28');
   });
 
-  it('Timestamp를 기본 날짜로 포맷한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28));
-    expect(formatDate(ts)).toBe('2025.01.28');
+  it('epoch milliseconds(number)를 기본 날짜로 포맷한다', () => {
+    const ms = new Date(2025, 0, 28).getTime();
+    expect(formatDate(ms)).toBe('2025.01.28');
   });
 
   it('ISO 문자열을 기본 날짜로 포맷한다', () => {
@@ -323,9 +321,9 @@ describe('formatRelativeTime', () => {
     expect(result).toContain('년');
   });
 
-  it('Timestamp도 처리한다', () => {
-    const ts = Timestamp.fromDate(new Date());
-    expect(formatRelativeTime(ts)).toBe('방금');
+  it('ISO string도 처리한다', () => {
+    const iso = new Date().toISOString();
+    expect(formatRelativeTime(iso)).toBe('방금');
   });
 
   it('null이면 빈 문자열을 반환한다', () => {

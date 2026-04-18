@@ -225,7 +225,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
     if (dayOfWeek === 6) {
       return 'text-primary-500 dark:text-primary-400'; // 토요일
     }
-    return 'text-secondary-900 dark:text-off-white';
+    return 'text-content-primary';
   };
 
   const dayNumber = day.date.getDate();

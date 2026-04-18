@@ -4,10 +4,10 @@
 > 현재 기준 문서는 `README.md`, `docs/README.md`, `docs/reference/ARCHITECTURE.md`, `docs/guides/DEPLOYMENT.md`를 우선 확인하세요.
 # 계정 관리 시스템
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 모바일앱 기준
+**최종 업데이트**: 2026-04-18
+**상태**: 현재 모바일앱 기준 (Supabase)
 
-이 문서는 `uniqn-mobile/`과 `functions/`에 실제 존재하는 계정 관리 기능만 정리합니다. 과거 `app2/`의 페이지 구조와 라우팅 설명은 현재 기준이 아닙니다.
+이 문서는 `uniqn-mobile/`과 Supabase Edge Functions에 실제 존재하는 계정 관리 기능만 정리합니다. 과거 `app2/`의 페이지 구조와 라우팅 설명은 현재 기준이 아닙니다.
 
 ## 기준 파일
 
@@ -23,12 +23,12 @@
 - `uniqn-mobile/app/(app)/settings/privacy.tsx`
 - `uniqn-mobile/src/services/auth/`
 
-백엔드:
+백엔드 (Supabase):
 
-- `functions/src/index.ts`
-- `functions/src/auth/verifyAndSaveProfile.ts`
-- `functions/src/account/scheduledDeletion.ts`
-- `functions/src/account/loginNotification.ts`
+- `uniqn-mobile/supabase/functions/verify-and-save-profile/`
+- `uniqn-mobile/supabase/functions/scheduled-deletion/`
+- `uniqn-mobile/supabase/functions/login-notification/`
+- Auth: Supabase Auth `auth.users` + `raw_app_meta_data` / `raw_user_meta_data`
 
 ## 현재 제공 기능
 
@@ -59,7 +59,7 @@
 
 - 회원가입 시 필수 동의: 이용약관, 개인정보처리방침
 - 선택 동의: 마케팅 수신
-- 백엔드 저장: `functions/src/index.ts`, `functions/src/auth/verifyAndSaveProfile.ts`
+- 백엔드 저장: Supabase `user_profiles` 테이블 + Edge Function `verify-and-save-profile`
 - 앱 내 조회 경로:
   - `/(app)/settings/terms`
   - `/(app)/settings/privacy`
@@ -84,12 +84,13 @@
 
 - 경로: `uniqn-mobile/app/(app)/settings/delete-account.tsx`
 - 30일 유예 삭제 흐름을 사용합니다.
-- 백엔드 정리 작업은 `functions/src/account/scheduledDeletion.ts`가 담당합니다.
+- 백엔드 정리 작업은 Supabase Edge Function `scheduled-deletion`이 담당합니다.
+- 실제 계정 삭제는 Supabase Admin API로 `auth.users` 레코드를 제거하고 연관 테이블(user_profiles 등)은 RLS 및 cascade로 정리됩니다.
 
 ### 로그인 알림
 
-- 서버 구현: `functions/src/account/loginNotification.ts`
-- 새 로그인 기록과 알림 저장 흐름을 처리합니다.
+- 서버 구현: Supabase Edge Function `login-notification`
+- 새 로그인 기록과 알림 저장 흐름을 처리합니다(PostgreSQL `notifications` 테이블).
 
 ## 현재 설정 화면 기준 계정 관련 항목
 
@@ -107,8 +108,10 @@
 ## 데이터 모델 메모
 
 - 사용자 스키마는 `language: 'ko' | 'en'` 필드를 허용합니다.
-- 약관 동의 및 마케팅 동의는 사용자 정보와 하위 컬렉션 문맥에서 함께 다뤄집니다.
-- 삭제 요청은 `scheduledDeletionAt` 기준으로 처리됩니다.
+- 인증 정보는 Supabase `auth.users`에 저장되며, 앱 고유 프로필은 `user_profiles` 테이블에서 관리합니다.
+- 역할은 `auth.users.raw_app_meta_data.role`(app_metadata)을 단일 소스로 사용합니다.
+- 약관 동의 및 마케팅 동의는 `user_profiles`와 연관 테이블에서 함께 다뤄집니다.
+- 삭제 요청은 `scheduled_deletion_at` 컬럼을 기준으로 처리됩니다(snake_case).
 
 ## 문서 작성 원칙
 
@@ -120,8 +123,8 @@
 - 현재 코드에 없는 과거 설정 UI 설명
  # Feature Flag 가이드
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 코드 기준
+**최종 업데이트**: 2026-04-18
+**상태**: 현재 코드 기준 (Supabase)
 
 이 문서는 `uniqn-mobile/`의 실제 Feature Flag 구현만 설명합니다. 과거 웹앱의 조건부 라우팅 패턴은 현재 기준이 아닙니다.
 
@@ -129,14 +132,14 @@
 
 - `uniqn-mobile/src/services/observability/featureFlagService.ts`
 - `uniqn-mobile/src/hooks/useFeatureFlag.ts`
-- `uniqn-mobile/src/lib/firebase.ts`
+- `uniqn-mobile/src/lib/supabase.ts`
 - `uniqn-mobile/app/(admin)/settings.tsx`
 
 ## 현재 동작 방식
 
 - Feature Flag는 `featureFlagService` 싱글톤이 관리합니다.
-- 웹에서는 Firebase Remote Config 값을 읽습니다.
-- 네이티브에서는 Remote Config가 없으면 기본값으로 폴백합니다.
+- 런타임 플래그는 Supabase `feature_flags` 테이블(또는 환경변수 `EXPO_PUBLIC_*`)을 소스로 사용합니다. (과거 Firebase Remote Config 기반은 제거됨)
+- 테이블/환경변수 값을 가져오지 못하면 `DEFAULT_FEATURE_FLAGS`로 폴백합니다.
 - 캐시 유효시간은 12시간입니다.
 - 관리자 화면에서는 `/(admin)/settings`에서 현재 플래그 상태를 읽기 전용으로 확인하고 캐시 새로고침만 할 수 있습니다.
 
@@ -206,7 +209,7 @@ const enabled = featureFlagService.isEnabled('enable_qr_checkin');
 주의:
 
 - 관리자 화면은 플래그 값을 직접 수정하지 않습니다.
-- 점검 모드 및 Remote Config 값 변경은 Firebase 콘솔 기준입니다.
+- 점검 모드 및 플래그 값 변경은 Supabase 대시보드의 `feature_flags` 테이블 또는 EAS 환경변수 업데이트 후 배포 기준입니다.
 
 ## 새 플래그 추가 절차
 
@@ -218,17 +221,18 @@ const enabled = featureFlagService.isEnabled('enable_qr_checkin');
 
 ## 운영 메모
 
-- 네이티브 앱은 현재 코드상 Remote Config 미사용 시 기본값으로 안전하게 동작합니다.
+- 네이티브 앱은 Supabase 플래그를 가져오지 못하면 기본값으로 안전하게 동작합니다.
 - `maintenance_mode`는 운영 영향이 크므로 관리자 화면에서 먼저 확인하고 배포합니다.
-- 플래그 문서에 과거 웹 전용 예시를 다시 넣으면 현재 코드와 어긋납니다.
+- 플래그 문서에 과거 Firebase Remote Config / 웹 전용 예시를 다시 넣으면 현재 코드와 어긋납니다.
  # 멀티 테넌트 아키텍처 구현 현황
 
-**최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심)
+**최종 업데이트**: 2026-04-18
+**버전**: v1.0.0 (모바일앱 중심 / Supabase 기반)
 **상태**: ✅ **100% 완료**
 
-> **참고**: 이 문서는 레거시 웹앱(app2/)의 멀티테넌트 구현 현황입니다.
-> 모바일앱(uniqn-mobile/)은 Repository 패턴과 Zustand를 활용한 새로운 아키텍처를 사용합니다.
+> **참고**: 이 문서는 레거시 웹앱(app2/)의 멀티테넌트 구현 현황(Firebase 시절)입니다.
+> 모바일앱(uniqn-mobile/)은 Supabase PostgreSQL + RLS와 Repository 패턴, Zustand를 활용한 새로운 아키텍처를 사용합니다.
+> 아래의 Firestore 경로 기반 설명은 레거시 기록이며, 현재 운영 기준은 PostgreSQL 테이블 + RLS 정책 조합입니다.
 
 ---
 
@@ -334,8 +338,8 @@ export const useTables = (
 ) => { ... }
 ```
 
-**상태**: ✅ **완전 멀티 테넌트 구현 완료**
-- 21개 Firestore 경로 모두 멀티 테넌트 경로로 변경
+**상태**: ✅ **완전 멀티 테넌트 구현 완료 (레거시 Firestore 기록)**
+- 21개 Firestore 경로 모두 멀티 테넌트 경로로 변경 (현재는 PostgreSQL 테이블 `tables`, `participants`, `tournament_settings` + `user_id` / `tournament_id` 컬럼 + RLS로 대체)
 - Read: ✅ (useEffect 구독)
 - Create: ✅ (openNewTable)
 - Update: ✅ (updateTableDetails, updateTablePosition, updateTableOrder, activateTable)
@@ -421,13 +425,15 @@ useTables(userId, tournamentId) ← 아직 내부 레거시
 
 ---
 
-### 3. Firestore 경로 검증
+### 3. Firestore 경로 검증 (레거시 — 참고용)
 
-| Hook | 멀티 테넌트 경로 | 상태 |
+| Hook | 레거시 Firestore 경로 | 상태 |
 |------|------------------|------|
 | useParticipants | `users/{userId}/tournaments/{tournamentId}/participants` | ✅ |
 | useSettings | `users/{userId}/tournaments/{tournamentId}/settings/tournament` | ✅ |
 | useTables | `users/{userId}/tournaments/{tournamentId}/tables` | ✅ |
+
+**현재(Supabase) 대응**: PostgreSQL 테이블 `participants`, `tournament_settings`, `tables`에 `user_id`, `tournament_id` 컬럼 + RLS 정책 `using (auth.uid() = user_id)`으로 동일한 격리 효과.
 
 ---
 
@@ -448,7 +454,7 @@ useTables(userId, tournamentId) ← 아직 내부 레거시
 
 ### 데이터베이스 구조 변화
 
-#### Before (레거시)
+#### Before (레거시 — Firestore 시절)
 ```
 Firestore
 ├── participants/          ← 모든 사용자 공유
@@ -456,7 +462,7 @@ Firestore
 └── tables/                ← 모든 사용자 공유
 ```
 
-#### After (멀티 테넌트)
+#### Intermediate (레거시 멀티 테넌트 — Firestore)
 ```
 Firestore
 └── users/
@@ -468,6 +474,16 @@ Firestore
                 └── tables/          ✅ 격리됨
 ```
 
+#### 현재 (Supabase PostgreSQL + RLS)
+```
+PostgreSQL (public schema)
+├── participants (user_id, tournament_id, ...)        + RLS
+├── tournament_settings (user_id, tournament_id, ...) + RLS
+└── tables (user_id, tournament_id, ...)              + RLS
+```
+
+모든 테이블은 `user_id = auth.uid()` 기반 RLS 정책으로 격리됩니다.
+
 ---
 
 ### 데이터 마이그레이션 필요 여부
@@ -476,10 +492,12 @@ Firestore
 - useParticipants, useSettings는 새 경로 사용
 - 기존 데이터가 레거시 경로에 있을 경우 마이그레이션 필요
 
-**마이그레이션 전략** (향후):
-1. Firebase Cloud Function 작성
-2. 레거시 경로 데이터 → 멀티 테넌트 경로 복사
-3. 검증 후 레거시 데이터 삭제
+**마이그레이션 전략** (향후 — 참고용):
+1. Supabase Edge Function 또는 SQL 마이그레이션 스크립트 작성
+2. 레거시 데이터 → 새 PostgreSQL 테이블(user_id/tournament_id 컬럼 포함)로 INSERT
+3. RLS 검증 후 레거시 데이터 삭제
+
+*참고*: 2026-04-11 Firebase→Supabase 이전에서 실데이터 마이그레이션은 별도 계획으로 진행되었습니다.
 
 ---
 
@@ -494,8 +512,8 @@ Firestore
 
 ### 향후 작업 (프로덕션 배포 전)
 - [ ] **데이터 마이그레이션 스크립트** (현재 데이터 없음 - 필요 시 진행)
-  - Firebase Cloud Function 작성
-  - 레거시 데이터 → 멀티 테넌트 경로 복사
+  - Supabase Edge Function 또는 SQL 스크립트 작성
+  - 레거시 데이터 → PostgreSQL 테이블(user_id/tournament_id 컬럼)로 INSERT
   - 검증 및 롤백 전략 수립
 
 - [ ] **통합 테스트 강화**
@@ -503,34 +521,37 @@ Firestore
   - 멀티 테넌트 격리 검증
   - 성능 테스트 및 최적화
 
-- ✅ **보안 규칙 업데이트** (완료 - 2025-01-17)
-  - ✅ Firestore Security Rules 작성
-  - ✅ 사용자별 데이터 격리 강제
-  - ✅ 권한 검증 로직 추가
-  - ✅ 배포 완료 (ruleset: 12925291-b09f-49bd-a478-9da7b54e6823)
+- ✅ **보안 규칙 업데이트** (레거시 완료 - 2025-01-17 / Supabase 이전 후 RLS로 대체됨)
+  - ✅ (레거시) Firestore Security Rules 작성
+  - ✅ (현재) Supabase RLS 정책으로 사용자별 데이터 격리 강제
+  - ✅ 권한 검증 로직: `auth.uid() = user_id` 기반 RLS
+  - ✅ 레거시 ruleset: 12925291-b09f-49bd-a478-9da7b54e6823 (현재는 사용하지 않음)
 
 ---
 
 ## 📝 커밋 이력
 
-### 2025-01-17: Security Rules 배포 완료 🔒
+### 2025-01-17: Security Rules 배포 완료 🔒 (레거시 — Firestore)
 ```
 feat: Firestore Security Rules 멀티 테넌트 지원 추가
 
-**주요 변경사항**:
+**주요 변경사항** (레거시):
 - users/{userId}/tournaments/{tournamentId} 경로에 대한 보안 규칙 추가
 - Participants, Tables, Settings 서브컬렉션 권한 설정
 - 본인 데이터만 접근 가능하도록 격리 (관리자는 모든 데이터 접근 가능)
 - isOwner() 함수를 활용한 소유권 검증
 
-**보안 정책**:
+**보안 정책** (레거시):
 - 읽기: isSignedIn() && (isOwner(userId) || isPrivileged())
 - 쓰기: isSignedIn() && (isOwner(userId) || isPrivileged())
 - 삭제: Settings는 관리자만 가능
 
-**배포**:
+**배포** (레거시):
 - Ruleset ID: 12925291-b09f-49bd-a478-9da7b54e6823
 - 배포 일시: 2025-01-17
+
+*현재 운영 기준*: 2026-04-11 Supabase 이전 이후 RLS 정책으로 대체됨.
+예) `create policy "owner_only" on participants for all using (auth.uid() = user_id)`
 ```
 
 ### 2025-01-17: Phase 6 완료 🎉
@@ -579,20 +600,20 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 
 ---
 
-*마지막 업데이트: 2026-02-01*
+*마지막 업데이트: 2026-04-18*
 *작성자: Claude Code*
-*상태: **Production Ready - 모바일앱 v1.0.0** 🎉*
+*상태: **Production Ready - 모바일앱 v1.0.0 (Supabase)** 🎉*
  # 알림 시스템 구현 상태
 
-**최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심)
-**문서 버전**: 3.0.0
+**최종 업데이트**: 2026-04-18
+**버전**: v1.0.0 (모바일앱 중심 / Supabase 기반)
+**문서 버전**: 3.1.0
 
-> **모바일앱 알림**: uniqn-mobile/은 FCM + expo-notifications를 통해 푸시 알림을 지원합니다.
+> **모바일앱 알림**: uniqn-mobile/은 FCM(APNs) + expo-notifications를 통해 푸시 알림을 지원합니다. 서버 측은 Supabase Edge Functions + PostgreSQL 트리거 기반입니다.
 >
 > 📚 **관련 문서 (역할별 참조)**:
 > - 💻 **모바일앱 구현 상세**: [10-notifications.md](../../specs/react-native-app/10-notifications.md) (앱개발자용 — FCM, Zustand, UI, 30개 타입)
-> - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../operations/NOTIFICATION_OPERATIONS.md) (운영팀용 — Functions 관리, 모니터링)
+> - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../operations/NOTIFICATION_OPERATIONS.md) (운영팀용 — Edge Functions 관리, 모니터링)
 >
 > 이 문서는 **구현 현황 추적용**입니다. Phase 진행도, 테스트 결과, 해결된 이슈에 집중합니다.
 
@@ -602,15 +623,16 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 
 ### 전체 진행률
 - **프론트엔드**: 100% ✅ (완성)
-- **백엔드 (Firebase Functions)**: 100% ✅ (Phase 1 완성 - 5개 Functions)
+- **백엔드 (Supabase Edge Functions + PostgreSQL Triggers)**: 100% ✅ (Phase 1 완성 - 5개 Functions)
 - **전체 시스템**: 100% ✅ (Phase 1 완성)
 
 ### 배포 상태
-- ✅ Firebase Functions 배포 완료 (5개 Functions)
-- ✅ 프로덕션 환경에서 실시간 알림 작동 중
-- ✅ FCM 푸시 알림 전송 가능
+- ✅ Supabase Edge Functions 배포 완료 (5개 Functions)
+- ✅ 프로덕션 환경에서 실시간 알림 작동 중 (Supabase Realtime)
+- ✅ FCM/APNs 푸시 알림 전송 가능
 - ✅ 타임존 처리 완료 (UTC → KST 변환)
 - ✅ 모든 알림 타입 테스트 완료
+- ✅ FCM 토큰 저장: PostgreSQL `fcm_tokens` 테이블 (user_id FK)
 
 ---
 
@@ -629,17 +651,17 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15)
 
 **백엔드 구현**
-- Function: sendJobPostingAnnouncement (HTTP Callable)
+- Function: `send-job-posting-announcement` (Supabase Edge Function, HTTP)
 - 트리거: 관리자/매니저가 공고 상세 페이지에서 공지 전송 버튼 클릭
 - 수신자: 해당 공고의 확정된 스태프 전원
-- 파일: functions/src/notifications/sendJobPostingAnnouncement.ts
+- 파일: `uniqn-mobile/supabase/functions/send-job-posting-announcement/index.ts`
 
 **주요 기능**
-- ✅ 권한 검증 (admin, manager만 가능)
+- ✅ 권한 검증 (admin, manager만 가능 — `auth.users.raw_app_meta_data.role` 확인)
 - ✅ 공지 제목/내용 입력 (최대 50자/500자)
 - ✅ 공고 제목 자동 prefix ([공고제목] 공지내용)
 - ✅ FCM 멀티캐스트 전송 (500명 단위 배치)
-- ✅ Firestore 알림 문서 생성
+- ✅ PostgreSQL `notifications` 테이블에 알림 행 생성
 - ✅ 전송 결과 추적 (성공/실패 건수)
 
 ---
@@ -655,17 +677,17 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15)
 
 **백엔드 구현**
-- Function: broadcastNewJobPosting (Firestore Trigger)
-- 트리거: jobPostings 컬렉션에 새 문서 생성 (onCreate)
-- 조건: status === 'open' (공개 상태 공고만)
+- Function: `broadcast-new-job-posting` (Supabase Edge Function, PG trigger webhook)
+- 트리거: PostgreSQL `job_postings` 테이블 INSERT 트리거 → Edge Function 호출 (pg_net / database webhook)
+- 조건: `status = 'open'` (공개 상태 공고만)
 - 수신자: 모든 사용자
-- 파일: functions/src/notifications/broadcastNewJobPosting.ts
+- 파일: `uniqn-mobile/supabase/functions/broadcast-new-job-posting/index.ts`
 
 **주요 기능**
 - ✅ 공고 정보 유효성 검증
 - ✅ 공고 제목, 지역, 시급 정보 포함
-- ✅ FCM 푸시 알림 배치 전송 (500명 단위)
-- ✅ 모든 사용자에게 알림 문서 자동 생성
+- ✅ FCM 푸시 알림 배치 전송 (500명 단위, `fcm_tokens` 조회)
+- ✅ 모든 사용자에게 `notifications` 행 자동 생성
 - ✅ 전송 결과 로깅 (성공/실패 건수)
 
 ---
@@ -707,17 +729,17 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15)
 
 **백엔드 구현**
-- Function: onApplicationSubmitted (Firestore Trigger)
-- 트리거: applications 컬렉션에 새 지원서 생성 (onCreate)
+- Function: `on-application-submitted` (Supabase Edge Function, PG trigger webhook)
+- 트리거: PostgreSQL `applications` 테이블 INSERT 트리거
 - 수신자: 공고 작성자 (고용주)
-- 파일: functions/src/notifications/onApplicationSubmitted.ts
+- 파일: `uniqn-mobile/supabase/functions/on-application-submitted/index.ts`
 
 **주요 기능**
 - ✅ 공고 정보 조회 및 검증
 - ✅ 고용주 정보 조회
 - ✅ 지원자 이름, 공고 제목 포함
 - ✅ 고용주에게 FCM 푸시 알림 전송
-- ✅ Firestore 알림 문서 저장
+- ✅ PostgreSQL `notifications` 테이블에 알림 저장
 
 ---
 
@@ -732,17 +754,17 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15)
 
 **백엔드 구현**
-- Function: onApplicationStatusChanged (Firestore Trigger)
-- 트리거: applications 문서 상태 변경 (onUpdate)
-- 조건: status: 'applied' → 'confirmed'
+- Function: `on-application-status-changed` (Supabase Edge Function, PG trigger webhook)
+- 트리거: PostgreSQL `applications` 테이블 UPDATE 트리거 (`status` 컬럼 변경)
+- 조건: `status: 'applied' → 'confirmed'`
 - 수신자: 지원자
-- 파일: functions/src/notifications/onApplicationStatusChanged.ts
+- 파일: `uniqn-mobile/supabase/functions/on-application-status-changed/index.ts`
 
 **주요 기능**
 - ✅ 공고 정보 조회
 - ✅ 지원자 정보 조회
 - ✅ 지원자에게 FCM 푸시 알림 전송
-- ✅ Firestore 알림 문서 저장
+- ✅ PostgreSQL `notifications` 테이블에 알림 저장
 
 ---
 
@@ -757,9 +779,9 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15)
 
 **백엔드 구현**
-- Function: onApplicationStatusChanged (Firestore Trigger)
-- 조건: status: 'applied' → 'cancelled' 또는 'confirmed' → 'cancelled'
-- 파일: functions/src/notifications/onApplicationStatusChanged.ts
+- Function: `on-application-status-changed` (Supabase Edge Function, PG trigger webhook)
+- 조건: `status: 'applied' → 'cancelled'` 또는 `'confirmed' → 'cancelled'`
+- 파일: `uniqn-mobile/supabase/functions/on-application-status-changed/index.ts`
 
 ---
 
@@ -776,23 +798,23 @@ feat: Phase 3 - 멀티 테넌트 아키텍처 페이지 컴포넌트 수정 완�
 - 구현 상태: ✅ 완성 (2025-10-15) - 타임존 수정 완료 ⭐
 
 **백엔드 구현**
-- Function: onWorkTimeChanged (Firestore Trigger)
-- 트리거: workLogs 문서의 시간 필드 변경 (onUpdate)
-- 조건: scheduledStartTime 또는 scheduledEndTime 변경
+- Function: `on-work-time-changed` (Supabase Edge Function, PG trigger webhook)
+- 트리거: PostgreSQL `work_logs` 테이블 UPDATE 트리거 (시간 컬럼 변경)
+- 조건: `scheduled_start_time` 또는 `scheduled_end_time` 변경
 - 수신자: 해당 근무 기록의 스태프
-- 파일: functions/src/notifications/onWorkTimeChanged.ts
+- 파일: `uniqn-mobile/supabase/functions/on-work-time-changed/index.ts`
 
 **주요 기능**
-- ✅ 시간 변경 감지 (Timestamp 비교)
+- ✅ 시간 변경 감지 (timestamptz 비교)
 - ✅ 타임존 변환 (UTC → KST) ⭐ 핵심 수정 완료
 - ✅ staffId 파싱 ({userId}_{index} 형식 처리)
 - ✅ 변경 전/후 시간 비교 정보 포함
 - ✅ 스태프에게 FCM 푸시 알림 전송
-- ✅ Firestore 알림 문서 저장
+- ✅ PostgreSQL `notifications` 테이블에 알림 저장
 
 **타임존 처리 (중요! ⭐)**
-Firestore는 Timestamp를 UTC로 저장하므로 KST(UTC+9)로 변환 필요:
-- formatTime 함수에서 UTC 시간에 9시간 추가
+PostgreSQL `timestamptz`도 UTC로 저장되므로 KST(UTC+9)로 변환 필요:
+- formatTime 함수에서 UTC 시간에 9시간 추가 (또는 `AT TIME ZONE 'Asia/Seoul'`)
 - 변경 전/후 시간 모두 KST로 변환하여 표시
 - 예: UTC 05:00 → KST 14:00
 
@@ -804,15 +826,17 @@ Firestore는 Timestamp를 UTC로 저장하므로 KST(UTC+9)로 변환 필요:
 
 ## 🚀 배포 상태
 
-### Firebase Functions 배포 현황
+### Supabase Edge Functions 배포 현황
 
 | Function | 타입 | 트리거 | 버전 | 배포일 | 상태 |
 |----------|------|--------|------|--------|------|
-| sendJobPostingAnnouncement | HTTP Callable | HTTPS 요청 | v1.0.0 | 2025-10-15 | ✅ 작동 중 |
-| broadcastNewJobPosting | Trigger | jobPostings onCreate | v1.0.0 | 2025-10-15 | ✅ 작동 중 |
-| onApplicationSubmitted | Trigger | applications onCreate | v1.0.0 | 2025-10-15 | ✅ 작동 중 |
-| onApplicationStatusChanged | Trigger | applications onUpdate | v1.0.0 | 2025-10-15 | ✅ 작동 중 |
-| onWorkTimeChanged | Trigger | workLogs onUpdate | v1.0.0 | 2025-10-15 | ✅ 작동 중 (KST 수정) |
+| send-job-posting-announcement | Edge Function (HTTP) | HTTPS 요청 | v1.0.0 | 2026-04-11 | ✅ 작동 중 |
+| broadcast-new-job-posting | Edge Function + PG Trigger | job_postings INSERT | v1.0.0 | 2026-04-11 | ✅ 작동 중 |
+| on-application-submitted | Edge Function + PG Trigger | applications INSERT | v1.0.0 | 2026-04-11 | ✅ 작동 중 |
+| on-application-status-changed | Edge Function + PG Trigger | applications UPDATE | v1.0.0 | 2026-04-11 | ✅ 작동 중 |
+| on-work-time-changed | Edge Function + PG Trigger | work_logs UPDATE | v1.0.0 | 2026-04-11 | ✅ 작동 중 (KST) |
+
+*이전 배포 (2025-10-15)는 Firebase Functions 기반이었으며, 2026-04-11 Supabase 이전 시 Edge Functions로 재배포되었습니다.*
 
 ---
 
@@ -869,9 +893,9 @@ Firestore는 Timestamp를 UTC로 저장하므로 KST(UTC+9)로 변환 필요:
 
 ### 2. 타임존 불일치 문제 ✅
 
-**문제**: Firestore UTC 시간이 그대로 표시됨 (14:00 → 05:00)
+**문제**: PostgreSQL `timestamptz`가 UTC로 직렬화되어 그대로 표시됨 (14:00 → 05:00)
 
-**해결**: formatTime 함수에 KST(UTC+9) 변환 로직 추가
+**해결**: formatTime 함수에 KST(UTC+9) 변환 로직 추가 (또는 SQL에서 `AT TIME ZONE 'Asia/Seoul'`)
 
 **테스트 결과**: 14:00 → 15:00 KST 시간으로 정확하게 표시 ✅
 
@@ -890,20 +914,21 @@ Firestore는 Timestamp를 UTC로 저장하므로 KST(UTC+9)로 변환 필요:
 - 예약 발송 기능
 
 ### 성능 최적화
-- FCM 토큰 자동 정리
-- 알림 문서 자동 아카이빙
+- FCM 토큰 자동 정리 (`fcm_tokens` 테이블 + PG cron)
+- `notifications` 테이블 자동 아카이빙 (파티션/오래된 행 정리)
 - 배치 전송 최적화
 
 ---
 
-*최종 수정: 2025년 10월 15일*  
-*Phase 1 완성: 5개 Firebase Functions 배포 및 테스트 완료*
+*최종 수정: 2026-04-18*  
+*Phase 1 완성: 5개 Supabase Edge Functions 배포 및 테스트 완료 (2026-04-11 이전 포팅)*
  # 권한 시스템 가이드
 
-**최종 업데이트**: 2026년 3월 14일
-**상태**: 현재 모바일앱 기준
+**최종 업데이트**: 2026-04-18
+**상태**: 현재 모바일앱 기준 (Supabase)
 
 현재 권한 시스템은 `uniqn-mobile/`의 역할 계층과 라우트 가드를 기준으로 설명합니다.
+역할의 **서버 측 단일 소스**는 Supabase `auth.users.raw_app_meta_data.role`입니다(JWT 클레임 `app_metadata.role`로 전달).
 
 ## 현재 역할
 
@@ -915,6 +940,7 @@ Firestore는 Timestamp를 UTC로 저장하므로 KST(UTC+9)로 변환 필요:
 
 - `uniqn-mobile/src/schemas/user.schema.ts`
 - `uniqn-mobile/src/shared/role/RoleResolver.ts`
+- 서버 소스: `auth.users.raw_app_meta_data.role` (구 Firebase Custom Claims 대체)
 
 ## 권한 계층
 
@@ -976,12 +1002,43 @@ const flags = RoleResolver.computeRoleFlags(role);
 - `app/(app)/support/*`
 - `app/(app)/settings/*`
 
+## RLS 정책 예시
+
+Supabase PostgreSQL에서 역할 기반 접근을 제어하는 정책 예시:
+
+```sql
+-- 본인 데이터만 읽기/쓰기
+create policy "owner_only_select"
+on public.user_profiles
+for select
+using (auth.uid() = user_id);
+
+-- 관리자 전용 (app_metadata.role 기반)
+create policy "admin_manage_reports"
+on public.reports
+for all
+using (
+  (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+);
+
+-- 구인자 이상(employer/admin) 조회 허용
+create policy "employer_or_admin_read_applications"
+on public.applications
+for select
+using (
+  (auth.jwt() -> 'app_metadata' ->> 'role') in ('employer', 'admin')
+);
+```
+
+*참고*: RLS에서 앱 역할은 `auth.jwt() ->> 'role'`이 아니라 `(auth.jwt() -> 'app_metadata' ->> 'role')`을 사용해야 합니다(프로젝트 메모 기준).
+
 ## 문서화 원칙
 
 현재 문서에는 아래 내용을 넣지 않습니다.
 
 - 현재 코드에 없는 과거 역할명
 - 레거시 웹앱 라우트 예시
+- Firebase Custom Claims / firestore.rules 기반 권한 설명 (현재는 Supabase RLS + `app_metadata.role` 기준)
 - 별도 커스텀 권한 엔진이 있는 것처럼 보이게 하는 설명
  # 💎 하트/다이아 포인트 시스템 구현 가이드
 

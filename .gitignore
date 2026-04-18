@@ -144,6 +144,7 @@ debug-*.html
 *.html.debug
 docs/archive/*
 !docs/archive/firebase-legacy/
+!docs/archive/planning/
 
 # ========================================
 # CAPACITOR & MOBILE (모바일 네이티브 파일들)

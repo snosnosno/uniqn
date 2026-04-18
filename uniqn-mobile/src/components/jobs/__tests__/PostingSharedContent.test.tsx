@@ -146,8 +146,7 @@ describe('Posting shared content', () => {
 
     const card = render(<PostingCompensationContent display="card" {...source} />);
     expect(card.getByText(`${dealerLabel}: 일급 150,000원`)).toBeTruthy();
-    expect(card.getByText('식비 10,000원')).toBeTruthy();
-    expect(card.getByText('세금 3.3%')).toBeTruthy();
+    expect(card.queryByText('식비 10,000원 · 세금 3.3%')).toBeNull();
     expect(card.getByText('+1개 역할 급여 더 있음')).toBeTruthy();
   });
 

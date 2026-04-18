@@ -99,7 +99,7 @@ function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionPr
             <Text
               className={`
                 text-base font-sans-semibold
-                ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-secondary-900 dark:text-off-white'}
+                ${isSelected ? 'text-error-600 dark:text-error-400' : 'text-content-primary'}
               `}
             >
               {typeInfo.label}

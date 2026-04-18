@@ -1,13 +1,13 @@
 # 비즈니스 케이스
 
-최종 업데이트: 2026-03-30  
-기준 코드: `uniqn-mobile/app/`, `uniqn-mobile/src/services/`, `uniqn-mobile/src/repositories/`, `functions/src/`
+최종 업데이트: 2026-04-18  
+기준 코드: `uniqn-mobile/app/`, `uniqn-mobile/src/services/`, `uniqn-mobile/src/repositories/`, `uniqn-mobile/supabase/functions/`
 
 이 문서는 현재 코드가 실제로 지원하는 제품 범위와 운영 가치를 요약합니다.
 
 ## 현재 제품이 해결하는 문제
 
-UNIQN은 현재 코드 기준으로 다음 운영 흐름을 하나의 모바일 앱과 Firebase 백엔드 안에서 처리합니다.
+UNIQN은 현재 코드 기준으로 다음 운영 흐름을 하나의 모바일 앱과 Supabase(Auth / PostgreSQL / Edge Functions / Storage / Realtime) 백엔드 안에서 처리합니다.
 
 - 구인 공고 작성과 관리
 - 지원 접수, 승인, 거절, 배정 관리

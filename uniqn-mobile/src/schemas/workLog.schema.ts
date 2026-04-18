@@ -31,8 +31,10 @@ export const workLogStatusSchema = z.enum([
 
 export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;
 
-const timeFieldSchema = timestampSchema.or(z.string());
-const optionalTimeFieldSchema = timeFieldSchema.nullable().optional();
+// timestampSchema가 이미 모든 timestamp 입력을 ISO string으로 정규화한다.
+// 과거 `.or(z.string())`는 검증 없는 raw string을 통과시켜 22007 재발 경로였음 (adversarial review CRITICAL 1).
+const timeFieldSchema = timestampSchema;
+const optionalTimeFieldSchema = timestampSchema.nullable().optional();
 
 // ============================================================================
 // 근무 기록 스키마
@@ -140,9 +142,9 @@ export const workLogDocumentSchema = z
     staffPhotoURL: z.string().nullable().optional(),
     staffPhotoURLBlurhash: z.string().nullable().optional(),
 
-    // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
-    checkInTime: optionalTimestampSchema.or(z.string()).optional(),
-    checkOutTime: optionalTimestampSchema.or(z.string()).optional(),
+    // 시간 정보 (optionalTimestampSchema가 모든 입력을 ISO string으로 정규화하므로 raw union 불필요)
+    checkInTime: optionalTimestampSchema,
+    checkOutTime: optionalTimestampSchema,
 
     // 상태
     status: workLogStatusSchema,
@@ -154,7 +156,7 @@ export const workLogDocumentSchema = z
     payrollAmount: z.number().nullable().optional(),
     payrollDate: optionalTimestampSchema,
     payrollNotes: z.string().nullable().optional(),
-    noShowAt: optionalTimestampSchema.or(z.string()).optional(),
+    noShowAt: optionalTimestampSchema,
     noShowReason: z.string().nullable().optional(),
 
     // 메타

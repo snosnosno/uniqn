@@ -104,7 +104,6 @@ export {
   useTemplates,
   useSaveTemplate,
   useLoadTemplate,
-  useDeleteTemplate,
 } from './useTemplateManager';
 export {
   useApplicantManagement,

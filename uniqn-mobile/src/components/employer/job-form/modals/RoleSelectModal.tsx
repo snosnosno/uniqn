@@ -92,7 +92,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               className={`text-base font-sans ${
                 isExisting && !isOther
                   ? 'text-secondary-400 dark:text-secondary-500'
-                  : 'text-secondary-900 dark:text-off-white'
+                  : 'text-content-primary'
               } font-sans`}
             >
               {item.name}

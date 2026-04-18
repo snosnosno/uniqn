@@ -19,7 +19,7 @@ import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { useToast } from '@/stores/toastStore';
 import { generateId } from '@/utils/generateId';
-import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
+import { type DateSpecificRequirement, type TimeSlot } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types

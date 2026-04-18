@@ -9,9 +9,11 @@ const DEALER_ROLE_NAME = STAFF_ROLES.find((role) => role.key === 'dealer')?.name
 function createTemplate(formData: JobPostingFormData): JobPostingTemplate {
   return {
     id: 'template-1',
+    userId: 'user-1',
     name: 'Reusable Template',
-    createdBy: 'user-1',
-    createdAt: new Date() as never,
+    createdAt: '2026-04-18T00:00:00Z',
+    updatedAt: '2026-04-18T00:00:00Z',
+    usageCount: 0,
     templateData: extractTemplateData(formData),
   };
 }

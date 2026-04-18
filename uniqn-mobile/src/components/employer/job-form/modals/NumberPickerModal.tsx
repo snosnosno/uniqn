@@ -172,7 +172,7 @@ export function NumberPickerModal({
                     <Text
                       className={`text-xl ${
                         isSelected
-                          ? 'font-sans-bold text-content-primary dark:text-off-white'
+                          ? 'font-sans-bold text-content-primary'
                           : 'text-secondary-400 dark:text-secondary-500'
                       }`}
                     >

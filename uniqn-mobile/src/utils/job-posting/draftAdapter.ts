@@ -12,7 +12,7 @@ import type { JobPostingDraft, JobPostingDraftDatedSchedule } from '@/types/jobP
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
+import { toDateString } from '@/utils/date';
 import { buildSeedTimeSlots } from './draftRoles';
 
 function findRoleOptionByName(name: string) {
@@ -214,7 +214,21 @@ function buildRoleCatalogFromFormData(formData: JobPostingFormData): PostingRole
       )
     ) ?? [];
 
-  return dedupeRoleCatalog([...slotEntries, ...roleEntries]);
+  const catalog = dedupeRoleCatalog([...slotEntries, ...roleEntries]);
+
+  if (formData.useSameSalary) {
+    const sharedSalary =
+      formData.defaultSalary ?? formData.roles?.find((role) => role.salary)?.salary;
+
+    if (sharedSalary) {
+      return catalog.map((entry) => ({
+        ...entry,
+        salary: sharedSalary,
+      }));
+    }
+  }
+
+  return catalog;
 }
 
 function buildCompensation(formData: JobPostingFormData): CreateJobPostingInput['compensation'] {
@@ -234,16 +248,16 @@ function buildCompensation(formData: JobPostingFormData): CreateJobPostingInput[
 
 function getPrimaryWorkDate(dateSpecificRequirements?: DateSpecificRequirement[]): string {
   const requirement = dateSpecificRequirements?.find((candidate) => {
-    return getDateString(candidate.date).length > 0;
+    return toDateString(candidate.date).length > 0;
   });
 
-  return requirement ? getDateString(requirement.date) : '';
+  return requirement ? toDateString(requirement.date) : '';
 }
 
 function buildDatedDraft(formData: JobPostingFormData): JobPostingDraftDatedSchedule {
   const requirements = (formData.dateSpecificRequirements ?? [])
     .map((requirement) => ({
-      date: getDateString(requirement.date),
+      date: toDateString(requirement.date),
       ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
       timeSlots: (requirement.timeSlots ?? []).map(toCanonicalTimeSlot),
     }))
@@ -353,25 +367,38 @@ function buildDatedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
 
   const totals = new Map<string, { role: PostingRoleCatalogEntry; count: number }>();
 
-  sourceSlots.forEach((slot) => {
-    slot.roles.forEach((role) => {
-      const key = getRoleKey(role);
-      const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
-        role: role.role ?? 'dealer',
-        ...(role.customRole ? { customRole: role.customRole } : {}),
-      };
-      const existing = totals.get(key);
+  const collectFromSlots = (slots: PostingTimeSlot[], addToExisting: boolean) => {
+    slots.forEach((slot) => {
+      slot.roles.forEach((role) => {
+        const key = getRoleKey(role);
+        const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
+          role: role.role ?? 'dealer',
+          ...(role.customRole ? { customRole: role.customRole } : {}),
+        };
+        const existing = totals.get(key);
 
-      if (existing) {
-        existing.count += role.count;
-        return;
-      }
+        if (existing) {
+          if (addToExisting) {
+            existing.count += role.count;
+          }
+          return;
+        }
 
-      totals.set(key, {
-        role: catalogRole,
-        count: role.count,
+        totals.set(key, {
+          role: catalogRole,
+          count: role.count,
+        });
       });
     });
+  };
+
+  collectFromSlots(sourceSlots, true);
+
+  draft.schedule.requirements.forEach((requirement) => {
+    if (requirement === seedRequirement) {
+      return;
+    }
+    collectFromSlots(requirement.timeSlots, false);
   });
 
   return Array.from(totals.values()).map((entry) => toFormRole(entry.role, entry.count));

@@ -209,9 +209,7 @@ const AllowanceItem = memo(function AllowanceItem({
           />
           <Text
             className={`ml-2 text-base font-sans-medium ${
-              isEnabled
-                ? 'text-secondary-900 dark:text-off-white'
-                : 'text-secondary-500 dark:text-secondary-400'
+              isEnabled ? 'text-content-primary' : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
             {config.label}
@@ -386,7 +384,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           <Text
             className={`ml-2 text-base font-sans-medium ${
               allowances.additional && allowances.additional > 0
-                ? 'text-secondary-900 dark:text-off-white'
+                ? 'text-content-primary'
                 : 'text-secondary-500 dark:text-secondary-400'
             }`}
           >
