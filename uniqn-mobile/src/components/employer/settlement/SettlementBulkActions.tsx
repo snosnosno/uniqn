@@ -6,10 +6,11 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { BanknotesIcon, CheckIcon } from '../../icons';
 import { formatCurrency } from '@/utils/settlement';
+import { triggerBatchStart } from '@/utils/haptics';
 
 // ============================================================================
 // Types
@@ -36,6 +37,14 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
   onBulkSettle,
   isAllSelected,
 }: SettlementBulkActionsProps) {
+  // impeccable v2 §17 — 일괄 정산 "시작" 햅틱.
+  // throttle 무관하게 Light 1회. 종료 햅틱은 useBulkSettlement 훅에서 발화.
+  const handleBulkSettle = useCallback(async () => {
+    if (selectedCount === 0) return;
+    await triggerBatchStart();
+    onBulkSettle();
+  }, [selectedCount, onBulkSettle]);
+
   return (
     <View className="flex-row items-center justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
       <View className="flex-row items-center">
@@ -69,7 +78,7 @@ export const SettlementBulkActions = React.memo(function SettlementBulkActions({
         </View>
       </View>
       <Pressable
-        onPress={onBulkSettle}
+        onPress={handleBulkSettle}
         disabled={selectedCount === 0}
         className={`
           flex-row items-center px-4 py-2 rounded-lg

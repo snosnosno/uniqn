@@ -30,6 +30,7 @@ import { logger } from '@/utils/logger';
 import { stableFilters } from '@/utils/queryUtils';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
+import { triggerBatchEnd } from '@/utils/haptics';
 import { STATUS } from '@/constants';
 import type { PayrollStatus } from '@/types';
 
@@ -270,17 +271,27 @@ export function useBulkSettlement() {
         });
       }
 
+      // impeccable v2 §17 — 일괄 정산 "종료" 햅틱.
+      // 부분 성공은 성공(success) 톤 유지, 전체 실패만 warning.
+      void triggerBatchEnd(result.successCount > 0);
+
       // 이벤트 기반 캐시 무효화
       invalidateRelated('settlement.bulkProcess');
     },
-    onError: createMutationErrorHandler('정산 처리', addToast, {
-      onRollback: (ctx) => {
-        const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
-        previousData?.forEach(([key, data]) => {
-          queryClient.setQueryData(key, data);
-        });
-      },
-    }),
+    onError: (error, variables, ctx) => {
+      // impeccable v2 §17 — 일괄 정산 실패 종료 햅틱. 에러 토스트보다 먼저.
+      void triggerBatchEnd(false);
+      return createMutationErrorHandler('정산 처리', addToast, {
+        onRollback: (rollbackCtx) => {
+          const { previousData } = rollbackCtx as {
+            previousData: [readonly unknown[], unknown][];
+          };
+          previousData?.forEach(([key, data]) => {
+            queryClient.setQueryData(key, data);
+          });
+        },
+      })(error, variables, ctx);
+    },
   });
 }
 

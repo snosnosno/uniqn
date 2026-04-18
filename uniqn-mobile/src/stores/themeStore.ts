@@ -14,6 +14,7 @@ import { mmkvStorage } from '@/lib/mmkvStorage';
 import { Appearance, ColorSchemeName } from 'react-native';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
 import { logger } from '@/utils/logger';
+import { triggerHaptic } from '@/utils/haptics';
 
 // ============================================================================
 // Constants
@@ -102,6 +103,10 @@ export const useThemeStore = create<ThemeState>()(
         } else {
           newMode = currentMode === 'light' ? 'dark' : 'light';
         }
+
+        // impeccable v2 §17 — 다크모드 토글은 상태 전환이므로 Light 햅틱.
+        // 200ms throttle 적용 (중복 탭 보호). 색상 전환 전에 발화 → 사용자가 변화를 "느끼면서 본다".
+        void triggerHaptic('light');
 
         applyColorScheme(newMode);
         set({
