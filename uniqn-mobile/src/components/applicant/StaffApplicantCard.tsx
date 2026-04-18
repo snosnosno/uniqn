@@ -159,7 +159,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         {/* 이름 + 상태 */}
         <View className="flex-row items-center mb-1">
           <Text
-            className={`font-sans-semibold text-content-primary dark:text-off-white ${
+            className={`font-sans-semibold text-content-primary ${
               compact ? 'text-base font-sans' : 'text-lg'
             }`}
           >

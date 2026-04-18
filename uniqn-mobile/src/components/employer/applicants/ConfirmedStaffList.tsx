@@ -70,9 +70,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
         <CalendarIcon size={18} color={group.isToday ? '#D4AF37' : SECONDARY_PALETTE[500]} />
         <Text
           className={`ml-2 text-base font-sans-semibold ${
-            group.isToday
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-secondary-900 dark:text-off-white'
+            group.isToday ? 'text-primary-600 dark:text-primary-400' : 'text-content-primary'
           }`}
         >
           {group.formattedDate}

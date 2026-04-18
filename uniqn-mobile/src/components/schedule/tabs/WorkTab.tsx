@@ -57,9 +57,7 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
       </Text>
       <Text
         className={`text-base font-sans-semibold ${
-          isHighlight
-            ? 'text-primary-600 dark:text-primary-400'
-            : 'text-secondary-900 dark:text-off-white'
+          isHighlight ? 'text-primary-600 dark:text-primary-400' : 'text-content-primary'
         }`}
       >
         {value}

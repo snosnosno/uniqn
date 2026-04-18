@@ -23,7 +23,7 @@ export function InfoRow({ label, value, highlight, valueColor }: InfoRowProps) {
         className={`text-sm font-sans-medium ${
           highlight
             ? 'text-lg font-display text-primary-600 dark:text-primary-400'
-            : valueColor || 'text-secondary-900 dark:text-off-white'
+            : valueColor || 'text-content-primary'
         }`}
       >
         {value}

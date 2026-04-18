@@ -287,7 +287,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-sans-medium ${
                         allowances.meal === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-off-white'
+                          : 'text-content-primary'
                       }`}
                     >
                       {allowances.meal === PROVIDED_FLAG
@@ -306,7 +306,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-sans-medium ${
                         allowances.transportation === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-off-white'
+                          : 'text-content-primary'
                       }`}
                     >
                       {allowances.transportation === PROVIDED_FLAG
@@ -325,7 +325,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                       className={`text-sm font-sans-medium ${
                         allowances.accommodation === PROVIDED_FLAG
                           ? 'text-success-600 dark:text-success-400'
-                          : 'text-secondary-900 dark:text-off-white'
+                          : 'text-content-primary'
                       }`}
                     >
                       {allowances.accommodation === PROVIDED_FLAG

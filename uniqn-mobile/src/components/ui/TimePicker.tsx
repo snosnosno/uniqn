@@ -110,7 +110,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
         className={`text-base font-sans ${
           isSelected
             ? 'text-primary-700 dark:text-primary-300 font-sans-semibold'
-            : 'text-secondary-900 dark:text-off-white'
+            : 'text-content-primary'
         }`}
       >
         {item.label}
@@ -233,7 +233,7 @@ export const TimePicker = memo(function TimePicker({
             disabled
               ? 'text-secondary-400 dark:text-secondary-500'
               : value
-                ? 'text-secondary-900 dark:text-off-white'
+                ? 'text-content-primary'
                 : 'text-secondary-400 dark:text-secondary-500'
           } font-sans`}
         >

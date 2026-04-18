@@ -60,7 +60,7 @@ function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOpti
           className={`text-base font-sans ${
             isSelected
               ? 'text-primary-600 dark:text-primary-400 font-sans-medium'
-              : 'text-secondary-900 dark:text-off-white'
+              : 'text-content-primary'
           } ${item.disabled ? 'text-secondary-400' : ''}`}
         >
           {item.label}
@@ -164,7 +164,7 @@ export function FormSelect<T = string>({
   const getTextStyle = () => {
     if (disabled) return 'text-secondary-400 dark:text-secondary-500';
     if (!selectedOption) return 'text-secondary-400 dark:text-secondary-500';
-    return 'text-secondary-900 dark:text-off-white';
+    return 'text-content-primary';
   };
 
   return (

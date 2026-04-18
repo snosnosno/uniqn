@@ -142,9 +142,7 @@ export function SelectBottomSheet({
               className={`
                 text-base font-sans-medium flex-1
                 ${
-                  option.destructive
-                    ? 'text-error-600 dark:text-error-400'
-                    : 'text-secondary-900 dark:text-off-white'
+                  option.destructive ? 'text-error-600 dark:text-error-400' : 'text-content-primary'
                 }
               `}
             >

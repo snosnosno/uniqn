@@ -112,7 +112,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
             className={`w-32 py-2 px-2 text-right text-sm font-sans rounded-md ${
               isReadOnly
                 ? 'bg-secondary-100 dark:bg-surface/50 text-secondary-400'
-                : 'bg-secondary-50 dark:bg-surface text-content-primary dark:text-off-white'
+                : 'bg-secondary-50 dark:bg-surface text-content-primary'
             }`}
           />
           <Text className="text-content-muted dark:text-secondary-400 ml-2 text-sm font-sans">

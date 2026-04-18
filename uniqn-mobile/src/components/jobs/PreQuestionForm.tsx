@@ -142,7 +142,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor={SECONDARY_PALETTE[400]}
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary dark:text-off-white`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary`}
         />
       )}
 
@@ -157,7 +157,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary dark:text-off-white min-h-[100px]`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-content-primary min-h-[100px]`}
         />
       )}
 

@@ -87,7 +87,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     className={`text-sm font-sans ${
                       isProvided
                         ? 'text-primary-600 dark:text-primary-400 font-sans-medium'
-                        : 'text-secondary-900 dark:text-off-white'
+                        : 'text-content-primary'
                     }`}
                   >
                     {displayLabel}

@@ -155,7 +155,7 @@ const RadioItem = memo(function RadioItem({
           className={`
             font-sans-medium
             ${config.label}
-            ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-secondary-900 dark:text-off-white'}
+            ${isDisabled ? 'text-secondary-400 dark:text-secondary-500' : 'text-content-primary'}
           `}
         >
           {option.label}

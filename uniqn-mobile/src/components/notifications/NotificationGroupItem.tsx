@@ -99,7 +99,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               <Text
                 className={`text-base font-sans flex-1 ${
                   hasUnread
-                    ? 'text-secondary-900 dark:text-off-white font-sans-bold'
+                    ? 'text-content-primary font-sans-bold'
                     : 'text-secondary-700 dark:text-secondary-300 font-normal'
                 }`}
                 numberOfLines={1}

@@ -49,7 +49,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
       <Text
         className={`text-sm font-sans ${
           isTotal
-            ? 'font-sans-semibold text-content-primary dark:text-off-white'
+            ? 'font-sans-semibold text-content-primary'
             : 'text-secondary-600 dark:text-secondary-400'
         }`}
       >
@@ -63,7 +63,7 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
               ? 'text-error-600 dark:text-error-400'
               : isProvided
                 ? 'text-success-600 dark:text-success-400'
-                : 'text-secondary-900 dark:text-off-white'
+                : 'text-content-primary'
         }`}
       >
         {value}

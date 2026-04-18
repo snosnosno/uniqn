@@ -145,7 +145,7 @@ export const DatePicker = memo(function DatePicker({
               disabled
                 ? 'text-secondary-400 dark:text-secondary-500'
                 : value
-                  ? 'text-secondary-900 dark:text-off-white'
+                  ? 'text-content-primary'
                   : 'text-secondary-400 dark:text-secondary-500'
             } font-sans`}
           >

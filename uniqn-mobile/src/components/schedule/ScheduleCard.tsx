@@ -176,7 +176,7 @@ export const ScheduleCard = memo(function ScheduleCard({
             className={`mb-2 text-base font-sans-semibold ${
               isCancelled
                 ? 'text-secondary-400 dark:text-secondary-500 line-through'
-                : 'text-content-primary dark:text-off-white'
+                : 'text-content-primary'
             }`}
             numberOfLines={1}
           >

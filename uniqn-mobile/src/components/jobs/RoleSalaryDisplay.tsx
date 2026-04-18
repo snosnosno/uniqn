@@ -104,9 +104,7 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
       >
         {label}
       </Text>
-      <Text
-        className={`${compact ? 'text-xs' : 'text-sm'} font-sans-medium text-content-primary dark:text-off-white`}
-      >
+      <Text className={`${compact ? 'text-xs' : 'text-sm'} font-sans-medium text-content-primary`}>
         {salaryText}
       </Text>
     </View>
