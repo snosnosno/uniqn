@@ -58,25 +58,6 @@ export function PostingCompensationContent({
         </NumericText>
       )}
 
-      {compensation.allowanceLabels.length > 0 ? (
-        <View className="mt-1">
-          {compensation.allowanceLabels.map((item, index) => (
-            <Text
-              key={`${item}-${index}`}
-              className="text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-            >
-              {item}
-            </Text>
-          ))}
-        </View>
-      ) : null}
-
-      {compensation.taxLabel ? (
-        <Text className="mt-1 text-xs text-content-placeholder font-sans">
-          {compensation.taxLabel}
-        </Text>
-      ) : null}
-
       {compensation.overflowCount > 0 ? (
         <Text className="mt-1 text-xs text-content-placeholder font-sans">
           +{compensation.overflowCount}개 역할 급여 더 있음

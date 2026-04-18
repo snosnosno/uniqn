@@ -84,55 +84,71 @@ export function PostingScheduleContent({
         </Text>
       ) : null}
 
-      {schedule.sections.map((section) => (
-        <View
-          key={section.key}
-          className={
-            display === 'card' ? 'mb-2' : 'mb-3 rounded-lg bg-surface-page p-3 dark:bg-surface'
-          }
-        >
-          <Text
+      {schedule.sections.map((section) => {
+        const dateRangeText = display === 'card' ? section.label.split('\n')[0] : section.label;
+        const showCardDayCount = display === 'card' && section.dayCount > 1;
+
+        return (
+          <View
+            key={section.key}
             className={
-              display === 'card'
-                ? 'text-sm font-sans-medium text-content-secondary dark:text-secondary-300'
-                : 'text-sm font-sans-semibold text-content-primary dark:text-off-white'
+              display === 'card' ? 'mb-3' : 'mb-3 rounded-lg bg-surface-page p-3 dark:bg-surface'
             }
           >
-            {section.label}
-          </Text>
+            <Text
+              className={
+                display === 'card'
+                  ? 'text-sm font-sans-bold text-content-primary'
+                  : 'text-sm font-sans-semibold text-content-primary'
+              }
+            >
+              {dateRangeText}
+            </Text>
+            {showCardDayCount ? (
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                {section.dayCount}일
+              </Text>
+            ) : null}
 
-          {section.timeSlots.map((slot) => (
-            <View key={slot.key} className={display === 'card' ? 'ml-5 mt-1' : 'ml-2 mt-2'}>
-              {display === 'card' ? (
-                slot.roles.map((role, roleIndex) => (
-                  <Text
-                    key={role.key}
-                    className={`text-sm font-sans ${
-                      role.isFilled
-                        ? 'text-secondary-400 line-through dark:text-secondary-500'
-                        : 'text-secondary-900 dark:text-secondary-100'
-                    } font-sans`}
-                  >
-                    {roleIndex === 0 ? `${slot.timeLabel} ` : '       '}
-                    {formatRoleLine(role, showFilledCount)}
-                  </Text>
-                ))
-              ) : (
-                <>
-                  <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
-                    {slot.timeLabel}
-                  </Text>
-                  <View className="ml-4 flex-row flex-wrap">
-                    {slot.roles.map((role) => (
-                      <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
-                    ))}
-                  </View>
-                </>
-              )}
-            </View>
-          ))}
-        </View>
-      ))}
+            {section.timeSlots.map((slot) => (
+              <View key={slot.key} className={display === 'card' ? 'mt-1.5 flex-row' : 'ml-2 mt-2'}>
+                {display === 'card' ? (
+                  <>
+                    <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">
+                      {slot.timeLabel}{' '}
+                    </Text>
+                    <View className="flex-1 gap-0.5">
+                      {slot.roles.map((role) => (
+                        <Text
+                          key={role.key}
+                          className={`text-sm font-sans ${
+                            role.isFilled
+                              ? 'text-secondary-400 line-through dark:text-secondary-500'
+                              : 'text-content-primary'
+                          }`}
+                        >
+                          {formatRoleLine(role, showFilledCount)}
+                        </Text>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text className="mb-1 text-sm font-sans-medium text-content-secondary">
+                      {slot.timeLabel}
+                    </Text>
+                    <View className="ml-4 flex-row flex-wrap">
+                      {slot.roles.map((role) => (
+                        <RoleBadge key={role.key} role={role} showFilledCount={showFilledCount} />
+                      ))}
+                    </View>
+                  </>
+                )}
+              </View>
+            ))}
+          </View>
+        );
+      })}
     </>
   );
 }

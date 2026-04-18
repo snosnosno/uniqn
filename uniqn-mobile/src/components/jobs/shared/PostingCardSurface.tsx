@@ -56,7 +56,7 @@ export function PostingCardSurface({
         {topStatus ? <View className="mb-2">{topStatus}</View> : null}
 
         <View className="mb-2 flex-row items-start justify-between">
-          <View className="flex-1 flex-row flex-wrap items-center">
+          <View className="flex-1 flex-row flex-wrap items-center pr-2">
             {card.postingType && card.postingType !== 'regular' ? (
               <PostingTypeBadge type={card.postingType} size="sm" className="mr-2" />
             ) : null}
@@ -74,15 +74,21 @@ export function PostingCardSurface({
             </Text>
           </View>
 
-          {titleAccessory}
+          <View className="flex-shrink-0 items-end">
+            {card.location ? (
+              <Text
+                numberOfLines={1}
+                className="max-w-[140px] text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+              >
+                {card.location}
+              </Text>
+            ) : null}
+            {titleAccessory}
+          </View>
         </View>
 
-        <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-          {card.location}
-        </Text>
-
         <View className="flex-row">
-          <View className="flex-1 pr-2">
+          <View style={{ flex: 1.3 }} className="pr-2">
             <PostingScheduleContent
               display="card"
               workflow={card.workflow}
@@ -98,7 +104,7 @@ export function PostingCardSurface({
 
           <View className="mx-2 w-px self-stretch bg-secondary-100 dark:bg-surface-overlay" />
 
-          <View className="flex-1 pl-2">
+          <View style={{ flex: 1 }} className="pl-2">
             <PostingCompensationContent
               display="card"
               salaryDisplay={card.salaryDisplay}
@@ -108,6 +114,14 @@ export function PostingCardSurface({
             />
           </View>
         </View>
+
+        {(card.allowanceLabels?.length ?? 0) > 0 || card.taxLabel ? (
+          <Text className="mt-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            {[...(card.allowanceLabels ?? []), ...(card.taxLabel ? [card.taxLabel] : [])].join(
+              ' · '
+            )}
+          </Text>
+        ) : null}
 
         {bodyFooter}
       </Pressable>
