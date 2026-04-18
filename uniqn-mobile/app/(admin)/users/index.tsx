@@ -85,11 +85,8 @@ function UserCard({ user, onPress }: UserCardProps) {
     }).format(date);
   };
 
-  // 계정 상태 → CardStripe tone
-  // - 비활성: muted (완료/비활성)
-  // - 활성 + 관리자: gold
-  // - 활성 + 구인자: info
-  // - 활성 + 스태프: gold
+  // admin과 staff는 동일하게 gold로 통일 (staff가 주 사용자 · admin은 별도 role Badge로 구분).
+  // employer는 info로 구분 · 비활성은 muted.
   const stripeTone: CardStripeTone = !user.isActive
     ? 'muted'
     : user.role === 'employer'

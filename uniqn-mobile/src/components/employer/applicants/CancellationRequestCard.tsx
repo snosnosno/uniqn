@@ -21,6 +21,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatAppliedDate, formatRelativeTime } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
+import type { BadgeVariant } from '@/components/ui/Badge';
 
 // ============================================================================
 // Types
@@ -57,6 +58,17 @@ const STATUS_LABELS: Record<CancellationRequestStatus, string> = {
   pending: '검토 대기',
   approved: '승인됨',
   rejected: '거절됨',
+};
+
+/**
+ * 상태별 Badge variant.
+ * - pending: chip (stripe=warning이 신호를 담당, chip은 분류 라벨)
+ * - approved/rejected: semantic variant (결정 완료 → 정보 밀도 유지)
+ */
+const STATUS_BADGE_VARIANT: Record<CancellationRequestStatus, BadgeVariant> = {
+  pending: 'chip',
+  approved: 'success',
+  rejected: 'error',
 };
 
 // ============================================================================
@@ -134,7 +146,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                   >
                     {displayName}
                   </Text>
-                  <Badge variant="chip" size="sm">
+                  <Badge variant={STATUS_BADGE_VARIANT[cancellationRequest.status]} size="sm">
                     {STATUS_LABELS[cancellationRequest.status]}
                   </Badge>
                 </View>

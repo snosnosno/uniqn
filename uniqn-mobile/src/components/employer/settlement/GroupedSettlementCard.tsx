@@ -13,7 +13,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Avatar, CardStripe, Checkbox, NumericText } from '@/components/ui';
-import { PAYROLL_STATUS_STRIPE_TONE } from './helpers/settlementConfig';
+import { PAYROLL_STATUS_CONFIG as PAYROLL_STATUS_SHARED } from './helpers/settlementConfig';
 import {
   CalendarIcon,
   BanknotesIcon,
@@ -245,7 +245,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
     return STATUS.PAYROLL.COMPLETED;
   }, [group.summary.pendingCount, group.dateStatuses]);
 
-  const stripeTone = PAYROLL_STATUS_STRIPE_TONE[groupPayrollStatus];
+  const stripeTone = PAYROLL_STATUS_SHARED[groupPayrollStatus].stripeTone;
 
   // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {

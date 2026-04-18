@@ -26,7 +26,7 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { STATUS } from '@/constants';
-import { PAYROLL_STATUS_STRIPE_TONE } from './helpers/settlementConfig';
+import { PAYROLL_STATUS_CONFIG } from './helpers/settlementConfig';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -44,22 +44,6 @@ export interface SettlementCardProps {
   onPress?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const PAYROLL_STATUS_CONFIG: Record<
-  PayrollStatus,
-  {
-    label: string;
-    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-  }
-> = {
-  pending: { label: '미정산', variant: 'warning' },
-  processing: { label: '처리중', variant: 'primary' },
-  completed: { label: '정산완료', variant: 'success' },
-};
 
 // ============================================================================
 // Component
@@ -104,7 +88,7 @@ export const SettlementCard = React.memo(function SettlementCard({
     onSettle?.(workLog);
   }, [workLog, onSettle]);
 
-  const stripeTone = PAYROLL_STATUS_STRIPE_TONE[payrollStatus];
+  const stripeTone = statusConfig.stripeTone;
 
   return (
     <CardStripe tone={stripeTone}>

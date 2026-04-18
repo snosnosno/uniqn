@@ -5,6 +5,7 @@
  * @version 1.0.0
  */
 
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
@@ -229,6 +230,23 @@ export function useBulkSettlement() {
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
+  // 핸들러를 훅 인스턴스당 한 번만 생성 (에러마다 factory 호출 방지).
+  // onRollback closure는 queryClient 참조 → deps에 포함 필수.
+  const handleBulkSettleError = useMemo(
+    () =>
+      createMutationErrorHandler('정산 처리', addToast, {
+        onRollback: (rollbackCtx) => {
+          const { previousData } = rollbackCtx as {
+            previousData: [readonly unknown[], unknown][];
+          };
+          previousData?.forEach(([key, data]) => {
+            queryClient.setQueryData(key, data);
+          });
+        },
+      }),
+    [addToast, queryClient]
+  );
+
   return useMutation({
     mutationFn: (input: BulkSettlementInput) => {
       requireAuth(user?.uid, 'useSettlement');
@@ -281,16 +299,7 @@ export function useBulkSettlement() {
     onError: (error, variables, ctx) => {
       // impeccable v2 §17 — 일괄 정산 실패 종료 햅틱. 에러 토스트보다 먼저.
       void triggerBatchEnd(false);
-      return createMutationErrorHandler('정산 처리', addToast, {
-        onRollback: (rollbackCtx) => {
-          const { previousData } = rollbackCtx as {
-            previousData: [readonly unknown[], unknown][];
-          };
-          previousData?.forEach(([key, data]) => {
-            queryClient.setQueryData(key, data);
-          });
-        },
-      })(error, variables, ctx);
+      return handleBulkSettleError(error, variables, ctx);
     },
   });
 }
