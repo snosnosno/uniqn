@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router, usePathname } from 'expo-router';
-import { BellIcon, QrCodeIcon, SettingsIcon } from '@/components/icons';
+import { BellIcon, MoonIcon, QrCodeIcon, SettingsIcon, SunIcon } from '@/components/icons';
 import { NotificationBadge } from '@/components/notifications';
 import { getIconColor, getLayoutColor, HEADER_CLASSES } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
@@ -12,6 +12,7 @@ interface TabHeaderProps {
   showQR?: boolean;
   showNotification?: boolean;
   showSettings?: boolean;
+  showThemeToggle?: boolean;
   rightAction?: React.ReactNode;
 }
 
@@ -20,10 +21,12 @@ export function TabHeader({
   showQR = true,
   showNotification = true,
   showSettings = false,
+  showThemeToggle = false,
   rightAction,
 }: TabHeaderProps) {
   const unreadCount = useUnreadCount();
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const headerBackgroundColor = getLayoutColor(isDarkMode, 'header');
   const headerTintColor = getLayoutColor(isDarkMode, 'headerTint');
   const actionColor = getIconColor(isDarkMode, 'primary');
@@ -73,7 +76,7 @@ export function TabHeader({
         {showNotification ? (
           <Pressable
             onPress={() => router.push('/(app)/notifications')}
-            className={`relative rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+            className={`relative overflow-visible rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`알림${unreadCount > 0 ? `, ${unreadCount}개의 읽지 않은 알림` : ''}`}
@@ -92,6 +95,22 @@ export function TabHeader({
             accessibilityLabel="설정"
           >
             <SettingsIcon size={24} color={actionColor} />
+          </Pressable>
+        ) : null}
+
+        {showThemeToggle ? (
+          <Pressable
+            onPress={toggleTheme}
+            className={`rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isDarkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+          >
+            {isDarkMode ? (
+              <SunIcon size={24} color={actionColor} />
+            ) : (
+              <MoonIcon size={24} color={actionColor} />
+            )}
           </Pressable>
         ) : null}
       </View>

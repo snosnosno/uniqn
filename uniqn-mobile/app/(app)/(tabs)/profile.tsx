@@ -25,7 +25,8 @@ import {
   LogOutIcon,
   ShieldIcon,
   EditIcon,
-  MegaphoneIcon,
+  HomeIcon,
+  UsersIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useBubbleScore } from '@/hooks/useReviews';
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-        <TabHeader title="프로필" showSettings />
+        <TabHeader title="프로필" showThemeToggle />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
           <Card className="mb-4">
             <SkeletonProfileHeader />
@@ -135,7 +136,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
-      <TabHeader title="프로필" showSettings />
+      <TabHeader title="프로필" showThemeToggle />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {profile?.role === 'staff' && <EmployerApplicationStatusBanner />}
@@ -178,9 +179,15 @@ export default function ProfileScreen() {
 
         <Card className="mb-4">
           <MenuItem
-            icon={<MegaphoneIcon size={22} color={SECONDARY_PALETTE[500]} />}
-            label="공지사항"
-            onPress={() => router.push('/(app)/(tabs)/board/notice')}
+            icon={<HomeIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            label="대시보드"
+            onPress={() => router.push('/(app)/home')}
+          />
+          <Divider spacing="sm" />
+          <MenuItem
+            icon={<UsersIcon size={22} color={SECONDARY_PALETTE[500]} />}
+            label="커뮤니티"
+            onPress={() => router.push('/(app)/(tabs)/board')}
           />
           <Divider spacing="sm" />
           <MenuItem

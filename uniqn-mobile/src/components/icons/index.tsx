@@ -59,6 +59,7 @@ import {
   MapPin,
   Megaphone,
   Menu,
+  MoreHorizontal,
   MessageCircle,
   MessageCircleMore,
   MessageSquare,
@@ -80,6 +81,7 @@ import {
   SlidersHorizontal,
   Smartphone,
   Star,
+  Sun,
   Tag,
   Trash2,
   TriangleAlert,
@@ -162,6 +164,7 @@ export const UserPlusIcon = createIcon(UserPlus);
 export const UserMinusIcon = createIcon(UserMinus);
 export const SettingsIcon = createIcon(Settings);
 export const MenuIcon = createIcon(Menu);
+export const EllipsisHorizontalIcon = createIcon(MoreHorizontal);
 export const XMarkIcon = createIcon(X);
 export const ChevronLeftIcon = createIcon(ChevronLeft);
 export const ChevronRightIcon = createIcon(ChevronRight);
@@ -238,6 +241,7 @@ export const ScanIcon = createIcon(ScanLine);
 
 // ─── Device / system ───────────────────────────────────────────────────────
 export const MoonIcon = createIcon(Moon);
+export const SunIcon = createIcon(Sun);
 export const DevicePhoneMobileIcon = createIcon(Smartphone);
 export const WifiIcon = createIcon(Wifi);
 export const WifiOff = createIcon(LucideWifiOff);
