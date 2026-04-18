@@ -7,7 +7,6 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Card,
   EmptyState,
   ErrorState,
   FocusablePressable,
@@ -160,10 +159,15 @@ interface StatsCardProps {
   isLoading: boolean;
 }
 
+// StatsCard — full-bleed 밴드로 전환 (옵션 A). MonthNavigator와 동일한 시각 언어
+// (bg-white dark:bg-surface + px-4 py-3 + border-b border-divider)를 사용해
+// TabHeader 아래 정보 패널이 하나의 띠 구조로 연결되도록 함.
 function StatsCard({ stats, isLoading }: StatsCardProps) {
+  const BAND_CLASS = 'bg-white dark:bg-surface px-4 py-3 border-b border-divider';
+
   if (isLoading) {
     return (
-      <Card className="mx-4 mt-4">
+      <View className={BAND_CLASS}>
         {/* 1행: 지원/확정/완료 스켈레톤 */}
         <View className="flex-row justify-around">
           {[1, 2, 3].map((i) => (
@@ -173,40 +177,37 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
             </View>
           ))}
         </View>
-        {/* 구분선 */}
-        <View className="h-px bg-secondary-200 dark:bg-surface my-2.5" />
+        {/* 내부 구분선 */}
+        <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2.5" />
         {/* 2행: 수익 스켈레톤 */}
         <View className="flex-row justify-between items-center px-2">
           <Skeleton width={40} height={14} />
           <Skeleton width={120} height={22} />
         </View>
-      </Card>
+      </View>
     );
   }
 
   if (!stats) return null;
 
   return (
-    <Card className="mx-4 mt-4">
-      {/* 1행: 지원/확정/완료 — 숫자 크기 축소(text-2xl→text-lg) + 수익 위계 유지 */}
+    <View className={BAND_CLASS}>
+      {/* 1행: 지원/확정/완료 — 숫자 text-lg, 수익은 한 단계 위(text-xl) */}
       <View className="flex-row justify-around">
-        {/* 지원 (applied) */}
         <View className="items-center" accessible accessibilityLabel="지원 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">지원</Text>
           <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
         </View>
-        <View className="h-6 w-px bg-secondary-200 dark:bg-surface" />
-        {/* 확정 (confirmed) */}
+        <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
         <View className="items-center" accessible accessibilityLabel="확정 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">확정</Text>
           <Text className="text-lg font-display text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
         </View>
-        <View className="h-6 w-px bg-secondary-200 dark:bg-surface" />
-        {/* 완료 (completed) */}
+        <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
         <View className="items-center" accessible accessibilityLabel="완료 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">완료</Text>
           <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
@@ -214,9 +215,9 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           </Text>
         </View>
       </View>
-      {/* 구분선 */}
-      <View className="h-px bg-secondary-200 dark:bg-surface my-2.5" />
-      {/* 2행: 수익 — 3숫자보다 한 단계 위계(text-lg < text-xl) 유지 */}
+      {/* 내부 구분선 */}
+      <View className="h-px bg-secondary-200 dark:bg-surface-overlay my-2.5" />
+      {/* 2행: 수익 */}
       <View
         className="flex-row justify-between items-center px-2"
         accessible
@@ -227,7 +228,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           {formatCurrency(stats.thisMonthEarnings)}
         </Text>
       </View>
-    </Card>
+    </View>
   );
 }
 
