@@ -8,6 +8,7 @@
 // Core utilities
 export {
   isValidDate,
+  normalizeToIsoString,
   toDate,
   toDateValue,
   toISODateString,
@@ -16,7 +17,7 @@ export {
   parseDateString,
   generateId,
 } from './core';
-export type { DateInput, SerializedTimestamp, TimestampLike } from './core';
+export type { DateInput } from './core';
 
 // Formatting utilities
 export {
