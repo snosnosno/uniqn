@@ -38,20 +38,21 @@ function MenuItem({ icon, label, description, onPress, badge, testID }: MenuItem
         <View className="flex-1 flex-row items-center">
           <View className="mr-4">{icon}</View>
           <View className="flex-1">
-            <Text className="text-base font-sans-medium text-content-primary dark:text-secondary-100">
+            <Text
+              className="text-base font-sans-medium text-content-primary"
+              style={{ letterSpacing: -0.32 }}
+            >
               {label}
             </Text>
             {description ? (
-              <Text className="mt-0.5 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                {description}
-              </Text>
+              <Text className="mt-0.5 text-sm text-content-muted font-sans">{description}</Text>
             ) : null}
           </View>
         </View>
         <View className="flex-row items-center">
           {badge !== undefined && badge > 0 ? (
             <View className="mr-2 min-w-[20px] items-center justify-center rounded-sm bg-primary-500 px-2 py-0.5">
-              <Text className="text-xs font-sans-bold text-surface-dark">{badge}</Text>
+              <Text className="text-xs font-sans-bold text-content-onGold">{badge}</Text>
             </View>
           ) : null}
           <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
@@ -111,10 +112,10 @@ export default function SupportScreen() {
         </Card>
 
         <View className="mt-6 items-center">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             고객센터 운영시간
           </Text>
-          <Text className="mt-1 text-sm font-sans-medium text-content-secondary">
+          <Text className="text-sm font-sans-medium text-content-secondary">
             평일 09:00 - 18:00 (주말/공휴일 휴무)
           </Text>
           <Text className="mt-2 text-xs text-content-placeholder font-sans">
