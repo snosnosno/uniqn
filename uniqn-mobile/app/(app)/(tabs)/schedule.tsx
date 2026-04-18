@@ -584,19 +584,17 @@ export default function ScheduleScreen() {
       {/* 통계 카드 — 월 요약을 먼저 노출 (대시보드 상태 우선) */}
       <StatsCard stats={stats} isLoading={isLoading} />
 
-      {/* 월 네비게이터 — 아래 캘린더/리스트 바로 위에 배치해 제어 대상을 명확히.
-          StatsCard와 직접 맞닿지 않도록 mt-4로 호흡 확보. */}
-      <View className="mt-4">
-        <MonthNavigator
-          year={currentMonth.year}
-          month={currentMonth.month}
-          viewMode={viewMode}
-          onPrev={goToPrevMonth}
-          onNext={goToNextMonth}
-          onToday={goToToday}
-          onToggleView={handleToggleView}
-        />
-      </View>
+      {/* 월 네비게이터 — StatsCard 바로 아래, 캘린더/리스트 바로 위에 배치해
+          섹션 사이 공백 제거. 구분은 Navigator 자체 border-b로 처리. */}
+      <MonthNavigator
+        year={currentMonth.year}
+        month={currentMonth.month}
+        viewMode={viewMode}
+        onPrev={goToPrevMonth}
+        onNext={goToNextMonth}
+        onToday={goToToday}
+        onToggleView={handleToggleView}
+      />
 
       {/* 미작성 평가 배너 */}
       {pendingCount > 0 && (
@@ -620,8 +618,8 @@ export default function ScheduleScreen() {
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
-          {/* 0: 캘린더 */}
-          <View className="mt-4">
+          {/* 0: 캘린더 — MonthNavigator border-b 바로 아래 붙임 */}
+          <View>
             <CalendarView
               schedules={schedules}
               selectedDate={selectedDate}
@@ -695,8 +693,8 @@ export default function ScheduleScreen() {
             </View>
           ) : (
             <>
-              {/* 0: sticky 헤더 */}
-              <View className="bg-surface-page px-4 pt-4 pb-2 border-b border-divider">
+              {/* 0: sticky 헤더 — MonthNavigator 아래 바로 붙음 (pt-3로 최소 호흡) */}
+              <View className="bg-surface-page px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
                 </Text>
