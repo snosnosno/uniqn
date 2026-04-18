@@ -10,6 +10,7 @@ const mockGetAppleLoginAvailability = jest.fn();
 const mockLogin = jest.fn();
 const mockSignInWithApple = jest.fn();
 const mockAddToast = jest.fn();
+const mockClearAllToasts = jest.fn();
 const mockSetUser = jest.fn();
 const mockSetProfile = jest.fn();
 const mockSetAutoLoginEnabled = jest.fn();
@@ -94,6 +95,7 @@ jest.mock('@/stores/authStore', () => ({
 jest.mock('@/stores/toastStore', () => ({
   useToastStore: () => ({
     addToast: mockAddToast,
+    clearAllToasts: mockClearAllToasts,
   }),
 }));
 
