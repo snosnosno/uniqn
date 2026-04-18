@@ -1,6 +1,7 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { TabHeader } from '@/components/headers';
 import { EmptyState, ErrorState, SkeletonListItem } from '@/components/ui';
 import { BoardPostCard } from '@/components/board/BoardPostCard';
@@ -85,7 +86,9 @@ export default function BoardHomeScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="p-4 pb-8"
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+          }
         >
           <PinnedNoticeBanner
             notices={data?.pinnedNotices ?? []}

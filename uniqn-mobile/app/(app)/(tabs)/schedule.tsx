@@ -18,9 +18,9 @@ import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplication
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
-import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
-import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { formatCurrency } from '@/utils/formatters';
 import { STATUS } from '@/constants';
 import { getApplicationById } from '@/services/jobs/applicationService';
@@ -220,7 +220,6 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 // ============================================================================
 
 export default function ScheduleScreen() {
-  const isDark = useThemeStore((s) => s.isDarkMode);
   const addToast = useToastStore((state) => state.addToast);
   const { user, profile } = useAuthStore();
 
@@ -589,11 +588,7 @@ export default function ScheduleScreen() {
           className="flex-1"
           contentContainerClassName="pb-20"
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refresh}
-              tintColor={getLayoutColor(isDark, 'refreshTint')}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
           <View className="mt-4">
@@ -646,11 +641,7 @@ export default function ScheduleScreen() {
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refresh}
-              tintColor={getLayoutColor(isDark, 'refreshTint')}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
           {isLoading && schedules.length === 0 ? (

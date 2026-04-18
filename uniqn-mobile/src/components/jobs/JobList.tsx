@@ -1,9 +1,8 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
-import { PRIMARY_COLORS } from '@/constants/colors';
 import { FlashList } from '@shopify/flash-list';
 import { LIST_CONTAINER_STYLES } from '@/constants';
-import { useThemeStore } from '@/stores/themeStore';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { JobPostingCard } from '@/types';
 import { JobCard } from './JobCard';
 import { PostingSurfaceState } from './shared';
@@ -34,7 +33,6 @@ export function JobList({
   emptyMessage = '등록된 공고가 없습니다',
   error,
 }: JobListProps) {
-  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => <JobCard job={item} onPress={onJobPress} />,
     [onJobPress]
@@ -101,11 +99,7 @@ export function JobList({
         contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
-          />
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
         }
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

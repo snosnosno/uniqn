@@ -3,6 +3,7 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
@@ -182,7 +183,11 @@ export const NotificationList = memo(function NotificationList({
         onEndReachedThreshold={0.5}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#D4AF37" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              {...PTR_REFRESH_PROPS}
+            />
           ) : undefined
         }
         ListEmptyComponent={ListEmptyComponent || defaultEmptyComponent}
