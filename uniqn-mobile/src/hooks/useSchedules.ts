@@ -23,7 +23,7 @@ import {
 } from '@/services/work/scheduleService';
 import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
 import { stableFilters } from '@/utils/queryUtils';
-import { AuthError, ERROR_CODES } from '@/errors/AppError';
+import { AuthError, ERROR_CODES, isAppError } from '@/errors/AppError';
 import type {
   CalendarView,
   ScheduleEvent,
@@ -315,11 +315,22 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
       (error) => {
         setIsRealtimeLoading(false);
         setRealtimeError(error);
-        logger.error('Schedule month realtime subscription failed', error, {
-          staffId,
-          year,
-          month,
-        });
+        // Realtime CHANNEL_ERROR 등 transient 에러는 Phoenix가 자동 재연결하므로
+        // warn 수준으로 로깅하여 Sentry 노이즈를 방지한다.
+        if (isAppError(error) && error.isRetryable) {
+          logger.warn('Schedule month realtime subscription transient error', {
+            message: error.message,
+            staffId,
+            year,
+            month,
+          });
+        } else {
+          logger.error('Schedule month realtime subscription failed', error, {
+            staffId,
+            year,
+            month,
+          });
+        }
       }
     );
 

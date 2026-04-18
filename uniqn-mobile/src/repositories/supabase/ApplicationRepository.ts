@@ -16,6 +16,7 @@ import { logger } from '@/utils/logger';
 import {
   toError,
   BusinessError,
+  NetworkError,
   PermissionError,
   AlreadyAppliedError,
   ApplicationClosedError,
@@ -222,7 +223,13 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         if (status === 'CHANNEL_ERROR') {
           // 일시 장애 — 상위에 통지하되, Phoenix가 자동 재연결을 시도한다.
           // 'RECOVERED' 신호가 오면 데이터를 재동기화한다.
-          onError(new Error(`Realtime 채널 에러: ${TABLES.APPLICATIONS}`));
+          // isRetryable=true로 소비자가 warn 수준으로 다운그레이드할 수 있도록 표시.
+          onError(
+            new NetworkError(ERROR_CODES.NETWORK_REALTIME_TRANSIENT, {
+              message: `Realtime 채널 에러: ${TABLES.APPLICATIONS}`,
+              severity: 'low',
+            })
+          );
         } else if (status === 'RECOVERED') {
           // 재연결 성공 — 끊긴 동안 놓친 변경을 반영하기 위해 전체 목록 재조회.
           logger.info('Realtime 채널 복구 — 데이터 재동기화', { applicantId });

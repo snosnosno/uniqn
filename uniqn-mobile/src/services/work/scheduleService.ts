@@ -8,7 +8,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { UnsubscribeFn } from '@/types/common';
 import { logger } from '@/utils/logger';
-import { NetworkError, ERROR_CODES, toError } from '@/errors';
+import { NetworkError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { STATUS } from '@/constants';
 import { formatDateWithDay, toDateString } from '@/utils/date';
@@ -624,7 +624,13 @@ export function subscribeToSchedules(
       if (hasErrored) return;
       hasErrored = true;
 
-      logger.error('스케줄 구독 에러', error);
+      // Realtime CHANNEL_ERROR 등 transient 에러는 Phoenix가 자동 재연결하므로
+      // warn 수준으로 로깅하여 Sentry 노이즈를 방지한다.
+      if (isAppError(error) && error.isRetryable) {
+        logger.warn('스케줄 구독 일시 장애 (자동 재시도 중)', { message: error.message });
+      } else {
+        logger.error('스케줄 구독 에러', error);
+      }
       onError?.(error);
     };
 

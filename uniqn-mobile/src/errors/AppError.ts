@@ -86,6 +86,7 @@ export const ERROR_CODES = {
   NETWORK_TIMEOUT: 'E1002',
   NETWORK_SERVER_UNREACHABLE: 'E1003',
   NETWORK_REQUEST_FAILED: 'E1004',
+  NETWORK_REALTIME_TRANSIENT: 'E1005',
 
   // 인증 에러 (E2xxx)
   AUTH_INVALID_CREDENTIALS: 'E2001',
@@ -185,6 +186,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.NETWORK_TIMEOUT]: '요청 시간이 초과되었습니다. 다시 시도해주세요',
   [ERROR_CODES.NETWORK_SERVER_UNREACHABLE]: '서버에 연결할 수 없습니다',
   [ERROR_CODES.NETWORK_REQUEST_FAILED]: '요청에 실패했습니다. 다시 시도해주세요',
+  [ERROR_CODES.NETWORK_REALTIME_TRANSIENT]: '실시간 연결이 일시 중단되었습니다. 자동 재연결 중...',
 
   // 인증
   [ERROR_CODES.AUTH_INVALID_CREDENTIALS]: '이메일 또는 비밀번호가 올바르지 않습니다',

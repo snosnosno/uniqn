@@ -32,6 +32,8 @@ import {
   subscribeToSchedules,
   getScheduleStats,
 } from '@/services/work/scheduleService';
+import { logger } from '@/utils/logger';
+import { NetworkError, ERROR_CODES } from '@/errors';
 
 // ============================================================================
 // Repository Mocks
@@ -154,48 +156,75 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
   handleErrorWithDefault: jest.fn((_error: unknown, defaultValue: unknown) => defaultValue),
 }));
 
-jest.mock('@/errors', () => ({
-  ERROR_CODES: {
-    INFRA_NOT_FOUND: 'E4002',
-    INFRA_PERMISSION_DENIED: 'E4001',
-    BUSINESS_INVALID_STATE: 'E6042',
-    NETWORK_REQUEST_FAILED: 'E1002',
-  },
-  toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
-  BusinessError: class BusinessError extends Error {
+jest.mock('@/errors', () => {
+  class AppErrorMock extends Error {
+    public readonly __isAppError = true as const;
     public userMessage: string;
     public code: string;
-    constructor(code: string, options?: { userMessage?: string }) {
-      const message = options?.userMessage || code;
+    public severity: string;
+    public isRetryable: boolean;
+    constructor(
+      code: string,
+      options?: {
+        userMessage?: string;
+        message?: string;
+        severity?: string;
+        isRetryable?: boolean;
+      }
+    ) {
+      const message = options?.message || options?.userMessage || code;
       super(message);
-      this.name = 'BusinessError';
+      this.name = 'AppError';
       this.code = code;
-      this.userMessage = message;
+      this.userMessage = options?.userMessage || message;
+      this.severity = options?.severity || 'medium';
+      this.isRetryable = options?.isRetryable ?? false;
     }
-  },
-  NetworkError: class NetworkError extends Error {
-    public userMessage: string;
-    public code: string;
-    constructor(code: string, options?: { userMessage?: string }) {
-      const message = options?.userMessage || code;
-      super(message);
-      this.name = 'NetworkError';
-      this.code = code;
-      this.userMessage = message;
-    }
-  },
-  PermissionError: class PermissionError extends Error {
-    public userMessage: string;
-    public code: string;
-    constructor(code: string, options?: { userMessage?: string }) {
-      const message = options?.userMessage || code;
-      super(message);
-      this.name = 'PermissionError';
-      this.code = code;
-      this.userMessage = message;
-    }
-  },
-}));
+  }
+
+  return {
+    ERROR_CODES: {
+      INFRA_NOT_FOUND: 'E4002',
+      INFRA_PERMISSION_DENIED: 'E4001',
+      BUSINESS_INVALID_STATE: 'E6042',
+      NETWORK_REQUEST_FAILED: 'E1002',
+      NETWORK_REALTIME_TRANSIENT: 'E1005',
+    },
+    toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
+    isAppError: (error: unknown): boolean =>
+      error instanceof AppErrorMock ||
+      (error !== null &&
+        typeof error === 'object' &&
+        '__isAppError' in error &&
+        (error as { __isAppError: unknown }).__isAppError === true),
+    BusinessError: class BusinessError extends AppErrorMock {
+      constructor(code: string, options?: { userMessage?: string }) {
+        super(code, options);
+        this.name = 'BusinessError';
+      }
+    },
+    NetworkError: class NetworkError extends AppErrorMock {
+      constructor(
+        code: string,
+        options?: {
+          userMessage?: string;
+          message?: string;
+          severity?: string;
+          isRetryable?: boolean;
+        }
+      ) {
+        super(code, { isRetryable: true, ...options });
+        this.name = 'NetworkError';
+      }
+    },
+    PermissionError: class PermissionError extends AppErrorMock {
+      constructor(code: string, options?: { userMessage?: string }) {
+        super(code, options);
+        this.name = 'PermissionError';
+      }
+    },
+  };
+});
 
 // Mock RealtimeManager to always call subscribeFn directly (bypass caching)
 jest.mock('@/shared/realtime', () => ({
@@ -663,7 +692,12 @@ describe('scheduleService', () => {
       onUpdate.mockClear();
 
       // 2) CHANNEL_ERROR 발생 → onError 호출, hasErrored=true 고정
-      appOnError(new Error('Realtime 채널 에러: applications'));
+      appOnError(
+        new NetworkError(ERROR_CODES.NETWORK_REALTIME_TRANSIENT, {
+          message: 'Realtime 채널 에러: applications',
+          severity: 'low',
+        })
+      );
       expect(onError).toHaveBeenCalledTimes(1);
 
       // 3) Phoenix 재연결 후 Repository가 RECOVERED → 재조회 → onData 호출
@@ -674,6 +708,72 @@ describe('scheduleService', () => {
       // 4) 수정 전에는 여기서 onUpdate가 절대 호출되지 않음 (hasErrored 고착)
       //    수정 후에는 새 스냅샷이 에러 상태를 해제하고 emitSchedules가 재개됨
       expect(onUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('should log transient NetworkError as warn, not error (Sentry noise prevention)', async () => {
+      const onUpdate = jest.fn();
+      const onError = jest.fn();
+      let appOnError: (error: Error) => void = () => undefined;
+
+      mockWorkLogRepoSubscribeByStaffId.mockReturnValue(jest.fn());
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockImplementation(((
+        _staffId: string,
+        _statuses: unknown,
+        _onData: unknown,
+        onErr: (error: Error) => void
+      ) => {
+        appOnError = onErr;
+        return jest.fn();
+      }) as never);
+
+      subscribeToSchedules('staff-123', onUpdate, onError);
+
+      const loggerWarn = logger.warn as jest.Mock;
+      const loggerError = logger.error as jest.Mock;
+      loggerWarn.mockClear();
+      loggerError.mockClear();
+
+      appOnError(
+        new NetworkError(ERROR_CODES.NETWORK_REALTIME_TRANSIENT, {
+          message: 'Realtime 채널 에러: applications',
+          severity: 'low',
+        })
+      );
+
+      expect(loggerWarn).toHaveBeenCalledWith(
+        '스케줄 구독 일시 장애 (자동 재시도 중)',
+        expect.objectContaining({ message: expect.stringContaining('applications') })
+      );
+      expect(loggerError).not.toHaveBeenCalledWith('스케줄 구독 에러', expect.anything());
+    });
+
+    it('should log non-retryable errors as error (preserve real error signal)', async () => {
+      const onUpdate = jest.fn();
+      const onError = jest.fn();
+      let appOnError: (error: Error) => void = () => undefined;
+
+      mockWorkLogRepoSubscribeByStaffId.mockReturnValue(jest.fn());
+      mockAppRepoSubscribeByApplicantIdWithStatuses.mockImplementation(((
+        _staffId: string,
+        _statuses: unknown,
+        _onData: unknown,
+        onErr: (error: Error) => void
+      ) => {
+        appOnError = onErr;
+        return jest.fn();
+      }) as never);
+
+      subscribeToSchedules('staff-123', onUpdate, onError);
+
+      const loggerWarn = logger.warn as jest.Mock;
+      const loggerError = logger.error as jest.Mock;
+      loggerWarn.mockClear();
+      loggerError.mockClear();
+
+      const fatalError = new Error('Schema mismatch');
+      appOnError(fatalError);
+
+      expect(loggerError).toHaveBeenCalledWith('스케줄 구독 에러', fatalError);
     });
 
     it('should not re-fire onError on repeated transient errors while already in error state', async () => {

@@ -13,7 +13,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { toError, isAppError } from '@/errors';
+import { toError, isAppError, NetworkError, ERROR_CODES } from '@/errors';
 import {
   handleSupabaseError,
   toCamelCase,
@@ -635,8 +635,14 @@ export class SupabaseNotificationRepository implements INotificationRepository {
         },
         (status) => {
           // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
+          // isRetryable=true로 소비자가 warn 수준으로 다운그레이드할 수 있도록 표시.
           if (status === 'CHANNEL_ERROR') {
-            onError?.(new Error(`Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`));
+            onError?.(
+              new NetworkError(ERROR_CODES.NETWORK_REALTIME_TRANSIENT, {
+                message: `Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`,
+                severity: 'low',
+              })
+            );
           }
         }
       );
@@ -680,8 +686,14 @@ export class SupabaseNotificationRepository implements INotificationRepository {
         },
         (status) => {
           // TIMED_OUT은 Phoenix가 자동 재시도 — CHANNEL_ERROR만 상위로 전파
+          // isRetryable=true로 소비자가 warn 수준으로 다운그레이드할 수 있도록 표시.
           if (status === 'CHANNEL_ERROR') {
-            onError?.(new Error(`Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`));
+            onError?.(
+              new NetworkError(ERROR_CODES.NETWORK_REALTIME_TRANSIENT, {
+                message: `Realtime 채널 에러: ${TABLES.NOTIFICATIONS}`,
+                severity: 'low',
+              })
+            );
           }
         }
       );
