@@ -2,194 +2,60 @@
  * UNIQN Mobile - 공통 Zod 스키마
  *
  * @description 여러 스키마에서 재사용되는 공통 타입 정의
- * @version 1.0.0 - Phase 1.5 (any 타입 제거)
+ * @version 3.0.0 - Firebase Timestamp 레거시 청산 (2026-04-19)
+ *                  timestampSchema가 모든 입력 형태를 ISO 8601 string으로 정규화.
+ *                  Supabase timestamptz round-trip이 string-string으로 일관 유지.
+ *                  정규화 진실원: utils/date/core의 normalizeToIsoString.
  *
  * @example
  * import { timestampSchema, optionalTimestampSchema } from './common';
  *
  * const mySchema = z.object({
- *   createdAt: timestampSchema,
- *   deletedAt: optionalTimestampSchema,
+ *   createdAt: timestampSchema,    // string (ISO 8601)
+ *   deletedAt: optionalTimestampSchema,  // string | null | undefined
  * });
  */
 
 import { z } from 'zod';
+import { normalizeToIsoString } from '@/utils/date';
 
 // ============================================================================
-// TimestampLike - Firebase Timestamp 추상화
-// ============================================================================
-
-/**
- * toDate() 메서드를 가진 Timestamp-like 인터페이스
- *
- * @description Firebase Timestamp와 호환되는 duck-typed 인터페이스.
- *              실제 Timestamp 클래스를 import하지 않고도 동일한 인터페이스를 제공.
- */
-interface TimestampLike {
-  toDate(): Date;
-  seconds: number;
-  nanoseconds: number;
-}
-
-/**
- * TimestampLike 객체 생성 헬퍼
- *
- * @description Date -> TimestampLike 변환. Firebase Timestamp과 동일한 인터페이스 제공.
- */
-function createTimestampLike(date: Date): TimestampLike {
-  const seconds = Math.floor(date.getTime() / 1000);
-  const nanoseconds = (date.getTime() % 1000) * 1_000_000;
-  return {
-    toDate: () => date,
-    seconds,
-    nanoseconds,
-  };
-}
-
-function createTimestampLikeFromParts(seconds: number, nanoseconds: number): TimestampLike {
-  const date = new Date(seconds * 1000 + nanoseconds / 1_000_000);
-  return {
-    toDate: () => date,
-    seconds,
-    nanoseconds,
-  };
-}
-
-// ============================================================================
-// Firebase Timestamp Schemas
+// Timestamp Schemas (ISO string 반환)
 // ============================================================================
 
 /**
- * Timestamp-like 객체 타입 가드
+ * Timestamp 검증 및 ISO string 정규화
  *
- * @description toDate() 메서드가 있는 객체인지 확인
+ * 지원 입력 (모두 ISO 8601 string으로 정규화):
+ *  - Supabase ISO string ("2026-04-19T15:30:00+00:00")
+ *  - Date 인스턴스
+ *  - Firebase Timestamp 호환 객체 (toDate() 메서드)
+ *  - { seconds, nanoseconds } JSON 직렬화 형태
+ *  - serverTimestamp() 센티널
+ *  - epoch milliseconds (number)
+ *
+ * 출력은 string이므로 JSON.stringify 시 그대로 통과 → Supabase timestamptz 호환.
+ * View layer에서 Date가 필요하면 utils/date의 toDate()로 변환.
  */
-function isTimestampLike(value: unknown): value is { toDate: () => Date } {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'toDate' in value &&
-    typeof (value as Record<string, unknown>).toDate === 'function'
-  );
-}
+export const timestampSchema = z.unknown().transform((val, ctx): string => {
+  try {
+    return normalizeToIsoString(val);
+  } catch {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Timestamp 형식이 아닙니다',
+    });
+    return z.NEVER;
+  }
+});
 
 /**
- * seconds/nanoseconds 객체 타입 가드
- */
-function isTimestampObject(value: unknown): value is { seconds: number; nanoseconds: number } {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'seconds' in value &&
-    'nanoseconds' in value &&
-    typeof (value as Record<string, unknown>).seconds === 'number' &&
-    typeof (value as Record<string, unknown>).nanoseconds === 'number'
-  );
-}
-
-/**
- * serverTimestamp() 센티널 값 타입 가드
- *
- * @description Firestore에서 pendingWrites 상태일 때 serverTimestamp()는
- *              실제 Timestamp 대신 { _methodName: 'serverTimestamp' } 형태로 반환됨
- */
-function isServerTimestampSentinel(value: unknown): value is { _methodName: 'serverTimestamp' } {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    '_methodName' in value &&
-    (value as Record<string, unknown>)._methodName === 'serverTimestamp'
-  );
-}
-
-/**
- * Timestamp 타입 검증 및 변환
- *
- * @description Supabase(ISO string) 및 Firestore Timestamp 모두 허용
- * - ISO string (Supabase: "2026-04-12T10:38:00+00:00")
- * - Timestamp 인스턴스 (toDate 메서드로 판별)
- * - Date 인스턴스
- * - { seconds: number, nanoseconds: number } 형태 (JSON 직렬화된 Timestamp)
- * - serverTimestamp() 센티널
- *
- * @note z.instanceof(Timestamp)는 번들러 환경에서 실패할 수 있으므로
- *       toDate() 메서드 존재 여부로 판별
- * @note 모든 유효한 입력은 TimestampLike로 변환되어 출력 타입이 일관됨
- *
- * @example
- * const schema = z.object({
- *   createdAt: timestampSchema,
- * });
- *
- * // 유효한 입력:
- * { createdAt: "2026-04-12T10:38:00+00:00" } // Supabase ISO string
- * { createdAt: Timestamp.now() }
- * { createdAt: new Date() }
- * { createdAt: { seconds: 1234567890, nanoseconds: 0 } }
- */
-function isIsoString(val: unknown): val is string {
-  return typeof val === 'string' && !isNaN(Date.parse(val));
-}
-
-export const timestampSchema = z
-  .custom<
-    | string
-    | { toDate: () => Date }
-    | Date
-    | { seconds: number; nanoseconds: number }
-    | { _methodName: 'serverTimestamp' }
-  >(
-    (val) =>
-      isIsoString(val) ||
-      isTimestampLike(val) ||
-      val instanceof Date ||
-      isTimestampObject(val) ||
-      isServerTimestampSentinel(val),
-    { message: 'Timestamp 형식이 아닙니다' }
-  )
-  .transform((val): TimestampLike => {
-    // ISO string (Supabase) → TimestampLike로 변환
-    if (isIsoString(val)) {
-      return createTimestampLike(new Date(val));
-    }
-    // 이미 Timestamp-like 객체인 경우 TimestampLike로 래핑
-    if (isTimestampLike(val)) {
-      const date = val.toDate();
-      return createTimestampLike(date);
-    }
-    // Date 객체인 경우 TimestampLike로 변환
-    if (val instanceof Date) {
-      return createTimestampLike(val);
-    }
-    // { seconds, nanoseconds } 객체인 경우 TimestampLike로 변환
-    if (isTimestampObject(val)) {
-      return createTimestampLikeFromParts(val.seconds, val.nanoseconds);
-    }
-    // serverTimestamp() 센티널 값인 경우 현재 시간으로 변환
-    // (pendingWrites 상태에서 읽은 경우)
-    if (isServerTimestampSentinel(val)) {
-      return createTimestampLike(new Date());
-    }
-    // 여기에 도달하면 안됨 (위의 custom에서 이미 검증됨)
-    throw new Error('Invalid timestamp format');
-  });
-
-/**
- * 선택적 Timestamp 스키마
- *
- * @description null/undefined 허용
- *
- * @example
- * const schema = z.object({
- *   confirmedAt: optionalTimestampSchema,
- * });
+ * 선택적 Timestamp 스키마 (null/undefined 허용)
  */
 export const optionalTimestampSchema = timestampSchema.optional().nullable();
 
 /**
- * Timestamp 또는 null 스키마 (nullable만, optional 아님)
- *
- * @description 필드는 있지만 null일 수 있는 경우
+ * Nullable Timestamp 스키마 (null 허용, undefined는 거부)
  */
 export const nullableTimestampSchema = timestampSchema.nullable();
 
