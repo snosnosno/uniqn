@@ -23,7 +23,7 @@ export class HomePage extends BasePage {
     await this.waitForReady();
   }
 
-  async selectTypeChip(label: '긴급' | '당일' | '지인' | '고정'): Promise<void> {
+  async selectTypeChip(label: '긴급' | '당일' | '지인' | '고정' | '지원'): Promise<void> {
     await this.getTypeChip(label).click();
   }
 
@@ -59,7 +59,7 @@ export class HomePage extends BasePage {
     }
   }
 
-  isDateSliderVisible(): Promise<boolean> {
+  isDateCalendarVisible(): Promise<boolean> {
     return this.page.locator('[aria-label*="날짜"]').isVisible();
   }
 }
