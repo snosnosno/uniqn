@@ -17,6 +17,7 @@ export interface ProfileIdentity {
   displayName: string;
   nickname?: string;
   photoURL?: string;
+  /** impeccable v2 §18 — photo placeholder 용 blurhash 해시 (DB null 허용) */
   photoURLBlurhash?: string | null;
 }
 

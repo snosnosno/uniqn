@@ -14,14 +14,14 @@ export class AdminDashboardPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    // app/(admin)/index.tsx: "관리자 대시보드" 헤더 텍스트
-    this.title = page.getByText('관리자 대시보드');
-    // app/(admin)/index.tsx: "UNIQN 서비스 관리 및 모니터링" 서브텍스트
-    this.subtitle = page.getByText('UNIQN 서비스 관리 및 모니터링');
+    // app/(admin)/index.tsx: 신고 관리 링크 카드 (항상 표시, link role로 접근)
+    this.title = page.getByRole('link', { name: /신고 관리/ });
+    // app/(admin)/index.tsx: 서브텍스트
+    this.subtitle = page.getByText('주요 운영 화면을 한 곳에서 빠르게 확인합니다.');
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/', { waitUntil: 'domcontentloaded' });
+    await this.page.goto('/admin', { waitUntil: 'domcontentloaded' });
     await this.waitForReady();
   }
 
@@ -40,9 +40,9 @@ export class AdminDashboardPage extends BasePage {
     await this.page.getByText(label).click();
   }
 
-  /** 메뉴 카드 표시 여부 확인 */
+  /** 메뉴 카드 표시 여부 확인 (link role 사용 — Text 요소는 hidden 처리됨) */
   getMenuCard(label: string): Locator {
-    return this.page.getByText(label);
+    return this.page.getByRole('link', { name: new RegExp(label) });
   }
 
   /** 통계 페이지로 이동 */

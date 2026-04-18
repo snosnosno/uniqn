@@ -80,3 +80,28 @@ export function formatTimeOfDay(value: DateLike): string {
   const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
   return `${period} ${hour12}시 ${minute}분`;
 }
+
+/**
+ * "HH:MM" 24시간제 짧은 시각. 표·리스트·일정 카드 등 밀도 있는 수치 컬럼에 적합.
+ * null/undefined/invalid 입력은 "--:--" placeholder 반환(정산 UI 관습).
+ */
+export function formatTimeShort(value: DateLike | null | undefined): string {
+  if (value === null || value === undefined) return '--:--';
+  const d = toDate(value);
+  if (!d) return '--:--';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+/**
+ * "YYYY년 M월 D일" 전체 한글 날짜(연도 포함).
+ * 정산·이력 등 정확한 날짜 문맥이 필요한 곳에 사용.
+ * null/undefined/invalid 입력은 "-" placeholder 반환.
+ */
+export function formatDateLong(value: DateLike | null | undefined): string {
+  if (value === null || value === undefined) return '-';
+  const d = toDate(value);
+  if (!d) return '-';
+  return format(d, 'yyyy년 M월 d일', { locale: ko });
+}

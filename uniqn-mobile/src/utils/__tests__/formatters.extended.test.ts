@@ -93,14 +93,14 @@ describe('Formatters (Extended Coverage)', () => {
   // formatSalary
   // ==========================================================================
   describe('formatSalary', () => {
-    it('should format salary type + amount', () => {
-      expect(formatSalary('hourly', 15000)).toBe('시급 15,000원');
-      expect(formatSalary('daily', 150000)).toBe('일급 150,000원');
-      expect(formatSalary('monthly', 3000000)).toBe('월급 3,000,000원');
+    it('should format salary type + amount (impeccable v2 §19)', () => {
+      expect(formatSalary('hourly', 15000)).toBe('시급 ₩15,000');
+      expect(formatSalary('daily', 150000)).toBe('일급 ₩150,000');
+      expect(formatSalary('monthly', 3000000)).toBe('월급 ₩3,000,000');
     });
 
     it('should format zero amount', () => {
-      expect(formatSalary('hourly', 0)).toBe('시급 0원');
+      expect(formatSalary('hourly', 0)).toBe('시급 ₩0');
     });
   });
 

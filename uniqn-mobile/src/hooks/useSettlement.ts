@@ -28,10 +28,10 @@ import { queryKeys, queryCachingOptions, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { triggerBatchStart, triggerBatchEnd } from '@/utils/haptics';
 import { stableFilters } from '@/utils/queryUtils';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
-import { triggerBatchEnd } from '@/utils/haptics';
 import { STATUS } from '@/constants';
 import type { PayrollStatus } from '@/types';
 
@@ -253,6 +253,9 @@ export function useBulkSettlement() {
       return bulkSettlement(input, user.uid);
     },
     onMutate: async (input) => {
+      // impeccable v2 §17 — 일괄 액션 시작 Light 햅틱 1회(개별 햅틱 대체)
+      void triggerBatchStart();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
 
@@ -274,6 +277,9 @@ export function useBulkSettlement() {
         failed: result.failedCount,
         totalAmount: result.totalAmount,
       });
+
+      // §17 — 종료 햅틱. 실패 0건이면 success, 일부라도 실패면 warning.
+      void triggerBatchEnd(result.failedCount === 0);
 
       if (result.successCount > 0) {
         addToast({

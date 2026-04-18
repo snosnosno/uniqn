@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import type { ConfirmApplicationInput, RejectApplicationInput } from '@/types';
 import { logger } from '@/utils/logger';
+import { triggerBatchStart, triggerBatchEnd } from '@/utils/haptics';
 import {
   bulkConfirmApplications,
   confirmApplication,
@@ -170,6 +171,9 @@ export function useBulkConfirmApplications() {
       return bulkConfirmApplications(applicationIds, user.uid);
     },
     onMutate: async (applicationIds) => {
+      // impeccable v2 §17 — 일괄 확정 시작 Light 햅틱(개별 Medium 대체)
+      void triggerBatchStart();
+
       await queryClient.cancelQueries({ queryKey: queryKeys.applicantManagement.all });
       const previousData = queryClient.getQueriesData({
         queryKey: queryKeys.applicantManagement.all,
@@ -204,6 +208,9 @@ export function useBulkConfirmApplications() {
         failed: result.failedCount,
       });
 
+      // §17 — 종료 햅틱. 실패 0이면 success, 일부라도 실패면 warning.
+      void triggerBatchEnd(result.failedCount === 0);
+
       if (result.successCount > 0) {
         addToast({
           type: 'success',
@@ -226,6 +233,8 @@ export function useBulkConfirmApplications() {
         [ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED]: '모집 인원이 마감되었습니다.',
       },
       onRollback: (ctx) => {
+        // §17 — 일괄 작업 전체 실패 시 warning 햅틱
+        void triggerBatchEnd(false);
         const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
         previousData?.forEach(([key, data]) => {
           queryClient.setQueryData(key, data);

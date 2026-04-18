@@ -21,7 +21,7 @@ test.describe('로그인', () => {
     await loginPage.login(email, password);
     await loginPage.waitForLoginSuccess();
 
-    expect(loginPage.getCurrentPath()).toBe('/');
+    expect(loginPage.getCurrentPath()).toBe('/home');
   });
 
   test('잘못된 이메일 형식 → 검증 에러 표시', async () => {

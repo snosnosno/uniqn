@@ -134,8 +134,22 @@ export const Button = memo(function Button({
   const resolvedAccessibilityLabel =
     accessibilityLabel ?? (typeof children === 'string' ? children : undefined);
 
-  const buttonClass =
-    `flex-row items-center justify-center rounded ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''} ${className ?? ''}`.trim();
+  // impeccable v2 §22 — 외부 키보드 사용자용 focus ring(Info 블루 #2563EB 2px).
+  // NativeWind focus: modifier + outset 예약(투명 border)으로 layout shift 방지.
+  const buttonClass = [
+    'flex-row items-center justify-center rounded',
+    'border-2 border-transparent',
+    'focus:border-[#2563EB]',
+    variantStyles[variant],
+    sizeStyles[size],
+    fullWidth ? 'w-full' : '',
+    isDisabled ? 'opacity-50' : '',
+    className ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
   const textClass = `font-sans-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
   // Focus ring wrapper class — variant의 기존 border(outline 등)와 충돌 방지를 위해 외부 View로 감쌈
   // fullWidth는 inner Pressable이 가져가므로 wrapper에는 self-stretch만 필요 (inline-block 방지)

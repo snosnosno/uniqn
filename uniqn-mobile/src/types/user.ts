@@ -56,7 +56,7 @@ export interface UserProfile {
   role: UserRole;
   /** 프로필 사진 URL (삭제 시 null) */
   photoURL?: string | null;
-  /** 프로필 사진 blurhash 플레이스홀더 (업로드 시 생성, 없으면 null) */
+  /** 프로필 사진 blurhash 해시 (impeccable v2 §18, placeholder 용) */
   photoURLBlurhash?: string | null;
 
   // 전화번호 인증

@@ -469,6 +469,9 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
         ...(context.applicantEmail && { applicant_email: context.applicantEmail }),
         ...(context.applicantNickname && { applicant_nickname: context.applicantNickname }),
         ...(context.applicantPhotoURL && { applicant_photo_url: context.applicantPhotoURL }),
+        ...(context.applicantPhotoURLBlurhash && {
+          applicant_photo_url_blurhash: context.applicantPhotoURLBlurhash,
+        }),
         applicant_role: normalizedPrimaryRole.role,
         ...(normalizedPrimaryRole.customRole && { custom_role: normalizedPrimaryRole.customRole }),
         job_posting_id: input.jobPostingId,

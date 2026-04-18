@@ -8,6 +8,7 @@
 import { toISODateString, generateId as generateIdBase } from '../date/core';
 import { formatDateWithDay } from '../date/formatting';
 import { groupConsecutiveDates as groupConsecutiveDatesBase } from '../date/grouping';
+import { calculateTotalPositionsFromSchedule } from '@/domains/job-posting/stats';
 import type { PostingSchedule } from '@/types/jobPosting';
 
 // Re-export from date/ for backward compatibility
@@ -222,43 +223,12 @@ export function getClosingStatus(jobData: {
   totalPositions?: number;
   filledPositions?: number;
 }): { total: number; filled: number; isClosed: boolean } {
-  if (jobData.schedule?.kind === 'fixed') {
-    const total = (jobData.schedule.roleRequirements ?? []).reduce(
-      (sum, role) => sum + role.count,
-      0
-    );
-    const filled = (jobData.schedule.roleRequirements ?? []).reduce(
-      (sum, role) => sum + (role.filled ?? 0),
-      0
-    );
-
-    return {
-      total,
-      filled,
-      isClosed: total > 0 && filled >= total,
-    };
-  }
-
-  if (jobData.schedule?.kind === 'dated') {
-    const total = jobData.schedule.requirements.reduce(
-      (dateSum, requirement) =>
-        dateSum +
-        requirement.timeSlots.reduce(
-          (slotSum, slot) => slotSum + slot.roles.reduce((sum, role) => sum + role.count, 0),
-          0
-        ),
-      0
-    );
-    const filled = jobData.schedule.requirements.reduce(
-      (dateSum, requirement) =>
-        dateSum +
-        requirement.timeSlots.reduce(
-          (slotSum, slot) =>
-            slotSum + slot.roles.reduce((sum, role) => sum + (role.filled ?? 0), 0),
-          0
-        ),
-      0
-    );
+  // schedule이 있으면 사람 단위(person basis)로 total/filled 계산.
+  // total: stats.ts의 calculateTotalPositionsFromSchedule과 의미 동등 (역할별 peak의 합).
+  // filled: RPC가 관리하는 job_postings.filled_positions 컬럼을 단일 진실원으로 사용.
+  if (jobData.schedule?.kind === 'fixed' || jobData.schedule?.kind === 'dated') {
+    const total = calculateTotalPositionsFromSchedule(jobData.schedule);
+    const filled = jobData.filledPositions ?? 0;
 
     return {
       total,
