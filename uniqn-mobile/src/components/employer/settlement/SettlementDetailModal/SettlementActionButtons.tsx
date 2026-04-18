@@ -5,9 +5,10 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ClockIcon, EditIcon, BanknotesIcon } from '../../../icons';
+import { triggerHaptic } from '@/utils/haptics';
 
 export interface SettlementActionButtonsProps {
   /** 시간 수정 핸들러 */
@@ -33,6 +34,14 @@ export function SettlementActionButtons({
   onEditAmount,
   onSettle,
 }: SettlementActionButtonsProps) {
+  // impeccable v2 §17 — 정산(결제 승인)은 결정적 순간이므로 Medium 햅틱 1회.
+  // 200ms throttle 로 중복 탭 보호됨.
+  const handleSettle = useCallback(async () => {
+    if (!onSettle) return;
+    await triggerHaptic('medium');
+    onSettle();
+  }, [onSettle]);
+
   return (
     <View className="px-4 py-4">
       {/* 첫 번째 줄: 시간 수정, 금액 수정 */}
@@ -71,7 +80,7 @@ export function SettlementActionButtons({
       {/* 두 번째 줄: 정산하기 버튼 */}
       {onSettle && (
         <Pressable
-          onPress={onSettle}
+          onPress={handleSettle}
           accessibilityRole="button"
           accessibilityLabel="정산하기"
           accessibilityHint="스태프에게 급여를 정산합니다"

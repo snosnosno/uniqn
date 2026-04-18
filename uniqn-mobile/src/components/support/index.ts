@@ -15,3 +15,4 @@ export { FAQList, type FAQListProps } from './FAQList';
 export { InquiryCard, type InquiryCardProps } from './InquiryCard';
 export { InquiryForm, type InquiryFormProps } from './InquiryForm';
 export { InquiryResponseForm, type InquiryResponseFormProps } from './InquiryResponseForm';
+export { INQUIRY_STATUS_STRIPE_TONE } from './helpers/inquiryConfig';

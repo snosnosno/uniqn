@@ -41,7 +41,7 @@ interface ReasonSelectProps {
 function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
   return (
     <View className="flex-col gap-2">
-      <Text className="text-sm font-sans-medium text-content-secondary mb-2">
+      <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
         탈퇴 사유를 선택해주세요
       </Text>
       {(Object.entries(DELETION_REASONS) as [DeletionReason, string][]).map(([key, label]) => (
@@ -51,24 +51,22 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
           className={`p-4 rounded-lg border ${
             selectedReason === key
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-secondary-200 dark:border-surface-overlay bg-white dark:bg-surface'
+              : 'border-divider bg-surface-card dark:bg-surface-elevated'
           }`}
         >
           <View className="flex-row items-center">
             <View
               className={`w-5 h-5 rounded-sm border-2 mr-3 items-center justify-center ${
-                selectedReason === key
-                  ? 'border-primary-500 bg-primary-500'
-                  : 'border-secondary-300 dark:border-surface-overlay'
+                selectedReason === key ? 'border-primary-500 bg-primary-500' : 'border-divider'
               }`}
             >
               {selectedReason === key && <View className="w-2 h-2 rounded-sm bg-white" />}
             </View>
             <Text
-              className={`flex-1 ${
+              className={`flex-1 font-sans ${
                 selectedReason === key
                   ? 'text-primary-700 dark:text-primary-300 font-sans-medium'
-                  : 'text-secondary-700 dark:text-secondary-300'
+                  : 'text-content-primary'
               }`}
             >
               {label}
@@ -271,7 +269,7 @@ export default function DeleteAccountScreen() {
               secureTextEntry
               autoComplete="password"
             />
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mt-1 font-sans">
+            <Text className="text-xs text-content-muted mt-1 font-sans">
               본인 확인을 위해 비밀번호를 입력해주세요
             </Text>
           </View>
@@ -357,7 +355,7 @@ export default function DeleteAccountScreen() {
             Apple 계정 연결 해제에 실패했습니다.{'\n'}
             재시도하시겠습니까?
           </Text>
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 text-center mb-6 font-sans">
+          <Text className="text-xs text-content-muted text-center mb-6 font-sans">
             건너뛰면 탈퇴는 진행되지만, Apple ID 설정에서{'\n'}
             수동으로 앱 연결을 해제해야 할 수 있습니다.
           </Text>

@@ -4,12 +4,19 @@ import { STATUS_COLORS } from '@/constants/colors';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, type CardStripeTone } from '@/components/ui';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import type { JobPostingCard } from '@/types';
 import { PostingCardSurface } from './shared/PostingCardSurface';
 
 export type ApplicationStatusType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
+
+const STRIPE_TONE_BY_STATUS: Record<ApplicationStatusType, CardStripeTone> = {
+  applied: 'info',
+  confirmed: 'info',
+  cancelled: 'muted',
+  completed: 'muted',
+};
 
 interface JobCardProps {
   job: JobPostingCard;
@@ -42,13 +49,18 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     [handleBookmarkPress]
   );
 
+  const stripeTone: CardStripeTone = applicationStatus
+    ? STRIPE_TONE_BY_STATUS[applicationStatus]
+    : 'gold';
+
   return (
     <PostingCardSurface
       card={job}
       onPress={handlePress}
+      stripeTone={stripeTone}
       topStatus={
         applicationStatus ? (
-          <Badge variant={SCHEDULE_STATUS[applicationStatus].variant} dot>
+          <Badge variant="chip" dot>
             {SCHEDULE_STATUS[applicationStatus].label}
           </Badge>
         ) : undefined
@@ -93,8 +105,8 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           </View>
         ) : undefined
       }
-      containerClassName="mb-3 overflow-hidden rounded-md border border-secondary-100 bg-white dark:border-surface-overlay dark:bg-surface"
-      pressableClassName="p-4 active:opacity-80"
+      containerClassName="overflow-hidden"
+      pressableClassName="py-4 pr-4 active:opacity-80"
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
     />
   );

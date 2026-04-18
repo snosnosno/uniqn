@@ -55,8 +55,12 @@ export interface OptimizedImageProps {
   height?: number | string;
   /** 이미지 맞춤 방식 */
   contentFit?: ImageContentFit;
-  /** blurhash 문자열 (커스텀) */
-  blurhash?: string;
+  /**
+   * blurhash 문자열 (커스텀).
+   * null/undefined 이면 `blurhashPreset` 기반 기본 해시가 자동 적용.
+   * DB 선계산된 해시를 그대로 넘기면 해당 해시가 우선 적용.
+   */
+  blurhash?: string | null;
   /** blurhash 프리셋 */
   blurhashPreset?: BlurhashPreset;
   /** 전환 애니메이션 시간 (ms) */
@@ -146,7 +150,8 @@ export const OptimizedImage = memo(function OptimizedImage({
           height: '100%',
         }}
         contentFit={contentFit}
-        placeholder={placeholder}
+        placeholder={{ blurhash: placeholder }}
+        placeholderContentFit="cover"
         transition={transition}
         cachePolicy={cachePolicy}
         onError={handleError}

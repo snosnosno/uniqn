@@ -34,12 +34,10 @@ interface DataRowProps {
 
 function DataRow({ label, value, editable, onEdit }: DataRowProps) {
   return (
-    <View className="flex-row items-center justify-between py-3 border-b border-secondary-100 dark:border-surface-overlay">
-      <Text className="text-content-muted dark:text-secondary-400 text-sm font-sans">{label}</Text>
+    <View className="flex-row items-center justify-between py-3 border-b border-divider">
+      <Text className="text-content-muted text-sm font-sans">{label}</Text>
       <View className="flex-row items-center">
-        <Text className="text-content-primary dark:text-off-white font-sans-medium mr-2">
-          {value || '-'}
-        </Text>
+        <Text className="text-content-primary font-sans-medium mr-2">{value || '-'}</Text>
         {editable && onEdit && (
           <Pressable onPress={onEdit}>
             <Text className="text-primary-600 dark:text-primary-400 text-sm font-sans">수정</Text>
@@ -183,9 +181,7 @@ export default function MyDataScreen() {
             size="large"
             color={isDarkMode ? PRIMARY_COLORS[300] : PRIMARY_COLORS[700]}
           />
-          <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-            정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-content-muted font-sans">정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -217,7 +213,7 @@ export default function MyDataScreen() {
 
         {/* 기본 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-4">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             기본 정보
           </Text>
 
@@ -237,7 +233,7 @@ export default function MyDataScreen() {
 
         {/* 본인인증 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-4">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             본인인증 정보
           </Text>
 
@@ -258,7 +254,7 @@ export default function MyDataScreen() {
 
         {/* 동의 정보 */}
         <Card className="mb-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-4">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             동의 정보
           </Text>
 
@@ -269,10 +265,10 @@ export default function MyDataScreen() {
 
         {/* 데이터 내보내기 */}
         <Card className="mb-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white mb-2">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             데이터 내보내기
           </Text>
-          <Text className="text-secondary-500 dark:text-secondary-400 text-sm mb-4 font-sans">
+          <Text className="text-content-muted text-sm mb-4 font-sans">
             저장된 모든 개인정보를 JSON 형식으로 내보낼 수 있습니다. 지원 내역, 근무 기록 등이
             포함됩니다.
           </Text>
@@ -297,8 +293,8 @@ export default function MyDataScreen() {
         </Card>
 
         {/* 개인정보 삭제 안내 */}
-        <Card className="bg-surface-card dark:bg-surface">
-          <Text className="text-content-muted dark:text-secondary-400 text-sm leading-5 font-sans">
+        <Card className="bg-surface-card dark:bg-surface-elevated">
+          <Text className="text-content-muted text-sm leading-5 font-sans">
             개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요. 탈퇴 시 30일간의 유예 기간이 있으며,
             이 기간 동안 복구가 가능합니다.
           </Text>

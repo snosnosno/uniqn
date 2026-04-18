@@ -35,12 +35,14 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     isLoading: isProfileLoading,
     displayName,
     profilePhotoURL,
+    profilePhotoURLBlurhash,
   } = useUserProfile({
     userId: staff?.staffId,
     enabled: visible,
     fallbackName: staff?.staffName,
     fallbackNickname: staff?.staffNickname,
     fallbackPhotoURL: staff?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: staff?.staffPhotoURLBlurhash,
   });
 
   const startTimeStr = useMemo(() => {
@@ -84,6 +86,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
               name={displayName}
               size="xl"
               className="mb-2"
+              blurhash={profilePhotoURLBlurhash}
             />
           )}
 

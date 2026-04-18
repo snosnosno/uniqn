@@ -1,9 +1,14 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useScheduleStats } from '@/hooks/useSchedules';
 import { usePendingReviews } from '@/hooks/useReviews';
+// `@/utils/formatters` 는 flat 파일(src/utils/formatters.ts)로 resolve 되어
+// 레거시 settlement 포맷("N원")을 돌려주므로, canonical 배럴의 currency 서브패스를
+// 직접 참조해 "₩N" 포맷(impeccable v2 §19)을 보장한다.
+import { formatCurrency } from '@/utils/formatters/currency';
 
 export function MonthSummaryWidget() {
   const scheduleStats = useScheduleStats();
@@ -14,42 +19,55 @@ export function MonthSummaryWidget() {
 
   const confirmedSchedules = scheduleStats.stats?.confirmedSchedules ?? 0;
   const thisMonthEarnings = scheduleStats.stats?.thisMonthEarnings ?? 0;
+  const hoursWorked = scheduleStats.stats?.hoursWorked ?? 0;
 
   const hasStats = scheduleStats.stats !== null && scheduleStats.stats !== undefined;
   const accessibilityLabel = hasStats
-    ? `이번 달 요약, 확정 근무 ${confirmedSchedules}일, 이번 달 수익 ${thisMonthEarnings}원, 미작성 리뷰 ${isPendingPartial ? '로딩 중' : pendingReviews.pendingCount}건`
+    ? `이번 달 요약, 예상 수령액 ${thisMonthEarnings}원, 확정 근무 ${confirmedSchedules}일, 근무 시간 ${hoursWorked}시간, 미작성 리뷰 ${isPendingPartial ? '로딩 중' : pendingReviews.pendingCount}건`
     : '이번 달 요약';
 
   return (
     <DashboardWidgetShell
+      variant="section"
       title="이번 달 요약"
       isLoading={scheduleStats.isLoading}
       error={scheduleStats.error}
       onRetry={scheduleStats.refetch}
       partial={isPendingPartial}
       emptyState={!hasStats ? { message: '이번 달 근무 기록이 없습니다' } : undefined}
-      onSeeMore={() => router.push('/(app)/(tabs)/schedule')}
-      seeMoreLabel="일정 보기"
+      action={
+        <Pressable
+          onPress={() => router.push('/(app)/(tabs)/schedule')}
+          accessibilityRole="button"
+          accessibilityLabel="이번 달 요약 상세 보기"
+          hitSlop={8}
+        >
+          <Text className="text-primary-500 text-[10px] font-sans-bold">상세 →</Text>
+        </Pressable>
+      }
     >
       {hasStats ? (
         <View accessibilityLabel={accessibilityLabel}>
-          <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-secondary-900 dark:text-secondary-50">확정 근무</Text>
-            <Text className="text-sm font-medium text-secondary-900 dark:text-secondary-50">
-              {confirmedSchedules}일
-            </Text>
-          </View>
-          <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-secondary-900 dark:text-secondary-50">이번 달 수익</Text>
-            <Text className="text-sm font-semibold" style={{ color: '#D4AF37' }}>
-              ₩{thisMonthEarnings.toLocaleString()}
-            </Text>
-          </View>
-          <View className="flex-row justify-between items-center py-1">
-            <Text className="text-sm text-secondary-900 dark:text-secondary-50">미작성 리뷰</Text>
-            <Text className="text-sm font-medium text-secondary-900 dark:text-secondary-50">
-              {pendingLabel}
-            </Text>
+          <View className="flex-row justify-between items-end">
+            <View>
+              <NumericText
+                className="text-3xl font-sans-bold text-primary-500"
+                style={{ letterSpacing: -0.6 }}
+              >
+                {formatCurrency(thisMonthEarnings)}
+              </NumericText>
+              <Text className="text-[10px] uppercase tracking-wider text-content-muted mt-1">
+                예상 수령액
+              </Text>
+            </View>
+            <View className="items-end">
+              <NumericText className="text-base font-sans-bold text-content-primary">
+                {confirmedSchedules}일
+              </NumericText>
+              <NumericText className="text-xs text-content-secondary">
+                {hoursWorked}시간 · 리뷰 {pendingLabel}
+              </NumericText>
+            </View>
           </View>
         </View>
       ) : undefined}

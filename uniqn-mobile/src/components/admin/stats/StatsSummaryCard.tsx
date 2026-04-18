@@ -4,7 +4,7 @@
  * @description 개별 통계 수치를 카드 형태로 표시
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, STATUS_COLORS } from '@/constants/colors';
 import { View, Text, ActivityIndicator } from 'react-native';
 import {
   type IconComponent,
@@ -12,6 +12,8 @@ import {
   ExclamationTriangleIcon,
   XCircleIcon,
 } from '@/components/icons';
+import { CardStripe } from '@/components/ui/CardStripe';
+import { NumericText } from '@/components/ui';
 
 interface StatsSummaryCardProps {
   label: string;
@@ -39,37 +41,39 @@ export function StatsSummaryCard({
   const Icon = icon;
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-            {label}
-          </Text>
-          {isLoading ? (
-            <ActivityIndicator size="small" className="mt-2 self-start" />
-          ) : (
-            <View className="flex-row items-baseline">
-              <Text className={`text-2xl font-display ${valueColor}`}>
-                {value?.toLocaleString() ?? '--'}
-              </Text>
-              {suffix && (
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-                  {suffix}
-                </Text>
-              )}
+    <CardStripe tone="gold" thickness={2}>
+      <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay">
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="text-[9px] uppercase tracking-wider text-content-muted mb-1 font-sans">
+              {label}
+            </Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" className="mt-2 self-start" />
+            ) : (
+              <View className="flex-row items-baseline">
+                <NumericText className={`text-2xl font-sans-bold ${valueColor}`}>
+                  {value?.toLocaleString() ?? '--'}
+                </NumericText>
+                {suffix && (
+                  <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+                    {suffix}
+                  </Text>
+                )}
+              </View>
+            )}
+            {description && (
+              <Text className="text-xs text-content-placeholder mt-1 font-sans">{description}</Text>
+            )}
+          </View>
+          {Icon && (
+            <View className={`w-10 h-10 rounded-lg items-center justify-center ${iconBgColor}`}>
+              <Icon size={20} color={iconColor} />
             </View>
           )}
-          {description && (
-            <Text className="text-xs text-content-placeholder mt-1 font-sans">{description}</Text>
-          )}
         </View>
-        {Icon && (
-          <View className={`w-10 h-10 rounded-lg items-center justify-center ${iconBgColor}`}>
-            <Icon size={20} color={iconColor} />
-          </View>
-        )}
       </View>
-    </View>
+    </CardStripe>
   );
 }
 
@@ -87,19 +91,19 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
       label: '정상',
       color: 'text-success-600',
       bgColor: 'bg-success-50 dark:bg-success-900/30',
-      iconColor: '#16a34a',
+      iconColor: STATUS_COLORS.success,
     },
     degraded: {
       label: '저하',
       color: 'text-warning-600',
       bgColor: 'bg-warning-100 dark:bg-warning-900/30',
-      iconColor: '#D4A017',
+      iconColor: STATUS_COLORS.warning,
     },
     down: {
       label: '장애',
       color: 'text-error-600',
       bgColor: 'bg-error-50 dark:bg-error-900/30',
-      iconColor: '#DC2626',
+      iconColor: STATUS_COLORS.error,
     },
   };
 

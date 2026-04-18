@@ -2,10 +2,11 @@ import React, { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LIST_CONTAINER_STYLES } from '@/constants';
-import { useThemeStore } from '@/stores/themeStore';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { JobPostingCard } from '@/types';
 import { JobCard } from './JobCard';
 import { PostingSurfaceState } from './shared';
+import { ScreenSkeleton } from '@/components/ui';
 
 interface JobListProps {
   jobs: JobPostingCard[];
@@ -32,7 +33,6 @@ export function JobList({
   emptyMessage = '등록된 공고가 없습니다',
   error,
 }: JobListProps) {
-  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const renderItem = useCallback(
     ({ item }: { item: JobPostingCard }) => <JobCard job={item} onPress={onJobPress} />,
     [onJobPress]
@@ -57,7 +57,7 @@ export function JobList({
   }, [hasMore, isFetchingMore, onLoadMore]);
 
   if (isLoading && jobs.length === 0) {
-    return <PostingSurfaceState mode="loading" scope="list" />;
+    return <ScreenSkeleton type="jobsList" count={5} />;
   }
 
   if (error && jobs.length === 0) {
@@ -99,13 +99,7 @@ export function JobList({
         contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          // impeccable v2 §24 — 골드 tint(브랜드 일관성)
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
-            colors={['#D4AF37']}
-          />
+          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} {...PTR_REFRESH_PROPS} />
         }
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

@@ -7,7 +7,7 @@
 
 import { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
-import { STATUS_COLORS } from '@/constants/colors';
+import { PRIMARY_COLORS, STATUS_COLORS } from '@/constants/colors';
 
 // ============================================================================
 // Types
@@ -40,7 +40,7 @@ const ROLE_CONFIG = [
   {
     key: 'employer' as const,
     label: '구인자',
-    color: '#B8962E',
+    color: PRIMARY_COLORS[600],
     bgColor: 'bg-primary-600',
     lightBg: 'bg-primary-50 dark:bg-primary-900/20',
     textColor: 'text-primary-700 dark:text-primary-300',
@@ -48,7 +48,7 @@ const ROLE_CONFIG = [
   {
     key: 'staff' as const,
     label: '스태프',
-    color: '#16a34a',
+    color: STATUS_COLORS.success,
     bgColor: 'bg-success-600',
     lightBg: 'bg-success-50 dark:bg-success-900/20',
     textColor: 'text-success-700 dark:text-success-300',

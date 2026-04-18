@@ -90,6 +90,7 @@ describe('JobDetail', () => {
       isLoading: false,
       displayName: '테스트 구인처',
       profilePhotoURL: undefined,
+      profilePhotoURLBlurhash: null,
     });
     mockUseAuthStore.mockImplementation((selector: (state: unknown) => unknown) =>
       selector({ isAdmin: false, isEmployer: false })
@@ -127,6 +128,7 @@ describe('JobDetail', () => {
       isLoading: false,
       displayName: '테스트 구인처',
       profilePhotoURL: undefined,
+      profilePhotoURLBlurhash: null,
     });
 
     const { getByText } = render(<JobDetail job={{} as JobPosting} />);

@@ -27,6 +27,8 @@ export default function AdminLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        statusBarStyle: 'auto',
+        statusBarBackgroundColor: 'transparent',
         contentStyle: {
           backgroundColor: getLayoutColor(isDark, 'content'),
         },

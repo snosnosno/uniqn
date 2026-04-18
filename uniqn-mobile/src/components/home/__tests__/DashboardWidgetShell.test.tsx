@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { DashboardWidgetShell } from '../DashboardWidgetShell';
 
@@ -83,5 +84,44 @@ describe('DashboardWidgetShell', () => {
       </DashboardWidgetShell>
     );
     expect(getByText('데이터가 없습니다')).toBeTruthy();
+  });
+
+  describe('variant="hero"', () => {
+    it('renders title and children without Card wrapper', () => {
+      const { getByText, queryByTestId } = render(
+        <DashboardWidgetShell title="오늘의 브리핑" variant="hero">
+          <Text>heroContent</Text>
+        </DashboardWidgetShell>
+      );
+      expect(getByText('오늘의 브리핑')).toBeTruthy();
+      expect(getByText('heroContent')).toBeTruthy();
+      // Hero variant should not render the Card shell used by the default variant.
+      expect(queryByTestId('card')).toBeNull();
+    });
+  });
+
+  describe('variant="section"', () => {
+    it('renders title, children, and action slot', () => {
+      const { getByText, queryByTestId } = render(
+        <DashboardWidgetShell title="이번 주" variant="section" action={<Text>전체 보기</Text>}>
+          <Text>sectionContent</Text>
+        </DashboardWidgetShell>
+      );
+      expect(getByText('이번 주')).toBeTruthy();
+      expect(getByText('sectionContent')).toBeTruthy();
+      expect(getByText('전체 보기')).toBeTruthy();
+      // Section variant does not render the Card shell.
+      expect(queryByTestId('card')).toBeNull();
+    });
+
+    it('renders without action slot', () => {
+      const { getByText } = render(
+        <DashboardWidgetShell title="이번 주" variant="section">
+          <Text>onlyChildren</Text>
+        </DashboardWidgetShell>
+      );
+      expect(getByText('이번 주')).toBeTruthy();
+      expect(getByText('onlyChildren')).toBeTruthy();
+    });
   });
 });

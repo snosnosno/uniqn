@@ -15,7 +15,8 @@ export type BadgeVariant =
   | 'success'
   | 'warning'
   | 'error'
-  | 'info';
+  | 'info'
+  | 'chip';
 export type BadgeSize = 'sm' | 'md';
 
 /**
@@ -94,6 +95,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   warning: 'bg-warning-100 dark:bg-warning-700/30',
   error: 'bg-error-100 dark:bg-error-700/30',
   info: 'bg-info-100 dark:bg-info-700/30',
+  chip: 'bg-primary-100 dark:bg-primary-900/30',
 };
 
 const textStyles: Record<BadgeVariant, string> = {
@@ -104,6 +106,7 @@ const textStyles: Record<BadgeVariant, string> = {
   warning: 'text-warning-700 dark:text-warning-500',
   error: 'text-error-700 dark:text-error-500',
   info: 'text-info-700 dark:text-info-500',
+  chip: 'text-primary-700 dark:text-primary-400 uppercase tracking-chip',
 };
 
 const dotStyles: Record<BadgeVariant, string> = {
@@ -114,6 +117,7 @@ const dotStyles: Record<BadgeVariant, string> = {
   warning: 'bg-warning-500',
   error: 'bg-error-500',
   info: 'bg-info-500',
+  chip: 'bg-primary-500',
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
@@ -147,7 +151,8 @@ export function Badge({
   const containerClass =
     `flex-row items-center rounded-sm ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
   const dotClass = `mr-2 h-2 w-2 rounded-sm ${dotStyles[variant]}`;
-  const textClass = `font-sans-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
+  const fontWeightClass = variant === 'chip' ? 'font-sans-bold' : 'font-sans-medium';
+  const textClass = `${fontWeightClass} ${textStyles[variant]} ${textSizeStyles[size]}`;
 
   // children 또는 preset label이 문자열인 경우 자동으로 accessibilityLabel 생성
   const resolvedAccessibilityLabel =

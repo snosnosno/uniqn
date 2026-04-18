@@ -47,11 +47,12 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   compact = false,
 }: ConfirmedStaffCardProps) {
   const { isDarkMode } = useThemeStore();
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: staff.staffId,
     fallbackName: staff.staffName,
     fallbackNickname: staff.staffNickname,
     fallbackPhotoURL: staff.staffPhotoURL,
+    fallbackPhotoURLBlurhash: staff.staffPhotoURLBlurhash,
   });
 
   const isCheckedIn =
@@ -123,6 +124,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               name={displayName}
               size={compact ? 'sm' : 'md'}
               className="mr-3"
+              blurhash={profilePhotoURLBlurhash}
             />
             <View className="flex-1">
               <View className="flex-row items-center">

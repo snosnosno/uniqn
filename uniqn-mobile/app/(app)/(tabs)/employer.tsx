@@ -1,4 +1,5 @@
 import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -287,7 +288,9 @@ function EmployerView() {
           keyExtractor={(item) => item.id}
           // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={200}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         />

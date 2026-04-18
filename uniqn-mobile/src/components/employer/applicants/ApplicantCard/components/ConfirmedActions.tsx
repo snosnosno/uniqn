@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { STATUS_COLORS } from '@/constants/colors';
 import { XMarkIcon } from '@/components/icons';
+import { triggerHaptic } from '@/utils/haptics';
 
 export interface ConfirmedActionsProps {
   onCancelConfirmation?: () => void;
@@ -10,6 +11,14 @@ export interface ConfirmedActionsProps {
 export const ConfirmedActions = React.memo(function ConfirmedActions({
   onCancelConfirmation,
 }: ConfirmedActionsProps) {
+  // impeccable v2 §17 — 확정 취소는 결정적 순간이므로 Medium 햅틱 1회.
+  // 200ms throttle 로 중복 탭 보호됨. await 로 햅틱 선행 → 상태 변경은 그 다음.
+  const handleCancelConfirmation = useCallback(async () => {
+    if (!onCancelConfirmation) return;
+    await triggerHaptic('medium');
+    onCancelConfirmation();
+  }, [onCancelConfirmation]);
+
   if (!onCancelConfirmation) {
     return null;
   }
@@ -17,7 +26,10 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
   return (
     <View className="mt-3 flex-row border-t border-secondary-100 pt-3 dark:border-surface-overlay">
       <Pressable
-        onPress={onCancelConfirmation}
+        onPress={handleCancelConfirmation}
+        accessibilityRole="button"
+        accessibilityLabel="확정 취소"
+        accessibilityHint="지원자 확정을 취소합니다"
         className="flex-1 flex-row items-center justify-center rounded-lg bg-surface-card py-2 active:opacity-70 dark:bg-surface"
       >
         <XMarkIcon size={16} color={STATUS_COLORS.error} />

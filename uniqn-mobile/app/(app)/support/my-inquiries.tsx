@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { EmptyState, Button } from '@/components/ui';
-import { InquiryCard } from '@/components/support';
+import { InquiryCard, INQUIRY_STATUS_STRIPE_TONE } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
@@ -42,7 +42,12 @@ export default function MyInquiriesScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Inquiry }) => (
-      <InquiryCard inquiry={item} onPress={() => handleInquiryPress(item)} className="mx-4 mb-3" />
+      <InquiryCard
+        inquiry={item}
+        onPress={() => handleInquiryPress(item)}
+        stripeTone={INQUIRY_STATUS_STRIPE_TONE[item.status]}
+        className="mx-4 mb-3"
+      />
     ),
     [handleInquiryPress]
   );

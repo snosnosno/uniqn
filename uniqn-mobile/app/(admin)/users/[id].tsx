@@ -199,7 +199,13 @@ export default function AdminUserDetailPage() {
         {/* Profile Header */}
         <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
           {user.photoURL ? (
-            <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
+            <Avatar
+              source={user.photoURL}
+              name={user.name}
+              size="xl"
+              className="mb-3"
+              blurhash={user.photoURLBlurhash}
+            />
           ) : (
             <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
               <UserIcon size={40} color={SECONDARY_PALETTE[400]} />
@@ -228,8 +234,8 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Basic Info */}
-        <View className="bg-white dark:bg-surface mt-3 px-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-2">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             기본 정보
           </Text>
           <InfoRow
@@ -263,11 +269,11 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Role Management */}
-        <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-4">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             역할 관리
           </Text>
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mt-3 mb-3 font-sans">
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
             사용자의 역할을 변경합니다. 역할에 따라 접근 가능한 기능이 달라집니다.
           </Text>
           {ROLE_OPTIONS.map((option) => (
@@ -315,11 +321,11 @@ export default function AdminUserDetailPage() {
         </View>
 
         {/* Account Actions */}
-        <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
-          <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white py-4 border-b border-secondary-100 dark:border-surface-overlay">
+        <View className="bg-white dark:bg-surface mt-3 px-4 pt-4 pb-4 mb-8">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정 관리
           </Text>
-          <View className="mt-4">
+          <View className="mt-3">
             <Pressable
               onPress={handleToggleActive}
               disabled={setActiveMutation.isPending}

@@ -57,12 +57,14 @@ export function SettlementDetailModal({
   const { isDarkMode: isDark } = useThemeStore();
 
   // 사용자 프로필 조회
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
     fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
     fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
+      ?.staffPhotoURLBlurhash,
   });
 
   // 수정 이력 접기/펼치기 상태 (기본: 접힘)
@@ -142,6 +144,7 @@ export function SettlementDetailModal({
         {/* 프로필 헤더 */}
         <StaffProfileHeader
           profilePhotoURL={profilePhotoURL}
+          profilePhotoURLBlurhash={profilePhotoURLBlurhash}
           displayName={displayName}
           payrollStatus={payrollStatus}
           role={workLog.role}

@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS_COLORS } from '@/constants/colors';
 import { Link } from 'expo-router';
 import { StackHeader } from '@/components/headers';
+import { CardStripe } from '@/components/ui/CardStripe';
 import {
   ChatbubbleEllipsesOutlineIcon,
   DocumentTextOutlineIcon,
@@ -32,16 +33,24 @@ function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Link href={href as never} asChild>
-      <Pressable className="rounded-md border border-secondary-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
-        <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
-          <Icon size={24} color={iconColor} />
-        </View>
-        <Text className="mb-1 text-lg font-display-semibold text-content-primary dark:text-off-white">
-          {title}
-        </Text>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-          {description}
-        </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        accessibilityHint={description}
+      >
+        <CardStripe tone="gold" thickness={2}>
+          <View className="rounded-md border border-secondary-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
+            <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
+              <Icon size={24} color={iconColor} />
+            </View>
+            <Text className="mb-1 text-lg font-display-semibold text-content-primary dark:text-off-white">
+              {title}
+            </Text>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              {description}
+            </Text>
+          </View>
+        </CardStripe>
       </Pressable>
     </Link>
   );

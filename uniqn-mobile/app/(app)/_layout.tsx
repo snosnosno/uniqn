@@ -107,6 +107,8 @@ export default function AppLayout() {
           screenOptions={{
             headerShown: false,
             animation: 'slide_from_right',
+            statusBarStyle: 'auto',
+            statusBarBackgroundColor: 'transparent',
             contentStyle: {
               backgroundColor: getLayoutColor(isDark, 'content'),
             },

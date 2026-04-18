@@ -9,7 +9,7 @@ interface ResolveProfileIdentityOptions {
   fallbackName?: string;
   fallbackNickname?: string;
   fallbackPhotoURL?: string;
-  fallbackPhotoURLBlurhash?: string;
+  fallbackPhotoURLBlurhash?: string | null;
 }
 
 export interface ProfileIdentity {
@@ -17,8 +17,8 @@ export interface ProfileIdentity {
   displayName: string;
   nickname?: string;
   photoURL?: string;
-  /** impeccable v2 §18 — photo placeholder 용 blurhash 해시 */
-  photoURLBlurhash?: string;
+  /** impeccable v2 §18 — photo placeholder 용 blurhash 해시 (DB null 허용) */
+  photoURLBlurhash?: string | null;
 }
 
 interface BuildCurrentUserIdentityOptions {
@@ -59,8 +59,8 @@ export function resolveProfileIdentity({
   const photoURL = resolveFallbackSafeField(userProfile, userProfile?.photoURL, fallbackPhotoURL);
   const photoURLBlurhash = resolveFallbackSafeField(
     userProfile,
-    userProfile?.photoURLBlurhash,
-    fallbackPhotoURLBlurhash
+    userProfile?.photoURLBlurhash ?? undefined,
+    fallbackPhotoURLBlurhash ?? undefined
   );
 
   return {
@@ -69,7 +69,7 @@ export function resolveProfileIdentity({
       nickname && namedBase && nickname !== namedBase ? `${namedBase}(${nickname})` : baseName,
     nickname,
     photoURL,
-    photoURLBlurhash,
+    photoURLBlurhash: photoURLBlurhash ?? null,
   };
 }
 
@@ -87,7 +87,7 @@ export function buildCurrentUserIdentitySnapshot({
     profile?.photoURL !== undefined
       ? (profile.photoURL ?? undefined)
       : (authUser?.photoURL ?? undefined);
-  const photoURLBlurhash = profile?.photoURLBlurhash ?? undefined;
+  const photoURLBlurhash = profile?.photoURLBlurhash ?? null;
 
   return {
     name,

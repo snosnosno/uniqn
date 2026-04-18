@@ -7,17 +7,17 @@
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, RefreshControl } from 'react-native';
+import { View, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { ApplicantCard } from './ApplicantCard';
-import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
+import { ScreenSkeleton } from '../../ui';
 import { FilterIcon } from '../../icons';
 import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
-import { useThemeStore } from '@/stores/themeStore';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
@@ -65,7 +65,6 @@ export function ApplicantList({
   onReject,
   onViewProfile,
 }: ApplicantListProps) {
-  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
 
   // ==========================================================================
@@ -119,14 +118,7 @@ export function ApplicantList({
 
   // 로딩 상태
   if (isLoading && !isRefreshing) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-          지원자 목록을 불러오는 중...
-        </Text>
-      </View>
-    );
+    return <ScreenSkeleton type="applicantList" count={5} />;
   }
 
   // 에러 상태
@@ -178,7 +170,7 @@ export function ApplicantList({
               <RefreshControl
                 refreshing={isRefreshing ?? false}
                 onRefresh={onRefresh}
-                tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
+                {...PTR_REFRESH_PROPS}
               />
             ) : undefined
           }

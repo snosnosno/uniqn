@@ -9,14 +9,14 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useThemeStore } from '@/stores/themeStore';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
 import { SettlementBulkActions } from './SettlementBulkActions';
-import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
+import { ScreenSkeleton } from '../../ui';
 import { BanknotesIcon, CheckIcon } from '../../icons';
 import {
   type SalaryType,
@@ -109,7 +109,6 @@ export function SettlementList({
   enableGrouping = true,
   onGroupBulkSettle,
 }: SettlementListProps) {
-  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -270,14 +269,7 @@ export function SettlementList({
 
   // 로딩 상태
   if (isLoading && !isRefreshing) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-          정산 목록을 불러오는 중...
-        </Text>
-      </View>
-    );
+    return <ScreenSkeleton type="settlementList" count={6} />;
   }
 
   // 에러 상태
@@ -368,7 +360,7 @@ export function SettlementList({
             <RefreshControl
               refreshing={isRefreshing ?? false}
               onRefresh={onRefresh}
-              tintColor={isDarkMode ? '#D4AF37' : '#8A7228'}
+              {...PTR_REFRESH_PROPS}
             />
           ) : undefined
         }

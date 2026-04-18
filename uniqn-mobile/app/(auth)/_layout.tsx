@@ -15,6 +15,8 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: false,
         animation: 'fade',
+        statusBarStyle: 'auto',
+        statusBarBackgroundColor: 'transparent',
         contentStyle: {
           backgroundColor: getLayoutColor(isDark, 'header'),
         },

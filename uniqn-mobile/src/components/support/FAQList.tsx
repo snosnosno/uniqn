@@ -63,7 +63,7 @@ export function FAQList({
   if (filteredItems.length === 0) {
     return (
       <View className={`items-center justify-center py-12 ${className}`}>
-        <Text className="text-secondary-500 dark:text-secondary-400 font-sans">{emptyMessage}</Text>
+        <Text className="text-content-muted font-sans">{emptyMessage}</Text>
       </View>
     );
   }
@@ -74,10 +74,10 @@ export function FAQList({
       <View className={className}>
         {Object.entries(groupedItems).map(([category, categoryItems]) => (
           <View key={category} className="mb-4">
-            <Text className="mb-2 px-4 text-sm font-sans-semibold text-secondary-500 dark:text-secondary-400">
+            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2 px-4">
               {INQUIRY_CATEGORY_LABELS[category as InquiryCategory] || category}
             </Text>
-            <View className="rounded-md bg-white dark:bg-surface">
+            <View className="rounded-md bg-surface-card dark:bg-surface-elevated">
               {categoryItems.map((item, index) => (
                 <View key={item.id}>
                   <View className="px-4">
@@ -86,14 +86,12 @@ export function FAQList({
                       expanded={expandedId === item.id}
                       onToggle={() => handleToggle(item.id)}
                     >
-                      <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
+                      <Text className="text-sm leading-6 text-content-muted font-sans">
                         {item.answer}
                       </Text>
                     </AccordionItem>
                   </View>
-                  {index < categoryItems.length - 1 && (
-                    <View className="mx-4 h-px bg-surface-card dark:bg-surface" />
-                  )}
+                  {index < categoryItems.length - 1 && <View className="mx-4 h-px bg-divider" />}
                 </View>
               ))}
             </View>
@@ -105,7 +103,7 @@ export function FAQList({
 
   // 특정 카테고리일 때 단순 리스트
   return (
-    <View className={`rounded-md bg-white dark:bg-surface ${className}`}>
+    <View className={`rounded-md bg-surface-card dark:bg-surface-elevated ${className}`}>
       {filteredItems.map((item, index) => (
         <View key={item.id}>
           <View className="px-4">
@@ -114,14 +112,10 @@ export function FAQList({
               expanded={expandedId === item.id}
               onToggle={() => handleToggle(item.id)}
             >
-              <Text className="text-sm leading-6 text-content-muted dark:text-secondary-300 font-sans">
-                {item.answer}
-              </Text>
+              <Text className="text-sm leading-6 text-content-muted font-sans">{item.answer}</Text>
             </AccordionItem>
           </View>
-          {index < filteredItems.length - 1 && (
-            <View className="mx-4 h-px bg-surface-card dark:bg-surface" />
-          )}
+          {index < filteredItems.length - 1 && <View className="mx-4 h-px bg-divider" />}
         </View>
       ))}
     </View>

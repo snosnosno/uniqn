@@ -150,6 +150,7 @@ export default function ProfileScreen() {
               name={currentUserIdentity.displayName || '사용자'}
               size="xl"
               source={currentUserIdentity.photoURL}
+              blurhash={currentUserIdentity.photoURLBlurhash}
             />
             <View className="ml-4 flex-1">
               <Text className="text-lg font-display-semibold text-content-primary dark:text-secondary-100">

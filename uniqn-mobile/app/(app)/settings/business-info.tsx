@@ -30,14 +30,10 @@ interface InfoRowProps {
 function InfoRow({ label, value, onPress, isLink }: InfoRowProps) {
   const content = (
     <View className="flex-row py-3">
-      <Text className="w-28 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-        {label}
-      </Text>
+      <Text className="w-28 text-sm text-content-muted font-sans">{label}</Text>
       <Text
         className={`flex-1 text-sm font-sans ${
-          isLink
-            ? 'text-primary-600 dark:text-primary-300'
-            : 'text-secondary-900 dark:text-secondary-100'
+          isLink ? 'text-primary-600 dark:text-primary-300' : 'text-content-primary'
         }`}
       >
         {value}
@@ -70,35 +66,35 @@ export default function BusinessInfoScreen() {
       <StackHeader title="사업자정보" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-display text-content-primary dark:text-secondary-100">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-4">
             사업자정보
           </Text>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="상호명" value={BUSINESS_INFO.companyName} />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="대표자" value={BUSINESS_INFO.representative} />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="사업자등록번호" value={BUSINESS_INFO.businessNumber} />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="통신판매업신고" value={BUSINESS_INFO.salesNumber} />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="사업장 주소" value={BUSINESS_INFO.address} />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="이메일" value={BUSINESS_INFO.email} onPress={handleEmailPress} isLink />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow
               label="고객센터"
               value={BUSINESS_INFO.phone}
@@ -107,7 +103,7 @@ export default function BusinessInfoScreen() {
             />
           </View>
 
-          <View className="border-t border-secondary-100 dark:border-secondary-700">
+          <View className="border-t border-divider">
             <InfoRow label="운영시간" value={BUSINESS_INFO.customerServiceHours} />
           </View>
         </Card>

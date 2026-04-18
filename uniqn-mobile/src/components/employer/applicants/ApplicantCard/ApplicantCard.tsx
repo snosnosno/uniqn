@@ -7,9 +7,10 @@ import { getRoleDisplayName } from '@/types/unified';
 import { useThemeStore } from '@/stores/themeStore';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatRelativeTime } from '@/utils/date';
-import { Card } from '../../../ui/Card';
+import { CardStripe } from '@/components/ui';
 import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
 import type { ApplicantCardProps, IconColors } from './types';
+import { STATUS_STRIPE_TONE } from './constants';
 import { useAssignmentSelection } from './useAssignmentSelection';
 import {
   AppliedActions,
@@ -71,11 +72,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     isFixedMode,
   });
 
-  const { displayName, profilePhotoURL, userProfile } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash, userProfile } = useUserProfile({
     userId: applicant.applicantId,
     fallbackName: applicant.applicantName,
     fallbackNickname: applicant.applicantNickname,
     fallbackPhotoURL: applicant.applicantPhotoURL,
+    fallbackPhotoURLBlurhash: applicant.applicantPhotoURLBlurhash,
   });
 
   const appliedTimeAgo = useMemo(
@@ -118,99 +120,102 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const canShowActions = showActions && applicant.status === STATUS.APPLICATION.APPLIED;
 
   return (
-    <Card variant="elevated" padding="md">
-      <CardHeader
-        displayName={displayName}
-        profilePhotoURL={profilePhotoURL}
-        isRead={applicant.isRead ?? true}
-        status={applicant.status}
-        isExpanded={isExpanded}
-        onToggleExpand={toggleExpand}
-        onViewProfile={onViewProfile ? handleViewProfile : undefined}
-      />
+    <CardStripe tone={STATUS_STRIPE_TONE[applicant.status]}>
+      <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
+        <CardHeader
+          displayName={displayName}
+          profilePhotoURL={profilePhotoURL}
+          profilePhotoURLBlurhash={profilePhotoURLBlurhash}
+          isRead={applicant.isRead ?? true}
+          status={applicant.status}
+          isExpanded={isExpanded}
+          onToggleExpand={toggleExpand}
+          onViewProfile={onViewProfile ? handleViewProfile : undefined}
+        />
 
-      {isExpanded && (
-        <View className="mt-3 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
-          <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {getRoleDisplayName(
-              applicant.assignments[0]?.roleIds?.[0] || 'other',
-              applicant.customRole
-            )}{' '}
-            지원 · {appliedTimeAgo}
-          </Text>
+        {isExpanded && (
+          <View className="mt-3 border-t border-secondary-100 pt-3 dark:border-surface-overlay">
+            <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              {getRoleDisplayName(
+                applicant.assignments[0]?.roleIds?.[0] || 'other',
+                applicant.customRole
+              )}{' '}
+              지원 · {appliedTimeAgo}
+            </Text>
 
-          {isFixedMode && (
-            <View
-              className={`mb-3 rounded-lg border p-3 ${
-                isDark
-                  ? 'border-secondary-600 bg-secondary-700'
-                  : 'border-secondary-200 bg-secondary-50'
-              }`}
-            >
-              <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                근무 조건
-              </Text>
-              <FixedScheduleDisplay
-                daysPerWeek={effectiveDaysPerWeek}
-                startTime={effectiveStartTime}
-                compact={true}
+            {isFixedMode && (
+              <View
+                className={`mb-3 rounded-lg border p-3 ${
+                  isDark
+                    ? 'border-secondary-600 bg-secondary-700'
+                    : 'border-secondary-200 bg-secondary-50'
+                }`}
+              >
+                <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                  근무 조건
+                </Text>
+                <FixedScheduleDisplay
+                  daysPerWeek={effectiveDaysPerWeek}
+                  startTime={effectiveStartTime}
+                  compact={true}
+                />
+              </View>
+            )}
+
+            {!isFixedMode && canShowActions && (
+              <GroupedAssignmentSelector
+                groupedAssignments={groupedAssignments}
+                selectedKeys={selectedKeys}
+                selectedCount={selectedCount}
+                totalCount={totalCount}
+                isDark={isDark}
+                iconColors={iconColors}
+                onToggle={toggleAssignment}
+                onToggleGroup={toggleGroup}
+                getGroupSelectionState={getGroupSelectionState}
               />
-            </View>
-          )}
+            )}
 
-          {!isFixedMode && canShowActions && (
-            <GroupedAssignmentSelector
-              groupedAssignments={groupedAssignments}
-              selectedKeys={selectedKeys}
-              selectedCount={selectedCount}
-              totalCount={totalCount}
-              isDark={isDark}
-              iconColors={iconColors}
-              onToggle={toggleAssignment}
-              onToggleGroup={toggleGroup}
-              getGroupSelectionState={getGroupSelectionState}
+            {!isFixedMode && !canShowActions && (
+              <AssignmentReadOnly
+                assignmentDisplays={assignmentDisplays}
+                isDark={isDark}
+                iconColors={iconColors}
+              />
+            )}
+
+            <ContactInfo
+              phone={userProfile?.phone || applicant.applicantPhone}
+              message={applicant.message}
+              preQuestionAnswers={applicant.preQuestionAnswers}
             />
-          )}
 
-          {!isFixedMode && !canShowActions && (
-            <AssignmentReadOnly
-              assignmentDisplays={assignmentDisplays}
-              isDark={isDark}
-              iconColors={iconColors}
+            <StatusInfo
+              status={applicant.status}
+              rejectionReason={applicant.rejectionReason}
+              confirmationHistory={applicant.confirmationHistory}
+              showConfirmationHistory={showConfirmationHistory}
             />
-          )}
+          </View>
+        )}
 
-          <ContactInfo
-            phone={userProfile?.phone || applicant.applicantPhone}
-            message={applicant.message}
-            preQuestionAnswers={applicant.preQuestionAnswers}
+        {canShowConfirmedActions && (
+          <ConfirmedActions
+            onCancelConfirmation={onCancelConfirmation ? handleCancelConfirmation : undefined}
           />
+        )}
 
-          <StatusInfo
-            status={applicant.status}
-            rejectionReason={applicant.rejectionReason}
-            confirmationHistory={applicant.confirmationHistory}
-            showConfirmationHistory={showConfirmationHistory}
+        {canShowActions && (
+          <AppliedActions
+            isFixedMode={isFixedMode}
+            totalCount={totalCount}
+            selectedCount={selectedCount}
+            onConfirm={handleConfirm}
+            onReject={handleReject}
           />
-        </View>
-      )}
-
-      {canShowConfirmedActions && (
-        <ConfirmedActions
-          onCancelConfirmation={onCancelConfirmation ? handleCancelConfirmation : undefined}
-        />
-      )}
-
-      {canShowActions && (
-        <AppliedActions
-          isFixedMode={isFixedMode}
-          totalCount={totalCount}
-          selectedCount={selectedCount}
-          onConfirm={handleConfirm}
-          onReject={handleReject}
-        />
-      )}
-    </Card>
+        )}
+      </View>
+    </CardStripe>
   );
 });
 

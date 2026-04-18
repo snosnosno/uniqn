@@ -38,6 +38,7 @@ export function toStoreProfile(profile: {
   phone?: string;
   role: string;
   photoURL?: string | null;
+  photoURLBlurhash?: string | null;
   phoneVerified?: boolean;
   identityVerified?: boolean;
   identityVerifiedAt?: unknown;
@@ -90,6 +91,7 @@ export function toStoreProfile(profile: {
     phone: profile.phone,
     role: profile.role as UserProfile['role'],
     photoURL: profile.photoURL,
+    photoURLBlurhash: profile.photoURLBlurhash,
     phoneVerified: profile.phoneVerified,
     identityVerified: profile.identityVerified,
     identityVerifiedAt: profile.identityVerifiedAt

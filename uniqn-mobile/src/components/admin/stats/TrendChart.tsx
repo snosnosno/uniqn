@@ -5,7 +5,7 @@
  * @version 2.0.0 - 차트 라이브러리 제거, 경량화
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PRIMARY_COLORS, SECONDARY_PALETTE } from '@/constants/colors';
 import { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
@@ -61,7 +61,12 @@ function isDateToday(dateString: string): boolean {
 // Component
 // ============================================================================
 
-export function TrendChart({ title, data, color = '#B8962E', suffix = '' }: TrendChartProps) {
+export function TrendChart({
+  title,
+  data,
+  color = PRIMARY_COLORS[600],
+  suffix = '',
+}: TrendChartProps) {
   const { isDarkMode } = useThemeStore();
 
   // 통계 계산

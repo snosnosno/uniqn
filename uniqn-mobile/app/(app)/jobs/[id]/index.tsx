@@ -41,6 +41,7 @@ export default function JobDetailScreen() {
   const { shareJob, isSharing } = useShare();
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
   const [bottomActionHeight, setBottomActionHeight] = useState(DEFAULT_BOTTOM_ACTION_HEIGHT);
+  const [ctaFocused, setCtaFocused] = useState(false);
 
   const handleShare = useCallback(() => {
     if (!job) {
@@ -237,9 +238,25 @@ export default function JobDetailScreen() {
                   로그인 후 지원할 수 있어요
                 </Text>
               ) : null}
-              <Button onPress={handleApply} fullWidth>
-                지원하기
-              </Button>
+              {/* Focus ring — Button과 동일 idiom: m-[-2px] + border-2 border-transparent, focus 시 info-500 */}
+              <View
+                className={`rounded-md m-[-2px] border-2 ${
+                  ctaFocused ? 'border-info-500' : 'border-transparent'
+                }`}
+              >
+                <Pressable
+                  onPress={handleApply}
+                  onFocus={() => setCtaFocused(true)}
+                  onBlur={() => setCtaFocused(false)}
+                  className="bg-primary-500 active:bg-primary-600 rounded-md py-3 min-h-[44px] items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel="공고에 지원하기"
+                >
+                  <Text className="text-content-onGold text-center font-sans-bold text-base">
+                    지원하기 →
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </SafeAreaView>

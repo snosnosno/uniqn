@@ -6,8 +6,16 @@
  */
 
 import { SECONDARY_PALETTE } from '@/constants/colors';
-import React, { memo } from 'react';
-import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-native';
+import React, { memo, useCallback, useState } from 'react';
+import {
+  Pressable,
+  Text,
+  ActivityIndicator,
+  View,
+  type PressableProps,
+  type NativeSyntheticEvent,
+  type TargetedEvent,
+} from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent';
@@ -94,11 +102,33 @@ export const Button = memo(function Button({
   fullWidth = false,
   accessibilityLabel,
   className,
+  onFocus,
+  onBlur,
   ...props
 }: ButtonProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const isDisabled = disabled || loading;
   const loaderColor = isDarkMode ? LOADER_COLORS[variant].dark : LOADER_COLORS[variant].light;
+  const [focused, setFocused] = useState(false);
+
+  // Focus ring — PressableCard와 동일 idiom: m-[-2px] + border-2 border-transparent
+  // 포커스 시 border 색만 변경 → layout shift 없는 2px outset info-blue ring
+  // impeccable-design.md §22 Focus ring Info 블루 2px outset
+  const handleFocus = useCallback(
+    (e: NativeSyntheticEvent<TargetedEvent>) => {
+      setFocused(true);
+      onFocus?.(e);
+    },
+    [onFocus]
+  );
+
+  const handleBlur = useCallback(
+    (e: NativeSyntheticEvent<TargetedEvent>) => {
+      setFocused(false);
+      onBlur?.(e);
+    },
+    [onBlur]
+  );
 
   // children이 문자열인 경우 자동으로 accessibilityLabel 생성
   const resolvedAccessibilityLabel =
@@ -121,6 +151,9 @@ export const Button = memo(function Button({
     .trim();
 
   const textClass = `font-sans-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
+  // Focus ring wrapper class — variant의 기존 border(outline 등)와 충돌 방지를 위해 외부 View로 감쌈
+  // fullWidth는 inner Pressable이 가져가므로 wrapper에는 self-stretch만 필요 (inline-block 방지)
+  const focusRingClass = `rounded m-[-2px] border-2 ${focused ? 'border-info-500' : 'border-transparent'}`;
   const content =
     typeof children === 'string' || typeof children === 'number' ? (
       <Text className={textClass}>{children}</Text>
@@ -129,27 +162,31 @@ export const Button = memo(function Button({
     );
 
   return (
-    <Pressable
-      {...props}
-      disabled={isDisabled}
-      accessibilityRole="button"
-      accessibilityLabel={resolvedAccessibilityLabel}
-      accessibilityState={{
-        disabled: isDisabled,
-        busy: loading,
-      }}
-      className={buttonClass}
-    >
-      {loading ? (
-        <ActivityIndicator color={loaderColor} size="small" />
-      ) : (
-        <>
-          {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
-          {content}
-          {icon && iconPosition === 'right' && <View className="ml-2">{icon}</View>}
-        </>
-      )}
-    </Pressable>
+    <View className={focusRingClass}>
+      <Pressable
+        {...props}
+        disabled={isDisabled}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        accessibilityRole="button"
+        accessibilityLabel={resolvedAccessibilityLabel}
+        accessibilityState={{
+          disabled: isDisabled,
+          busy: loading,
+        }}
+        className={buttonClass}
+      >
+        {loading ? (
+          <ActivityIndicator color={loaderColor} size="small" />
+        ) : (
+          <>
+            {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
+            {content}
+            {icon && iconPosition === 'right' && <View className="ml-2">{icon}</View>}
+          </>
+        )}
+      </Pressable>
+    </View>
   );
 });
 

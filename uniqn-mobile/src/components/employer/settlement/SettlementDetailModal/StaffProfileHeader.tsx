@@ -16,6 +16,8 @@ import type { PayrollStatus } from '@/types';
 export interface StaffProfileHeaderProps {
   /** 프로필 사진 URL */
   profilePhotoURL?: string;
+  /** 프로필 사진 blurhash 플레이스홀더 */
+  profilePhotoURLBlurhash?: string | null;
   /** 표시 이름 */
   displayName: string;
   /** 정산 상태 */
@@ -42,6 +44,7 @@ export interface StaffProfileHeaderProps {
  */
 export function StaffProfileHeader({
   profilePhotoURL,
+  profilePhotoURLBlurhash,
   displayName,
   payrollStatus,
   role,
@@ -52,7 +55,13 @@ export function StaffProfileHeader({
 
   return (
     <View className="items-center py-6 bg-surface-page">
-      <Avatar source={profilePhotoURL} name={displayName} size="xl" className="mb-3" />
+      <Avatar
+        source={profilePhotoURL}
+        name={displayName}
+        size="xl"
+        className="mb-3"
+        blurhash={profilePhotoURLBlurhash}
+      />
       <View className="flex-row items-center gap-2 mb-1">
         <Text className="text-xl font-display text-content-primary dark:text-off-white">
           {displayName}

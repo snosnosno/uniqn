@@ -62,6 +62,8 @@ module.exports = {
           secondary: 'var(--color-content-secondary)',
           muted: 'var(--color-content-muted)',
           placeholder: 'var(--color-content-placeholder)',
+          // 골드 배경 위의 전경 텍스트 (고정 다크 — 다크모드 무관)
+          onGold: '#09090B',
         },
         'surface-page': 'var(--color-surface-page)',
         'surface-card': 'var(--color-surface-card)',
@@ -159,6 +161,15 @@ module.exports = {
         lg: '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)',
         xl: '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)',
         none: 'none',
+      },
+      // 자간 (디자인 현대화 v3.1 - 카드 타이틀 타이트닝 + 칩 UPPERCASE)
+      letterSpacing: {
+        'card-title': '-0.02em',
+        chip: '0.06em',
+      },
+      // 숫자 정렬 (가변→고정폭 전환 — 금액/시간 표시용)
+      fontVariantNumeric: {
+        tabular: 'tabular-nums',
       },
     },
   },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, CardStripe, type CardStripeTone } from '@/components/ui';
 import type { PostingCardViewModel } from '@/types';
 import { PostingCompensationContent } from './PostingCompensationContent';
 import { PostingScheduleContent } from './PostingScheduleContent';
@@ -23,6 +23,7 @@ interface PostingCardSurfaceProps {
   pressableClassName?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  stripeTone?: CardStripeTone;
 }
 
 export function PostingCardSurface({
@@ -36,14 +37,15 @@ export function PostingCardSurface({
   pressableClassName,
   accessibilityLabel,
   accessibilityHint,
+  stripeTone,
 }: PostingCardSurfaceProps) {
   const schedule = buildPostingScheduleModel(card);
   const compensation = buildPostingCompensationModel(card, { display: 'card' });
   const resolvedAccessibilityLabel =
     accessibilityLabel || buildAccessibilityLabel(card, schedule, compensation.primaryText);
 
-  return (
-    <View className={containerClassName}>
+  const innerContent = (
+    <>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -64,7 +66,8 @@ export function PostingCardSurface({
               </Badge>
             ) : null}
             <Text
-              className="flex-1 text-base font-sans-semibold text-content-primary dark:text-off-white"
+              className="flex-1 text-base font-sans-bold text-content-primary dark:text-off-white"
+              style={{ letterSpacing: -0.32 }}
               numberOfLines={1}
             >
               {card.title}
@@ -110,8 +113,22 @@ export function PostingCardSurface({
       </Pressable>
 
       {footer}
-    </View>
+    </>
   );
+
+  if (stripeTone) {
+    return (
+      <CardStripe tone={stripeTone} style={{ marginBottom: 8 }}>
+        <View
+          className={`bg-surface-card dark:bg-surface-elevated rounded-md pl-4 ${containerClassName ?? ''}`.trim()}
+        >
+          {innerContent}
+        </View>
+      </CardStripe>
+    );
+  }
+
+  return <View className={containerClassName}>{innerContent}</View>;
 }
 
 function buildAccessibilityLabel(

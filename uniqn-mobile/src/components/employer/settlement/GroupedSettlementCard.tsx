@@ -12,7 +12,8 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
-import { Card, Avatar, Checkbox } from '@/components/ui';
+import { Avatar, CardStripe, Checkbox, NumericText } from '@/components/ui';
+import { PAYROLL_STATUS_CONFIG as PAYROLL_STATUS_SHARED } from './helpers/settlementConfig';
 import {
   CalendarIcon,
   BanknotesIcon,
@@ -194,11 +195,12 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: group.staffId,
     fallbackName: group.staffProfile.name,
     fallbackNickname: group.staffProfile.nickname,
     fallbackPhotoURL: group.staffProfile.photoURL,
+    fallbackPhotoURLBlurhash: group.staffProfile.photoURLBlurhash,
   });
 
   // 역할 표시 텍스트
@@ -234,6 +236,17 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
   // 전체 선택 여부
   const isAllSelected = selectedCount === group.originalWorkLogs.length;
+
+  // 그룹 대표 상태 → stripe tone
+  // 우선순위: pending(미정산) > processing(처리중) > completed(완료)
+  const groupPayrollStatus: PayrollStatus = useMemo(() => {
+    if (group.summary.pendingCount > 0) return STATUS.PAYROLL.PENDING;
+    const hasProcessing = group.dateStatuses.some((s) => s.payrollStatus === 'processing');
+    if (hasProcessing) return 'processing';
+    return STATUS.PAYROLL.COMPLETED;
+  }, [group.summary.pendingCount, group.dateStatuses]);
+
+  const stripeTone = PAYROLL_STATUS_SHARED[groupPayrollStatus].stripeTone;
 
   // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {
@@ -276,143 +289,158 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   }, [onToggleSelect, group.originalWorkLogs, isAllSelected, selectedIds]);
 
   return (
-    <Card className="mb-3" variant="elevated" padding="md">
-      {/* 상단: 프로필 + 상태/금액 */}
-      <Pressable
-        onPress={selectionMode ? handleToggleAllSelect : handlePress}
-        className="active:opacity-80"
-        accessibilityLabel={`${displayName} 정산 상세 보기`}
-      >
-        <View className="flex-row items-center">
-          {/* 선택 모드: 체크박스 */}
-          {selectionMode && (
-            <View className="mr-3">
-              <Checkbox
-                checked={isAllSelected || (selectedCount > 0 && !isAllSelected)}
-                onChange={handleToggleAllSelect}
-              />
+    <CardStripe tone={stripeTone} style={{ marginBottom: 12 }}>
+      <View className="bg-surface-card dark:bg-surface-elevated rounded-md pl-4 p-3">
+        {/* 상단: 프로필 + 상태/금액 */}
+        <Pressable
+          onPress={selectionMode ? handleToggleAllSelect : handlePress}
+          className="active:opacity-80"
+          accessibilityLabel={`${displayName} 정산 상세 보기`}
+        >
+          <View className="flex-row items-center">
+            {/* 선택 모드: 체크박스 */}
+            {selectionMode && (
+              <View className="mr-3">
+                <Checkbox
+                  checked={isAllSelected || (selectedCount > 0 && !isAllSelected)}
+                  onChange={handleToggleAllSelect}
+                />
+              </View>
+            )}
+
+            {/* 아바타 */}
+            <Avatar
+              source={profilePhotoURL}
+              name={displayName}
+              size="md"
+              className="mr-3"
+              blurhash={profilePhotoURLBlurhash}
+            />
+
+            {/* 이름 + 역할 */}
+            <View className="flex-1">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
+                {displayName}
+              </Text>
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                {rolesDisplay}
+              </Text>
+            </View>
+
+            {/* 금액/건수 */}
+            <View className="items-end">
+              <NumericText
+                className="text-base font-sans-bold text-primary-600 dark:text-primary-400"
+                style={{
+                  letterSpacing: -0.3,
+                  textAlign: 'right',
+                }}
+              >
+                {formatCurrency(group.summary.totalAmount)}
+              </NumericText>
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                {group.summary.totalCount}건
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+
+        {/* 날짜 범위 */}
+        <View className="flex-row items-center mt-3">
+          <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
+          <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
+            {dateDisplay}
+          </Text>
+        </View>
+
+        {/* 정산 요약 (미정산/완료 건수) */}
+        <View className="flex-row items-center mt-2 flex-wrap gap-2">
+          {group.summary.pendingCount > 0 && (
+            <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
+              <ClockIcon size={12} color="#D4A017" />
+              <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300 font-sans">
+                미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)}
+                )
+              </Text>
             </View>
           )}
-
-          {/* 아바타 */}
-          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
-
-          {/* 이름 + 역할 */}
-          <View className="flex-1">
-            <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
-              {displayName}
-            </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              {rolesDisplay}
-            </Text>
-          </View>
-
-          {/* 금액/건수 */}
-          <View className="items-end">
-            <Text className="text-base font-sans-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(group.summary.totalAmount)}
-            </Text>
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-              {group.summary.totalCount}건
-            </Text>
-          </View>
+          {group.summary.completedCount > 0 && (
+            <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
+              <CheckCircleIcon size={12} color="#22C55E" />
+              <Text className="ml-1 text-xs text-success-700 dark:text-success-300 font-sans">
+                완료 {group.summary.completedCount}건 (
+                {formatCurrency(group.summary.completedAmount)})
+              </Text>
+            </View>
+          )}
+          {group.summary.settlableCount < group.summary.pendingCount && (
+            <View className="flex-row items-center px-2 py-1 bg-surface-page rounded-lg">
+              <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
+              <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
+                출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
+              </Text>
+            </View>
+          )}
         </View>
-      </Pressable>
 
-      {/* 날짜 범위 */}
-      <View className="flex-row items-center mt-3">
-        <CalendarIcon size={14} color={SECONDARY_PALETTE[500]} />
-        <Text className="ml-1.5 text-sm text-content-muted dark:text-secondary-400 font-sans">
-          {dateDisplay}
-        </Text>
+        {/* 펼침/접힘 버튼 */}
+        <Pressable
+          onPress={toggleExpanded}
+          className="flex-row items-center justify-center mt-3 py-2 border-t border-divider"
+          accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
+        >
+          <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1 font-sans">
+            날짜별 상세
+          </Text>
+          {isExpanded ? (
+            <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
+          ) : (
+            <ChevronDownIcon size={16} color={SECONDARY_PALETTE[500]} />
+          )}
+        </Pressable>
+
+        {/* 펼침 상태: 날짜별 정산 상태 */}
+        {isExpanded && (
+          <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
+            {group.dateStatuses.map((status, index) => {
+              const workLog = workLogMap.get(status.workLogId);
+              if (!workLog) return null;
+
+              return (
+                <DateStatusRow
+                  key={status.workLogId}
+                  status={status}
+                  workLog={workLog}
+                  group={group}
+                  isLast={index === group.dateStatuses.length - 1}
+                  selectionMode={selectionMode}
+                  isSelected={selectedIds?.has(status.workLogId)}
+                  onToggleSelect={onToggleSelect}
+                  onPress={onDatePress}
+                  onSettle={onSettle}
+                />
+              );
+            })}
+          </View>
+        )}
+
+        {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
+        {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
+          <View className="mt-3 pt-3 border-t border-divider">
+            <Pressable
+              onPress={handleBulkSettle}
+              className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"
+              accessibilityLabel={`${settlableWorkLogs.length}건 일괄 정산`}
+            >
+              <BanknotesIcon size={18} color="#fff" />
+              <Text className="ml-2 text-sm font-sans-semibold text-surface-dark">
+                {settlableWorkLogs.length}건 일괄 정산
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
-
-      {/* 정산 요약 (미정산/완료 건수) */}
-      <View className="flex-row items-center mt-2 flex-wrap gap-2">
-        {group.summary.pendingCount > 0 && (
-          <View className="flex-row items-center px-2 py-1 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
-            <ClockIcon size={12} color="#D4A017" />
-            <Text className="ml-1 text-xs text-warning-700 dark:text-warning-300 font-sans">
-              미정산 {group.summary.pendingCount}건 ({formatCurrency(group.summary.pendingAmount)})
-            </Text>
-          </View>
-        )}
-        {group.summary.completedCount > 0 && (
-          <View className="flex-row items-center px-2 py-1 bg-success-50 dark:bg-success-900/20 rounded-lg">
-            <CheckCircleIcon size={12} color="#22C55E" />
-            <Text className="ml-1 text-xs text-success-700 dark:text-success-300 font-sans">
-              완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)}
-              )
-            </Text>
-          </View>
-        )}
-        {group.summary.settlableCount < group.summary.pendingCount && (
-          <View className="flex-row items-center px-2 py-1 bg-surface-page rounded-lg">
-            <ExclamationCircleIcon size={12} color={SECONDARY_PALETTE[500]} />
-            <Text className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
-              출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* 펼침/접힘 버튼 */}
-      <Pressable
-        onPress={toggleExpanded}
-        className="flex-row items-center justify-center mt-3 py-2 border-t border-divider"
-        accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
-      >
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mr-1 font-sans">
-          날짜별 상세
-        </Text>
-        {isExpanded ? (
-          <ChevronUpIcon size={16} color={SECONDARY_PALETTE[500]} />
-        ) : (
-          <ChevronDownIcon size={16} color={SECONDARY_PALETTE[500]} />
-        )}
-      </Pressable>
-
-      {/* 펼침 상태: 날짜별 정산 상태 */}
-      {isExpanded && (
-        <View className="mt-2 pt-2 border-t border-secondary-100 dark:border-surface-overlay">
-          {group.dateStatuses.map((status, index) => {
-            const workLog = workLogMap.get(status.workLogId);
-            if (!workLog) return null;
-
-            return (
-              <DateStatusRow
-                key={status.workLogId}
-                status={status}
-                workLog={workLog}
-                group={group}
-                isLast={index === group.dateStatuses.length - 1}
-                selectionMode={selectionMode}
-                isSelected={selectedIds?.has(status.workLogId)}
-                onToggleSelect={onToggleSelect}
-                onPress={onDatePress}
-                onSettle={onSettle}
-              />
-            );
-          })}
-        </View>
-      )}
-
-      {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
-      {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
-        <View className="mt-3 pt-3 border-t border-divider">
-          <Pressable
-            onPress={handleBulkSettle}
-            className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"
-            accessibilityLabel={`${settlableWorkLogs.length}건 일괄 정산`}
-          >
-            <BanknotesIcon size={18} color="#fff" />
-            <Text className="ml-2 text-sm font-sans-semibold text-surface-dark">
-              {settlableWorkLogs.length}건 일괄 정산
-            </Text>
-          </Pressable>
-        </View>
-      )}
-    </Card>
+    </CardStripe>
   );
 });
 

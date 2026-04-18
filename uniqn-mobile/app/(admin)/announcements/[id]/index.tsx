@@ -35,6 +35,7 @@ import {
   getAnnouncementImages,
 } from '@/types/announcement';
 import { useModal } from '@/stores/modalStore';
+import { NumericText } from '@/components/ui';
 import { toDate, type DateInput } from '@/utils/date';
 
 export default function AnnouncementDetailPage() {
@@ -154,257 +155,262 @@ export default function AnnouncementDetailPage() {
       />
 
       <ScrollView className="flex-1 bg-surface-page">
-        <View className="p-4">
-          {/* Header Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
-            {/* Badges */}
-            <View className="flex-row flex-wrap gap-2 mb-3">
-              {/* Status */}
-              <View className={`px-2 py-1 rounded ${statusConfig.bgColor}`}>
-                <Text className={`text-xs font-sans-medium ${statusConfig.color}`}>
-                  {statusConfig.label}
-                </Text>
-              </View>
-
-              {/* Priority */}
-              {announcement.priority > 0 && (
-                <View className={`px-2 py-1 rounded ${priorityConfig.bgColor}`}>
-                  <Text className={`text-xs font-sans-medium ${priorityConfig.color}`}>
-                    {priorityConfig.label}
-                  </Text>
-                </View>
-              )}
-
-              {/* Category */}
-              <View className="px-2 py-1 rounded bg-surface-card dark:bg-surface">
-                <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
-                  {categoryLabel}
-                </Text>
-              </View>
-
-              {/* Pinned */}
-              {announcement.isPinned && (
-                <View className="px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 flex-row items-center">
-                  <PinIcon size={12} color="#D4A017" />
-                  <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300 ml-1">
-                    고정
-                  </Text>
-                </View>
-              )}
+        {/* Hero */}
+        <View className="bg-surface-elevated dark:bg-surface-elevated px-4 py-4 border-b border-divider">
+          {/* Badges */}
+          <View className="flex-row flex-wrap gap-2 mb-2">
+            {/* Status */}
+            <View className={`px-2 py-1 rounded ${statusConfig.bgColor}`}>
+              <Text className={`text-xs font-sans-medium ${statusConfig.color}`}>
+                {statusConfig.label}
+              </Text>
             </View>
 
-            {/* Title */}
-            <Text className="text-xl font-display text-content-primary dark:text-off-white mb-2">
-              {announcement.title}
-            </Text>
+            {/* Priority */}
+            {announcement.priority > 0 && (
+              <View className={`px-2 py-1 rounded ${priorityConfig.bgColor}`}>
+                <Text className={`text-xs font-sans-medium ${priorityConfig.color}`}>
+                  {priorityConfig.label}
+                </Text>
+              </View>
+            )}
 
-            {/* Meta */}
-            <View className="flex-row flex-wrap gap-4">
-              <View className="flex-row items-center">
-                <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-                  {announcement.authorName}
+            {/* Category */}
+            <View className="px-2 py-1 rounded bg-surface-card dark:bg-surface">
+              <Text className="text-xs text-content-muted dark:text-secondary-400 font-sans">
+                {categoryLabel}
+              </Text>
+            </View>
+
+            {/* Pinned */}
+            {announcement.isPinned && (
+              <View className="px-2 py-1 rounded bg-warning-100 dark:bg-warning-900/30 flex-row items-center">
+                <PinIcon size={12} color="#D4A017" />
+                <Text className="text-xs font-sans-medium text-warning-700 dark:text-warning-300 ml-1">
+                  고정
                 </Text>
               </View>
-              <View className="flex-row items-center">
-                <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-                  {announcement.viewCount.toLocaleString()}
-                </Text>
-              </View>
+            )}
+          </View>
+
+          {/* Title */}
+          <Text
+            className="text-content-primary dark:text-off-white text-lg font-sans-bold"
+            style={{ letterSpacing: -0.5, lineHeight: 24 }}
+          >
+            {announcement.title}
+          </Text>
+
+          {/* Meta */}
+          <View className="flex-row flex-wrap gap-4 mt-2">
+            <View className="flex-row items-center">
+              <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+                {announcement.authorName}
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <NumericText className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+                {announcement.viewCount.toLocaleString()}
+              </NumericText>
             </View>
           </View>
+        </View>
 
-          {/* Content Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-              내용
-            </Text>
-            <Text className="text-base text-content-primary dark:text-off-white leading-6 font-sans">
-              {announcement.content}
-            </Text>
-          </View>
+        {/* 내용 */}
+        <View className="px-4 py-3 border-b border-divider">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            내용
+          </Text>
+          <Text className="text-base text-content-primary dark:text-off-white leading-6 font-sans">
+            {announcement.content}
+          </Text>
+        </View>
 
-          {/* Image Card (다중 이미지 지원) */}
-          {(() => {
-            const images = getAnnouncementImages(announcement);
-            if (images.length === 0) return null;
+        {/* 첨부 이미지 (다중 이미지 지원) */}
+        {(() => {
+          const images = getAnnouncementImages(announcement);
+          if (images.length === 0) return null;
 
-            return (
-              <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
-                <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
-                  첨부 이미지 ({images.length}장)
-                </Text>
-                {images.length === 1 ? (
-                  // 단일 이미지
-                  <Image
-                    source={{ uri: images[0].url }}
-                    style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8 }}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ) : (
-                  // 다중 이미지 그리드
-                  <View className="flex-row flex-wrap" style={{ margin: -4 }}>
-                    {images.map((image, index) => (
-                      <View
-                        key={image.id}
-                        style={{
-                          width: images.length === 2 ? '50%' : '33.33%',
-                          padding: 4,
-                        }}
-                      >
-                        <View className="relative">
-                          <Image
-                            source={{ uri: image.url }}
-                            style={{
-                              width: '100%',
-                              aspectRatio: 1,
-                              borderRadius: 8,
-                            }}
-                            contentFit="cover"
-                            transition={200}
-                          />
-                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-sm px-2 py-0.5">
-                            <Text className="text-white text-xs font-sans-medium">{index + 1}</Text>
-                          </View>
+          return (
+            <View className="px-4 py-3 border-b border-divider">
+              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+                첨부 이미지 ({images.length}장)
+              </Text>
+              {images.length === 1 ? (
+                // 단일 이미지
+                <Image
+                  source={{ uri: images[0].url }}
+                  style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8 }}
+                  contentFit="cover"
+                  placeholder={images[0].blurhash ? { blurhash: images[0].blurhash } : undefined}
+                  placeholderContentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                // 다중 이미지 그리드
+                <View className="flex-row flex-wrap" style={{ margin: -4 }}>
+                  {images.map((image, index) => (
+                    <View
+                      key={image.id}
+                      style={{
+                        width: images.length === 2 ? '50%' : '33.33%',
+                        padding: 4,
+                      }}
+                    >
+                      <View className="relative">
+                        <Image
+                          source={{ uri: image.url }}
+                          style={{
+                            width: '100%',
+                            aspectRatio: 1,
+                            borderRadius: 8,
+                          }}
+                          contentFit="cover"
+                          placeholder={image.blurhash ? { blurhash: image.blurhash } : undefined}
+                          placeholderContentFit="cover"
+                          transition={200}
+                        />
+                        <View className="absolute bottom-1 right-1 bg-black/60 rounded-sm px-2 py-0.5">
+                          <Text className="text-white text-xs font-sans-medium">{index + 1}</Text>
                         </View>
                       </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            );
-          })()}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
-          {/* Info Card */}
-          <View className="bg-white dark:bg-surface rounded-md p-4 border border-secondary-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-3">
-              정보
+        {/* 정보 */}
+        <View className="px-4 py-3 border-b border-divider">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            정보
+          </Text>
+
+          {/* Target Audience */}
+          <View className="flex-row justify-between py-2 border-b border-divider">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              대상
             </Text>
-
-            {/* Target Audience */}
-            <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                대상
-              </Text>
-              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
-                {announcement.targetAudience.type === 'all'
-                  ? '전체'
-                  : announcement.targetAudience.roles
-                      ?.map((role) => {
-                        switch (role) {
-                          case 'admin':
-                            return '관리자';
-                          case 'employer':
-                            return '구인자';
-                          case 'staff':
-                            return '스태프';
-                          default:
-                            return role;
-                        }
-                      })
-                      .join(', ')}
-              </Text>
-            </View>
-
-            {/* Created At */}
-            <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                작성일
-              </Text>
-              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
-                {formatDate(announcement.createdAt)}
-              </Text>
-            </View>
-
-            {/* Published At */}
-            {announcement.publishedAt && (
-              <View className="flex-row justify-between py-2 border-b border-secondary-100 dark:border-surface-overlay">
-                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                  발행일
-                </Text>
-                <Text className="text-sm text-content-primary dark:text-off-white font-sans">
-                  {formatDate(announcement.publishedAt)}
-                </Text>
-              </View>
-            )}
-
-            {/* Updated At */}
-            <View className="flex-row justify-between py-2">
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-                수정일
-              </Text>
-              <Text className="text-sm text-content-primary dark:text-off-white font-sans">
-                {formatDate(announcement.updatedAt)}
-              </Text>
-            </View>
+            <Text className="text-sm text-content-primary dark:text-off-white font-sans">
+              {announcement.targetAudience.type === 'all'
+                ? '전체'
+                : announcement.targetAudience.roles
+                    ?.map((role) => {
+                      switch (role) {
+                        case 'admin':
+                          return '관리자';
+                        case 'employer':
+                          return '구인자';
+                        case 'staff':
+                          return '스태프';
+                        default:
+                          return role;
+                      }
+                    })
+                    .join(', ')}
+            </Text>
           </View>
 
-          {/* Action Buttons */}
-          <View className="gap-3 pb-8">
-            {/* Publish (draft only) */}
-            {announcement.status === STATUS.ANNOUNCEMENT.DRAFT && (
-              <Pressable
-                onPress={handlePublish}
-                disabled={!!actionLoading}
-                className="bg-success-600 rounded-lg py-3 items-center flex-row justify-center"
-              >
-                {actionLoading === 'publish' ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <PaperPlaneOutlineIcon size={18} color="#fff" />
-                    <Text className="text-white font-sans-medium ml-2">발행하기</Text>
-                  </>
-                )}
-              </Pressable>
-            )}
+          {/* Created At */}
+          <View className="flex-row justify-between py-2 border-b border-divider">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              작성일
+            </Text>
+            <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
+              {formatDate(announcement.createdAt)}
+            </NumericText>
+          </View>
 
-            {/* Archive (published only) */}
-            {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && (
-              <Pressable
-                onPress={handleArchive}
-                disabled={!!actionLoading}
-                className="bg-warning-600 rounded-lg py-3 items-center flex-row justify-center"
-              >
-                {actionLoading === 'archive' ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <ArchiveOutlineIcon size={18} color="#fff" />
-                    <Text className="text-white font-sans-medium ml-2">보관하기</Text>
-                  </>
-                )}
-              </Pressable>
-            )}
+          {/* Published At */}
+          {announcement.publishedAt && (
+            <View className="flex-row justify-between py-2 border-b border-divider">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                발행일
+              </Text>
+              <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
+                {formatDate(announcement.publishedAt)}
+              </NumericText>
+            </View>
+          )}
 
-            {/* Edit */}
+          {/* Updated At */}
+          <View className="flex-row justify-between py-2">
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+              수정일
+            </Text>
+            <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
+              {formatDate(announcement.updatedAt)}
+            </NumericText>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View className="gap-3 px-4 py-4 pb-8">
+          {/* Publish (draft only) */}
+          {announcement.status === STATUS.ANNOUNCEMENT.DRAFT && (
             <Pressable
-              onPress={handleEdit}
+              onPress={handlePublish}
               disabled={!!actionLoading}
-              className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
+              className="bg-success-600 rounded-lg py-3 items-center flex-row justify-center"
             >
-              <CreateOutlineIcon size={18} color="#fff" />
-              <Text className="text-surface-dark font-sans-medium ml-2">수정하기</Text>
-            </Pressable>
-
-            {/* Delete */}
-            <Pressable
-              onPress={handleDelete}
-              disabled={!!actionLoading}
-              className="bg-error-600 rounded-lg py-3 items-center flex-row justify-center"
-            >
-              {actionLoading === 'delete' ? (
+              {actionLoading === 'publish' ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <TrashOutlineIcon size={18} color="#fff" />
-                  <Text className="text-white font-sans-medium ml-2">삭제하기</Text>
+                  <PaperPlaneOutlineIcon size={18} color="#fff" />
+                  <Text className="text-white font-sans-medium ml-2">발행하기</Text>
                 </>
               )}
             </Pressable>
-          </View>
+          )}
+
+          {/* Archive (published only) */}
+          {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && (
+            <Pressable
+              onPress={handleArchive}
+              disabled={!!actionLoading}
+              className="bg-warning-600 rounded-lg py-3 items-center flex-row justify-center"
+            >
+              {actionLoading === 'archive' ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <ArchiveOutlineIcon size={18} color="#fff" />
+                  <Text className="text-white font-sans-medium ml-2">보관하기</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+
+          {/* Edit */}
+          <Pressable
+            onPress={handleEdit}
+            disabled={!!actionLoading}
+            className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
+          >
+            <CreateOutlineIcon size={18} color="#fff" />
+            <Text className="text-surface-dark font-sans-medium ml-2">수정하기</Text>
+          </Pressable>
+
+          {/* Delete */}
+          <Pressable
+            onPress={handleDelete}
+            disabled={!!actionLoading}
+            className="bg-error-600 rounded-lg py-3 items-center flex-row justify-center"
+          >
+            {actionLoading === 'delete' ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <TrashOutlineIcon size={18} color="#fff" />
+                <Text className="text-white font-sans-medium ml-2">삭제하기</Text>
+              </>
+            )}
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,35 +1,33 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useApplications } from '@/hooks/useApplications';
 
-interface CountCardProps {
-  count: number;
+interface StripCellProps {
+  num: number;
   label: string;
+  gold?: boolean;
+  isLast?: boolean;
 }
 
-function CountCard({ count, label }: CountCardProps) {
+function StripCell({ num, label, gold, isLast }: StripCellProps) {
   return (
-    <View className="flex-1 items-center py-2">
-      <Text
-        className="font-bold text-secondary-900 dark:text-secondary-50"
-        style={{ fontSize: 22 }}
+    <View
+      className={`flex-1 items-center py-2 ${
+        isLast === true ? '' : 'border-r border-divider dark:border-surface-overlay'
+      }`}
+    >
+      <NumericText
+        className={`text-2xl font-sans-bold ${gold === true ? 'text-primary-500' : 'text-content-primary'}`}
+        style={{ letterSpacing: -0.5 }}
       >
-        {count}
-      </Text>
-      <Text className="text-secondary-500 dark:text-secondary-400" style={{ fontSize: 12 }}>
-        {label}
-      </Text>
+        {num}
+      </NumericText>
+      <Text className="text-[9px] uppercase tracking-wider text-content-muted mt-0.5">{label}</Text>
     </View>
   );
-}
-
-interface DividerProps {
-  vertical?: boolean;
-}
-
-function VerticalDivider(_props: DividerProps) {
-  return <View className="w-px bg-neutral-200 dark:bg-neutral-700 self-stretch my-1" />;
 }
 
 export function ApplicationStatusWidget() {
@@ -40,8 +38,11 @@ export function ApplicationStatusWidget() {
   const applied = myApplications.filter((a) => a.status === 'applied').length;
   const confirmed = myApplications.filter((a) => a.status === 'confirmed').length;
   const rejected = myApplications.filter((a) => a.status === 'rejected').length;
+  const cancelled = myApplications.filter(
+    (a) => a.status === 'cancelled' || a.status === 'cancellation_pending'
+  ).length;
 
-  const accessibilityLabel = `내 지원 현황, 대기중 ${applied}건, 확정 ${confirmed}건, 거절 ${rejected}건`;
+  const accessibilityLabel = `내 지원 현황, 대기중 ${applied}건, 확정 ${confirmed}건, 거절 ${rejected}건, 취소 ${cancelled}건`;
 
   const emptyState = {
     message: '아직 지원한 공고가 없습니다',
@@ -49,10 +50,21 @@ export function ApplicationStatusWidget() {
 
   return (
     <DashboardWidgetShell
+      variant="section"
       title="내 지원 현황"
       isLoading={isLoading}
       emptyState={hasApplications ? undefined : emptyState}
       error={error}
+      action={
+        <Pressable
+          onPress={() => router.push('/(app)/(tabs)/schedule')}
+          accessibilityRole="button"
+          accessibilityLabel="지원 현황 전체 보기"
+          hitSlop={8}
+        >
+          <Text className="text-primary-500 text-[10px] font-sans-bold">전체 →</Text>
+        </Pressable>
+      }
     >
       {hasApplications ? (
         <View
@@ -60,11 +72,10 @@ export function ApplicationStatusWidget() {
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="summary"
         >
-          <CountCard count={applied} label="대기중" />
-          <VerticalDivider />
-          <CountCard count={confirmed} label="확정" />
-          <VerticalDivider />
-          <CountCard count={rejected} label="거절" />
+          <StripCell num={applied} label="대기중" gold />
+          <StripCell num={confirmed} label="확정" />
+          <StripCell num={rejected} label="거절" />
+          <StripCell num={cancelled} label="취소" isLast />
         </View>
       ) : null}
     </DashboardWidgetShell>

@@ -110,7 +110,7 @@ export function useApplications() {
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
       const applicantNickname = identity.nickname;
       const applicantPhotoURL = identity.photoURL;
-      const applicantPhotoURLBlurhash = identity.photoURLBlurhash;
+      const applicantPhotoURLBlurhash = identity.photoURLBlurhash ?? undefined;
 
       return applyToJobV2(
         {

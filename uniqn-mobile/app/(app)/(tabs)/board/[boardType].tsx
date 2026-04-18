@@ -11,6 +11,7 @@ import { BoardWriteFab } from '@/components/board/BoardWriteFab';
 import { useBoardPosts } from '@/hooks/useBoard';
 import { BOARD_TYPE_LABELS, type BoardType } from '@/types/board';
 import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 
 const SUPPORTED_BOARD_TYPES: BoardType[] = ['notice', 'schedule', 'free', 'tda', 'substitute'];
 
@@ -71,7 +72,9 @@ export default function BoardListScreen() {
           // @ts-expect-error - FlashList 2.x runtime prop is available but project types lag behind
           estimatedItemSize={72}
           contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8, paddingBottom: 80 }}
-          refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} {...PTR_REFRESH_PROPS} />
+          }
           ListEmptyComponent={
             isLoading ? (
               <View className="flex-1 items-center justify-center py-20">

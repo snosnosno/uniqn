@@ -22,6 +22,12 @@ export interface AvatarProps {
   name?: string;
   size?: AvatarSize;
   className?: string;
+  /**
+   * 선계산된 blurhash 문자열 (impeccable v2 §18).
+   * 없으면 DEFAULT_BLURHASH.avatar 기본값 사용 → 단색 fallback 대비 부드러운 placeholder.
+   * DB 컬럼: users.photo_url_blurhash 등.
+   */
+  blurhash?: string | null;
 }
 
 const sizeStyles: Record<AvatarSize, string> = {
@@ -83,6 +89,7 @@ export const Avatar = memo(function Avatar({
   name,
   size = 'md',
   className = '',
+  blurhash,
 }: AvatarProps) {
   const [hasImageError, setHasImageError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
@@ -139,7 +146,8 @@ export const Avatar = memo(function Avatar({
           source={source}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
-          placeholder={DEFAULT_BLURHASH.avatar}
+          placeholder={{ blurhash: blurhash ?? DEFAULT_BLURHASH.avatar }}
+          placeholderContentFit="cover"
           transition={200}
           cachePolicy="memory-disk"
           onLoad={handleImageLoad}

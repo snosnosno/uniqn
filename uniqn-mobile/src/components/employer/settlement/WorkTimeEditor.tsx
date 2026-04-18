@@ -70,12 +70,13 @@ export function WorkTimeEditor({
 
   // 휠 피커 상태 (출근/퇴근 구분)
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
     fallbackName: workLog?.staffName,
     fallbackNickname: workLog?.staffNickname,
     fallbackPhotoURL: workLog?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: workLog?.staffPhotoURLBlurhash,
   });
 
   // workLog 변경 시 초기값 설정
@@ -336,7 +337,12 @@ export function WorkTimeEditor({
           {/* 스태프 정보 */}
           <View className="flex-row items-center py-2 px-3 bg-surface-page rounded-lg mb-2">
             {/* 프로필 이미지 */}
-            <Avatar source={profilePhotoURL} name={displayName} size="md" />
+            <Avatar
+              source={profilePhotoURL}
+              name={displayName}
+              size="md"
+              blurhash={profilePhotoURLBlurhash}
+            />
             <View className="ml-3 flex-1">
               {/* 이름(닉네임) */}
               <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">

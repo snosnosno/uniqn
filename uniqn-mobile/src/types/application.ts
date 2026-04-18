@@ -53,8 +53,8 @@ export interface Application extends FirebaseDocument {
   applicantRole?: StaffRole;
   applicantNickname?: string;
   applicantPhotoURL?: string;
-  /** impeccable v2 §18 — photoURL placeholder 용 blurhash 해시 */
-  applicantPhotoURLBlurhash?: string;
+  /** impeccable v2 §18 — photoURL placeholder 용 blurhash 해시 (DB null 허용) */
+  applicantPhotoURLBlurhash?: string | null;
 
   jobPostingId: string;
   jobPostingTitle?: string;

@@ -84,6 +84,8 @@ export function BoardImagePicker({
               source={{ uri: image.url }}
               style={{ width: tileSize, height: tileSize, borderRadius: 16 }}
               contentFit="cover"
+              placeholder={image.blurhash ? { blurhash: image.blurhash } : undefined}
+              placeholderContentFit="cover"
               transition={200}
             />
             <Pressable

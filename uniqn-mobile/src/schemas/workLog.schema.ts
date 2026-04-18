@@ -192,7 +192,7 @@ export function parseWorkLogDocument(data: unknown): WorkLog | null {
     date: result.data.date ?? '',
     staffNickname: result.data.staffNickname ?? undefined,
     staffPhotoURL: result.data.staffPhotoURL ?? undefined,
-    staffPhotoURLBlurhash: result.data.staffPhotoURLBlurhash ?? undefined,
+    staffPhotoURLBlurhash: result.data.staffPhotoURLBlurhash ?? null,
     customRole: result.data.customRole ?? undefined,
     notes: result.data.notes ?? undefined,
     timeSlot: result.data.timeSlot ?? undefined,

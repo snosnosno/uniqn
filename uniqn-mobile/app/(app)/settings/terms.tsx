@@ -17,16 +17,14 @@ export default function TermsScreen() {
       <StackHeader title="이용약관" fallbackHref="/(app)/settings" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         <Card className="mb-4">
-          <Text className="mb-4 text-lg font-display text-content-primary dark:text-secondary-100">
-            UNIQN 이용약관
-          </Text>
+          <Text className="mb-4 text-lg font-display text-content-primary">UNIQN 이용약관</Text>
 
           {/* 제1조: 목적 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제1조 (목적)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               이 약관은 스노스튜디오(이하 "회사")가 제공하는 UNIQN 서비스(이하 "서비스")의 이용조건
               및 절차, 회사와 회원 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.
             </Text>
@@ -34,10 +32,10 @@ export default function TermsScreen() {
 
           {/* 제2조: 정의 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제2조 (정의)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. "서비스"란 회사가 제공하는 홀덤 토너먼트 스태프 매칭 플랫폼을 의미합니다.{'\n\n'}
               2. "회원"이란 이 약관에 동의하고 회사와 이용계약을 체결한 자를 의미합니다.{'\n\n'}
               3. "구인자"란 스태프를 모집하는 회원을 의미합니다.{'\n\n'}
@@ -49,10 +47,10 @@ export default function TermsScreen() {
 
           {/* 제3조: 약관의 효력 및 변경 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제3조 (약관의 효력 및 변경)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 이 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력이
               발생합니다.{'\n\n'}
               2. 회사는 필요한 경우 관련 법령을 위배하지 않는 범위에서 이 약관을 변경할 수 있습니다.
@@ -69,10 +67,10 @@ export default function TermsScreen() {
 
           {/* 제4조: 서비스의 제공 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제4조 (서비스의 제공)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               회사는 다음과 같은 서비스를 제공합니다.{'\n\n'}
               1. 구인공고 등록 및 조회 서비스{'\n'}
               2. 스태프 지원 및 매칭 서비스{'\n'}
@@ -86,10 +84,10 @@ export default function TermsScreen() {
 
           {/* 제5조: 회원의 의무 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제5조 (회원의 의무)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회원은 서비스 이용 시 관련 법령과 이 약관을 준수해야 합니다.{'\n\n'}
               2. 회원은 타인의 권리를 침해하거나 허위 정보를 등록해서는 안 됩니다.{'\n\n'}
               3. 회원은 자신의 계정 정보를 안전하게 관리해야 하며, 제3자에게 이용을 허락해서는 안
@@ -103,10 +101,10 @@ export default function TermsScreen() {
 
           {/* 제6조: 회원가입 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제6조 (회원가입)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 가입 자격{'\n'}- 만 19세 이상의 성인{'\n'}- 본인인증을 완료한 자{'\n\n'}
               2. 가입 절차{'\n'}- 이용약관 및 개인정보처리방침 동의{'\n'}- 본인인증 (PASS 또는
               카카오 인증){'\n'}- 필수 정보 입력{'\n'}- 가입 완료{'\n\n'}
@@ -117,10 +115,10 @@ export default function TermsScreen() {
 
           {/* 제7조: 회원탈퇴 및 자격상실 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제7조 (회원탈퇴 및 자격상실)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회원 탈퇴{'\n'}- 회원은 언제든지 앱 내 "설정 {'>'} 계정관리 {'>'} 회원탈퇴" 메뉴를
               통해 탈퇴를 신청할 수 있습니다.{'\n'}- 탈퇴 시 개인정보는 관련 법령에 따라 일정 기간
               보관 후 파기됩니다.{'\n'}- 진행 중인 매칭이 있는 경우 해당 매칭 완료 후 탈퇴가
@@ -133,10 +131,10 @@ export default function TermsScreen() {
 
           {/* 제8조: 서비스 이용제한 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제8조 (서비스 이용제한)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 이용제한 사유{'\n'}- 약관 위반, 허위정보 등록, 타인 권리 침해{'\n'}- 노쇼(No-show),
               무단 이탈 등 신뢰도 저하 행위{'\n'}- 불법 행위 또는 불법 행위에 대한 조장{'\n'}-
               서비스의 안정적 운영을 방해하는 행위{'\n\n'}
@@ -150,10 +148,10 @@ export default function TermsScreen() {
 
           {/* 제9조: 회사의 의무 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제9조 (회사의 의무)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회사는 관련 법령과 이 약관을 준수하며, 지속적이고 안정적으로 서비스를 제공하기 위해
               노력합니다.{'\n\n'}
               2. 회사는 회원의 개인정보를 보호하며, 개인정보처리방침에 따라 처리합니다.{'\n\n'}
@@ -166,10 +164,10 @@ export default function TermsScreen() {
 
           {/* 제10조: 서비스 중단 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제10조 (서비스 중단)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회사는 다음의 경우 서비스 제공을 일시적으로 중단할 수 있습니다.{'\n'}- 시스템
               정기점검, 교체 및 고장{'\n'}- 천재지변, 국가비상사태 등 불가항력적 사유{'\n'}-
               기간통신사업자의 전기통신 서비스 중지{'\n\n'}
@@ -182,10 +180,10 @@ export default function TermsScreen() {
 
           {/* 제11조: 손해배상 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제11조 (손해배상)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회사는 회사의 귀책사유로 인해 회원에게 손해가 발생한 경우, 그 손해를 배상할 책임이
               있습니다.{'\n\n'}
               2. 배상 범위{'\n'}- 직접적이고 현실적인 손해에 한함{'\n'}- 간접적, 부수적, 결과적
@@ -197,10 +195,10 @@ export default function TermsScreen() {
 
           {/* 제12조: 면책조항 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제12조 (면책조항)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 회사는 천재지변, 전쟁, 기간통신사업자의 서비스 중지 등 불가항력적 사유로 서비스를
               제공할 수 없는 경우 책임이 면제됩니다.{'\n\n'}
               2. 회사는 회원의 귀책사유로 인한 서비스 이용장애에 대해 책임지지 않습니다.{'\n\n'}
@@ -215,10 +213,10 @@ export default function TermsScreen() {
 
           {/* 제13조: 저작권 및 지식재산권 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제13조 (저작권 및 지식재산권)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 서비스에 대한 저작권 및 지식재산권은 회사에 귀속됩니다.{'\n\n'}
               2. 회원이 서비스 내에 게시한 콘텐츠의 저작권은 해당 회원에게 귀속됩니다.{'\n\n'}
               3. 회원은 서비스를 이용하면서 얻은 정보를 회사의 사전 동의 없이 복제, 전송, 출판,
@@ -231,10 +229,10 @@ export default function TermsScreen() {
 
           {/* 제14조: 분쟁해결 */}
           <View className="mb-6">
-            <Text className="mb-2 text-base font-sans-semibold text-secondary-800 dark:text-secondary-200">
+            <Text className="mb-2 text-base font-sans-semibold text-content-primary">
               제14조 (분쟁해결)
             </Text>
-            <Text className="text-sm leading-6 text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="text-sm leading-6 text-content-muted font-sans">
               1. 이 약관에 명시되지 않은 사항은 대한민국 법률에 따릅니다.{'\n\n'}
               2. 서비스 이용과 관련하여 회사와 회원 간에 분쟁이 발생한 경우, 쌍방은 분쟁해결을 위해
               성실히 협의합니다.{'\n\n'}
@@ -245,9 +243,11 @@ export default function TermsScreen() {
           </View>
 
           {/* 시행일 */}
-          <View className="border-t border-secondary-200 pt-4 dark:border-surface-overlay">
-            <Text className="text-sm font-sans-medium text-content-secondary">부칙</Text>
-            <Text className="mt-2 text-xs text-secondary-500 dark:text-secondary-500 font-sans">
+          <View className="border-t border-divider pt-4">
+            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+              부칙
+            </Text>
+            <Text className="text-xs text-content-muted font-sans">
               - 공고일: 2025년 1월 25일{'\n'}- 시행일: 2025년 2월 1일{'\n'}- 버전: 1.0
             </Text>
           </View>

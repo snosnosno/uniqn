@@ -73,7 +73,7 @@ export default function AdminInquiryDetailScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             문의자 정보
           </Text>
           <View className="flex-row items-center justify-between">
@@ -111,7 +111,7 @@ export default function AdminInquiryDetailScreen() {
           {/* 첨부파일 */}
           {inquiry.attachments && inquiry.attachments.length > 0 && (
             <View className="mt-4">
-              <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
                 첨부파일 ({inquiry.attachments.length})
               </Text>
               {inquiry.attachments.map((attachment, index) => (

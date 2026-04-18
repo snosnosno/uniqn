@@ -94,8 +94,9 @@ describe('PostingOverviewWidget', () => {
 
     render(<PostingOverviewWidget />);
 
-    expect(screen.getByText(/모집중 2건/)).toBeTruthy();
-    expect(screen.getByText(/마감 1건/)).toBeTruthy();
+    // hero 레이아웃: "공고 N건 모집중" + 보조 라인 "모집중 N · 마감 M"
+    expect(screen.getByText(/공고 2건 모집중/)).toBeTruthy();
+    expect(screen.getByText(/모집중 2 · 마감 1/)).toBeTruthy();
   });
 
   it('공고가 없으면 emptyState를 표시한다', () => {

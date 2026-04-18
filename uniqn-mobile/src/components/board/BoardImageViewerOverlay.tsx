@@ -94,6 +94,10 @@ export function BoardImageViewerOverlay({
                   source={{ uri: activeImage.url }}
                   style={{ width: '100%', height: '100%' }}
                   contentFit="contain"
+                  placeholder={
+                    activeImage.blurhash ? { blurhash: activeImage.blurhash } : undefined
+                  }
+                  placeholderContentFit="contain"
                   transition={200}
                 />
               </View>

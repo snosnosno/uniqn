@@ -125,6 +125,8 @@ export function AnnouncementImagePicker({
               source={{ uri: item.url }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
+              placeholder={item.blurhash ? { blurhash: item.blurhash } : undefined}
+              placeholderContentFit="cover"
               transition={200}
             />
 

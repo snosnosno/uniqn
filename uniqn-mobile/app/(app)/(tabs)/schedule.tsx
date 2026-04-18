@@ -6,7 +6,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
+import { Card, EmptyState, ErrorState, ScreenSkeleton, Skeleton } from '@/components/ui';
 import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
@@ -18,9 +18,9 @@ import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplication
 import { useAuthStore } from '@/stores/authStore';
 import { usePendingReviews } from '@/hooks/useReviews';
 import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
-import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
-import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE } from '@/constants/colors';
+import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { formatCurrency } from '@/utils/formatters';
 import { STATUS } from '@/constants';
 import { getApplicationById } from '@/services/jobs/applicationService';
@@ -220,7 +220,6 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 // ============================================================================
 
 export default function ScheduleScreen() {
-  const isDark = useThemeStore((s) => s.isDarkMode);
   const addToast = useToastStore((state) => state.addToast);
   const { user, profile } = useAuthStore();
 
@@ -589,11 +588,7 @@ export default function ScheduleScreen() {
           className="flex-1"
           contentContainerClassName="pb-20"
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refresh}
-              tintColor={getLayoutColor(isDark, 'refreshTint')}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
           <View className="mt-4">
@@ -646,20 +641,12 @@ export default function ScheduleScreen() {
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={refresh}
-              tintColor={getLayoutColor(isDark, 'refreshTint')}
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
           {isLoading && schedules.length === 0 ? (
-            // 스켈레톤 로딩 (SkeletonScheduleCard 사용)
-            <View>
-              {[1, 2, 3].map((i) => (
-                <SkeletonScheduleCard key={i} />
-              ))}
-            </View>
+            // 스켈레톤 로딩 (ScreenSkeleton scheduleList 프리셋)
+            <ScreenSkeleton type="scheduleList" count={4} />
           ) : groupedByApplication.length === 0 ? (
             <EmptyState
               title="스케줄이 없습니다"

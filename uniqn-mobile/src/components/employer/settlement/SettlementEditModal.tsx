@@ -104,12 +104,14 @@ export function SettlementEditModal({
   onSave,
 }: SettlementEditModalProps) {
   // 사용자 프로필 조회
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog?.staffId,
     enabled: visible,
     fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
     fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string })?.staffPhotoURL,
+    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
+      ?.staffPhotoURLBlurhash,
   });
 
   // 로컬 상태
@@ -221,7 +223,13 @@ export function SettlementEditModal({
       <View>
         {/* 프로필 헤더 */}
         <View className="flex-row items-center p-4 bg-surface-page -mx-5 -mt-5">
-          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+          <Avatar
+            source={profilePhotoURL}
+            name={displayName}
+            size="md"
+            className="mr-3"
+            blurhash={profilePhotoURLBlurhash}
+          />
           <View className="flex-1">
             <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
               {displayName}

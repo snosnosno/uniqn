@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { NumericText } from '@/components/ui';
 import type { PostingCompensationSource } from './postingSurfaceModel';
 import { buildPostingCompensationModel } from './postingSurfaceModel';
 
@@ -22,9 +23,9 @@ export function PostingCompensationContent({
               <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {row.roleLabel}
               </Text>
-              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+              <NumericText className="text-sm font-sans-medium text-content-primary dark:text-off-white">
                 {row.text}
-              </Text>
+              </NumericText>
             </View>
           ))}
         </View>
@@ -33,9 +34,9 @@ export function PostingCompensationContent({
 
     return (
       <View className="py-1">
-        <Text className="text-lg font-display text-primary-600 dark:text-primary-400">
+        <NumericText className="text-lg font-display text-primary-600 dark:text-primary-400">
           {compensation.primaryText}
-        </Text>
+        </NumericText>
       </View>
     );
   }
@@ -44,17 +45,17 @@ export function PostingCompensationContent({
     <View>
       {!compensation.useSameSalary && compensation.rows.length > 0 ? (
         compensation.rows.map((row) => (
-          <Text
+          <NumericText
             key={row.key}
             className="text-sm text-content-primary dark:text-off-white font-sans"
           >
             {row.roleLabel}: {row.text}
-          </Text>
+          </NumericText>
         ))
       ) : (
-        <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+        <NumericText className="text-sm font-sans-medium text-content-primary dark:text-off-white">
           {compensation.primaryText}
-        </Text>
+        </NumericText>
       )}
 
       {compensation.allowanceLabels.length > 0 ? (

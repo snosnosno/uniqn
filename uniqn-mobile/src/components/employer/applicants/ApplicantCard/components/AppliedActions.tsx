@@ -50,7 +50,9 @@ export const AppliedActions = React.memo(function AppliedActions({
       ? `${selectedCount}개 확정`
       : '확정';
 
-  // impeccable v2 §17 — 승인/거절은 결정적 순간이므로 Medium 햅틱 1회.
+  // impeccable v2 §17 — 결정적 순간 햅틱:
+  //  - 확정(긍정) → Medium (성공적 승인 신호)
+  //  - 거절(파괴적) → Warning (사용자가 "결과를 되돌릴 수 없음" 을 손끝으로 인지)
   // 200ms throttle 로 중복 탭 보호됨.
   const handleConfirm = useCallback(() => {
     void triggerHaptic('medium');
@@ -58,7 +60,7 @@ export const AppliedActions = React.memo(function AppliedActions({
   }, [onConfirm]);
 
   const handleReject = useCallback(() => {
-    void triggerHaptic('medium');
+    void triggerHaptic('warning');
     onReject();
   }, [onReject]);
 

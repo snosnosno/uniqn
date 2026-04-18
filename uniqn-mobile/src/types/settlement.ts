@@ -58,6 +58,7 @@ export interface GroupedSettlement {
     name?: string;
     nickname?: string;
     photoURL?: string;
+    photoURLBlurhash?: string | null;
   };
 
   /**

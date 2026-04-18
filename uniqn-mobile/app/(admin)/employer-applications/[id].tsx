@@ -165,6 +165,9 @@ export default function AdminEmployerApplicationDetailPage() {
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Card 1 — 신청자 정보 */}
         <Card className="mb-4">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+            신청자 정보
+          </Text>
           <View className="mb-3 flex-row flex-wrap items-center gap-2">
             <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(app.status)}`}>
               <Text className="text-xs font-sans-medium">{getStatusLabel(app.status)}</Text>
@@ -199,7 +202,7 @@ export default function AdminEmployerApplicationDetailPage() {
 
         {/* Card 2 — 약관 동의 스냅샷 */}
         <Card className="mb-4">
-          <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-off-white">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-3">
             약관 동의 스냅샷
           </Text>
 
