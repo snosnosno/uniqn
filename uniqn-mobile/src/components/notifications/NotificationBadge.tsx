@@ -2,11 +2,11 @@
  * UNIQN Mobile - NotificationBadge 컴포넌트
  *
  * @description 읽지 않은 알림 수를 표시하는 뱃지
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { memo } from 'react';
-import { View, Text } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 export interface NotificationBadgeProps {
@@ -22,44 +22,80 @@ export interface NotificationBadgeProps {
 
 const sizeStyles = {
   sm: {
-    container: 'min-w-[16px] h-[16px] px-1',
-    text: 'text-[9px]',
+    container: 'min-w-[18px] h-[18px] px-1',
+    text: 'text-[10px]',
   },
   md: {
-    container: 'min-w-[18px] h-[18px] px-1',
-    text: 'text-xs font-sans',
+    container: 'min-w-[20px] h-[20px] px-1.5',
+    text: 'text-[11px] font-sans',
   },
   lg: {
-    container: 'min-w-[22px] h-[22px] px-1.5',
+    container: 'min-w-[24px] h-[24px] px-1.5',
     text: 'text-sm font-sans',
   },
+};
+
+const badgeShadow = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  android: {
+    elevation: 3,
+  },
+  default: {},
+});
+
+const sizeInlineStyles = {
+  sm: { minWidth: 18, height: 18, paddingHorizontal: 4, fontSize: 10 },
+  md: { minWidth: 20, height: 20, paddingHorizontal: 6, fontSize: 11 },
+  lg: { minWidth: 24, height: 24, paddingHorizontal: 6, fontSize: 14 },
 };
 
 export const NotificationBadge = memo(function NotificationBadge({
   count,
   maxCount = 99,
   size = 'md',
-  className = '',
 }: NotificationBadgeProps) {
   if (count <= 0) return null;
 
   const displayCount = count > maxCount ? `${maxCount}+` : String(count);
-  const styles = sizeStyles[size];
+  const s = sizeInlineStyles[size];
 
   return (
     <Animated.View
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(200)}
-      style={{ position: 'absolute', top: -4, right: -4 }}
       accessibilityLabel={`읽지 않은 알림 ${count}개`}
-      className={`
-        bg-error-500 rounded-sm
-        items-center justify-center
-        ${styles.container}
-        ${className}
-      `}
+      style={{
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        zIndex: 20,
+        minWidth: s.minWidth,
+        height: s.height,
+        paddingHorizontal: s.paddingHorizontal,
+        backgroundColor: '#DC2626',
+        borderRadius: 999,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: '#FFFFFF',
+        ...badgeShadow,
+      }}
     >
-      <Text className={`text-white font-sans-bold ${styles.text}`}>{displayCount}</Text>
+      <Text
+        style={{
+          color: '#FFFFFF',
+          fontSize: s.fontSize,
+          fontWeight: '700',
+          lineHeight: s.fontSize + 2,
+        }}
+      >
+        {displayCount}
+      </Text>
     </Animated.View>
   );
 });
@@ -82,7 +118,7 @@ export const NotificationBadgeInline = memo(function NotificationBadgeInline({
     <View
       accessibilityLabel={`읽지 않은 알림 ${count}개`}
       className={`
-        bg-error-500 rounded-sm
+        bg-error-500 rounded-full
         items-center justify-center
         ${styles.container}
         ${className}

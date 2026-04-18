@@ -44,7 +44,7 @@ export function TabHeader({
   return (
     <View
       className="h-12 flex-row items-center px-4"
-      style={{ backgroundColor: headerBackgroundColor }}
+      style={{ backgroundColor: headerBackgroundColor, overflow: 'visible', zIndex: 1 }}
     >
       {/* 좌: 탭 제목 */}
       <View className="flex-1 items-start" style={{ paddingRight: 60 }}>
@@ -58,7 +58,10 @@ export function TabHeader({
       </View>
 
       {/* 우: actions */}
-      <View className="flex-1 flex-row items-center justify-end" style={{ paddingLeft: 60 }}>
+      <View
+        className="flex-1 flex-row items-center justify-end"
+        style={{ paddingLeft: 60, overflow: 'visible', zIndex: 10 }}
+      >
         {rightAction}
 
         {showQR ? (
@@ -76,7 +79,8 @@ export function TabHeader({
         {showNotification ? (
           <Pressable
             onPress={() => router.push('/(app)/notifications')}
-            className={`relative overflow-visible rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+            className={`relative rounded-sm p-2 ${HEADER_CLASSES.actionPressed}`}
+            style={{ overflow: 'visible', zIndex: 10 }}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`알림${unreadCount > 0 ? `, ${unreadCount}개의 읽지 않은 알림` : ''}`}
