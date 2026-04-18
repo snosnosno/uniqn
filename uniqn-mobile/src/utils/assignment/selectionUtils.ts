@@ -4,9 +4,9 @@
 
 import type { TimeSlotInfo, DatedScheduleInfo } from '@/types/unified';
 import type { PostingType } from '@/types';
-import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
+import { getDateString, type DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { formatDateDisplay } from '@/types/unified';
-import { areDatesConsecutive, formatDateRangeWithCount, toDateString } from '@/utils/date';
+import { areDatesConsecutive, formatDateRangeWithCount } from '@/utils/date';
 import { makeSelectionKey as makeSelectionKeyCore } from './selectionCore';
 
 export type SelectionKey = string;
@@ -105,10 +105,10 @@ export const groupDatedSchedules = (
     const prev = sorted[i - 1]!;
     const curr = sorted[i]!;
     const prevReq = dateRequirements?.find(
-      (requirement) => toDateString(requirement.date) === prev.date
+      (requirement) => getDateString(requirement.date) === prev.date
     );
     const currReq = dateRequirements?.find(
-      (requirement) => toDateString(requirement.date) === curr.date
+      (requirement) => getDateString(requirement.date) === curr.date
     );
     const bothGrouped = prevReq?.isGrouped === true && currReq?.isGrouped === true;
 

@@ -4,7 +4,11 @@ import { View, Text, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { DATE_CONSTRAINTS } from '@/constants';
 import type { JobPostingFormData } from '@/types';
-import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
+import {
+  getDateString,
+  type DateSpecificRequirement,
+  type TimeSlot,
+} from '@/types/jobPosting/dateRequirement';
 import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
 import { generateId } from '@/utils/generateId';
 import { DatePickerModal, GroupingConfirmModal } from '../modals';
@@ -12,7 +16,6 @@ import { DateRequirementCard, DateRangeCard } from '../cards';
 import {
   groupRequirementsToDateRanges,
   groupConsecutiveDates,
-  toDateString,
   type DateRangeGroup,
 } from '@/utils/date';
 
@@ -55,7 +58,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   }, [dateRequirements]);
 
   const existingDates = useMemo(() => {
-    return dateRequirements.map((req) => toDateString(req.date)).filter(Boolean);
+    return dateRequirements.map((req) => getDateString(req.date)).filter(Boolean);
   }, [dateRequirements]);
 
   const canAddDate = useMemo(() => {
@@ -165,7 +168,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       }
 
       const updated = dateRequirements.map((requirement) => {
-        const currentDate = toDateString(requirement.date);
+        const currentDate = getDateString(requirement.date);
         if (currentDate >= group.startDate && currentDate <= group.endDate) {
           return {
             ...requirement,
@@ -189,7 +192,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       }
 
       const updated = dateRequirements.filter((requirement) => {
-        const currentDate = toDateString(requirement.date);
+        const currentDate = getDateString(requirement.date);
         return currentDate < group.startDate || currentDate > group.endDate;
       });
 

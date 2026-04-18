@@ -7,11 +7,12 @@
 
 import { differenceInDays, addDays, format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { parseDateString, toDateString, generateId } from './core';
-import type {
-  DateSpecificRequirement,
-  TimeSlot,
-  RoleRequirement,
+import { parseDateString, generateId } from './core';
+import {
+  getDateString,
+  type DateSpecificRequirement,
+  type TimeSlot,
+  type RoleRequirement,
 } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -256,7 +257,7 @@ function deepCloneTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
  * DateSpecificRequirement[] 에서 DateRangeGroup 생성
  */
 function createGroupFromRequirements(requirements: DateSpecificRequirement[]): DateRangeGroup {
-  const sortedDates = requirements.map((r) => toDateString(r.date)).sort();
+  const sortedDates = requirements.map((r) => getDateString(r.date)).sort();
 
   const startDate = sortedDates[0]!;
   const endDate = sortedDates[sortedDates.length - 1]!;
@@ -286,8 +287,8 @@ export function groupRequirementsToDateRanges(
   if (requirements.length === 0) return [];
 
   const sorted = [...requirements].sort((a, b) => {
-    const dateA = toDateString(a.date);
-    const dateB = toDateString(b.date);
+    const dateA = getDateString(a.date);
+    const dateB = getDateString(b.date);
     return dateA.localeCompare(dateB);
   });
 
@@ -298,8 +299,8 @@ export function groupRequirementsToDateRanges(
     const prev = sorted[i - 1]!;
     const curr = sorted[i]!;
 
-    const prevDate = toDateString(prev.date);
-    const currDate = toDateString(curr.date);
+    const prevDate = getDateString(prev.date);
+    const currDate = getDateString(curr.date);
 
     const bothGrouped = prev.isGrouped === true && curr.isGrouped === true;
     if (

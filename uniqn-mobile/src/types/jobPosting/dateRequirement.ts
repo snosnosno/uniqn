@@ -1,7 +1,10 @@
 import { generateId } from '@/utils/generateId';
-import { getTodayString, toDateString, type SerializedTimestamp } from '@/utils/date';
+import { getTodayString, toDateString } from '@/utils/date';
 import type { SalaryInfo } from '../jobPosting';
 import type { StaffRole } from '../role';
+
+// Firebase 레거시 데이터 호환용 인라인 타입 (timestampSchema가 string으로 정규화하기 전 데이터)
+type SerializedTimestamp = { seconds: number; nanoseconds: number };
 
 export interface RoleRequirement {
   id?: string;
@@ -31,7 +34,20 @@ export interface DateConstraint {
   label: string;
 }
 
+function isSerializedTimestamp(value: unknown): value is SerializedTimestamp {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'seconds' in value &&
+    typeof (value as { seconds: unknown }).seconds === 'number'
+  );
+}
+
 export function getDateString(dateInput: string | Date | SerializedTimestamp): string {
+  // Firebase 레거시 {seconds, nanoseconds} 입력은 Date로 변환 후 처리
+  if (isSerializedTimestamp(dateInput)) {
+    return toDateString(new Date(dateInput.seconds * 1000));
+  }
   return toDateString(dateInput);
 }
 
