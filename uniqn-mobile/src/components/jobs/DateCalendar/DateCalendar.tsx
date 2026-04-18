@@ -47,9 +47,9 @@ export const DateCalendar = memo(function DateCalendar({
     };
   }, []);
 
-  // 포함적 비교 — 경계 달 자체도 이동 가능
-  const canGoPrev = !isBefore(visibleMonth, minMonth);
-  const canGoNext = !isAfter(visibleMonth, maxMonth);
+  // strict 비교 — 경계 달에 도달하면 이동 불가 (spec: -1 ~ +3개월)
+  const canGoPrev = isAfter(visibleMonth, minMonth);
+  const canGoNext = isBefore(visibleMonth, maxMonth);
 
   // 외부 selectedDate=null 변경 시 expanded 동기화
   useEffect(() => {
