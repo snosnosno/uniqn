@@ -190,3 +190,6 @@ claude-forge/
 
 # Brainstorming visual companion
 .superpowers/
+
+# Dead code analysis reports
+.reports/
