@@ -3,9 +3,6 @@ import { getTodayString, toDateString } from '@/utils/date';
 import type { SalaryInfo } from '../jobPosting';
 import type { StaffRole } from '../role';
 
-// Firebase 레거시 데이터 호환용 인라인 타입 (timestampSchema가 string으로 정규화하기 전 데이터)
-type SerializedTimestamp = { seconds: number; nanoseconds: number };
-
 export interface RoleRequirement {
   id?: string;
   role?: StaffRole | 'other';
@@ -24,7 +21,7 @@ export interface TimeSlot {
 }
 
 export interface DateSpecificRequirement {
-  date: string | Date | SerializedTimestamp;
+  date: string | Date;
   timeSlots: TimeSlot[];
   isGrouped?: boolean;
 }
@@ -34,25 +31,11 @@ export interface DateConstraint {
   label: string;
 }
 
-function isSerializedTimestamp(value: unknown): value is SerializedTimestamp {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'seconds' in value &&
-    typeof (value as { seconds: unknown }).seconds === 'number'
-  );
-}
-
-export function getDateString(dateInput: string | Date | SerializedTimestamp): string {
-  // Firebase 레거시 {seconds, nanoseconds} 입력은 Date로 변환 후 처리
-  if (isSerializedTimestamp(dateInput)) {
-    return toDateString(new Date(dateInput.seconds * 1000));
-  }
-  return toDateString(dateInput);
-}
+// getDateString 제거 — `toDateString`을 직접 사용 (순환 의존 해소)
+// isSerializedTimestamp 제거 — Firebase 레거시 {seconds, nanoseconds}는 상류의 timestampSchema에서 문자열로 정규화됨
 
 export function getDateFromRequirement(requirement: DateSpecificRequirement): string {
-  return getDateString(requirement.date);
+  return toDateString(requirement.date);
 }
 
 export function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {

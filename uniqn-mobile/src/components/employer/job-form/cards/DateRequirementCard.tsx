@@ -14,16 +14,12 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon, TrashIcon } from '@/components/icons';
-import { formatDateWithDay } from '@/utils/date';
+import { formatDateWithDay, toDateString } from '@/utils/date';
 import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { useToast } from '@/stores/toastStore';
 import { generateId } from '@/utils/generateId';
-import {
-  getDateString,
-  type DateSpecificRequirement,
-  type TimeSlot,
-} from '@/types/jobPosting/dateRequirement';
+import { type DateSpecificRequirement, type TimeSlot } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -55,7 +51,7 @@ export function DateRequirementCard({
 }: DateRequirementCardProps) {
   const toast = useToast();
 
-  const dateString = getDateString(requirement.date);
+  const dateString = toDateString(requirement.date);
 
   // 시간대 추가
   const handleAddTimeSlot = useCallback(() => {
