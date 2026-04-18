@@ -5,7 +5,10 @@ export type DateInput = Date | string | number | null | undefined;
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 // strict ISO 8601 (date + time + timezone). Date.parse가 통과시키는 loose 형식 차단.
-const STRICT_ISO_8601 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
+// 달력 범위 enforce: 월 01-12, 일 01-31, 시 00-23, 분/초 00-59.
+// 24:00:00 같은 silent day shift 차단 (parseISO가 다음날로 rollover하면서 work_date 쿼리 깨짐).
+const STRICT_ISO_8601 =
+  /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
 
 export function isValidDate(value: unknown): value is Date {
   return value instanceof Date && isValid(value);

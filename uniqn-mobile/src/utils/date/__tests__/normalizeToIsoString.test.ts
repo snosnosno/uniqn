@@ -70,6 +70,24 @@ describe('normalizeToIsoString (정규화 single source)', () => {
       expect(() => normalizeToIsoString(Infinity)).toThrow();
     });
   });
+
+  describe('strict 거부 — 달력 검증', () => {
+    it('월 13 거부', () => {
+      expect(() => normalizeToIsoString('2026-13-01T00:00:00Z')).toThrow();
+    });
+
+    it('일 32 거부', () => {
+      expect(() => normalizeToIsoString('2026-04-32T00:00:00Z')).toThrow();
+    });
+
+    it('시 24 거부 (silent day shift 차단)', () => {
+      expect(() => normalizeToIsoString('2026-04-19T24:00:00Z')).toThrow();
+    });
+
+    it('분 60 거부', () => {
+      expect(() => normalizeToIsoString('2026-04-19T12:60:00Z')).toThrow();
+    });
+  });
 });
 
 describe('toDate (lenient string→Date for view layer)', () => {
