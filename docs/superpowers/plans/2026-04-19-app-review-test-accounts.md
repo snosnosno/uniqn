@@ -676,36 +676,204 @@ git commit -m "docs(app-review): 심사 제출용 테스트 계정 안내 문서
 
 ---
 
-## 스키마 조사 결과 (Task 1 산출물 — 채워질 자리)
+## 스키마 조사 결과 (Task 1 산출물 — 2026-04-19 완료)
 
 ### public.users 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL)
+- email (text, NOT NULL)
+- name (text, NOT NULL)  ← handle_new_user 트리거가 COALESCE 처리
+- nickname (text, nullable, UNIQUE)
+- phone (text, nullable, UNIQUE)  ← **plan의 `phone_number`와 다름 → `phone` 사용**
+- role (user_role enum, NOT NULL, default 'staff')  ← enum: admin/employer/staff
+- photo_url (text, nullable)
+- phone_verified (boolean, nullable, default false)
+- identity_verified (boolean, nullable, default false)
+- gender (text, nullable, CHECK IN ['male','female'])
+- birth_date (text, nullable)
+- region (text, nullable)
+- experience_years (int, nullable)
+- career / note (text, nullable)
+- terms_agreed / privacy_agreed / marketing_agreed (bool, nullable, default false)
+- bubble_score (jsonb, nullable, default {score:50,...})
+- status (text, nullable, default 'active')
+- profile_completed / is_active (bool, nullable)
+- fcm_tokens (jsonb, nullable, default {})
+- created_at / updated_at (timestamptz, nullable, default now())
 
 ### public.job_postings 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- schema_version (int, nullable, default 3)
+- title (text, NOT NULL)
+- description (text, nullable)
+- status (posting_status enum, NOT NULL, default 'draft')  ← enum: draft/pending/approved/active/closed/cancelled/expired/rejected
+- owner_id (uuid, nullable)  ← **plan의 `employer_id`와 다름 → `owner_id` 사용**
+- owner_name (text, nullable)
+- posting_type (posting_type enum, nullable, default 'regular')
+- work_date (text, nullable)
+- work_dates (text[], nullable)
+- last_work_date (date, nullable)
+- role_keys (text[], nullable)
+- total_positions (int, nullable, default 0)  ← **plan의 `recruit_count`와 다름 → `total_positions` 사용**
+- filled_positions (int, nullable, default 0)
+- view_count (int, nullable, default 0)
+- stats (jsonb, nullable)
+- location (jsonb, NOT NULL, default {})  ← **plan의 `location text`와 다름 → jsonb**
+- schedule (jsonb, NOT NULL, default {})
+- role_catalog / compensation / questions (jsonb, nullable)
+- contact_phone (text, nullable)
+- closed_at (timestamptz, nullable)
+- created_at / updated_at (timestamptz, nullable, default now())
 
 ### public.applications 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- applicant_id (uuid, NOT NULL)
+- job_posting_id (uuid, NOT NULL)
+- status (application_status enum, NOT NULL, default 'applied')  ← enum: applied/confirmed/rejected/cancelled/completed/cancellation_pending
+- applicant_name (text, NOT NULL)  ← **시드 시 필수 제공 필요**
+- applicant_phone / applicant_email / applicant_nickname / applicant_photo_url (text, nullable)
+- applicant_role (staff_role enum, nullable)
+- job_posting_title / job_posting_date / recruitment_type (text, nullable)
+- message (text, nullable)
+- assignments / confirmation_history (jsonb, nullable)
+- processed_by / processed_at / confirmed_at / cancelled_at (nullable)
+- is_read (bool, nullable, default false)
+- created_at / updated_at (timestamptz, nullable, default now())
+- **plan의 `applied_at` 컬럼 없음 → 삭제**
 
 ### public.work_logs 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- staff_id (uuid, NOT NULL)  ← **plan과 동일**
+- job_posting_id (uuid, NOT NULL)  ← **plan의 `employer_id` 없음 → 사용 불가**
+- application_id (uuid, nullable)
+- date (text, NOT NULL)  ← **YYYY-MM-DD 문자열, NOT NULL**
+- status (work_log_status enum, NOT NULL, default 'scheduled')  ← enum: scheduled/checked_in/checked_out/completed/cancelled/no_show
+- role (staff_role enum, NOT NULL, default 'staff')  ← **NOT NULL 주의**
+- check_in_time / check_out_time (jsonb, nullable)  ← **timestamptz 아님, jsonb**
+- payroll_status (payroll_status enum, nullable, default 'pending')  ← enum: pending/completed/failed
+- payroll_amount (numeric, nullable)
+- payroll_date (timestamptz, nullable)
+- staff_name / staff_nickname / staff_photo_url (text, nullable)
+- time_slot (text, nullable)
+- owner_id (uuid, nullable)
+- created_at / updated_at (timestamptz, nullable, default now())
+- **plan의 `employer_id`, `scheduled_start_at`, `scheduled_end_at`, `check_in_at`, `check_out_at` 모두 없음**
 
-### public.board_posts / board_comments 컬럼
-- (Task 1.1 결과로 채움)
+### public.board_posts 컬럼
+- id (text, PK, NOT NULL, default gen_random_uuid()::text)  ← **uuid가 아닌 text**
+- board_type (board_type enum, NOT NULL, default 'free')
+- source (text, nullable, default 'board')
+- title (text, NOT NULL)
+- body (text, NOT NULL)
+- author_id (uuid, nullable)
+- author_name (text, NOT NULL)  ← **시드 시 필수**
+- author_role (text, NOT NULL)  ← **시드 시 필수**
+- visibility (text, nullable, default 'public')
+- status (text, nullable, default 'active')
+- like_count / dislike_count / comment_count / view_count (int, nullable, default 0)
+- image_attachments (jsonb, nullable, default [])
+- created_at / updated_at (timestamptz, nullable, default now())
+
+### public.board_comments 컬럼
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- post_id (text, NOT NULL)  ← **board_posts.id가 text이므로 text FK**
+- parent_comment_id (uuid, nullable)
+- body (text, NOT NULL)
+- author_id (uuid, nullable)
+- author_name (text, NOT NULL)  ← **시드 시 필수**
+- author_role (text, NOT NULL)  ← **시드 시 필수**
+- mentioned_user_ids (text[], nullable, default {})
+- reaction_counts (jsonb, nullable, default {})
+- is_pinned (bool, nullable, default false)
+- status (text, nullable, default 'active')
+- created_at / updated_at (timestamptz, nullable, default now())
+- **XSS 트리거 존재** — INSERT/UPDATE 시 body 검사
 
 ### public.notifications 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- recipient_id (uuid, NOT NULL)  ← **plan의 `user_id`와 다름 → `recipient_id` 사용**
+- type (text, NOT NULL)
+- category (notification_category enum, nullable)
+- title (text, NOT NULL)
+- body (text, NOT NULL)
+- link (text, nullable)
+- data (jsonb, nullable)
+- is_read (bool, nullable, default false)
+- priority (text, nullable, default 'normal')
+- read_at (timestamptz, nullable)
+- created_at (timestamptz, nullable, default now())
+- **updated_at 없음** (plan과 다름)
+- **on_notification_created, on_notification_created_send_push 트리거** — INSERT 시 push 발화
 
 ### public.job_posting_templates 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- user_id (uuid, NOT NULL)
+- name (text, NOT NULL)
+- template_data (jsonb, NOT NULL, default {})
+- usage_count (int, NOT NULL, default 0)
+- description (text, nullable)
+- created_at / updated_at (timestamptz, nullable, default now())
+- **plan과 일치** (description 컬럼 2026-04-18 추가 확인됨)
 
 ### public.employer_applications 컬럼
-- (Task 1.1 결과로 채움)
+- id (uuid, PK, NOT NULL, default gen_random_uuid())
+- user_id (uuid, NOT NULL)  ← **plan의 `applicant_id`와 다름 → `user_id` 사용**
+- status (text, NOT NULL)  ← enum 아님, text. 값: pending/approved/rejected
+- submitted_at (timestamptz, NOT NULL, default now())
+- reviewed_at / reviewed_by (nullable)
+- rejection_reason / rejection_category (text, nullable)
+- agreements_snapshot (jsonb, NOT NULL)  ← **NOT NULL, 기본값 없음 → 시드 시 제공 필수**
+- supersedes_id (uuid, nullable)
+- created_at (timestamptz, nullable, default now())
+- **plan의 `business_name`, `business_number`, `phone_number` 컬럼 없음 → agreements_snapshot jsonb에 포함**
+
+---
 
 ### 트리거 동작 결정
-- application confirmed → work_log: [예/아니오] → Step 2.6 Case [A/B]
-- work_log checked_out → payroll: [예/아니오]
-- application/work_log → notification: [예/아니오] → notifications 9건 [그대로 / 축소]
+
+- **application confirmed → work_log 자동 생성: 아니오** → Step 2.6 **Case B** 적용 (직접 INSERT 2건)
+  - `tr_sync_application_completion`은 work_log→application 방향 (역방향)
+  - application INSERT/UPDATE 시 work_log 자동 생성 트리거 없음
+
+- **work_log checked_out → payroll 자동 생성: 아니오** → 별도 payroll 테이블 없음
+  - payroll은 work_log 내 `payroll_status/payroll_amount/payroll_date` 컬럼으로 인라인 관리
+  - `protect_work_log_payroll_columns` 트리거: staff는 payroll 컬럼 직접 변경 불가 (service_role은 허용)
+
+- **application/work_log INSERT → notifications 자동 발화: 예**
+  - applications INSERT → `application_notify_insert` (notify_on_application_insert) → employer에게 notification INSERT
+  - applications UPDATE → `application_notify_update` (notify_on_application_update) → 상태별 분기
+  - work_logs INSERT → `work_log_notify_insert` (notify_on_work_log_insert) → staff에게 근무 배정 notification INSERT
+  - work_logs INSERT → `tr_notify_schedule_created` (fn_notify_schedule_created) 중복 트리거도 존재
+  - **결론: notifications 시드 시 applications/work_logs INSERT가 자동으로 notifications를 발생시킴**
+  - **→ notifications 직접 시드 9건 추가 시 중복 발생 가능. 단, 마이그레이션 실행 컨텍스트(service_role)이고 시드 notifications는 다른 type으로 삽입하므로 기능상 무해. notifications 9건 그대로 시드.**
 
 ### auth.identities 제약
-- ON CONFLICT 절: [확정 / 수정]
+
+- PK: `PRIMARY KEY (id)` (id는 uuid, default gen_random_uuid())
+- UNIQUE: `UNIQUE (provider_id, provider)` ← 제약명 `identities_provider_id_provider_unique`
+- **ON CONFLICT 절 수정**: plan의 `ON CONFLICT (provider, provider_id)` → `ON CONFLICT (provider_id, provider)` 순서 변경 필요
+  - 단, ON CONFLICT 절에는 컬럼 순서가 실제 constraint 정의와 일치해야 함
+  - 안전한 대안: `ON CONFLICT ON CONSTRAINT identities_provider_id_provider_unique DO NOTHING`
+
+### handle_new_user 트리거
+
+- 존재: `INSERT INTO public.users (id, email, name, role) VALUES (NEW.id, COALESCE(NEW.email,''), COALESCE(meta->>'name',''), COALESCE(role::user_role,'staff'))`
+- **결론**: auth.users INSERT 시 public.users 자동 생성됨 → Step 2.3 UPSERT (ON CONFLICT DO UPDATE) 사용
+- `name` 컬럼: handle_new_user가 빈 문자열('')로 채우므로, UPSERT로 실제 이름으로 갱신 필요
+- `phone` 컬럼: handle_new_user가 INSERT하지 않으므로, UPSERT 시 phone 업데이트로 추가 가능
+
+### 컬럼명 차이 요약 (Task 2에서 수정 필요)
+
+| plan 컬럼명 | 실제 컬럼명 | 테이블 |
+|------------|------------|--------|
+| `phone_number` | `phone` | public.users |
+| `employer_id` | `owner_id` | job_postings |
+| `recruit_count` | `total_positions` | job_postings |
+| `location` (text) | `location` (jsonb) | job_postings |
+| `start_date/end_date` | 없음 (work_date/work_dates/last_work_date) | job_postings |
+| `applied_at` | 없음 | applications |
+| `employer_id` | 없음 (`owner_id`는 job_postings에) | work_logs |
+| `scheduled_start_at/end_at` | 없음 (date text + time_slot text) | work_logs |
+| `check_in_at/check_out_at` | `check_in_time/check_out_time` (jsonb) | work_logs |
+| `user_id` | `recipient_id` | notifications |
+| `applicant_id` | `user_id` | employer_applications |
+| `business_name/number/phone_number` | 없음 (agreements_snapshot jsonb) | employer_applications |
