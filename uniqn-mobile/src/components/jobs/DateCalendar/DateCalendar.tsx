@@ -34,8 +34,6 @@ export const DateCalendar = memo(function DateCalendar({
   className = '',
 }: DateCalendarProps) {
   const [mode, setMode] = useState<Mode>(selectedDate ? 'collapsed' : 'expanded');
-  // collapsed 렌더에 사용할 날짜 — prop이 uncontrolled로 null로 고정돼도 내부적으로 유지
-  const [internalSelected, setInternalSelected] = useState<Date | null>(selectedDate);
   const [visibleMonth, setVisibleMonth] = useState<Date>(
     selectedDate ? startOfMonth(selectedDate) : startOfMonth(new Date())
   );
@@ -49,28 +47,22 @@ export const DateCalendar = memo(function DateCalendar({
     };
   }, []);
 
-  const canGoPrev = isAfter(visibleMonth, minMonth);
-  const canGoNext = isBefore(visibleMonth, maxMonth);
+  // 포함적 비교 — 경계 달 자체도 이동 가능
+  const canGoPrev = !isBefore(visibleMonth, minMonth);
+  const canGoNext = !isAfter(visibleMonth, maxMonth);
 
   // 외부 selectedDate=null 변경 시 expanded 동기화
   useEffect(() => {
     if (selectedDate === null) {
       setMode('expanded');
-      setInternalSelected(null);
-    } else {
-      setInternalSelected(selectedDate);
     }
   }, [selectedDate]);
-
-  // collapsed 렌더에 사용할 날짜: prop이 있으면 우선, 없으면 내부 상태
-  const displayDate = selectedDate ?? internalSelected;
 
   const { data: counts = {} } = useRegularDateCounts(visibleMonth);
 
   const handleDateSelect = useCallback(
     (date: Date) => {
       onDateSelect(date);
-      setInternalSelected(date);
       setMode('collapsed');
     },
     [onDateSelect]
@@ -80,7 +72,6 @@ export const DateCalendar = memo(function DateCalendar({
 
   const handleClearSelection = useCallback(() => {
     onDateSelect(null);
-    setInternalSelected(null);
     setMode('expanded');
   }, [onDateSelect]);
 
@@ -92,13 +83,13 @@ export const DateCalendar = memo(function DateCalendar({
     setVisibleMonth((m) => addMonths(m, 1));
   }, []);
 
-  if (mode === 'collapsed' && displayDate) {
-    const key = format(displayDate, 'yyyy-MM-dd');
+  if (mode === 'collapsed' && selectedDate) {
+    const key = format(selectedDate, 'yyyy-MM-dd');
     const count = counts[key] ?? 0;
     return (
       <View className={className}>
         <CollapsedHeader
-          selectedDate={displayDate}
+          selectedDate={selectedDate}
           count={count}
           onExpand={handleExpand}
           onClear={handleClearSelection}

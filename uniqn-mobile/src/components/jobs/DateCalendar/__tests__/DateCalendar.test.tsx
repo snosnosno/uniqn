@@ -1,5 +1,5 @@
-import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import React, { useState } from 'react';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DateCalendar } from '../DateCalendar';
 
@@ -15,13 +15,34 @@ jest.mock('@tanstack/react-query', () => jest.requireActual('@tanstack/react-que
 
 jest.mock('@/utils/haptics', () => ({ triggerHaptic: jest.fn() }));
 
-// 아이콘 스텁
 jest.mock('@/components/icons', () => ({
   ChevronLeftIcon: () => null,
   ChevronRightIcon: () => null,
   CalendarIcon: () => null,
   XIcon: () => null,
 }));
+
+/**
+ * Controlled parent wrapper — 실제 부모가 selectedDate를 useState로 관리하는 패턴 재현.
+ */
+function ControlledParent({
+  initial = null,
+  onSelectSpy,
+}: {
+  initial?: Date | null;
+  onSelectSpy?: jest.Mock;
+}) {
+  const [selectedDate, setSelectedDate] = useState<Date | null>(initial);
+  return (
+    <DateCalendar
+      selectedDate={selectedDate}
+      onDateSelect={(d) => {
+        setSelectedDate(d);
+        onSelectSpy?.(d);
+      }}
+    />
+  );
+}
 
 function renderWithClient(ui: React.ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -32,7 +53,6 @@ describe('DateCalendar 상태머신', () => {
   beforeEach(() => {
     mockGetRegularDateCounts.mockReset();
     mockGetRegularDateCounts.mockResolvedValue({ '2026-04-18': 12 });
-    // Date.now()만 고정하고 setTimeout 등은 실제 유지
     jest.useFakeTimers({
       doNotFake: [
         'setTimeout',
@@ -51,19 +71,17 @@ describe('DateCalendar 상태머신', () => {
     jest.useRealTimers();
   });
 
-  it('마운트 시 selectedDate=null이면 expanded (calendar grid 렌더)', async () => {
-    const { findByTestId } = renderWithClient(
-      <DateCalendar selectedDate={null} onDateSelect={jest.fn()} />
-    );
+  it('마운트 시 selectedDate=null이면 expanded', async () => {
+    const { findByTestId } = renderWithClient(<ControlledParent />);
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 
-  it('날짜 셀 탭 시 onDateSelect + 상태 collapsed로 전환', async () => {
+  it('날짜 셀 탭 → onDateSelect + collapsed 전환', async () => {
     const onSelect = jest.fn();
     const { findByTestId, queryByTestId, getByLabelText, findByText } = renderWithClient(
-      <DateCalendar selectedDate={null} onDateSelect={onSelect} />
+      <ControlledParent onSelectSpy={onSelect} />
     );
-    // 카운트 데이터 로드 완료(뱃지 "12건" 등장)까지 대기 → 셀이 활성화된 상태
+    // 카운트 데이터 로드 완료(뱃지 "12건" 등장)까지 대기 → 셀이 활성화(count>0)된 상태
     await findByText('12건');
     const cell = await findByTestId('calendar-cell-2026-04-18');
     fireEvent.press(cell);
@@ -74,19 +92,19 @@ describe('DateCalendar 상태머신', () => {
     });
   });
 
-  it('selectedDate가 주어지면 초기 collapsed, 헤더 탭 시 expanded 복귀', async () => {
+  it('selectedDate=값 초기 진입 → collapsed, 헤더 탭 시 expanded 복귀', async () => {
     const { findByTestId, getByLabelText } = renderWithClient(
-      <DateCalendar selectedDate={new Date('2026-04-18T00:00:00')} onDateSelect={jest.fn()} />
+      <ControlledParent initial={new Date('2026-04-18T00:00:00')} />
     );
     const header = getByLabelText(/날짜 필터 펼치기/);
     fireEvent.press(header);
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 
-  it('collapsed ✕ 탭 시 onDateSelect(null) + expanded 복귀', async () => {
+  it('collapsed ✕ 탭 → onDateSelect(null) + expanded 복귀', async () => {
     const onSelect = jest.fn();
     const { getByLabelText, findByTestId } = renderWithClient(
-      <DateCalendar selectedDate={new Date('2026-04-18T00:00:00')} onDateSelect={onSelect} />
+      <ControlledParent initial={new Date('2026-04-18T00:00:00')} onSelectSpy={onSelect} />
     );
     fireEvent.press(getByLabelText('날짜 필터 해제'));
     expect(onSelect).toHaveBeenCalledWith(null);
@@ -94,19 +112,20 @@ describe('DateCalendar 상태머신', () => {
   });
 
   it('selectedDate prop이 외부에서 null로 바뀌면 expanded 복귀', async () => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { rerender, findByTestId, queryByTestId } = render(
-      <QueryClientProvider client={client}>
-        <DateCalendar selectedDate={new Date('2026-04-18T00:00:00')} onDateSelect={jest.fn()} />
-      </QueryClientProvider>
-    );
-    // 초기 collapsed — 셀 없음
+    // 외부 상태 전환을 직접 제어하는 래퍼
+    let externalSetter: ((d: Date | null) => void) | null = null;
+    function ExternalController() {
+      const [d, setD] = useState<Date | null>(new Date('2026-04-18T00:00:00'));
+      externalSetter = setD;
+      return <DateCalendar selectedDate={d} onDateSelect={() => undefined} />;
+    }
+    const { findByTestId, queryByTestId } = renderWithClient(<ExternalController />);
     expect(queryByTestId('calendar-cell-2026-04-18')).toBeNull();
-    rerender(
-      <QueryClientProvider client={client}>
-        <DateCalendar selectedDate={null} onDateSelect={jest.fn()} />
-      </QueryClientProvider>
-    );
+
+    act(() => {
+      externalSetter?.(null);
+    });
+
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 });
