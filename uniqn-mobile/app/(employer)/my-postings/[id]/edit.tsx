@@ -251,6 +251,17 @@ export default function EditJobPostingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <View className="mb-4 rounded-lg border border-primary-200 bg-primary-50 p-3 dark:border-primary-800 dark:bg-primary-900/20">
+            <Text className="text-sm font-sans-bold text-primary-700 dark:text-primary-300">
+              모집 인원 표시 기준 변경 안내
+            </Text>
+            <Text className="mt-1 text-sm text-primary-700 dark:text-primary-300 font-sans">
+              2026-04-17부터 &quot;모집 인원&quot;이 슬롯 합계가 아닌 실제 필요 인원 수(역할별 최대
+              동시 필요 인원의 합)로 표시됩니다. 기존 공고의 숫자는 자동 재계산되어 과거보다 작게
+              보일 수 있습니다.
+            </Text>
+          </View>
+
           {hasConfirmedApplicants && (
             <View className="mb-4 rounded-lg border border-amber-200 bg-warning-50 p-3 dark:border-amber-800 dark:bg-warning-900/20">
               <Text className="text-sm text-warning-700 dark:text-warning-300 font-sans">

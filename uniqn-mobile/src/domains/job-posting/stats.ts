@@ -25,6 +25,55 @@ export function calculateFilledPositionsFromSchedule(schedule: PostingSchedule):
   }, 0);
 }
 
+function getRoleKey(role: { role?: string; customRole?: string }): string | null {
+  // 빈 role 필드는 키 충돌·무의미 집계를 막기 위해 스킵
+  if (!role.role) {
+    return null;
+  }
+
+  if (role.role === 'other') {
+    return role.customRole ? `other:${role.customRole}` : 'other:';
+  }
+
+  return role.role;
+}
+
+/**
+ * 사람 단위(person basis) 모집 인원 계산.
+ * 같은 역할은 여러 슬롯/날짜에서 "같은 사람이 돌아가며 근무 가능"하다고 가정하여
+ * 역할별 최대 동시 필요 인원(peak)의 합으로 totalPositions를 구한다.
+ * (HANDOFF.md Phase 6 알고리즘 결정)
+ */
+export function calculateTotalPositionsFromSchedule(schedule: PostingSchedule): number {
+  if (schedule.kind === 'fixed') {
+    return (schedule.roleRequirements ?? []).reduce((sum, role) => sum + role.count, 0);
+  }
+
+  const peakByRole = new Map<string, number>();
+
+  schedule.requirements.forEach((requirement) => {
+    requirement.timeSlots.forEach((slot) => {
+      slot.roles.forEach((role) => {
+        const key = getRoleKey(role);
+        if (key === null) {
+          return;
+        }
+        const previous = peakByRole.get(key) ?? 0;
+        if (role.count > previous) {
+          peakByRole.set(key, role.count);
+        }
+      });
+    });
+  });
+
+  let total = 0;
+  peakByRole.forEach((count) => {
+    total += count;
+  });
+
+  return total;
+}
+
 export function createInitialPostingStats(schedule: PostingSchedule): JobPostingAggregateStats {
   return {
     totalApplicants: 0,
