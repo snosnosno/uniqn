@@ -50,7 +50,8 @@ export const CalendarCell = memo(function CalendarCell({
     onPress(date);
   }, [date, disabled, onPress]);
 
-  const containerBase = 'flex-1 items-center justify-center min-h-[64px] rounded-sm mx-0.5 my-0.5';
+  const containerBase =
+    'flex-1 items-center justify-center min-h-[64px] rounded-sm mx-0.5 my-0.5 active:bg-secondary-100 dark:active:bg-surface-hover';
   const containerState = isSelected
     ? 'bg-primary-500'
     : isToday
@@ -78,9 +79,6 @@ export const CalendarCell = memo(function CalendarCell({
       accessibilityLabel={`${fullLabel} ${countLabel}`}
       accessibilityState={{ selected: isSelected, disabled }}
       className={`${containerBase} ${containerState} ${opacityClass}`}
-      style={({ pressed }) =>
-        pressed && !disabled ? { backgroundColor: 'rgba(34, 34, 40, 0.4)' } : undefined
-      }
     >
       <Text className={`text-sm font-sans-medium ${numberColor}`}>{dayNumber}</Text>
       {count > 0 && !isOutsideMonth && (
