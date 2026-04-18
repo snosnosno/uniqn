@@ -46,9 +46,18 @@ describe('applicationDocumentSchema', () => {
       ],
     });
 
-    expect(parsed.originalApplication?.appliedAt?.toDate()).toBeInstanceOf(Date);
-    expect(parsed.confirmationHistory?.[0]?.confirmedAt.toDate()).toBeInstanceOf(Date);
-    expect(parsed.confirmationHistory?.[0]?.cancelledAt?.toDate()).toBeInstanceOf(Date);
+    // Task 4: timestampSchema는 ISO string을 반환함
+    expect(typeof parsed.originalApplication?.appliedAt).toBe('string');
+    expect(typeof parsed.confirmationHistory?.[0]?.confirmedAt).toBe('string');
+    expect(typeof parsed.confirmationHistory?.[0]?.cancelledAt).toBe('string');
+    // 각 값은 유효한 ISO 8601 날짜 문자열이어야 함
+    expect(new Date(parsed.originalApplication!.appliedAt!).toString()).not.toBe('Invalid Date');
+    expect(new Date(parsed.confirmationHistory![0]!.confirmedAt).toString()).not.toBe(
+      'Invalid Date'
+    );
+    expect(new Date(parsed.confirmationHistory![0]!.cancelledAt!).toString()).not.toBe(
+      'Invalid Date'
+    );
   });
 
   it('keeps legacy originalApplication data when appliedAt is missing', () => {
@@ -98,12 +107,10 @@ describe('applicationDocumentSchema', () => {
       throw new Error('Expected rejected cancellation request');
     }
 
+    // Task 4: timestampSchema는 ISO string을 반환함 (Firebase-shaped 입력 → ISO string)
     const reviewedAt = parsed.cancellationRequest.reviewedAt;
-    if (typeof reviewedAt === 'string') {
-      throw new Error('Expected reviewedAt to be a Timestamp-like value');
-    }
-
-    expect(reviewedAt.toDate()).toBeInstanceOf(Date);
+    expect(typeof reviewedAt).toBe('string');
+    expect(new Date(reviewedAt).toString()).not.toBe('Invalid Date');
   });
 
   it('accepts custom assignment role ids and preserves customRole metadata', () => {

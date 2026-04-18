@@ -470,7 +470,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: Timestamp.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
+      checkInTime: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
@@ -719,7 +719,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: Timestamp.fromMillis(checkInMs),
+      checkInTime: new Date(checkInMs).toISOString(),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(

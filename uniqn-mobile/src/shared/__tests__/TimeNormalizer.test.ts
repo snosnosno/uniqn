@@ -1,4 +1,3 @@
-import { Timestamp } from '@/shared/time';
 import { TimeNormalizer } from '../time/TimeNormalizer';
 import type { NormalizedWorkTime } from '../time/types';
 
@@ -40,10 +39,11 @@ describe('TimeNormalizer', () => {
       expect(normalized.scheduledEnd?.getHours()).toBe(18);
     });
 
-    it('supports Firebase Timestamp inputs', () => {
+    it('supports ISO string inputs (post-schema 정규화)', () => {
+      // Task 4 이후: Firebase Timestamp-shaped 입력은 timestampSchema가 ISO string으로 정규화함.
       const date = new Date('2025-01-20T09:00:00');
       const normalized = TimeNormalizer.normalize({
-        checkInTime: Timestamp.fromDate(date),
+        checkInTime: date.toISOString(),
       });
 
       expect(normalized.actualStart).toEqual(date);

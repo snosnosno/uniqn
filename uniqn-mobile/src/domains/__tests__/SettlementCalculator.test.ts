@@ -25,17 +25,9 @@ function createDate(hours: number, minutes = 0): Date {
   return date;
 }
 
-function createMockTimestamp(date: Date) {
-  const seconds = Math.floor(date.getTime() / 1000);
-  return {
-    toDate: () => date,
-    seconds,
-    nanoseconds: 0,
-    toMillis: () => date.getTime(),
-    isEqual: () => false,
-    valueOf: () => '',
-    toJSON: () => ({ seconds, nanoseconds: 0, type: 'timestamp' }),
-  };
+// Task 4 이후: timestampSchema가 ISO string을 반환하므로, 시간 입력은 string 기준으로 테스트함.
+function createIsoString(date: Date): string {
+  return date.toISOString();
 }
 
 // ============================================================================
@@ -294,9 +286,9 @@ describe('SettlementCalculator', () => {
       expect(hours).toBe(9); // 실제 9시간 (휴게시간 별도 처리 없음)
     });
 
-    it('Firebase Timestamp 형식 지원', () => {
-      const start = createMockTimestamp(createDate(9, 0));
-      const end = createMockTimestamp(createDate(17, 0));
+    it('ISO string 형식 지원 (스키마 정규화 후)', () => {
+      const start = createIsoString(createDate(9, 0));
+      const end = createIsoString(createDate(17, 0));
       const hours = SettlementCalculator.calculateHours(start, end);
       expect(hours).toBe(8);
     });
