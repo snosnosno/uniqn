@@ -11,6 +11,7 @@ import { StackHeader } from '@/components/headers';
 import { EmptyState } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
+import { REVIEW_CONTEXT_STRIPE_TONE } from '@/components/review/helpers/reviewConfig';
 import { useReceivedReviews, useGivenReviews, useBubbleScore } from '@/hooks/useReviews';
 import { useAuthStore } from '@/stores/authStore';
 import { SENTIMENT_EMOJI } from '@/types/review';
@@ -41,7 +42,7 @@ export default function ReviewHistoryScreen() {
   const renderItem = useCallback(
     ({ item }: { item: Review }) => (
       <View className="px-4 py-1.5">
-        <ReviewCard review={item} />
+        <ReviewCard review={item} stripeTone={REVIEW_CONTEXT_STRIPE_TONE.history} />
       </View>
     ),
     []
@@ -123,12 +124,18 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
     <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-secondary-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Text className="text-2xl font-display text-content-primary dark:text-secondary-100">
+          <Text
+            className="text-2xl font-sans-bold text-content-primary dark:text-secondary-100"
+            style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.32 }}
+          >
             {bubbleScore.score.toFixed(1)}
           </Text>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
         </View>
-        <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+        <Text
+          className="text-xs text-secondary-500 dark:text-secondary-400 font-sans"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
           총 {bubbleScore.totalReviewCount}건
         </Text>
       </View>
@@ -145,7 +152,12 @@ function StatItem({ emoji, count, label }: { emoji: string; count: number; label
   return (
     <View className="flex-row items-center gap-1">
       <Text className="text-sm font-sans">{emoji}</Text>
-      <Text className="text-sm font-sans-medium text-content-secondary">{count}</Text>
+      <Text
+        className="text-sm font-sans-bold text-content-secondary"
+        style={{ fontVariant: ['tabular-nums'] }}
+      >
+        {count}
+      </Text>
       <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
     </View>
   );

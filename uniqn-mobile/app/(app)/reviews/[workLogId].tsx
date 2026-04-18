@@ -6,6 +6,7 @@ import { StackHeader } from '@/components/headers';
 import { Loading, ErrorState } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import ReviewBlindMessage from '@/components/review/ReviewBlindMessage';
+import { REVIEW_CONTEXT_STRIPE_TONE } from '@/components/review/helpers/reviewConfig';
 import { Button } from '@/components/ui/Button';
 import { resolveReviewerType } from '@/domains/review';
 import { useWorkLogReviews } from '@/hooks/useReviews';
@@ -138,7 +139,11 @@ export default function ReviewDetailScreen() {
             내 리뷰
           </Text>
           {data?.myReview ? (
-            <ReviewCard review={data.myReview} showReviewer={false} />
+            <ReviewCard
+              review={data.myReview}
+              showReviewer={false}
+              stripeTone={REVIEW_CONTEXT_STRIPE_TONE.history}
+            />
           ) : canNavigateToWrite ? (
             <Pressable
               onPress={openWriteScreen}
@@ -167,7 +172,11 @@ export default function ReviewDetailScreen() {
             상대방 리뷰
           </Text>
           {data?.canViewOpponent && data?.opponentReview ? (
-            <ReviewCard review={data.opponentReview} showReviewer={false} />
+            <ReviewCard
+              review={data.opponentReview}
+              showReviewer={false}
+              stripeTone={REVIEW_CONTEXT_STRIPE_TONE.history}
+            />
           ) : (
             <ReviewBlindMessage hasMyReview={hasMyReview} />
           )}

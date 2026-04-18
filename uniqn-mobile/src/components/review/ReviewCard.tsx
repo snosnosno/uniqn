@@ -14,13 +14,24 @@ import {
   SENTIMENT_COLORS,
   getTagsForReviewerType,
 } from '@/types/review';
+import { CardStripe, type CardStripeTone } from '@/components/ui';
 
 interface ReviewCardProps {
   review: Review;
   showReviewer?: boolean;
+  /**
+   * CardStripe tone — opt-in. 지정 시 좌측 3px 엣지 스트라이프 표시.
+   * - 'gold': 평가 대기/작성 필요 컨텍스트
+   * - 'muted': 이미 작성/수신한 리뷰 (히스토리)
+   */
+  stripeTone?: CardStripeTone;
 }
 
-export default React.memo(function ReviewCard({ review, showReviewer = true }: ReviewCardProps) {
+export default React.memo(function ReviewCard({
+  review,
+  showReviewer = true,
+  stripeTone,
+}: ReviewCardProps) {
   const colors = SENTIMENT_COLORS[review.sentiment];
   const tagMap = useMemo(() => {
     const tags = getTagsForReviewerType(review.reviewerType);
@@ -33,8 +44,14 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
     return date ? formatDate(date) : '';
   }, [review.createdAt]);
 
-  return (
-    <View className="rounded-md border border-secondary-200 bg-white p-4 dark:border-secondary-700 dark:bg-secondary-800">
+  const cardBody = (
+    <View
+      className={
+        stripeTone
+          ? 'rounded-md bg-white pl-4 p-4 dark:bg-secondary-800'
+          : 'rounded-md border border-secondary-200 bg-white p-4 dark:border-secondary-700 dark:bg-secondary-800'
+      }
+    >
       {/* 헤더 */}
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-2">
@@ -49,11 +66,20 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
             </Text>
           )}
         </View>
-        <Text className="text-xs text-content-placeholder font-sans">{formattedDate}</Text>
+        <Text
+          className="text-xs text-content-placeholder font-sans"
+          style={{ fontVariant: ['tabular-nums'] }}
+        >
+          {formattedDate}
+        </Text>
       </View>
 
       {/* 공고 정보 */}
-      <Text className="mb-2 text-sm text-content-secondary font-sans" numberOfLines={1}>
+      <Text
+        className="mb-2 text-sm font-sans-semibold text-content-secondary"
+        style={{ letterSpacing: -0.32 }}
+        numberOfLines={1}
+      >
         {review.jobPostingTitle}
       </Text>
 
@@ -88,4 +114,10 @@ export default React.memo(function ReviewCard({ review, showReviewer = true }: R
       )}
     </View>
   );
+
+  if (stripeTone) {
+    return <CardStripe tone={stripeTone}>{cardBody}</CardStripe>;
+  }
+
+  return cardBody;
 });

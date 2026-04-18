@@ -23,7 +23,10 @@ export default React.memo(function BubbleScoreBadge({ score, size = 'sm' }: Bubb
     <View
       className={`flex-row items-center gap-1 rounded-sm ${sizeClasses} ${colorRange.bg} ${colorRange.darkBg}`}
     >
-      <Text className={`font-sans-semibold ${textClasses} ${colorRange.text}`}>
+      <Text
+        className={`font-sans-bold ${textClasses} ${colorRange.text}`}
+        style={{ fontVariant: ['tabular-nums'] }}
+      >
         {score.toFixed(1)}
       </Text>
     </View>
