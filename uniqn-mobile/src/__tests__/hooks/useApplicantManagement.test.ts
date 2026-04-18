@@ -520,6 +520,47 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.cancellationRequests[0].id).toBe('app-3');
     });
 
+    it('should count multi-role applicants under each role (deliberate overcount in role stats)', () => {
+      // 딜러+플로어 겸직 지원자 1명 확정 → dealer.confirmed=1 AND floor.confirmed=1
+      // overall confirmedCount=1 (사람 수), Σ statsByRole[role].confirmed=2 (역할별 합계)는 의도된 차이
+      mockData = createMockApplicantListResult([
+        createMockApplicantWithDetails({
+          id: 'app-multi',
+          status: 'confirmed',
+          assignments: [
+            { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer', 'floor'] },
+          ],
+        }),
+      ]);
+
+      const { result } = renderHook(() => useApplicantManagement('job-1'));
+
+      expect(result.current.confirmedCount).toBe(1);
+      expect(result.current.statsByRole.dealer.confirmed).toBe(1);
+      expect(result.current.statsByRole.floor.confirmed).toBe(1);
+      expect(result.current.statsByRole.dealer.total).toBe(1);
+      expect(result.current.statsByRole.floor.total).toBe(1);
+    });
+
+    it('should dedupe the same role across multiple assignments on a single application', () => {
+      // 같은 application이 서로 다른 assignment에서 'dealer' 역할을 2번 가져도 1번만 카운트
+      mockData = createMockApplicantListResult([
+        createMockApplicantWithDetails({
+          id: 'app-dupe-role',
+          status: 'confirmed',
+          assignments: [
+            { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] },
+            { dates: ['2024-01-16'], timeSlot: '14:00~22:00', roleIds: ['dealer'] },
+          ],
+        }),
+      ]);
+
+      const { result } = renderHook(() => useApplicantManagement('job-1'));
+
+      expect(result.current.statsByRole.dealer.confirmed).toBe(1);
+      expect(result.current.statsByRole.dealer.total).toBe(1);
+    });
+
     it('should filter and sort applicants', () => {
       mockData = createMockApplicantListResult([
         createMockApplicantWithDetails({

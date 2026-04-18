@@ -11,7 +11,7 @@ import { STATUS } from '@/constants';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { toDateValue } from '@/utils/date';
 import { useApplicantsByJobPosting } from './useApplicantsByJobPosting';
-import { getPrimaryRoleId } from './helpers';
+import { getPrimaryRoleId, getAllRoleIds } from './helpers';
 import {
   useConfirmApplication,
   useRejectApplication,
@@ -60,24 +60,39 @@ function createEmptyApplicationStats(): ApplicationStats {
   };
 }
 
+/**
+ * 지원자를 assignments의 **모든** 역할에 1씩 카운트한다.
+ * 멀티역할(딜러+플로어 겸직) 지원자는 각 역할 statsByRole에 1번씩 반영.
+ *
+ * 주의: Σ statsByRole[role].total > applicants.length 가능 (중복 카운트는 의도됨).
+ * 이유: "역할별 지원자 수" 카드는 각 역할 관점의 수요를 보여줘야 하고,
+ *       전체 합계는 별도 overall count(`confirmedCount` 등)에서 사람 단위로 제공.
+ */
 function buildStatsByRole(applicants: ApplicantWithDetails[]): Record<StaffRole, ApplicationStats> {
   const statsByRole: Record<string, ApplicationStats> = {};
 
   applicants.forEach((application) => {
-    const primaryRole = getPrimaryRoleId(application.assignments);
-    const effectiveRole =
-      primaryRole === 'other' && application.customRole ? application.customRole : primaryRole;
-
-    if (!statsByRole[effectiveRole]) {
-      statsByRole[effectiveRole] = createEmptyApplicationStats();
-    }
-
-    statsByRole[effectiveRole].total++;
+    const roleIds = getAllRoleIds(application.assignments);
+    const baseRoles = roleIds.length > 0 ? roleIds : ['other'];
+    const effectiveRoles = baseRoles.map((roleId) =>
+      roleId === 'other' && application.customRole ? application.customRole : roleId
+    );
+    // 같은 application이 다수 assignment에서 동일 역할을 가지면 1번만 카운트
+    const uniqueEffectiveRoles = Array.from(new Set(effectiveRoles));
 
     const statsKey = STATUS_TO_STATS_KEY[application.status];
-    if (statsKey && statsKey !== 'total') {
-      statsByRole[effectiveRole][statsKey]++;
-    }
+
+    uniqueEffectiveRoles.forEach((role) => {
+      if (!statsByRole[role]) {
+        statsByRole[role] = createEmptyApplicationStats();
+      }
+
+      statsByRole[role].total++;
+
+      if (statsKey && statsKey !== 'total') {
+        statsByRole[role][statsKey]++;
+      }
+    });
   });
 
   return statsByRole as Record<StaffRole, ApplicationStats>;
