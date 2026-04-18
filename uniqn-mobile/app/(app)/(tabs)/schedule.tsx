@@ -581,19 +581,22 @@ export default function ScheduleScreen() {
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 
-      {/* 월 네비게이터 */}
-      <MonthNavigator
-        year={currentMonth.year}
-        month={currentMonth.month}
-        viewMode={viewMode}
-        onPrev={goToPrevMonth}
-        onNext={goToNextMonth}
-        onToday={goToToday}
-        onToggleView={handleToggleView}
-      />
-
-      {/* 통계 카드 */}
+      {/* 통계 카드 — 월 요약을 먼저 노출 (대시보드 상태 우선) */}
       <StatsCard stats={stats} isLoading={isLoading} />
+
+      {/* 월 네비게이터 — 아래 캘린더/리스트 바로 위에 배치해 제어 대상을 명확히.
+          StatsCard와 직접 맞닿지 않도록 mt-4로 호흡 확보. */}
+      <View className="mt-4">
+        <MonthNavigator
+          year={currentMonth.year}
+          month={currentMonth.month}
+          viewMode={viewMode}
+          onPrev={goToPrevMonth}
+          onNext={goToNextMonth}
+          onToday={goToToday}
+          onToggleView={handleToggleView}
+        />
+      </View>
 
       {/* 미작성 평가 배너 */}
       {pendingCount > 0 && (
