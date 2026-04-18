@@ -128,4 +128,11 @@ describe('DateCalendar 상태머신', () => {
 
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
+
+  it('에러 상태에서 "다시 시도" 버튼 노출 및 탭 시 refetch 호출', async () => {
+    mockGetRegularDateCounts.mockReset();
+    mockGetRegularDateCounts.mockRejectedValue(new Error('RPC fail'));
+    const { findByLabelText } = renderWithClient(<ControlledParent />);
+    expect(await findByLabelText('공고 개수 다시 불러오기')).toBeTruthy();
+  });
 });

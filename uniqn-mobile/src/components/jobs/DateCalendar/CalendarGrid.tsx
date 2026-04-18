@@ -2,7 +2,7 @@
  * UNIQN Mobile - CalendarGrid
  *
  * @description 7×N 달력 그리드 (요일 헤더 + 날짜 셀). CalendarCell 조합.
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { memo, useMemo } from 'react';
@@ -25,6 +25,8 @@ interface CalendarGridProps {
   selectedDate: Date | null;
   counts: Record<string, number>;
   onDateSelect: (date: Date) => void;
+  /** true이면 셀 뱃지 위치에 Skeleton shimmer 표시 (Rule 16) */
+  isLoading?: boolean;
 }
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -40,6 +42,7 @@ export const CalendarGrid = memo(function CalendarGrid({
   selectedDate,
   counts,
   onDateSelect,
+  isLoading = false,
 }: CalendarGridProps) {
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(visibleMonth), { weekStartsOn: 0 });
@@ -75,6 +78,7 @@ export const CalendarGrid = memo(function CalendarGrid({
                 isOutsideMonth={isOutsideMonth}
                 onPress={onDateSelect}
                 testID={`calendar-cell-${key}`}
+                loading={isLoading}
               />
             </View>
           );
