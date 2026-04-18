@@ -83,11 +83,12 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 }: CancellationRequestCardProps) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: application.applicantId,
     fallbackName: application.applicantName,
     fallbackNickname: application.applicantNickname,
     fallbackPhotoURL: application.applicantPhotoURL,
+    fallbackPhotoURLBlurhash: application.applicantPhotoURLBlurhash,
   });
 
   const cancellationRequest = application.cancellationRequest;
@@ -137,7 +138,13 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
           <View className="p-4 pl-5">
             {/* 헤더: 지원자 정보 + 상태 */}
             <View className="flex-row items-center mb-3">
-              <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+              <Avatar
+                source={profilePhotoURL}
+                name={displayName}
+                size="md"
+                className="mr-3"
+                blurhash={profilePhotoURLBlurhash}
+              />
               <View className="flex-1">
                 <View className="flex-row items-center justify-between">
                   <Text

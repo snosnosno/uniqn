@@ -106,7 +106,12 @@ function UserCard({ user, onPress }: UserCardProps) {
         <View className="pl-4 pr-4 py-4 flex-row items-center">
           <View className="mr-3">
             {user.photoURL ? (
-              <Avatar source={user.photoURL} name={user.name} size="lg" />
+              <Avatar
+                source={user.photoURL}
+                name={user.name}
+                size="lg"
+                blurhash={user.photoURLBlurhash}
+              />
             ) : (
               <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
                 <UserIcon size={24} color={SECONDARY_PALETTE[400]} />

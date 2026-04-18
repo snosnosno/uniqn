@@ -53,6 +53,7 @@ export interface Application extends FirebaseDocument {
   applicantRole?: StaffRole;
   applicantNickname?: string;
   applicantPhotoURL?: string;
+  applicantPhotoURLBlurhash?: string | null;
 
   jobPostingId: string;
   jobPostingTitle?: string;

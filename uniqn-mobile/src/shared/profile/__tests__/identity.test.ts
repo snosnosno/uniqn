@@ -16,6 +16,7 @@ describe('profile identity helpers', () => {
         displayName: '김소호(스노)',
         nickname: '스노',
         photoURL: 'https://example.com/fallback.jpg',
+        photoURLBlurhash: null,
       });
     });
 
@@ -33,6 +34,7 @@ describe('profile identity helpers', () => {
         displayName: '레거시 이름(레거시닉)',
         nickname: '레거시닉',
         photoURL: 'https://example.com/legacy.jpg',
+        photoURLBlurhash: null,
       });
     });
 
@@ -54,6 +56,7 @@ describe('profile identity helpers', () => {
         displayName: '김소호',
         nickname: undefined,
         photoURL: undefined,
+        photoURLBlurhash: null,
       });
     });
 
@@ -94,6 +97,7 @@ describe('profile identity helpers', () => {
         displayName: '김소호(스노)',
         nickname: '스노',
         photoURL: 'https://example.com/profile.jpg',
+        photoURLBlurhash: null,
       });
     });
 
@@ -115,6 +119,7 @@ describe('profile identity helpers', () => {
         displayName: 'Auth Name',
         nickname: undefined,
         photoURL: 'https://example.com/auth.jpg',
+        photoURLBlurhash: null,
       });
     });
 

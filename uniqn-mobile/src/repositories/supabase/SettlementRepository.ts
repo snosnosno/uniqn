@@ -55,7 +55,7 @@ const JOB_POSTINGS_TABLE = 'job_postings';
 /** Supabase에는 Firestore의 500 배치 제한이 없지만 합리적 청크 크기 유지 */
 const BATCH_CHUNK_SIZE = 100;
 const WORK_LOG_COLUMNS =
-  'id,application_id,assignment_group_id,check_in_time,check_out_time,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,status,time_slot,updated_at' as const;
+  'id,application_id,assignment_group_id,check_in_time,check_out_time,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
 const JOB_POSTING_COLUMNS =
   'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,is_featured,last_work_date,location,og_image_url,owner_id,owner_name,posting_type,questions,rejection_reason,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
 

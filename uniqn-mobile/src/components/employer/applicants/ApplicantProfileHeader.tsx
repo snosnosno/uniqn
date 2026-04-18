@@ -12,6 +12,7 @@ export interface ApplicantProfileHeaderProps {
   applicant: ApplicantWithDetails;
   displayName: string;
   profilePhotoURL: string | null | undefined;
+  profilePhotoURLBlurhash?: string | null | undefined;
   isProfileLoading: boolean;
   appliedTimeAgo: string;
 }
@@ -32,6 +33,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
   applicant,
   displayName,
   profilePhotoURL,
+  profilePhotoURLBlurhash,
   isProfileLoading,
   appliedTimeAgo,
 }: ApplicantProfileHeaderProps) {
@@ -53,6 +55,7 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
           name={displayName}
           size="xl"
           className="mb-2"
+          blurhash={profilePhotoURLBlurhash}
         />
       )}
 

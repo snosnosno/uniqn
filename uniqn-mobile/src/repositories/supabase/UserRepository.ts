@@ -37,7 +37,7 @@ const TABLES = {
   CONSENTS: 'consents',
 } as const;
 const USER_COLUMNS =
-  'id,birth_date,bubble_score,career,created_at,deletion_requested_at,deletion_scheduled_for,email,employer_agreements,employer_registered_at,experience_years,fcm_tokens,gender,identity,identity_provider,identity_verified,identity_verified_at,is_active,is_orphan,marketing_agreed,name,nickname,note,phone,phone_verified,photo_url,privacy_agreed,profile_completed,region,role,social_provider,status,terms_agreed,updated_at' as const;
+  'id,birth_date,bubble_score,career,created_at,deletion_requested_at,deletion_scheduled_for,email,employer_agreements,employer_registered_at,experience_years,fcm_tokens,gender,identity,identity_provider,identity_verified,identity_verified_at,is_active,is_orphan,marketing_agreed,name,nickname,note,phone,phone_verified,photo_url,photo_url_blurhash,privacy_agreed,profile_completed,region,role,social_provider,status,terms_agreed,updated_at' as const;
 
 // ============================================================================
 // Helpers

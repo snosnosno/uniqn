@@ -138,6 +138,7 @@ export const workLogDocumentSchema = z
     staffName: z.string().optional(),
     staffNickname: z.string().nullable().optional(),
     staffPhotoURL: z.string().nullable().optional(),
+    staffPhotoURLBlurhash: z.string().nullable().optional(),
 
     // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
     checkInTime: optionalTimestampSchema.or(z.string()).optional(),
@@ -191,6 +192,7 @@ export function parseWorkLogDocument(data: unknown): WorkLog | null {
     date: result.data.date ?? '',
     staffNickname: result.data.staffNickname ?? undefined,
     staffPhotoURL: result.data.staffPhotoURL ?? undefined,
+    staffPhotoURLBlurhash: result.data.staffPhotoURLBlurhash ?? null,
     customRole: result.data.customRole ?? undefined,
     notes: result.data.notes ?? undefined,
     timeSlot: result.data.timeSlot ?? undefined,

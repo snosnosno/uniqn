@@ -61,7 +61,10 @@ export function workLogToConfirmedStaff(
   return {
     id: workLog.id,
     staffId: workLog.staffId,
-    staffName: staffName || workLog.staffId.slice(-4),
+    staffName: staffName || workLog.staffName || workLog.staffId.slice(-4),
+    staffNickname: workLog.staffNickname,
+    staffPhotoURL: workLog.staffPhotoURL,
+    staffPhotoURLBlurhash: workLog.staffPhotoURLBlurhash,
     role: workLog.role,
     customRole: workLog.customRole,
     date: workLog.date,

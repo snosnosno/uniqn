@@ -94,12 +94,13 @@ export function ApplicantConfirmModal({
   const { isDarkMode: isDark } = useThemeStore();
 
   // 지원자 프로필 조회
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: applicant?.applicantId,
     enabled: visible,
     fallbackName: applicant?.applicantName,
     fallbackNickname: applicant?.applicantNickname,
     fallbackPhotoURL: applicant?.applicantPhotoURL,
+    fallbackPhotoURLBlurhash: applicant?.applicantPhotoURLBlurhash,
   });
 
   // 선택된 일정 포맷팅
@@ -159,7 +160,13 @@ export function ApplicantConfirmModal({
       <View>
         {/* 지원자 정보 */}
         <View className="flex-row items-center p-3 bg-surface-page rounded-md mb-3">
-          <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
+          <Avatar
+            source={profilePhotoURL}
+            name={displayName}
+            size="lg"
+            className="mr-4"
+            blurhash={profilePhotoURLBlurhash}
+          />
           <View className="flex-1">
             <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
               {displayName}

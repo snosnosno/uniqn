@@ -10,6 +10,7 @@ export interface ConfirmedStaff {
   staffName: string;
   staffNickname?: string;
   staffPhotoURL?: string;
+  staffPhotoURLBlurhash?: string | null;
   phone?: string;
   role: string;
   customRole?: string;

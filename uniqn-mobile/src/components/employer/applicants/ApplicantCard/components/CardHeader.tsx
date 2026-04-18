@@ -23,6 +23,8 @@ export interface CardHeaderProps {
   displayName: string;
   /** 프로필 사진 URL */
   profilePhotoURL?: string;
+  /** 프로필 사진 blurhash 플레이스홀더 */
+  profilePhotoURLBlurhash?: string | null;
   /** 읽음 여부 */
   isRead: boolean;
   /** 지원 상태 */
@@ -42,6 +44,7 @@ export interface CardHeaderProps {
 export const CardHeader = React.memo(function CardHeader({
   displayName,
   profilePhotoURL,
+  profilePhotoURLBlurhash,
   isRead,
   status,
   isExpanded,
@@ -64,7 +67,13 @@ export const CardHeader = React.memo(function CardHeader({
         accessibilityState={{ disabled: !onViewProfile }}
         className="flex-1 flex-row items-center active:opacity-80"
       >
-        <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+        <Avatar
+          source={profilePhotoURL}
+          name={displayName}
+          size="md"
+          className="mr-3"
+          blurhash={profilePhotoURLBlurhash}
+        />
         <View className="flex-1">
           <View className="flex-row items-center">
             <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">

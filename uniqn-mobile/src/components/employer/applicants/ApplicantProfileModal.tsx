@@ -20,12 +20,14 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
     isLoading: isProfileLoading,
     displayName,
     profilePhotoURL,
+    profilePhotoURLBlurhash,
   } = useUserProfile({
     userId: applicant?.applicantId,
     enabled: visible,
     fallbackName: applicant?.applicantName,
     fallbackNickname: applicant?.applicantNickname,
     fallbackPhotoURL: applicant?.applicantPhotoURL,
+    fallbackPhotoURLBlurhash: applicant?.applicantPhotoURLBlurhash,
   });
 
   const appliedTimeAgo = useMemo(
@@ -44,6 +46,7 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
           applicant={applicant}
           displayName={displayName}
           profilePhotoURL={profilePhotoURL}
+          profilePhotoURLBlurhash={profilePhotoURLBlurhash}
           isProfileLoading={isProfileLoading}
           appliedTimeAgo={appliedTimeAgo}
         />

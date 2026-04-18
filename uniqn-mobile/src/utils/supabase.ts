@@ -684,10 +684,22 @@ export function toCamelCase<T>(obj: Record<string, unknown>): T {
   const result: Record<string, unknown> = {};
   for (const key of Object.keys(obj)) {
     let camelKey = key.replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase());
-    // Restore known acronyms at end of key (e.g., photoUrl → photoURL)
-    for (const [suffix, replacement] of Object.entries(KNOWN_ACRONYMS)) {
-      if (camelKey.endsWith(suffix) && camelKey !== suffix.toLowerCase()) {
-        camelKey = camelKey.slice(0, -suffix.length) + replacement;
+    // Restore known acronyms anywhere in key
+    // - End of key: photoUrl → photoURL
+    // - Middle of key (followed by uppercase): photoUrlBlurhash → photoURLBlurhash
+    for (const [token, replacement] of Object.entries(KNOWN_ACRONYMS)) {
+      if (camelKey === token.toLowerCase()) {
+        continue;
+      }
+      if (camelKey.endsWith(token)) {
+        camelKey = camelKey.slice(0, -token.length) + replacement;
+        break;
+      }
+      // Middle occurrence: token must be followed by an uppercase letter
+      // to avoid false positives like `urlParam` (= would match `url` + `P`).
+      const midRegex = new RegExp(`${token}(?=[A-Z])`);
+      if (midRegex.test(camelKey)) {
+        camelKey = camelKey.replace(midRegex, replacement);
         break;
       }
     }

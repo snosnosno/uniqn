@@ -1,6 +1,6 @@
 import type { AuthUser, UserProfile } from '@/types';
 
-type IdentityProfile = Pick<UserProfile, 'name' | 'nickname' | 'photoURL'>;
+type IdentityProfile = Pick<UserProfile, 'name' | 'nickname' | 'photoURL' | 'photoURLBlurhash'>;
 type IdentityAuthUser = Pick<AuthUser, 'displayName' | 'photoURL'>;
 
 interface ResolveProfileIdentityOptions {
@@ -9,6 +9,7 @@ interface ResolveProfileIdentityOptions {
   fallbackName?: string;
   fallbackNickname?: string;
   fallbackPhotoURL?: string;
+  fallbackPhotoURLBlurhash?: string | null;
 }
 
 export interface ProfileIdentity {
@@ -16,6 +17,7 @@ export interface ProfileIdentity {
   displayName: string;
   nickname?: string;
   photoURL?: string;
+  photoURLBlurhash?: string | null;
 }
 
 interface BuildCurrentUserIdentityOptions {
@@ -48,11 +50,17 @@ export function resolveProfileIdentity({
   fallbackName,
   fallbackNickname,
   fallbackPhotoURL,
+  fallbackPhotoURLBlurhash,
 }: ResolveProfileIdentityOptions): ProfileIdentity {
   const nickname = resolveFallbackSafeField(userProfile, userProfile?.nickname, fallbackNickname);
   const namedBase = userProfile?.name || fallbackName;
   const baseName = namedBase || nickname || (userId ? userId.slice(-4) : '');
   const photoURL = resolveFallbackSafeField(userProfile, userProfile?.photoURL, fallbackPhotoURL);
+  const photoURLBlurhash = resolveFallbackSafeField(
+    userProfile,
+    userProfile?.photoURLBlurhash ?? undefined,
+    fallbackPhotoURLBlurhash ?? undefined
+  );
 
   return {
     baseName,
@@ -60,6 +68,7 @@ export function resolveProfileIdentity({
       nickname && namedBase && nickname !== namedBase ? `${namedBase}(${nickname})` : baseName,
     nickname,
     photoURL,
+    photoURLBlurhash: photoURLBlurhash ?? null,
   };
 }
 
@@ -77,6 +86,7 @@ export function buildCurrentUserIdentitySnapshot({
     profile?.photoURL !== undefined
       ? (profile.photoURL ?? undefined)
       : (authUser?.photoURL ?? undefined);
+  const photoURLBlurhash = profile?.photoURLBlurhash ?? null;
 
   return {
     name,
@@ -86,5 +96,6 @@ export function buildCurrentUserIdentitySnapshot({
     displayName: nickname && name && nickname !== name ? `${name}(${nickname})` : baseName,
     nickname,
     photoURL,
+    photoURLBlurhash,
   };
 }

@@ -22,6 +22,7 @@ export interface AdminUser {
   role: UserRole;
   phone?: string;
   photoURL?: string;
+  photoURLBlurhash?: string | null;
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;

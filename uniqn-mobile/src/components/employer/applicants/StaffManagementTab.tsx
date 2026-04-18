@@ -229,6 +229,7 @@ export function StaffManagementTab({
         staffName: selectedStaff.staffName,
         staffNickname: selectedStaff.staffNickname,
         staffPhotoURL: selectedStaff.staffPhotoURL,
+        staffPhotoURLBlurhash: selectedStaff.staffPhotoURLBlurhash,
       }
     : null;
 

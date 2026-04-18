@@ -223,6 +223,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
           <Card className="mb-4 items-center py-6">
             <ProfileImagePicker
               currentImageUrl={profile.photoURL ?? null}
+              currentImageBlurhash={profile.photoURLBlurhash ?? null}
               name={profile.name ?? user?.displayName ?? '사용자'}
               onImageUpdated={handleImageUpdated}
               size="xl"

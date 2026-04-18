@@ -72,11 +72,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     isFixedMode,
   });
 
-  const { displayName, profilePhotoURL, userProfile } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash, userProfile } = useUserProfile({
     userId: applicant.applicantId,
     fallbackName: applicant.applicantName,
     fallbackNickname: applicant.applicantNickname,
     fallbackPhotoURL: applicant.applicantPhotoURL,
+    fallbackPhotoURLBlurhash: applicant.applicantPhotoURLBlurhash,
   });
 
   const appliedTimeAgo = useMemo(
@@ -124,6 +125,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         <CardHeader
           displayName={displayName}
           profilePhotoURL={profilePhotoURL}
+          profilePhotoURLBlurhash={profilePhotoURLBlurhash}
           isRead={applicant.isRead ?? true}
           status={applicant.status}
           isExpanded={isExpanded}

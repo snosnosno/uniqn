@@ -24,6 +24,8 @@ import { logger } from '@/utils/logger';
 interface ProfileImagePickerProps {
   /** 현재 이미지 URL */
   currentImageUrl?: string | null;
+  /** 이미지 blurhash 플레이스홀더 (로딩 중 배경) */
+  currentImageBlurhash?: string | null;
   /** 이미지가 없을 때 표시할 이름 (이니셜 생성용) */
   name?: string;
   /** 아바타 크기 */
@@ -40,6 +42,7 @@ interface ProfileImagePickerProps {
 
 export function ProfileImagePicker({
   currentImageUrl,
+  currentImageBlurhash,
   name,
   size = 'xl',
   onImageUpdated,
@@ -151,7 +154,12 @@ export function ProfileImagePicker({
         accessibilityLabel="프로필 사진 변경"
         accessibilityRole="button"
       >
-        <Avatar source={currentImageUrl ?? undefined} name={name} size={size} />
+        <Avatar
+          source={currentImageUrl ?? undefined}
+          name={name}
+          size={size}
+          blurhash={currentImageBlurhash}
+        />
 
         {/* 카메라 아이콘 오버레이 */}
         <View

@@ -103,6 +103,7 @@ function extractStaffProfile(workLog: WorkLog): GroupedSettlement['staffProfile'
     name: workLog.staffName,
     nickname: workLog.staffNickname,
     photoURL: workLog.staffPhotoURL,
+    photoURLBlurhash: workLog.staffPhotoURLBlurhash,
   };
 }
 

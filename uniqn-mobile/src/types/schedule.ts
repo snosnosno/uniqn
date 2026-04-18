@@ -424,6 +424,8 @@ export interface WorkLog extends FirebaseDocument {
   staffNickname?: string;
   /** 스태프 프로필 사진 URL */
   staffPhotoURL?: string;
+  /** 스태프 프로필 사진 blurhash 플레이스홀더 */
+  staffPhotoURLBlurhash?: string | null;
 
   // 실제 시간 (QR 스탬프 또는 관리자 수정)
   /** 실제 출근 시간 */

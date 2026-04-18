@@ -17,6 +17,7 @@ interface UseUserProfileOptions {
   fallbackName?: string;
   fallbackNickname?: string;
   fallbackPhotoURL?: string;
+  fallbackPhotoURLBlurhash?: string | null;
 }
 
 interface UseUserProfileResult {
@@ -24,6 +25,7 @@ interface UseUserProfileResult {
   isLoading: boolean;
   displayName: string;
   profilePhotoURL: string | undefined;
+  profilePhotoURLBlurhash: string | null | undefined;
 }
 
 export function useUserProfile({
@@ -32,6 +34,7 @@ export function useUserProfile({
   fallbackName,
   fallbackNickname,
   fallbackPhotoURL,
+  fallbackPhotoURLBlurhash,
 }: UseUserProfileOptions): UseUserProfileResult {
   const { data: userProfile, isLoading } = useQuery<UserProfile | null>({
     queryKey: queryKeys.user.profile(userId ?? ''),
@@ -46,6 +49,7 @@ export function useUserProfile({
     fallbackName,
     fallbackNickname,
     fallbackPhotoURL,
+    fallbackPhotoURLBlurhash,
   });
 
   return {
@@ -53,5 +57,6 @@ export function useUserProfile({
     isLoading,
     displayName: profileIdentity.displayName,
     profilePhotoURL: profileIdentity.photoURL,
+    profilePhotoURLBlurhash: profileIdentity.photoURLBlurhash,
   };
 }

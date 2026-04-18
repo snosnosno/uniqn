@@ -199,7 +199,13 @@ export default function AdminUserDetailPage() {
         {/* Profile Header */}
         <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-divider">
           {user.photoURL ? (
-            <Avatar source={user.photoURL} name={user.name} size="xl" className="mb-3" />
+            <Avatar
+              source={user.photoURL}
+              name={user.name}
+              size="xl"
+              className="mb-3"
+              blurhash={user.photoURLBlurhash}
+            />
           ) : (
             <View className="w-20 h-20 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center mb-3">
               <UserIcon size={40} color={SECONDARY_PALETTE[400]} />

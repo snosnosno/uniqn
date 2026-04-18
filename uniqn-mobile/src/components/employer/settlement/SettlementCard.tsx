@@ -58,11 +58,13 @@ export const SettlementCard = React.memo(function SettlementCard({
   onSettle,
 }: SettlementCardProps) {
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: workLog.staffId,
     fallbackName: (workLog as WorkLog & { staffName?: string }).staffName,
     fallbackNickname: (workLog as WorkLog & { staffNickname?: string }).staffNickname,
     fallbackPhotoURL: (workLog as WorkLog & { staffPhotoURL?: string }).staffPhotoURL,
+    fallbackPhotoURLBlurhash: (workLog as WorkLog & { staffPhotoURLBlurhash?: string | null })
+      .staffPhotoURLBlurhash,
   });
 
   // 정산 계산 (수당 + 세금 포함)
@@ -103,7 +105,13 @@ export const SettlementCard = React.memo(function SettlementCard({
         >
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
-              <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
+              <Avatar
+                source={profilePhotoURL}
+                name={displayName}
+                size="sm"
+                className="mr-3"
+                blurhash={profilePhotoURLBlurhash}
+              />
               <View className="flex-1">
                 <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
                   {displayName}

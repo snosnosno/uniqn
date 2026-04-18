@@ -195,11 +195,12 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { displayName, profilePhotoURL } = useUserProfile({
+  const { displayName, profilePhotoURL, profilePhotoURLBlurhash } = useUserProfile({
     userId: group.staffId,
     fallbackName: group.staffProfile.name,
     fallbackNickname: group.staffProfile.nickname,
     fallbackPhotoURL: group.staffProfile.photoURL,
+    fallbackPhotoURLBlurhash: group.staffProfile.photoURLBlurhash,
   });
 
   // 역할 표시 텍스트
@@ -308,7 +309,13 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             )}
 
             {/* 아바타 */}
-            <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+            <Avatar
+              source={profilePhotoURL}
+              name={displayName}
+              size="md"
+              className="mr-3"
+              blurhash={profilePhotoURLBlurhash}
+            />
 
             {/* 이름 + 역할 */}
             <View className="flex-1">
