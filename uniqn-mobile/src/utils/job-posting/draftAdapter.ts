@@ -214,7 +214,21 @@ function buildRoleCatalogFromFormData(formData: JobPostingFormData): PostingRole
       )
     ) ?? [];
 
-  return dedupeRoleCatalog([...slotEntries, ...roleEntries]);
+  const catalog = dedupeRoleCatalog([...slotEntries, ...roleEntries]);
+
+  if (formData.useSameSalary) {
+    const sharedSalary =
+      formData.defaultSalary ?? formData.roles?.find((role) => role.salary)?.salary;
+
+    if (sharedSalary) {
+      return catalog.map((entry) => ({
+        ...entry,
+        salary: sharedSalary,
+      }));
+    }
+  }
+
+  return catalog;
 }
 
 function buildCompensation(formData: JobPostingFormData): CreateJobPostingInput['compensation'] {
@@ -353,25 +367,38 @@ function buildDatedFormRoles(draft: JobPostingDraft): FormRoleWithCount[] {
 
   const totals = new Map<string, { role: PostingRoleCatalogEntry; count: number }>();
 
-  sourceSlots.forEach((slot) => {
-    slot.roles.forEach((role) => {
-      const key = getRoleKey(role);
-      const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
-        role: role.role ?? 'dealer',
-        ...(role.customRole ? { customRole: role.customRole } : {}),
-      };
-      const existing = totals.get(key);
+  const collectFromSlots = (slots: PostingTimeSlot[], addToExisting: boolean) => {
+    slots.forEach((slot) => {
+      slot.roles.forEach((role) => {
+        const key = getRoleKey(role);
+        const catalogRole = draft.roleCatalog.find((entry) => getRoleKey(entry) === key) ?? {
+          role: role.role ?? 'dealer',
+          ...(role.customRole ? { customRole: role.customRole } : {}),
+        };
+        const existing = totals.get(key);
 
-      if (existing) {
-        existing.count += role.count;
-        return;
-      }
+        if (existing) {
+          if (addToExisting) {
+            existing.count += role.count;
+          }
+          return;
+        }
 
-      totals.set(key, {
-        role: catalogRole,
-        count: role.count,
+        totals.set(key, {
+          role: catalogRole,
+          count: role.count,
+        });
       });
     });
+  };
+
+  collectFromSlots(sourceSlots, true);
+
+  draft.schedule.requirements.forEach((requirement) => {
+    if (requirement === seedRequirement) {
+      return;
+    }
+    collectFromSlots(requirement.timeSlots, false);
   });
 
   return Array.from(totals.values()).map((entry) => toFormRole(entry.role, entry.count));
