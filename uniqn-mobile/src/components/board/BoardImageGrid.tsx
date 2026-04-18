@@ -68,6 +68,8 @@ function ImageCell({
         source={{ uri: image.url }}
         style={{ width: '100%', aspectRatio, borderRadius: 16 }}
         contentFit="cover"
+        placeholder={image.blurhash ? { blurhash: image.blurhash } : undefined}
+        placeholderContentFit="cover"
         transition={200}
       />
       {totalCount > 1 ? (

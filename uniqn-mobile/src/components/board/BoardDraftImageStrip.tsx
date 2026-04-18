@@ -38,6 +38,8 @@ export function BoardDraftImageStrip({ images, onRemoveImage }: BoardDraftImageS
               source={{ uri: image.url }}
               style={{ width: 88, height: 88, borderRadius: 12 }}
               contentFit="cover"
+              placeholder={image.blurhash ? { blurhash: image.blurhash } : undefined}
+              placeholderContentFit="cover"
             />
             <Pressable
               onPress={() => onRemoveImage(image.id)}

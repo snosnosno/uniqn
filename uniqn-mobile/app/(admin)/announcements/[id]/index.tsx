@@ -246,6 +246,8 @@ export default function AnnouncementDetailPage() {
                   source={{ uri: images[0].url }}
                   style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8 }}
                   contentFit="cover"
+                  placeholder={images[0].blurhash ? { blurhash: images[0].blurhash } : undefined}
+                  placeholderContentFit="cover"
                   transition={200}
                 />
               ) : (
@@ -268,6 +270,8 @@ export default function AnnouncementDetailPage() {
                             borderRadius: 8,
                           }}
                           contentFit="cover"
+                          placeholder={image.blurhash ? { blurhash: image.blurhash } : undefined}
+                          placeholderContentFit="cover"
                           transition={200}
                         />
                         <View className="absolute bottom-1 right-1 bg-black/60 rounded-sm px-2 py-0.5">
