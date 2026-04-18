@@ -28,6 +28,14 @@ INSERT INTO auth.users (
   email,
   encrypted_password,
   email_confirmed_at,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change,
+  email_change_token_current,
+  reauthentication_token,
+  phone_change,
+  phone_change_token,
   raw_app_meta_data,
   raw_user_meta_data,
   created_at,
@@ -41,6 +49,7 @@ INSERT INTO auth.users (
     'review-staff@uniqn.app',
     crypt('Review2026!', gen_salt('bf')),
     NOW(),
+    '', '', '', '', '', '', '', '',
     '{"provider":"email","providers":["email"],"role":"staff"}'::jsonb,
     '{"name":"심사용 스태프"}'::jsonb,
     NOW(),
@@ -54,6 +63,7 @@ INSERT INTO auth.users (
     'review-employer@uniqn.app',
     crypt('Review2026!', gen_salt('bf')),
     NOW(),
+    '', '', '', '', '', '', '', '',
     '{"provider":"email","providers":["email"],"role":"employer"}'::jsonb,
     '{"name":"심사용 구인자"}'::jsonb,
     NOW(),
@@ -67,6 +77,7 @@ INSERT INTO auth.users (
     'review-admin@uniqn.app',
     crypt('Review2026!', gen_salt('bf')),
     NOW(),
+    '', '', '', '', '', '', '', '',
     '{"provider":"email","providers":["email"],"role":"admin"}'::jsonb,
     '{"name":"심사용 관리자"}'::jsonb,
     NOW(),
@@ -80,6 +91,7 @@ INSERT INTO auth.users (
     'review-applicant@uniqn.app',
     crypt('Review2026!', gen_salt('bf')),
     NOW(),
+    '', '', '', '', '', '', '', '',
     '{"provider":"email","providers":["email"],"role":"staff"}'::jsonb,
     '{"name":"심사용 신청자"}'::jsonb,
     NOW(),
@@ -89,6 +101,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 1-B. auth.identities 4건
 -- ON CONFLICT: identities_provider_id_provider_unique (provider_id, provider)
+-- NOTE: provider_id must be the user UUID (not email) for GoTrue email provider sign-in to work.
 INSERT INTO auth.identities (
   id,
   user_id,
@@ -102,33 +115,33 @@ INSERT INTO auth.identities (
   (
     gen_random_uuid(),
     'a1111111-1111-4111-a111-111111111111',
-    '{"sub":"a1111111-1111-4111-a111-111111111111","email":"review-staff@uniqn.app","email_verified":true}'::jsonb,
+    '{"sub":"a1111111-1111-4111-a111-111111111111","email":"review-staff@uniqn.app","email_verified":true,"phone_verified":false}'::jsonb,
     'email',
-    'review-staff@uniqn.app',
+    'a1111111-1111-4111-a111-111111111111',
     NOW(), NOW(), NOW()
   ),
   (
     gen_random_uuid(),
     'b2222222-2222-4222-b222-222222222222',
-    '{"sub":"b2222222-2222-4222-b222-222222222222","email":"review-employer@uniqn.app","email_verified":true}'::jsonb,
+    '{"sub":"b2222222-2222-4222-b222-222222222222","email":"review-employer@uniqn.app","email_verified":true,"phone_verified":false}'::jsonb,
     'email',
-    'review-employer@uniqn.app',
+    'b2222222-2222-4222-b222-222222222222',
     NOW(), NOW(), NOW()
   ),
   (
     gen_random_uuid(),
     'c3333333-3333-4333-c333-333333333333',
-    '{"sub":"c3333333-3333-4333-c333-333333333333","email":"review-admin@uniqn.app","email_verified":true}'::jsonb,
+    '{"sub":"c3333333-3333-4333-c333-333333333333","email":"review-admin@uniqn.app","email_verified":true,"phone_verified":false}'::jsonb,
     'email',
-    'review-admin@uniqn.app',
+    'c3333333-3333-4333-c333-333333333333',
     NOW(), NOW(), NOW()
   ),
   (
     gen_random_uuid(),
     'd4444444-4444-4444-d444-444444444444',
-    '{"sub":"d4444444-4444-4444-d444-444444444444","email":"review-applicant@uniqn.app","email_verified":true}'::jsonb,
+    '{"sub":"d4444444-4444-4444-d444-444444444444","email":"review-applicant@uniqn.app","email_verified":true,"phone_verified":false}'::jsonb,
     'email',
-    'review-applicant@uniqn.app',
+    'd4444444-4444-4444-d444-444444444444',
     NOW(), NOW(), NOW()
   )
 ON CONFLICT ON CONSTRAINT identities_provider_id_provider_unique DO NOTHING;
