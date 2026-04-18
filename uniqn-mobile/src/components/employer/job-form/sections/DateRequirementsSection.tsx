@@ -4,7 +4,7 @@ import { View, Text, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { DATE_CONSTRAINTS } from '@/constants';
 import type { JobPostingFormData } from '@/types';
-import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
+import { type DateSpecificRequirement, type TimeSlot } from '@/types/jobPosting/dateRequirement';
 import { buildSeedTimeSlots } from '@/utils/job-posting/draftRoles';
 import { generateId } from '@/utils/generateId';
 import { DatePickerModal, GroupingConfirmModal } from '../modals';

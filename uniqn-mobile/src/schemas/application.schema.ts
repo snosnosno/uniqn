@@ -206,8 +206,8 @@ const confirmationHistoryEntrySchema = z
   })
   .passthrough();
 
-// string이 먼저 매칭되어야 ISO string이 그대로 유지됨 (timestampSchema가 먼저면 TimestampLike로 변환)
-const cancellationRequestTimestampSchema = z.string().or(timestampSchema);
+// timestampSchema가 이미 string 입력을 받아 ISO string으로 통일하므로 union 불필요
+const cancellationRequestTimestampSchema = timestampSchema;
 
 /**
  * applications.cancellation_request JSONB 필드 Zod 스키마.
@@ -218,8 +218,8 @@ const cancellationRequestTimestampSchema = z.string().or(timestampSchema);
  * safeParse 됨.
  *
  * 과거 이슈: 6e24a4868 — cancellationRequest timestamp 스키마 순서 버그.
- *   string이 먼저 매칭되지 않으면 ISO string이 TimestampLike로 변환됨.
- *   safeParse 기반이므로 실패 시 해당 레코드만 drop.
+ *   timestampSchema가 ISO string 반환으로 통일된 후(Task 2+4) union이 불필요해져
+ *   단일 스키마로 정리. safeParse 기반이므로 실패 시 해당 레코드만 drop.
  */
 export const cancellationRequestStoredSchema = z.discriminatedUnion('status', [
   z.object({

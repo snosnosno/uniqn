@@ -4,7 +4,7 @@ import { parseJobPostingDocument } from '@/schemas';
 import { JOB_POSTING_SCHEMA_VERSION } from '@/types/jobPosting';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
+import { toDateString } from '@/utils/date';
 import { mergeJobPostingInput, serializeJobPostingV3 } from '@/domains/job-posting';
 import {
   buildCreateJobPostingInput,
@@ -91,7 +91,7 @@ function createPosting(): JobPosting {
       allDates: ['2026-03-25', '2026-03-26'],
       requirements: [createDateRequirement('2026-03-25'), createDateRequirement('2026-03-26')].map(
         (requirement) => ({
-          date: getDateString(requirement.date),
+          date: toDateString(requirement.date),
           timeSlots: requirement.timeSlots.map((slot) => ({
             id: slot.id,
             startTime: slot.startTime,

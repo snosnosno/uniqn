@@ -4,8 +4,6 @@
  * @description 날짜 핵심 유틸리티 함수들의 단위 테스트
  */
 
-import { Timestamp } from '@/shared/time';
-
 import { toDate, toISODateString, getTodayString, toDateString, parseDateString } from '../core';
 
 // ============================================================================
@@ -18,9 +16,10 @@ describe('toDate', () => {
     expect(toDate(date)).toBe(date);
   });
 
-  it('Timestamp를 Date로 변환한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28));
-    const result = toDate(ts);
+  it('ISO string (스키마 정규화 후)을 Date로 변환한다', () => {
+    // Task 4 이후 timestampSchema는 ISO string을 반환. toDate는 string 입력을 받음.
+    const iso = new Date(2025, 0, 28).toISOString();
+    const result = toDate(iso);
     expect(result).toBeInstanceOf(Date);
     expect(result!.getFullYear()).toBe(2025);
     expect(result!.getMonth()).toBe(0);
@@ -110,23 +109,16 @@ describe('toDateString', () => {
     expect(toDateString(date)).toBe('2025-01-28');
   });
 
-  it('Timestamp를 YYYY-MM-DD로 변환한다', () => {
-    const ts = Timestamp.fromDate(new Date(2025, 0, 28));
-    expect(toDateString(ts)).toBe('2025-01-28');
+  it('ISO string (스키마 정규화 후)을 YYYY-MM-DD로 변환한다', () => {
+    // Task 4 이후 Firebase-shaped 입력은 timestampSchema가 ISO string으로 정규화함.
+    const iso = new Date(2025, 0, 28).toISOString();
+    expect(toDateString(iso)).toBe('2025-01-28');
   });
 
-  it('toDate 메서드가 있는 객체를 처리한다', () => {
-    const obj = { toDate: () => new Date(2025, 0, 28) };
-    expect(toDateString(obj)).toBe('2025-01-28');
-  });
-
-  it('seconds 필드가 있는 객체를 처리한다', () => {
-    // 2025-01-28 00:00:00 UTC
-    const ts = new Date(2025, 0, 28).getTime() / 1000;
-    const obj = { seconds: ts };
-    const result = toDateString(obj);
-    // 시간대에 따라 날짜가 달라질 수 있으므로 형식만 확인
-    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  it('epoch millisecond (number)를 YYYY-MM-DD로 변환한다', () => {
+    const ms = new Date(2025, 0, 28).getTime();
+    const result = toDateString(ms);
+    expect(result).toBe('2025-01-28');
   });
 
   it('null이면 빈 문자열을 반환한다', () => {

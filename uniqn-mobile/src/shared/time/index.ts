@@ -8,9 +8,6 @@
 // 타입
 export type { NormalizedWorkTime, TimeFieldsInput, TimeInput } from './types';
 
-// Timestamp (Firebase Timestamp 대체)
-export { Timestamp } from './Timestamp';
-
 // 시간 정규화 유틸리티
 export { TimeNormalizer } from './TimeNormalizer';
 

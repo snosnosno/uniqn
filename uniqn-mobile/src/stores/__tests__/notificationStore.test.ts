@@ -20,7 +20,6 @@ import {
   type NotificationData,
   type NotificationSettings,
 } from '@/types/notification';
-import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Test Helpers
@@ -34,7 +33,7 @@ function createMockNotification(overrides: Partial<NotificationData> = {}): Noti
     title: '새로운 지원자',
     body: '홍길동님이 지원했습니다.',
     isRead: false,
-    createdAt: Timestamp.now(),
+    createdAt: new Date(),
     ...overrides,
   } as NotificationData;
 }

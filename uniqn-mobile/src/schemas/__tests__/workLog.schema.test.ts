@@ -1,4 +1,3 @@
-import { Timestamp } from '@/shared/time';
 import { parseWorkLogDocument } from '../workLog.schema';
 
 describe('workLog.schema fixed compatibility', () => {
@@ -19,8 +18,8 @@ describe('workLog.schema fixed compatibility', () => {
       notes: null,
       timeSlot: null,
       isFixedPosting: true,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     expect(parsed).toEqual(

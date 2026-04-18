@@ -1,6 +1,5 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Timestamp } from '@/shared/time';
 import { WorkTimeEditor } from '../WorkTimeEditor';
 import type { WorkLog } from '@/types';
 
@@ -158,8 +157,8 @@ function createWorkLog(overrides?: Partial<WorkLog>): WorkLog {
     status: 'scheduled',
     role: 'dealer',
     timeSlot: '09:00~18:00',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as WorkLog;
 }

@@ -12,7 +12,7 @@ import type { JobPostingDraft, JobPostingDraftDatedSchedule } from '@/types/jobP
 import { INITIAL_JOB_POSTING_DRAFT } from '@/types/jobPostingDraft';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
-import { getDateString } from '@/types/jobPosting/dateRequirement';
+import { toDateString } from '@/utils/date';
 import { buildSeedTimeSlots } from './draftRoles';
 
 function findRoleOptionByName(name: string) {
@@ -248,16 +248,16 @@ function buildCompensation(formData: JobPostingFormData): CreateJobPostingInput[
 
 function getPrimaryWorkDate(dateSpecificRequirements?: DateSpecificRequirement[]): string {
   const requirement = dateSpecificRequirements?.find((candidate) => {
-    return getDateString(candidate.date).length > 0;
+    return toDateString(candidate.date).length > 0;
   });
 
-  return requirement ? getDateString(requirement.date) : '';
+  return requirement ? toDateString(requirement.date) : '';
 }
 
 function buildDatedDraft(formData: JobPostingFormData): JobPostingDraftDatedSchedule {
   const requirements = (formData.dateSpecificRequirements ?? [])
     .map((requirement) => ({
-      date: getDateString(requirement.date),
+      date: toDateString(requirement.date),
       ...(requirement.isGrouped !== undefined ? { isGrouped: requirement.isGrouped } : {}),
       timeSlots: (requirement.timeSlots ?? []).map(toCanonicalTimeSlot),
     }))
