@@ -6,7 +6,6 @@
  */
 
 import type { EventQRCode, WorkLog, EventQRDisplayData } from '@/types';
-import { Timestamp } from '@/shared/time';
 
 // Import after mocks
 import {
@@ -181,8 +180,8 @@ function createMockWorkLog(overrides?: Partial<WorkLog>): WorkLog {
     date: '2025-01-15',
     status: STATUS.WORK_LOG.SCHEDULED,
     role: '딜러',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as WorkLog;
 }

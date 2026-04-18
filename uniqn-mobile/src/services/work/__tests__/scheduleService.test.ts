@@ -22,7 +22,6 @@ import {
   getCalendarMarkedDates,
 } from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
-import { Timestamp } from '@/shared/time';
 
 // ============================================================================
 // Mock Setup
@@ -199,8 +198,8 @@ function createMockWorkLog(overrides?: Partial<WorkLog>): WorkLog {
     date: '2025-01-15',
     status: STATUS.WORK_LOG.SCHEDULED,
     role: '딜러',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as WorkLog;
 }
@@ -213,8 +212,8 @@ function createMockApplication(overrides?: Partial<Application>): Application {
     status: STATUS.APPLICATION.APPLIED,
     date: '2025-01-15',
     selectedDates: ['2025-01-15'],
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as Application;
 }

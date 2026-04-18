@@ -12,7 +12,6 @@ import {
 } from '../../../__tests__/mocks/factories';
 
 // Import after mocks
-import { Timestamp } from '@/shared/time';
 
 import {
   getWorkLogsByJobPosting,
@@ -346,8 +345,8 @@ function createMockWorkLogWithTimes(overrides = {}) {
     payrollStatus: 'pending' as const,
     payrollAmount: undefined,
     date: '2024-01-15',
-    checkInTime: Timestamp.fromDate(checkIn),
-    checkOutTime: Timestamp.fromDate(checkOut),
+    checkInTime: checkIn,
+    checkOutTime: checkOut,
     modificationHistory: [],
     ...overrides,
   };

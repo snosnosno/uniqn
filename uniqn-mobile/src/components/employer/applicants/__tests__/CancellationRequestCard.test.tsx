@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import { Timestamp } from '@/shared/time';
 import { CancellationRequestCard } from '../CancellationRequestCard';
 import { STATUS } from '@/constants';
 import type { Application } from '@/types';
@@ -69,10 +68,10 @@ function createApplication(overrides?: Partial<Application>): Application {
     cancellationRequest: {
       status: STATUS.CANCELLATION_REQUEST.PENDING,
       reason: '개인 사정',
-      requestedAt: Timestamp.now(),
+      requestedAt: new Date(),
     },
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   } as Application;
 }
