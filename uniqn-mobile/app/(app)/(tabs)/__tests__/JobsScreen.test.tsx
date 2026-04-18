@@ -90,15 +90,22 @@ jest.mock('@/components/jobs', () => ({
       </ReactNative.View>
     );
   },
-  DateSlider: ({ onDateSelect }: { onDateSelect: (date: Date) => void }) => {
+  DateCalendar: ({
+    onDateSelect,
+  }: {
+    selectedDate: Date | null;
+    onDateSelect: (date: Date | null) => void;
+  }) => {
     const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
     return (
-      <ReactNative.Pressable
-        testID="date-select"
-        onPress={() => onDateSelect(new Date('2026-04-02T00:00:00.000Z'))}
-      >
-        <ReactNative.Text>date</ReactNative.Text>
-      </ReactNative.Pressable>
+      <ReactNative.View testID="date-calendar">
+        <ReactNative.Pressable
+          testID="date-select"
+          onPress={() => onDateSelect(new Date('2026-04-02T00:00:00.000Z'))}
+        >
+          <ReactNative.Text>date</ReactNative.Text>
+        </ReactNative.Pressable>
+      </ReactNative.View>
     );
   },
   JobList: (props: { jobs: { id: string; title: string }[] }) => mockJobList(props),
@@ -308,5 +315,14 @@ describe('JobsScreen search filters', () => {
 
     expect(mockPostingTypeChips).toHaveBeenCalled();
     expect(mockPostingTypeChips.mock.calls.at(-1)?.[0]?.counts).toBeUndefined();
+  });
+
+  it('일반 탭 진입 시 달력이 기본 펼침 상태로 렌더', async () => {
+    const { findByTestId, getByText } = render(<JobsScreen />);
+
+    // regular 탭을 선택하면 DateCalendar가 렌더됨
+    fireEvent.press(getByText('regular'));
+
+    expect(await findByTestId('date-calendar')).toBeTruthy();
   });
 });
