@@ -8,6 +8,7 @@ import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { BellSlashIcon } from '@/components/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenSkeleton } from '@/components/ui';
 import { NotificationItem, NotificationItemSkeleton } from './NotificationItem';
 import { NotificationGroupItem } from './NotificationGroupItem';
 import {
@@ -35,8 +36,6 @@ export interface NotificationListProps {
   ListEmptyComponent?: React.ReactElement;
   className?: string;
 }
-
-const SKELETON_COUNT = 5;
 
 export const NotificationList = memo(function NotificationList({
   notifications,
@@ -110,9 +109,7 @@ export const NotificationList = memo(function NotificationList({
   if (isLoading && notifications.length === 0) {
     return (
       <View className={`flex-1 bg-surface-page ${className}`}>
-        {[...Array(SKELETON_COUNT)].map((_, index) => (
-          <NotificationItemSkeleton key={`skeleton-${index}`} />
-        ))}
+        <ScreenSkeleton type="notificationList" count={8} />
       </View>
     );
   }

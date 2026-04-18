@@ -7,6 +7,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import type { JobPostingCard } from '@/types';
 import { JobCard } from './JobCard';
 import { PostingSurfaceState } from './shared';
+import { ScreenSkeleton } from '@/components/ui';
 
 interface JobListProps {
   jobs: JobPostingCard[];
@@ -58,7 +59,7 @@ export function JobList({
   }, [hasMore, isFetchingMore, onLoadMore]);
 
   if (isLoading && jobs.length === 0) {
-    return <PostingSurfaceState mode="loading" scope="list" />;
+    return <ScreenSkeleton type="jobsList" count={5} />;
   }
 
   if (error && jobs.length === 0) {

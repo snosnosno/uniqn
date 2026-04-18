@@ -6,7 +6,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
+import { Card, EmptyState, ErrorState, ScreenSkeleton, Skeleton } from '@/components/ui';
 import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
@@ -654,12 +654,8 @@ export default function ScheduleScreen() {
           }
         >
           {isLoading && schedules.length === 0 ? (
-            // 스켈레톤 로딩 (SkeletonScheduleCard 사용)
-            <View>
-              {[1, 2, 3].map((i) => (
-                <SkeletonScheduleCard key={i} />
-              ))}
-            </View>
+            // 스켈레톤 로딩 (ScreenSkeleton scheduleList 프리셋)
+            <ScreenSkeleton type="scheduleList" count={4} />
           ) : groupedByApplication.length === 0 ? (
             <EmptyState
               title="스케줄이 없습니다"

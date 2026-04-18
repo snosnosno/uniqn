@@ -13,10 +13,10 @@ import { useThemeStore } from '@/stores/themeStore';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
 import { SettlementBulkActions } from './SettlementBulkActions';
-import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
+import { ScreenSkeleton } from '../../ui';
 import { BanknotesIcon, CheckIcon } from '../../icons';
 import {
   type SalaryType,
@@ -270,14 +270,7 @@ export function SettlementList({
 
   // 로딩 상태
   if (isLoading && !isRefreshing) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <Loading size="large" />
-        <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
-          정산 목록을 불러오는 중...
-        </Text>
-      </View>
-    );
+    return <ScreenSkeleton type="settlementList" count={6} />;
   }
 
   // 에러 상태
