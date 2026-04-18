@@ -73,17 +73,11 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
     <View className="flex-row items-center justify-between py-3">
       <View className="flex-row items-center">
         <View className="mr-3">{icon}</View>
-        <Text className="text-base text-content-primary dark:text-secondary-100 font-sans">
-          {label}
-        </Text>
+        <Text className="text-base text-content-primary font-sans">{label}</Text>
       </View>
       {rightElement || (
         <View className="flex-row items-center">
-          {value && (
-            <Text className="mr-2 text-secondary-500 dark:text-secondary-400 font-sans">
-              {value}
-            </Text>
-          )}
+          {value && <Text className="mr-2 text-content-muted font-sans">{value}</Text>}
           <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
         </View>
       )}
@@ -265,7 +259,7 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             알림
           </Text>
           {permissionStatus === 'denied' && (
@@ -308,7 +302,7 @@ export default function SettingsScreen() {
 
         {/* 계정 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             계정
           </Text>
           <SettingItem
@@ -333,7 +327,7 @@ export default function SettingsScreen() {
                   />
                 }
               />
-              <Text className="ml-[34px] mt-1 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              <Text className="ml-[34px] mt-1 text-xs text-content-muted font-sans">
                 {AUTO_LOGIN_HELPER_TEXT}
               </Text>
               {isBiometricAvailable && (
@@ -362,7 +356,7 @@ export default function SettingsScreen() {
 
         {/* 앱 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             앱 설정
           </Text>
           <SettingItem
@@ -389,7 +383,7 @@ export default function SettingsScreen() {
               ) : (
                 <View className="flex-row items-center">
                   {cacheStats && (
-                    <Text className="mr-2 text-secondary-500 dark:text-secondary-400 font-sans">
+                    <Text className="mr-2 text-content-muted font-sans">
                       {cacheStats.queryCount}개 항목
                     </Text>
                   )}
@@ -402,7 +396,7 @@ export default function SettingsScreen() {
 
         {/* 앱 정보 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-sans-medium text-secondary-500 dark:text-secondary-400">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             정보
           </Text>
           <SettingItem
