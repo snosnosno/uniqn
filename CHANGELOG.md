@@ -5,6 +5,14 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
+## [0.0.1.1] - 2026-04-18
+
+### Fixed
+- 로그인 성공 시 이전 인증 실패 에러 토스트가 남아 있던 문제 수정 — 로그인 완료 후 `clearAllToasts()` 호출로 stale 에러 메시지 즉시 제거 (`app/(auth)/login.tsx`)
+- `login.test.tsx`에 `clearAllToasts` mock 추가 — 위 수정에 대한 회귀 테스트 보강
+
+---
+
 ## [0.0.1.0] - 2026-04-17
 
 ### Changed

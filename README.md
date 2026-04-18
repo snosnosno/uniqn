@@ -1,16 +1,17 @@
 # UNIQN Project
 
-최종 업데이트: 2026-04-05  
-현재 기준 코드: `uniqn-mobile/`, `functions/`
+최종 업데이트: 2026-04-18  
+현재 기준 코드: `uniqn-mobile/`
 
-이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`과 배포용 Firebase Functions `functions/`입니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리하며, 현재 기능 판단 기준으로 사용하지 않습니다.
+이 저장소의 현재 source of truth는 모바일 앱 `uniqn-mobile/`입니다. 백엔드는 Supabase(Auth + PostgreSQL + Realtime)로 이전 완료(2026-04-11). `functions/`(Firebase Functions)는 레거시 참고용으로만 보존하며 현재 배포 기준으로 사용하지 않습니다. 과거 웹 실험물과 이관 참고 자료는 저장소 밖 백업 또는 아카이브 문서로만 관리합니다.
 
 ## 현재 워크스페이스
 
-- `uniqn-mobile/`: Expo + React Native 앱
-- `functions/`: Firebase Functions 배포 엔트리
+- `uniqn-mobile/`: Expo + React Native 앱 (Supabase 백엔드)
+- `uniqn-mobile/supabase/`: Supabase Edge Functions, 마이그레이션, 설정
 - `docs/`: 현재 운영/개발 문서 허브
 - `specs/`: 설계 기록 및 이행 아카이브
+- `functions/`: Firebase Functions (레거시, 참고용만)
 
 ## 빠른 시작
 
@@ -24,14 +25,11 @@ npm run quality
 npm start
 ```
 
-### Functions
+### Supabase Functions (로컬)
 
-```powershell
-cd functions
-npm install
-Copy-Item .env.example .env
-npm run build
-npm test
+```bash
+cd uniqn-mobile
+npx supabase functions serve  # Edge Functions 로컬 실행
 ```
 
 ## 주요 명령
@@ -47,12 +45,13 @@ npm test
 - `npm run e2e`: Playwright E2E
 - `npm run build:web`: Expo Web export
 
-### `functions/`
+### Supabase Edge Functions
 
-- `npm run build`: TypeScript 빌드
-- `npm test`: Firestore emulator 기반 Mocha 테스트
-- `npm run serve`: Functions emulator 실행
-- `npm run deploy`: Functions 배포
+- `npx supabase functions serve`: Edge Functions 로컬 실행
+- `npx supabase db push`: 마이그레이션 적용
+- `npx supabase gen types typescript`: DB 타입 재생성
+
+> `functions/` (Firebase Functions)는 레거시이며 더 이상 배포하지 않습니다.
 
 ## 구조 기준
 
@@ -67,16 +66,15 @@ npm test
 - 공통 모듈: `uniqn-mobile/src/shared/`
 - 상태 저장소: `uniqn-mobile/src/stores/`
 
-### 백엔드
+### 백엔드 (Supabase)
 
-- 진입점: `functions/src/index.ts`
-- callable / HTTP: `functions/src/api/`
-- Firestore 트리거: `functions/src/triggers/`
-- 스케줄 작업: `functions/src/scheduled/`
+- Edge Functions: `uniqn-mobile/supabase/functions/`
+- 마이그레이션: `uniqn-mobile/supabase/migrations/`
+- DB 타입: `uniqn-mobile/src/lib/database.types.ts`
 
 ## 현재 아키텍처 원칙
 
-- 기본 흐름: `Screen -> Hook -> Service -> Repository -> Firebase`
+- 기본 흐름: `Screen -> Hook -> Service -> Repository -> Supabase`
 - 권한 체계: `admin`, `employer`, `staff`
 - 역할 계산 단일 소스: `uniqn-mobile/src/shared/role/RoleResolver.ts`
 - 상태 canonical 모듈:
@@ -90,7 +88,7 @@ npm test
 
 - 네이티브 Firebase 설정의 기준 파일은 `uniqn-mobile/google-services.json`, `uniqn-mobile/GoogleService-Info.plist`입니다.
 - 저장소 루트의 로컬 키/설정 파일은 개발자 개인 자산이며 현재 배포 기준에 포함하지 않습니다.
-- 배포와 실행 설정은 `uniqn-mobile/app.config.ts`, `uniqn-mobile/eas.json`, `firebase.json`을 기준으로 검증합니다.
+- 배포와 실행 설정은 `uniqn-mobile/app.config.ts`, `uniqn-mobile/eas.json`, `uniqn-mobile/supabase/config.toml`을 기준으로 검증합니다.
 
 ## 문서 시작점
 

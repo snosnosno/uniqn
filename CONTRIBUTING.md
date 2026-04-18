@@ -1,13 +1,13 @@
 # Contributing to UNIQN
 
-최종 업데이트: 2026-03-30  
-현재 기준: 모바일 앱 `uniqn-mobile/`, 배포 Functions `functions/`
+최종 업데이트: 2026-04-18  
+현재 기준: 모바일 앱 `uniqn-mobile/` (백엔드: Supabase)
 
 ## 시작 전
 
-- 저장소 전체보다 먼저 `README.md`와 `docs/README.md`를 읽습니다.
-- 현재 제품 기준은 `uniqn-mobile/`과 `functions/`입니다.
-- `app2/`는 레거시 참고용이며 새 제품 기능 기준으로 사용하지 않습니다.
+- 저장소 전체보다 먼저 `README.md`를 읽습니다.
+- 현재 제품 기준은 `uniqn-mobile/`입니다. 백엔드는 Supabase로 이전 완료(2026-04-11).
+- `functions/`(Firebase Functions)와 `app2/`는 레거시 참고용이며 현재 배포 기준으로 사용하지 않습니다.
 
 ## 개발 환경
 
@@ -25,13 +25,11 @@ Copy-Item .env.example .env.local
 npm start
 ```
 
-### Functions
+### Supabase Edge Functions (선택)
 
-```powershell
-cd functions
-npm install
-Copy-Item .env.example .env
-npm run build
+```bash
+cd uniqn-mobile
+npx supabase functions serve
 ```
 
 ## 코드 원칙
@@ -39,7 +37,7 @@ npm run build
 - TypeScript strict 유지
 - 2-space indentation
 - 앱 런타임 로깅은 `logger` 사용
-- Firestore 접근은 `Service -> Repository` 경로를 우선
+- DB 접근은 `Service -> Repository -> Supabase` 경로를 우선
 - 역할 분기는 `RoleResolver`, `useAuth`, `useAuthGuard` 기준 사용
 - `@/types`는 type-only barrel로 사용
 
@@ -66,12 +64,12 @@ npm run test:coverage
 npm run e2e
 ```
 
-### Functions
+### Supabase (마이그레이션 변경 시)
 
 ```bash
-cd functions
-npm run build
-npm test
+cd uniqn-mobile
+npx supabase db push
+npx supabase gen types typescript > src/lib/database.types.ts
 ```
 
 ## 커밋 규칙
@@ -105,7 +103,7 @@ docs(repo): 운영 문서 최신화
 - 관련 이슈 또는 스펙
 - 영향 범위
 - UI 변경 시 스크린샷 또는 녹화
-- Firebase 규칙, 트랜잭션, 권한 변경 여부
+- Supabase RLS 정책, 마이그레이션, 권한 변경 여부
 
 ## 참고 문서
 
