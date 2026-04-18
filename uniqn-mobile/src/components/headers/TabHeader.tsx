@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, PixelRatio } from 'react-native';
 import { router, usePathname } from 'expo-router';
 import { BellIcon, MoonIcon, QrCodeIcon, SettingsIcon, SunIcon } from '@/components/icons';
 import { NotificationBadge } from '@/components/notifications';
@@ -51,6 +51,7 @@ export function TabHeader({
         <Text
           className={`text-base font-semibold ${HEADER_CLASSES.title}`}
           numberOfLines={1}
+          maxFontSizeMultiplier={1.5}
           style={{ color: headerTintColor }}
         >
           {title}
@@ -139,7 +140,16 @@ export function TabHeader({
           accessibilityRole="button"
           accessibilityLabel="UNIQN 홈으로 이동"
         >
-          <Text className="font-display text-lg font-bold" style={{ color: '#D4AF37' }}>
+          <Text
+            className="font-display font-bold"
+            allowFontScaling={false}
+            style={{
+              color: '#D4AF37',
+              // impeccable §27 — 브랜드 마크는 Dynamic Type 영향을 받되 극단 스케일
+              // (예: 200%)에서 헤더 레이아웃 붕괴 방지. 기본 + 최대 1.5배까지만 확대.
+              fontSize: 18 * Math.min(PixelRatio.getFontScale(), 1.5),
+            }}
+          >
             UNIQN
           </Text>
         </Pressable>

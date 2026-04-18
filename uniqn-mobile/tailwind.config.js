@@ -119,6 +119,16 @@ module.exports = {
         '2xl': ['28px', { lineHeight: '36px' }],
         '3xl': ['36px', { lineHeight: '44px' }],
       },
+      // impeccable §1 — 다크모드 본문 lineHeight 가산 (+6~8%, 밝은 텍스트는
+      // 다크 배경 위에서 시각적으로 더 가벼워 호흡이 더 필요).
+      // 사용: `leading-body-dark` (본문 ~14-16px 기준), `leading-base-dark` (15px),
+      //       `leading-sm-dark` (14px). 적용 예: `text-sm leading-5 dark:leading-body-dark`.
+      lineHeight: {
+        'sm-dark': '22px', // sm(14) 기본 20 → 다크 22 (+10%)
+        'body-dark': '24px', // 본문 통칭 — base/sm 혼용 컨테이너에 사용
+        'base-dark': '24px', // base(15) 기본 22 → 다크 24 (+9%)
+        'lg-dark': '30px', // lg(18) 기본 28 → 다크 30 (+7%)
+      },
       // 스페이싱 (px 단위)
       spacing: {
         0.5: '2px',

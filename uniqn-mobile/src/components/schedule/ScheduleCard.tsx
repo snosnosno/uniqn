@@ -173,7 +173,7 @@ export const ScheduleCard = memo(function ScheduleCard({
           </View>
 
           <Text
-            className={`mb-2 text-base font-sans-semibold ${
+            className={`mb-2 text-base font-sans-semibold dark:leading-base-dark ${
               isCancelled
                 ? 'text-secondary-400 dark:text-secondary-500 line-through'
                 : 'text-content-primary'
@@ -187,7 +187,7 @@ export const ScheduleCard = memo(function ScheduleCard({
             <View className="mb-2 flex-row items-center">
               <MapIcon size={14} color={SECONDARY_PALETTE[500]} />
               <Text
-                className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
+                className="ml-1.5 flex-1 text-sm text-secondary-500 dark:text-secondary-400 dark:leading-sm-dark font-sans"
                 numberOfLines={1}
               >
                 {schedule.location}

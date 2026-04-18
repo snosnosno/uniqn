@@ -168,17 +168,17 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         <View className="flex-row justify-around">
           {[1, 2, 3].map((i) => (
             <View key={i} className="items-center">
-              <Skeleton width={50} height={16} />
-              <Skeleton width={40} height={24} className="mt-1" />
+              <Skeleton width={50} height={14} />
+              <Skeleton width={36} height={20} className="mt-1" />
             </View>
           ))}
         </View>
         {/* 구분선 */}
-        <View className="h-px bg-secondary-200 dark:bg-surface my-3" />
+        <View className="h-px bg-secondary-200 dark:bg-surface my-2.5" />
         {/* 2행: 수익 스켈레톤 */}
         <View className="flex-row justify-between items-center px-2">
-          <Skeleton width={40} height={16} />
-          <Skeleton width={120} height={24} />
+          <Skeleton width={40} height={14} />
+          <Skeleton width={120} height={22} />
         </View>
       </Card>
     );
@@ -188,35 +188,35 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
   return (
     <Card className="mx-4 mt-4">
-      {/* 1행: 지원/확정/완료 */}
+      {/* 1행: 지원/확정/완료 — 숫자 크기 축소(text-2xl→text-lg) + 수익 위계 유지 */}
       <View className="flex-row justify-around">
         {/* 지원 (applied) */}
         <View className="items-center" accessible accessibilityLabel="지원 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">지원</Text>
-          <Text className="text-2xl font-display text-warning-600 dark:text-warning-400">
+          <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
+        <View className="h-6 w-px bg-secondary-200 dark:bg-surface" />
         {/* 확정 (confirmed) */}
         <View className="items-center" accessible accessibilityLabel="확정 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">확정</Text>
-          <Text className="text-2xl font-display text-success-600 dark:text-success-400">
+          <Text className="text-lg font-display text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-secondary-200 dark:bg-surface" />
+        <View className="h-6 w-px bg-secondary-200 dark:bg-surface" />
         {/* 완료 (completed) */}
         <View className="items-center" accessible accessibilityLabel="완료 통계">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">완료</Text>
-          <Text className="text-2xl font-display text-content-primary dark:text-secondary-100">
+          <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
         </View>
       </View>
       {/* 구분선 */}
-      <View className="h-px bg-secondary-200 dark:bg-surface my-3" />
-      {/* 2행: 수익 */}
+      <View className="h-px bg-secondary-200 dark:bg-surface my-2.5" />
+      {/* 2행: 수익 — 3숫자보다 한 단계 위계(text-lg < text-xl) 유지 */}
       <View
         className="flex-row justify-between items-center px-2"
         accessible
@@ -610,10 +610,14 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
+          // impeccable §24 — 선택 날짜 헤더를 sticky로: 스크롤해도 현재 컨텍스트 유지.
+          // 선택 날짜 스케줄이 있을 때만 sticky 활성 (index 1 = 헤더).
+          stickyHeaderIndices={selectedDateSchedules.length > 0 ? [1] : undefined}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
+          {/* 0: 캘린더 */}
           <View className="mt-4">
             <CalendarView
               schedules={schedules}
@@ -622,16 +626,20 @@ export default function ScheduleScreen() {
               onDateSelect={handleDateSelect}
               onMonthChange={handleMonthChange}
             />
+          </View>
 
-            {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
-            {selectedDateSchedules.length > 0 && (
-              <View className="mt-4 px-4">
-                <Text className="text-sm font-sans-medium text-content-secondary mb-2">
+          {selectedDateSchedules.length > 0 && (
+            <>
+              {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
+              <View className="bg-surface-page px-4 pt-3 pb-2 border-b border-divider">
+                <Text className="text-sm font-sans-medium text-content-secondary">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
+              </View>
+              {/* 2: 카드 리스트 */}
+              <View className="px-4 pt-3">
                 {selectedDateSchedules.map((item) => {
                   if (isGroupedScheduleEvent(item)) {
-                    // 그룹화된 스케줄: GroupedScheduleCard 사용
                     return (
                       <GroupedScheduleCard
                         key={item.id}
@@ -641,7 +649,6 @@ export default function ScheduleScreen() {
                       />
                     );
                   }
-                  // 단일 스케줄: ScheduleCard 사용
                   return (
                     <ScheduleCard
                       key={item.id}
@@ -653,8 +660,8 @@ export default function ScheduleScreen() {
                   );
                 })}
               </View>
-            )}
-          </View>
+            </>
+          )}
         </ScrollView>
       )}
 
@@ -662,52 +669,60 @@ export default function ScheduleScreen() {
       {viewMode === 'list' && (
         <ScrollView
           className="flex-1"
-          contentContainerClassName="p-4 pb-20"
+          contentContainerClassName="pb-20"
+          // impeccable §24 — 월 스케줄 요약 헤더를 sticky로: 카드 실제 렌더 시에만 활성.
+          stickyHeaderIndices={!isLoading && groupedByApplication.length > 0 ? [0] : undefined}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refresh} {...PTR_REFRESH_PROPS} />
           }
         >
           {isLoading && schedules.length === 0 ? (
-            // 스켈레톤 로딩 (ScreenSkeleton scheduleList 프리셋)
-            <ScreenSkeleton type="scheduleList" count={4} />
+            <View className="p-4">
+              <ScreenSkeleton type="scheduleList" count={4} />
+            </View>
           ) : groupedByApplication.length === 0 ? (
-            <EmptyState
-              title="아직 예정된 스케줄이 없어요"
-              description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
-              actionLabel="공고 둘러보기"
-              onAction={() => router.push('/(app)/(tabs)')}
-              variant="content"
-            />
+            <View className="p-4">
+              <EmptyState
+                title="아직 예정된 스케줄이 없어요"
+                description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
+                actionLabel="공고 둘러보기"
+                onAction={() => router.push('/(app)/(tabs)')}
+                variant="content"
+              />
+            </View>
           ) : (
-            // 지원(applicationId)별 그룹화된 스케줄
-            <View>
-              <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-3 font-sans">
-                {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
-              </Text>
-              {groupedByApplication.map((item) => {
-                if (isGroupedScheduleEvent(item)) {
-                  // 그룹화된 스케줄: GroupedScheduleCard 사용
+            <>
+              {/* 0: sticky 헤더 */}
+              <View className="bg-surface-page px-4 pt-4 pb-2 border-b border-divider">
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                  {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
+                </Text>
+              </View>
+              {/* 1: 카드 리스트 */}
+              <View className="px-4 pt-3">
+                {groupedByApplication.map((item) => {
+                  if (isGroupedScheduleEvent(item)) {
+                    return (
+                      <GroupedScheduleCard
+                        key={item.id}
+                        group={item}
+                        onPress={() => handleOpenGroupedDetailSheet(item)}
+                        onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
+                      />
+                    );
+                  }
                   return (
-                    <GroupedScheduleCard
+                    <ScheduleCard
                       key={item.id}
-                      group={item}
-                      onPress={() => handleOpenGroupedDetailSheet(item)}
-                      onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
+                      schedule={item}
+                      onPress={() => handleOpenDetailSheet(item)}
+                      onCancelApplication={handleCancelApplication}
+                      onRequestCancellation={handleRequestCancellation}
                     />
                   );
-                }
-                // 단일 스케줄: ScheduleCard 사용
-                return (
-                  <ScheduleCard
-                    key={item.id}
-                    schedule={item}
-                    onPress={() => handleOpenDetailSheet(item)}
-                    onCancelApplication={handleCancelApplication}
-                    onRequestCancellation={handleRequestCancellation}
-                  />
-                );
-              })}
-            </View>
+                })}
+              </View>
+            </>
           )}
         </ScrollView>
       )}
