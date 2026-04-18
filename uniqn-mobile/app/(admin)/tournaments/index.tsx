@@ -24,6 +24,7 @@ import { ApprovalModal } from '@/components/admin/ApprovalModal';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import { CardStripe, type CardStripeTone } from '@/components/ui';
 import { STATUS } from '@/constants';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
@@ -97,6 +98,23 @@ const StatusTab = memo(function StatusTab({
   );
 });
 
+/**
+ * 대회공고 승인 상태 → CardStripe tone
+ *  - pending(승인 대기): gold (신규 접수)
+ *  - approved(승인됨): muted (완료)
+ *  - rejected(거부됨): warning (반려)
+ */
+function getTournamentStripeTone(status: TournamentApprovalStatus): CardStripeTone {
+  switch (status) {
+    case 'approved':
+      return 'muted';
+    case 'rejected':
+      return 'warning';
+    default:
+      return 'gold';
+  }
+}
+
 const TournamentCard = memo(function TournamentCard({
   posting,
   onApprove,
@@ -107,6 +125,7 @@ const TournamentCard = memo(function TournamentCard({
   const approvalStatus = posting.tournamentConfig?.approvalStatus ?? STATUS.TOURNAMENT.PENDING;
   const isPending = approvalStatus === STATUS.TOURNAMENT.PENDING;
   const isResubmitted = !!posting.tournamentConfig?.resubmittedAt;
+  const stripeTone = getTournamentStripeTone(approvalStatus);
 
   const formatDate = (dateStr: string) => {
     return formatDateShortWithDay(dateStr) || dateStr || '-';
@@ -127,61 +146,63 @@ const TournamentCard = memo(function TournamentCard({
   }, [posting]);
 
   return (
-    <View className="bg-white dark:bg-surface rounded-md mb-3 overflow-hidden border border-secondary-100 dark:border-surface-overlay">
-      {/* 헤더 */}
-      <Pressable
-        onPress={onViewDetail}
-        className="p-4 active:opacity-80"
-        accessibilityRole="button"
-        accessibilityLabel={`${posting.title} 상세 보기`}
-      >
-        <View className="flex-row items-start justify-between mb-2">
-          <View className="flex-1 flex-row items-center flex-wrap">
-            <Badge variant="secondary" size="sm" className="mr-2">
-              대회
-            </Badge>
-            <TournamentStatusBadge
-              status={approvalStatus}
-              rejectionReason={posting.tournamentConfig?.rejectionReason}
-              size="sm"
-              className="mr-2"
-            />
-            {isResubmitted && (
-              <Badge variant="warning" size="sm" className="mr-2">
-                재제출
-              </Badge>
-            )}
-          </View>
-        </View>
-
-        <Text
-          className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-2"
-          numberOfLines={2}
+    <View className="bg-white dark:bg-surface rounded-md mb-3 overflow-hidden border border-divider">
+      <CardStripe tone={stripeTone}>
+        {/* 헤더 */}
+        <Pressable
+          onPress={onViewDetail}
+          className="pl-4 pr-4 py-4 active:opacity-80"
+          accessibilityRole="button"
+          accessibilityLabel={`${posting.title} 상세 보기`}
         >
-          {posting.title}
-        </Text>
+          <View className="flex-row items-start justify-between mb-2">
+            <View className="flex-1 flex-row items-center flex-wrap">
+              <Badge variant="secondary" size="sm" className="mr-2">
+                대회
+              </Badge>
+              <TournamentStatusBadge
+                status={approvalStatus}
+                rejectionReason={posting.tournamentConfig?.rejectionReason}
+                size="sm"
+                className="mr-2"
+              />
+              {isResubmitted && (
+                <Badge variant="warning" size="sm" className="mr-2">
+                  재제출
+                </Badge>
+              )}
+            </View>
+          </View>
 
-        <View className="flex-row items-center mb-1">
-          <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-            {posting.location.name}
+          <Text
+            className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-2"
+            numberOfLines={2}
+          >
+            {posting.title}
           </Text>
-        </View>
 
-        <View className="flex-row items-center mb-1">
-          <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-            {dateRange}
-          </Text>
-        </View>
+          <View className="flex-row items-center mb-1">
+            <LocationOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+              {posting.location.name}
+            </Text>
+          </View>
 
-        <View className="flex-row items-center">
-          <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-          <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
-            {posting.ownerName ?? '구인자'}
-          </Text>
-        </View>
-      </Pressable>
+          <View className="flex-row items-center mb-1">
+            <CalendarOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+              {dateRange}
+            </Text>
+          </View>
+
+          <View className="flex-row items-center">
+            <PersonOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
+              {posting.ownerName ?? '구인자'}
+            </Text>
+          </View>
+        </Pressable>
+      </CardStripe>
 
       {/* 액션 버튼 (pending 상태에서만 표시) */}
       {isPending && (

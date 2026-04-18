@@ -24,6 +24,7 @@ import { useAdminUsers } from '@/hooks/useAdminDashboard';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import { CardStripe, type CardStripeTone } from '@/components/ui';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
 
@@ -84,57 +85,77 @@ function UserCard({ user, onPress }: UserCardProps) {
     }).format(date);
   };
 
+  // 계정 상태 → CardStripe tone
+  // - 비활성: muted (완료/비활성)
+  // - 활성 + 관리자: gold
+  // - 활성 + 구인자: info
+  // - 활성 + 스태프: gold
+  const stripeTone: CardStripeTone = !user.isActive
+    ? 'muted'
+    : user.role === 'employer'
+      ? 'info'
+      : 'gold';
+
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-surface rounded-md p-4 mb-3 flex-row items-center active:opacity-80"
+      className="bg-white dark:bg-surface rounded-md mb-3 border border-divider active:opacity-80"
       style={{
         boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
         elevation: 2,
       }}
     >
-      <View className="mr-3">
-        {user.photoURL ? (
-          <Avatar source={user.photoURL} name={user.name} size="lg" />
-        ) : (
-          <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
-            <UserIcon size={24} color={SECONDARY_PALETTE[400]} />
+      <CardStripe tone={stripeTone}>
+        <View className="pl-4 pr-4 py-4 flex-row items-center">
+          <View className="mr-3">
+            {user.photoURL ? (
+              <Avatar source={user.photoURL} name={user.name} size="lg" />
+            ) : (
+              <View className="w-12 h-12 rounded-sm bg-secondary-200 dark:bg-surface items-center justify-center">
+                <UserIcon size={24} color={SECONDARY_PALETTE[400]} />
+              </View>
+            )}
           </View>
-        )}
-      </View>
 
-      <View className="flex-1">
-        <View className="flex-row items-center mb-1">
-          <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mr-2">
-            {user.name}
-          </Text>
-          <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
-            {getRoleLabel(user.role)}
-          </Badge>
-        </View>
-        <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-          {user.email}
-        </Text>
-        <View className="flex-row items-center">
-          <Text className="text-xs text-content-placeholder font-sans">
-            가입일: {formatDate(user.createdAt)}
-          </Text>
-          {!user.isActive && (
-            <View className="ml-2 px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded">
-              <Text className="text-xs text-error-600 dark:text-error-400 font-sans">비활성</Text>
-            </View>
-          )}
-          {user.isVerified && (
-            <View className="ml-2 px-2 py-0.5 bg-success-50 dark:bg-success-900/30 rounded">
-              <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
-                인증됨
+          <View className="flex-1">
+            <View className="flex-row items-center mb-1">
+              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mr-2">
+                {user.name}
               </Text>
+              <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
+                {getRoleLabel(user.role)}
+              </Badge>
             </View>
-          )}
-        </View>
-      </View>
+            <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
+              {user.email}
+            </Text>
+            <View className="flex-row items-center">
+              <Text
+                style={{ fontVariant: ['tabular-nums'] }}
+                className="text-xs text-content-placeholder font-sans"
+              >
+                가입일: {formatDate(user.createdAt)}
+              </Text>
+              {!user.isActive && (
+                <View className="ml-2 px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded">
+                  <Text className="text-xs text-error-600 dark:text-error-400 font-sans">
+                    비활성
+                  </Text>
+                </View>
+              )}
+              {user.isVerified && (
+                <View className="ml-2 px-2 py-0.5 bg-success-50 dark:bg-success-900/30 rounded">
+                  <Text className="text-xs text-success-600 dark:text-success-400 font-sans">
+                    인증됨
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
 
-      <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
+          <ChevronRightIcon size={20} color={SECONDARY_PALETTE[400]} />
+        </View>
+      </CardStripe>
     </Pressable>
   );
 }

@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Card, EmptyState, Loading } from '@/components/ui';
+import { CardStripe, type CardStripeTone, EmptyState, Loading } from '@/components/ui';
 import { StackHeader } from '@/components/headers';
 import { PeopleOutlineIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
@@ -59,6 +59,23 @@ function getStatusLabel(status: EmployerApplication['status']): string {
   }
 }
 
+/**
+ * 구인자 신청 상태 → CardStripe tone
+ *  - pending(대기): gold (신규 접수)
+ *  - approved(승인): muted (완료)
+ *  - rejected(거부): warning (반려)
+ */
+function getStripeTone(status: EmployerApplication['status']): CardStripeTone {
+  switch (status) {
+    case 'approved':
+      return 'muted';
+    case 'rejected':
+      return 'warning';
+    default:
+      return 'gold';
+  }
+}
+
 // ============================================================================
 // Hook
 // ============================================================================
@@ -83,35 +100,50 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
     ? format(submittedDate, 'yyyy.MM.dd HH:mm', { locale: ko })
     : '';
   const showOverdue = app.status === 'pending' && isOverdue(app.submittedAt);
+  const stripeTone = getStripeTone(app.status);
 
   return (
-    <Card className="mb-3" onPress={() => router.push(`/(admin)/employer-applications/${app.id}`)}>
-      <View className="mb-2 flex-row items-center justify-between gap-3">
-        <View className="flex-1 flex-row flex-wrap items-center gap-2">
-          <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(app.status)}`}>
-            <Text className="text-xs font-sans-medium">{getStatusLabel(app.status)}</Text>
-          </View>
-          {showOverdue ? (
-            <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
-              <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
-                ⏰ 24h 경과
-              </Text>
+    <Pressable
+      onPress={() => router.push(`/(admin)/employer-applications/${app.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`구인자 신청 상세, ${getStatusLabel(app.status)}`}
+      className="mb-3 rounded-md bg-surface-card dark:bg-surface-elevated border border-divider active:opacity-80"
+    >
+      <CardStripe tone={stripeTone}>
+        <View className="pl-4 pr-4 py-4">
+          <View className="mb-2 flex-row items-center justify-between gap-3">
+            <View className="flex-1 flex-row flex-wrap items-center gap-2">
+              <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(app.status)}`}>
+                <Text className="text-xs font-sans-medium">{getStatusLabel(app.status)}</Text>
+              </View>
+              {showOverdue ? (
+                <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
+                  <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
+                    ⏰ 24h 경과
+                  </Text>
+                </View>
+              ) : null}
             </View>
+            <Text
+              style={{ fontVariant: ['tabular-nums'] }}
+              className="text-xs text-content-placeholder font-sans"
+            >
+              {formattedDate}
+            </Text>
+          </View>
+
+          <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            신청자 ID: {app.userId.slice(0, 8)}...
+          </Text>
+
+          {app.status === 'rejected' && app.rejectionCategory ? (
+            <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
+              거부 사유: {app.rejectionCategory}
+            </Text>
           ) : null}
         </View>
-        <Text className="text-xs text-content-placeholder font-sans">{formattedDate}</Text>
-      </View>
-
-      <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
-        신청자 ID: {app.userId.slice(0, 8)}...
-      </Text>
-
-      {app.status === 'rejected' && app.rejectionCategory ? (
-        <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
-          거부 사유: {app.rejectionCategory}
-        </Text>
-      ) : null}
-    </Card>
+      </CardStripe>
+    </Pressable>
   );
 }
 

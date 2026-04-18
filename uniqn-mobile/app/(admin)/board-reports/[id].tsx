@@ -124,7 +124,7 @@ export default function AdminBoardReportDetailPage() {
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
+          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
             신고 사유
           </Text>
           <Text className="text-sm leading-6 text-content-secondary font-sans">
@@ -133,7 +133,7 @@ export default function AdminBoardReportDetailPage() {
 
           {data.report.details ? (
             <>
-              <Text className="mb-2 mt-4 text-base font-sans-semibold text-content-primary dark:text-off-white">
+              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mt-4 mb-2">
                 상세 설명
               </Text>
               <Text className="text-sm leading-6 text-content-secondary font-sans">
@@ -145,7 +145,7 @@ export default function AdminBoardReportDetailPage() {
 
         {data.post ? (
           <Card className="mb-4">
-            <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               게시글 본문
             </Text>
             <Text className="text-sm leading-6 text-content-secondary font-sans">
@@ -156,7 +156,7 @@ export default function AdminBoardReportDetailPage() {
 
         {data.targetComment ? (
           <Card className="mb-4">
-            <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
+            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
               신고 대상 댓글
             </Text>
             <Text className="mb-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
