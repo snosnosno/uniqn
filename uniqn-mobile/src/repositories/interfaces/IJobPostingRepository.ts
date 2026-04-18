@@ -131,6 +131,17 @@ export interface IJobPostingRepository {
    */
   getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts>;
 
+  /**
+   * 일반 공고 타입의 일자별 공고 개수 집계
+   *
+   * @description DateCalendar UI의 달력 셀 뱃지용.
+   *              Supabase RPC(get_regular_posting_date_counts) 호출 래퍼.
+   * @param startDate - 집계 시작일 (inclusive, 'yyyy-MM-dd')
+   * @param endDate   - 집계 종료일 (inclusive, 'yyyy-MM-dd')
+   * @returns 날짜→개수 맵 (0건 날짜는 키 없음)
+   */
+  getRegularDateCounts(startDate: string, endDate: string): Promise<Record<string, number>>;
+
   // ==========================================================================
   // 변경 (Write) - 단순 업데이트
   // ==========================================================================
