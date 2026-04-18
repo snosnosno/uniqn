@@ -36,7 +36,7 @@ export default function LoginScreen() {
   const [loginAutoLoginEnabled, setLoginAutoLoginEnabled] = useState(true);
   const [hasLoadedAutoLoginPreference, setHasLoadedAutoLoginPreference] = useState(false);
   const autoLoginPreferenceRef = useRef(true);
-  const { addToast } = useToastStore();
+  const { addToast, clearAllToasts } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
   const isMountedRef = useIsMounted();
   const { autoLoginEnabled: storedAutoLoginEnabled, setAutoLoginEnabled } = useAutoLogin();
@@ -118,6 +118,8 @@ export default function LoginScreen() {
       }
 
       logger.info(`${providerLabel} 로그인 성공`, { userId: result.user.id });
+      // 이전 실패 시도의 stale 에러 토스트 제거 — 성공 후에도 남아 하단 탭바를 가림
+      clearAllToasts();
       addToast({ type: 'success', message: '로그인되었습니다.' });
       router.replace(
         getResolvedAuthenticatedRoute({
@@ -128,7 +130,7 @@ export default function LoginScreen() {
         })
       );
     },
-    [addToast, postAuthRedirect, setProfile, setUser, updateBiometricCredentials]
+    [addToast, clearAllToasts, postAuthRedirect, setProfile, setUser, updateBiometricCredentials]
   );
 
   const handleBiometricLogin = useCallback(async () => {
