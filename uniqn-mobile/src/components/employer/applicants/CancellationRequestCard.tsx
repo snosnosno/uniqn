@@ -9,6 +9,7 @@ import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { Card } from '../../ui/Card';
+import { CardStripe } from '../../ui/CardStripe';
 import { Modal } from '../../ui/Modal';
 import { Badge } from '../../ui/Badge';
 import { Avatar } from '../../ui/Avatar';
@@ -118,126 +119,133 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
   return (
     <>
-      <Card variant="elevated" padding="md">
-        {/* 헤더: 지원자 정보 + 상태 */}
-        <View className="flex-row items-center mb-3">
-          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
-          <View className="flex-1">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
-                {displayName}
-              </Text>
-              <Badge
-                variant={
-                  isPending
-                    ? 'warning'
-                    : cancellationRequest.status === STATUS.CANCELLATION_REQUEST.APPROVED
-                      ? 'success'
-                      : 'error'
-                }
-                size="sm"
-                dot
-              >
-                {STATUS_LABELS[cancellationRequest.status]}
-              </Badge>
+      <Card variant="elevated" padding="none">
+        <CardStripe tone="warning">
+          <View className="p-4 pl-5">
+            {/* 헤더: 지원자 정보 + 상태 */}
+            <View className="flex-row items-center mb-3">
+              <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+              <View className="flex-1">
+                <View className="flex-row items-center justify-between">
+                  <Text
+                    className="text-base font-sans-bold text-content-primary dark:text-off-white"
+                    style={{ letterSpacing: -0.32 }}
+                  >
+                    {displayName}
+                  </Text>
+                  <Badge variant="chip" size="sm">
+                    {STATUS_LABELS[cancellationRequest.status]}
+                  </Badge>
+                </View>
+                <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                  {getRoleDisplayName(
+                    application.assignments[0]?.roleIds?.[0] || 'other',
+                    application.customRole
+                  )}{' '}
+                  역할
+                </Text>
+              </View>
             </View>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              {getRoleDisplayName(
-                application.assignments[0]?.roleIds?.[0] || 'other',
-                application.customRole
-              )}{' '}
-              역할
-            </Text>
-          </View>
-        </View>
 
-        {/* 취소 대상 일정 표시 (assignments 기반) */}
-        {application.assignments.length > 0 && (
-          <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-3">
-            <CalendarIcon size={14} color="#DC2626" />
-            <Text className="ml-2 text-sm text-error-700 dark:text-error-300 font-sans">
-              취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
-              {application.assignments[0]?.timeSlot && ` ${application.assignments[0].timeSlot}`}
-            </Text>
-          </View>
-        )}
+            {/* 취소 대상 일정 표시 (assignments 기반) */}
+            {application.assignments.length > 0 && (
+              <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-3">
+                <CalendarIcon size={14} color="#DC2626" />
+                <Text
+                  className="ml-2 text-sm text-error-700 dark:text-error-300 font-sans"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
+                  {application.assignments[0]?.timeSlot &&
+                    ` ${application.assignments[0].timeSlot}`}
+                </Text>
+              </View>
+            )}
 
-        {/* 공고 정보 */}
-        <View className="bg-surface-page rounded-lg px-3 py-2 mb-3">
-          <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
-            {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
-          </Text>
-          <Text className="text-xs text-content-placeholder font-sans">
-            {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
-          </Text>
-        </View>
-
-        {/* 취소 요청 사유 */}
-        <View className="mb-3">
-          <View className="flex-row items-center mb-1">
-            <MessageIcon size={14} color={SECONDARY_PALETTE[400]} />
-            <Text className="ml-1 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
-              취소 사유
-            </Text>
-          </View>
-          <View className="bg-orange-50 dark:bg-orange-900/20 rounded-lg px-3 py-2">
-            <Text className="text-sm text-orange-800 dark:text-orange-200 font-sans">
-              {cancellationRequest.reason}
-            </Text>
-          </View>
-        </View>
-
-        {/* 요청 시간 */}
-        <View className="flex-row items-center mb-3">
-          <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-          <Text className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            {requestTimeAgo}
-          </Text>
-        </View>
-
-        {/* 검토 결과 표시 (처리 완료 시) */}
-        {!isPending && cancellationRequest.rejectionReason && (
-          <View className={`${statusColors.bg} rounded-lg px-3 py-2 mb-3`}>
-            <Text className={`text-sm ${statusColors.text} font-sans`}>
-              거절 사유: {cancellationRequest.rejectionReason}
-            </Text>
-          </View>
-        )}
-
-        {/* 액션 버튼 (pending 상태일 때만) */}
-        {isPending && (
-          <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
-            {/* 거절 버튼 */}
-            <Pressable
-              onPress={handleOpenRejectModal}
-              disabled={isProcessing}
-              className={`
-                flex-1 flex-row items-center justify-center py-2 mr-2
-                rounded-lg bg-surface-card dark:bg-surface active:opacity-70
-                ${isProcessing ? 'opacity-50' : ''}
-              `}
-            >
-              <XMarkIcon size={16} color="#DC2626" />
-              <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
-                거절
+            {/* 공고 정보 */}
+            <View className="bg-surface-page rounded-lg px-3 py-2 mb-3">
+              <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
+                {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
               </Text>
-            </Pressable>
+              <Text
+                className="text-xs text-content-placeholder font-sans"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
+              </Text>
+            </View>
 
-            {/* 승인 버튼 */}
-            <Pressable
-              onPress={handleApprove}
-              disabled={isProcessing}
-              className={`
-                flex-1 flex-row items-center justify-center py-2
-                rounded-lg bg-primary-500 active:opacity-70
-                ${isProcessing ? 'opacity-50' : ''}
-              `}
-            >
-              <CheckIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-sans-medium text-surface-dark">승인</Text>
-            </Pressable>
+            {/* 취소 요청 사유 */}
+            <View className="mb-3">
+              <View className="flex-row items-center mb-1">
+                <MessageIcon size={14} color={SECONDARY_PALETTE[400]} />
+                <Text className="ml-1 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
+                  취소 사유
+                </Text>
+              </View>
+              <View className="bg-orange-50 dark:bg-orange-900/20 rounded-lg px-3 py-2">
+                <Text className="text-sm text-orange-800 dark:text-orange-200 font-sans">
+                  {cancellationRequest.reason}
+                </Text>
+              </View>
+            </View>
+
+            {/* 요청 시간 */}
+            <View className="flex-row items-center mb-3">
+              <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
+              <Text
+                className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {requestTimeAgo}
+              </Text>
+            </View>
+
+            {/* 검토 결과 표시 (처리 완료 시) */}
+            {!isPending && cancellationRequest.rejectionReason && (
+              <View className={`${statusColors.bg} rounded-lg px-3 py-2 mb-3`}>
+                <Text className={`text-sm ${statusColors.text} font-sans`}>
+                  거절 사유: {cancellationRequest.rejectionReason}
+                </Text>
+              </View>
+            )}
+
+            {/* 액션 버튼 (pending 상태일 때만) */}
+            {isPending && (
+              <View className="flex-row mt-3 pt-3 border-t border-secondary-100 dark:border-surface-overlay">
+                {/* 거절 버튼 */}
+                <Pressable
+                  onPress={handleOpenRejectModal}
+                  disabled={isProcessing}
+                  className={`
+                    flex-1 flex-row items-center justify-center py-2 mr-2
+                    rounded-lg bg-surface-card dark:bg-surface active:opacity-70
+                    ${isProcessing ? 'opacity-50' : ''}
+                  `}
+                >
+                  <XMarkIcon size={16} color="#DC2626" />
+                  <Text className="ml-1 text-sm font-sans-medium text-error-600 dark:text-error-400">
+                    거절
+                  </Text>
+                </Pressable>
+
+                {/* 승인 버튼 */}
+                <Pressable
+                  onPress={handleApprove}
+                  disabled={isProcessing}
+                  className={`
+                    flex-1 flex-row items-center justify-center py-2
+                    rounded-lg bg-primary-500 active:opacity-70
+                    ${isProcessing ? 'opacity-50' : ''}
+                  `}
+                >
+                  <CheckIcon size={16} color="#fff" />
+                  <Text className="ml-1 text-sm font-sans-medium text-surface-dark">승인</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
-        )}
+        </CardStripe>
       </Card>
 
       {/* 거절 사유 입력 모달 */}
