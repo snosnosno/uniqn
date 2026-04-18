@@ -81,8 +81,8 @@ describe('templateService', () => {
   describe('getTemplates', () => {
     it('사용자의 템플릿 목록을 조회해야 한다', async () => {
       const mockTemplates = [
-        { id: 'tmpl-1', name: '템플릿1', createdBy: 'user-1' },
-        { id: 'tmpl-2', name: '템플릿2', createdBy: 'user-1' },
+        { id: 'tmpl-1', name: '템플릿1', userId: 'user-1' },
+        { id: 'tmpl-2', name: '템플릿2', userId: 'user-1' },
       ];
 
       mockRepo.getTemplates.mockResolvedValue(mockTemplates as never);
@@ -180,7 +180,7 @@ describe('templateService', () => {
     const mockTemplateData = {
       id: 'tmpl-1',
       name: '테스트 템플릿',
-      createdBy: 'user-1',
+      userId: 'user-1',
       templateData: { title: '공고' },
       usageCount: 3,
     };

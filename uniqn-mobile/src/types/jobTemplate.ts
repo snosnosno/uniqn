@@ -29,13 +29,13 @@ export type TemplateFormData = JobPostingTemplateData;
 
 export interface JobPostingTemplate {
   id: string;
+  userId: string;
   name: string;
-  description?: string;
-  createdBy: string;
-  createdAt: Date;
+  description?: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
   templateData: TemplateFormData;
-  usageCount?: number;
-  lastUsedAt?: Date;
+  usageCount: number;
 }
 
 export interface CreateTemplateInput {

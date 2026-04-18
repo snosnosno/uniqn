@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
+import { useTemplateManager } from '@/hooks/useTemplateManager';
+import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { HeaderQRAction, JobTitleSuffix, useJobDetailContext } from './_layout';
@@ -64,6 +66,7 @@ export default function EditJobPostingScreen() {
 
   const sectionPositions = useRef<Record<string, number>>({});
   const updateJobPosting = useUpdateJobPosting();
+  const templateManager = useTemplateManager();
   const formData = useMemo(() => (draft ? draftToFormData(draft) : null), [draft]);
   const isFixed = formData?.postingType === 'fixed';
   const allowScheduleFallback = useMemo(() => {
@@ -180,6 +183,11 @@ export default function EditJobPostingScreen() {
     addToast,
     router,
   ]);
+
+  const handleSaveTemplate = useCallback(async () => {
+    if (!draft) return;
+    await templateManager.handleSaveTemplate(draft);
+  }, [draft, templateManager]);
 
   const handleSectionLayout = useCallback((section: string, y: number) => {
     sectionPositions.current[section] = y;
@@ -364,21 +372,55 @@ export default function EditJobPostingScreen() {
         </ScrollView>
 
         <View className="absolute bottom-0 left-0 right-0 border-t border-secondary-200 bg-white p-4 dark:border-surface-overlay dark:bg-surface-dark">
-          <Button
-            variant="primary"
-            size="lg"
-            onPress={handleSubmit}
-            disabled={updateJobPosting.isPending}
-            fullWidth
-            accessibilityLabel="공고 수정"
-            testID="job-posting-edit-submit"
-          >
-            <Text className="font-sans-semibold text-surface-dark">
-              {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
-            </Text>
-          </Button>
+          <View className="flex-row items-center gap-2">
+            <Button
+              variant="ghost"
+              size="lg"
+              onPress={templateManager.openTemplateModal}
+              disabled={templateManager.isSavingTemplate}
+              accessibilityLabel="템플릿으로 저장"
+            >
+              <Text
+                className={`font-sans-medium ${
+                  templateManager.isSavingTemplate
+                    ? 'text-secondary-400'
+                    : 'text-primary-600 dark:text-primary-400'
+                }`}
+              >
+                {templateManager.isSavingTemplate ? '저장 중...' : '템플릿 저장'}
+              </Text>
+            </Button>
+            <View className="flex-1">
+              <Button
+                variant="primary"
+                size="lg"
+                onPress={handleSubmit}
+                disabled={updateJobPosting.isPending}
+                fullWidth
+                accessibilityLabel="공고 수정"
+                testID="job-posting-edit-submit"
+              >
+                <Text className="font-sans-semibold text-surface-dark">
+                  {updateJobPosting.isPending ? '수정 중...' : '공고 수정'}
+                </Text>
+              </Button>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
+
+      {templateManager.isTemplateModalOpen ? (
+        <TemplateModal
+          visible={templateManager.isTemplateModalOpen}
+          onClose={templateManager.closeTemplateModal}
+          templateName={templateManager.templateName}
+          templateDescription={templateManager.templateDescription}
+          onTemplateNameChange={templateManager.setTemplateName}
+          onTemplateDescriptionChange={templateManager.setTemplateDescription}
+          onSave={handleSaveTemplate}
+          isSaving={templateManager.isSavingTemplate}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -867,6 +867,7 @@ export type Database = {
       job_posting_templates: {
         Row: {
           created_at: string | null;
+          description: string | null;
           id: string;
           name: string;
           template_data: Json;
@@ -876,6 +877,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          description?: string | null;
           id?: string;
           name: string;
           template_data?: Json;
@@ -885,6 +887,7 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          description?: string | null;
           id?: string;
           name?: string;
           template_data?: Json;
