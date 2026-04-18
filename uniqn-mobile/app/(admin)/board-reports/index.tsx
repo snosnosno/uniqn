@@ -32,15 +32,16 @@ function getStatusLabel(status: BoardAdminReportRecord['report']['status']): str
   }
 }
 
+const REPORT_STATUS_CLASSNAMES = {
+  resolved: 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300',
+  dismissed: 'bg-secondary-100 text-content-muted dark:bg-surface-elevated dark:text-secondary-300',
+  pending: 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300',
+} as const;
+
 function getStatusClassName(status: BoardAdminReportRecord['report']['status']): string {
-  switch (status) {
-    case 'resolved':
-      return 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300';
-    case 'dismissed':
-      return 'bg-secondary-100 text-content-muted dark:bg-surface-elevated dark:text-secondary-300';
-    default:
-      return 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300';
-  }
+  if (status === 'resolved') return REPORT_STATUS_CLASSNAMES.resolved;
+  if (status === 'dismissed') return REPORT_STATUS_CLASSNAMES.dismissed;
+  return REPORT_STATUS_CLASSNAMES.pending;
 }
 
 /**

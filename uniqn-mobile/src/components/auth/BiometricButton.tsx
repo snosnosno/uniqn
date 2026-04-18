@@ -149,15 +149,15 @@ export const BiometricButton = memo(function BiometricButton({
       `}
     >
       {isLoading ? (
-        <ActivityIndicator size="small" color={variant === 'default' ? '#fff' : primaryColor} />
+        <ActivityIndicator size="small" color={variant === 'default' ? '#09090B' : primaryColor} />
       ) : (
         <>
           {isFaceId ? (
-            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#fff' : primaryColor} />
+            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#09090B' : primaryColor} />
           ) : (
             <FingerprintIcon
               size={iconSize}
-              color={variant === 'default' ? '#fff' : primaryColor}
+              color={variant === 'default' ? '#09090B' : primaryColor}
             />
           )}
           <Text

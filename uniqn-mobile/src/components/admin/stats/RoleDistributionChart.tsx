@@ -137,7 +137,7 @@ export function RoleDistributionChart({
               <Text className={`text-lg font-display ${role.textColor} mr-2`}>
                 {role.count.toLocaleString()}명
               </Text>
-              <View className="bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded">
+              <View className="bg-white/60 dark:bg-black/40 px-2 py-0.5 rounded">
                 <Text className="text-xs font-sans-medium text-content-muted dark:text-secondary-400">
                   {role.percent}%
                 </Text>

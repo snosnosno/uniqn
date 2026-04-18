@@ -6,7 +6,11 @@ import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { NumericText } from '@/components/ui';
 import { useUpcomingSchedules } from '@/hooks/useSchedules';
 import { formatTimeOfDay } from '@/utils/formatters/date';
+import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent } from '@/types/schedule';
+
+const HERO_GRADIENT_DARK = ['#1A1710', '#09090B'] as const;
+const HERO_GRADIENT_LIGHT = ['#FAF8F3', '#FFFFFF'] as const;
 
 function computeDayDiff(dateStr: string): number {
   const today = new Date();
@@ -86,6 +90,8 @@ function HeroScheduleCard({ schedule }: HeroScheduleCardProps) {
 
 export function NextWorkWidget() {
   const { schedules, isLoading, error, refetch } = useUpcomingSchedules(14);
+  const isDarkMode = useThemeStore((s) => s.isDarkMode);
+  const gradientColors = isDarkMode ? HERO_GRADIENT_DARK : HERO_GRADIENT_LIGHT;
 
   const confirmedSchedules = schedules.filter((s) => s.type === 'confirmed');
   const nextSchedule = confirmedSchedules[0] ?? null;
@@ -118,7 +124,7 @@ export function NextWorkWidget() {
          *   horizontal inset; at full bleed it's a cosmetic no-op.
          */
         <LinearGradient
-          colors={['#1A1710', '#09090B']}
+          colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={{

@@ -13,6 +13,10 @@ import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
+import { useThemeStore } from '@/stores/themeStore';
+
+const HERO_GRADIENT_DARK = ['#1A1710', '#09090B'] as const;
+const HERO_GRADIENT_LIGHT = ['#FAF8F3', '#FFFFFF'] as const;
 
 interface HeroContentProps {
   activeCount: number;
@@ -52,6 +56,8 @@ function HeroContent({ activeCount, closedCount, newApplicantCount }: HeroConten
 
 export function PostingOverviewWidget() {
   const { data, isLoading, error, refetch } = useMyJobPostings();
+  const isDarkMode = useThemeStore((s) => s.isDarkMode);
+  const gradientColors = isDarkMode ? HERO_GRADIENT_DARK : HERO_GRADIENT_LIGHT;
 
   const postings = data ?? [];
   const activePostings = postings.filter((p) => p.status === 'active' || p.status === 'approved');
@@ -94,7 +100,7 @@ export function PostingOverviewWidget() {
          *   horizontal inset; at full bleed it's a cosmetic no-op.
          */
         <LinearGradient
-          colors={['#1A1710', '#09090B']}
+          colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={{

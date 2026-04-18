@@ -169,7 +169,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     numberOfLines={4}
                     editable={!isProcessing}
                     textAlignVertical="top"
-                    className="border border-secondary-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-content-primary dark:text-secondary-100 min-h-[100px]"
+                    className="border border-secondary-300 dark:border-surface-overlay rounded-lg p-3 bg-surface-card text-content-primary min-h-[100px]"
                     accessibilityLabel="거부 사유 입력"
                     accessibilityHint="최소 10자 이상 입력해주세요"
                   />

@@ -31,15 +31,16 @@ function formatTimestamp(value: string | null | undefined): string {
   ).padStart(2, '0')}`;
 }
 
+const STATUS_CLASSNAMES = {
+  approved: 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300',
+  rejected: 'bg-secondary-100 text-content-muted dark:bg-surface-elevated dark:text-secondary-300',
+  pending: 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300',
+} as const;
+
 function getStatusClassName(status: EmployerApplication['status']): string {
-  switch (status) {
-    case 'approved':
-      return 'bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300';
-    case 'rejected':
-      return 'bg-secondary-100 text-content-muted dark:bg-surface-elevated dark:text-secondary-300';
-    default:
-      return 'bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-300';
-  }
+  if (status === 'approved') return STATUS_CLASSNAMES.approved;
+  if (status === 'rejected') return STATUS_CLASSNAMES.rejected;
+  return STATUS_CLASSNAMES.pending;
 }
 
 function getStatusLabel(status: EmployerApplication['status']): string {

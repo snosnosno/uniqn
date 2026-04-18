@@ -122,8 +122,8 @@ export function QRCodeDisplay({
           QR 코드를 스캔하여 {actionLabel}을 완료하세요
         </Text>
 
-        {/* QR 코드 영역 - 다크모드에서도 QR 가독성을 위해 흰색 배경 유지 */}
-        <View className="bg-white dark:bg-secondary-100 rounded-lg p-6 shadow-lg dark:shadow-gray-800/50">
+        {/* QR 코드 영역 - 다크모드에서도 QR 스캐너 가독성을 위해 흰색 배경 강제 유지 */}
+        <View className="bg-white rounded-lg p-6 shadow-lg dark:shadow-gray-800/50">
           {isLoading ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
