@@ -5,7 +5,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CardStripe, Badge } from '@/components/ui';
+import { CardStripe, Badge, FocusablePressable } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
@@ -268,7 +268,7 @@ export const ScheduleCard = memo(function ScheduleCard({
             ((schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication) ||
               (schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation)) && (
               <View className="mt-3 flex-row justify-end">
-                <Pressable
+                <FocusablePressable
                   onPress={(event) => {
                     event.stopPropagation();
                     if (!schedule.applicationId) return;
@@ -279,6 +279,7 @@ export const ScheduleCard = memo(function ScheduleCard({
                     }
                   }}
                   hitSlop={10}
+                  focusRingRadius={6}
                   className="rounded-md border border-secondary-200 px-3 py-1.5 min-h-[36px] active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -288,7 +289,7 @@ export const ScheduleCard = memo(function ScheduleCard({
                   <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-300">
                     {schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'}
                   </Text>
-                </Pressable>
+                </FocusablePressable>
               </View>
             )}
 

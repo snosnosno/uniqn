@@ -4,9 +4,16 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState, ErrorState, ScreenSkeleton, Skeleton } from '@/components/ui';
+import {
+  Card,
+  EmptyState,
+  ErrorState,
+  FocusablePressable,
+  ScreenSkeleton,
+  Skeleton,
+} from '@/components/ui';
 import { CalendarView } from '@/components/schedule/CalendarView';
 import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { CancellationRequestForm } from '@/components/applications';
@@ -75,16 +82,17 @@ function MonthNavigator({
 }: MonthNavigatorProps) {
   return (
     <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-divider">
-      <Pressable
+      <FocusablePressable
         onPress={onPrev}
         hitSlop={10}
+        focusRingRadius={4}
         className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
         accessibilityLabel="이전 달"
         accessibilityRole="button"
         testID="schedule-prev-month-button"
       >
         <ChevronLeftIcon size={24} color={SECONDARY_PALETTE[500]} />
-      </Pressable>
+      </FocusablePressable>
 
       <View className="flex-1 px-3">
         <Text
@@ -96,9 +104,10 @@ function MonthNavigator({
       </View>
 
       <View className="flex-row items-center">
-        <Pressable
+        <FocusablePressable
           onPress={onToday}
           hitSlop={8}
+          focusRingRadius={4}
           className="rounded-sm px-3 py-1.5 active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel="오늘로 이동"
           accessibilityRole="button"
@@ -107,10 +116,11 @@ function MonthNavigator({
           <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-200">
             오늘
           </Text>
-        </Pressable>
-        <Pressable
+        </FocusablePressable>
+        <FocusablePressable
           onPress={onToggleView}
           hitSlop={10}
+          focusRingRadius={4}
           className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel={viewMode === 'list' ? '캘린더 보기' : '목록 보기'}
           accessibilityRole="button"
@@ -121,17 +131,18 @@ function MonthNavigator({
           ) : (
             <MenuIcon size={20} color={SECONDARY_PALETTE[500]} />
           )}
-        </Pressable>
-        <Pressable
+        </FocusablePressable>
+        <FocusablePressable
           onPress={onNext}
           hitSlop={10}
+          focusRingRadius={4}
           className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="다음 달"
           accessibilityRole="button"
           testID="schedule-next-month-button"
         >
           <ChevronRightIcon size={24} color={SECONDARY_PALETTE[500]} />
-        </Pressable>
+        </FocusablePressable>
       </View>
     </View>
   );
