@@ -71,43 +71,51 @@ export const Input = React.forwardRef<TextInput, InputProps>(function Input(
         <Text className="mb-1.5 text-sm font-sans-medium text-content-secondary">{label}</Text>
       )}
 
+      {/* Focus ring wrapper — PressableCard와 동일 idiom: m-[-2px] + border-2 border-transparent */}
+      {/* 포커스 시 외곽 border 색만 변경 → layout shift 없는 2px outset info-blue ring */}
+      {/* 내부 View는 기존 1px visual border 유지 (error/focused primary/default) */}
+      {/* impeccable-design.md §22 Focus ring Info 블루 2px outset */}
       <View
-        className={`
-          flex-row items-center rounded-lg border px-3
-          ${getBorderClass()}
-        `}
+        className={`rounded-lg m-[-2px] border-2 ${isFocused ? 'border-info-500' : 'border-transparent'}`}
       >
-        {leftIcon && <View className="mr-2">{leftIcon}</View>}
+        <View
+          className={`
+            flex-row items-center rounded-lg border px-3
+            ${getBorderClass()}
+          `}
+        >
+          {leftIcon && <View className="mr-2">{leftIcon}</View>}
 
-        <TextInput
-          ref={ref}
-          {...props}
-          accessibilityLabel={props.accessibilityLabel ?? label}
-          secureTextEntry={isPassword && !showPassword}
-          keyboardType={props.keyboardType ?? getKeyboardType()}
-          onFocus={(e) => {
-            setIsFocused(true);
-            props.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setIsFocused(false);
-            props.onBlur?.(e);
-          }}
-          className="flex-1 py-3 text-base font-sans text-content-primary dark:text-secondary-100"
-          placeholderTextColor={placeholderColor}
-        />
+          <TextInput
+            ref={ref}
+            {...props}
+            accessibilityLabel={props.accessibilityLabel ?? label}
+            secureTextEntry={isPassword && !showPassword}
+            keyboardType={props.keyboardType ?? getKeyboardType()}
+            onFocus={(e) => {
+              setIsFocused(true);
+              props.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              setIsFocused(false);
+              props.onBlur?.(e);
+            }}
+            className="flex-1 py-3 text-base font-sans text-content-primary dark:text-secondary-100"
+            placeholderTextColor={placeholderColor}
+          />
 
-        {isPassword && (
-          <Pressable onPress={() => setShowPassword(!showPassword)} className="p-1" hitSlop={8}>
-            {showPassword ? (
-              <EyeSlashIcon size={20} color={placeholderColor} />
-            ) : (
-              <EyeIcon size={20} color={placeholderColor} />
-            )}
-          </Pressable>
-        )}
+          {isPassword && (
+            <Pressable onPress={() => setShowPassword(!showPassword)} className="p-1" hitSlop={8}>
+              {showPassword ? (
+                <EyeSlashIcon size={20} color={placeholderColor} />
+              ) : (
+                <EyeIcon size={20} color={placeholderColor} />
+              )}
+            </Pressable>
+          )}
 
-        {rightIcon && !isPassword && <View className="ml-2">{rightIcon}</View>}
+          {rightIcon && !isPassword && <View className="ml-2">{rightIcon}</View>}
+        </View>
       </View>
 
       {(error || hint) && (
