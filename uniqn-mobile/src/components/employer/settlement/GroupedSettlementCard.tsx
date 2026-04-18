@@ -12,7 +12,7 @@
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
-import { Avatar, CardStripe, Checkbox } from '@/components/ui';
+import { Avatar, CardStripe, Checkbox, NumericText } from '@/components/ui';
 import { PAYROLL_STATUS_STRIPE_TONE } from './helpers/settlementConfig';
 import {
   CalendarIcon,
@@ -322,16 +322,15 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
             {/* 금액/건수 */}
             <View className="items-end">
-              <Text
+              <NumericText
                 className="text-base font-sans-bold text-primary-600 dark:text-primary-400"
                 style={{
-                  fontVariant: ['tabular-nums'],
                   letterSpacing: -0.3,
                   textAlign: 'right',
                 }}
               >
                 {formatCurrency(group.summary.totalAmount)}
-              </Text>
+              </NumericText>
               <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                 {group.summary.totalCount}건
               </Text>

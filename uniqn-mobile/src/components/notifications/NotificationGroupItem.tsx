@@ -10,6 +10,7 @@ import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
+import { NumericText } from '@/components/ui';
 import { NotificationIcon } from './NotificationIcon';
 import { NotificationItem } from './NotificationItem';
 import { formatRelativeTime, toDate } from '@/utils/date';
@@ -108,21 +109,15 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
               {/* 읽지 않은 수 배지 */}
               {group.unreadCount > 0 && (
                 <View className="ml-2 min-w-[20px] h-5 px-1.5 bg-error-500 rounded-sm items-center justify-center">
-                  <Text
-                    className="text-xs font-sans-bold text-white"
-                    style={{ fontVariant: ['tabular-nums'] }}
-                  >
+                  <NumericText className="text-xs font-sans-bold text-white">
                     {group.unreadCount > 99 ? '99+' : group.unreadCount}
-                  </Text>
+                  </NumericText>
                 </View>
               )}
               {timeAgo ? (
-                <Text
-                  className="ml-2 text-xs text-content-muted font-sans"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
+                <NumericText className="ml-2 text-xs text-content-muted font-sans">
                   {timeAgo}
-                </Text>
+                </NumericText>
               ) : null}
             </View>
 

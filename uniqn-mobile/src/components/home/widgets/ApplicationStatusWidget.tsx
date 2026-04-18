@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useApplications } from '@/hooks/useApplications';
 
 interface StripCellProps {
@@ -18,12 +19,12 @@ function StripCell({ num, label, gold, isLast }: StripCellProps) {
         isLast === true ? '' : 'border-r border-divider dark:border-surface-overlay'
       }`}
     >
-      <Text
+      <NumericText
         className={`text-2xl font-sans-bold ${gold === true ? 'text-primary-500' : 'text-content-primary'}`}
-        style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.5 }}
+        style={{ letterSpacing: -0.5 }}
       >
         {num}
-      </Text>
+      </NumericText>
       <Text className="text-[9px] uppercase tracking-wider text-content-muted mt-0.5">{label}</Text>
     </View>
   );

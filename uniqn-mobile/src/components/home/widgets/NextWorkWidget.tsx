@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useUpcomingSchedules } from '@/hooks/useSchedules';
 import { formatTimeOfDay } from '@/utils/formatters/date';
 import type { ScheduleEvent } from '@/types/schedule';
@@ -64,15 +65,9 @@ function HeroScheduleCard({ schedule }: HeroScheduleCardProps) {
     >
       <View className="flex-row items-center gap-2 mb-1">
         <View className="bg-primary-500 rounded px-2 py-0.5" style={{ borderRadius: 4 }}>
-          <Text
-            className="font-sans-bold text-content-onGold"
-            style={{
-              fontSize: 14,
-              fontVariant: ['tabular-nums'],
-            }}
-          >
+          <NumericText className="font-sans-bold text-content-onGold" style={{ fontSize: 14 }}>
             {badge}
-          </Text>
+          </NumericText>
         </View>
         <Text
           className="text-content-primary font-sans-bold"
@@ -82,13 +77,9 @@ function HeroScheduleCard({ schedule }: HeroScheduleCardProps) {
           {schedule.location}
         </Text>
       </View>
-      <Text
-        className="text-content-secondary text-xs mt-1"
-        style={{ fontVariant: ['tabular-nums'] }}
-        numberOfLines={1}
-      >
+      <NumericText className="text-content-secondary text-xs mt-1" numberOfLines={1}>
         {subtitleParts.join(' · ')}
-      </Text>
+      </NumericText>
     </Pressable>
   );
 }

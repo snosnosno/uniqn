@@ -7,6 +7,7 @@ import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useAuthStore } from '@/stores/authStore';
 import { getCancellationRequests } from '@/services';
@@ -85,12 +86,9 @@ export function CancellationWidget() {
       }
     >
       <View className="gap-2 py-1">
-        <Text
-          className="text-xs font-sans-bold text-warning"
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
+        <NumericText className="text-xs font-sans-bold text-warning">
           ⚠ {pendingCount}건 대기 중
-        </Text>
+        </NumericText>
         {recentTwo.map((req) => (
           <View key={req.id} className="border-l-2 border-warning/40 bg-warning/10 px-2 py-1">
             <Text className="text-xs text-content-secondary">

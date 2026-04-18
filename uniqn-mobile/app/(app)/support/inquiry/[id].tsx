@@ -7,7 +7,7 @@ import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import { Card } from '@/components/ui';
+import { Card, NumericText } from '@/components/ui';
 import { InquiryStatusBadge } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useInquiryDetail } from '@/hooks/useInquiry';
@@ -68,12 +68,9 @@ export default function InquiryDetailScreen() {
           </Text>
 
           {/* 작성일 */}
-          <Text
-            className="mb-4 text-sm text-content-placeholder font-sans"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
+          <NumericText className="mb-4 text-sm text-content-placeholder font-sans">
             {createdDate ? format(createdDate, 'yyyy년 M월 d일 HH:mm', { locale: ko }) : ''}
-          </Text>
+          </NumericText>
 
           {/* 내용 */}
           <View className="rounded-lg bg-surface-page p-4 dark:bg-surface/50">
@@ -114,13 +111,10 @@ export default function InquiryDetailScreen() {
             </View>
 
             {/* 답변일 */}
-            <Text
-              className="mb-3 text-sm text-content-placeholder font-sans"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
+            <NumericText className="mb-3 text-sm text-content-placeholder font-sans">
               {respondedDate ? format(respondedDate, 'yyyy년 M월 d일 HH:mm', { locale: ko }) : ''}
               {inquiry.responderName && ` · ${inquiry.responderName}`}
-            </Text>
+            </NumericText>
 
             {/* 답변 내용 */}
             <View className="rounded-lg bg-success-50 p-4 dark:bg-success-900/20">

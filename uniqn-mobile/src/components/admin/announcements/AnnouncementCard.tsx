@@ -18,7 +18,7 @@ import { EyeOutlineIcon, PeopleOutlineIcon, PersonOutlineIcon, PinIcon } from '@
 // 3. 내부 모듈
 import { getIconColor } from '@/constants/colors';
 import { formatDateKorean } from '@/utils/date';
-import { CardStripe, type CardStripeTone } from '@/components/ui';
+import { CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
 import {
   ANNOUNCEMENT_STATUS_CONFIG,
   ANNOUNCEMENT_CATEGORY_LABELS,
@@ -119,26 +119,20 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
               {/* View Count */}
               <View className="flex-row items-center">
                 <EyeOutlineIcon size={12} color={getIconColor(isDarkMode, 'secondary')} />
-                <Text
-                  style={{ fontVariant: ['tabular-nums'] }}
-                  className="text-xs text-content-placeholder ml-1 font-sans"
-                >
+                <NumericText className="text-xs text-content-placeholder ml-1 font-sans">
                   {announcement.viewCount.toLocaleString()}
-                </Text>
+                </NumericText>
               </View>
             </View>
 
             {/* Date */}
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-xs text-content-placeholder font-sans"
-            >
+            <NumericText className="text-xs text-content-placeholder font-sans">
               {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && announcement.publishedAt
                 ? formatDateKorean(announcement.publishedAt) || '-'
                 : announcement.createdAt
                   ? formatDateKorean(announcement.createdAt)
                   : '-'}
-            </Text>
+            </NumericText>
           </View>
 
           {/* Target Audience Indicator */}

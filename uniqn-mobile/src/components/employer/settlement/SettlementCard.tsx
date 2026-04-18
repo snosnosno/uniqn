@@ -11,6 +11,7 @@ import { View, Text, Pressable } from 'react-native';
 import { CardStripe } from '../../ui/CardStripe';
 import { Badge } from '../../ui/Badge';
 import { Avatar } from '../../ui/Avatar';
+import { NumericText } from '../../ui/NumericText';
 import { BanknotesIcon, ChevronRightIcon } from '../../icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {
@@ -138,10 +139,9 @@ export const SettlementCard = React.memo(function SettlementCard({
                 {statusConfig.label}
               </Badge>
               {hasValidTimes && (
-                <Text
+                <NumericText
                   className="text-base font-sans-bold text-primary-600 dark:text-primary-400 mt-1"
                   style={{
-                    fontVariant: ['tabular-nums'],
                     letterSpacing: -0.3,
                     textAlign: 'right',
                   }}
@@ -149,7 +149,7 @@ export const SettlementCard = React.memo(function SettlementCard({
                   {formatCurrency(
                     settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay
                   )}
-                </Text>
+                </NumericText>
               )}
             </View>
           </View>

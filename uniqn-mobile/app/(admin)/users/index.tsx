@@ -24,7 +24,7 @@ import { useAdminUsers } from '@/hooks/useAdminDashboard';
 import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
-import { CardStripe, type CardStripeTone } from '@/components/ui';
+import { CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
 
@@ -130,12 +130,9 @@ function UserCard({ user, onPress }: UserCardProps) {
               {user.email}
             </Text>
             <View className="flex-row items-center">
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="text-xs text-content-placeholder font-sans"
-              >
+              <NumericText className="text-xs text-content-placeholder font-sans">
                 가입일: {formatDate(user.createdAt)}
-              </Text>
+              </NumericText>
               {!user.isActive && (
                 <View className="ml-2 px-2 py-0.5 bg-error-50 dark:bg-error-900/30 rounded">
                   <Text className="text-xs text-error-600 dark:text-error-400 font-sans">

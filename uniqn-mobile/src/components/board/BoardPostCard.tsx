@@ -9,7 +9,7 @@ import {
 } from '@/components/icons';
 import { BoardTypeBadge } from './BoardTypeBadge';
 import { BOARD_TYPE_STRIPE_TONE } from './helpers/boardConfig';
-import { CardStripe } from '@/components/ui';
+import { CardStripe, NumericText } from '@/components/ui';
 import { formatCompactCount } from '@/utils/formatCompactCount';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import type { BoardPost } from '@/types/board';
@@ -58,47 +58,32 @@ export function BoardPostCard({ post, onPress }: BoardPostCardProps) {
             <Text className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
               {post.authorName}
             </Text>
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-xs font-sans text-secondary-500 dark:text-secondary-400"
-            >
+            <NumericText className="text-xs font-sans text-secondary-500 dark:text-secondary-400">
               {formatMetaDate(post)}
-            </Text>
+            </NumericText>
             <View className="flex-row items-center">
               <ChatbubbleEllipsesOutlineIcon size={12} color="#D4AF37" />
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="ml-1 text-xs font-sans-semibold text-primary-700 dark:text-primary-300"
-              >
+              <NumericText className="ml-1 text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
                 {formatCompactCount(post.commentCount)}
-              </Text>
+              </NumericText>
             </View>
             <View className="flex-row items-center">
               <EyeIcon size={12} color={SECONDARY_PALETTE[500]} />
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="ml-1 text-xs font-sans text-secondary-500 dark:text-secondary-400"
-              >
+              <NumericText className="ml-1 text-xs font-sans text-secondary-500 dark:text-secondary-400">
                 {formatCompactCount(post.viewCount)}
-              </Text>
+              </NumericText>
             </View>
             <View className="flex-row items-center">
               <HeartIcon size={12} color="#16A34A" />
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="ml-1 text-xs font-sans text-success-700 dark:text-success-500"
-              >
+              <NumericText className="ml-1 text-xs font-sans text-success-700 dark:text-success-500">
                 {formatCompactCount(post.likeCount)}
-              </Text>
+              </NumericText>
             </View>
             <View className="flex-row items-center">
               <CloseCircleOutlineIcon size={12} color="#DC2626" />
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="ml-1 text-xs font-sans text-error-700 dark:text-error-500"
-              >
+              <NumericText className="ml-1 text-xs font-sans text-error-700 dark:text-error-500">
                 {formatCompactCount(post.dislikeCount)}
-              </Text>
+              </NumericText>
             </View>
           </View>
         </View>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { usePublishedAnnouncements } from '@/hooks/useAnnouncement';
 import type { Announcement } from '@/types/announcement';
 import { formatRelative } from '@/utils/formatters/date';
@@ -45,12 +46,7 @@ function NoticeRow({ notice, isLast }: NoticeRowProps) {
         ) : null}
       </View>
       {relativeTime ? (
-        <Text
-          className="text-content-muted text-[10px] ml-2"
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
-          {relativeTime}
-        </Text>
+        <NumericText className="text-content-muted text-[10px] ml-2">{relativeTime}</NumericText>
       ) : null}
     </Pressable>
   );

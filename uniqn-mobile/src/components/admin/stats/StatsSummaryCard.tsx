@@ -13,6 +13,7 @@ import {
   XCircleIcon,
 } from '@/components/icons';
 import { CardStripe } from '@/components/ui/CardStripe';
+import { NumericText } from '@/components/ui';
 
 interface StatsSummaryCardProps {
   label: string;
@@ -51,12 +52,9 @@ export function StatsSummaryCard({
               <ActivityIndicator size="small" className="mt-2 self-start" />
             ) : (
               <View className="flex-row items-baseline">
-                <Text
-                  className={`text-2xl font-sans-bold ${valueColor}`}
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
+                <NumericText className={`text-2xl font-sans-bold ${valueColor}`}>
                   {value?.toLocaleString() ?? '--'}
-                </Text>
+                </NumericText>
                 {suffix && (
                   <Text className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
                     {suffix}

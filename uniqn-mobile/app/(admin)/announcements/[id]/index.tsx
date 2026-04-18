@@ -35,6 +35,7 @@ import {
   getAnnouncementImages,
 } from '@/types/announcement';
 import { useModal } from '@/stores/modalStore';
+import { NumericText } from '@/components/ui';
 import { toDate, type DateInput } from '@/utils/date';
 
 export default function AnnouncementDetailPage() {
@@ -210,12 +211,9 @@ export default function AnnouncementDetailPage() {
             </View>
             <View className="flex-row items-center">
               <EyeOutlineIcon size={14} color={SECONDARY_PALETTE[400]} />
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans"
-              >
+              <NumericText className="text-sm text-secondary-500 dark:text-secondary-400 ml-1 font-sans">
                 {announcement.viewCount.toLocaleString()}
-              </Text>
+              </NumericText>
             </View>
           </View>
         </View>
@@ -322,12 +320,9 @@ export default function AnnouncementDetailPage() {
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               작성일
             </Text>
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-sm text-content-primary dark:text-off-white font-sans"
-            >
+            <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatDate(announcement.createdAt)}
-            </Text>
+            </NumericText>
           </View>
 
           {/* Published At */}
@@ -336,12 +331,9 @@ export default function AnnouncementDetailPage() {
               <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 발행일
               </Text>
-              <Text
-                style={{ fontVariant: ['tabular-nums'] }}
-                className="text-sm text-content-primary dark:text-off-white font-sans"
-              >
+              <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
                 {formatDate(announcement.publishedAt)}
-              </Text>
+              </NumericText>
             </View>
           )}
 
@@ -350,12 +342,9 @@ export default function AnnouncementDetailPage() {
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               수정일
             </Text>
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-sm text-content-primary dark:text-off-white font-sans"
-            >
+            <NumericText className="text-sm text-content-primary dark:text-off-white font-sans">
               {formatDate(announcement.updatedAt)}
-            </Text>
+            </NumericText>
           </View>
         </View>
 

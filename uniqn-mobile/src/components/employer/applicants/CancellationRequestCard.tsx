@@ -14,6 +14,7 @@ import { Modal } from '../../ui/Modal';
 import { Badge } from '../../ui/Badge';
 import { Avatar } from '../../ui/Avatar';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
+import { NumericText } from '../../ui/NumericText';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
 import { STATUS } from '@/constants';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -151,14 +152,11 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             {application.assignments.length > 0 && (
               <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg px-3 py-2 mb-3">
                 <CalendarIcon size={14} color="#DC2626" />
-                <Text
-                  className="ml-2 text-sm text-error-700 dark:text-error-300 font-sans"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
+                <NumericText className="ml-2 text-sm text-error-700 dark:text-error-300 font-sans">
                   취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
                   {application.assignments[0]?.timeSlot &&
                     ` ${application.assignments[0].timeSlot}`}
-                </Text>
+                </NumericText>
               </View>
             )}
 
@@ -167,12 +165,9 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
               </Text>
-              <Text
-                className="text-xs text-content-placeholder font-sans"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
+              <NumericText className="text-xs text-content-placeholder font-sans">
                 {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
-              </Text>
+              </NumericText>
             </View>
 
             {/* 취소 요청 사유 */}
@@ -193,12 +188,9 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             {/* 요청 시간 */}
             <View className="flex-row items-center mb-3">
               <ClockIcon size={14} color={SECONDARY_PALETTE[400]} />
-              <Text
-                className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
+              <NumericText className="ml-2 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                 {requestTimeAgo}
-              </Text>
+              </NumericText>
             </View>
 
             {/* 검토 결과 표시 (처리 완료 시) */}

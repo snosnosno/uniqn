@@ -78,6 +78,12 @@ export { ModalManager } from './ModalManager';
 export { NumericInput, type NumericInputProps } from './NumericInput';
 
 // ============================================================================
+// Numeric Text (tabular-nums)
+// ============================================================================
+
+export { NumericText, type NumericTextProps } from './NumericText';
+
+// ============================================================================
 // Form Components
 // ============================================================================
 

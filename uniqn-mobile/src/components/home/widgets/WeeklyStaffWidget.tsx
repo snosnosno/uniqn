@@ -7,6 +7,7 @@ import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { useQueries } from '@tanstack/react-query';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { getConfirmedStaff } from '@/services';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
@@ -138,12 +139,9 @@ export function WeeklyStaffWidget() {
                     }}
                   />
                 </View>
-                <Text
-                  className="w-10 text-right text-xs text-content-secondary"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
+                <NumericText className="w-10 text-right text-xs text-content-secondary">
                   {confirmed}/{capacity}
-                </Text>
+                </NumericText>
               </View>
             );
           })}

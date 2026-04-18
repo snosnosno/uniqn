@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CardStripe, type CardStripeTone, EmptyState, Loading } from '@/components/ui';
+import { CardStripe, type CardStripeTone, EmptyState, Loading, NumericText } from '@/components/ui';
 import { StackHeader } from '@/components/headers';
 import { PeopleOutlineIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
@@ -124,12 +124,9 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
                 </View>
               ) : null}
             </View>
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-xs text-content-placeholder font-sans"
-            >
+            <NumericText className="text-xs text-content-placeholder font-sans">
               {formattedDate}
-            </Text>
+            </NumericText>
           </View>
 
           <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">

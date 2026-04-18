@@ -5,8 +5,9 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import { getBubbleScoreColor } from '@/types/review';
+import { NumericText } from '@/components/ui';
 
 interface BubbleScoreBadgeProps {
   score: number;
@@ -23,12 +24,9 @@ export default React.memo(function BubbleScoreBadge({ score, size = 'sm' }: Bubb
     <View
       className={`flex-row items-center gap-1 rounded-sm ${sizeClasses} ${colorRange.bg} ${colorRange.darkBg}`}
     >
-      <Text
-        className={`font-sans-bold ${textClasses} ${colorRange.text}`}
-        style={{ fontVariant: ['tabular-nums'] }}
-      >
+      <NumericText className={`font-sans-bold ${textClasses} ${colorRange.text}`}>
         {score.toFixed(1)}
-      </Text>
+      </NumericText>
     </View>
   );
 });

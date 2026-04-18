@@ -6,6 +6,7 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft, Layout } from 'react-native-reanimated';
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
+import { NumericText } from '@/components/ui';
 import { getIconColor } from '@/constants/colors';
 import { navigateFromNotification } from '@/services/observability/deepLinkService';
 import { useThemeStore } from '@/stores/themeStore';
@@ -93,12 +94,9 @@ export const NotificationItem = memo(function NotificationItem({
                 {notification.title}
               </Text>
               {timeAgo ? (
-                <Text
-                  className="ml-2 text-xs text-content-muted font-sans"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                >
+                <NumericText className="ml-2 text-xs text-content-muted font-sans">
                   {timeAgo}
-                </Text>
+                </NumericText>
               ) : null}
             </View>
 

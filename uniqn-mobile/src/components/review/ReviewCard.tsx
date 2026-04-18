@@ -14,7 +14,7 @@ import {
   SENTIMENT_COLORS,
   getTagsForReviewerType,
 } from '@/types/review';
-import { CardStripe, type CardStripeTone } from '@/components/ui';
+import { CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
 
 interface ReviewCardProps {
   review: Review;
@@ -66,12 +66,9 @@ export default React.memo(function ReviewCard({
             </Text>
           )}
         </View>
-        <Text
-          className="text-xs text-content-placeholder font-sans"
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
+        <NumericText className="text-xs text-content-placeholder font-sans">
           {formattedDate}
-        </Text>
+        </NumericText>
       </View>
 
       {/* 공고 정보 */}

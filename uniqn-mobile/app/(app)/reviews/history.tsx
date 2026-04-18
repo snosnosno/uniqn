@@ -8,7 +8,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { StackHeader } from '@/components/headers';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, NumericText } from '@/components/ui';
 import ReviewCard from '@/components/review/ReviewCard';
 import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { REVIEW_CONTEXT_STRIPE_TONE } from '@/components/review/helpers/reviewConfig';
@@ -124,20 +124,17 @@ function ScoreSummary({ bubbleScore }: { bubbleScore: ScoreSummaryData }) {
     <View className="mx-4 mt-3 mb-2 rounded-md bg-white p-4 dark:bg-secondary-800">
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3">
-          <Text
+          <NumericText
             className="text-2xl font-sans-bold text-content-primary dark:text-secondary-100"
-            style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.32 }}
+            style={{ letterSpacing: -0.32 }}
           >
             {bubbleScore.score.toFixed(1)}
-          </Text>
+          </NumericText>
           <BubbleScoreBadge score={bubbleScore.score} size="md" />
         </View>
-        <Text
-          className="text-xs text-secondary-500 dark:text-secondary-400 font-sans"
-          style={{ fontVariant: ['tabular-nums'] }}
-        >
+        <NumericText className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
           총 {bubbleScore.totalReviewCount}건
-        </Text>
+        </NumericText>
       </View>
       <View className="mt-3 flex-row gap-4">
         <StatItem emoji={SENTIMENT_EMOJI.positive} count={bubbleScore.positiveCount} label="긍정" />
@@ -152,12 +149,7 @@ function StatItem({ emoji, count, label }: { emoji: string; count: number; label
   return (
     <View className="flex-row items-center gap-1">
       <Text className="text-sm font-sans">{emoji}</Text>
-      <Text
-        className="text-sm font-sans-bold text-content-secondary"
-        style={{ fontVariant: ['tabular-nums'] }}
-      >
-        {count}
-      </Text>
+      <NumericText className="text-sm font-sans-bold text-content-secondary">{count}</NumericText>
       <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">{label}</Text>
     </View>
   );

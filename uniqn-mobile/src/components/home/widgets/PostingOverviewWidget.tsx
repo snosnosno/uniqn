@@ -7,10 +7,11 @@
  * - 보조: 모집중/마감 공고 건수
  */
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 
 interface HeroContentProps {
@@ -30,31 +31,21 @@ function HeroContent({ activeCount, closedCount, newApplicantCount }: HeroConten
     >
       <View className="flex-row items-center gap-2 mb-1">
         <View className="bg-primary-500 rounded px-2 py-0.5" style={{ borderRadius: 4 }}>
-          <Text
-            className="font-sans-bold text-content-onGold"
-            style={{
-              fontSize: 14,
-              fontVariant: ['tabular-nums'],
-            }}
-          >
+          <NumericText className="font-sans-bold text-content-onGold" style={{ fontSize: 14 }}>
             새 지원자 {newApplicantCount}
-          </Text>
+          </NumericText>
         </View>
-        <Text
+        <NumericText
           className="text-content-primary font-sans-bold"
-          style={{ fontSize: 20, letterSpacing: -0.5, fontVariant: ['tabular-nums'] }}
+          style={{ fontSize: 20, letterSpacing: -0.5 }}
           numberOfLines={1}
         >
           공고 {activeCount}건 모집중
-        </Text>
+        </NumericText>
       </View>
-      <Text
-        className="text-content-secondary text-xs mt-1"
-        style={{ fontVariant: ['tabular-nums'] }}
-        numberOfLines={1}
-      >
+      <NumericText className="text-content-secondary text-xs mt-1" numberOfLines={1}>
         모집중 {activeCount} · 마감 {closedCount}
-      </Text>
+      </NumericText>
     </Pressable>
   );
 }

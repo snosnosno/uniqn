@@ -10,7 +10,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { CardStripe, EmptyState, Skeleton } from '@/components/ui';
+import { CardStripe, EmptyState, NumericText, Skeleton } from '@/components/ui';
 import { usePendingReviews } from '@/hooks/useReviews';
 import type { PendingReviewItem } from '@/hooks/useReviews';
 import { getReviewDaysRemaining } from '@/domains/review/reviewDeadline';
@@ -69,12 +69,11 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
           <View
             className={`rounded-sm px-2.5 py-1 ${isUrgent ? 'bg-error-50 dark:bg-error-900/30' : 'bg-warning-100 dark:bg-warning-900/30'}`}
           >
-            <Text
+            <NumericText
               className={`text-xs font-sans-bold ${isUrgent ? 'text-error-700 dark:text-error-300' : 'text-warning-700 dark:text-warning-300'}`}
-              style={{ fontVariant: ['tabular-nums'] }}
             >
               D-{daysRemaining}
-            </Text>
+            </NumericText>
           </View>
         </View>
         <View className="mt-3 flex-row items-center justify-between">
@@ -130,12 +129,9 @@ export default function PendingReviewsScreen() {
           />
         ) : (
           <View>
-            <Text
-              className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
+            <NumericText className="mb-3 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
               작성 대기 {pendingCount}건
-            </Text>
+            </NumericText>
             {pendingReviews.map((item) => (
               <PendingReviewCard
                 key={`${item.workLogId}_${item.reviewerType}`}

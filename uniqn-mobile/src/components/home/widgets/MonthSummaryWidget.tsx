@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
+import { NumericText } from '@/components/ui';
 import { useScheduleStats } from '@/hooks/useSchedules';
 import { usePendingReviews } from '@/hooks/useReviews';
 // `@/utils/formatters` 는 flat 파일(src/utils/formatters.ts)로 resolve 되어
@@ -49,29 +50,23 @@ export function MonthSummaryWidget() {
         <View accessibilityLabel={accessibilityLabel}>
           <View className="flex-row justify-between items-end">
             <View>
-              <Text
+              <NumericText
                 className="text-3xl font-sans-bold text-primary-500"
-                style={{ fontVariant: ['tabular-nums'], letterSpacing: -0.6 }}
+                style={{ letterSpacing: -0.6 }}
               >
                 {formatCurrency(thisMonthEarnings)}
-              </Text>
+              </NumericText>
               <Text className="text-[10px] uppercase tracking-wider text-content-muted mt-1">
                 예상 수령액
               </Text>
             </View>
             <View className="items-end">
-              <Text
-                className="text-base font-sans-bold text-content-primary"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
+              <NumericText className="text-base font-sans-bold text-content-primary">
                 {confirmedSchedules}일
-              </Text>
-              <Text
-                className="text-xs text-content-secondary"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
+              </NumericText>
+              <NumericText className="text-xs text-content-secondary">
                 {hoursWorked}시간 · 리뷰 {pendingLabel}
-              </Text>
+              </NumericText>
             </View>
           </View>
         </View>

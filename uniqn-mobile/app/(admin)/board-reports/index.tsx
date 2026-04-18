@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { FlagOutlineIcon, SearchIcon } from '@/components/icons';
-import { CardStripe, type CardStripeTone, EmptyState, Loading } from '@/components/ui';
+import { CardStripe, type CardStripeTone, EmptyState, Loading, NumericText } from '@/components/ui';
 import { useAdminBoardReports } from '@/hooks/useAdminBoardReports';
 import {
   BOARD_TYPE_LABELS,
@@ -113,12 +113,9 @@ function BoardReportCard({ record }: { record: BoardAdminReportRecord }) {
                 </Text>
               </View>
             </View>
-            <Text
-              style={{ fontVariant: ['tabular-nums'] }}
-              className="text-xs text-content-placeholder font-sans"
-            >
+            <NumericText className="text-xs text-content-placeholder font-sans">
               {formatDateValue(record.report.createdAt)}
-            </Text>
+            </NumericText>
           </View>
 
           <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">

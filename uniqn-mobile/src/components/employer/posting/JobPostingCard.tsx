@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { PostingCardSurface } from '@/components/jobs/shared/PostingCardSurface';
 import { QrCodeIcon, UsersIcon } from '@/components/icons';
-import { Badge, type CardStripeTone } from '@/components/ui';
+import { Badge, NumericText, type CardStripeTone } from '@/components/ui';
 import { STATUS } from '@/constants';
 import { toJobPostingCard } from '@/domains/job-posting';
 import { getPostingStatusMeta } from '@/components/jobs/shared/postingSurfaceModel';
@@ -63,12 +63,9 @@ export const JobPostingCard = memo(function JobPostingCard({
           <View className="mt-2 flex-row items-center justify-between border-t border-secondary-100 px-4 pt-2 dark:border-surface-overlay">
             <View className="flex-row items-center">
               <UsersIcon size={14} color="#B8962E" />
-              <Text
-                className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans"
-                style={{ fontVariant: ['tabular-nums'] }}
-              >
+              <NumericText className="ml-1 text-xs text-content-muted dark:text-secondary-400 font-sans">
                 지원자 {posting.stats?.totalApplicants ?? 0}
-              </Text>
+              </NumericText>
             </View>
 
             <View className="flex-row items-center gap-2">

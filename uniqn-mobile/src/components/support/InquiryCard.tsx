@@ -8,7 +8,7 @@ import React from 'react';
 import { Pressable, Text, View, useColorScheme } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { Card, CardStripe, type CardStripeTone } from '@/components/ui';
+import { Card, CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
@@ -68,12 +68,9 @@ export function InquiryCard({
             </Text>
           )}
 
-          <Text
-            className="text-xs text-content-placeholder font-sans"
-            style={{ fontVariant: ['tabular-nums'] }}
-          >
+          <NumericText className="text-xs text-content-placeholder font-sans">
             {formattedDate}
-          </Text>
+          </NumericText>
 
           {inquiry.status === STATUS.INQUIRY.CLOSED && inquiry.response && (
             <View className="mt-2 flex-row items-center">
