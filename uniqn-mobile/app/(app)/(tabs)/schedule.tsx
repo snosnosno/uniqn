@@ -25,6 +25,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { STATUS } from '@/constants';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
+import { triggerHaptic } from '@/utils/haptics';
 import type {
   Application,
   ScheduleEvent,
@@ -76,6 +77,7 @@ function MonthNavigator({
     <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-divider">
       <Pressable
         onPress={onPrev}
+        hitSlop={10}
         className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
         accessibilityLabel="이전 달"
         accessibilityRole="button"
@@ -96,6 +98,7 @@ function MonthNavigator({
       <View className="flex-row items-center">
         <Pressable
           onPress={onToday}
+          hitSlop={8}
           className="rounded-sm px-3 py-1.5 active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel="오늘로 이동"
           accessibilityRole="button"
@@ -107,19 +110,21 @@ function MonthNavigator({
         </Pressable>
         <Pressable
           onPress={onToggleView}
+          hitSlop={10}
           className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700 mr-1"
           accessibilityLabel={viewMode === 'list' ? '캘린더 보기' : '목록 보기'}
           accessibilityRole="button"
           testID="schedule-view-toggle-button"
         >
           {viewMode === 'list' ? (
-            <CalendarIcon size={22} color={SECONDARY_PALETTE[500]} />
+            <CalendarIcon size={20} color={SECONDARY_PALETTE[500]} />
           ) : (
-            <MenuIcon size={22} color={SECONDARY_PALETTE[500]} />
+            <MenuIcon size={20} color={SECONDARY_PALETTE[500]} />
           )}
         </Pressable>
         <Pressable
           onPress={onNext}
+          hitSlop={10}
           className="p-2 rounded-sm active:bg-secondary-100 dark:active:bg-secondary-700"
           accessibilityLabel="다음 달"
           accessibilityRole="button"
@@ -294,10 +299,12 @@ export default function ScheduleScreen() {
   // 지원 취소 핸들러 (applied 상태)
   const handleCancelApplication = useCallback(
     (applicationId: string) => {
-      Alert.alert('지원 취소', '정말 취소하시겠습니까?', [
-        { text: '아니오', style: 'cancel' },
+      // 파괴적 액션 — 경고 햅틱으로 주의 환기 (impeccable §17 삭제 경계).
+      void triggerHaptic('warning');
+      Alert.alert('지원 취소', '지원을 취소하면 이 스케줄이 목록에서 사라져요.', [
+        { text: '계속 유지', style: 'cancel' },
         {
-          text: '예, 취소합니다',
+          text: '지원 취소',
           style: 'destructive',
           onPress: () => {
             cancelApplication(applicationId);
@@ -317,7 +324,10 @@ export default function ScheduleScreen() {
         const application = await getApplicationById(applicationId);
 
         if (!application) {
-          addToast({ type: 'error', message: '지원서를 찾을 수 없습니다' });
+          addToast({
+            type: 'error',
+            message: '지원서를 찾지 못했어요. 새로고침 후 다시 시도해주세요.',
+          });
           return;
         }
 
@@ -502,6 +512,8 @@ export default function ScheduleScreen() {
   // QR 스캔 결과 처리 훅
   const { handleScanResult, lastError, clearError } = useQRCodeScanner({
     onSuccess: () => {
+      // 출퇴근 체크 완료 — 결정적 순간이므로 Success 햅틱 (impeccable §17).
+      void triggerHaptic('success');
       setIsQRScannerVisible(false);
       handleCloseDetailSheet();
     },
@@ -544,8 +556,8 @@ export default function ScheduleScreen() {
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
-            title="스케줄을 불러올 수 없습니다"
-            message={error.message}
+            title="스케줄을 불러오지 못했어요"
+            message={`${error.message}\n인터넷 연결을 확인하고 다시 시도해주세요.`}
             onRetry={refresh}
           />
         </View>
@@ -649,8 +661,10 @@ export default function ScheduleScreen() {
             <ScreenSkeleton type="scheduleList" count={4} />
           ) : groupedByApplication.length === 0 ? (
             <EmptyState
-              title="스케줄이 없습니다"
-              description={`${currentMonth.year}년 ${currentMonth.month}월에 예정된 스케줄이 없습니다.\n공고에 지원하면 스케줄이 여기에 표시됩니다.`}
+              title="아직 예정된 스케줄이 없어요"
+              description={`${currentMonth.year}년 ${currentMonth.month}월 일정이 비어있어요.\n공고에 지원하면 여기에 바로 표시돼요.`}
+              actionLabel="공고 둘러보기"
+              onAction={() => router.push('/(app)/(tabs)')}
               variant="content"
             />
           ) : (

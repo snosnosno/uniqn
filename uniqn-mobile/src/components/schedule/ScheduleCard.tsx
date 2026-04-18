@@ -278,7 +278,8 @@ export const ScheduleCard = memo(function ScheduleCard({
                       onRequestCancellation?.(schedule.applicationId);
                     }
                   }}
-                  className="rounded-md border border-secondary-200 px-3 py-1.5 active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
+                  hitSlop={10}
+                  className="rounded-md border border-secondary-200 px-3 py-1.5 min-h-[36px] active:bg-secondary-50 dark:border-surface-overlay dark:active:bg-surface-overlay"
                   accessibilityRole="button"
                   accessibilityLabel={
                     schedule.type === STATUS.SCHEDULE.APPLIED ? '지원 취소' : '취소 요청'
