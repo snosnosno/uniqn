@@ -65,7 +65,8 @@
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_RELEASE_CHANNEL": "production"
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
+        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
       },
       "ios": {
         "resourceClass": "m-medium"
