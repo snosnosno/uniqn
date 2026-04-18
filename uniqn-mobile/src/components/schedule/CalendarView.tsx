@@ -11,6 +11,7 @@ import {
   PRIMARY_COLORS,
   STATUS_COLORS,
   SECONDARY_PALETTE,
+  TEXT_COLORS,
 } from '@/constants/colors';
 import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent, ScheduleType } from '@/types';
@@ -80,11 +81,11 @@ const calendarTheme = {
   selectedDayBackgroundColor: PRIMARY_COLORS[600],
   selectedDayTextColor: '#FFFFFF',
   todayTextColor: ACCENT_COLORS[600],
-  dayTextColor: '#09090B',
+  dayTextColor: TEXT_COLORS.primary.light,
   textDisabledColor: SECONDARY_PALETTE[200],
   dotColor: PRIMARY_COLORS[500],
   selectedDotColor: '#FFFFFF',
-  monthTextColor: '#09090B',
+  monthTextColor: TEXT_COLORS.primary.light,
   indicatorColor: PRIMARY_COLORS[500],
   arrowColor: SECONDARY_PALETTE[500],
   textDayFontSize: 14,
@@ -100,9 +101,9 @@ const darkCalendarTheme = {
   textSectionTitleColor: SECONDARY_PALETTE[400],
   textSectionTitleDisabledColor: SECONDARY_PALETTE[500],
   todayTextColor: ACCENT_COLORS[300],
-  dayTextColor: '#F0F0F2',
+  dayTextColor: TEXT_COLORS.primary.dark,
   textDisabledColor: SECONDARY_PALETTE[500],
-  monthTextColor: '#F0F0F2',
+  monthTextColor: TEXT_COLORS.primary.dark,
   arrowColor: SECONDARY_PALETTE[200],
 };
 
