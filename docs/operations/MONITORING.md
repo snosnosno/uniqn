@@ -1,7 +1,7 @@
 # 모니터링 가이드
 
-최종 업데이트: 2026-03-30  
-기준 코드: `uniqn-mobile/src/services/observability/`, `functions/src/`
+최종 업데이트: 2026-04-18  
+기준 코드: `uniqn-mobile/src/services/observability/`, `uniqn-mobile/supabase/functions/`
 
 이 문서는 현재 구현된 관측성 수단만 정리합니다.
 
@@ -13,17 +13,19 @@
 - 화면 추적: `useNavigationTracking`
 - 로그인, 회원가입, 공고 조회, 지원, 출퇴근, 정산 등 주요 이벤트 추적
 
-### Sentry
+### Sentry (React Native)
 
 - 구현: `uniqn-mobile/src/services/observability/sentryService.ts`
 - canonical 이름: `sentryService`
-- 호환 alias: `crashlyticsService`
+- 호환 alias: `crashlyticsService` (레거시 별칭, 신규 코드에서는 `sentryService` 사용)
 - 초기화 진입점: `uniqn-mobile/app/_layout.tsx`
+- 크래시/에러 리포팅은 Sentry로 통합 (Firebase Crashlytics 제거됨)
 
 ### 성능
 
 - 구현: `uniqn-mobile/src/services/observability/performanceService.ts`
 - 화면/API/렌더 추적용 내부 추상화 제공
+- 백엔드 성능은 Supabase Logs + Sentry 트랜잭션으로 관측
 
 ### 세션
 
@@ -39,16 +41,18 @@
 
 ## 백엔드 관측성
 
-- Firebase Functions 로그
-- Firebase Console Auth / Firestore / Functions
-- Functions 내부 Sentry 유틸: `functions/src/utils/sentry.ts`
+- Supabase Edge Functions 로그 (`npx supabase functions logs`)
+- Supabase Dashboard — Auth / PostgreSQL / Edge Functions / Storage
+- PostgreSQL 쿼리 메트릭: Supabase Dashboard → Database → Query Performance
+- Edge Functions 내부 Sentry 유틸: `uniqn-mobile/supabase/functions/_shared/sentry.ts`
 
 ## 장애 확인 순서
 
 1. Sentry에서 최근 오류 확인
-2. `firebase functions:log` 확인
-3. 관리자 통계 화면에서 주요 수치 확인
-4. 최근 배포와 env 변경 여부 확인
+2. `npx supabase functions logs <function-name>` 확인
+3. Supabase Dashboard → Logs (Auth/DB/Storage) 확인
+4. 관리자 통계 화면에서 주요 수치 확인
+5. 최근 배포와 env 변경 여부 확인
 
 ## 운영 문서 범위 밖
 

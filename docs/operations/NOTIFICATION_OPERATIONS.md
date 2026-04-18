@@ -1,19 +1,20 @@
 # 알림 시스템 운영 가이드
 
-최종 업데이트: 2026-03-30  
-기준 코드: `functions/src/api/notifications.ts`, `functions/src/triggers/notifications.ts`, `functions/src/scheduled/cleanupExpiredTokens.ts`, `uniqn-mobile/src/services/notifications/`, `uniqn-mobile/src/components/notifications/NotificationSettings.tsx`
+최종 업데이트: 2026-04-18  
+기준 코드: `uniqn-mobile/supabase/functions/notifications/`, `uniqn-mobile/supabase/functions/_shared/notifications/`, `uniqn-mobile/src/services/notifications/`, `uniqn-mobile/src/components/notifications/NotificationSettings.tsx`
 
-모바일 푸시 알림의 현재 운영 기준은 `FCM + expo-notifications`입니다.
+모바일 푸시 알림의 현재 운영 기준은 `FCM + expo-notifications`입니다. 백엔드는 Supabase Edge Functions + PostgreSQL trigger로 구성되어 있습니다.
 
 ## 현재 구조
 
-- 서버는 Firebase Functions에서 알림 문서 생성, 발송, 미읽음 카운터 보정을 담당합니다.
+- 서버는 Supabase Edge Functions + PostgreSQL trigger에서 알림 레코드 생성, 발송, 미읽음 카운터 보정을 담당합니다.
 - 앱은 알림 목록 조회, 읽음 처리, 푸시 권한 요청, 디바이스 토큰 등록, 사용자 알림 설정 저장을 담당합니다.
+- FCM 토큰은 PostgreSQL `fcm_tokens` 테이블에 저장되며, RLS로 본인 토큰만 접근 가능합니다.
 - Android 푸시 채널은 `default`, `applications`, `reminders`, `settlement`, `announcements`를 사용합니다.
 
 ## 현재 배포 기준 Functions
 
-### Callable / onCall
+### Edge Functions (HTTP invoke)
 
 | 함수명 | 용도 |
 |---|---|
@@ -23,35 +24,39 @@
 | `decrementUnreadCounter` | 읽음/삭제 이후 미읽음 카운터 감소 |
 | `resetUnreadCounter` | 미읽음 카운터 재설정 |
 
-### Firestore 트리거
+### PostgreSQL 트리거 / Edge Function 핸들러
 
-| 함수명 | 트리거 요약 |
+PostgreSQL trigger 또는 Edge Function webhook에서 테이블 변경 이벤트를 수신하여 알림을 생성합니다.
+
+| 핸들러명 | 트리거 요약 |
 |---|---|
-| `onApplicationSubmitted` | 지원서 생성 |
-| `onApplicationStatusChanged` | 지원 상태 변경 |
-| `onScheduleCreated` | 근무 일정 생성 |
-| `onScheduleCancelled` | 근무 일정 취소 |
-| `onCheckInOut` | 출퇴근 기록 |
-| `onWorkTimeChanged` | 근무 시간 변경 |
-| `onReviewCreated` | 리뷰 생성 |
-| `onJobPostingUpdated` | 공고 수정 |
-| `onJobPostingCancelled` | 공고 취소 |
-| `onJobPostingClosed` | 공고 마감 |
-| `onNoShow` | 노쇼 처리 |
-| `onSettlementCompleted` | 정산 완료 |
+| `onApplicationSubmitted` | `applications` 테이블 INSERT |
+| `onApplicationStatusChanged` | `applications.status` UPDATE |
+| `onScheduleCreated` | `schedules` 테이블 INSERT |
+| `onScheduleCancelled` | `schedules.status` → `cancelled` |
+| `onCheckInOut` | `work_logs` 테이블 INSERT/UPDATE |
+| `onWorkTimeChanged` | `work_logs` 시간 UPDATE |
+| `onReviewCreated` | `reviews` 테이블 INSERT |
+| `onJobPostingUpdated` | `job_postings` UPDATE |
+| `onJobPostingCancelled` | `job_postings.status` → `cancelled` |
+| `onJobPostingClosed` | `job_postings.status` → `closed` |
+| `onNoShow` | 노쇼 처리 UPDATE |
+| `onSettlementCompleted` | `settlements.status` → `completed` |
 | `onNegativeSettlement` | 회수/음수 정산 알림 |
-| `onReportCreated` | 신고 생성 |
-| `onInquiryCreated` | 문의 생성 |
-| `onTournamentPostingCreated` | 대회 공고 생성 |
-| `onTournamentApprovalChange` | 대회 승인 상태 변경 |
-| `onNotificationRead` | 알림 읽음 처리 |
-| `onNotificationDeleted` | 알림 삭제 처리 |
+| `onReportCreated` | `reports` 테이블 INSERT |
+| `onInquiryCreated` | `inquiries` 테이블 INSERT |
+| `onTournamentPostingCreated` | `tournament_postings` 테이블 INSERT |
+| `onTournamentApprovalChange` | `tournament_postings.approval_status` UPDATE |
+| `onNotificationRead` | `notifications.read_at` UPDATE |
+| `onNotificationDeleted` | `notifications` 테이블 DELETE |
 
-### Scheduled
+### Scheduled (pg_cron)
 
-| 함수명 | 용도 |
+Supabase PostgreSQL의 `pg_cron` 확장으로 주기 작업을 실행합니다.
+
+| 작업명 | 용도 |
 |---|---|
-| `cleanupExpiredTokensScheduled` | 만료된 토큰 정리 |
+| `cleanupExpiredTokensScheduled` | 만료된 FCM 토큰 정리 (매일) |
 
 ## 앱 측 기준 구현
 
@@ -73,22 +78,22 @@
 ## 운영 명령
 
 ```bash
-cd functions
-firebase functions:list
-firebase functions:log --only onApplicationStatusChanged
-firebase functions:log --only onScheduleCreated
-firebase functions:log --only sendSystemAnnouncement
-firebase deploy --only functions
-firebase deploy --only functions:sendSystemAnnouncement
+cd uniqn-mobile
+npx supabase functions list
+npx supabase functions logs onApplicationStatusChanged
+npx supabase functions logs onScheduleCreated
+npx supabase functions logs sendSystemAnnouncement
+npx supabase functions deploy
+npx supabase functions deploy sendSystemAnnouncement
 ```
 
 ## 점검 순서
 
 ### 알림이 생성되지 않을 때
 
-1. `firebase functions:log --only <FUNCTION_NAME>`로 최근 오류를 확인합니다.
-2. Firestore `notifications` 문서가 실제로 생성되는지 봅니다.
-3. 해당 사용자 문서의 푸시 토큰이 살아 있는지 확인합니다.
+1. `npx supabase functions logs <FUNCTION_NAME>`로 최근 오류를 확인합니다.
+2. PostgreSQL `notifications` 테이블에 레코드가 실제로 생성되는지 확인합니다 (Supabase Dashboard → Table Editor).
+3. `fcm_tokens` 테이블에서 해당 사용자의 푸시 토큰이 살아 있는지 확인합니다.
 4. 앱에서 알림 설정이나 방해 금지 시간이 발송 체감에 영향을 주는지 확인합니다.
 
 ### 미읽음 카운터가 어긋날 때

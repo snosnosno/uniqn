@@ -144,7 +144,7 @@ export const NotificationList = memo(function NotificationList({
   return (
     <View className={`flex-1 bg-surface-page ${className}`}>
       {showHeader && notifications.length > 0 && (
-        <View className="flex-row items-center justify-between border-b border-secondary-100 bg-white px-4 py-2 dark:border-surface">
+        <View className="flex-row items-center justify-between border-b border-secondary-100 bg-surface-card px-4 py-2 dark:border-surface">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
@@ -198,7 +198,7 @@ export const NotificationList = memo(function NotificationList({
             </View>
           ) : null
         }
-        contentContainerClassName="bg-white"
+        contentContainerClassName="bg-surface-page"
       />
     </View>
   );

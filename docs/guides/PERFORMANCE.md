@@ -1,6 +1,6 @@
 # 성능 가이드
 
-최종 업데이트: 2026-03-30  
+최종 업데이트: 2026-04-18  
 기준 코드: `uniqn-mobile/src/lib/queryClient.ts`, `uniqn-mobile/src/lib/invalidationStrategy.ts`, `uniqn-mobile/src/hooks/`, `uniqn-mobile/src/repositories/`, `uniqn-mobile/src/services/offline/`
 
 이 문서는 현재 앱에서 실제 사용 중인 성능 패턴과 검증 포인트만 정리합니다.
@@ -10,8 +10,8 @@
 - 서버 상태 캐싱은 TanStack Query로 통일합니다.
 - 긴 목록은 `@shopify/flash-list` 사용을 우선 검토합니다.
 - 이미지는 `expo-image`를 우선 사용합니다.
-- Firestore 접근은 화면에서 직접 반복 호출하지 않고 `Repository -> Service -> Hook` 흐름을 유지합니다.
-- 오프라인과 재연결 처리, 일부 실시간 동기화는 공통 서비스와 훅에서 관리합니다.
+- Supabase(PostgreSQL) 접근은 화면에서 직접 반복 호출하지 않고 `Screen -> Hook -> Service -> Repository -> Supabase` 흐름을 유지합니다.
+- 오프라인과 재연결 처리, Supabase Realtime 기반 실시간 동기화는 공통 서비스와 훅에서 관리합니다.
 
 ## 기준 파일
 
@@ -41,16 +41,29 @@
 - Query Key는 `queryClient.ts`와 `invalidationStrategy.ts` 기준으로 관리합니다.
 - 낙관적 갱신을 추가할 때는 캐시 무효화와 오프라인 재시도 흐름을 함께 검토합니다.
 
+### PostgreSQL 쿼리 최적화
+
+- Repository 계층에서 필요한 컬럼만 `select('col1, col2')`로 지정해 페이로드를 줄입니다.
+- 목록 화면은 Supabase `range()` 기반 페이지네이션을 우선 검토합니다.
+- 필터/정렬 조건이 자주 쓰이는 컬럼은 인덱스 여부를 DB 스키마에서 확인합니다.
+- N+1 쿼리가 의심되면 `select('..., related(*)')` 형태의 조인 조회로 통합합니다.
+
+### Edge Functions cold start
+
+- Supabase Edge Functions는 cold start 시 지연이 발생할 수 있으므로, 사용자 동기 흐름의 critical path에는 가급적 직접 DB 조회를 우선합니다.
+- Edge Function은 권한 검증, 트랜잭션 래핑, 외부 API 호출처럼 서버 책임이 명확한 경우에만 사용합니다.
+- 응답 페이로드는 필요한 필드만 반환하여 함수 실행 시간과 네트워크 비용을 줄입니다.
+
 ### 실시간과 오프라인
 
-- 실시간 구독은 `useRealtimeQuery`, `shared/realtime`, 오프라인 서비스와 함께 검토합니다.
+- 실시간 구독은 Supabase Realtime을 래핑한 `useRealtimeQuery`, `shared/realtime`, 오프라인 서비스와 함께 검토합니다.
 - 앱 포그라운드 전환과 네트워크 상태는 Query 생명주기와 맞물려야 합니다.
 
 ## 새 화면 추가 체크리스트
 
 1. 긴 목록이면 `FlashList`가 더 적합한지 먼저 확인합니다.
 2. 이미지가 있다면 `expo-image` 또는 기존 이미지 래퍼를 우선 재사용합니다.
-3. Firebase 직접 호출 대신 기존 Repository, Service, Hook을 재사용합니다.
+3. Supabase 직접 호출 대신 기존 Repository, Service, Hook을 재사용합니다.
 4. Query Key, 캐시 무효화, 빈 상태, 오류 상태를 함께 설계합니다.
 5. 실시간 갱신이 필요하면 오프라인 재연결 동작까지 같이 확인합니다.
 

@@ -138,7 +138,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             className={`mb-2 text-base font-sans-semibold ${
               isCancelled
                 ? 'text-secondary-400 dark:text-secondary-500 line-through'
-                : 'text-secondary-900 dark:text-off-white'
+                : 'text-content-primary dark:text-off-white'
             }`}
             numberOfLines={1}
           >

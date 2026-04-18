@@ -5,17 +5,17 @@
 
 # 💼 포인트 시스템 운영 가이드
 
-**최종 업데이트**: 2026년 3월 26일
-**버전**: v2.0.0 (하트/다이아 포인트 시스템)
+**최종 업데이트**: 2026-04-18 (Supabase 이전 반영)
+**버전**: v2.1.0 (하트/다이아 포인트 시스템, Supabase 기반)
 **상태**: 📋 **운영 초안 / 미구현**
 **프로젝트**: UNIQN 포인트 시스템
 
 > ⚠️ 현재 저장소의 런타임 코드에는 이 문서가 전제하는 결제/포인트 흐름이 완전히 구현되어 있지 않습니다.
 > 이 문서는 운영 초안입니다.
 >
-> ⚠️ 2026년 3월 26일 기준 `cleanupExpiredHearts`, `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday`, `dailyAttendanceReset`, `archiveOldData`는 현재 `tholdem-ebc18` 배포 함수 목록에 없습니다.
-> 아래 Cloud Scheduler 예시는 운영 중인 실제 배포 상태가 아니라 결제 시스템 초안에 남아 있는 레거시 설계 예시로 취급하세요.
-> 현재 감사 로그 영향 판단과 후속 계획은 [2026-03-26-cloud-scheduler-audit-log-response.md](./2026-03-26-cloud-scheduler-audit-log-response.md)를 기준으로 확인합니다.
+> ⚠️ 2026년 3월 26일 기준 `cleanupExpiredHearts`, `heartExpiry7Days`, `heartExpiry3Days`, `heartExpiryToday`, `dailyAttendanceReset`, `archiveOldData`는 과거 Firebase Functions 설계에 정의되어 있었으나 현재 Supabase Edge Functions 배포 목록에는 존재하지 않습니다.
+> 아래 pg_cron 예시는 운영 중인 실제 배포 상태가 아니라 결제 시스템 초안에 남아 있는 레거시 설계 예시로 취급하세요.
+> 현재 감사 로그 영향 판단과 후속 계획은 [2026-03-26-cloud-scheduler-audit-log-response.md](./2026-03-26-cloud-scheduler-audit-log-response.md)를 기준으로 확인합니다 (Firebase Cloud Scheduler 기준 당시 기록).
 >
 > **📋 관련 문서**:
 > - 📊 **포인트 정의 & 가격표 (마스터)**: [MODEL_B_CHIP_SYSTEM_FINAL.md](../features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md)
@@ -61,8 +61,7 @@
 
 ### 주요 도구
 
-- **Firebase Console**: Firestore 데이터 관리, Functions 모니터링
-- **Google Cloud Console**: Cloud Scheduler, Logging, Monitoring
+- **Supabase Dashboard**: PostgreSQL 데이터 관리, Edge Functions 모니터링, Logs, pg_cron 작업 관리
 - **RevenueCat Dashboard**: 결제 내역 조회, 구독 관리
 - **App Store Connect**: iOS 환불 처리
 - **Google Play Console**: Android 환불 처리
@@ -121,57 +120,58 @@
 | ₩50,000 | 167 💎 | +23 💎 | **190 💎** | +14% |
 | ₩100,000 | 333 💎 | +67 💎 | **400 💎** | +20% |
 
-### Firestore 구조
+### PostgreSQL 스키마
 
-```typescript
-// users/{userId}
-{
-  points: {
-    hearts: number,          // 총 하트 잔액 (heartBatches 합계)
-    diamonds: number,        // 총 다이아 잔액
-    updatedAt: Timestamp
-  }
-}
+```sql
+-- users 테이블 (points 필드는 별도 컬럼)
+-- hearts_balance / diamonds_balance: 총 잔액 (heart_batches 합계)
+-- points_updated_at: 포인트 갱신 시각
 
-// users/{userId}/heartBatches/{batchId}
-{
-  amount: number,            // 획득 수량
-  remainingAmount: number,   // 남은 수량
-  source: HeartSource,       // 획득 경로
-  acquiredAt: Timestamp,     // 획득일
-  expiresAt: Timestamp       // 만료일 (획득일 + 90일)
-}
+-- heart_batches 테이블
+CREATE TABLE heart_batches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  amount integer NOT NULL,                   -- 획득 수량
+  remaining_amount integer NOT NULL,         -- 남은 수량
+  source text NOT NULL,                      -- HeartSource (signup/daily/review/invite 등)
+  acquired_at timestamptz NOT NULL DEFAULT now(),  -- 획득일
+  expires_at timestamptz NOT NULL            -- 만료일 (acquired_at + 90 days)
+);
 
-// purchases/{purchaseId}
-{
-  userId: string,
-  packageId: 'starter' | 'basic' | 'popular' | 'premium',
-  diamonds: number,
-  bonusDiamonds: number,
-  totalDiamonds: number,
-  price: number,
-  revenueCatTransactionId: string,
-  store: 'app_store' | 'play_store',
-  productId: string,
-  environment: 'sandbox' | 'production',
-  status: 'pending' | 'completed' | 'failed' | 'refunded',
-  createdAt: Timestamp,
-  completedAt?: Timestamp
-}
+-- purchases 테이블
+CREATE TABLE purchases (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  package_id text CHECK (package_id IN ('starter','basic','popular','premium')),
+  diamonds integer NOT NULL,
+  bonus_diamonds integer DEFAULT 0,
+  total_diamonds integer NOT NULL,
+  price integer NOT NULL,
+  revenuecat_transaction_id text UNIQUE,
+  store text CHECK (store IN ('app_store','play_store')),
+  product_id text NOT NULL,
+  environment text CHECK (environment IN ('sandbox','production')),
+  status text CHECK (status IN ('pending','completed','failed','refunded')) DEFAULT 'pending',
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz
+);
 
-// users/{userId}/pointTransactions/{transactionId}
-{
-  type: 'earn' | 'spend' | 'refund' | 'expire',
-  pointType: 'heart' | 'diamond',
-  amount: number,
-  source?: HeartSource,
-  purchaseId?: string,
-  jobPostingId?: string,
-  postingType?: 'regular' | 'urgent' | 'fixed',
-  balanceAfter: { hearts: number, diamonds: number },
-  createdAt: Timestamp,
-  description?: string
-}
+-- point_transactions 테이블
+CREATE TABLE point_transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  type text CHECK (type IN ('earn','spend','refund','expire')),
+  point_type text CHECK (point_type IN ('heart','diamond')),
+  amount integer NOT NULL,
+  source text,
+  purchase_id uuid REFERENCES purchases(id),
+  job_posting_id uuid REFERENCES job_postings(id),
+  posting_type text CHECK (posting_type IN ('regular','urgent','fixed')),
+  balance_hearts_after integer NOT NULL,
+  balance_diamonds_after integer NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  description text
+);
 ```
 
 ---
@@ -194,7 +194,7 @@
   - com.uniqn.diamond.100000 (₩100,000 - 400💎)
 
 Webhook:
-  URL: https://us-central1-tholdem-ebc18.cloudfunctions.net/handleRevenueCatWebhook
+  URL: https://<supabase-project-ref>.supabase.co/functions/v1/handleRevenueCatWebhook
   Events: INITIAL_PURCHASE, NON_RENEWING_PURCHASE, REFUND
 ```
 
@@ -209,7 +209,8 @@ Webhook:
 ### Webhook 처리
 
 ```typescript
-// Cloud Functions: handleRevenueCatWebhook
+// Supabase Edge Function: handleRevenueCatWebhook
+// 경로: uniqn-mobile/supabase/functions/handleRevenueCatWebhook/index.ts
 
 지원 이벤트:
 - INITIAL_PURCHASE: 첫 구매 → 다이아 지급
@@ -219,8 +220,8 @@ Webhook:
 처리 순서:
 1. 서명 검증 (x-revenuecat-signature)
 2. 이벤트 타입별 분기
-3. Firestore 트랜잭션으로 포인트 업데이트
-4. 구매/거래 기록 저장
+3. PostgreSQL 트랜잭션으로 포인트 업데이트 (RPC 함수 또는 Service Role 사용)
+4. 구매/거래 기록 저장 (purchases, point_transactions 테이블)
 5. 응답 200 OK
 ```
 
@@ -262,10 +263,10 @@ Webhook:
 // 자동 처리 흐름
 1. RevenueCat에서 REFUND 이벤트 수신
 2. 해당 구매 건의 다이아 수량 확인
-3. Firestore 트랜잭션:
-   - users/{userId}.points.diamonds 차감
-   - purchases/{purchaseId}.status = 'refunded'
-   - pointTransactions 기록 추가
+3. PostgreSQL 트랜잭션 (RPC 함수 내부):
+   - users.diamonds_balance 차감
+   - purchases.status = 'refunded'
+   - point_transactions 기록 추가
 4. 사용자에게 알림 (선택)
 ```
 
@@ -280,9 +281,9 @@ Webhook:
   - 고객 민원 접수 후 스토어 환불 미반영
 
 처리 절차:
-  1. purchases 컬렉션에서 해당 거래 확인
+  1. purchases 테이블에서 해당 거래 확인
   2. 다이아 잔액 확인 (마이너스 가능)
-  3. 수동 차감 + 거래 기록
+  3. 수동 차감 + 거래 기록 (point_transactions INSERT)
   4. 고객에게 결과 안내
 ```
 
@@ -320,45 +321,44 @@ Webhook:
 
 ### 2. 조사 절차
 
-**Firestore 쿼리**:
+**PostgreSQL 쿼리** (Supabase Dashboard → SQL Editor 또는 `supabase.from()`):
 
 ```typescript
 // 사용자 결제 이력
-const purchases = await db.collection('purchases')
-  .where('userId', '==', suspiciousUserId)
-  .orderBy('createdAt', 'desc')
-  .get();
+const { data: purchases } = await supabase
+  .from('purchases')
+  .select('*')
+  .eq('user_id', suspiciousUserId)
+  .order('created_at', { ascending: false });
 
 // 하트 획득 이력
-const heartBatches = await db.collection('users')
-  .doc(suspiciousUserId)
-  .collection('heartBatches')
-  .orderBy('acquiredAt', 'desc')
-  .get();
+const { data: heartBatches } = await supabase
+  .from('heart_batches')
+  .select('*')
+  .eq('user_id', suspiciousUserId)
+  .order('acquired_at', { ascending: false });
 
 // 포인트 거래 내역
-const transactions = await db.collection('users')
-  .doc(suspiciousUserId)
-  .collection('pointTransactions')
-  .orderBy('createdAt', 'desc')
-  .get();
+const { data: transactions } = await supabase
+  .from('point_transactions')
+  .select('*')
+  .eq('user_id', suspiciousUserId)
+  .order('created_at', { ascending: false });
 ```
 
 ### 3. 대응 조치
 
 **경고 → 정지 → 영구 차단**:
 
-```typescript
-// users/{userId}
-{
-  accountStatus: 'active' | 'warned' | 'suspended' | 'banned',
-  warningCount: number,
-  warningReasons: string[],
-  suspendedAt?: Timestamp,
-  suspendedReason?: string,
-  bannedAt?: Timestamp,
-  bannedReason?: string
-}
+```sql
+-- users 테이블 스키마 (부정 계정 관리 컬럼)
+-- account_status: 'active' | 'warned' | 'suspended' | 'banned'
+-- warning_count: integer
+-- warning_reasons: text[]
+-- suspended_at: timestamptz
+-- suspended_reason: text
+-- banned_at: timestamptz
+-- banned_reason: text
 ```
 
 | 단계 | 조건 | 조치 |
@@ -380,32 +380,34 @@ const transactions = await db.collection('users')
 - **Active Subscribers**: (구독 모델 사용 시)
 - **Churn Rate**: (구독 모델 사용 시)
 
-### 2. Firebase 모니터링
+### 2. Supabase 모니터링
 
-**Cloud Functions**:
+**Edge Functions**:
 
 ```bash
 # 함수별 로그 확인
-gcloud functions logs read handleRevenueCatWebhook --limit 50
-gcloud functions logs read grantHearts --limit 50
-gcloud functions logs read deductPoints --limit 50
+npx supabase functions logs handleRevenueCatWebhook
+npx supabase functions logs grantHearts
+npx supabase functions logs deductPoints
 ```
+
+또는 Supabase Dashboard → Edge Functions → Logs에서 실시간 스트림 확인.
 
 **알림 설정**:
 
 | 조건 | 알림 |
 |------|------|
-| Webhook 함수 에러율 > 1% | Slack + 이메일 |
+| Edge Function 에러율 > 1% | Slack + 이메일 |
 | 일일 매출 50% 감소 | 이메일 |
 | 대량 환불 (10건+/시간) | Slack + SMS |
 
-### 3. Scheduled Functions 모니터링
+### 3. Scheduled (pg_cron) 모니터링
 
-> 참고: 아래 작업명은 현재 `tholdem-ebc18` 배포 기준 활성 scheduled function 목록이 아닙니다.
-> 현재 활성 scheduled function은 Cloud Scheduler 감사 로그 대응 기록 문서를 기준으로 확인합니다.
+> 참고: 아래 작업명은 현재 Supabase 배포 기준 활성 pg_cron 작업 목록이 아닙니다.
+> 현재 활성 scheduled 작업은 Cloud Scheduler 감사 로그 대응 기록 문서(당시 Firebase 기반)를 기준으로 확인하고, Supabase 이전 이후 재등록된 pg_cron 작업만 신뢰합니다.
 
 ```yaml
-일일 실행:
+일일 실행 (pg_cron):
   - cleanupExpiredHearts (00:00 KST): 만료 하트 정리
   - heartExpiry7Days (09:00 KST): 7일 전 만료 알림
   - heartExpiry3Days (09:00 KST): 3일 전 만료 알림
@@ -413,7 +415,8 @@ gcloud functions logs read deductPoints --limit 50
   - dailyAttendanceReset (00:00 KST): 출석 체크 리셋
 
 확인 방법:
-  Google Cloud Console → Cloud Scheduler → 각 작업 실행 이력
+  Supabase Dashboard → Database → Cron Jobs → 각 작업 실행 이력
+  또는 SQL: SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 50;
 ```
 
 ---
@@ -430,7 +433,7 @@ gcloud functions logs read deductPoints --limit 50
 
 ```bash
 # Step 1: Webhook 로그 확인
-gcloud functions logs read handleRevenueCatWebhook --limit 100
+npx supabase functions logs handleRevenueCatWebhook
 
 # Step 2: RevenueCat 대시보드에서 이벤트 재전송
 RevenueCat Dashboard → Events → 실패 이벤트 → Retry
@@ -446,19 +449,24 @@ Admin 페이지 → 사용자 관리 → 다이아 수동 지급
 
 **증상**:
 - 만료된 하트가 사용 가능 상태
-- cleanupExpiredHearts 함수 실패
+- cleanupExpiredHearts pg_cron 작업 실패
 
 **대응**:
 
+```sql
+-- Step 1: pg_cron 작업 상태 확인
+SELECT * FROM cron.job WHERE jobname = 'cleanupExpiredHearts';
+SELECT * FROM cron.job_run_details
+  WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'cleanupExpiredHearts')
+  ORDER BY start_time DESC LIMIT 10;
+
+-- Step 2: 수동 실행 (해당 함수를 직접 호출)
+SELECT cleanup_expired_hearts();
+```
+
 ```bash
-# Step 1: Scheduler 상태 확인
-gcloud scheduler jobs describe cleanupExpiredHearts
-
-# Step 2: 수동 실행
-gcloud scheduler jobs run cleanupExpiredHearts
-
-# Step 3: 함수 로그 확인
-gcloud functions logs read cleanupExpiredHearts --limit 50
+# Step 3: Edge Function 로그 확인 (Edge Function에서 호출하는 경우)
+npx supabase functions logs cleanupExpiredHearts
 ```
 
 ### 3. 대량 어뷰징 공격
@@ -490,8 +498,8 @@ gcloud functions logs read cleanupExpiredHearts --limit 50
 #### 09:00 - 대시보드 확인
 
 - [ ] RevenueCat 전일 매출 확인
-- [ ] Firebase Functions 에러율 확인
-- [ ] Scheduled Functions 실행 확인
+- [ ] Supabase Edge Functions 에러율 확인
+- [ ] pg_cron 작업 실행 확인 (`cron.job_run_details`)
 - [ ] 고객 문의 확인
 
 #### 10:00, 15:00 - 결제 이슈 처리
@@ -547,8 +555,8 @@ gcloud functions logs read cleanupExpiredHearts --limit 50
 
 #### 15일 - 시스템 점검
 
-- [ ] Scheduled Functions 점검
-- [ ] Firebase 사용량 확인
+- [ ] pg_cron 작업 점검
+- [ ] Supabase 사용량 확인 (DB 크기, Edge Function 호출 수, Auth MAU)
 - [ ] RevenueCat API 키 로테이션 (필요 시)
 
 ---
@@ -558,41 +566,43 @@ gcloud functions logs read cleanupExpiredHearts --limit 50
 ### 백업 정책
 
 ```yaml
-자동 백업 (Firestore Export):
-  - 매일 02:00 KST
-  - 보관: 30일
+자동 백업 (Supabase PITR / Daily Backup):
+  - 매일 02:00 KST (Pro 플랜 이상 자동)
+  - 보관: 플랜별 (Free 7일 / Pro 7일 / Team 14일 / Enterprise 30일)
+  - PITR (Point-in-Time Recovery): Pro 플랜 이상 지원
 
-백업 대상:
-  - purchases
-  - users (points 필드 포함)
-  - users/*/heartBatches
-  - users/*/pointTransactions
+백업 대상 (PostgreSQL 전체 DB):
+  - purchases 테이블
+  - users 테이블 (hearts_balance, diamonds_balance 컬럼 포함)
+  - heart_batches 테이블
+  - point_transactions 테이블
 ```
 
 ### 데이터 정리
 
-> 참고: `archiveOldData`는 현재 저장소/배포 기준 활성 함수가 아닙니다.
-> 아래 절차는 운영 중인 실제 함수 목록이 아니라 결제 시스템 초안 메모입니다.
+> 참고: `archiveOldData`는 현재 저장소/배포 기준 활성 pg_cron 작업이 아닙니다.
+> 아래 절차는 운영 중인 실제 pg_cron 작업 목록이 아니라 결제 시스템 초안 메모입니다.
 
 ```yaml
 정리 대상:
-  - 만료된 heartBatches (90일 후)
-  - 오래된 pointTransactions (1년 후)
+  - 만료된 heart_batches (90일 후)
+  - 오래된 point_transactions (1년 후)
 
 정리 방법:
-  - Cloud Scheduler → archiveOldData 함수 실행
-  - Cloud Storage로 아카이브 후 Firestore에서 삭제
+  - pg_cron → archive_old_data() PostgreSQL 함수 실행
+  - Supabase Storage로 아카이브 후 PostgreSQL에서 삭제
 ```
 
 ### 복구 절차
 
 ```bash
-# 특정 시점으로 복구
-gcloud firestore import gs://tholdem-ebc18-backups/YYYYMMDD
+# Supabase Dashboard → Database → Backups
+# - 일일 백업: 특정 날짜 선택 후 Restore
+# - PITR: 특정 시점(초 단위)으로 복구
 
-# 특정 컬렉션만 복구
-gcloud firestore import gs://tholdem-ebc18-backups/YYYYMMDD \
-  --collection-ids=purchases
+# CLI로 수동 덤프 / 복구
+npx supabase db dump --file backup-YYYYMMDD.sql
+npx supabase db reset --file backup-YYYYMMDD.sql  # 주의: 전체 DB 초기화
 ```
 
 ---
@@ -673,8 +683,8 @@ Google Play → 계정 → 결제 및 구독 → 예산 및 내역 → 환불 �
 #### 일일 체크리스트
 
 - [ ] RevenueCat 대시보드 - 매출/에러 확인
-- [ ] Cloud Functions 에러율 확인 (< 1%)
-- [ ] Scheduled Functions 실행 확인
+- [ ] Supabase Edge Functions 에러율 확인 (< 1%)
+- [ ] pg_cron 작업 실행 확인
 - [ ] 고객 문의 응대
 
 #### 주간 체크리스트
@@ -687,7 +697,7 @@ Google Play → 계정 → 결제 및 구독 → 예산 및 내역 → 환불 �
 
 - [ ] 월간 정산 보고서 작성
 - [ ] 데이터 아카이브 실행
-- [ ] Scheduled Functions 점검
+- [ ] pg_cron 작업 점검
 - [ ] API 키 로테이션 검토
 
 ### B. 긴급 연락처
@@ -696,7 +706,7 @@ Google Play → 계정 → 결제 및 구독 → 예산 및 내역 → 환불 �
 |------|--------|
 | 시스템 관리자 | admin@uniqn.com |
 | RevenueCat 지원 | support@revenuecat.com |
-| Firebase 지원 | firebase-support@google.com |
+| Supabase 지원 | https://supabase.com/dashboard/support |
 | Apple 개발자 지원 | https://developer.apple.com/contact/ |
 | Google Play 지원 | https://support.google.com/googleplay/android-developer/ |
 
@@ -709,6 +719,6 @@ Google Play → 계정 → 결제 및 구독 → 예산 및 내역 → 환불 �
 
 ---
 
-**문서 버전**: v2.0.0
-**최종 업데이트**: 2026-03-26
+**문서 버전**: v2.1.0 (Supabase 이전 반영)
+**최종 업데이트**: 2026-04-18
 **작성자**: UNIQN 개발팀
