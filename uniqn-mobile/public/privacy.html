@@ -109,7 +109,7 @@
         <li><strong>필수 수집 항목</strong>
           <ul>
             <li>회원가입: 이메일, 이름, 휴대폰 번호, 생년월일</li>
-            <li>본인인증: CI/DI (암호화 저장)</li>
+            <li>본인인증: 이름, 성별, 생년월일, 휴대폰 번호, 내/외국인 정보, 암호화된 이용자 확인값(CI), 중복가입 확인값(DI)</li>
           </ul>
         </li>
         <li><strong>선택 수집 항목</strong>
@@ -174,7 +174,7 @@
       <ol>
         <li><strong>관리적 조치</strong>: 개인정보 취급 직원의 최소화, 정기적 직원 교육</li>
         <li><strong>기술적 조치</strong>: 개인정보 암호화 (SSL/TLS), 해킹 등에 대비한 보안 시스템, 접근권한 관리 및 접근통제</li>
-        <li><strong>물리적 조치</strong>: 클라우드 서버 보안 (Google Cloud Platform)</li>
+        <li><strong>물리적 조치</strong>: 클라우드 서버 보안 (Supabase, Cloudflare)</li>
       </ol>
     </div>
 
@@ -214,8 +214,13 @@
             <td>위탁 계약 종료 시</td>
           </tr>
           <tr>
+            <td>Cloudflare, Inc. (Cloudflare Pages)</td>
+            <td>웹 호스팅 및 정적 파일 전송</td>
+            <td>위탁 계약 종료 시</td>
+          </tr>
+          <tr>
             <td>Expo, Inc. (Expo Push Notifications)</td>
-            <td>푸시 알림 발송</td>
+            <td>푸시 알림 발송 (내부적으로 Apple APNs 및 Google FCM 경유)</td>
             <td>발송 완료 시 즉시 삭제</td>
           </tr>
           <tr>
@@ -317,9 +322,9 @@
     <div class="footer">
       <p>
         <strong>부칙</strong><br>
-        - 공고일: 2025년 1월 25일<br>
-        - 시행일: 2025년 2월 1일<br>
-        - 버전: 1.0
+        - 공고일: 2026년 4월 10일<br>
+        - 시행일: 2026년 4월 10일<br>
+        - 버전: 1.1
       </p>
     </div>
   </div>

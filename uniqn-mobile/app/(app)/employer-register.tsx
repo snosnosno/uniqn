@@ -20,9 +20,10 @@ import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-
-const EMPLOYER_TERMS_VERSION = 'v3-2026-03-22';
-const EMPLOYER_LIABILITY_WAIVER_VERSION = 'v3-2026-03-22';
+import {
+  EMPLOYER_TERMS_VERSION_TAG as EMPLOYER_TERMS_VERSION,
+  LIABILITY_WAIVER_VERSION_TAG as EMPLOYER_LIABILITY_WAIVER_VERSION,
+} from '@/constants/legal';
 
 // ============================================================================
 // Sub-components
