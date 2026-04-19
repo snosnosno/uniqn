@@ -82,3 +82,29 @@
 - 데모 데이터 시드 마이그레이션: `uniqn-mobile/supabase/migrations/20260419031905_seed_app_review_accounts.sql`
 - 마이그레이션 재적용으로 데이터 복구 가능 (멱등성 보장)
 - 비밀번호 정기 로테이션 권장 (분기 1회)
+
+### 공고 `schedule` jsonb shape 주의
+
+`job_postings.schedule`는 앱이 `serializeJobPostingV3` (src/domains/job-posting/serialization.ts) 로 직렬화한 정확한 shape이어야 일별 탭 필터에 공고가 나타남:
+
+```json
+{
+  "kind": "dated",
+  "primaryDate": "YYYY-MM-DD",
+  "allDates": ["YYYY-MM-DD", ...],
+  "requirements": [
+    {
+      "date": "YYYY-MM-DD",
+      "timeSlots": [
+        {
+          "startTime": "HH:MM",
+          "roles": [{ "role": "dealer|floor|...", "count": N, "filled": 0 }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+- `requirements[].date`가 비어 있으면 `matchesPostingDate()` (src/domains/job-posting/projections.ts) 가 항상 false 반환 → 일별 탭에 안 보임.
+- 수동 INSERT 시 `work_dates` text[] 배열도 `requirements[].date` 와 동일하게 유지해야 DB 레벨 필터도 동작.

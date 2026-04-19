@@ -206,74 +206,199 @@ ON CONFLICT (id) DO UPDATE SET
 -- =========================================================================
 -- Part 3a: job_postings (employer 소유 — 3건)
 -- =========================================================================
--- 실제 컬럼: owner_id (uuid), total_positions (int), location (jsonb NOT NULL)
--- work_dates (text[]), last_work_date (date)
--- start_date/end_date 컬럼 없음 → work_dates 배열로 대체
+-- 앱 런타임이 생성하는 정확한 shape 복제 (serialization.ts + draftAdapter.ts).
+--
+-- 핵심 조건 (일별 탭 필터가 공고를 찾으려면 모두 만족해야 함):
+--   1. schedule.kind = 'dated' (fixed 공고가 아님)
+--   2. schedule.requirements[].date 배열에 모든 근무 날짜 존재 (YYYY-MM-DD)
+--   3. schedule.allDates = requirements[].date 과 동일한 배열
+--   4. schedule.primaryDate = requirements[0].date
+--   5. work_dates (text[]) 컬럼도 동일한 날짜 배열로 유지 (DB 검색 최적화)
+--
+-- 참고: jsonb 컬럼(location/schedule/role_catalog/compensation/questions/stats)은
+--   camelCase 유지. toSnakeCase는 top-level 컬럼명만 변환한다.
 
 INSERT INTO public.job_postings (
-  id,
-  owner_id,
-  title,
-  description,
-  location,
-  schedule,
-  work_dates,
-  last_work_date,
-  total_positions,
-  status,
-  created_at,
-  updated_at
+  id, schema_version, owner_id, owner_name, title, description,
+  location, schedule, work_date, work_dates, last_work_date,
+  role_keys, total_positions, filled_positions, view_count,
+  role_catalog, compensation, questions, stats,
+  status, posting_type, contact_phone, tags,
+  created_at, updated_at
 ) VALUES
+  -- 공고 1: 강남 포커룸 주말 스태프 (7/14일 후, 일요일 기준)
   (
     '10000001-0000-4000-a000-000000000001',
+    3,
     'b2222222-2222-4222-b222-222222222222',
+    '심사용 구인자',
     '강남 포커룸 주말 스태프',
     '주말 야간 딜러/플로어 모집. 경력 무관, 친절 교육 제공.',
-    jsonb_build_object('address', '서울 강남구 역삼동', 'lat', 37.5012, 'lng', 127.0396),
-    '{}'::jsonb,
+    jsonb_build_object('name', '강남 포커룸', 'district', '서울 강남구 역삼동'),
+    jsonb_build_object(
+      'kind', 'dated',
+      'primaryDate', to_char((NOW() + INTERVAL '7 days')::date, 'YYYY-MM-DD'),
+      'allDates', jsonb_build_array(
+        to_char((NOW() + INTERVAL '7 days')::date, 'YYYY-MM-DD'),
+        to_char((NOW() + INTERVAL '14 days')::date, 'YYYY-MM-DD')
+      ),
+      'requirements', jsonb_build_array(
+        jsonb_build_object(
+          'date', to_char((NOW() + INTERVAL '7 days')::date, 'YYYY-MM-DD'),
+          'timeSlots', jsonb_build_array(
+            jsonb_build_object(
+              'startTime', '19:00',
+              'roles', jsonb_build_array(
+                jsonb_build_object('role', 'dealer', 'count', 3, 'filled', 0),
+                jsonb_build_object('role', 'floor',  'count', 2, 'filled', 0)
+              )
+            )
+          )
+        ),
+        jsonb_build_object(
+          'date', to_char((NOW() + INTERVAL '14 days')::date, 'YYYY-MM-DD'),
+          'timeSlots', jsonb_build_array(
+            jsonb_build_object(
+              'startTime', '19:00',
+              'roles', jsonb_build_array(
+                jsonb_build_object('role', 'dealer', 'count', 3, 'filled', 0),
+                jsonb_build_object('role', 'floor',  'count', 2, 'filled', 0)
+              )
+            )
+          )
+        )
+      )
+    ),
+    to_char((NOW() + INTERVAL '7 days')::date, 'YYYY-MM-DD'),
     ARRAY[
-      (NOW() + INTERVAL '7 days')::date::text,
-      (NOW() + INTERVAL '14 days')::date::text
+      to_char((NOW() + INTERVAL '7 days')::date, 'YYYY-MM-DD'),
+      to_char((NOW() + INTERVAL '14 days')::date, 'YYYY-MM-DD')
     ],
     (NOW() + INTERVAL '14 days')::date,
-    3,
-    'active',
-    NOW(),
-    NOW()
+    ARRAY['dealer', 'floor'],
+    5, 0, 0,
+    jsonb_build_array(
+      jsonb_build_object('role', 'dealer', 'salary', jsonb_build_object('type', 'hourly', 'amount', 25000)),
+      jsonb_build_object('role', 'floor',  'salary', jsonb_build_object('type', 'hourly', 'amount', 25000))
+    ),
+    jsonb_build_object('mode', 'shared', 'defaultSalary', jsonb_build_object('type', 'hourly', 'amount', 25000)),
+    jsonb_build_object('items', jsonb_build_array()),
+    jsonb_build_object(
+      'totalApplicants', 0, 'activeApplicants', 0,
+      'confirmedApplicants', 0, 'cancellationPendingApplicants', 0,
+      'filledPositions', 0
+    ),
+    'active', 'regular', '+82-2-1234-5678', ARRAY[]::text[],
+    NOW(), NOW()
   ),
+  -- 공고 2: 분당 포커룸 평일 딜러 (2/5일 후 — 마감 임박)
   (
     '10000002-0000-4000-a000-000000000002',
+    3,
     'b2222222-2222-4222-b222-222222222222',
+    '심사용 구인자',
     '분당 포커룸 평일 딜러',
     '평일 저녁 딜러 급구. 마감 임박.',
-    jsonb_build_object('address', '경기 성남시 분당구', 'lat', 37.3595, 'lng', 127.1050),
-    '{}'::jsonb,
+    jsonb_build_object('name', '분당 포커룸', 'district', '경기 성남시 분당구'),
+    jsonb_build_object(
+      'kind', 'dated',
+      'primaryDate', to_char((NOW() + INTERVAL '2 days')::date, 'YYYY-MM-DD'),
+      'allDates', jsonb_build_array(
+        to_char((NOW() + INTERVAL '2 days')::date, 'YYYY-MM-DD'),
+        to_char((NOW() + INTERVAL '5 days')::date, 'YYYY-MM-DD')
+      ),
+      'requirements', jsonb_build_array(
+        jsonb_build_object(
+          'date', to_char((NOW() + INTERVAL '2 days')::date, 'YYYY-MM-DD'),
+          'timeSlots', jsonb_build_array(
+            jsonb_build_object(
+              'startTime', '18:00',
+              'roles', jsonb_build_array(
+                jsonb_build_object('role', 'dealer', 'count', 2, 'filled', 0)
+              )
+            )
+          )
+        ),
+        jsonb_build_object(
+          'date', to_char((NOW() + INTERVAL '5 days')::date, 'YYYY-MM-DD'),
+          'timeSlots', jsonb_build_array(
+            jsonb_build_object(
+              'startTime', '18:00',
+              'roles', jsonb_build_array(
+                jsonb_build_object('role', 'dealer', 'count', 2, 'filled', 0)
+              )
+            )
+          )
+        )
+      )
+    ),
+    to_char((NOW() + INTERVAL '2 days')::date, 'YYYY-MM-DD'),
     ARRAY[
-      (NOW() + INTERVAL '2 days')::date::text,
-      (NOW() + INTERVAL '5 days')::date::text
+      to_char((NOW() + INTERVAL '2 days')::date, 'YYYY-MM-DD'),
+      to_char((NOW() + INTERVAL '5 days')::date, 'YYYY-MM-DD')
     ],
     (NOW() + INTERVAL '5 days')::date,
-    2,
-    'active',
-    NOW(),
-    NOW()
+    ARRAY['dealer'],
+    2, 0, 0,
+    jsonb_build_array(
+      jsonb_build_object('role', 'dealer', 'salary', jsonb_build_object('type', 'hourly', 'amount', 22000))
+    ),
+    jsonb_build_object('mode', 'shared', 'defaultSalary', jsonb_build_object('type', 'hourly', 'amount', 22000)),
+    jsonb_build_object('items', jsonb_build_array()),
+    jsonb_build_object(
+      'totalApplicants', 0, 'activeApplicants', 0,
+      'confirmedApplicants', 0, 'cancellationPendingApplicants', 0,
+      'filledPositions', 0
+    ),
+    'active', 'regular', '+82-2-5678-1234', ARRAY[]::text[],
+    NOW(), NOW()
   ),
+  -- 공고 3: 홍대 포커룸 단기 알바 (1일 전 마감, closed)
   (
     '10000003-0000-4000-a000-000000000003',
+    3,
     'b2222222-2222-4222-b222-222222222222',
+    '심사용 구인자',
     '홍대 포커룸 단기 알바',
     '주말 단기 모집 (마감).',
-    jsonb_build_object('address', '서울 마포구 서교동', 'lat', 37.5536, 'lng', 126.9229),
-    '{}'::jsonb,
-    ARRAY[
-      (NOW() - INTERVAL '14 days')::date::text,
-      (NOW() - INTERVAL '7 days')::date::text
-    ],
-    (NOW() - INTERVAL '7 days')::date,
-    2,
-    'closed',
-    NOW() - INTERVAL '20 days',
-    NOW() - INTERVAL '7 days'
+    jsonb_build_object('name', '홍대 포커룸', 'district', '서울 마포구 서교동'),
+    jsonb_build_object(
+      'kind', 'dated',
+      'primaryDate', to_char((NOW() - INTERVAL '1 day')::date, 'YYYY-MM-DD'),
+      'allDates', jsonb_build_array(
+        to_char((NOW() - INTERVAL '1 day')::date, 'YYYY-MM-DD')
+      ),
+      'requirements', jsonb_build_array(
+        jsonb_build_object(
+          'date', to_char((NOW() - INTERVAL '1 day')::date, 'YYYY-MM-DD'),
+          'timeSlots', jsonb_build_array(
+            jsonb_build_object(
+              'startTime', '20:00',
+              'roles', jsonb_build_array(
+                jsonb_build_object('role', 'floor', 'count', 2, 'filled', 2)
+              )
+            )
+          )
+        )
+      )
+    ),
+    to_char((NOW() - INTERVAL '1 day')::date, 'YYYY-MM-DD'),
+    ARRAY[to_char((NOW() - INTERVAL '1 day')::date, 'YYYY-MM-DD')],
+    (NOW() - INTERVAL '1 day')::date,
+    ARRAY['floor'],
+    2, 2, 0,
+    jsonb_build_array(
+      jsonb_build_object('role', 'floor', 'salary', jsonb_build_object('type', 'hourly', 'amount', 20000))
+    ),
+    jsonb_build_object('mode', 'shared', 'defaultSalary', jsonb_build_object('type', 'hourly', 'amount', 20000)),
+    jsonb_build_object('items', jsonb_build_array()),
+    jsonb_build_object(
+      'totalApplicants', 0, 'activeApplicants', 0,
+      'confirmedApplicants', 0, 'cancellationPendingApplicants', 0,
+      'filledPositions', 2
+    ),
+    'closed', 'regular', '+82-2-9876-5432', ARRAY[]::text[],
+    NOW() - INTERVAL '14 days', NOW() - INTERVAL '1 day'
   )
 ON CONFLICT (id) DO NOTHING;
 
