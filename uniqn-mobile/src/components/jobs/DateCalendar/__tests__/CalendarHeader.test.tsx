@@ -14,6 +14,11 @@ jest.mock('@/components/icons', () => ({
     const { Text } = require('react-native');
     return <Text {...(props as object)}>›</Text>;
   },
+  ChevronUpIcon: (props: unknown) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Text } = require('react-native');
+    return <Text {...(props as object)}>▲</Text>;
+  },
 }));
 
 describe('CalendarHeader', () => {
@@ -25,12 +30,14 @@ describe('CalendarHeader', () => {
     onPrev: jest.fn(),
     onNext: jest.fn(),
     onClearSelection: jest.fn(),
+    onCollapse: jest.fn(),
   };
 
   beforeEach(() => {
     baseProps.onPrev = jest.fn();
     baseProps.onNext = jest.fn();
     baseProps.onClearSelection = jest.fn();
+    baseProps.onCollapse = jest.fn();
   });
 
   it('월 이름 표시 (2026년 4월)', () => {
@@ -67,5 +74,11 @@ describe('CalendarHeader', () => {
     const { getByText } = render(<CalendarHeader {...baseProps} hasSelection />);
     fireEvent.press(getByText('전체 보기'));
     expect(baseProps.onClearSelection).toHaveBeenCalled();
+  });
+
+  it('월 이름 영역 탭 시 onCollapse 호출', () => {
+    const { getByLabelText } = render(<CalendarHeader {...baseProps} />);
+    fireEvent.press(getByLabelText('달력 접기'));
+    expect(baseProps.onCollapse).toHaveBeenCalled();
   });
 });

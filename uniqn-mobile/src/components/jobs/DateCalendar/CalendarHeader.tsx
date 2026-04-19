@@ -9,7 +9,7 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from '@/components/icons';
 import { triggerHaptic } from '@/utils/haptics';
 
 interface CalendarHeaderProps {
@@ -20,6 +20,7 @@ interface CalendarHeaderProps {
   onPrev: () => void;
   onNext: () => void;
   onClearSelection: () => void;
+  onCollapse: () => void;
 }
 
 export const CalendarHeader = memo(function CalendarHeader({
@@ -30,6 +31,7 @@ export const CalendarHeader = memo(function CalendarHeader({
   onPrev,
   onNext,
   onClearSelection,
+  onCollapse,
 }: CalendarHeaderProps) {
   const monthLabel = format(visibleMonth, 'yyyy년 M월', { locale: ko });
 
@@ -45,6 +47,11 @@ export const CalendarHeader = memo(function CalendarHeader({
     onNext();
   }, [canGoNext, onNext]);
 
+  const handleCollapse = useCallback(() => {
+    void triggerHaptic('light');
+    onCollapse();
+  }, [onCollapse]);
+
   return (
     <View className="flex-row items-center px-4 py-3">
       <Pressable
@@ -59,14 +66,21 @@ export const CalendarHeader = memo(function CalendarHeader({
         <ChevronLeftIcon size={24} />
       </Pressable>
 
-      <View className="flex-1 items-center">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="달력 접기"
+        onPress={handleCollapse}
+        hitSlop={10}
+        className="flex-1 flex-row items-center justify-center gap-1 active:opacity-70"
+      >
         <Text
           className="text-base font-sans-semibold text-content-primary"
           accessibilityRole="header"
         >
           {monthLabel}
         </Text>
-      </View>
+        <ChevronUpIcon size={16} />
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"

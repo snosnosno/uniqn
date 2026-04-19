@@ -9,6 +9,11 @@ jest.mock('@/components/icons', () => ({
     const { Text } = require('react-native');
     return <Text>📅</Text>;
   },
+  ChevronDownIcon: () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Text } = require('react-native');
+    return <Text>▼</Text>;
+  },
   XIcon: () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text } = require('react-native');
@@ -18,7 +23,8 @@ jest.mock('@/components/icons', () => ({
 
 describe('CollapsedHeader', () => {
   const baseProps = {
-    selectedDate: new Date('2026-04-18T00:00:00'),
+    selectedDate: new Date('2026-04-18T00:00:00') as Date | null,
+    visibleMonth: new Date('2026-04-15T00:00:00'),
     count: 12,
     onExpand: jest.fn(),
     onClear: jest.fn(),
@@ -50,5 +56,19 @@ describe('CollapsedHeader', () => {
   it('count=0이어도 요약에 "0건" 표시', () => {
     const { getByText } = render(<CollapsedHeader {...baseProps} count={0} />);
     expect(getByText(/0건/)).toBeTruthy();
+  });
+
+  it('selectedDate=null이면 "2026년 4월 · 전체 보기" 렌더 + ✕ 버튼 미표시', () => {
+    const { getByText, queryByLabelText } = render(
+      <CollapsedHeader {...baseProps} selectedDate={null} />
+    );
+    expect(getByText('2026년 4월 · 전체 보기')).toBeTruthy();
+    expect(queryByLabelText('날짜 필터 해제')).toBeNull();
+  });
+
+  it('selectedDate=null 상태에서 영역 탭 → onExpand 호출', () => {
+    const { getByLabelText } = render(<CollapsedHeader {...baseProps} selectedDate={null} />);
+    fireEvent.press(getByLabelText(/달력 펼치기/));
+    expect(baseProps.onExpand).toHaveBeenCalled();
   });
 });

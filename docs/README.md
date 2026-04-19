@@ -43,7 +43,6 @@
 
 - `../uniqn-mobile/docs/EAS_BUILD_GUIDE.md`
 - `../uniqn-mobile/docs/PUSH_NOTIFICATION_TEST_CHECKLIST.md`
-- `../uniqn-mobile/docs/apple-app-review-demo-setup.md`
 - `../uniqn-mobile/README-E2E.md`
 
 ## 아카이브 문서
