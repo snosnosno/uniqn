@@ -524,8 +524,13 @@ WHERE id = '10000003-0000-4000-a000-000000000003';
 
 -- RLS wl_select 정책이 owner_id = auth.uid() 를 검사함 (staff_id도 허용).
 -- employer 계정이 대시보드에서 조회하려면 owner_id 반드시 채워야 함.
+--
+-- Zod workLogDocumentSchema 요구사항:
+--   1. staff_name: z.string().optional() — NULL 불가 (undefined만). 반드시 값을 채움.
+--   2. check_in_time/check_out_time (jsonb): optionalTimestampSchema — NULL 또는 ISO 8601 string.
+--      `{at: "..."}` 같은 구조는 normalizeToIsoString이 거부 → 반드시 NULL 사용.
 INSERT INTO public.work_logs (
-  id, staff_id, owner_id, job_posting_id, application_id,
+  id, staff_id, staff_name, owner_id, job_posting_id, application_id,
   date, role, status,
   check_in_time, check_out_time,
   payroll_status, payroll_amount, payroll_date,
@@ -535,14 +540,15 @@ INSERT INTO public.work_logs (
   (
     '30000001-0000-4000-a000-000000000001',
     'a1111111-1111-4111-a111-111111111111',
+    '심사용 스태프',
     'b2222222-2222-4222-b222-222222222222',
     '10000002-0000-4000-a000-000000000002',
     '20000002-0000-4000-a000-000000000002',
     (NOW() - INTERVAL '4 days')::date::text,
     'staff',
     'checked_out',
-    jsonb_build_object('at', (NOW() - INTERVAL '4 days 8 hours')::text),
-    jsonb_build_object('at', (NOW() - INTERVAL '4 days')::text),
+    NULL,
+    NULL,
     'completed',
     120000,
     NOW() - INTERVAL '4 days',
@@ -553,6 +559,7 @@ INSERT INTO public.work_logs (
   (
     '30000002-0000-4000-a000-000000000002',
     'a1111111-1111-4111-a111-111111111111',
+    '심사용 스태프',
     'b2222222-2222-4222-b222-222222222222',
     '10000001-0000-4000-a000-000000000001',
     NULL,
@@ -571,14 +578,15 @@ INSERT INTO public.work_logs (
   (
     '30000003-0000-4000-a000-000000000003',
     'a1111111-1111-4111-a111-111111111111',
+    '심사용 스태프',
     'b2222222-2222-4222-b222-222222222222',
     '10000003-0000-4000-a000-000000000003',
     '20000005-0000-4000-a000-000000000005',
     (NOW() - INTERVAL '1 day')::date::text,
     'staff',
     'checked_out',
-    jsonb_build_object('at', (NOW() - INTERVAL '1 day 4 hours')::text),
-    jsonb_build_object('at', (NOW() - INTERVAL '1 day')::text),
+    NULL,
+    NULL,
     'completed',
     80000,
     NOW() - INTERVAL '12 hours',
@@ -589,14 +597,15 @@ INSERT INTO public.work_logs (
   (
     '30000004-0000-4000-a000-000000000004',
     'd4444444-4444-4444-d444-444444444444',
+    '심사용 신청자',
     'b2222222-2222-4222-b222-222222222222',
     '10000003-0000-4000-a000-000000000003',
     '20000006-0000-4000-a000-000000000006',
     (NOW() - INTERVAL '1 day')::date::text,
     'staff',
     'checked_out',
-    jsonb_build_object('at', (NOW() - INTERVAL '1 day 4 hours')::text),
-    jsonb_build_object('at', (NOW() - INTERVAL '1 day')::text),
+    NULL,
+    NULL,
     'pending',
     80000,
     NULL,
@@ -607,6 +616,7 @@ INSERT INTO public.work_logs (
   (
     '30000005-0000-4000-a000-000000000005',
     'd4444444-4444-4444-d444-444444444444',
+    '심사용 신청자',
     'b2222222-2222-4222-b222-222222222222',
     '10000002-0000-4000-a000-000000000002',
     '20000004-0000-4000-a000-000000000004',
