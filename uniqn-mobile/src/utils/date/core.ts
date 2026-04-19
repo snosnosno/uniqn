@@ -96,6 +96,7 @@ export function normalizeToIsoString(val: unknown): string {
   }
 
   if (isFirestoreTimestampLike(val)) {
+    // eslint-disable-next-line no-restricted-syntax -- 레거시 TimestampLike 입력을 ISO string으로 정규화하는 진실원. 외부 호출은 ESLint가 차단.
     const date = val.toDate();
     if (isValidDate(date)) return date.toISOString();
     throw new Error('Invalid timestamp format: TimestampLike returned invalid Date');

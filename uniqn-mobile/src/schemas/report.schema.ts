@@ -185,10 +185,10 @@ export const reportDocumentSchema = z.object({
   status: reportStatusUnionSchema,
   reviewerId: z.string().optional(),
   reviewerNotes: z.string().optional(),
-  reviewedAt: optionalTimestampSchema, // Firebase Timestamp
+  reviewedAt: optionalTimestampSchema,
   severity: reportSeveritySchema,
-  createdAt: timestampSchema, // Firebase Timestamp
-  updatedAt: timestampSchema, // Firebase Timestamp
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
 });
 
 export type ReportDocumentData = z.infer<typeof reportDocumentSchema>;

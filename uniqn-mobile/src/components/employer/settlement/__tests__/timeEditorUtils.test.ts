@@ -20,6 +20,7 @@ jest.mock('@/shared/time', () => ({
         return Number.isNaN(parsed.getTime()) ? null : parsed;
       }
       if (typeof value === 'object' && value !== null && 'toDate' in value) {
+        // eslint-disable-next-line no-restricted-syntax -- TimestampLike 입력 정규화 검증을 위한 테스트 mock.
         return (value as { toDate: () => Date }).toDate();
       }
       return null;

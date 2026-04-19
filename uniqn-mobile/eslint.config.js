@@ -160,6 +160,31 @@ module.exports = [
           message:
             'Arrow 함수 반환 className에 dark:text-off-white 금지. `text-content-primary` CSS var 토큰 사용.',
         },
+        // Firebase Timestamp 레거시 청산 가드 (2026-04-19)
+        // timestampSchema는 ISO string을 반환한다. Date가 필요한 view site만 @/utils/date의
+        // toDate(str)로 변환하고, Firebase Firestore 모방 API(Timestamp 클래스, .toDate(),
+        // SerializedTimestamp/TimestampLike/getDateString 등)는 전부 제거됐다. 재도입 차단.
+        {
+          selector: 'NewExpression[callee.name="Timestamp"]',
+          message:
+            'Firebase Timestamp 클래스 재도입 금지. ISO string(new Date().toISOString()) 또는 Date 사용.',
+        },
+        {
+          selector: 'MemberExpression[object.name="Timestamp"]',
+          message:
+            'Timestamp.now()/fromDate() 등 Firebase 모방 API 금지. new Date() + .toISOString() 사용.',
+        },
+        {
+          selector:
+            'ImportSpecifier[imported.name=/^(SerializedTimestamp|TimestampLike|hasToDate|hasSeconds|getDateString)$/]',
+          message:
+            '청산된 Firebase Timestamp 레거시 타입/헬퍼는 import 금지. timestampSchema(ISO string) 또는 @/utils/date의 toDate(str) 사용.',
+        },
+        {
+          selector: 'CallExpression[callee.type="MemberExpression"][callee.property.name="toDate"]',
+          message:
+            '.toDate() 메서드 호출 금지 (Firebase Timestamp 레거시). schema 출력은 ISO string이므로 @/utils/date의 toDate(str) 함수를 사용.',
+        },
       ],
     },
   },
