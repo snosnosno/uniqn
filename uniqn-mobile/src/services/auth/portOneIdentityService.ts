@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import type { Customer, IdentityVerificationRequest } from '@portone/browser-sdk/v2';
-import { supabase } from '@/lib/supabase';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { getStorageItem, removeStorageItem, setStorageItem, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { ERROR_CODES, ValidationError, isRetryableError } from '@/errors';
 import { logger } from '@/utils/logger';
@@ -230,7 +230,7 @@ export async function callVerifyPortOneIdentity(
   payload: VerifyPortOneIdentityPayload
 ): Promise<VerifyPortOneIdentityResult> {
   const invoke = async () => {
-    const { data, error } = await supabase.functions.invoke<VerifyPortOneIdentityResult>(
+    const { data, error } = await invokeEdgeFunction<VerifyPortOneIdentityResult>(
       'verify-portone-identity',
       { body: payload }
     );
@@ -259,7 +259,7 @@ export async function callVerifyAndSavePortOneProfile(
   accessToken?: string
 ): Promise<VerifyAndSavePortOneProfileResult> {
   const invoke = async () => {
-    const { data, error } = await supabase.functions.invoke<VerifyAndSavePortOneProfileResult>(
+    const { data, error } = await invokeEdgeFunction<VerifyAndSavePortOneProfileResult>(
       'verify-and-save-portone-profile',
       {
         body: payload,

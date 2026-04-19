@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { logger } from '@/utils/logger';
 import {
   normalizeError,
@@ -113,13 +114,18 @@ async function mapEdgeFunctionError(error: unknown): Promise<Error> {
 // ============================================================================
 
 /**
- * 현재 세션의 access token 획득
+ * 현재 세션의 access token 획득 (만료 임박 시 preflight refresh).
  *
  * @description Supabase JS v2의 FunctionsClient는 onAuthStateChange 시
  * 자동으로 Authorization 헤더를 갱신하지 않아, 세션이 stale이면 anon key로
  * 폴백되어 Edge Function이 401을 반환함. 명시적으로 세션 토큰을 꺼내 헤더에
  * 주입해야 함. authCoreService.ts / portOneIdentityService.ts 참고.
+ *
+ * 페이지 새로고침 직후 localStorage 에서 복원된 세션이 이미 만료된 경우
+ * supabase-js 내부 refresh 완료 전에 만료 토큰을 그대로 반환하는 레이스가
+ * 존재 — 30초 skew 내면 명시적으로 refreshSession() 호출.
  */
+const REFRESH_SKEW_MS = 30_000;
 async function getAccessTokenOrThrow(): Promise<string> {
   const { data, error } = await supabase.auth.getSession();
   if (error || !data.session?.access_token) {
@@ -127,7 +133,21 @@ async function getAccessTokenOrThrow(): Promise<string> {
       userMessage: '로그인이 필요합니다',
     });
   }
-  return data.session.access_token;
+
+  const session = data.session;
+  const expiresAt = session.expires_at;
+  if (expiresAt && expiresAt * 1000 - Date.now() <= REFRESH_SKEW_MS) {
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshed.session?.access_token) {
+      throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+        userMessage: '로그인이 필요합니다',
+        originalError: refreshError ? new Error(refreshError.message) : undefined,
+      });
+    }
+    return refreshed.session.access_token;
+  }
+
+  return session.access_token;
 }
 
 // ============================================================================
@@ -147,7 +167,7 @@ export async function approveTournamentPosting(
     logger.info('대회공고 승인 요청', { jobPostingId: data.jobPostingId });
 
     const accessToken = await getAccessTokenOrThrow();
-    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+    const { data: result, error } = await invokeEdgeFunction<ApprovalResponse>(
       'approve-job-posting',
       {
         body: data,
@@ -188,7 +208,7 @@ export async function rejectTournamentPosting(
     });
 
     const accessToken = await getAccessTokenOrThrow();
-    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+    const { data: result, error } = await invokeEdgeFunction<ApprovalResponse>(
       'reject-job-posting',
       {
         body: data,
@@ -225,7 +245,7 @@ export async function resubmitTournamentPosting(
     logger.info('대회공고 재제출 요청', { jobPostingId: data.jobPostingId });
 
     const accessToken = await getAccessTokenOrThrow();
-    const { data: result, error } = await supabase.functions.invoke<ApprovalResponse>(
+    const { data: result, error } = await invokeEdgeFunction<ApprovalResponse>(
       'resubmit-job-posting',
       {
         body: data,

@@ -9,6 +9,7 @@
 
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { logger } from '@/utils/logger';
 import { AuthError, ERROR_CODES, isAppError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -51,7 +52,7 @@ export interface DeletionResult {
  */
 async function tryRevokeAppleToken(authorizationCode: string, userId: string): Promise<boolean> {
   try {
-    const { error } = await supabase.functions.invoke('revoke-apple-token', {
+    const { error } = await invokeEdgeFunction('revoke-apple-token', {
       body: { authorizationCode },
     });
     if (error) throw error;

@@ -207,15 +207,15 @@ async function initializeUnreadCount(uid: string): Promise<number> {
     return 0;
   }
 
-  const { supabase: sb } = await importWithFallback(
-    () => import('@/lib/supabase'),
-    '@/lib/supabase'
+  const { invokeEdgeFunction } = await importWithFallback(
+    () => import('@/lib/supabaseFunctions'),
+    '@/lib/supabaseFunctions'
   );
 
   storage.set(debounceKey, String(now));
 
   try {
-    const { data: result, error } = await sb.functions.invoke<{ unreadCount: number }>(
+    const { data: result, error } = await invokeEdgeFunction<{ unreadCount: number }>(
       'initialize-unread-counter'
     );
     if (error) throw error;

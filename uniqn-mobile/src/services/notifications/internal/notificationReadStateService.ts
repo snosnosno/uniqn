@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react-native';
-import { supabase } from '@/lib/supabase';
+import { invokeEdgeFunction } from '@/lib/supabaseFunctions';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
 import { notificationRepository } from '@/repositories';
@@ -24,7 +24,7 @@ async function resetUnreadCounterWithRetry(
 
   while (retryCount < MAX_RETRIES) {
     try {
-      const { error } = await supabase.functions.invoke('reset-unread-counter', {
+      const { error } = await invokeEdgeFunction('reset-unread-counter', {
         body: { notificationIds },
       });
       if (error) throw error;
@@ -57,7 +57,7 @@ async function resetUnreadCounterWithRetry(
 
 async function decrementUnreadCounterWithRetry(delta: number): Promise<boolean> {
   try {
-    const { error } = await supabase.functions.invoke('decrement-unread-counter', {
+    const { error } = await invokeEdgeFunction('decrement-unread-counter', {
       body: { delta },
     });
     if (error) throw error;

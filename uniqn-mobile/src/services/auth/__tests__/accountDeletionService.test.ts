@@ -38,6 +38,10 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
+jest.mock('@/lib/supabaseFunctions', () => ({
+  invokeEdgeFunction: (...args: unknown[]) => mockFunctionsInvoke(...args),
+}));
+
 jest.mock('@/repositories', () => ({
   userRepository: {
     requestDeletion: (...args: unknown[]) => mockRequestDeletion(...args),
