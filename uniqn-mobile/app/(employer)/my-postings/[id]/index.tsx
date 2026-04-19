@@ -186,7 +186,7 @@ export default function JobPostingDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 정보를 불러오는 중..." />
       </SafeAreaView>
@@ -195,7 +195,7 @@ export default function JobPostingDetailScreen() {
 
   if (error || !posting || !managementView) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공고 상세" fallbackHref="/(app)/(tabs)/employer" />
         <PostingSurfaceState
           mode="error"
@@ -223,7 +223,7 @@ export default function JobPostingDetailScreen() {
   const questionCount = managementView.questions.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="공고 상세"
         titleSuffix={<JobTitleSuffix jobTitle={posting.title} />}
@@ -373,7 +373,7 @@ export default function JobPostingDetailScreen() {
               </>
             ) : null}
 
-            <View className="rounded-lg bg-surface-page px-3 pb-2 pt-3 dark:bg-surface">
+            <View className="rounded-lg bg-surface-page dark:bg-surface px-3 pb-2 pt-3 dark:bg-surface">
               <View className="flex-row justify-around">
                 <View className="flex-1 items-center">
                   <Text className="text-xl font-display text-primary-600 dark:text-primary-400">

@@ -52,7 +52,7 @@ export default function AdminStatsScreen() {
 
   if (isLoading && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
         <Loading variant="layout" message="통계 데이터를 불러오는 중..." />
       </SafeAreaView>
@@ -61,7 +61,7 @@ export default function AdminStatsScreen() {
 
   if (error && !stats && !metrics) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
         <ErrorState
           error={error}
@@ -74,7 +74,7 @@ export default function AdminStatsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="서비스 통계" fallbackHref="/(admin)" />
       <ScrollView
         className="flex-1"
@@ -206,7 +206,7 @@ export default function AdminStatsScreen() {
               {stats.recentUsers.map((user) => (
                 <View
                   key={user.uid}
-                  className="flex-row items-center justify-between rounded-lg bg-surface-page px-3 py-3 dark:bg-surface-elevated"
+                  className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface px-3 py-3 dark:bg-surface-elevated"
                 >
                   <View className="flex-1 pr-3">
                     <Text className="text-sm font-sans-semibold text-content-primary dark:text-off-white">

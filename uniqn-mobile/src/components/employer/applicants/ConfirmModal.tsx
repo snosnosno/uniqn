@@ -159,7 +159,7 @@ export function ApplicantConfirmModal({
     <Modal visible={visible} onClose={handleClose} title={config.title} position="center">
       <View>
         {/* 지원자 정보 */}
-        <View className="flex-row items-center p-3 bg-surface-page rounded-md mb-3">
+        <View className="flex-row items-center p-3 bg-surface-page dark:bg-surface rounded-md mb-3">
           <Avatar
             source={profilePhotoURL}
             name={displayName}

@@ -62,7 +62,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
   return (
     <Pressable
       onPress={onToggle}
-      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-surface-page px-4 py-3 dark:bg-surface/50 ${
+      className={`mx-4 mb-2 flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface px-4 py-3 dark:bg-surface/50 ${
         group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''
       }`}
     >

@@ -156,7 +156,7 @@ export function DatePickerModal({
       </View>
 
       {/* 선택된 날짜 목록 */}
-      <View className="mb-4 p-3 bg-surface-page rounded-lg">
+      <View className="mb-4 p-3 bg-surface-page dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-2">
           <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             선택한 날짜 ({selectedDates.length}개)
@@ -213,7 +213,7 @@ export function DatePickerModal({
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
-        <View className="mb-4 p-3 bg-surface-page rounded-lg">
+        <View className="mb-4 p-3 bg-surface-page dark:bg-surface rounded-lg">
           <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
             이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
           </Text>

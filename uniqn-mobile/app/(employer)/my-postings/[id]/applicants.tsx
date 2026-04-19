@@ -135,7 +135,7 @@ export default function ApplicantsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="지원자 관리"
           titleSuffix={headerTitleSuffix}
@@ -155,7 +155,7 @@ export default function ApplicantsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="지원자 관리"
           titleSuffix={headerTitleSuffix}
@@ -174,7 +174,7 @@ export default function ApplicantsScreen() {
   const isProcessing = isConfirmingWithHistory || isRejecting;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="지원자 관리"
         titleSuffix={headerTitleSuffix}

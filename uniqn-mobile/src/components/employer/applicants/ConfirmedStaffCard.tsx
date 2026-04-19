@@ -200,7 +200,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
         )}
 
         {staff.notes && !compact ? (
-          <View className="mt-2 rounded-lg bg-surface-page p-2 dark:bg-surface">
+          <View className="mt-2 rounded-lg bg-surface-page dark:bg-surface p-2 dark:bg-surface">
             <Text
               className="text-sm text-content-muted dark:text-secondary-400 font-sans"
               numberOfLines={2}

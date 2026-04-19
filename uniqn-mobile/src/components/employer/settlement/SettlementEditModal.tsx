@@ -222,7 +222,7 @@ export function SettlementEditModal({
     >
       <View>
         {/* 프로필 헤더 */}
-        <View className="flex-row items-center p-4 bg-surface-page -mx-5 -mt-5">
+        <View className="flex-row items-center p-4 bg-surface-page dark:bg-surface -mx-5 -mt-5">
           <Avatar
             source={profilePhotoURL}
             name={displayName}
@@ -286,7 +286,7 @@ export function SettlementEditModal({
 
         {/* 정산 금액 요약 */}
         {settlement && (
-          <View className="px-4 py-4 bg-surface-page">
+          <View className="px-4 py-4 bg-surface-page dark:bg-surface">
             <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mb-3">
               정산 금액 요약
             </Text>

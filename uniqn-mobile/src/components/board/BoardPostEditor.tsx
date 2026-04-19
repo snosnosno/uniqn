@@ -71,7 +71,7 @@ export function BoardPostEditor({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-surface-page"
+      className="flex-1 bg-surface-page dark:bg-surface"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
@@ -160,7 +160,7 @@ export function BoardPostEditorLoading({
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-surface-page"
+      className="flex-1 bg-surface-page dark:bg-surface"
       contentContainerStyle={{ paddingBottom: bottomPadding }}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}

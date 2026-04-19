@@ -564,7 +564,7 @@ export default function ScheduleScreen() {
   // 에러 상태
   if (error && !isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -578,7 +578,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 
@@ -633,7 +633,7 @@ export default function ScheduleScreen() {
           {selectedDateSchedules.length > 0 && (
             <>
               {/* 1: sticky 헤더 — 배경 solid로 아래 콘텐츠 가림 */}
-              <View className="bg-surface-page px-4 pt-3 pb-2 border-b border-divider">
+              <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm font-sans-medium text-content-secondary">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
@@ -695,7 +695,7 @@ export default function ScheduleScreen() {
           ) : (
             <>
               {/* 0: sticky 헤더 — MonthNavigator 아래 바로 붙음 (pt-3로 최소 호흡) */}
-              <View className="bg-surface-page px-4 pt-3 pb-2 border-b border-divider">
+              <View className="bg-surface-page dark:bg-surface px-4 pt-3 pb-2 border-b border-divider">
                 <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
                   {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
                 </Text>

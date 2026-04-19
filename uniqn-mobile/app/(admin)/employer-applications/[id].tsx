@@ -133,9 +133,9 @@ export default function AdminEmployerApplicationDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
-        <View className="flex-1 items-center justify-center bg-surface-page">
+        <View className="flex-1 items-center justify-center bg-surface-page dark:bg-surface">
           <Loading size="large" message="신청 정보를 불러오는 중..." />
         </View>
       </SafeAreaView>
@@ -144,9 +144,9 @@ export default function AdminEmployerApplicationDetailPage() {
 
   if (error || !app) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="신청 정보를 확인할 수 없습니다"
             description="잠시 후 다시 시도해 주세요."
@@ -179,7 +179,7 @@ export default function AdminEmployerApplicationDetailPage() {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
         {/* Card 1 — 신청자 헤더 (상태 + 아바타 + 표시명) */}

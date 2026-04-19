@@ -180,7 +180,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             )}
 
             {/* 공고 정보 */}
-            <View className="bg-surface-page rounded-lg px-3 py-2 mb-3">
+            <View className="bg-surface-page dark:bg-surface rounded-lg px-3 py-2 mb-3">
               <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
                 {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
               </Text>
@@ -281,7 +281,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             multiline
             numberOfLines={3}
             maxLength={200}
-            className="bg-surface-page rounded-lg p-3 text-content-primary dark:text-off-white text-base font-sans min-h-[80px] mb-4"
+            className="bg-surface-page dark:bg-surface rounded-lg p-3 text-content-primary dark:text-off-white text-base font-sans min-h-[80px] mb-4"
             textAlignVertical="top"
           />
           <Text className="text-xs text-content-placeholder text-right mb-4 font-sans">

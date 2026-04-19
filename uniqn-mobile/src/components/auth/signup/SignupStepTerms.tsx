@@ -191,7 +191,7 @@ export function SignupStepTerms({ onNext, initialData, isLoading = false }: Sign
         accessibilityState={{ checked: allChecked, disabled: isLoading }}
         accessibilityLabel="전체 동의하기"
         className={`
-          flex-row items-center rounded-lg bg-surface-page p-4 dark:bg-surface
+          flex-row items-center rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface
           ${isLoading ? 'opacity-50' : ''}
         `}
       >

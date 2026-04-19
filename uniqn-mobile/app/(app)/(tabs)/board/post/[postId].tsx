@@ -1061,7 +1061,7 @@ export default function BoardPostDetailScreen() {
 
   if (!postId) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <StackHeader title="게시글" fallbackHref="/(app)/(tabs)/board" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1076,7 +1076,7 @@ export default function BoardPostDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <BoardPostDetailSkeleton />
       </SafeAreaView>
@@ -1085,7 +1085,7 @@ export default function BoardPostDetailScreen() {
 
   if (error || !post || !data) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <StackHeader title="게시글" fallbackHref={postFallbackHref} />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -1099,7 +1099,7 @@ export default function BoardPostDetailScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <StackHeader title={BOARD_TYPE_LABELS[post.boardType]} fallbackHref={postFallbackHref} />
 
       <KeyboardAvoidingView

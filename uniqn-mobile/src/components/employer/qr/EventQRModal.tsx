@@ -448,7 +448,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-error-500">
@@ -463,7 +463,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -475,7 +475,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -487,7 +487,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -499,7 +499,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page px-4 dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface px-4 dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#D4A017" />
         <Text className="mt-3 text-center text-sm font-sans-medium text-secondary-800">
@@ -520,7 +520,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page dark:bg-secondary-100"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface dark:bg-secondary-100"
       >
         <AlertCircleIcon size={48} color="#DC2626" />
         <Text className="mb-4 mt-3 text-center font-sans-medium text-error-500">
@@ -549,7 +549,7 @@ export function EventQRModal({
     qrPanelContent = (
       <View
         style={{ width: qrSize, height: qrSize }}
-        className="items-center justify-center rounded-md bg-surface-page"
+        className="items-center justify-center rounded-md bg-surface-page dark:bg-surface"
       >
         <ActivityIndicator size="large" color={modeColor} />
       </View>
@@ -602,7 +602,11 @@ export function EventQRModal({
               disabled={isLoading || isRefreshing}
             />
           ) : selectedScope ? (
-            <Card variant="filled" padding="sm" className="mb-5 w-full bg-surface-page">
+            <Card
+              variant="filled"
+              padding="sm"
+              className="mb-5 w-full bg-surface-page dark:bg-surface"
+            >
               <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
                 선택한 슬롯
               </Text>

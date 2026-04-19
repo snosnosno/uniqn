@@ -163,7 +163,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   const categoryKeys = Object.values(NotificationCategory);
 
   return (
-    <ScrollView className="flex-1 bg-surface-page" contentContainerClassName="p-4">
+    <ScrollView className="flex-1 bg-surface-page dark:bg-surface" contentContainerClassName="p-4">
       {/* 푸시 알림 권한 영구 거부 배너 */}
       {pushPermission && !pushPermission.granted && !pushPermission.canAskAgain && (
         <Pressable

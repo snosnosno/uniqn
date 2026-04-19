@@ -260,7 +260,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         className={`flex-row items-center justify-center rounded-lg border-2 border-dashed p-4 ${
           canAddDate
             ? 'border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20'
-            : 'border-secondary-300 bg-surface-page opacity-50 dark:border-surface-overlay dark:bg-surface'
+            : 'border-secondary-300 bg-surface-page dark:bg-surface opacity-50 dark:border-surface-overlay dark:bg-surface'
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"

@@ -39,9 +39,9 @@ export default function EditAnnouncementPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </SafeAreaView>
@@ -50,9 +50,9 @@ export default function EditAnnouncementPage() {
 
   if (error || !announcement) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
-        <View className="flex-1 bg-surface-page items-center justify-center px-8">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#DC2626" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
@@ -69,9 +69,9 @@ export default function EditAnnouncementPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공지사항 수정" fallbackHref={fallbackHref} />
-      <View className="flex-1 bg-surface-page">
+      <View className="flex-1 bg-surface-page dark:bg-surface">
         <AnnouncementForm
           initialData={{
             title: announcement.title,

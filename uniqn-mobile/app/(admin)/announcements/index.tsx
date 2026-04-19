@@ -88,7 +88,7 @@ export default function AdminAnnouncementsPage() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="공지사항 관리"
         fallbackHref="/(admin)"
@@ -99,7 +99,7 @@ export default function AdminAnnouncementsPage() {
         }
       />
 
-      <View className="flex-1 bg-surface-page">
+      <View className="flex-1 bg-surface-page dark:bg-surface">
         {/* Status Tabs */}
         <ScrollView
           horizontal

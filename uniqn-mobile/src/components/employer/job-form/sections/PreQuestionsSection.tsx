@@ -139,7 +139,7 @@ const QuestionCard = memo(function QuestionCard({
         placeholder="질문 내용을 입력하세요"
         placeholderTextColor={SECONDARY_PALETTE[400]}
         multiline
-        className="px-3 py-2 bg-surface-page rounded-lg text-content-primary dark:text-off-white min-h-[48px]"
+        className="px-3 py-2 bg-surface-page dark:bg-surface rounded-lg text-content-primary dark:text-off-white min-h-[48px]"
       />
 
       {/* 질문 타입 & 필수 여부 */}
@@ -148,7 +148,7 @@ const QuestionCard = memo(function QuestionCard({
         <View className="flex-1 mr-4">
           <Pressable
             onPress={() => setShowTypeSelector(true)}
-            className="flex-row items-center justify-between px-3 py-2 bg-surface-page rounded-lg"
+            className="flex-row items-center justify-between px-3 py-2 bg-surface-page dark:bg-surface rounded-lg"
           >
             <Text className="text-content-primary dark:text-off-white font-sans">
               {PRE_QUESTION_TYPE_LABELS[question.type]}
@@ -197,7 +197,7 @@ const QuestionCard = memo(function QuestionCard({
                 onChangeText={(v) => handleOptionChange(optionIndex, v)}
                 placeholder={`선택지 ${optionIndex + 1}`}
                 placeholderTextColor={SECONDARY_PALETTE[400]}
-                className="flex-1 px-3 py-2 bg-surface-page rounded-lg text-content-primary dark:text-off-white"
+                className="flex-1 px-3 py-2 bg-surface-page dark:bg-surface rounded-lg text-content-primary dark:text-off-white"
               />
               {(question.options?.length || 0) > 1 && (
                 <Pressable

@@ -210,9 +210,9 @@ export default function AdminUsersPage() {
 
   if (isLoading && !data) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             사용자 목록을 불러오는 중...
@@ -224,9 +224,9 @@ export default function AdminUsersPage() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
             description="사용자 목록을 불러오는 데 실패했습니다."
@@ -242,7 +242,7 @@ export default function AdminUsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="사용자 관리" fallbackHref="/(admin)" />
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
         <View className="flex-row items-center bg-surface-card dark:bg-surface rounded-lg px-3 py-2">

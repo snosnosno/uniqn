@@ -30,9 +30,9 @@ export default function CreateAnnouncementPage() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공지사항 작성" fallbackHref="/(admin)/announcements" />
-      <View className="flex-1 bg-surface-page">
+      <View className="flex-1 bg-surface-page dark:bg-surface">
         <AnnouncementForm
           onSubmit={handleSubmit}
           onCancel={handleCancel}

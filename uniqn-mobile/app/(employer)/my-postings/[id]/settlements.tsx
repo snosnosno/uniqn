@@ -622,7 +622,7 @@ export default function StaffSettlementsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="정산 관리"
           titleSuffix={headerTitleSuffix}
@@ -640,7 +640,7 @@ export default function StaffSettlementsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="정산 관리"
           titleSuffix={headerTitleSuffix}
@@ -660,7 +660,7 @@ export default function StaffSettlementsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="정산 관리"
           titleSuffix={headerTitleSuffix}
@@ -683,7 +683,7 @@ export default function StaffSettlementsScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="정산 관리"
         titleSuffix={headerTitleSuffix}

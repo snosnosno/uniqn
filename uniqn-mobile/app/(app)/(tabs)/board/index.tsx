@@ -64,7 +64,7 @@ export default function BoardHomeScreen() {
   const { data, isLoading, error, refetch, isRefetching } = useBoardHome();
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="게시판" />
       <BoardTabBar activeTab="home" onTabPress={navigateToTab} />
 

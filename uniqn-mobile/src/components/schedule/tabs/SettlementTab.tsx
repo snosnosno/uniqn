@@ -202,7 +202,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         </View>
 
         {settlement && (
-          <View className="mt-4 w-full rounded-md bg-surface-page p-4 dark:bg-surface/50">
+          <View className="mt-4 w-full rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
             <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               예상 급여 (참고용)
             </Text>
@@ -248,7 +248,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       )}
 
       {settlement ? (
-        <View className="rounded-md bg-surface-page p-4 dark:bg-surface/30">
+        <View className="rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/30">
           <View className="mb-4">
             <Text className="mb-2 text-xs text-secondary-500 dark:text-secondary-400 font-sans">
               급여 계산
@@ -338,7 +338,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           />
         </View>
       ) : (
-        <View className="rounded-md bg-surface-page p-4 dark:bg-surface/50">
+        <View className="rounded-md bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
           <Text className="text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
             정산 정보를 계산할 수 없습니다.
           </Text>

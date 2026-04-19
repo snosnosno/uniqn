@@ -172,7 +172,7 @@ export default function JobPostingDetailLayout() {
 
   return (
     <JobDetailContext.Provider value={contextValue}>
-      <View className="flex-1 bg-surface-page">
+      <View className="flex-1 bg-surface-page dark:bg-surface">
         <Stack
           screenOptions={{
             headerShown: false,

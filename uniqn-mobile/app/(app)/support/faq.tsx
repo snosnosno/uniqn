@@ -25,7 +25,7 @@ export default function FAQScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="자주 묻는 질문" fallbackHref="/(app)/support" />
       {/* 카테고리 탭 */}
       <FAQCategoryTabs

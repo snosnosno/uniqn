@@ -64,7 +64,7 @@ export function TimeModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-surface-page rounded-lg p-3">
+        <View className="mt-3 bg-surface-page dark:bg-surface rounded-lg p-3">
           {modificationHistory.map((mod, idx) => (
             <ModificationHistoryItem key={idx} modification={mod} index={idx} />
           ))}

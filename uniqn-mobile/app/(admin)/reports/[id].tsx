@@ -385,9 +385,9 @@ export default function AdminReportDetailPage() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
       </SafeAreaView>
@@ -397,9 +397,9 @@ export default function AdminReportDetailPage() {
   // 에러 상태
   if (error || !report) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="신고를 찾을 수 없습니다"
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
@@ -413,7 +413,7 @@ export default function AdminReportDetailPage() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="신고 상세" fallbackHref="/(admin)/reports" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

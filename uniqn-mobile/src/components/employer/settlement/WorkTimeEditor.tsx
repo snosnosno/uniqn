@@ -335,7 +335,7 @@ export function WorkTimeEditor({
       >
         <View className="px-4">
           {/* 스태프 정보 */}
-          <View className="flex-row items-center py-2 px-3 bg-surface-page rounded-lg mb-2">
+          <View className="flex-row items-center py-2 px-3 bg-surface-page dark:bg-surface rounded-lg mb-2">
             {/* 프로필 이미지 */}
             <Avatar
               source={profilePhotoURL}

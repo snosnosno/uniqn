@@ -69,7 +69,7 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center rounded-lg bg-surface-page p-3 dark:bg-surface">
+    <View className="flex-row items-center rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface">
       <View className="mr-2 h-8 w-8 items-center justify-center rounded-sm bg-surface-card dark:bg-surface">
         {icon}
       </View>

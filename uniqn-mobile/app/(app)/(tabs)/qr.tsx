@@ -73,7 +73,7 @@ export default function QRScreen() {
   const actionLabel = selectedAction === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       {/* 헤더 */}
       <View className="bg-white px-4 py-3 dark:bg-surface">
         <Text className="text-xl font-display text-content-primary dark:text-secondary-100">
@@ -140,7 +140,7 @@ export default function QRScreen() {
 
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
-          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-surface-page">
+          <View className="mb-8 h-56 w-56 items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 dark:border-surface-overlay bg-surface-page dark:bg-surface">
             <ScanIcon size={80} color={SECONDARY_PALETTE[400]} />
           </View>
 

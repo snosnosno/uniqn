@@ -199,7 +199,7 @@ export default function EditJobPostingScreen() {
 
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="공고 수정"
           titleSuffix={headerTitleSuffix}
@@ -218,7 +218,7 @@ export default function EditJobPostingScreen() {
 
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="공고 수정"
           titleSuffix={headerTitleSuffix}
@@ -241,7 +241,7 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="공고 수정"
         titleSuffix={headerTitleSuffix}

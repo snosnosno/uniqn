@@ -52,7 +52,7 @@ export default function ReviewHistoryScreen() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-surface-page dark:bg-secondary-900"
+      className="flex-1 bg-surface-page dark:bg-surface dark:bg-secondary-900"
       edges={['top', 'bottom']}
     >
       <StackHeader title="평가 히스토리" fallbackHref="/(app)/(tabs)/profile" />

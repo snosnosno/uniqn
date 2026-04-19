@@ -42,7 +42,7 @@ export default function AdminInquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={PRIMARY_COLORS[300]} />
@@ -53,7 +53,7 @@ export default function AdminInquiryDetailScreen() {
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
         <View className="flex-1 items-center justify-center">
           <Text className="text-secondary-500 dark:text-secondary-400 font-sans">
@@ -68,7 +68,7 @@ export default function AdminInquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="문의 상세" fallbackHref="/(admin)/inquiries" />
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
@@ -104,7 +104,7 @@ export default function AdminInquiryDetailScreen() {
             {inquiry.subject}
           </Text>
 
-          <View className="rounded-lg bg-surface-page p-4 dark:bg-surface/50">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface/50">
             <Text className="leading-6 text-content-secondary font-sans">{inquiry.message}</Text>
           </View>
 

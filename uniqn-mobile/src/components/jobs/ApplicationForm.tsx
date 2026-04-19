@@ -218,7 +218,7 @@ export function ApplicationForm({
       fullHeight
     >
       <View className="px-4">
-        <View className="mb-6 rounded-lg bg-surface-page p-4 dark:bg-surface">
+        <View className="mb-6 rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface">
           {job.postingType && job.postingType !== 'regular' && (
             <View className="mb-2">
               <PostingTypeBadge type={job.postingType as PostingType} size="sm" />
@@ -304,7 +304,7 @@ export function ApplicationForm({
             editable={!isSubmitting}
             returnKeyType="default"
             blurOnSubmit={false}
-            className="min-h-[120px] rounded-lg bg-surface-page p-4 text-base font-sans text-content-primary dark:bg-surface dark:text-off-white"
+            className="min-h-[120px] rounded-lg bg-surface-page dark:bg-surface p-4 text-base font-sans text-content-primary dark:bg-surface dark:text-off-white"
             textAlignVertical="top"
           />
           <Text className="mt-1 text-right text-xs text-content-placeholder font-sans">
@@ -312,7 +312,7 @@ export function ApplicationForm({
           </Text>
         </View>
 
-        <View className="mb-6 rounded-lg bg-surface-page p-4 dark:bg-surface">
+        <View className="mb-6 rounded-lg bg-surface-page dark:bg-surface p-4 dark:bg-surface">
           <Text className="text-xs leading-5 text-secondary-500 dark:text-secondary-400 font-sans">
             지원 후에는 구인자가 지원서를 확인합니다.
             {'\n'}

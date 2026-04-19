@@ -95,13 +95,13 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .dark\\:text-secondary-900:is(.dark *) { color: #18181E !important; }
 
       /* bg-surface-*/border-divider 유틸리티 (NativeWind가 var() 룰 미생성) */
-      .bg-surface-page     { background-color: var(--color-surface-page) !important; }
+      .bg-surface-page dark:bg-surface     { background-color: var(--color-surface-page) !important; }
       .bg-surface-card     { background-color: var(--color-surface-card) !important; }
       .border-divider      { border-color: var(--color-divider) !important; }
       .text-divider        { color: var(--color-divider) !important; }
 
       /* 다크모드 명시 오버라이드 (CSS var 해소 실패 대비) */
-      .dark .bg-surface-page, .dark.bg-surface-page { background-color: #09090B !important; }
+      .dark .bg-surface-page dark:bg-surface, .dark.bg-surface-page dark:bg-surface { background-color: #09090B !important; }
       .dark .bg-surface-card, .dark.bg-surface-card { background-color: #111113 !important; }
       .dark .border-divider, .dark.border-divider   { border-color: #222228 !important; }
 

@@ -267,7 +267,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
             )}
 
             {/* 거부 사유 */}
-            <View className="p-3 bg-surface-page rounded-lg mb-3">
+            <View className="p-3 bg-surface-page dark:bg-surface rounded-lg mb-3">
               <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-1">
                 거부 사유
               </Text>

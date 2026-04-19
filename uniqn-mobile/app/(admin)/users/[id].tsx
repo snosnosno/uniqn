@@ -155,9 +155,9 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             사용자 정보를 불러오는 중...
@@ -169,9 +169,9 @@ export default function AdminUserDetailPage() {
 
   if (error || !user) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="사용자를 찾을 수 없음"
             description="요청하신 사용자 정보를 찾을 수 없습니다."
@@ -184,10 +184,10 @@ export default function AdminUserDetailPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="사용자 상세" fallbackHref="/(admin)/users" />
       <ScrollView
-        className="flex-1 bg-surface-page"
+        className="flex-1 bg-surface-page dark:bg-surface"
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}

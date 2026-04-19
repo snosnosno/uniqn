@@ -83,7 +83,7 @@ export function TemplateModal({
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor={SECONDARY_PALETTE[400]}
-          className="bg-surface-page border border-divider rounded-md px-4 py-3 text-content-primary dark:text-off-white"
+          className="bg-surface-page dark:bg-surface border border-divider rounded-md px-4 py-3 text-content-primary dark:text-off-white"
           maxLength={100}
           editable={!isSaving}
           multiline

@@ -271,7 +271,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
           title="급여 정보"
         >
-          <View className="rounded-lg bg-surface-page p-3 dark:bg-surface/30">
+          <View className="rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
             <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
             </Text>
@@ -360,7 +360,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           icon={<BanknotesIcon size={18} color={SECONDARY_PALETTE[500]} />}
           title="정산 현황"
         >
-          <View className="flex-row items-center justify-between rounded-lg bg-surface-page p-3 dark:bg-surface/30">
+          <View className="flex-row items-center justify-between rounded-lg bg-surface-page dark:bg-surface p-3 dark:bg-surface/30">
             <View>
               {schedule.settlementBreakdown && (
                 <Text className="text-base font-sans-medium text-content-primary dark:text-off-white">

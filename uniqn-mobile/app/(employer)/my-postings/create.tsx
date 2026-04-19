@@ -81,7 +81,7 @@ export default function CreateJobPostingScreen() {
   }, [user, formData.location, formData.postingType, draft, createJobPosting, addToast, router]);
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="공고 작성" fallbackHref="/(app)/(tabs)/employer" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

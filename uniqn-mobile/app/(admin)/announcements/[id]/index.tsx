@@ -109,9 +109,9 @@ export default function AnnouncementDetailPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </SafeAreaView>
@@ -120,9 +120,9 @@ export default function AnnouncementDetailPage() {
 
   if (error || !announcement) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="공지사항 상세" fallbackHref="/(admin)/announcements" />
-        <View className="flex-1 bg-surface-page items-center justify-center px-8">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center px-8">
           <AlertCircleOutlineIcon size={64} color="#DC2626" />
           <Text className="text-lg font-sans-medium text-content-secondary mt-4">
             공지사항을 찾을 수 없습니다
@@ -143,7 +143,7 @@ export default function AnnouncementDetailPage() {
   const categoryLabel = ANNOUNCEMENT_CATEGORY_LABELS[announcement.category];
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="공지사항 상세"
         fallbackHref="/(admin)/announcements"
@@ -154,7 +154,7 @@ export default function AnnouncementDetailPage() {
         }
       />
 
-      <ScrollView className="flex-1 bg-surface-page">
+      <ScrollView className="flex-1 bg-surface-page dark:bg-surface">
         {/* Hero */}
         <View className="bg-surface-elevated dark:bg-surface-elevated px-4 py-4 border-b border-divider">
           {/* Badges */}

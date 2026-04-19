@@ -33,7 +33,7 @@ export default function BoardListScreen() {
 
   if (!isValidBoardType) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <TabHeader title="게시판" />
         <View className="flex-1 items-center justify-center p-4">
           <ErrorState
@@ -47,7 +47,7 @@ export default function BoardListScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title={BOARD_TYPE_LABELS[boardType]} />
       <BoardTabBar activeTab={safeBoardType} onTabPress={navigateToTab} />
 

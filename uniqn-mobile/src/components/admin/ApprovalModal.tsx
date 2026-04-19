@@ -145,7 +145,7 @@ export const ApprovalModal = memo(function ApprovalModal({
               <Text className="text-sm text-content-muted dark:text-secondary-300 mb-2 font-sans">
                 다음 공고를 {isApprove ? '승인' : '거부'}하시겠습니까?
               </Text>
-              <View className="bg-surface-page rounded-lg p-3 mb-4">
+              <View className="bg-surface-page dark:bg-surface rounded-lg p-3 mb-4">
                 <Text
                   className="text-sm font-sans-medium text-content-primary dark:text-secondary-100"
                   numberOfLines={2}

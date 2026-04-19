@@ -43,7 +43,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
       </View>
 
       {hasValidTimes ? (
-        <View className="flex-row items-center justify-between p-3 bg-surface-page rounded-lg">
+        <View className="flex-row items-center justify-between p-3 bg-surface-page dark:bg-surface rounded-lg">
           <View className="items-center">
             <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
               출근

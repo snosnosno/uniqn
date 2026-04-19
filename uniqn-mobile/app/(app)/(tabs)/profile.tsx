@@ -115,7 +115,7 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
         <TabHeader title="프로필" showThemeToggle />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
           <Card className="mb-4">
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
       <TabHeader title="프로필" showThemeToggle />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">

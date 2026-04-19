@@ -126,7 +126,7 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingPosting) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="취소 요청"
           titleSuffix={headerTitleSuffix}
@@ -145,7 +145,7 @@ export default function CancellationRequestsScreen() {
 
   if (posting && !isCanonicalDatedPosting(posting)) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="취소 요청"
           titleSuffix={headerTitleSuffix}
@@ -162,7 +162,7 @@ export default function CancellationRequestsScreen() {
 
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="취소 요청"
           titleSuffix={headerTitleSuffix}
@@ -181,7 +181,7 @@ export default function CancellationRequestsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader
           title="취소 요청"
           titleSuffix={headerTitleSuffix}
@@ -198,7 +198,7 @@ export default function CancellationRequestsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader
         title="취소 요청"
         titleSuffix={headerTitleSuffix}

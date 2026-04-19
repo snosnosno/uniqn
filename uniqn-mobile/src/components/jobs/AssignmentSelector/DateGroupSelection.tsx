@@ -26,7 +26,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
   );
 
   return (
-    <View className="mb-3 rounded-lg bg-surface-page p-3">
+    <View className="mb-3 rounded-lg bg-surface-page dark:bg-surface p-3">
       <View className="mb-3 flex-row flex-wrap items-center">
         <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white">
           {group.label}

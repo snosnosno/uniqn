@@ -110,7 +110,7 @@ export function BoardImagePicker({
             style={getTileStyle(images.length, tileSize)}
             className={`items-center justify-center rounded-lg border border-dashed ${
               canAddMore
-                ? 'border-secondary-300 bg-surface-page active:bg-secondary-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
+                ? 'border-secondary-300 bg-surface-page dark:bg-surface active:bg-secondary-100 dark:border-surface-overlay dark:bg-surface/60 dark:active:bg-surface-elevated'
                 : 'border-secondary-300 bg-surface-card dark:border-surface-overlay dark:bg-surface'
             }`}
             accessibilityRole="button"

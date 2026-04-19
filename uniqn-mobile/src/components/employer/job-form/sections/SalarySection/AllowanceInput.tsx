@@ -57,7 +57,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page text-content-primary dark:text-off-white"
+                className="w-16 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page dark:bg-surface text-content-primary dark:text-off-white"
               />
               <Text className="text-content-muted dark:text-secondary-400 ml-2 text-sm font-sans">
                 시간
@@ -120,7 +120,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={value && value > 0 ? formatNumber(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page text-content-primary dark:text-off-white"
+                    className="w-32 py-2 px-2 text-right text-sm font-sans rounded-md bg-surface-page dark:bg-surface text-content-primary dark:text-off-white"
                   />
                   <Text className="text-content-muted dark:text-secondary-400 ml-2 text-sm font-sans">
                     원

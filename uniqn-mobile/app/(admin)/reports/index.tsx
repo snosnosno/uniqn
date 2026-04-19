@@ -114,9 +114,9 @@ export default function AdminReportsPage() {
   // 로딩 상태
   if (isLoading && !reports) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="신고 관리" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
       </SafeAreaView>
@@ -126,9 +126,9 @@ export default function AdminReportsPage() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="신고 관리" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
             description="신고 목록을 불러오는 데 실패했습니다."
@@ -142,7 +142,7 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
+    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page dark:bg-surface">
       <StackHeader title="신고 관리" fallbackHref="/(admin)" />
       {/* 검색바 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">
@@ -202,7 +202,7 @@ export default function AdminReportsPage() {
 
       {/* 확장 필터 패널 */}
       {showFilters && (
-        <View className="px-4 py-3 bg-surface-page border-b border-divider">
+        <View className="px-4 py-3 bg-surface-page dark:bg-surface border-b border-divider">
           {/* 심각도 필터 */}
           <Text className="text-sm font-sans-medium text-secondary-500 dark:text-secondary-400 mb-2">
             심각도

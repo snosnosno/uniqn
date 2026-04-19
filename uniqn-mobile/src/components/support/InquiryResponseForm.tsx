@@ -100,7 +100,7 @@ export function InquiryResponseForm({
           className={`min-h-[150px] rounded-lg border px-4 py-3 text-base font-sans text-content-primary dark:text-secondary-100 ${
             errors.response
               ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-              : 'border-secondary-300 bg-surface-page dark:border-surface-overlay dark:bg-surface'
+              : 'border-secondary-300 bg-surface-page dark:bg-surface dark:border-surface-overlay dark:bg-surface'
           }`}
           maxLength={2000}
         />

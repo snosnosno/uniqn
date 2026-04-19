@@ -38,7 +38,7 @@ export default function ProfileEditScreen() {
   // profile이 로드될 때까지 로딩 표시
   if (isLoading || !profile) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="프로필 수정" fallbackHref="/(app)/settings" />
         <Loading />
       </SafeAreaView>
@@ -208,7 +208,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="프로필 수정" fallbackHref="/(app)/settings" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

@@ -328,9 +328,9 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page items-center justify-center">
+        <View className="flex-1 bg-surface-page dark:bg-surface items-center justify-center">
           <ActivityIndicator size="large" color="#D4AF37" />
           <Text className="mt-4 text-secondary-500 dark:text-secondary-400 font-sans">
             대회공고 목록을 불러오는 중...
@@ -343,9 +343,9 @@ export default function AdminTournamentsPage() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+      <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
-        <View className="flex-1 bg-surface-page">
+        <View className="flex-1 bg-surface-page dark:bg-surface">
           <EmptyState
             title="오류 발생"
             description="대회공고 목록을 불러오는 데 실패했습니다."
@@ -360,7 +360,7 @@ export default function AdminTournamentsPage() {
   const displayPostings = postings ?? [];
 
   return (
-    <SafeAreaView className="flex-1 bg-surface-page" edges={['top', 'bottom']}>
+    <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="대회공고 검토" fallbackHref="/(admin)" />
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-divider">

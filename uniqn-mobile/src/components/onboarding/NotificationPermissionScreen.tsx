@@ -146,7 +146,7 @@ export function NotificationPermissionScreen({
                 <Animated.View
                   key={item.title}
                   entering={FadeInUp.delay(200 + index * 100).duration(500)}
-                  className="mb-3 flex-row items-center rounded-md bg-surface-page px-4 py-4 dark:bg-surface"
+                  className="mb-3 flex-row items-center rounded-md bg-surface-page dark:bg-surface px-4 py-4 dark:bg-surface"
                 >
                   <View className="mr-4 h-12 w-12 items-center justify-center rounded-sm bg-primary-100 dark:bg-primary-900/30">
                     <ItemIcon size={24} color={PRIMARY_COLORS[500]} />

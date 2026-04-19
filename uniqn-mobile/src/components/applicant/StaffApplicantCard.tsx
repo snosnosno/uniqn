@@ -247,7 +247,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
   }
 
   return (
-    <View className="mt-3 bg-surface-page rounded-lg p-3">
+    <View className="mt-3 bg-surface-page dark:bg-surface rounded-lg p-3">
       <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white mb-2">
         지원 일정
       </Text>

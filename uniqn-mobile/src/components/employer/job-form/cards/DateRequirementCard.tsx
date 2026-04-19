@@ -147,7 +147,7 @@ export function DateRequirementCard({
         className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
           canAddTimeSlot
             ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
-            : 'border-secondary-300 dark:border-surface-overlay bg-surface-page opacity-50'
+            : 'border-secondary-300 dark:border-surface-overlay bg-surface-page dark:bg-surface opacity-50'
         }`}
         accessibilityRole="button"
         accessibilityLabel="시간대 추가"
