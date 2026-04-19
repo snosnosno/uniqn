@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1320px;
+    height: 2868px;
+    background: linear-gradient(180deg, #09090B 0%, #141418 40%, #09090B 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+  }
+
+  .caption-area {
+    margin-top: 240px;
+    text-align: center;
+  }
+
+  .caption-main {
+    font-size: 120px;
+    font-weight: 800;
+    color: #D4AF37;
+    letter-spacing: -3px;
+    line-height: 1.3;
+  }
+
+  .caption-sub {
+    font-size: 56px;
+    font-weight: 400;
+    color: #a0a0a8;
+    margin-top: 40px;
+    line-height: 1.4;
+  }
+
+  .phone-frame {
+    margin-top: 140px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .phone-bezel {
+    width: 1050px;
+    height: 2150px;
+    background: #1c1c1e;
+    border-radius: 100px;
+    border: 7px solid #3a3a3c;
+    padding: 24px;
+    box-shadow:
+      0 0 0 3px #2a2a2c,
+      0 80px 160px rgba(0,0,0,0.7),
+      0 0 200px rgba(212,175,55,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .phone-bezel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    height: 64px;
+    background: #1c1c1e;
+    border-radius: 0 0 32px 32px;
+    z-index: 10;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 76px;
+    overflow: hidden;
+  }
+
+  .phone-screen img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="caption-area">
+    <div class="caption-main" id="captionMain"></div>
+    <div class="caption-sub" id="captionSub"></div>
+  </div>
+  <div class="phone-frame">
+    <div class="phone-bezel">
+      <div class="phone-screen">
+        <img id="screenshot" src="" alt="screenshot">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('captionMain').innerHTML = decodeURIComponent(params.get('main') || '');
+    document.getElementById('captionSub').innerHTML = decodeURIComponent(params.get('sub') || '');
+    document.getElementById('screenshot').src = decodeURIComponent(params.get('img') || '');
+  </script>
+</body>
+</html>
