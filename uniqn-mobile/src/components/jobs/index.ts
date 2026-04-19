@@ -34,7 +34,7 @@ export { ResubmitButton } from './ResubmitButton';
 // ============================================================================
 
 export { PostingTypeChips } from './PostingTypeChips';
-export { DateSlider } from './DateSlider';
+export { DateCalendar } from './DateCalendar';
 export { SearchBar } from './SearchBar';
 
 // ============================================================================

@@ -334,6 +334,33 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
+  async getRegularDateCounts(startDate: string, endDate: string): Promise<Record<string, number>> {
+    try {
+      logger.info('일반 공고 일자별 개수 조회', { startDate, endDate });
+      const { data, error } = await supabase.rpc('get_regular_posting_date_counts', {
+        p_start_date: startDate,
+        p_end_date: endDate,
+      });
+      if (error) {
+        handleSupabaseError(error, {
+          operation: '일반 공고 일자별 개수 조회',
+          table: TABLE,
+        });
+      }
+      const rows = (data ?? []) as { work_date: string; posting_count: number | string }[];
+      const result: Record<string, number> = {};
+      for (const row of rows) {
+        result[row.work_date] = Number(row.posting_count);
+      }
+      logger.info('일반 공고 일자별 개수 조회 완료', {
+        dates: Object.keys(result).length,
+      });
+      return result;
+    } catch (error) {
+      rethrowOrHandle(error, '일반 공고 일자별 개수 조회', { startDate, endDate });
+    }
+  }
+
   // ── Simple Write ────────────────────────────────────────────────────────
 
   async incrementViewCount(jobPostingId: string): Promise<void> {

@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
-import { JobList, PostingTypeChips, DateSlider, SearchBar } from '@/components/jobs';
+import { JobList, PostingTypeChips, DateCalendar, SearchBar } from '@/components/jobs';
 import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
@@ -175,7 +175,7 @@ export default function JobsScreen() {
       <PostingTypeChips selected={selectedType} onChange={handleTypeChange} counts={chipCounts} />
 
       {selectedType === 'regular' && (
-        <DateSlider selectedDate={selectedDate} onDateSelect={setSelectedDate} />
+        <DateCalendar selectedDate={selectedDate} onDateSelect={setSelectedDate} />
       )}
 
       {isSearchMode ? (

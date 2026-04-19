@@ -193,6 +193,7 @@ export const AlertCircleIcon = createIcon(CircleAlert);
 export const ExclamationTriangleIcon = createIcon(TriangleAlert);
 export const InformationCircleIcon = createIcon(Info);
 export const XCircleIcon = createIcon(CircleX);
+export const XIcon = createIcon(X);
 export const CloseCircleOutlineIcon = createIcon(CircleX);
 export const LoaderIcon = createIcon(Loader2);
 
