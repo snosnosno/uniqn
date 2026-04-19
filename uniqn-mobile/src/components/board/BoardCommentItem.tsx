@@ -1,7 +1,8 @@
-import React, { memo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Badge, Card } from '@/components/ui';
+import React, { memo, useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { ActionSheet, type ActionSheetOption, Badge, Card } from '@/components/ui';
 import { ROLE_LABELS } from '@/constants';
+import { EllipsisHorizontalIcon, PlusIcon } from '@/components/icons';
 import {
   COMMENT_REACTION_LABELS,
   type BoardCommentNode,
@@ -76,40 +77,94 @@ export const BoardCommentItem = memo(function BoardCommentItem({
   const indentationOffset = depth * BOARD_COMMENT_INDENT_STEP;
   const hasDepthIndicator = depth > 0;
 
-  const actionChipClass =
-    'rounded-sm bg-surface-card px-3 py-1.5 dark:bg-surface-elevated active:opacity-70';
-  const mutedActionTextClass =
-    'text-xs font-sans-medium text-content-muted dark:text-secondary-300';
+  const [reactionPickerVisible, setReactionPickerVisible] = useState(false);
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
+
+  const visibleReactions = useMemo(
+    () =>
+      REACTION_TYPES.filter(
+        (type) => (comment.reactionCounts[type] ?? 0) > 0 || activeReaction === type
+      ),
+    [activeReaction, comment.reactionCounts]
+  );
+
+  const reactionPickerOptions = useMemo<ActionSheetOption[]>(
+    () =>
+      REACTION_TYPES.map((type) => ({
+        label: `${COMMENT_REACTION_LABELS[type]} ${comment.reactionCounts[type] ?? 0}`,
+        value: type,
+      })),
+    [comment.reactionCounts]
+  );
+
+  const actionMenuOptions = useMemo<ActionSheetOption[]>(() => {
+    const options: ActionSheetOption[] = [];
+
+    if (isOwnComment && !contentDisabled && canInteract) {
+      options.push({ label: '수정', value: 'edit' });
+      options.push({ label: '삭제', value: 'delete', destructive: true });
+    }
+    if (canPin) {
+      options.push({
+        label: comment.isPinned ? '고정 해제' : '고정',
+        value: 'pin',
+      });
+    }
+    if (isAdmin && !contentDisabled) {
+      options.push({ label: '숨김', value: 'hide', destructive: true });
+    }
+    if (!isOwnComment && !contentDisabled) {
+      options.push({ label: '신고', value: 'report' });
+    }
+
+    return options;
+  }, [canInteract, canPin, comment.isPinned, contentDisabled, isAdmin, isOwnComment]);
+
+  const handleReactionPickerSelect = (value: string) => {
+    onToggleReaction(comment, value as CommentReactionType);
+  };
+
+  const handleActionMenuSelect = (value: string) => {
+    if (value === 'edit') {
+      onEdit(comment);
+    } else if (value === 'delete') {
+      onDelete(comment);
+    } else if (value === 'pin') {
+      onTogglePin(comment);
+    } else if (value === 'hide') {
+      onHide(comment);
+    } else if (value === 'report') {
+      onReport(comment);
+    }
+  };
 
   return (
     <View style={{ marginLeft: indentationOffset }} className="mb-3">
       <View
         className={
-          hasDepthIndicator ? 'border-l-2 border-primary-200 pl-3 dark:border-primary-900/40' : ''
+          hasDepthIndicator
+            ? 'border-l-2 border-secondary-200 pl-3 dark:border-surface-overlay'
+            : ''
         }
       >
         <Card className="border border-secondary-100 bg-white dark:border-surface-overlay dark:bg-surface">
-          <View className="mb-3 flex-row items-start justify-between gap-3">
-            <View className="flex-1">
-              <View className="flex-row flex-wrap items-center gap-2">
-                <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
-                  {comment.authorName}
-                </Text>
-                <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
-                  {getAuthorRoleLabel(comment.authorRole)}
-                </Badge>
-                {comment.isPinned ? (
-                  <Badge variant="warning" size="sm">
-                    고정
-                  </Badge>
-                ) : null}
-              </View>
-              {createdAtLabel ? (
-                <Text className="mt-2 text-xs text-content-placeholder font-sans">
-                  {createdAtLabel}
-                </Text>
-              ) : null}
-            </View>
+          <View className="mb-3 flex-row flex-wrap items-center gap-x-2 gap-y-1">
+            <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
+              {comment.authorName}
+            </Text>
+            <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
+              {getAuthorRoleLabel(comment.authorRole)}
+            </Badge>
+            {comment.isPinned ? (
+              <Badge variant="warning" size="sm">
+                고정
+              </Badge>
+            ) : null}
+            {createdAtLabel ? (
+              <Text className="ml-auto text-xs text-content-placeholder font-sans">
+                {createdAtLabel}
+              </Text>
+            ) : null}
           </View>
 
           <Text
@@ -129,89 +184,96 @@ export const BoardCommentItem = memo(function BoardCommentItem({
             />
           ) : null}
 
-          {!contentDisabled ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mt-4"
-              contentContainerStyle={{ paddingHorizontal: 4 }}
-            >
-              {REACTION_TYPES.map((reactionType, index) => {
-                const count = comment.reactionCounts[reactionType] ?? 0;
-                const isActive = activeReaction === reactionType;
+          {!contentDisabled || actionMenuOptions.length > 0 ? (
+            <View className="mt-4 flex-row items-center justify-between gap-2">
+              <View className="flex-1 flex-row flex-wrap items-center gap-2">
+                {!contentDisabled
+                  ? visibleReactions.map((type) => {
+                      const count = comment.reactionCounts[type] ?? 0;
+                      const isActive = activeReaction === type;
 
-                return (
+                      return (
+                        <Pressable
+                          key={type}
+                          onPress={() => onToggleReaction(comment, type)}
+                          disabled={!canInteract}
+                          className={`rounded-sm px-2.5 py-1 ${
+                            isActive
+                              ? 'bg-primary-100 dark:bg-primary-900/30'
+                              : 'bg-secondary-100 dark:bg-surface-elevated'
+                          } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
+                        >
+                          <Text
+                            className={`text-xs font-sans-medium ${
+                              isActive
+                                ? 'text-primary-700 dark:text-primary-300'
+                                : 'text-content-secondary dark:text-secondary-200'
+                            }`}
+                          >
+                            {COMMENT_REACTION_LABELS[type]} {count}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
+                  : null}
+
+                {!contentDisabled && canInteract ? (
                   <Pressable
-                    key={reactionType}
-                    onPress={() => onToggleReaction(comment, reactionType)}
-                    disabled={!canInteract}
-                    style={{ marginRight: index === REACTION_TYPES.length - 1 ? 0 : 8 }}
-                    className={`rounded-sm px-3 py-1.5 ${
-                      isActive
-                        ? 'bg-primary-100 dark:bg-primary-900/30'
-                        : 'bg-secondary-100 dark:bg-surface-elevated'
-                    } ${!canInteract ? 'opacity-50' : 'active:opacity-70'}`}
+                    onPress={() => setReactionPickerVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="반응 추가"
+                    hitSlop={6}
+                    className="flex-row items-center gap-1 rounded-sm bg-secondary-100 px-2.5 py-1 dark:bg-surface-elevated active:opacity-70"
                   >
-                    <Text className="text-xs font-sans-medium text-content-secondary dark:text-secondary-200">
-                      {COMMENT_REACTION_LABELS[reactionType]} {count}
+                    <PlusIcon size={12} />
+                    <Text className="text-xs font-sans-medium text-content-muted dark:text-secondary-300">
+                      반응
                     </Text>
                   </Pressable>
-                );
-              })}
-            </ScrollView>
+                ) : null}
+
+                {canInteract && !contentDisabled ? (
+                  <Pressable
+                    onPress={() => onReply(comment)}
+                    className="rounded-sm bg-primary-50 px-3 py-1 dark:bg-primary-900/20 active:opacity-70"
+                  >
+                    <Text className="text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
+                      답글
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {actionMenuOptions.length > 0 ? (
+                <Pressable
+                  onPress={() => setActionMenuVisible(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="댓글 메뉴"
+                  hitSlop={10}
+                  className="rounded-sm p-1.5 active:opacity-70"
+                >
+                  <EllipsisHorizontalIcon size={18} />
+                </Pressable>
+              ) : null}
+            </View>
           ) : null}
-
-          <View className="mt-4 flex-row flex-wrap items-center gap-2">
-            {canInteract && !contentDisabled ? (
-              <Pressable
-                onPress={() => onReply(comment)}
-                className="rounded-sm bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 active:opacity-70"
-              >
-                <Text className="text-xs font-sans-semibold text-primary-700 dark:text-primary-300">
-                  답글
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {isOwnComment && !contentDisabled && canInteract ? (
-              <Pressable onPress={() => onEdit(comment)} className={actionChipClass}>
-                <Text className={mutedActionTextClass}>수정</Text>
-              </Pressable>
-            ) : null}
-
-            {isOwnComment && !contentDisabled && canInteract ? (
-              <Pressable onPress={() => onDelete(comment)} className={actionChipClass}>
-                <Text className={mutedActionTextClass}>삭제</Text>
-              </Pressable>
-            ) : null}
-
-            {canPin ? (
-              <Pressable onPress={() => onTogglePin(comment)} className={actionChipClass}>
-                <Text className={mutedActionTextClass}>
-                  {comment.isPinned ? '고정 해제' : '고정'}
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {isAdmin && !contentDisabled ? (
-              <Pressable
-                onPress={() => onHide(comment)}
-                className="rounded-sm bg-error-50 px-3 py-1.5 dark:bg-error-900/20 active:opacity-70"
-              >
-                <Text className="text-xs font-sans-medium text-error-600 dark:text-error-400">
-                  숨김
-                </Text>
-              </Pressable>
-            ) : null}
-
-            {!isOwnComment && !contentDisabled ? (
-              <Pressable onPress={() => onReport(comment)} className={actionChipClass}>
-                <Text className={mutedActionTextClass}>신고</Text>
-              </Pressable>
-            ) : null}
-          </View>
         </Card>
       </View>
+
+      <ActionSheet
+        visible={reactionPickerVisible}
+        onClose={() => setReactionPickerVisible(false)}
+        title="반응 추가"
+        options={reactionPickerOptions}
+        onSelect={handleReactionPickerSelect}
+      />
+
+      <ActionSheet
+        visible={actionMenuVisible}
+        onClose={() => setActionMenuVisible(false)}
+        options={actionMenuOptions}
+        onSelect={handleActionMenuSelect}
+      />
     </View>
   );
 });

@@ -103,9 +103,11 @@ jest.mock('@/components/icons', () => {
     FlagOutlineIcon: Icon,
     HeartIcon: Icon,
     ChatbubbleEllipsesOutlineIcon: Icon,
+    EllipsisHorizontalIcon: Icon,
     EyeIcon: Icon,
     LockIcon: Icon,
     PinIcon: Icon,
+    PlusIcon: Icon,
     ImageIcon: Icon,
     PaperPlaneOutlineIcon: Icon,
     XMarkIcon: Icon,
@@ -161,6 +163,30 @@ jest.mock('@/components/ui', () => {
   const ReactNative = jest.requireActual('react-native') as typeof import('react-native');
 
   return {
+    ActionSheet: ({
+      visible,
+      options,
+      onSelect,
+    }: {
+      visible: boolean;
+      options: { label: string; value: string; disabled?: boolean }[];
+      onSelect: (value: string) => void;
+    }) =>
+      visible ? (
+        <ReactNative.View>
+          {options.map((option) => (
+            <ReactNative.Pressable
+              key={option.value}
+              accessibilityRole="button"
+              accessibilityLabel={option.label}
+              disabled={option.disabled}
+              onPress={() => onSelect(option.value)}
+            >
+              <ReactNative.Text>{option.label}</ReactNative.Text>
+            </ReactNative.Pressable>
+          ))}
+        </ReactNative.View>
+      ) : null,
     Badge: ({ children }: { children: React.ReactNode }) => (
       <ReactNative.Text>{children}</ReactNative.Text>
     ),
@@ -339,24 +365,26 @@ describe('BoardPostDetailScreen', () => {
   });
 
   it('switches from the root composer to an inline reply composer', () => {
-    const { getAllByText, getByText, queryByText } = render(<BoardPostDetailScreen />);
+    const { getAllByText, getByLabelText, queryByLabelText } = render(<BoardPostDetailScreen />);
 
-    expect(getByText('댓글 작성')).toBeTruthy();
+    expect(queryByLabelText('답글 작성')).toBeNull();
 
     fireEvent.press(getAllByText('답글')[0]);
 
-    expect(getByText('답글 작성')).toBeTruthy();
-    expect(queryByText('댓글 작성')).toBeNull();
+    expect(getByLabelText('답글 작성')).toBeTruthy();
   });
 
   it('opens inline edit mode with the existing body prefilled', () => {
-    const { getByDisplayValue, getByText, queryByText } = render(<BoardPostDetailScreen />);
+    const { getByDisplayValue, getAllByLabelText, getByLabelText, getByText, queryByLabelText } =
+      render(<BoardPostDetailScreen />);
 
+    const menuButtons = getAllByLabelText('댓글 메뉴');
+    fireEvent.press(menuButtons[menuButtons.length - 1]);
     fireEvent.press(getByText('수정'));
 
-    expect(getByText('댓글 수정')).toBeTruthy();
+    expect(getByLabelText('댓글 수정')).toBeTruthy();
     expect(getByDisplayValue('내 댓글')).toBeTruthy();
-    expect(queryByText('댓글 작성')).toBeNull();
+    expect(queryByLabelText('답글 작성')).toBeNull();
   });
 
   it('keeps FlashList renderItem stable while typing in the composer', () => {
@@ -371,12 +399,19 @@ describe('BoardPostDetailScreen', () => {
   });
 
   it('resets stale edit state when the target comment disappears', async () => {
-    const { getByText, queryByDisplayValue, queryByText, rerender } = render(
-      <BoardPostDetailScreen />
-    );
+    const {
+      getAllByLabelText,
+      getByLabelText,
+      getByText,
+      queryByDisplayValue,
+      queryByLabelText,
+      rerender,
+    } = render(<BoardPostDetailScreen />);
 
+    const menuButtons = getAllByLabelText('댓글 메뉴');
+    fireEvent.press(menuButtons[menuButtons.length - 1]);
     fireEvent.press(getByText('수정'));
-    expect(getByText('댓글 수정')).toBeTruthy();
+    expect(getByLabelText('댓글 수정')).toBeTruthy();
 
     mockUseBoardPostDetail.mockReturnValue({
       data: createBoardDetailData([
@@ -391,8 +426,7 @@ describe('BoardPostDetailScreen', () => {
     rerender(<BoardPostDetailScreen />);
 
     await waitFor(() => {
-      expect(getByText('댓글 작성')).toBeTruthy();
-      expect(queryByText('댓글 수정')).toBeNull();
+      expect(queryByLabelText('댓글 수정')).toBeNull();
       expect(queryByDisplayValue('내 댓글')).toBeNull();
     });
   });

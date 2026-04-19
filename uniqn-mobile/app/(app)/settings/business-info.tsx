@@ -14,6 +14,7 @@ const BUSINESS_INFO = {
   representative: '김승호',
   businessNumber: '107-37-40217',
   salesNumber: '제2026-인천부평-0255호',
+  jobInfoNumber: 'J1501020260002',
   address: '인천광역시 부평구 부평대로 141번길 12, 504호',
   email: 'uniqnkorea@gmail.com',
   phone: '010-9800-9039',
@@ -84,6 +85,10 @@ export default function BusinessInfoScreen() {
 
           <View className="border-t border-divider">
             <InfoRow label="통신판매업신고" value={BUSINESS_INFO.salesNumber} />
+          </View>
+
+          <View className="border-t border-divider">
+            <InfoRow label="직업정보제공사업 신고번호" value={BUSINESS_INFO.jobInfoNumber} />
           </View>
 
           <View className="border-t border-divider">

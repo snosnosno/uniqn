@@ -1,4 +1,3 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import {
   createContext,
   useCallback,
@@ -7,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
   type RefObject,
 } from 'react';
 import {
@@ -36,6 +34,8 @@ import {
   type BoardDetailSectionItem,
 } from '@/components/board/boardDetailListItems';
 import {
+  ActionSheet,
+  type ActionSheetOption,
   Badge,
   Button,
   Card,
@@ -49,9 +49,8 @@ import {
 } from '@/components/ui';
 import { LAYOUT, ROLE_LABELS } from '@/constants';
 import {
-  ChatbubbleEllipsesOutlineIcon,
   CloseCircleOutlineIcon,
-  EyeIcon,
+  EllipsisHorizontalIcon,
   FlagOutlineIcon,
   HeartIcon,
   LockIcon,
@@ -115,63 +114,6 @@ function getComposerPlaceholder(canInteract: boolean, isLocked: boolean) {
 
 function getPostFallbackHref(boardType?: string | null) {
   return boardType ? `/(app)/(tabs)/board/${boardType}` : '/(app)/(tabs)/board';
-}
-
-function MetaPill({ icon, label }: { icon?: ReactNode; label: string }) {
-  return (
-    <View className="flex-row items-center rounded-sm bg-surface-card px-3 py-1.5 dark:bg-surface-elevated">
-      {icon ? <View>{icon}</View> : null}
-      <Text
-        className={`${icon ? 'ml-1.5' : ''} text-xs font-sans-medium text-content-muted dark:text-secondary-300`}
-      >
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function ActionChip({
-  label,
-  variant = 'neutral',
-  disabled = false,
-  testID,
-  accessibilityLabel,
-  onPress,
-}: {
-  label: string;
-  variant?: 'neutral' | 'primary' | 'danger';
-  disabled?: boolean;
-  testID?: string;
-  accessibilityLabel?: string;
-  onPress: () => void;
-}) {
-  const containerClass =
-    variant === 'primary'
-      ? 'bg-primary-50 dark:bg-primary-900/20'
-      : variant === 'danger'
-        ? 'bg-error-50 dark:bg-error-900/20'
-        : 'bg-secondary-100 dark:bg-surface-elevated';
-  const textClass =
-    variant === 'primary'
-      ? 'text-primary-700 dark:text-primary-300'
-      : variant === 'danger'
-        ? 'text-error-600 dark:text-error-400'
-        : 'text-secondary-600 dark:text-secondary-300';
-
-  return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
-      onPress={onPress}
-      disabled={disabled}
-      className={`rounded-sm px-3 py-2 ${containerClass} ${
-        disabled ? 'opacity-50' : 'active:opacity-70'
-      }`}
-    >
-      <Text className={`text-xs font-sans-semibold ${textClass}`}>{label}</Text>
-    </Pressable>
-  );
 }
 
 function BoardPostDetailSkeleton() {
@@ -402,6 +344,7 @@ export default function BoardPostDetailScreen() {
   } | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
+  const [postMenuVisible, setPostMenuVisible] = useState(false);
 
   useEffect(() => {
     if (data?.post.id && viewedPostIdRef.current !== data.post.id) {
@@ -711,6 +654,25 @@ export default function BoardPostDetailScreen() {
     });
   }, [hidePostMutation, post]);
 
+  const handlePostMenuSelect = useCallback(
+    (value: string) => {
+      if (!post) {
+        return;
+      }
+
+      if (value === 'edit') {
+        router.push(`/(app)/(tabs)/board/edit/${post.id}`);
+      } else if (value === 'lock') {
+        handleTogglePostLock();
+      } else if (value === 'hide') {
+        handleHidePost();
+      } else if (value === 'report') {
+        setReportTarget({ targetType: 'post', targetId: post.id });
+      }
+    },
+    [handleHidePost, handleTogglePostLock, post]
+  );
+
   const handleReply = useCallback((comment: BoardCommentNode) => {
     const currentUserId = currentUserIdRef.current;
     const nextMentionCandidates = mentionCandidatesRef.current;
@@ -901,11 +863,25 @@ export default function BoardPostDetailScreen() {
         </View>
 
         <Card className="mb-4 border border-secondary-100 dark:border-surface-overlay">
-          <Text className="text-2xl font-display leading-9 text-content-primary dark:text-secondary-100">
-            {post.title}
-          </Text>
+          <View className="flex-row items-start gap-3">
+            <Text className="flex-1 text-2xl font-display leading-9 text-content-primary dark:text-secondary-100">
+              {post.title}
+            </Text>
+            {showActionBar ? (
+              <Pressable
+                testID={`board-post-menu-${post.id}`}
+                accessibilityRole="button"
+                accessibilityLabel="게시글 메뉴"
+                onPress={() => setPostMenuVisible(true)}
+                hitSlop={10}
+                className="-mr-1 -mt-1 rounded-sm p-2 active:opacity-70"
+              >
+                <EllipsisHorizontalIcon size={20} />
+              </Pressable>
+            ) : null}
+          </View>
 
-          <View className="mt-3 flex-row flex-wrap items-center gap-2">
+          <View className="mt-3 flex-row flex-wrap items-center gap-x-2 gap-y-1">
             <Text className="text-sm font-sans-medium text-content-secondary dark:text-secondary-200">
               {post.authorName}
             </Text>
@@ -914,14 +890,6 @@ export default function BoardPostDetailScreen() {
                 <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
                 <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
                   {postCreatedAtLabel}
-                </Text>
-              </>
-            ) : null}
-            {postLastActivityLabel ? (
-              <>
-                <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
-                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
-                  최근 활동 {postLastActivityLabel}
                 </Text>
               </>
             ) : null}
@@ -936,134 +904,51 @@ export default function BoardPostDetailScreen() {
             onPressImage={(index) => openImageViewer(post.imageAttachments, index)}
           />
 
-          {post.jobSummary ? (
-            <View className="mt-5 rounded-lg border border-primary-100 bg-primary-50/60 p-4 dark:border-surface-overlay dark:bg-surface-elevated">
-              <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
-                일정 요약
-              </Text>
-              <View className="mt-3 gap-2">
-                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
-                  날짜: {post.jobSummary.workDates?.join(', ') || post.jobSummary.workDate}
-                </Text>
-                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
-                  장소: {post.jobSummary.locationName || '미정'}
-                </Text>
-                <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
-                  인원: {post.jobSummary.filledPositions ?? 0}/{post.jobSummary.totalPositions ?? 0}
-                </Text>
-                {post.jobSummary.compensationLabel ? (
-                  <Text className="text-sm text-content-muted dark:text-secondary-300 font-sans">
-                    급여: {post.jobSummary.compensationLabel}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-
-          <View className="mt-5 flex-row flex-wrap gap-2">
-            <MetaPill
-              icon={<ChatbubbleEllipsesOutlineIcon size={14} color={SECONDARY_PALETTE[500]} />}
-              label={`댓글 ${post.commentCount}`}
-            />
-            <MetaPill
-              icon={<EyeIcon size={14} color={SECONDARY_PALETTE[500]} />}
-              label={`조회 ${post.viewCount}`}
-            />
+          <View className="mt-5 flex-row flex-wrap items-center gap-x-2 gap-y-1">
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              댓글 {post.commentCount}
+            </Text>
+            <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
+            <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+              조회 {post.viewCount}
+            </Text>
             {postLastActivityLabel ? (
-              <MetaPill label={`최근 활동 ${postLastActivityLabel}`} />
+              <>
+                <View className="h-1 w-1 rounded-sm bg-secondary-300 dark:bg-secondary-600" />
+                <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                  {postLastActivityLabel} 활동
+                </Text>
+              </>
             ) : null}
           </View>
 
-          {post.boardType !== 'notice' || showActionBar ? (
-            <View className="mt-5 flex-row flex-wrap gap-3">
-              {post.boardType !== 'notice' ? (
-                <View className="min-w-[180px] flex-1 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
-                  <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
-                    반응
-                  </Text>
-                  <View className="mt-3 flex-row flex-wrap gap-2">
-                    <Button
-                      variant={data.myVote === 'like' ? 'primary' : 'outline'}
-                      size="sm"
-                      icon={
-                        <HeartIcon
-                          size={16}
-                          color={data.myVote === 'like' ? '#FFFFFF' : '#16A34A'}
-                        />
-                      }
-                      onPress={() => voteMutation.mutate('like')}
-                      disabled={!canInteract || isVoteSubmitting}
-                    >
-                      좋아요 {post.likeCount}
-                    </Button>
-                    <Button
-                      variant={data.myVote === 'dislike' ? 'danger' : 'outline'}
-                      size="sm"
-                      icon={
-                        <CloseCircleOutlineIcon
-                          size={16}
-                          color={data.myVote === 'dislike' ? '#FFFFFF' : '#DC2626'}
-                        />
-                      }
-                      onPress={() => voteMutation.mutate('dislike')}
-                      disabled={!canInteract || isVoteSubmitting}
-                    >
-                      싫어요 {post.dislikeCount}
-                    </Button>
-                  </View>
-                </View>
-              ) : null}
-
-              {showActionBar ? (
-                <View className="min-w-[180px] flex-1 rounded-lg bg-surface-page p-4 dark:bg-surface-elevated">
-                  <Text className="text-xs font-sans-semibold uppercase tracking-[0.8px] text-secondary-500 dark:text-secondary-400">
-                    게시글 작업
-                  </Text>
-                  <View className="mt-3 flex-row flex-wrap gap-2">
-                    {canManagePost && post.boardType !== 'schedule' && !post.isLocked ? (
-                      <ActionChip
-                        testID={`board-post-edit-${post.id}`}
-                        accessibilityLabel="게시글 수정"
-                        label="수정"
-                        variant="primary"
-                        onPress={() => router.push(`/(app)/(tabs)/board/edit/${post.id}`)}
-                      />
-                    ) : null}
-                    {canManagePost ? (
-                      <ActionChip
-                        testID={`board-post-lock-${post.id}`}
-                        accessibilityLabel={post.isLocked ? '게시글 잠금 해제' : '게시글 잠금'}
-                        label={post.isLocked ? '잠금 해제' : '잠금'}
-                        disabled={isPostActionPending}
-                        onPress={handleTogglePostLock}
-                      />
-                    ) : null}
-                    {isAdmin && post.boardType !== 'notice' ? (
-                      <ActionChip
-                        testID={`board-post-hide-${post.id}`}
-                        accessibilityLabel="게시글 숨김"
-                        label="숨김"
-                        variant="danger"
-                        disabled={isPostActionPending}
-                        onPress={handleHidePost}
-                      />
-                    ) : null}
-                    {canReportPost ? (
-                      <ActionChip
-                        testID={`board-post-report-${post.id}`}
-                        accessibilityLabel="게시글 신고"
-                        label="신고"
-                        onPress={() =>
-                          setReportTarget({
-                            targetType: 'post',
-                            targetId: post.id,
-                          })
-                        }
-                      />
-                    ) : null}
-                  </View>
-                </View>
-              ) : null}
+          {post.boardType !== 'notice' ? (
+            <View className="mt-3 flex-row flex-wrap items-center gap-2">
+              <Button
+                variant={data.myVote === 'like' ? 'primary' : 'outline'}
+                size="sm"
+                icon={
+                  <HeartIcon size={16} color={data.myVote === 'like' ? '#FFFFFF' : '#16A34A'} />
+                }
+                onPress={() => voteMutation.mutate('like')}
+                disabled={!canInteract || isVoteSubmitting}
+              >
+                {`${post.likeCount}`}
+              </Button>
+              <Button
+                variant={data.myVote === 'dislike' ? 'danger' : 'outline'}
+                size="sm"
+                icon={
+                  <CloseCircleOutlineIcon
+                    size={16}
+                    color={data.myVote === 'dislike' ? '#FFFFFF' : '#DC2626'}
+                  />
+                }
+                onPress={() => voteMutation.mutate('dislike')}
+                disabled={!canInteract || isVoteSubmitting}
+              >
+                {`${post.dislikeCount}`}
+              </Button>
             </View>
           ) : null}
         </Card>
@@ -1074,10 +959,7 @@ export default function BoardPostDetailScreen() {
     canManagePost,
     canReportPost,
     data,
-    handleHidePost,
-    handleTogglePostLock,
     isAdmin,
-    isPostActionPending,
     isVoteSubmitting,
     openImageViewer,
     post,
@@ -1085,6 +967,38 @@ export default function BoardPostDetailScreen() {
     postLastActivityLabel,
     voteMutation,
   ]);
+
+  const postMenuOptions = useMemo<ActionSheetOption[]>(() => {
+    if (!post) {
+      return [];
+    }
+
+    const options: ActionSheetOption[] = [];
+
+    if (canManagePost && post.boardType !== 'schedule' && !post.isLocked) {
+      options.push({ label: '수정', value: 'edit' });
+    }
+    if (canManagePost) {
+      options.push({
+        label: post.isLocked ? '잠금 해제' : '잠금',
+        value: 'lock',
+        disabled: isPostActionPending,
+      });
+    }
+    if (isAdmin && post.boardType !== 'notice') {
+      options.push({
+        label: '숨김',
+        value: 'hide',
+        destructive: true,
+        disabled: isPostActionPending,
+      });
+    }
+    if (canReportPost) {
+      options.push({ label: '신고', value: 'report' });
+    }
+
+    return options;
+  }, [canManagePost, canReportPost, isAdmin, isPostActionPending, post]);
 
   const renderItem = useCallback(
     ({ item }: { item: BoardDetailListItem }) => {
@@ -1209,6 +1123,13 @@ export default function BoardPostDetailScreen() {
           />
         </BoardDetailComposerContext.Provider>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={postMenuVisible}
+        onClose={() => setPostMenuVisible(false)}
+        options={postMenuOptions}
+        onSelect={handlePostMenuSelect}
+      />
 
       <Modal
         visible={Boolean(reportTarget)}

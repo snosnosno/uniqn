@@ -257,17 +257,8 @@ function formatCompensationLabel(jobPosting: JobPosting): string {
 
 function buildScheduleBoardBody(jobPosting: JobPosting): string {
   const lines = [
-    `공고명: ${jobPosting.title}`,
-    `근무일: ${jobPosting.workDates?.length ? jobPosting.workDates.join(', ') : jobPosting.workDate}`,
-    `장소: ${jobPosting.location?.name ?? '미정'}`,
+    `이 게시글은 "${jobPosting.title}"의 단체 대화방이에요. 공지사항, 문의사항, 소통 등 자유롭게 사용가능합니다.`,
   ];
-
-  const compensationLabel = formatCompensationLabel(jobPosting);
-  if (compensationLabel) {
-    lines.push(`급여: ${compensationLabel}`);
-  }
-
-  lines.push(`모집 인원: ${jobPosting.filledPositions}/${jobPosting.totalPositions}`);
 
   if (jobPosting.description?.trim()) {
     lines.push('', sanitizeBoardText(jobPosting.description));
@@ -798,7 +789,7 @@ export async function getBoardHomeData(viewer: BoardViewer): Promise<BoardHomeDa
                 right.viewCount -
                 (left.likeCount + left.commentCount + left.viewCount)
             )
-            .slice(0, 10);
+            .slice(0, 5);
         },
         []
       ),

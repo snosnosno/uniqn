@@ -1,8 +1,7 @@
-import { SECONDARY_PALETTE } from '@/constants/colors';
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { ImageIcon, PaperPlaneOutlineIcon } from '@/components/icons';
+import { ImageIcon, PaperPlaneOutlineIcon, XMarkIcon } from '@/components/icons';
 import { Button, Card, Input } from '@/components/ui';
 import { BoardDraftImageStrip } from './BoardDraftImageStrip';
 import type { BoardImageAttachment, BoardMentionCandidate } from '@/types/board';
@@ -66,34 +65,38 @@ export function BoardCommentComposer({
     return () => clearTimeout(timer);
   }, [autoFocus, inputRef]);
 
-  const title = mode === 'edit' ? '댓글 수정' : mode === 'reply' ? '답글 작성' : '댓글 작성';
-  const helperText =
-    mode === 'reply' && replyTargetName
-      ? `@${replyTargetName} 에게 답글을 남기는 중이에요.`
-      : mode === 'edit'
-        ? '댓글 내용을 수정 중이에요.'
-        : null;
   const isSubmitDisabled = !canInteract || !value.trim() || isSubmitting;
+  const showHeader = mode !== 'create';
+  const headerLabel =
+    mode === 'reply' && replyTargetName
+      ? `↳ @${replyTargetName} 답글`
+      : mode === 'edit'
+        ? '댓글 수정 중'
+        : '';
+  const headerAccessibilityLabel = mode === 'reply' ? '답글 작성' : '댓글 수정';
 
   return (
     <Card>
-      <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-base font-sans-semibold text-content-primary dark:text-secondary-100">
-          {title}
-        </Text>
-        {onCancel ? (
-          <Pressable onPress={onCancel} className="active:opacity-70">
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              취소
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-
-      {helperText ? (
-        <Text className="mb-2 text-sm text-primary-600 dark:text-primary-400 font-sans">
-          {helperText}
-        </Text>
+      {showHeader ? (
+        <View className="mb-3 flex-row items-center justify-between gap-2">
+          <Text
+            accessibilityLabel={headerAccessibilityLabel}
+            className="flex-1 text-xs font-sans-medium text-primary-700 dark:text-primary-300"
+          >
+            {headerLabel}
+          </Text>
+          {onCancel ? (
+            <Pressable
+              onPress={onCancel}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="취소"
+              className="rounded-sm p-1 active:opacity-70"
+            >
+              <XMarkIcon size={16} />
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
 
       <Input
@@ -103,53 +106,51 @@ export function BoardCommentComposer({
         placeholder={placeholder}
         multiline
         textAlignVertical="top"
-        numberOfLines={5}
+        numberOfLines={2}
         editable={canInteract}
         accessibilityLabel="댓글 내용"
         onFocus={onFocus}
       />
 
       {canSelectMentions ? (
-        <View className="mt-3">
-          <Text className="mb-2 text-xs font-sans-medium text-secondary-500 dark:text-secondary-400">
-            멘션
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {mentionCandidates.map((candidate) => {
-              const isSelected = selectedMentionIds.includes(candidate.userId);
+        <View className="mt-3 flex-row flex-wrap gap-2">
+          {mentionCandidates.map((candidate) => {
+            const isSelected = selectedMentionIds.includes(candidate.userId);
 
-              return (
-                <Pressable
-                  key={candidate.userId}
-                  onPress={() => onToggleMention(candidate.userId)}
-                  className={`rounded-sm px-3 py-1.5 ${
-                    isSelected
-                      ? 'bg-primary-100 dark:bg-primary-900/30'
-                      : 'bg-secondary-100 dark:bg-surface-elevated'
-                  }`}
-                >
-                  <Text className="text-xs text-content-secondary dark:text-secondary-200 font-sans">
-                    @{candidate.displayName}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+            return (
+              <Pressable
+                key={candidate.userId}
+                onPress={() => onToggleMention(candidate.userId)}
+                className={`rounded-sm px-2.5 py-1 ${
+                  isSelected
+                    ? 'bg-primary-100 dark:bg-primary-900/30'
+                    : 'bg-secondary-100 dark:bg-surface-elevated'
+                }`}
+              >
+                <Text className="text-xs text-content-secondary dark:text-secondary-200 font-sans">
+                  @{candidate.displayName}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
 
       <BoardDraftImageStrip images={images} onRemoveImage={onRemoveImage} />
 
-      <View className="mt-4 flex-row gap-3">
-        <Button
-          variant="outline"
-          className="flex-1"
-          icon={<ImageIcon size={18} color={SECONDARY_PALETTE[500]} />}
+      <View className="mt-4 flex-row items-center gap-2">
+        <Pressable
           onPress={onPickImages}
           disabled={!canInteract || isUploadingImages}
+          accessibilityRole="button"
+          accessibilityLabel="이미지 첨부"
+          hitSlop={6}
+          className={`rounded-sm border border-secondary-200 bg-surface-card p-2.5 dark:border-surface-overlay dark:bg-surface-elevated ${
+            !canInteract || isUploadingImages ? 'opacity-50' : 'active:opacity-70'
+          }`}
         >
-          이미지
-        </Button>
+          <ImageIcon size={20} />
+        </Pressable>
         <Button
           className="flex-1"
           loading={isSubmitting}
