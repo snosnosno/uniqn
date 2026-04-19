@@ -522,8 +522,10 @@ WHERE id = '10000003-0000-4000-a000-000000000003';
 --   WL4 applicant@posting3 — 1일 전 checked_out, 정산 pending  80000원 (정산 대기)
 --   WL5 applicant@posting2 — 2일 후 scheduled                          (미래 예정)
 
+-- RLS wl_select 정책이 owner_id = auth.uid() 를 검사함 (staff_id도 허용).
+-- employer 계정이 대시보드에서 조회하려면 owner_id 반드시 채워야 함.
 INSERT INTO public.work_logs (
-  id, staff_id, job_posting_id, application_id,
+  id, staff_id, owner_id, job_posting_id, application_id,
   date, role, status,
   check_in_time, check_out_time,
   payroll_status, payroll_amount, payroll_date,
@@ -533,6 +535,7 @@ INSERT INTO public.work_logs (
   (
     '30000001-0000-4000-a000-000000000001',
     'a1111111-1111-4111-a111-111111111111',
+    'b2222222-2222-4222-b222-222222222222',
     '10000002-0000-4000-a000-000000000002',
     '20000002-0000-4000-a000-000000000002',
     (NOW() - INTERVAL '4 days')::date::text,
@@ -550,6 +553,7 @@ INSERT INTO public.work_logs (
   (
     '30000002-0000-4000-a000-000000000002',
     'a1111111-1111-4111-a111-111111111111',
+    'b2222222-2222-4222-b222-222222222222',
     '10000001-0000-4000-a000-000000000001',
     NULL,
     (NOW() + INTERVAL '3 days')::date::text,
@@ -567,6 +571,7 @@ INSERT INTO public.work_logs (
   (
     '30000003-0000-4000-a000-000000000003',
     'a1111111-1111-4111-a111-111111111111',
+    'b2222222-2222-4222-b222-222222222222',
     '10000003-0000-4000-a000-000000000003',
     '20000005-0000-4000-a000-000000000005',
     (NOW() - INTERVAL '1 day')::date::text,
@@ -584,6 +589,7 @@ INSERT INTO public.work_logs (
   (
     '30000004-0000-4000-a000-000000000004',
     'd4444444-4444-4444-d444-444444444444',
+    'b2222222-2222-4222-b222-222222222222',
     '10000003-0000-4000-a000-000000000003',
     '20000006-0000-4000-a000-000000000006',
     (NOW() - INTERVAL '1 day')::date::text,
@@ -601,6 +607,7 @@ INSERT INTO public.work_logs (
   (
     '30000005-0000-4000-a000-000000000005',
     'd4444444-4444-4444-d444-444444444444',
+    'b2222222-2222-4222-b222-222222222222',
     '10000002-0000-4000-a000-000000000002',
     '20000004-0000-4000-a000-000000000004',
     (NOW() + INTERVAL '2 days')::date::text,
