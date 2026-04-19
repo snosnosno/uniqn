@@ -403,21 +403,21 @@ INSERT INTO public.job_postings (
 ON CONFLICT (id) DO NOTHING;
 
 -- =========================================================================
--- Part 3b: applications (staff → posting1: applied, posting2: confirmed — 2건)
+-- Part 3b: applications (공고 수명주기 데모 — 6건)
 -- =========================================================================
--- 실제 컬럼: applicant_name (text NOT NULL), applied_at 없음
+-- 실제 컬럼: applicant_name (text NOT NULL)
 -- status enum: applied/confirmed/rejected/cancelled/completed/cancellation_pending
--- 'pending' 없음 → 'applied' 사용
+-- UNIQUE 제약: (job_posting_id, applicant_id) — 같은 (공고, 지원자) 조합 1회
+--
+-- 데모 매트릭스:
+--   posting1 강남 active  — staff:applied,    applicant:applied    (다중 대기)
+--   posting2 분당 active  — staff:confirmed,  applicant:confirmed  (다중 확정)
+--   posting3 홍대 closed  — staff:completed,  applicant:completed  (마감 + 완료)
 
 INSERT INTO public.applications (
-  id,
-  job_posting_id,
-  applicant_id,
-  applicant_name,
-  status,
-  created_at,
-  updated_at
+  id, job_posting_id, applicant_id, applicant_name, status, created_at, updated_at
 ) VALUES
+  -- posting1 강남: staff 지원 (대기)
   (
     '20000001-0000-4000-a000-000000000001',
     '10000001-0000-4000-a000-000000000001',
@@ -427,6 +427,7 @@ INSERT INTO public.applications (
     NOW() - INTERVAL '2 days',
     NOW() - INTERVAL '2 days'
   ),
+  -- posting2 분당: staff 확정
   (
     '20000002-0000-4000-a000-000000000002',
     '10000002-0000-4000-a000-000000000002',
@@ -435,36 +436,101 @@ INSERT INTO public.applications (
     'confirmed',
     NOW() - INTERVAL '5 days',
     NOW() - INTERVAL '1 day'
+  ),
+  -- posting1 강남: applicant 지원 (대기)
+  (
+    '20000003-0000-4000-a000-000000000003',
+    '10000001-0000-4000-a000-000000000001',
+    'd4444444-4444-4444-d444-444444444444',
+    '심사용 신청자',
+    'applied',
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+  ),
+  -- posting2 분당: applicant 확정
+  (
+    '20000004-0000-4000-a000-000000000004',
+    '10000002-0000-4000-a000-000000000002',
+    'd4444444-4444-4444-d444-444444444444',
+    '심사용 신청자',
+    'confirmed',
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '1 day'
+  ),
+  -- posting3 홍대: staff 근무 완료
+  (
+    '20000005-0000-4000-a000-000000000005',
+    '10000003-0000-4000-a000-000000000003',
+    'a1111111-1111-4111-a111-111111111111',
+    '심사용 스태프',
+    'completed',
+    NOW() - INTERVAL '10 days',
+    NOW() - INTERVAL '1 day'
+  ),
+  -- posting3 홍대: applicant 근무 완료
+  (
+    '20000006-0000-4000-a000-000000000006',
+    '10000003-0000-4000-a000-000000000003',
+    'd4444444-4444-4444-d444-444444444444',
+    '심사용 신청자',
+    'completed',
+    NOW() - INTERVAL '10 days',
+    NOW() - INTERVAL '1 day'
   )
 ON CONFLICT (id) DO NOTHING;
 
+-- posting stats 보정 — applications 상태 집계와 동기화
+-- 트리거 없이 직접 INSERT 하므로 stats jsonb + filled_positions 는 수동 갱신 필수.
+UPDATE public.job_postings
+SET stats = jsonb_build_object(
+  'totalApplicants', 2, 'activeApplicants', 2,
+  'confirmedApplicants', 0, 'cancellationPendingApplicants', 0,
+  'filledPositions', 0
+)
+WHERE id = '10000001-0000-4000-a000-000000000001';
+
+UPDATE public.job_postings
+SET
+  stats = jsonb_build_object(
+    'totalApplicants', 2, 'activeApplicants', 2,
+    'confirmedApplicants', 2, 'cancellationPendingApplicants', 0,
+    'filledPositions', 2
+  ),
+  filled_positions = 2
+WHERE id = '10000002-0000-4000-a000-000000000002';
+
+UPDATE public.job_postings
+SET stats = jsonb_build_object(
+  'totalApplicants', 2, 'activeApplicants', 0,
+  'confirmedApplicants', 0, 'cancellationPendingApplicants', 0,
+  'filledPositions', 2
+)
+WHERE id = '10000003-0000-4000-a000-000000000003';
+
 -- =========================================================================
--- Part 3c: work_logs (Case B — 트리거 없음, 직접 INSERT 2건)
+-- Part 3c: work_logs (근무 + 정산 데모 — 5건)
 -- =========================================================================
 -- 실제 컬럼: staff_id (uuid NOT NULL), job_posting_id (uuid NOT NULL),
 --   date (text NOT NULL, YYYY-MM-DD), role (staff_role NOT NULL, default 'staff')
 --   check_in_time / check_out_time (jsonb, nullable)
---   payroll_status / payroll_amount / payroll_date (nullable)
--- employer_id, scheduled_start_at/end_at, check_in_at/check_out_at 컬럼 없음.
+-- payroll_status enum: pending / completed / failed (processing 없음)
+--
+-- 데모 매트릭스:
+--   WL1 staff@posting2   — 4일 전 checked_out, 정산 completed 120000원 (과거 완료)
+--   WL2 staff@posting1   — 3일 후 scheduled                           (미래 예정)
+--   WL3 staff@posting3   — 1일 전 checked_out, 정산 completed  80000원 (홍대 마감)
+--   WL4 applicant@posting3 — 1일 전 checked_out, 정산 pending  80000원 (정산 대기)
+--   WL5 applicant@posting2 — 2일 후 scheduled                          (미래 예정)
 
 INSERT INTO public.work_logs (
-  id,
-  staff_id,
-  job_posting_id,
-  application_id,
-  date,
-  role,
-  status,
-  check_in_time,
-  check_out_time,
-  payroll_status,
-  payroll_amount,
-  payroll_date,
-  created_at,
-  updated_at
+  id, staff_id, job_posting_id, application_id,
+  date, role, status,
+  check_in_time, check_out_time,
+  payroll_status, payroll_amount, payroll_date,
+  created_at, updated_at
 ) VALUES
+  -- WL1: staff@posting2, 4일 전 완료, 정산 완료
   (
-    -- 과거 근무 (4일 전, 완료)
     '30000001-0000-4000-a000-000000000001',
     'a1111111-1111-4111-a111-111111111111',
     '10000002-0000-4000-a000-000000000002',
@@ -480,8 +546,8 @@ INSERT INTO public.work_logs (
     NOW() - INTERVAL '5 days',
     NOW() - INTERVAL '4 days'
   ),
+  -- WL2: staff@posting1, 3일 후 예정
   (
-    -- 미래 근무 (3일 후, 예정)
     '30000002-0000-4000-a000-000000000002',
     'a1111111-1111-4111-a111-111111111111',
     '10000001-0000-4000-a000-000000000001',
@@ -496,6 +562,57 @@ INSERT INTO public.work_logs (
     NULL,
     NOW(),
     NOW()
+  ),
+  -- WL3: staff@posting3 (홍대 마감), 1일 전 완료, 정산 완료
+  (
+    '30000003-0000-4000-a000-000000000003',
+    'a1111111-1111-4111-a111-111111111111',
+    '10000003-0000-4000-a000-000000000003',
+    '20000005-0000-4000-a000-000000000005',
+    (NOW() - INTERVAL '1 day')::date::text,
+    'staff',
+    'checked_out',
+    jsonb_build_object('at', (NOW() - INTERVAL '1 day 4 hours')::text),
+    jsonb_build_object('at', (NOW() - INTERVAL '1 day')::text),
+    'completed',
+    80000,
+    NOW() - INTERVAL '12 hours',
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '12 hours'
+  ),
+  -- WL4: applicant@posting3 (홍대 마감), 1일 전 완료, 정산 대기
+  (
+    '30000004-0000-4000-a000-000000000004',
+    'd4444444-4444-4444-d444-444444444444',
+    '10000003-0000-4000-a000-000000000003',
+    '20000006-0000-4000-a000-000000000006',
+    (NOW() - INTERVAL '1 day')::date::text,
+    'staff',
+    'checked_out',
+    jsonb_build_object('at', (NOW() - INTERVAL '1 day 4 hours')::text),
+    jsonb_build_object('at', (NOW() - INTERVAL '1 day')::text),
+    'pending',
+    80000,
+    NULL,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+  ),
+  -- WL5: applicant@posting2, 2일 후 예정
+  (
+    '30000005-0000-4000-a000-000000000005',
+    'd4444444-4444-4444-d444-444444444444',
+    '10000002-0000-4000-a000-000000000002',
+    '20000004-0000-4000-a000-000000000004',
+    (NOW() + INTERVAL '2 days')::date::text,
+    'staff',
+    'scheduled',
+    NULL,
+    NULL,
+    'pending',
+    NULL,
+    NULL,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
   )
 ON CONFLICT (id) DO NOTHING;
 
