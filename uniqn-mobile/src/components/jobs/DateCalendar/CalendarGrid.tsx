@@ -55,7 +55,7 @@ export const CalendarGrid = memo(function CalendarGrid({
       {/* 요일 헤더 */}
       <View className="flex-row border-b border-divider">
         {WEEKDAY_LABELS.map((label, index) => (
-          <View key={label} className="flex-1 items-center py-2">
+          <View key={label} className="flex-1 items-center py-1">
             <Text className={`text-xs font-sans-medium ${weekdayColor(index)}`}>{label}</Text>
           </View>
         ))}

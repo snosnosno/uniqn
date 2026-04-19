@@ -53,7 +53,7 @@ export const CalendarHeader = memo(function CalendarHeader({
   }, [onCollapse]);
 
   return (
-    <View className="flex-row items-center px-4 py-3">
+    <View className="flex-row items-center px-4 py-2">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="이전 달"

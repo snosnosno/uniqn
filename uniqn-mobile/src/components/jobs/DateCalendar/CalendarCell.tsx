@@ -56,7 +56,7 @@ export const CalendarCell = memo(function CalendarCell({
   }, [date, disabled, onPress]);
 
   const containerBase =
-    'flex-1 items-center justify-center min-h-[64px] rounded-sm mx-0.5 my-0.5 active:bg-secondary-100 dark:active:bg-surface-hover';
+    'flex-1 items-center justify-center min-h-[40px] rounded-sm mx-0.5 my-0.5 active:bg-secondary-100 dark:active:bg-surface-hover';
   const containerState = isSelected
     ? 'bg-primary-500'
     : isToday
