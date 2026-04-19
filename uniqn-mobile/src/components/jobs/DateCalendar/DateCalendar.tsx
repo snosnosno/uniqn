@@ -4,10 +4,11 @@
  * @description 일반 공고 탭 날짜 필터의 상태머신 컴포넌트.
  *   - 마운트: selectedDate=null → expanded, selectedDate 있음 → collapsed
  *   - 날짜 셀 탭 → onDateSelect + collapsed
- *   - CollapsedHeader 탭 → expanded 복귀
+ *   - CalendarHeader 월 이름 ▲ 탭 → collapsed (선택 유지)
+ *   - CollapsedHeader 좌측 탭 → expanded 복귀
  *   - CollapsedHeader ✕ → onDateSelect(null) + expanded
- *   - 외부 selectedDate=null로 변경 → expanded 동기화
- * @version 1.1.0
+ *   - CalendarHeader "전체 보기" 탭 → onDateSelect(null), expanded 유지
+ * @version 1.2.0
  *
  * 월 범위: 오늘의 전월 1일 ~ 오늘의 +3개월 말일 (spec 결정 #2).
  * 폴리시:
@@ -109,13 +110,6 @@ export const DateCalendar = memo(function DateCalendar({
   const canGoPrev = isAfter(visibleMonth, minMonth);
   const canGoNext = isBefore(visibleMonth, maxMonth);
 
-  // 외부 selectedDate=null 변경 시 expanded 동기화
-  useEffect(() => {
-    if (selectedDate === null) {
-      setMode('expanded');
-    }
-  }, [selectedDate]);
-
   const { data: counts = {}, isLoading, isError, refetch } = useRegularDateCounts(visibleMonth);
 
   const triggerExpandAnimation = useCallback(() => {
@@ -144,6 +138,11 @@ export const DateCalendar = memo(function DateCalendar({
     setMode('expanded');
   }, [triggerExpandAnimation]);
 
+  const handleCollapseFromHeader = useCallback(() => {
+    triggerCollapseAnimation();
+    setMode('collapsed');
+  }, [triggerCollapseAnimation]);
+
   const handleClearSelection = useCallback(() => {
     triggerExpandAnimation();
     onDateSelect(null);
@@ -158,13 +157,14 @@ export const DateCalendar = memo(function DateCalendar({
     setVisibleMonth((m) => addMonths(m, 1));
   }, []);
 
-  if (mode === 'collapsed' && selectedDate) {
-    const key = format(selectedDate, 'yyyy-MM-dd');
-    const count = counts[key] ?? 0;
+  if (mode === 'collapsed') {
+    const key = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+    const count = key ? (counts[key] ?? 0) : 0;
     return (
       <View className={className}>
         <CollapsedHeader
           selectedDate={selectedDate}
+          visibleMonth={visibleMonth}
           count={count}
           onExpand={handleExpand}
           onClear={handleClearSelection}
@@ -185,6 +185,7 @@ export const DateCalendar = memo(function DateCalendar({
         onPrev={handlePrevMonth}
         onNext={handleNextMonth}
         onClearSelection={handleClearSelection}
+        onCollapse={handleCollapseFromHeader}
       />
       <CalendarGrid
         visibleMonth={visibleMonth}

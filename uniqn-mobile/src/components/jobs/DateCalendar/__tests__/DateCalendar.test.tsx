@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DateCalendar } from '../DateCalendar';
 
@@ -18,6 +18,8 @@ jest.mock('@/utils/haptics', () => ({ triggerHaptic: jest.fn() }));
 jest.mock('@/components/icons', () => ({
   ChevronLeftIcon: () => null,
   ChevronRightIcon: () => null,
+  ChevronUpIcon: () => null,
+  ChevronDownIcon: () => null,
   CalendarIcon: () => null,
   XIcon: () => null,
 }));
@@ -111,21 +113,23 @@ describe('DateCalendar 상태머신', () => {
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 
-  it('selectedDate prop이 외부에서 null로 바뀌면 expanded 복귀', async () => {
-    // 외부 상태 전환을 직접 제어하는 래퍼
-    let externalSetter: ((d: Date | null) => void) | null = null;
-    function ExternalController() {
-      const [d, setD] = useState<Date | null>(new Date('2026-04-18T00:00:00'));
-      externalSetter = setD;
-      return <DateCalendar selectedDate={d} onDateSelect={() => undefined} />;
-    }
-    const { findByTestId, queryByTestId } = renderWithClient(<ExternalController />);
-    expect(queryByTestId('calendar-cell-2026-04-18')).toBeNull();
-
-    act(() => {
-      externalSetter?.(null);
+  it('expanded + selectedDate=null 상태에서 월 이름 탭 → collapsed 전환(전체 보기 요약 노출)', async () => {
+    const { findByText, getByLabelText, queryByTestId } = renderWithClient(<ControlledParent />);
+    // 초기 expanded — 달력 셀 노출
+    await findByText('12건');
+    fireEvent.press(getByLabelText('달력 접기'));
+    await waitFor(() => {
+      expect(getByLabelText(/달력 펼치기/)).toBeTruthy();
+      expect(queryByTestId('calendar-cell-2026-04-18')).toBeNull();
     });
+  });
 
+  it('collapsed(null) 전체 보기 요약 탭 → expanded 복귀', async () => {
+    const { findByText, getByLabelText, findByTestId } = renderWithClient(<ControlledParent />);
+    await findByText('12건');
+    fireEvent.press(getByLabelText('달력 접기'));
+    const header = await getByLabelText(/달력 펼치기/);
+    fireEvent.press(header);
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 

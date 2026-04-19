@@ -1,23 +1,22 @@
 /**
  * UNIQN Mobile - CollapsedHeader
  *
- * @description 달력이 접힌 상태의 헤더 — 선택 요약 + 펼치기 탭 + ✕ 해제
- * @version 1.0.0
- *
- * H1 디자인 (spec 결정 #8):
- *   [ 📅  4월 18일 (토) · 12건              [ ✕ ] ]
- *   ↑ 왼쪽 영역 전체 탭 = 펼치기    ↑ ✕ = 선택 해제
+ * @description 달력이 접힌 상태의 헤더
+ *   - 날짜 선택됨: [ 📅  4월 18일 (토) · 12건    [ ✕ ] ]  — 좌측 탭 = 펼치기 / ✕ = 선택 해제
+ *   - 선택 없음:   [ ▼  2026년 4월 · 전체 보기 ]         — 영역 전체 탭 = 펼치기
+ * @version 1.1.0
  */
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
-import { CalendarIcon, XIcon } from '@/components/icons';
+import { CalendarIcon, ChevronDownIcon, XIcon } from '@/components/icons';
 import { triggerHaptic } from '@/utils/haptics';
 
 interface CollapsedHeaderProps {
-  selectedDate: Date;
+  selectedDate: Date | null;
+  visibleMonth: Date;
   count: number;
   onExpand: () => void;
   onClear: () => void;
@@ -25,12 +24,11 @@ interface CollapsedHeaderProps {
 
 export const CollapsedHeader = memo(function CollapsedHeader({
   selectedDate,
+  visibleMonth,
   count,
   onExpand,
   onClear,
 }: CollapsedHeaderProps) {
-  const summary = `${format(selectedDate, 'M월 d일 (E)', { locale: ko })} · ${count}건`;
-
   const handleExpand = useCallback(() => {
     void triggerHaptic('light');
     onExpand();
@@ -40,6 +38,30 @@ export const CollapsedHeader = memo(function CollapsedHeader({
     void triggerHaptic('light');
     onClear();
   }, [onClear]);
+
+  if (!selectedDate) {
+    const monthLabel = format(visibleMonth, 'yyyy년 M월', { locale: ko });
+    return (
+      <View
+        className="flex-row items-center bg-surface-card dark:bg-surface-elevated border-b border-divider"
+        style={{ minHeight: 48 }}
+      >
+        <Pressable
+          onPress={handleExpand}
+          accessibilityRole="button"
+          accessibilityLabel={`달력 펼치기, 현재 ${monthLabel} 전체 보기`}
+          className="flex-1 flex-row items-center px-4 py-3 active:bg-secondary-100 dark:active:bg-surface-hover"
+        >
+          <ChevronDownIcon size={16} />
+          <Text className="ml-2 text-sm font-sans-medium text-content-primary">
+            {monthLabel} · 전체 보기
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const summary = `${format(selectedDate, 'M월 d일 (E)', { locale: ko })} · ${count}건`;
 
   return (
     <View
