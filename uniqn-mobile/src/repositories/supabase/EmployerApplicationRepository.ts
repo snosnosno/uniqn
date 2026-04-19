@@ -34,6 +34,20 @@ export type EmployerApplicationRejectionCategory =
   | 'identity_mismatch'
   | 'other';
 
+export interface EmployerApplicationApplicant {
+  name: string | null;
+  nickname: string | null;
+  email: string | null;
+  phone: string | null;
+  phoneVerified: boolean;
+  photoURL: string | null;
+}
+
+export interface EmployerApplicationReviewer {
+  name: string | null;
+  nickname: string | null;
+}
+
 export interface EmployerApplication {
   id: string;
   userId: string;
@@ -46,6 +60,8 @@ export interface EmployerApplication {
   agreementsSnapshot: Record<string, unknown>;
   supersedesId: string | null;
   createdAt: string;
+  applicant: EmployerApplicationApplicant | null;
+  reviewer: EmployerApplicationReviewer | null;
 }
 
 export interface RegisterAsEmployerResult {
@@ -83,6 +99,14 @@ const COMPONENT = 'SupabaseEmployerApplicationRepository';
 
 const TABLE_COLUMNS =
   'id,user_id,status,submitted_at,reviewed_at,reviewed_by,rejection_reason,rejection_category,agreements_snapshot,supersedes_id,created_at' as const;
+
+const APPLICANT_JOIN =
+  'applicant:users!employer_applications_user_id_fkey(name,nickname,email,phone,phone_verified,photo_url)' as const;
+
+const REVIEWER_JOIN =
+  'reviewer:users!employer_applications_reviewed_by_fkey(name,nickname)' as const;
+
+const ADMIN_SELECT = `${TABLE_COLUMNS},${APPLICANT_JOIN},${REVIEWER_JOIN}` as const;
 
 // ============================================================================
 // RPC 에러 메시지 → AppError 변환
@@ -128,8 +152,38 @@ function mapRpcError(error: unknown): never {
 // Row → Domain 변환
 // ============================================================================
 
+function rowToApplicant(
+  raw: Record<string, unknown> | null | undefined
+): EmployerApplicationApplicant | null {
+  if (!raw) return null;
+  return {
+    name: (raw.name as string | null) ?? null,
+    nickname: (raw.nickname as string | null) ?? null,
+    email: (raw.email as string | null) ?? null,
+    phone: (raw.phone as string | null) ?? null,
+    phoneVerified: Boolean(raw.phone_verified),
+    photoURL: (raw.photo_url as string | null) ?? null,
+  };
+}
+
+function rowToReviewer(
+  raw: Record<string, unknown> | null | undefined
+): EmployerApplicationReviewer | null {
+  if (!raw) return null;
+  return {
+    name: (raw.name as string | null) ?? null,
+    nickname: (raw.nickname as string | null) ?? null,
+  };
+}
+
 function rowToApplication(row: Record<string, unknown>): EmployerApplication {
-  return toCamelCase<EmployerApplication>(row);
+  const { applicant: applicantRaw, reviewer: reviewerRaw, ...rest } = row;
+  const base = toCamelCase<Omit<EmployerApplication, 'applicant' | 'reviewer'>>(rest);
+  return {
+    ...base,
+    applicant: rowToApplicant(applicantRaw as Record<string, unknown> | null | undefined),
+    reviewer: rowToReviewer(reviewerRaw as Record<string, unknown> | null | undefined),
+  };
 }
 
 // ============================================================================
@@ -192,7 +246,7 @@ export class SupabaseEmployerApplicationRepository {
 
     try {
       const result = await paginatedQuery<Record<string, unknown>>(TABLE, {
-        select: TABLE_COLUMNS,
+        select: ADMIN_SELECT,
         orderBy: 'submitted_at',
         ascending: false,
         pageSize,
@@ -220,7 +274,7 @@ export class SupabaseEmployerApplicationRepository {
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select(TABLE_COLUMNS)
+        .select(ADMIN_SELECT)
         .eq('id', applicationId)
         .maybeSingle();
 

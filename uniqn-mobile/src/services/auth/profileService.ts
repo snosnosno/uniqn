@@ -185,6 +185,7 @@ export async function registerAsEmployer(
     const result = await employerApplicationRepository.register(agreementsSnapshot);
 
     void invalidateQueries.user();
+    void invalidateQueries.employerApplications();
 
     logger.info('구인자 등록 신청 완료 — 관리자 승인 대기', {
       uid: user.id,

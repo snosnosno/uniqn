@@ -1,9 +1,11 @@
-import { ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { STATUS_COLORS } from '@/constants/colors';
 import { StackHeader } from '@/components/headers';
-import { Button, Card, EmptyState, Loading } from '@/components/ui';
+import { Avatar, Button, Card, EmptyState, Loading } from '@/components/ui';
+import { CheckCircleIcon, ExclamationCircleIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys } from '@/lib/queryClient';
 import type { EmployerApplication } from '@/repositories';
@@ -159,47 +161,192 @@ export default function AdminEmployerApplicationDetailPage() {
 
   const snapshot = app.agreementsSnapshot ?? {};
   const isSeeded = snapshot._seeded === true;
+  const applicant = app.applicant;
+  const reviewer = app.reviewer;
+  const phoneVerified = applicant?.phoneVerified === true;
+  const primaryName = applicant?.nickname || applicant?.name || `신청자 ${app.userId.slice(0, 8)}`;
+  const reviewerName = reviewer?.nickname || reviewer?.name;
+
+  const handleCallPhone = () => {
+    if (!applicant?.phone) return;
+    const digits = applicant.phone.replace(/[^\d+]/g, '');
+    void Linking.openURL(`tel:${digits}`);
+  };
+
+  const handleSendEmail = () => {
+    if (!applicant?.email) return;
+    void Linking.openURL(`mailto:${applicant.email}`);
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-surface-page">
       <StackHeader title="구인자 신청 상세" fallbackHref="/(admin)/employer-applications" />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {/* Card 1 — 신청자 정보 */}
+        {/* Card 1 — 신청자 헤더 (상태 + 아바타 + 표시명) */}
         <Card className="mb-4">
-          <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
-            신청자 정보
-          </Text>
           <View className="mb-3 flex-row flex-wrap items-center gap-2">
             <View className={`rounded-sm px-2.5 py-1 ${getStatusClassName(app.status)}`}>
               <Text className="text-xs font-sans-medium">{getStatusLabel(app.status)}</Text>
             </View>
+            {!phoneVerified && applicant ? (
+              <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
+                <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
+                  본인인증 미완료
+                </Text>
+              </View>
+            ) : null}
           </View>
 
-          <Text className="mb-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
-            신청자 ID: {app.userId.slice(0, 8)}...
-          </Text>
-          <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-            신청 시각: {formatTimestamp(app.submittedAt)}
-          </Text>
+          <View className="flex-row items-center gap-3">
+            <Avatar size="lg" name={primaryName} source={applicant?.photoURL ?? undefined} />
+            <View className="flex-1">
+              <Text
+                className="text-lg font-sans-semibold text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
+                {primaryName}
+              </Text>
+              <Text className="text-xs text-content-placeholder font-sans">
+                ID: {app.userId.slice(0, 8)}…
+              </Text>
+            </View>
+          </View>
 
-          {app.reviewedAt ? (
+          <View className="mt-3 border-t border-divider pt-3">
             <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              처리 시각: {formatTimestamp(app.reviewedAt)}
+              신청 시각: {formatTimestamp(app.submittedAt)}
             </Text>
-          ) : null}
 
-          {app.rejectionReason ? (
-            <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              거부 사유: {app.rejectionReason}
-            </Text>
-          ) : null}
+            {app.reviewedAt ? (
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                처리 시각: {formatTimestamp(app.reviewedAt)}
+                {reviewerName ? ` (처리자: ${reviewerName})` : ''}
+              </Text>
+            ) : null}
 
-          {app.rejectionCategory ? (
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              거부 분류: {app.rejectionCategory}
-            </Text>
-          ) : null}
+            {app.rejectionReason ? (
+              <Text className="mb-1 text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                거부 사유: {app.rejectionReason}
+              </Text>
+            ) : null}
+
+            {app.rejectionCategory ? (
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                거부 분류: {app.rejectionCategory}
+              </Text>
+            ) : null}
+          </View>
         </Card>
+
+        {/* Card 2 — 본인인증 정보 */}
+        {applicant ? (
+          <Card className="mb-4">
+            <View className="mb-3 flex-row items-center">
+              {phoneVerified ? (
+                <CheckCircleIcon size={20} color={STATUS_COLORS.success} />
+              ) : (
+                <ExclamationCircleIcon size={20} color={STATUS_COLORS.error} />
+              )}
+              <Text className="ml-2 text-base font-sans-semibold text-content-primary dark:text-off-white">
+                본인인증 정보
+              </Text>
+            </View>
+
+            <View className="flex-row justify-between py-2">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이름
+              </Text>
+              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+                {applicant.name || '-'}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center justify-between py-2">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                연락처
+              </Text>
+              {applicant.phone ? (
+                <Pressable
+                  onPress={handleCallPhone}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${applicant.phone}로 전화`}
+                >
+                  <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline">
+                    {applicant.phone}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+                  -
+                </Text>
+              )}
+            </View>
+
+            <View
+              className={`mt-2 rounded-md px-3 py-2 ${
+                phoneVerified
+                  ? 'bg-success-50 dark:bg-success-900/20'
+                  : 'bg-error-50 dark:bg-error-900/20'
+              }`}
+            >
+              <Text
+                className={`text-sm font-sans ${
+                  phoneVerified
+                    ? 'text-success-700 dark:text-success-400'
+                    : 'text-error-700 dark:text-error-400'
+                }`}
+              >
+                {phoneVerified
+                  ? '본인인증이 완료된 신청자입니다'
+                  : '본인인증이 완료되지 않았습니다'}
+              </Text>
+            </View>
+          </Card>
+        ) : null}
+
+        {/* Card 3 — 프로필 정보 */}
+        {applicant ? (
+          <Card className="mb-4">
+            <Text className="mb-3 text-base font-sans-semibold text-content-primary dark:text-off-white">
+              프로필 정보
+            </Text>
+
+            <View className="flex-row justify-between py-2">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                닉네임
+              </Text>
+              <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+                {applicant.nickname || '-'}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center justify-between py-2">
+              <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+                이메일
+              </Text>
+              {applicant.email ? (
+                <Pressable
+                  onPress={handleSendEmail}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${applicant.email}로 이메일`}
+                >
+                  <Text
+                    className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline"
+                    numberOfLines={1}
+                  >
+                    {applicant.email}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text className="text-sm font-sans-medium text-content-primary dark:text-off-white">
+                  -
+                </Text>
+              )}
+            </View>
+          </Card>
+        ) : null}
 
         {/* Card 2 — 약관 동의 스냅샷 */}
         <Card className="mb-4">

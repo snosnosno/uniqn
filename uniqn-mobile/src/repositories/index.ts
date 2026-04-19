@@ -457,6 +457,8 @@ export const boardRepository = new SupabaseBoardRepository();
 export { employerApplicationRepository } from './supabase/EmployerApplicationRepository';
 export type {
   EmployerApplication,
+  EmployerApplicationApplicant,
+  EmployerApplicationReviewer,
   EmployerApplicationStatus,
   EmployerApplicationRejectionCategory,
   RegisterAsEmployerResult,

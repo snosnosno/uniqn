@@ -4,7 +4,14 @@ import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CardStripe, type CardStripeTone, EmptyState, Loading, NumericText } from '@/components/ui';
+import {
+  Avatar,
+  CardStripe,
+  type CardStripeTone,
+  EmptyState,
+  Loading,
+  NumericText,
+} from '@/components/ui';
 import { StackHeader } from '@/components/headers';
 import { PeopleOutlineIcon } from '@/components/icons';
 import { queryKeys } from '@/lib/queryClient';
@@ -103,11 +110,16 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
   const showOverdue = app.status === 'pending' && isOverdue(app.submittedAt);
   const stripeTone = getStripeTone(app.status);
 
+  const applicant = app.applicant;
+  const primaryName = applicant?.nickname || applicant?.name || `신청자 ${app.userId.slice(0, 8)}`;
+  const subLine = applicant?.nickname && applicant?.name ? applicant.name : applicant?.email;
+  const phoneUnverified = applicant !== null && applicant.phoneVerified === false;
+
   return (
     <Pressable
       onPress={() => router.push(`/(admin)/employer-applications/${app.id}`)}
       accessibilityRole="button"
-      accessibilityLabel={`구인자 신청 상세, ${getStatusLabel(app.status)}`}
+      accessibilityLabel={`구인자 신청 상세, ${primaryName}, ${getStatusLabel(app.status)}`}
       className="mb-3 rounded-md bg-surface-card dark:bg-surface-elevated border border-divider active:opacity-80"
     >
       <CardStripe tone={stripeTone}>
@@ -124,18 +136,41 @@ function ApplicationCard({ app }: { app: EmployerApplication }) {
                   </Text>
                 </View>
               ) : null}
+              {phoneUnverified ? (
+                <View className="rounded-sm bg-error-50 px-2.5 py-1 dark:bg-error-900/30">
+                  <Text className="text-xs font-sans-medium text-error-700 dark:text-error-300">
+                    본인인증 미완료
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <NumericText className="text-xs text-content-placeholder font-sans">
               {formattedDate}
             </NumericText>
           </View>
 
-          <Text className="mb-1 text-base font-sans-semibold text-content-primary dark:text-off-white">
-            신청자 ID: {app.userId.slice(0, 8)}...
-          </Text>
+          <View className="flex-row items-center gap-3">
+            <Avatar size="md" name={primaryName} source={applicant?.photoURL ?? undefined} />
+            <View className="flex-1">
+              <Text
+                className="text-base font-sans-semibold text-content-primary dark:text-off-white"
+                numberOfLines={1}
+              >
+                {primaryName}
+              </Text>
+              {subLine ? (
+                <Text
+                  className="text-xs text-content-muted dark:text-secondary-400 font-sans"
+                  numberOfLines={1}
+                >
+                  {subLine}
+                </Text>
+              ) : null}
+            </View>
+          </View>
 
           {app.status === 'rejected' && app.rejectionCategory ? (
-            <Text className="mt-1 text-sm text-content-muted dark:text-secondary-400 font-sans">
+            <Text className="mt-2 text-sm text-content-muted dark:text-secondary-400 font-sans">
               거부 사유: {app.rejectionCategory}
             </Text>
           ) : null}
