@@ -6,7 +6,7 @@ import { LogBox, Platform, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colorScheme as nativeWindColorScheme } from 'nativewind';
+import { colorScheme as nativeWindColorScheme, vars } from 'nativewind';
 import { useFonts } from 'expo-font';
 import { Outfit_600SemiBold, Outfit_700Bold, Outfit_800ExtraBold } from '@expo-google-fonts/outfit';
 import {
@@ -24,7 +24,7 @@ import {
   ScreenErrorBoundary,
   ToastManager,
 } from '@/components/ui';
-import { getLayoutColor } from '@/constants/colors';
+import { getLayoutColor, getCssVarTokens } from '@/constants/colors';
 import { SheetProvider } from '@/components/app/SheetProvider';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAndroidOrientationPolicy } from '@/hooks/useAndroidOrientationPolicy';
@@ -95,13 +95,13 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .dark\\:text-secondary-900:is(.dark *) { color: #18181E !important; }
 
       /* bg-surface-*/border-divider 유틸리티 (NativeWind가 var() 룰 미생성) */
-      .bg-surface-page dark:bg-surface     { background-color: var(--color-surface-page) !important; }
+      .bg-surface-page     { background-color: var(--color-surface-page) !important; }
       .bg-surface-card     { background-color: var(--color-surface-card) !important; }
       .border-divider      { border-color: var(--color-divider) !important; }
       .text-divider        { color: var(--color-divider) !important; }
 
       /* 다크모드 명시 오버라이드 (CSS var 해소 실패 대비) */
-      .dark .bg-surface-page dark:bg-surface, .dark.bg-surface-page dark:bg-surface { background-color: #09090B !important; }
+      .dark .bg-surface-page, .dark.bg-surface-page { background-color: #09090B !important; }
       .dark .bg-surface-card, .dark.bg-surface-card { background-color: #111113 !important; }
       .dark .border-divider, .dark.border-divider   { border-color: #222228 !important; }
 
@@ -190,8 +190,10 @@ function MainNavigator() {
 
   useAuthGuard();
 
+  const cssVarStyle = Platform.OS !== 'web' ? vars(getCssVarTokens(isDark)) : undefined;
+
   return (
-    <View style={{ flex: 1 }} onTouchStart={handleTouchActivity}>
+    <View style={[{ flex: 1 }, cssVarStyle]} onTouchStart={handleTouchActivity}>
       {isAuthenticated ? (
         <Suspense fallback={null}>
           <AuthenticatedRuntime />

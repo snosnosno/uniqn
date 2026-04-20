@@ -325,3 +325,35 @@ export const LAYOUT_COLORS = {
 export function getLayoutColor(isDarkMode: boolean, key: keyof typeof LAYOUT_COLORS): string {
   return isDarkMode ? LAYOUT_COLORS[key].dark : LAYOUT_COLORS[key].light;
 }
+
+// ============================================================================
+// CSS 변수 토큰 (NativeWind vars() 주입용)
+// NativeWind Metro 컴파일러가 global.css의 .dark {} CSS 변수를 네이티브에 전파하지
+// 못하므로, vars() API로 루트 View에 직접 주입한다.
+// global.css의 :root / .dark 블록과 값을 동기화 유지할 것.
+// 동기화 검증: npm run quality → scripts/check-css-vars-sync.js
+// ============================================================================
+
+const CSS_VAR_LIGHT = {
+  '--color-content-primary': '#09090B',
+  '--color-content-secondary': '#606068',
+  '--color-content-muted': '#888890',
+  '--color-content-placeholder': '#A8A8B0',
+  '--color-surface-page': '#F5F5F2',
+  '--color-surface-card': '#FFFFFF',
+  '--color-divider': '#D6D2CA',
+} as const;
+
+const CSS_VAR_DARK = {
+  '--color-content-primary': '#F0F0F2',
+  '--color-content-secondary': '#C0C0C8',
+  '--color-content-muted': '#9898A0',
+  '--color-content-placeholder': '#A8A8B0',
+  '--color-surface-page': '#09090B',
+  '--color-surface-card': '#111113',
+  '--color-divider': '#222228',
+} as const;
+
+export function getCssVarTokens(isDarkMode: boolean): Record<string, string> {
+  return isDarkMode ? { ...CSS_VAR_DARK } : { ...CSS_VAR_LIGHT };
+}
