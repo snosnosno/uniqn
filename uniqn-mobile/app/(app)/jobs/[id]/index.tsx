@@ -135,7 +135,11 @@ export default function JobDetailScreen() {
   }
 
   const titleSuffix = job?.title ? (
-    <Text className="text-sm font-sans" style={{ color: secondaryTextColor }} numberOfLines={1}>
+    <Text
+      className="text-sm font-sans"
+      style={{ color: getLayoutColor(isDark, 'headerTint') }}
+      numberOfLines={1}
+    >
       · {job.title}
     </Text>
   ) : null;
