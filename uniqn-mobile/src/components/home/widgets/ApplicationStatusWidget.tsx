@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { DashboardWidgetShell } from '@/components/home/DashboardWidgetShell';
 import { NumericText } from '@/components/ui';
 import { useApplications } from '@/hooks/useApplications';
+import { APPLICATION_COUNT_LABELS } from '@/utils/applicationStatusLabel';
 
 interface StripCellProps {
   num: number;
@@ -42,7 +43,7 @@ export function ApplicationStatusWidget() {
     (a) => a.status === 'cancelled' || a.status === 'cancellation_pending'
   ).length;
 
-  const accessibilityLabel = `내 지원 현황, 대기중 ${applied}건, 확정 ${confirmed}건, 거절 ${rejected}건, 취소 ${cancelled}건`;
+  const accessibilityLabel = `내 지원 현황, ${APPLICATION_COUNT_LABELS.applied} ${applied}건, ${APPLICATION_COUNT_LABELS.confirmed} ${confirmed}건, ${APPLICATION_COUNT_LABELS.rejected} ${rejected}건, ${APPLICATION_COUNT_LABELS.cancelled} ${cancelled}건`;
 
   const emptyState = {
     message: '아직 지원한 공고가 없습니다',
@@ -72,10 +73,10 @@ export function ApplicationStatusWidget() {
           accessibilityLabel={accessibilityLabel}
           accessibilityRole="summary"
         >
-          <StripCell num={applied} label="대기중" gold />
-          <StripCell num={confirmed} label="확정" />
-          <StripCell num={rejected} label="거절" />
-          <StripCell num={cancelled} label="취소" isLast />
+          <StripCell num={applied} label={APPLICATION_COUNT_LABELS.applied} gold />
+          <StripCell num={confirmed} label={APPLICATION_COUNT_LABELS.confirmed} />
+          <StripCell num={rejected} label={APPLICATION_COUNT_LABELS.rejected} />
+          <StripCell num={cancelled} label={APPLICATION_COUNT_LABELS.cancelled} isLast />
         </View>
       ) : null}
     </DashboardWidgetShell>

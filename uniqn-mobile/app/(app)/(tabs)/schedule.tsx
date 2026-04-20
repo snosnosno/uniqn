@@ -28,6 +28,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { SECONDARY_PALETTE } from '@/constants/colors';
 import { PTR_REFRESH_PROPS } from '@/constants/ptr';
 import { formatCurrency } from '@/utils/formatters';
+import { SCHEDULE_STATS_LABELS } from '@/utils/applicationStatusLabel';
 import { STATUS } from '@/constants';
 import { getApplicationById } from '@/services/jobs/applicationService';
 import { logger } from '@/utils/logger';
@@ -192,24 +193,42 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
   return (
     <View className={BAND_CLASS}>
-      {/* 1행: 지원/확정/완료 — 숫자 text-lg, 수익은 한 단계 위(text-xl) */}
+      {/* 1행: 대기중/확정/완료 — 홈 ApplicationStatusWidget과 동일 어휘 사용 */}
       <View className="flex-row justify-around">
-        <View className="items-center" accessible accessibilityLabel="지원 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">지원</Text>
+        <View
+          className="items-center"
+          accessible
+          accessibilityLabel={`${SCHEDULE_STATS_LABELS.upcoming} 통계`}
+        >
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            {SCHEDULE_STATS_LABELS.upcoming}
+          </Text>
           <Text className="text-lg font-display text-warning-600 dark:text-warning-400">
             {stats.upcomingSchedules}
           </Text>
         </View>
         <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
-        <View className="items-center" accessible accessibilityLabel="확정 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">확정</Text>
+        <View
+          className="items-center"
+          accessible
+          accessibilityLabel={`${SCHEDULE_STATS_LABELS.confirmed} 통계`}
+        >
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            {SCHEDULE_STATS_LABELS.confirmed}
+          </Text>
           <Text className="text-lg font-display text-success-600 dark:text-success-400">
             {stats.confirmedSchedules}
           </Text>
         </View>
         <View className="h-6 w-px bg-secondary-200 dark:bg-surface-overlay" />
-        <View className="items-center" accessible accessibilityLabel="완료 통계">
-          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">완료</Text>
+        <View
+          className="items-center"
+          accessible
+          accessibilityLabel={`${SCHEDULE_STATS_LABELS.completed} 통계`}
+        >
+          <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+            {SCHEDULE_STATS_LABELS.completed}
+          </Text>
           <Text className="text-lg font-display text-content-primary dark:text-secondary-100">
             {stats.completedSchedules}
           </Text>
