@@ -30,12 +30,13 @@
 
 > 상세는 `.gstack/qa-reports/MASTER_BASELINE.json` 참조. Health 평균 86/100, critical/high 0건, medium 14 + low 9.
 
-### FIX WINDOW 2 (DB-only fast-track)
+### FIX WINDOW 2A (DB-only fast-track) ✅ 2026-04-20
 
-- **ST-001 board comment_count drift**: `UPDATE board_posts SET comment_count = (SELECT COUNT(*) FROM board_comments WHERE post_id = board_posts.id)` + QA 댓글 cleanup (baseline.json sideEffects 참고)
-- **ST-002 notifications 중복**: 레거시 `fn_notify_*` triggers DROP — 실제 DB 확인된 중복 trigger 리스트는 phase-4-admin-notif/notifications/report.md
-- **EJ-002 템플릿 시드**: employer b2222222 소유 "주말 스태프 모집 템플릿" migration 추가
-- **AD-001 심사용 applicant**: 별도 staff 계정의 pending employer_application 시드 (현재는 admin 본인 계정)
+- [x] **ST-001** board_posts.comment_count reconcile + QA 댓글 cleanup — migration `20260420142540_qa_fix_st001_...` (단, 일회성 reconcile — 2E에서 trigger로 구조 보강)
+- [x] **ST-002** 레거시 `fn_notify_*` triggers DROP (phase1: 5개 / phase2: 7개) — migrations `20260420142649_qa_fix_st002_...`, `20260420235202_..._phase2.sql` + 후속 `drop_legacy_report_notify_trigger` + `drop_unreferenced_legacy_notify_functions`
+- [x] **EJ-002** "주말 스태프 모집 템플릿" seed (b2222222) — migration `20260420142758_qa_fix_ej002_...`
+- AD-001은 FIX WINDOW 2D로 이관 (별도 staff 계정 시드)
+- 상세: `.gstack/qa-reports/FIX-WINDOW-2A.md`, `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`
 
 ### FIX WINDOW 2B (copy fast-track) ✅ 2026-04-20
 
@@ -64,6 +65,14 @@
 - [x] **ES-003** 정산 완료 시점 customAllowances snapshot 자동 저장 (retro-active 차단) — 1475218d0
 - [x] **WK-004** work_logs.check_in/out_time 레거시 Firebase Timestamp → ISO string(jsonb) 정규화 — 1ee82ccaf
 - 상세: `.gstack/qa-reports/FIX-WINDOW-2D.md`
+
+### FIX WINDOW 2E (검증 리런 후속) ✅ 2026-04-21
+
+- [x] **ST-001 regression 구조 fix** board_comments INSERT/UPDATE/DELETE trigger 추가 (`tr_board_comment_count_sync`) — migration `20260421030000_qa_fix_st001e_...`. 2A의 일회성 reconcile은 쓰기 trigger 부재로 drift 재발했음(검증 결과 post e2222222 stored 0 vs actual 1). 이제 구조적으로 동기화.
+- [x] **WK-005** WorkTab 퇴근 "예정 미정" → "예정 / 시간 협의" (value === '미정'일 때 copy 대체, 출근도 대칭 적용)
+- [x] TODOS.md FIX WINDOW 2A 섹션 재라벨링 + checkbox 반영 (docs drift 해소)
+- **AD-003** (admin) group 라우팅 prefix 혼동 → **deferred** (Expo Router 구조 결정 필요, LOW severity, 후속 세션)
+- 상세: `.gstack/qa-reports/FIX-WINDOW-2E.md`
 
 ### 후속 세션
 
