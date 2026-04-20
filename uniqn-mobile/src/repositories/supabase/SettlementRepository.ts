@@ -132,13 +132,11 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
       };
 
       if (context.checkInTime !== undefined) {
-        updateData.check_in_time = context.checkInTime ? context.checkInTime.toISOString() : null;
+        updateData.check_in_ts = context.checkInTime ? context.checkInTime.toISOString() : null;
       }
 
       if (context.checkOutTime !== undefined) {
-        updateData.check_out_time = context.checkOutTime
-          ? context.checkOutTime.toISOString()
-          : null;
+        updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
       }
 
       if (context.notes !== undefined) {

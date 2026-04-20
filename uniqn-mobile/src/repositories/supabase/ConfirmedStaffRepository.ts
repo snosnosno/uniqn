@@ -241,13 +241,11 @@ export class SupabaseConfirmedStaffRepository implements IConfirmedStaffReposito
       };
 
       if (context.checkInTime !== undefined) {
-        updateData.check_in_time = context.checkInTime ? context.checkInTime.toISOString() : null;
+        updateData.check_in_ts = context.checkInTime ? context.checkInTime.toISOString() : null;
       }
 
       if (context.checkOutTime !== undefined) {
-        updateData.check_out_time = context.checkOutTime
-          ? context.checkOutTime.toISOString()
-          : null;
+        updateData.check_out_ts = context.checkOutTime ? context.checkOutTime.toISOString() : null;
       }
 
       // 상태 결정: 양쪽 다 있으면 checked_out

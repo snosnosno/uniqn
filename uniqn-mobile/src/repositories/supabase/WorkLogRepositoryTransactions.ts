@@ -68,11 +68,11 @@ export async function executeUpdateWorkTime(
     };
 
     if (updates.checkInTime) {
-      updateData.check_in_time = updates.checkInTime.toISOString();
+      updateData.check_in_ts = updates.checkInTime.toISOString();
     }
 
     if (updates.checkOutTime) {
-      updateData.check_out_time = updates.checkOutTime.toISOString();
+      updateData.check_out_ts = updates.checkOutTime.toISOString();
     }
 
     if (updates.notes !== undefined) {
