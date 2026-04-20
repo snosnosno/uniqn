@@ -23,3 +23,44 @@
 - **Context**: MVP 배포 후 앱 시작 시간(TTI) 측정 결과에 따라 결정. 3초 이내면 현재 상태 유지, 5초 이상이면 구현 고려. Expo의 기본 프로파일링 또는 `@shopify/react-native-performance` 활용 가능.
 - **Depends on**: MVP 배포, 실측 데이터 수집.
 - **Status**: 비용/최적화 추적 TODO. 성능 지표 정량화 후 판단.
+
+---
+
+## 전체 QA 발견 (2026-04-20 Phase 1~4)
+
+> 상세는 `.gstack/qa-reports/MASTER_BASELINE.json` 참조. Health 평균 86/100, critical/high 0건, medium 14 + low 9.
+
+### FIX WINDOW 2 (DB-only fast-track)
+
+- **ST-001 board comment_count drift**: `UPDATE board_posts SET comment_count = (SELECT COUNT(*) FROM board_comments WHERE post_id = board_posts.id)` + QA 댓글 cleanup (baseline.json sideEffects 참고)
+- **ST-002 notifications 중복**: 레거시 `fn_notify_*` triggers DROP — 실제 DB 확인된 중복 trigger 리스트는 phase-4-admin-notif/notifications/report.md
+- **EJ-002 템플릿 시드**: employer b2222222 소유 "주말 스태프 모집 템플릿" migration 추가
+- **AD-001 심사용 applicant**: 별도 staff 계정의 pending employer_application 시드 (현재는 admin 본인 계정)
+
+### FIX WINDOW 2 (copy fast-track)
+
+- **ST-003** 리뷰 D-day 7일 vs 9일 (4/15 완료 + D-4 = 4/24 마감)
+- **ST-004** 공지 탭 empty copy 역할별 분기
+- **JS-001** 튜토리얼 "날짜 슬라이더" → "달력"
+- **ES-002** 정산 모달 퇴근 02:00 색상 중립 + "익일" 배지
+
+### FIX WINDOW 2 (코드 수정)
+
+- **EJ-001** 공고 카드 "지원자 N" 카운트 로직 (목록↔상세 소스 단일화)
+- **JS-002** JobCard aria-label role_catalog fallback
+- **JS-003** 공고 상세 헤더 텍스트 color 토큰
+- **JS-004** application.status ↔ work_log.status 매핑 단일 함수
+- **WK-001 / WK-002** QR 스캐너 닫기 버튼 + 카메라 fallback
+- **AD-002** 구인자 신청 상세 applicant 필드 렌더 (a5bd38440 UI 완성)
+- **EJ-003** 전화번호 표시 정규화 유틸
+- **EJ-004** 스태프 관리 필터에 COMPLETED 상태 매핑
+
+### 기획 동의 후 반영
+
+- **ES-001** 정산 gross/afterTax copy 재설계 (employer 화면에도 "확정" 분리)
+- **ES-003 + WK-004** work_logs 스키마 정리 (custom_allowances snapshot + check_in/out_time 타입 정리)
+
+### 후속 세션
+
+- **Phase 5 qa/offline**: 오프라인 복구 QA — 실기기 + 별도 세션 필요
+- 알림 emitter 통합: notifications 중복 SQL fix 후 code path 레거시 참조 정리
