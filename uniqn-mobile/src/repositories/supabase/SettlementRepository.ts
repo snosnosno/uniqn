@@ -220,6 +220,14 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
         updateData.payroll_notes = context.notes;
       }
 
+      // ES-003: 정산 완료 시점에 allowance snapshot 저장 (customAllowances 비어있을 때만)
+      // 공고 수정으로 과거 정산이 retro-active 변경되는 것을 방지
+      const workLogWithOverrides = workLog as WorkLogWithOverrides;
+      const postingAllowances = jobPosting.compensation?.allowances;
+      if (!workLogWithOverrides.customAllowances && postingAllowances) {
+        updateData.custom_allowances = postingAllowances;
+      }
+
       const { error } = await supabase
         .from(WORK_LOGS_TABLE)
         .update(updateData)
@@ -398,6 +406,13 @@ export class SupabaseSettlementRepository implements ISettlementRepository {
 
           if (context.notes !== undefined) {
             updateData.payroll_notes = context.notes;
+          }
+
+          // ES-003: allowance snapshot (customAllowances 비어있을 때만 공고값 복사)
+          const workLogWithOverridesBulk = workLog as WorkLogWithOverrides;
+          const postingAllowancesBulk = jobPosting.compensation?.allowances;
+          if (!workLogWithOverridesBulk.customAllowances && postingAllowancesBulk) {
+            updateData.custom_allowances = postingAllowancesBulk;
           }
 
           const { error: updateError } = await supabase
