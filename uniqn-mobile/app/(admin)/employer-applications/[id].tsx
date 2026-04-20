@@ -16,6 +16,7 @@ import {
 } from '@/services/admin';
 import { confirmAction } from '@/utils/confirmAction';
 import { toDate } from '@/utils/date';
+import { formatE164ToDisplay } from '@/utils/phone';
 
 // ============================================================================
 // Helpers
@@ -270,10 +271,10 @@ export default function AdminEmployerApplicationDetailPage() {
                   onPress={handleCallPhone}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel={`${applicant.phone}로 전화`}
+                  accessibilityLabel={`${formatE164ToDisplay(applicant.phone)}로 전화`}
                 >
                   <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400 underline">
-                    {applicant.phone}
+                    {formatE164ToDisplay(applicant.phone)}
                   </Text>
                 </Pressable>
               ) : (

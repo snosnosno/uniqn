@@ -3,6 +3,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { formatBirthDate } from '@/utils/formatters';
 import { toDate } from '@/utils/date';
+import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserProfile } from '@/services';
 import {
   BriefcaseIcon,
@@ -185,7 +186,7 @@ export function ContactInfoSection({
         <InfoRow
           icon={<PhoneIcon size={16} color={SECONDARY_PALETTE[500]} />}
           label="전화번호"
-          value={phone}
+          value={formatE164ToDisplay(phone)}
         />
       ) : null}
 
