@@ -195,3 +195,30 @@ describe('executeProcessQRCheckInOut — 에러 매핑', () => {
     ).rejects.toBeInstanceOf(InvalidQRCodeError);
   });
 });
+
+describe('executeProcessQRCheckInOut — Phase C 응답 호환', () => {
+  it('checkIn 응답의 check_in_time 이 ISO string 이면 정상 처리', async () => {
+    const iso = '2026-04-21T12:00:00.000Z';
+    mockRpc.mockResolvedValue({
+      data: {
+        success: true,
+        action: 'checkIn',
+        check_in_time: iso,
+        work_duration: 0,
+      },
+      error: null,
+    });
+
+    const result = await executeProcessQRCheckInOut(
+      WORK_LOG_ID,
+      STAFF_ID,
+      JOB_POSTING_ID,
+      'checkIn',
+      new Date(iso),
+      EXPECTED_DATE
+    );
+
+    expect(result.action).toBe('checkIn');
+    expect(result.workDuration).toBe(0);
+  });
+});
