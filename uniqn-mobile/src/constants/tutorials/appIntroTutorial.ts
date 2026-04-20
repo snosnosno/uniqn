@@ -30,7 +30,7 @@ const STAFF_PAGES: readonly TutorialPage[] = [
     title: '원하는 공고를 찾아보세요',
     subtitle: '날짜, 지역, 타입별로 필터링하세요',
     description:
-      '긴급, 대회, 일반, 고정 4가지 타입의 공고를 탐색하고\n날짜 슬라이더로 원하는 날짜의 공고만 볼 수 있어요.',
+      '긴급, 대회, 일반, 고정 4가지 타입의 공고를 탐색하고\n달력에서 원하는 날짜의 공고만 볼 수 있어요.',
   },
   {
     id: 'staff-apply',
