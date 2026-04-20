@@ -148,34 +148,41 @@ export const BoardCommentItem = memo(function BoardCommentItem({
         }
       >
         <Card className="border border-secondary-100 bg-white dark:border-surface-overlay dark:bg-surface">
-          <View className="mb-3 flex-row flex-wrap items-center gap-x-2 gap-y-1">
-            <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
-              {comment.authorName}
-            </Text>
-            <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
-              {getAuthorRoleLabel(comment.authorRole)}
-            </Badge>
-            {comment.isPinned ? (
-              <Badge variant="warning" size="sm">
-                고정
-              </Badge>
-            ) : null}
-            {createdAtLabel ? (
-              <Text className="ml-auto text-xs text-content-placeholder font-sans">
-                {createdAtLabel}
+          {contentDisabled ? (
+            <View className="flex-row items-center gap-2">
+              <Text className="flex-1 text-sm font-sans italic leading-6 text-content-placeholder dark:text-secondary-500">
+                {comment.body}
               </Text>
-            ) : null}
-          </View>
+              {createdAtLabel ? (
+                <Text className="text-xs text-content-placeholder font-sans">{createdAtLabel}</Text>
+              ) : null}
+            </View>
+          ) : (
+            <>
+              <View className="mb-3 flex-row flex-wrap items-center gap-x-2 gap-y-1">
+                <Text className="text-sm font-sans-semibold text-content-primary dark:text-secondary-100">
+                  {comment.authorName}
+                </Text>
+                <Badge variant={getRoleBadgeVariant(comment.authorRole)} size="sm">
+                  {getAuthorRoleLabel(comment.authorRole)}
+                </Badge>
+                {comment.isPinned ? (
+                  <Badge variant="warning" size="sm">
+                    고정
+                  </Badge>
+                ) : null}
+                {createdAtLabel ? (
+                  <Text className="ml-auto text-xs text-content-placeholder font-sans">
+                    {createdAtLabel}
+                  </Text>
+                ) : null}
+              </View>
 
-          <Text
-            className={`text-sm font-sans leading-6 ${
-              contentDisabled
-                ? 'italic text-content-placeholder dark:text-secondary-500'
-                : 'text-secondary-700 dark:text-secondary-300'
-            }`}
-          >
-            {comment.body}
-          </Text>
+              <Text className="text-sm font-sans leading-6 text-secondary-700 dark:text-secondary-300">
+                {comment.body}
+              </Text>
+            </>
+          )}
 
           {!contentDisabled ? (
             <BoardImageGrid
