@@ -50,6 +50,7 @@ const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: STATUS.WORK_LOG.SCHEDULED, label: FILTER_LABELS.scheduled },
   { value: STATUS.WORK_LOG.CHECKED_IN, label: FILTER_LABELS.checked_in },
   { value: STATUS.WORK_LOG.CHECKED_OUT, label: FILTER_LABELS.checked_out },
+  { value: STATUS.WORK_LOG.COMPLETED, label: FILTER_LABELS.completed },
 ];
 
 interface SectionHeaderProps {
