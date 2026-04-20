@@ -9,7 +9,7 @@ import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
-import { EmptyState, Button } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
 import { InquiryCard, INQUIRY_STATUS_STRIPE_TONE } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useMyInquiries } from '@/hooks/useInquiry';
@@ -63,12 +63,12 @@ export default function MyInquiriesScreen() {
 
   const renderEmpty = useCallback(
     () => (
-      <View className="flex-1 items-center justify-center px-4 py-12">
-        <EmptyState title="문의 내역이 없습니다" description="아직 문의하신 내역이 없습니다" />
-        <Button onPress={handleCreateInquiry} className="mt-4">
-          1:1 문의하기
-        </Button>
-      </View>
+      <EmptyState
+        title="아직 문의한 내역이 없어요"
+        description="궁금한 점이 있으시면 언제든 문의해주세요. 영업일 기준 1~2일 내에 답변드립니다."
+        actionLabel="1:1 문의하기"
+        onAction={handleCreateInquiry}
+      />
     ),
     [handleCreateInquiry]
   );

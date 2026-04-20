@@ -16,6 +16,8 @@ import type {
   CreateInquiryInput,
   RespondInquiryInput,
   InquiryFilters,
+  InquiryAttachment,
+  LocalInquiryAttachment,
 } from '@/types';
 
 // ============================================================================
@@ -125,4 +127,50 @@ export interface IInquiryRepository {
    * @param status - 변경할 상태
    */
   updateStatus(inquiryId: string, status: InquiryStatus): Promise<void>;
+
+  // ==========================================================================
+  // 첨부파일 (Attachments)
+  // ==========================================================================
+
+  /**
+   * 첨부파일 순차 업로드 (Storage). 실패 시 이미 업로드된 파일을 rollback한다.
+   *
+   * 경로: {userId}/{inquiryId}/{timestamp}-{random}.{ext}
+   *
+   * @returns 업로드된 InquiryAttachment 배열 (모두 성공한 경우)
+   * @throws 한 장이라도 실패하면 이미 업로드된 파일 삭제 후 에러 throw
+   */
+  uploadAttachments(
+    userId: string,
+    inquiryId: string,
+    files: LocalInquiryAttachment[]
+  ): Promise<InquiryAttachment[]>;
+
+  /**
+   * 문의 attachments JSONB 컬럼 갱신 (교체)
+   */
+  updateAttachments(inquiryId: string, attachments: InquiryAttachment[]): Promise<void>;
+
+  /**
+   * Storage에서 첨부파일 경로 목록 삭제 (rollback 또는 문의 삭제 cascade)
+   */
+  removeAttachmentsFromStorage(paths: string[]): Promise<void>;
+
+  /**
+   * Storage 경로에 대한 signed URL 발급 (조회용)
+   * @param expiresInSeconds - 기본 3600(1시간)
+   */
+  getSignedAttachmentUrl(path: string, expiresInSeconds?: number): Promise<string>;
+
+  // ==========================================================================
+  // 삭제 (Delete)
+  // ==========================================================================
+
+  /**
+   * 사용자가 자기 문의 삭제 (rollback 또는 사용자 명시적 삭제)
+   *
+   * 가드: 본인 소유 + status = 'open' 만 허용. 그 외는 에러.
+   * DB 레벨 RLS 정책으로 한 번 더 방어되지만 Repository도 명시적 체크.
+   */
+  deleteInquiry(inquiryId: string, userId: string): Promise<void>;
 }

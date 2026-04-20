@@ -20,6 +20,9 @@ import {
   respondToInquiry,
   updateInquiryStatus,
   getUnansweredCount,
+  attachFilesToInquiry,
+  deleteMyInquiry,
+  getInquiryAttachmentSignedUrl,
 } from '@/services/inquiryService';
 import type {
   Inquiry,
@@ -28,6 +31,7 @@ import type {
   RespondInquiryInput,
   InquiryFilters,
   InquiryCategory,
+  LocalInquiryAttachment,
 } from '@/types';
 import { FAQ_DATA, filterFAQByCategory } from '@/types/inquiry';
 import type { InquiryPaginationCursor } from '@/repositories';
@@ -177,7 +181,14 @@ export function useInquiryDetail(inquiryId: string | undefined) {
 // 문의 생성 (사용자)
 // ============================================================================
 
-export function useCreateInquiry() {
+/**
+ * 문의 생성 mutation
+ *
+ * @param options.silent true면 success/error toast 표시 안 함.
+ *   첨부파일 오케스트레이션처럼 호출 측에서 최종 성공 시점을 판단할 때 사용.
+ */
+export function useCreateInquiry(options: { silent?: boolean } = {}) {
+  const { silent = false } = options;
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
@@ -205,11 +216,80 @@ export function useCreateInquiry() {
     onSuccess: () => {
       // user.uid를 포함한 쿼리 키로 invalidate
       queryClient.invalidateQueries({ queryKey: [...queryKeys.inquiries.mine(), user?.uid] });
-      addToast({ type: 'success', message: '문의가 접수되었습니다' });
+      if (!silent) addToast({ type: 'success', message: '문의가 접수되었습니다' });
     },
     onError: () => {
-      addToast({ type: 'error', message: '문의 접수에 실패했습니다' });
+      if (!silent) addToast({ type: 'error', message: '문의 접수에 실패했습니다' });
     },
+  });
+}
+
+// ============================================================================
+// 첨부파일 추가 (사용자)
+// ============================================================================
+
+interface AttachInquiryFilesParams {
+  inquiryId: string;
+  files: LocalInquiryAttachment[];
+}
+
+/**
+ * 첨부파일 업로드 mutation. 실패 시 Repository/Service가 Storage 롤백 처리.
+ * 문의 자체의 롤백(DELETE)은 호출 측에서 useDeleteMyInquiry로 처리.
+ */
+export function useAttachInquiryFiles() {
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+
+  return useMutation({
+    mutationFn: async ({ inquiryId, files }: AttachInquiryFilesParams) => {
+      requireAuth(user?.uid, 'useInquiry.attachInquiryFiles');
+      return attachFilesToInquiry(user.uid, inquiryId, files);
+    },
+    onSuccess: (_, { inquiryId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.inquiries.detail(inquiryId) });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.inquiries.mine(), user?.uid] });
+    },
+  });
+}
+
+// ============================================================================
+// 문의 삭제 (사용자 본인, status=open)
+// ============================================================================
+
+/**
+ * 문의 삭제 mutation. 전체 롤백 또는 사용자 명시적 철회에 사용.
+ * Storage 첨부 정리까지 best-effort로 수행.
+ */
+export function useDeleteMyInquiry() {
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+
+  return useMutation({
+    mutationFn: async (inquiryId: string) => {
+      requireAuth(user?.uid, 'useInquiry.deleteMyInquiry');
+      return deleteMyInquiry(user.uid, inquiryId);
+    },
+    onSuccess: (_, inquiryId) => {
+      queryClient.removeQueries({ queryKey: queryKeys.inquiries.detail(inquiryId) });
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.inquiries.mine(), user?.uid] });
+    },
+  });
+}
+
+// ============================================================================
+// 첨부 이미지 signed URL (조회)
+// ============================================================================
+
+/**
+ * Storage path로 signed URL 조회. 1시간 TTL, 50분 staleTime으로 자동 갱신.
+ */
+export function useInquiryAttachmentUrl(path: string | undefined) {
+  return useQuery({
+    queryKey: ['inquiry-attachment-url', path],
+    queryFn: () => getInquiryAttachmentSignedUrl(path!),
+    enabled: !!path,
+    staleTime: 1000 * 60 * 50, // 50분 (TTL 1시간 - 10분 여유)
   });
 }
 

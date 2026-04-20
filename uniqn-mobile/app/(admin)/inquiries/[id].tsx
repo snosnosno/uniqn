@@ -10,7 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Card } from '@/components/ui';
-import { InquiryStatusBadge, InquiryResponseForm } from '@/components/support';
+import {
+  InquiryStatusBadge,
+  InquiryResponseForm,
+  InquiryAttachmentGallery,
+} from '@/components/support';
 import { useInquiryDetail, useRespondInquiry } from '@/hooks/useInquiry';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
 import type { RespondInquiryInput } from '@/types';
@@ -109,23 +113,7 @@ export default function AdminInquiryDetailScreen() {
           </View>
 
           {/* 첨부파일 */}
-          {inquiry.attachments && inquiry.attachments.length > 0 && (
-            <View className="mt-4">
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
-                첨부파일 ({inquiry.attachments.length})
-              </Text>
-              {inquiry.attachments.map((attachment, index) => (
-                <View
-                  key={index}
-                  className="mb-1 rounded-lg bg-surface-card px-3 py-2 dark:bg-surface"
-                >
-                  <Text className="text-sm text-content-secondary font-sans">
-                    {attachment.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
+          <InquiryAttachmentGallery attachments={inquiry.attachments ?? []} />
         </Card>
 
         {/* 기존 답변 (있는 경우) */}

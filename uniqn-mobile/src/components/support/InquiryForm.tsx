@@ -11,14 +11,15 @@ import { View, Text, TextInput, KeyboardAvoidingView, Platform, ScrollView } fro
 import { useThemeStore } from '@/stores/themeStore';
 import { Button, FormField, FormSelect } from '@/components/ui';
 import type { SelectOption } from '@/components/ui';
-import type { InquiryCategory, CreateInquiryInput } from '@/types';
+import type { InquiryCategory, CreateInquiryInput, LocalInquiryAttachment } from '@/types';
 import { INQUIRY_CATEGORIES } from '@/types/inquiry';
 import { createInquirySchema } from '@/schemas';
+import { InquiryAttachmentPicker } from './InquiryAttachmentPicker';
 import { z } from 'zod';
 
 export interface InquiryFormProps {
-  /** 제출 핸들러 */
-  onSubmit: (data: CreateInquiryInput) => void;
+  /** 제출 핸들러 (데이터 + 로컬 첨부파일 분리 전달) */
+  onSubmit: (data: CreateInquiryInput, attachments: LocalInquiryAttachment[]) => void;
   /** 제출 중 상태 */
   isSubmitting?: boolean;
   /** 취소 핸들러 */
@@ -46,6 +47,7 @@ export function InquiryForm({
   const [category, setCategory] = useState<InquiryCategory | ''>(defaultCategory || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [attachments, setAttachments] = useState<LocalInquiryAttachment[]>([]);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   // 다크모드 대응 입력 필드 스타일
@@ -94,12 +96,15 @@ export function InquiryForm({
       return;
     }
 
-    onSubmit({
-      category: category as InquiryCategory,
-      subject,
-      message,
-    });
-  }, [category, subject, message, onSubmit]);
+    onSubmit(
+      {
+        category: category as InquiryCategory,
+        subject,
+        message,
+      },
+      attachments
+    );
+  }, [category, subject, message, attachments, onSubmit]);
 
   const isValid = category && subject.length >= 2 && message.length >= 10;
 
@@ -183,6 +188,15 @@ export function InquiryForm({
           <Text className="mt-1 text-right text-xs text-content-placeholder font-sans">
             {message.length}/2000
           </Text>
+        </FormField>
+
+        {/* 첨부파일 */}
+        <FormField label="이미지 첨부 (선택)" className="mb-6">
+          <InquiryAttachmentPicker
+            value={attachments}
+            onChange={setAttachments}
+            disabled={isSubmitting}
+          />
         </FormField>
 
         {/* 버튼 */}

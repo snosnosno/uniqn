@@ -6,9 +6,9 @@
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { PRIMARY_COLORS } from '@/constants/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { Card, NumericText } from '@/components/ui';
-import { InquiryStatusBadge } from '@/components/support';
+import { useLocalSearchParams, router } from 'expo-router';
+import { Card, NumericText, Button } from '@/components/ui';
+import { InquiryStatusBadge, InquiryAttachmentGallery } from '@/components/support';
 import { StackHeader } from '@/components/headers';
 import { useInquiryDetail } from '@/hooks/useInquiry';
 import { INQUIRY_CATEGORY_LABELS } from '@/types/inquiry';
@@ -18,7 +18,15 @@ import { ko } from 'date-fns/locale/ko';
 
 export default function InquiryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: inquiry, isLoading, isError } = useInquiryDetail(id);
+  const { data: inquiry, isLoading, isError, refetch, isRefetching } = useInquiryDetail(id);
+
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(app)/support/my-inquiries');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -35,8 +43,21 @@ export default function InquiryDetailScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
         <StackHeader title="문의 상세" fallbackHref="/(app)/support/my-inquiries" />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-content-muted font-sans">문의를 찾을 수 없습니다</Text>
+        <View className="flex-1 items-center justify-center px-6 py-12">
+          <Text className="mb-2 text-center text-lg font-display-semibold text-content-primary dark:text-secondary-100">
+            문의를 불러오지 못했어요
+          </Text>
+          <Text className="mb-6 text-center text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+            일시적인 네트워크 문제일 수 있어요. 잠시 후 다시 시도해주세요.
+          </Text>
+          <View className="flex-row gap-3">
+            <Button variant="outline" onPress={handleGoBack}>
+              목록으로
+            </Button>
+            <Button onPress={() => refetch()} loading={isRefetching}>
+              다시 시도
+            </Button>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -78,23 +99,7 @@ export default function InquiryDetailScreen() {
           </View>
 
           {/* 첨부파일 */}
-          {inquiry.attachments && inquiry.attachments.length > 0 && (
-            <View className="mt-4">
-              <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
-                첨부파일 ({inquiry.attachments.length})
-              </Text>
-              {inquiry.attachments.map((attachment, index) => (
-                <View
-                  key={index}
-                  className="mb-1 rounded-lg bg-surface-card px-3 py-2 dark:bg-surface"
-                >
-                  <Text className="text-sm text-content-secondary font-sans">
-                    {attachment.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
+          <InquiryAttachmentGallery attachments={inquiry.attachments ?? []} />
         </Card>
 
         {/* 답변 */}

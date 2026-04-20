@@ -9,13 +9,16 @@ import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { inquiryRepository } from '@/repositories';
 import { requireAdminUser, requireMatchingCurrentUser } from '@/services/auth/authorizationService';
-import { createInquirySchema, respondInquirySchema } from '@/schemas';
+import { createInquirySchema, respondInquirySchema, attachInquiryFilesSchema } from '@/schemas';
+import { INQUIRY_ATTACHMENT_LIMITS } from '@/types';
 import type {
   Inquiry,
   InquiryStatus,
   CreateInquiryInput,
   RespondInquiryInput,
   InquiryFilters,
+  InquiryAttachment,
+  LocalInquiryAttachment,
 } from '@/types';
 import type { InquiryPaginationCursor } from '@/repositories';
 
@@ -209,6 +212,163 @@ export async function getUnansweredCount(): Promise<number> {
   }
 }
 
+/**
+ * 첨부파일을 문의에 추가 (전체 롤백 지원)
+ *
+ * 흐름:
+ * 1. 로컬 파일 Zod 검증 (MIME / 크기 / 개수)
+ * 2. 기존 attachments 로드 후 합산이 3개 초과면 reject (동시성 방어)
+ * 3. Storage 순차 업로드 (실패 시 Repository가 이미 업로드한 파일 rollback)
+ * 4. DB attachments JSONB 갱신 — 실패 시 방금 업로드한 Storage 파일 수동 rollback
+ */
+export async function attachFilesToInquiry(
+  userId: string,
+  inquiryId: string,
+  files: LocalInquiryAttachment[]
+): Promise<InquiryAttachment[]> {
+  const currentUser = await requireMatchingCurrentUser(userId);
+
+  const validationResult = attachInquiryFilesSchema.safeParse({ inquiryId, files });
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '첨부파일을 확인해주세요.',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
+
+  const inquiry = await inquiryRepository.getById(inquiryId);
+  if (!inquiry || inquiry.userId !== currentUser.id) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '해당 문의를 찾을 수 없습니다.',
+      field: 'inquiryId',
+    });
+  }
+
+  const existing = inquiry.attachments ?? [];
+  if (existing.length + files.length > INQUIRY_ATTACHMENT_LIMITS.MAX_COUNT) {
+    throw new ValidationError(ERROR_CODES.VALIDATION_MAX_LENGTH, {
+      userMessage: `이미지는 최대 ${INQUIRY_ATTACHMENT_LIMITS.MAX_COUNT}장까지 첨부 가능합니다.`,
+      field: 'files',
+    });
+  }
+
+  let uploadedNow: InquiryAttachment[] = [];
+  try {
+    uploadedNow = await inquiryRepository.uploadAttachments(currentUser.id, inquiryId, files);
+
+    try {
+      await inquiryRepository.updateAttachments(inquiryId, [...existing, ...uploadedNow]);
+    } catch (dbError) {
+      // DB 갱신 실패 — 방금 업로드한 Storage 파일 롤백
+      logger.warn('inquiry.attach.db_failed_rollback_storage', {
+        component: COMPONENT,
+        inquiryId,
+        count: uploadedNow.length,
+      });
+      try {
+        await inquiryRepository.removeAttachmentsFromStorage(uploadedNow.map((a) => a.path));
+      } catch (rollbackError) {
+        logger.error('inquiry.attach.storage_rollback_failed', {
+          component: COMPONENT,
+          inquiryId,
+          rollbackError,
+        });
+      }
+      throw dbError;
+    }
+
+    logger.info('inquiry.attach.success', {
+      component: COMPONENT,
+      inquiryId,
+      count: uploadedNow.length,
+    });
+
+    return uploadedNow;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 첨부파일 추가',
+      component: COMPONENT,
+      context: { userId: currentUser.id, inquiryId, count: files.length },
+    });
+  }
+}
+
+/**
+ * 문의 삭제 (본인 + status=open 만 허용)
+ *
+ * 용도:
+ * - 전체 롤백: 첨부 실패 시 방금 생성한 문의를 원자적으로 제거
+ * - 사용자 명시적 삭제: open 상태에서 철회
+ *
+ * 관련 첨부 Storage 파일도 함께 제거 (best-effort).
+ */
+export async function deleteMyInquiry(userId: string, inquiryId: string): Promise<void> {
+  const currentUser = await requireMatchingCurrentUser(userId);
+
+  try {
+    const inquiry = await inquiryRepository.getById(inquiryId);
+    if (!inquiry) {
+      return; // 이미 없음, 멱등
+    }
+    if (inquiry.userId !== currentUser.id) {
+      throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+        userMessage: '본인의 문의만 삭제할 수 있습니다.',
+      });
+    }
+    if (inquiry.status !== 'open') {
+      throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '답변이 시작된 문의는 삭제할 수 없습니다.',
+      });
+    }
+
+    // 1. 문의 레코드 삭제 (RLS: inquiries_delete_own 재검증)
+    await inquiryRepository.deleteInquiry(inquiryId, currentUser.id);
+
+    // 2. Storage 첨부 정리 (best-effort — 실패해도 레코드는 이미 삭제됨)
+    const paths = (inquiry.attachments ?? []).map((a) => a.path);
+    if (paths.length > 0) {
+      try {
+        await inquiryRepository.removeAttachmentsFromStorage(paths);
+      } catch (cleanupError) {
+        logger.error('inquiry.delete.storage_cleanup_failed', {
+          component: COMPONENT,
+          inquiryId,
+          paths,
+          cleanupError,
+        });
+      }
+    }
+
+    logger.info('inquiry.deleted', {
+      component: COMPONENT,
+      inquiryId,
+      userId: currentUser.id,
+    });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 삭제',
+      component: COMPONENT,
+      context: { userId: currentUser.id, inquiryId },
+    });
+  }
+}
+
+/**
+ * 첨부파일 signed URL 발급 (조회 화면에서 사용)
+ */
+export async function getInquiryAttachmentSignedUrl(path: string): Promise<string> {
+  try {
+    return await inquiryRepository.getSignedAttachmentUrl(path);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '첨부파일 URL 발급',
+      component: COMPONENT,
+      context: { path },
+    });
+  }
+}
+
 export const inquiryService = {
   fetchMyInquiries,
   fetchAllInquiries,
@@ -217,6 +377,9 @@ export const inquiryService = {
   respondToInquiry,
   updateInquiryStatus,
   getUnansweredCount,
+  attachFilesToInquiry,
+  deleteMyInquiry,
+  getInquiryAttachmentSignedUrl,
 };
 
 export default inquiryService;

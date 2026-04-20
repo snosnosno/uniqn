@@ -76,17 +76,56 @@ export interface Inquiry extends FirebaseDocument {
 }
 
 /**
- * 첨부파일 타입
+ * 첨부파일 허용 MIME 타입
+ */
+export type InquiryAttachmentMime = 'image/jpeg' | 'image/png' | 'image/webp';
+
+/**
+ * 첨부 제약 상수
+ */
+export const INQUIRY_ATTACHMENT_LIMITS = {
+  MAX_COUNT: 3,
+  MAX_SIZE_BYTES: 5 * 1024 * 1024, // 5MB
+  ALLOWED_MIMES: ['image/jpeg', 'image/png', 'image/webp'] as const,
+} as const;
+
+/**
+ * 저장된 첨부파일 (Supabase Storage 경로 기반)
+ *
+ * 경로 규칙: {user_id}/{inquiry_id}/{timestamp}-{random}.{ext}
+ * URL은 signed URL로 그때그때 발급 (path에서 유도)
  */
 export interface InquiryAttachment {
-  /** 파일 이름 */
-  name: string;
-  /** 다운로드 URL */
-  url: string;
+  /** Storage 내부 경로 (user_id/inquiry_id/...) */
+  path: string;
   /** MIME 타입 */
-  type: string;
+  mime: InquiryAttachmentMime;
   /** 파일 크기 (bytes) */
-  size?: number;
+  size: number;
+  /** 업로드 시각 (ISO string) */
+  uploadedAt: string;
+  /** 이미지 가로 (px) — blurhash 포함 시 사용 */
+  width?: number;
+  /** 이미지 세로 (px) */
+  height?: number;
+}
+
+/**
+ * 업로드 전 로컬 이미지 (picker에서 선택된 상태)
+ */
+export interface LocalInquiryAttachment {
+  /** 로컬 URI (file:// 또는 content://) */
+  uri: string;
+  /** MIME 타입 */
+  mime: InquiryAttachmentMime;
+  /** 파일 크기 (bytes) */
+  size: number;
+  /** 원본 파일명 (UI 표시용, Storage에는 저장 안 함) */
+  fileName?: string;
+  /** 이미지 가로 */
+  width?: number;
+  /** 이미지 세로 */
+  height?: number;
 }
 
 // ============================================================================
@@ -95,12 +134,22 @@ export interface InquiryAttachment {
 
 /**
  * 문의 생성 입력 (사용자)
+ *
+ * 첨부파일은 생성 후 별도 mutation(`attachFilesToInquiry`)으로 추가한다.
+ * — 레이어 분리 + 전체 롤백 처리 용이.
  */
 export interface CreateInquiryInput {
   category: InquiryCategory;
   subject: string;
   message: string;
-  attachments?: InquiryAttachment[];
+}
+
+/**
+ * 첨부파일 추가 입력
+ */
+export interface AttachInquiryFilesInput {
+  inquiryId: string;
+  files: LocalInquiryAttachment[];
 }
 
 /**
@@ -248,7 +297,7 @@ export const FAQ_DATA: FAQItem[] = [
     category: 'account',
     question: '회원 탈퇴는 어떻게 하나요?',
     answer:
-      '프로필 > 설정 > 계정 삭제에서 탈퇴할 수 있습니다. 탈퇴 시 모든 데이터가 삭제되며 복구가 불가능합니다.',
+      '프로필 > 설정 > 계정 삭제에서 탈퇴 신청을 할 수 있습니다. 신청 후 30일간의 유예 기간이 있으며, 이 기간 내에는 로그인하여 탈퇴를 철회할 수 있습니다. 30일이 지나면 모든 데이터가 완전히 삭제되며 복구가 불가능합니다.',
     order: 2,
   },
   // 결제 문의
@@ -276,6 +325,15 @@ export const FAQ_DATA: FAQItem[] = [
     answer:
       '설정 > 알림 설정에서 알림이 켜져 있는지 확인해주세요. 또한 기기의 알림 설정에서 UNIQN 앱의 알림이 허용되어 있어야 합니다.',
     order: 2,
+  },
+  // 신고 문의
+  {
+    id: 'faq-report-1',
+    category: 'report',
+    question: '신고는 어떻게 처리되나요?',
+    answer:
+      '접수된 신고는 관리자가 검토 후 운영 정책에 따라 조치됩니다. 처리 결과는 앱 내 알림으로 안내드립니다. 허위 또는 악의적인 신고로 확인될 경우 신고자에게 제재가 있을 수 있으니 신중하게 신고해주세요.',
+    order: 1,
   },
   // 기타
   {

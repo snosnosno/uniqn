@@ -131,7 +131,6 @@ describe('inquiryService', () => {
       category: 'general' as const,
       subject: 'Question',
       message: 'Details here',
-      attachments: [],
     };
 
     await expect(createInquiry('user-1', 'user@test.com', 'User', input)).resolves.toBe('inq-new');
@@ -146,7 +145,6 @@ describe('inquiryService', () => {
       category: 'general' as const,
       subject: 'Question',
       message: 'Details here',
-      attachments: [],
     };
 
     mockRequireMatchingCurrentUser.mockImplementationOnce(() => {

@@ -12,9 +12,16 @@
 
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { isAppError } from '@/errors';
+import { NetworkError, ERROR_CODES, isAppError } from '@/errors';
 import { handleSupabaseError, toCamelCase, paginatedQuery, runRpc } from '@/utils/supabase';
-import type { Inquiry, InquiryStatus, CreateInquiryInput, RespondInquiryInput } from '@/types';
+import type {
+  Inquiry,
+  InquiryStatus,
+  CreateInquiryInput,
+  RespondInquiryInput,
+  InquiryAttachment,
+  LocalInquiryAttachment,
+} from '@/types';
 import type {
   IInquiryRepository,
   FetchInquiriesOptions,
@@ -30,7 +37,24 @@ const TABLES = {
   INQUIRIES: 'inquiries',
 } as const;
 
+const BUCKETS = {
+  INQUIRY_ATTACHMENTS: 'inquiry-attachments',
+} as const;
+
 const COMPONENT = 'SupabaseInquiryRepository';
+
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+function buildAttachmentPath(userId: string, inquiryId: string, mime: string): string {
+  const ext = MIME_TO_EXT[mime] ?? 'bin';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 10);
+  return `${userId}/${inquiryId}/${timestamp}-${random}.${ext}`;
+}
 const TABLE_COLUMNS =
   'id,attachments,category,created_at,message,responded_at,responder_id,responder_name,response,status,subject,updated_at,user_email,user_id,user_name' as const;
 
@@ -174,7 +198,7 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
           subject: input.subject,
           message: input.message,
           status: 'open',
-          attachments: input.attachments ?? [],
+          attachments: [],
           created_at: now,
           updated_at: now,
         })
@@ -246,6 +270,172 @@ export class SupabaseInquiryRepository implements IInquiryRepository {
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '문의 상태 변경', table: TABLES.INQUIRIES });
+    }
+  }
+
+  // ==========================================================================
+  // 첨부파일 (Attachments)
+  // ==========================================================================
+
+  async uploadAttachments(
+    userId: string,
+    inquiryId: string,
+    files: LocalInquiryAttachment[]
+  ): Promise<InquiryAttachment[]> {
+    const uploaded: InquiryAttachment[] = [];
+    const uploadedPaths: string[] = [];
+
+    try {
+      for (const file of files) {
+        const path = buildAttachmentPath(userId, inquiryId, file.mime);
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+
+        const { error } = await supabase.storage
+          .from(BUCKETS.INQUIRY_ATTACHMENTS)
+          .upload(path, blob, {
+            contentType: file.mime,
+            upsert: false,
+          });
+
+        if (error) {
+          throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+            message: `첨부파일 업로드 실패: ${error.message}`,
+            userMessage: '이미지 업로드에 실패했어요. 네트워크를 확인하고 다시 시도해주세요.',
+            metadata: { component: COMPONENT, path, mime: file.mime },
+            originalError: error instanceof Error ? error : undefined,
+          });
+        }
+
+        uploadedPaths.push(path);
+        uploaded.push({
+          path,
+          mime: file.mime,
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          width: file.width,
+          height: file.height,
+        });
+      }
+
+      logger.info('inquiry.attachments.uploaded', {
+        component: COMPONENT,
+        inquiryId,
+        count: uploaded.length,
+      });
+
+      return uploaded;
+    } catch (error) {
+      // Rollback: 이미 업로드된 파일 삭제 시도 (best-effort)
+      if (uploadedPaths.length > 0) {
+        logger.warn('inquiry.attachments.rollback', {
+          component: COMPONENT,
+          inquiryId,
+          count: uploadedPaths.length,
+        });
+        try {
+          await this.removeAttachmentsFromStorage(uploadedPaths);
+        } catch (rollbackError) {
+          logger.error('inquiry.attachments.rollback.failed', {
+            component: COMPONENT,
+            inquiryId,
+            paths: uploadedPaths,
+            rollbackError,
+          });
+        }
+      }
+
+      if (isAppError(error)) throw error;
+      throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+        message: '첨부파일 업로드 중 오류가 발생했습니다.',
+        userMessage: '이미지 업로드에 실패했어요. 네트워크를 확인하고 다시 시도해주세요.',
+        metadata: { component: COMPONENT, inquiryId },
+        originalError: error instanceof Error ? error : undefined,
+      });
+    }
+  }
+
+  async updateAttachments(inquiryId: string, attachments: InquiryAttachment[]): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from(TABLES.INQUIRIES)
+        .update({
+          attachments,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', inquiryId);
+
+      if (error) {
+        handleSupabaseError(error, { operation: '첨부파일 갱신', table: TABLES.INQUIRIES });
+      }
+
+      logger.info('inquiry.attachments.updated', {
+        component: COMPONENT,
+        inquiryId,
+        count: attachments.length,
+      });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '첨부파일 갱신', table: TABLES.INQUIRIES });
+    }
+  }
+
+  async removeAttachmentsFromStorage(paths: string[]): Promise<void> {
+    if (paths.length === 0) return;
+
+    const { error } = await supabase.storage.from(BUCKETS.INQUIRY_ATTACHMENTS).remove(paths);
+
+    if (error) {
+      throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+        message: `첨부파일 삭제 실패: ${error.message}`,
+        metadata: { component: COMPONENT, paths },
+        originalError: error instanceof Error ? error : undefined,
+      });
+    }
+  }
+
+  async getSignedAttachmentUrl(path: string, expiresInSeconds = 3600): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from(BUCKETS.INQUIRY_ATTACHMENTS)
+      .createSignedUrl(path, expiresInSeconds);
+
+    if (error || !data?.signedUrl) {
+      throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+        message: `signed URL 발급 실패: ${error?.message ?? 'unknown'}`,
+        metadata: { component: COMPONENT, path },
+        originalError: error instanceof Error ? error : undefined,
+      });
+    }
+
+    return data.signedUrl;
+  }
+
+  // ==========================================================================
+  // 삭제 (Delete)
+  // ==========================================================================
+
+  async deleteInquiry(inquiryId: string, userId: string): Promise<void> {
+    try {
+      // RLS 정책 inquiries_delete_own 이 user_id=auth.uid() AND status='open' 보장
+      // userId 파라미터는 호출 측 의도 확인용 (실제 검증은 RLS)
+      const { error } = await supabase
+        .from(TABLES.INQUIRIES)
+        .delete()
+        .eq('id', inquiryId)
+        .eq('user_id', userId);
+
+      if (error) {
+        handleSupabaseError(error, { operation: '문의 삭제', table: TABLES.INQUIRIES });
+      }
+
+      logger.info('inquiry.deleted', {
+        component: COMPONENT,
+        inquiryId,
+        userId,
+      });
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '문의 삭제', table: TABLES.INQUIRIES });
     }
   }
 }

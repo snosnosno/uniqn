@@ -275,6 +275,9 @@ export {
   respondInquirySchema,
   inquiryFilterSchema,
   faqItemSchema,
+  inquiryAttachmentMimeSchema,
+  localInquiryAttachmentSchema,
+  attachInquiryFilesSchema,
 } from './inquiry.schema';
 
 export type {
@@ -285,6 +288,8 @@ export type {
   RespondInquiryFormData,
   InquiryFilterData,
   FAQItemData,
+  LocalInquiryAttachmentData,
+  AttachInquiryFilesData,
 } from './inquiry.schema';
 
 // 대회공고 승인 스키마

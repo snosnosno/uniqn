@@ -6,7 +6,8 @@
  */
 
 import { z } from 'zod';
-import { xssValidation, isSafeUrl } from '@/utils/security';
+import { xssValidation } from '@/utils/security';
+import { INQUIRY_ATTACHMENT_LIMITS } from '@/types/inquiry';
 
 // ============================================================================
 // 기본 스키마
@@ -58,37 +59,65 @@ export const inquiryMessageSchema = z
   .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
 
 /**
- * 첨부파일 스키마
+ * 허용 MIME 타입 (Storage 버킷 `inquiry-attachments` 설정과 일치)
+ */
+export const inquiryAttachmentMimeSchema = z.enum(INQUIRY_ATTACHMENT_LIMITS.ALLOWED_MIMES);
+
+/**
+ * 업로드 전 로컬 첨부파일 스키마 (picker 결과)
+ */
+export const localInquiryAttachmentSchema = z.object({
+  uri: z.string().min(1, { message: '이미지 경로가 필요합니다' }),
+  mime: inquiryAttachmentMimeSchema,
+  size: z.number().int().positive().max(INQUIRY_ATTACHMENT_LIMITS.MAX_SIZE_BYTES, {
+    message: '이미지는 5MB 이하만 첨부 가능합니다',
+  }),
+  fileName: z.string().optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+});
+
+export type LocalInquiryAttachmentData = z.infer<typeof localInquiryAttachmentSchema>;
+
+/**
+ * 저장된 첨부파일 스키마 (DB JSONB 보존용)
  */
 export const inquiryAttachmentSchema = z.object({
-  name: z.string().min(1, { message: '파일 이름이 필요합니다' }),
-  url: z
-    .string()
-    .url({ message: '올바른 URL 형식이 아닙니다' })
-    .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' }),
-  type: z.string().min(1, { message: '파일 타입이 필요합니다' }),
-  size: z
-    .number()
-    .max(5 * 1024 * 1024, { message: '파일 크기는 5MB를 초과할 수 없습니다' })
-    .optional(),
+  path: z.string().min(1),
+  mime: inquiryAttachmentMimeSchema,
+  size: z.number().int().positive().max(INQUIRY_ATTACHMENT_LIMITS.MAX_SIZE_BYTES),
+  uploadedAt: z.string().datetime({ message: 'ISO 날짜 형식이 아닙니다' }),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
 });
 
 export type InquiryAttachmentData = z.infer<typeof inquiryAttachmentSchema>;
 
 /**
- * 문의 생성 스키마
+ * 문의 생성 스키마 — 첨부파일은 생성 후 별도 mutation으로 추가
  */
 export const createInquirySchema = z.object({
   category: inquiryCategorySchema,
   subject: inquirySubjectSchema,
   message: inquiryMessageSchema,
-  attachments: z
-    .array(inquiryAttachmentSchema)
-    .max(3, { message: '첨부파일은 최대 3개까지 가능합니다' })
-    .optional(),
 });
 
 export type CreateInquiryFormData = z.infer<typeof createInquirySchema>;
+
+/**
+ * 첨부파일 추가 스키마 (파일 배열 검증)
+ */
+export const attachInquiryFilesSchema = z.object({
+  inquiryId: z.string().uuid({ message: '올바른 문의 ID가 아닙니다' }),
+  files: z
+    .array(localInquiryAttachmentSchema)
+    .min(1, { message: '첨부할 이미지를 선택해주세요' })
+    .max(INQUIRY_ATTACHMENT_LIMITS.MAX_COUNT, {
+      message: '이미지는 최대 3장까지 첨부 가능합니다',
+    }),
+});
+
+export type AttachInquiryFilesData = z.infer<typeof attachInquiryFilesSchema>;
 
 // ============================================================================
 // 문의 응답 스키마 (관리자)

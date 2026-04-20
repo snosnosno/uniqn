@@ -277,12 +277,16 @@ export type {
   InquiryStatus,
   Inquiry,
   InquiryAttachment,
+  InquiryAttachmentMime,
+  LocalInquiryAttachment,
   CreateInquiryInput,
+  AttachInquiryFilesInput,
   RespondInquiryInput,
   InquiryFilters,
   FAQItem,
   InquiryCategoryInfo,
 } from './inquiry';
+export { INQUIRY_ATTACHMENT_LIMITS } from './inquiry';
 
 // 공지사항 타입
 export type {
