@@ -20,6 +20,7 @@ import { useEmployerApplication } from '@/hooks/auth/useEmployerApplication';
 import { registerAsEmployer } from '@/services/auth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { formatE164ToDisplay } from '@/utils/phone';
 import {
   EMPLOYER_TERMS_VERSION_TAG as EMPLOYER_TERMS_VERSION,
   LIABILITY_WAIVER_VERSION_TAG as EMPLOYER_LIABILITY_WAIVER_VERSION,
@@ -214,7 +215,10 @@ export default function EmployerRegisterScreen() {
           {isVerified ? (
             <>
               <InfoRow label="이름" value={profile?.name} />
-              <InfoRow label="연락처" value={profile?.phone} />
+              <InfoRow
+                label="연락처"
+                value={profile?.phone ? formatE164ToDisplay(profile.phone) : undefined}
+              />
               <View className="mt-2 rounded-md bg-success-50 px-3 py-2 dark:bg-success-900/20">
                 <Text className="text-sm text-success-700 dark:text-success-400 font-sans">
                   본인인증이 완료되었습니다

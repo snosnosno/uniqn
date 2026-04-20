@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
+import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserRole } from '@/types/role';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
@@ -247,7 +248,7 @@ export default function AdminUserDetailPage() {
             <InfoRow
               icon={<PhoneIcon size={20} color={SECONDARY_PALETTE[500]} />}
               label="전화번호"
-              value={user.phone}
+              value={formatE164ToDisplay(user.phone)}
             />
           )}
           <InfoRow

@@ -29,6 +29,7 @@ import { updateUserProfile, checkNicknameExists } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
 import { formatBirthDate } from '@/utils/formatters';
+import { formatE164ToDisplay } from '@/utils/phone';
 import type { UserProfile } from '@/types';
 import type { AuthUser } from '@/stores/authStore';
 
@@ -266,7 +267,9 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             <View className="mb-4">
               <Text className="mb-1 text-sm text-content-muted font-sans">전화번호</Text>
               <View className="rounded-lg bg-surface-card px-4 py-3 dark:bg-surface-elevated">
-                <Text className="text-content-primary font-sans">{profile.phone ?? '-'}</Text>
+                <Text className="text-content-primary font-sans">
+                  {profile.phone ? formatE164ToDisplay(profile.phone) : '-'}
+                </Text>
               </View>
             </View>
 

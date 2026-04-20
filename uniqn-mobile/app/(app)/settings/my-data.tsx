@@ -20,6 +20,7 @@ import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
 import { toDate, type DateInput } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
+import { formatE164ToDisplay } from '@/utils/phone';
 
 // ============================================================================
 // Data Row Component
@@ -219,7 +220,10 @@ export default function MyDataScreen() {
 
           <DataRow label="이메일" value={userData?.email ?? null} />
           <DataRow label="이름" value={userData?.name ?? null} />
-          <DataRow label="연락처" value={userData?.phone ?? null} />
+          <DataRow
+            label="연락처"
+            value={userData?.phone ? formatE164ToDisplay(userData.phone) : null}
+          />
           <DataRow
             label="닉네임"
             value={userData?.nickname ?? null}
@@ -239,7 +243,10 @@ export default function MyDataScreen() {
 
           <DataRow label="전화번호 인증" value={userData?.phoneVerified ? '인증 완료' : '미인증'} />
           <DataRow label="이름" value={userData?.name ?? null} />
-          <DataRow label="연락처" value={userData?.phone ?? null} />
+          <DataRow
+            label="연락처"
+            value={userData?.phone ? formatE164ToDisplay(userData.phone) : null}
+          />
           <DataRow
             label="생년월일"
             value={userData?.birthDate ? formatBirthDate(userData.birthDate) : null}
