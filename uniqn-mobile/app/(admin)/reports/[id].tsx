@@ -67,6 +67,8 @@ const REVIEW_STATUS_OPTIONS: { value: ReportStatus; label: string; description: 
   { value: 'dismissed', label: '기각', description: '신고 사유 불충분 또는 증거 부족' },
 ];
 
+const TERMINAL_REPORT_STATUSES: readonly ReportStatus[] = ['resolved', 'dismissed'];
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -279,7 +281,13 @@ function ReviewFormSection({
   const [selectedStatus, setSelectedStatus] = useState<ReportStatus | null>(null);
   const [notes, setNotes] = useState('');
 
-  if (report.status !== STATUS.REPORT.PENDING) return null;
+  if (TERMINAL_REPORT_STATUSES.includes(report.status)) return null;
+
+  // reviewed 상태는 이미 진입 단계를 지났으므로 "검토 중" 옵션은 재선택 의미 없음
+  const availableOptions =
+    report.status === 'reviewed'
+      ? REVIEW_STATUS_OPTIONS.filter((option) => option.value !== 'reviewed')
+      : REVIEW_STATUS_OPTIONS;
 
   const handleSubmit = () => {
     if (!selectedStatus) return;
@@ -298,7 +306,7 @@ function ReviewFormSection({
       {/* 상태 선택 */}
       <Text className="text-sm font-sans-medium text-content-secondary mb-2">처리 결과 선택</Text>
       <View className="space-y-2 mb-4">
-        {REVIEW_STATUS_OPTIONS.map((option) => (
+        {availableOptions.map((option) => (
           <Pressable
             key={option.value}
             onPress={() => setSelectedStatus(option.value)}
