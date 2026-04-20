@@ -14,7 +14,6 @@ import {
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
 import { handleSupabaseError } from '@/utils/supabase';
-import { TimeNormalizer } from '@/shared/time';
 import { STATUS } from '@/constants';
 import type { PayrollStatus, QRCodeAction } from '@/types';
 import { TABLE, TABLE_COLUMNS, toWorkLog, rethrowOrHandle } from './WorkLogRepositoryHelpers';
@@ -80,16 +79,20 @@ export async function executeUpdateWorkTime(
       updateData.notes = updates.notes;
     }
 
-    // workDuration 재계산
-    const finalCheckIn =
-      updates.checkInTime ?? TimeNormalizer.parseTime(workLog.checkInTime ?? null);
-    const finalCheckOut =
-      updates.checkOutTime ?? TimeNormalizer.parseTime(workLog.checkOutTime ?? null);
+    // workDuration 재계산 (ISO string → ms). Phase C: workLog.checkInTime 은 ISO string 보장.
+    const finalCheckInMs = updates.checkInTime
+      ? updates.checkInTime.getTime()
+      : workLog.checkInTime
+        ? Date.parse(String(workLog.checkInTime))
+        : NaN;
+    const finalCheckOutMs = updates.checkOutTime
+      ? updates.checkOutTime.getTime()
+      : workLog.checkOutTime
+        ? Date.parse(String(workLog.checkOutTime))
+        : NaN;
 
-    if (finalCheckIn && finalCheckOut) {
-      const durationMinutes = Math.round(
-        (finalCheckOut.getTime() - finalCheckIn.getTime()) / (1000 * 60)
-      );
+    if (Number.isFinite(finalCheckInMs) && Number.isFinite(finalCheckOutMs)) {
+      const durationMinutes = Math.round((finalCheckOutMs - finalCheckInMs) / (1000 * 60));
       updateData.work_duration = Math.round((durationMinutes / 60) * 100) / 100;
     }
 
