@@ -33,7 +33,7 @@ export default React.memo(function ReviewPromptBanner({
             작성할 평가가 {pendingCount}건 있어요
           </Text>
           <Text className="text-xs text-primary-600 dark:text-primary-400 font-sans">
-            근무 완료 후 7일 이내에 평가해주세요
+            퇴근 후 7일 이내에 평가해주세요
           </Text>
         </View>
       </View>

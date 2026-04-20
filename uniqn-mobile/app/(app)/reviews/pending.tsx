@@ -78,7 +78,7 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
         </View>
         <View className="mt-3 flex-row items-center justify-between">
           <Text className="text-xs text-content-placeholder font-sans">
-            근무 완료 후 {REVIEW_DEADLINE_DAYS}일 이내 평가 가능
+            퇴근 후 {REVIEW_DEADLINE_DAYS}일 이내 평가 가능
           </Text>
           <Text className="text-sm font-sans-medium text-primary-600 dark:text-primary-400">
             평가하기 →
