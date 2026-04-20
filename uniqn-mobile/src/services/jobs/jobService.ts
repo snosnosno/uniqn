@@ -18,82 +18,10 @@ import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { startApiTrace } from '@/services/observability';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
-import { supabase } from '@/lib/supabase';
 import { RealtimeManager } from '@/shared/realtime';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/domains/job-posting';
 import { STATUS } from '@/constants';
-
-/**
- * 공고 ID 목록에 대해 활성 지원 카운트를 실시간으로 조회해서 stats 를 덮어쓴다.
- * denormalized counter(job_postings.stats.totalApplicants) 가 trigger drift 로 상세/목록 간 불일치를
- * 보이는 이슈(QA: EJ-001) 방어용. 단일 배치 쿼리로 N+1 회피.
- */
-async function hydrateApplicantCounts(postings: JobPosting[]): Promise<JobPosting[]> {
-  if (postings.length === 0) return postings;
-  const ids = postings.map((p) => p.id);
-  const { data, error } = await supabase
-    .from('applications')
-    .select('job_posting_id,status')
-    .in('job_posting_id', ids)
-    .in('status', [
-      STATUS.APPLICATION.APPLIED,
-      STATUS.APPLICATION.CONFIRMED,
-      STATUS.APPLICATION.CANCELLATION_PENDING,
-    ]);
-  if (error) {
-    handleSilentError(error, { operation: '지원자 카운트 하이드레이션', component: 'jobService' });
-    return postings;
-  }
-  type Counts = { total: number; active: number; confirmed: number; cancellationPending: number };
-  const bucket = new Map<string, Counts>();
-  for (const row of (data ?? []) as { job_posting_id: string; status: string }[]) {
-    const counts = bucket.get(row.job_posting_id) ?? {
-      total: 0,
-      active: 0,
-      confirmed: 0,
-      cancellationPending: 0,
-    };
-    counts.total += 1;
-    if (row.status === STATUS.APPLICATION.APPLIED) counts.active += 1;
-    else if (row.status === STATUS.APPLICATION.CONFIRMED) counts.confirmed += 1;
-    else if (row.status === STATUS.APPLICATION.CANCELLATION_PENDING)
-      counts.cancellationPending += 1;
-    bucket.set(row.job_posting_id, counts);
-  }
-  return postings.map((posting) => {
-    const live = bucket.get(posting.id);
-    if (!live) {
-      return {
-        ...posting,
-        stats: {
-          ...(posting.stats ?? {
-            totalApplicants: 0,
-            activeApplicants: 0,
-            confirmedApplicants: 0,
-            cancellationPendingApplicants: 0,
-            filledPositions: 0,
-          }),
-          totalApplicants: 0,
-          activeApplicants: 0,
-          confirmedApplicants: 0,
-          cancellationPendingApplicants: 0,
-        },
-      };
-    }
-    return {
-      ...posting,
-      stats: {
-        ...(posting.stats ?? { filledPositions: 0 }),
-        totalApplicants: live.total,
-        activeApplicants: live.active,
-        confirmedApplicants: live.confirmed,
-        cancellationPendingApplicants: live.cancellationPending,
-        filledPositions: posting.stats?.filledPositions ?? 0,
-      },
-    };
-  });
-}
 
 // ============================================================================
 // Re-export Types
@@ -308,14 +236,10 @@ export async function getMyJobPostings(
         jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.ACTIVE),
         jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.CLOSED),
       ]);
-      return hydrateApplicantCounts([...results[0], ...results[1]]);
+      return [...results[0], ...results[1]];
     }
 
-    const postings = await jobPostingRepository.getByOwnerId(
-      ownerId,
-      status || STATUS.JOB_POSTING.ACTIVE
-    );
-    return hydrateApplicantCounts(postings);
+    return jobPostingRepository.getByOwnerId(ownerId, status || STATUS.JOB_POSTING.ACTIVE);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '내 공고 조회',
