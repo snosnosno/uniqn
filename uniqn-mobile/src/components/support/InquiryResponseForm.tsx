@@ -20,8 +20,8 @@ export interface InquiryResponseFormProps {
   onSubmit: (data: RespondInquiryInput) => void;
   /** 제출 중 상태 */
   isSubmitting?: boolean;
-  /** 기존 응답 (수정 시) */
-  existingResponse?: string;
+  /** 기존 응답 (수정 시). DB NULL을 그대로 받아도 안전. */
+  existingResponse?: string | null;
   /** 현재 상태 */
   currentStatus?: InquiryStatus;
 }
@@ -34,10 +34,11 @@ const statusOptions: SelectOption[] = [
 export function InquiryResponseForm({
   onSubmit,
   isSubmitting = false,
-  existingResponse = '',
+  existingResponse,
   currentStatus = STATUS.INQUIRY.OPEN,
 }: InquiryResponseFormProps) {
-  const [response, setResponse] = useState(existingResponse);
+  // 구조분해 기본값은 undefined에만 작동 — Supabase가 반환하는 null까지 방어
+  const [response, setResponse] = useState(existingResponse ?? '');
   const [status, setStatus] = useState<InquiryStatus>(
     currentStatus === STATUS.INQUIRY.OPEN ? STATUS.INQUIRY.CLOSED : currentStatus
   );
