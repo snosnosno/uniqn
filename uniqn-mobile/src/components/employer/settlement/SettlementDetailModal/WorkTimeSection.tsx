@@ -32,6 +32,7 @@ export interface WorkTimeSectionProps {
  */
 export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSectionProps) {
   const hasValidTimes = startTime && endTime;
+  const isOvernight = hasValidTimes && endTime.toDateString() !== startTime.toDateString();
 
   return (
     <View className="px-4 py-4 border-b border-secondary-100 dark:border-surface-overlay">
@@ -54,10 +55,19 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
           </View>
           <View className="h-0.5 flex-1 mx-4 bg-secondary-200 dark:bg-surface" />
           <View className="items-center">
-            <Text className="text-xs text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
-              퇴근
-            </Text>
-            <Text className="text-lg font-display-semibold text-error-600 dark:text-error-400">
+            <View className="flex-row items-center mb-1 gap-1">
+              <Text className="text-xs text-secondary-500 dark:text-secondary-400 font-sans">
+                퇴근
+              </Text>
+              {isOvernight ? (
+                <View className="rounded bg-info-100 px-1.5 py-0.5 dark:bg-info-900/30">
+                  <Text className="text-[10px] text-info-700 dark:text-info-300 font-sans-semibold">
+                    익일
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
               {formatTime(endTime)}
             </Text>
           </View>
