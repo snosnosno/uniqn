@@ -183,11 +183,19 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         <View className="flex-row gap-2">
           <TimeBox
             label={timeInfo.isEffectiveStartActual ? '출근' : '예정'}
-            value={timeInfo.effectiveStart}
+            value={
+              !timeInfo.isEffectiveStartActual && timeInfo.effectiveStart === '미정'
+                ? '시간 협의'
+                : timeInfo.effectiveStart
+            }
           />
           <TimeBox
             label={timeInfo.isEffectiveEndActual ? '퇴근' : '예정'}
-            value={timeInfo.effectiveEnd}
+            value={
+              !timeInfo.isEffectiveEndActual && timeInfo.effectiveEnd === '미정'
+                ? '시간 협의'
+                : timeInfo.effectiveEnd
+            }
           />
           {timeInfo.duration !== '-' && (
             <TimeBox
