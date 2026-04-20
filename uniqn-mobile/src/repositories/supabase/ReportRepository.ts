@@ -12,7 +12,13 @@
 
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/utils/logger';
-import { isAppError, CannotReportSelfError } from '@/errors';
+import {
+  isAppError,
+  CannotReportSelfError,
+  DuplicateReportError,
+  ReportNotFoundError,
+  ReportAlreadyReviewedError,
+} from '@/errors';
 import { handleSupabaseError, toCamelCase, paginatedQuery, runRpc } from '@/utils/supabase';
 import { getReportSeverity } from '@/types/report';
 import type {
@@ -203,6 +209,21 @@ export class SupabaseReportRepository implements IReportRepository {
       return result.report_id;
     } catch (error) {
       if (isAppError(error)) throw error;
+
+      // RPC 내부에서 RAISE EXCEPTION 으로 전달된 비즈니스 예외를 AppError 로 변환
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('DUPLICATE_REPORT')) {
+        throw new DuplicateReportError({
+          userMessage: '이미 해당 건에 대해 신고하셨습니다',
+          targetId: input.targetId,
+          jobPostingId: input.jobPostingId,
+        });
+      }
+      if (message.includes('CANNOT_REPORT_SELF')) {
+        throw new CannotReportSelfError({
+          userMessage: '본인을 신고할 수 없습니다',
+        });
+      }
       handleSupabaseError(error, { operation: '신고 생성', table: TABLES.REPORTS });
     }
   }
@@ -224,6 +245,20 @@ export class SupabaseReportRepository implements IReportRepository {
       logger.info('신고 처리 트랜잭션 완료', { reportId: input.reportId });
     } catch (error) {
       if (isAppError(error)) throw error;
+
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('REPORT_NOT_FOUND')) {
+        throw new ReportNotFoundError({
+          userMessage: '신고를 찾을 수 없습니다',
+          reportId: input.reportId,
+        });
+      }
+      if (message.includes('REPORT_ALREADY_REVIEWED')) {
+        throw new ReportAlreadyReviewedError({
+          userMessage: '이미 처리된 신고입니다',
+          reportId: input.reportId,
+        });
+      }
       handleSupabaseError(error, { operation: '신고 처리', table: TABLES.REPORTS });
     }
   }
