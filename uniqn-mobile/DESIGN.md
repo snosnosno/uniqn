@@ -50,16 +50,18 @@
 - **Gold Dark:** #B8962E
 - **Gold Subtle:** rgba(212,175,55,0.06)
 - **Gold Subtle Strong:** rgba(212,175,55,0.12)
-- **Surface:** #09090B
-- **Surface Elevated:** #111113
-- **Surface Overlay:** #19191D
-- **Surface Hover:** #222228
+- **Surface (page):** #0B0B0E — Option B (LCD smearing 방지, 순흑 회피)
+- **Surface Card:** #141418 — 카드 기본 배경, page 대비 ΔL≈+9
+- **Surface Elevated:** #1C1C22 — sheet/popover, card보다 높은 단계
+- **Surface Overlay:** #26262C — modal 배경
+- **Surface Hover:** #2E2E34 — pressed/hover
+- **Surface Dark (splash):** #07070A — page 아래 단계, splash/오버스크롤
 - **Text Primary:** #F0F0F2
 - **Text Secondary:** #C0C0C8 (뉴트럴 그레이 — 보조 정보. 무채색 중립.)
 - **Text Muted:** #9898A0 (뉴트럴 그레이 — 플레이스홀더, 캡션. 더 뮤트.)
 - **Text On Gold:** #09090B
 - **Border:** #222228
-- **Border Subtle:** #19191D
+- **Border Subtle:** #1C1C22
 - **Success:** #22C55E / subtle rgba(34,197,94,0.08)
 - **Warning:** #D4A017 / subtle rgba(212,160,23,0.08)
 - **Error:** #DC2626 / subtle rgba(220,38,38,0.08)

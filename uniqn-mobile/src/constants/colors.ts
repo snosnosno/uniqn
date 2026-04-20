@@ -89,11 +89,11 @@ export const PRIMARY_COLORS = {
 export const ACCENT_COLORS = PRIMARY_COLORS;
 
 export const SURFACE_COLORS = {
-  DEFAULT: '#09090B',
-  dark: '#050506',
-  elevated: '#111113',
-  overlay: '#19191D',
-  hover: '#222228',
+  DEFAULT: '#0B0B0E',
+  dark: '#07070A',
+  elevated: '#1C1C22',
+  overlay: '#26262C',
+  hover: '#2E2E34',
 } as const;
 
 export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'): string {
@@ -107,8 +107,8 @@ export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'
 export const BORDER_COLORS = {
   light: SECONDARY_PALETTE[200], // 라이트 모드 기본 보더
   lightSubtle: SECONDARY_PALETTE[100], // 라이트 모드 subtle
-  dark: '#222228', // surface.hover — 다크 모드 기본 보더
-  darkSubtle: '#19191D', // surface.overlay — 다크 모드 subtle
+  dark: '#222228', // 다크 모드 기본 보더 (divider 토큰과 동일)
+  darkSubtle: '#1C1C22', // 다크 모드 subtle — elevated 레벨과 동일
 } as const;
 
 export const TEXT_COLORS = {
@@ -246,7 +246,7 @@ export const HEADER_CLASSES = {
 export const CHART_COLORS = {
   background: {
     light: '#FFFFFF',
-    dark: '#09090B',
+    dark: '#0B0B0E',
   },
   text: {
     light: '#09090B',
@@ -254,7 +254,7 @@ export const CHART_COLORS = {
   },
   grid: {
     light: SECONDARY_PALETTE[200],
-    dark: '#19191D',
+    dark: '#1C1C22',
   },
   series: {
     light: ['#8A7228', '#16A34A', '#A16207', '#B91C1C', '#1D4ED8'],
@@ -311,14 +311,14 @@ export function getLoadingColor(
 // ============================================================================
 
 export const LAYOUT_COLORS = {
-  header: { light: '#FFFFFF', dark: '#09090B' },
-  content: { light: SECONDARY_PALETTE[50], dark: '#09090B' },
+  header: { light: '#FFFFFF', dark: '#0B0B0E' },
+  content: { light: SECONDARY_PALETTE[50], dark: '#0B0B0E' },
   headerTint: { light: '#09090B', dark: '#F0F0F2' },
-  headerBorder: { light: SECONDARY_PALETTE[200], dark: '#19191D' },
+  headerBorder: { light: SECONDARY_PALETTE[200], dark: '#1C1C22' },
   tabBarActive: { light: '#8A7228', dark: '#D4AF37' },
   tabBarInactive: { light: SECONDARY_PALETTE[600], dark: SECONDARY_PALETTE[500] },
-  tabBarBg: { light: '#FFFFFF', dark: '#09090B' },
-  tabBarBorder: { light: SECONDARY_PALETTE[200], dark: '#111113' },
+  tabBarBg: { light: '#FFFFFF', dark: '#0B0B0E' },
+  tabBarBorder: { light: SECONDARY_PALETTE[200], dark: '#141418' },
   refreshTint: { light: '#8A7228', dark: '#D4AF37' },
 } as const;
 
@@ -349,8 +349,8 @@ const CSS_VAR_DARK = {
   '--color-content-secondary': '#C0C0C8',
   '--color-content-muted': '#9898A0',
   '--color-content-placeholder': '#A8A8B0',
-  '--color-surface-page': '#09090B',
-  '--color-surface-card': '#111113',
+  '--color-surface-page': '#0B0B0E',
+  '--color-surface-card': '#141418',
   '--color-divider': '#222228',
 } as const;
 

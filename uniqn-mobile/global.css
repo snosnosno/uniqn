@@ -18,8 +18,8 @@
     --color-content-secondary:   #C0C0C8; /* DESIGN.md dark: 뉴트럴 그레이 */
     --color-content-muted:       #9898A0; /* DESIGN.md dark: 뉴트럴 그레이 */
     --color-content-placeholder: #A8A8B0; /* secondary-400 — 뉴트럴 그레이 */
-    --color-surface-page:        #09090B;
-    --color-surface-card:        #111113;
+    --color-surface-page:        #0B0B0E; /* Option B — page (순흑 회피, LCD smearing 방지) */
+    --color-surface-card:        #141418; /* card — elevated(#1C1C22)보다 낮은 단계로 명확히 구분 */
     --color-divider:             #222228; /* DESIGN.md dark: Border */
   }
 }

@@ -10,12 +10,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, MessageIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 import { LAYOUT } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
-import { getLayoutColor, PRIMARY_COLORS } from '@/constants/colors';
+import { getLayoutColor, PRIMARY_COLORS, SURFACE_COLORS } from '@/constants/colors';
 
 // 활성 탭 상단 2px 골드 underbar (디자인 현대화 Task 1.4)
 const TAB_UNDERBAR_COLOR = PRIMARY_COLORS[500];
 const TAB_INACTIVE_COLOR = '#9898A0';
-const TAB_BORDER_TOP_COLOR = '#19191D';
+const TAB_BORDER_TOP_COLOR = SURFACE_COLORS.overlay;
 
 type TabBarIconProps = { color: string; focused: boolean };
 

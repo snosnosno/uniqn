@@ -4,7 +4,7 @@
  * @description 리스트 화면의 RefreshControl 틴트/배경을 Black & Gold 팔레트로 통일.
  * - iOS: tintColor
  * - Android: colors (progress arrow) + progressBackgroundColor (배경 원)
- * - 다크 surface(#111113)와 브랜드 골드(#D4AF37) 조합
+ * - 다크 surface-card(#141418)와 브랜드 골드(#D4AF37) 조합
  *
  * @usage
  * ```tsx
@@ -32,5 +32,5 @@ interface PtrRefreshProps {
 export const PTR_REFRESH_PROPS: PtrRefreshProps = {
   tintColor: PRIMARY_COLORS[500],
   colors: [PRIMARY_COLORS[500]],
-  progressBackgroundColor: '#111113',
+  progressBackgroundColor: '#141418',
 };

@@ -69,7 +69,7 @@ export function QRCodeScanner({
 
   // DESIGN.md 토큰: 카메라 뷰는 다크 유지(카메라 UI 표준),
   // 권한 안내 화면만 테마에 반응
-  const infoBg = isDarkMode ? '#09090B' : SECONDARY_PALETTE[50];
+  const infoBg = isDarkMode ? '#0B0B0E' : SECONDARY_PALETTE[50];
   const infoTextPrimary = isDarkMode ? '#F0F0F2' : '#09090B';
   const infoTextMuted = isDarkMode ? SECONDARY_PALETTE[500] : SECONDARY_PALETTE[600];
 

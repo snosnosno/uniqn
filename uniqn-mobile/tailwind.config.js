@@ -35,13 +35,13 @@ module.exports = {
           600: '#B8962E',
           700: '#8A7228',
         },
-        // Surface: 블랙 배경
+        // Surface: 블랙 배경 (다크모드 엘리베이션 계층 — 각 단계 ~+9 lightness)
         surface: {
-          DEFAULT: '#09090B',
-          dark: '#050506',
-          elevated: '#111113',
-          overlay: '#19191D',
-          hover: '#222228',
+          DEFAULT: '#0B0B0E', // page — Option B: LCD smearing 방지, 순흑 회피
+          dark: '#07070A', // page 아래 단계 — splash/오버스크롤
+          elevated: '#1C1C22', // sheet/popover — card(#141418)보다 확실히 높음
+          overlay: '#26262C', // modal 배경
+          hover: '#2E2E34', // pressed/hover
         },
         // Secondary: 뉴트럴 쿨 그레이 (A옵션)
         secondary: {
@@ -86,9 +86,14 @@ module.exports = {
         error: {
           50: 'rgba(220,38,38,0.08)',
           100: 'rgba(220,38,38,0.12)',
+          200: '#FCA5A5',
+          300: '#F87171',
+          400: '#EF4444',
           500: '#DC2626',
           600: '#B91C1C',
           700: '#991B1B',
+          800: '#7F1D1D',
+          900: '#450A0A',
         },
         info: {
           50: 'rgba(37,99,235,0.08)',

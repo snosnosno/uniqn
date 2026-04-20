@@ -61,8 +61,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
         --color-content-secondary:   #C0C0C8;
         --color-content-muted:       #9898A0;
         --color-content-placeholder: #A8A8B0;
-        --color-surface-page:        #09090B;
-        --color-surface-card:        #111113;
+        --color-surface-page:        #0B0B0E;
+        --color-surface-card:        #141418;
         --color-divider:             #222228;
       }
 
@@ -101,8 +101,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
       .text-divider        { color: var(--color-divider) !important; }
 
       /* 다크모드 명시 오버라이드 (CSS var 해소 실패 대비) */
-      .dark .bg-surface-page, .dark.bg-surface-page { background-color: #09090B !important; }
-      .dark .bg-surface-card, .dark.bg-surface-card { background-color: #111113 !important; }
+      .dark .bg-surface-page, .dark.bg-surface-page { background-color: #0B0B0E !important; }
+      .dark .bg-surface-card, .dark.bg-surface-card { background-color: #141418 !important; }
       .dark .border-divider, .dark.border-divider   { border-color: #222228 !important; }
 
       /* placeholder 색상 (NativeWind가 var() 룰 미생성) */

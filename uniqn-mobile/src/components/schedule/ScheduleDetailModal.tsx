@@ -375,7 +375,7 @@ export function ScheduleDetailModal({
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 8,
-            backgroundColor: isDarkMode ? '#111113' : SECONDARY_PALETTE[50],
+            backgroundColor: isDarkMode ? '#141418' : SECONDARY_PALETTE[50],
           }}
           activeOpacity={0.7}
           accessibilityLabel="닫기"
@@ -399,7 +399,7 @@ export function ScheduleDetailModal({
                 justifyContent: 'center',
                 paddingVertical: 10,
                 borderRadius: 8,
-                backgroundColor: isActive ? (isDarkMode ? '#111113' : '#FFFFFF') : 'transparent',
+                backgroundColor: isActive ? (isDarkMode ? '#141418' : '#FFFFFF') : 'transparent',
               }}
               activeOpacity={0.7}
               accessibilityRole="tab"

@@ -15,7 +15,7 @@ import { NumericText } from '@/components/ui';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
 import { useThemeStore } from '@/stores/themeStore';
 
-const HERO_GRADIENT_DARK = ['#1A1710', '#09090B'] as const;
+const HERO_GRADIENT_DARK = ['#1A1710', '#0B0B0E'] as const;
 const HERO_GRADIENT_LIGHT = ['#FAF8F3', '#FFFFFF'] as const;
 
 interface HeroContentProps {

@@ -10,7 +10,7 @@
  *
  * Pressed 피드백 역방향:
  *  - 라이트: surface-hover(어두워짐)
- *  - 다크:   surface-hover(#222228, 약간 밝아짐) — active: 다크 모드에서도 동일 토큰 사용
+ *  - 다크:   surface-hover(#2E2E34, 약간 밝아짐) — active: 다크 모드에서도 동일 토큰 사용
  *    → 토큰 `surface-hover`는 다크 팔레트 기준 "한 단계 elevation up" 색이라 역방향 효과 제공
  */
 

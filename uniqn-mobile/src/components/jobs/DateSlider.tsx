@@ -225,7 +225,7 @@ export const DateSlider = memo(function DateSlider({
               width: 32,
               // @ts-expect-error — web-only CSS gradient property not in RN types
               background: isDarkMode
-                ? 'linear-gradient(to right, transparent, #09090B)'
+                ? 'linear-gradient(to right, transparent, #0B0B0E)'
                 : 'linear-gradient(to right, transparent, white)',
             }}
           />

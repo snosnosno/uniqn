@@ -55,7 +55,7 @@ export function InquiryForm({
         ? 'rgba(127, 29, 29, 0.2)'
         : '#FEF2F2'
       : isDark
-        ? '#09090B'
+        ? '#0B0B0E'
         : '#FFFFFF',
   });
 

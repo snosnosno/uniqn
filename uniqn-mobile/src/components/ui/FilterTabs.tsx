@@ -87,7 +87,7 @@ function FilterTabsInner<T extends string = string>({
               onPress={() => onSelect(option.value)}
               className="flex-1 items-center justify-center py-2 rounded-md"
               style={{
-                backgroundColor: isSelected ? (isDarkMode ? '#111113' : '#FFFFFF') : 'transparent',
+                backgroundColor: isSelected ? (isDarkMode ? '#141418' : '#FFFFFF') : 'transparent',
               }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isSelected }}

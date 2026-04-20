@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { SECONDARY_PALETTE } from '@/constants/colors';
+import { SECONDARY_PALETTE, SURFACE_COLORS } from '@/constants/colors';
 import { useState, useCallback, memo, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -69,7 +69,11 @@ const StatusTab = memo(function StatusTab({
       onPress={onPress}
       className="px-4 py-2 rounded-sm mr-2 flex-row items-center"
       style={{
-        backgroundColor: isSelected ? '#B8962E' : isDarkMode ? '#19191D' : SECONDARY_PALETTE[100],
+        backgroundColor: isSelected
+          ? '#B8962E'
+          : isDarkMode
+            ? SURFACE_COLORS.overlay
+            : SECONDARY_PALETTE[100],
       }}
     >
       <Text

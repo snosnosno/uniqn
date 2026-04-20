@@ -9,7 +9,7 @@ import { formatTimeOfDay } from '@/utils/formatters/date';
 import { useThemeStore } from '@/stores/themeStore';
 import type { ScheduleEvent } from '@/types/schedule';
 
-const HERO_GRADIENT_DARK = ['#1A1710', '#09090B'] as const;
+const HERO_GRADIENT_DARK = ['#1A1710', '#0B0B0E'] as const;
 const HERO_GRADIENT_LIGHT = ['#FAF8F3', '#FFFFFF'] as const;
 
 function computeDayDiff(dateStr: string): number {
