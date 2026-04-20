@@ -45,16 +45,17 @@
 - [x] **ES-002** 정산 모달 퇴근 시간 색상 중립 + "익일" 배지 — 78cf7d871
 - 상세: `.gstack/qa-reports/FIX-WINDOW-2B.md`
 
-### FIX WINDOW 2 (코드 수정)
+### FIX WINDOW 2C (코드 수정) ✅ 2026-04-21
 
-- **EJ-001** 공고 카드 "지원자 N" 카운트 로직 (목록↔상세 소스 단일화)
-- **JS-002** JobCard aria-label role_catalog fallback
-- **JS-003** 공고 상세 헤더 텍스트 color 토큰
-- **JS-004** application.status ↔ work_log.status 매핑 단일 함수
-- **WK-001 / WK-002** QR 스캐너 닫기 버튼 + 카메라 fallback
-- **AD-002** 구인자 신청 상세 applicant 필드 렌더 (a5bd38440 UI 완성)
-- **EJ-003** 전화번호 표시 정규화 유틸
-- **EJ-004** 스태프 관리 필터에 COMPLETED 상태 매핑
+- [x] **EJ-001** 공고 카드 지원자 카운트 실시간 하이드레이션 — 4968a7345
+- [x] **JS-002** JobCard aria-label role_catalog 최대 급여 fallback — 7ebff9ffd
+- [x] **JS-003** 공고 상세 헤더 titleSuffix headerTint 색상 통일 — aa2c577e3
+- [x] **JS-004** 지원 카운트 라벨 단일화 (applicationStatusLabel.ts) — 4968a7345 (JS-004+EJ-001 합쳐짐)
+- [x] **WK-001 + WK-002** QR 스캐너 닫기 X + 5초 타임아웃 fallback + 설정 열기 — 9616540ab
+- [x] **EJ-003** formatE164ToDisplay 적용 (ContactInfoSection + admin 구인자 신청 상세) — d6cfcdb3a
+- [x] **EJ-004** 스태프 관리 COMPLETED 필터 옵션 추가 — 179ef5822
+- [x] **AD-002** 이미 구현됨(a5bd38440) → verified-closed
+- 상세: `.gstack/qa-reports/FIX-WINDOW-2C.md`
 
 ### 기획 동의 후 반영
 
