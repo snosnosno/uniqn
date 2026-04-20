@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   EmptyState,
@@ -309,22 +309,14 @@ export default function ScheduleScreen() {
   }, []);
 
   // 지원 취소 핸들러 (applied 상태)
+  // 확인 다이얼로그는 호출자(ScheduleCard / ScheduleDetailModal)가 각자 띄운다.
+  // 여기서 Alert.alert를 띄우면 ScheduleDetailModal 경유 시 이중 Modal/Alert 레이스로
+  // iOS에서 Alert가 삼켜져 mutate가 영영 호출되지 않는다.
   const handleCancelApplication = useCallback(
     (applicationId: string) => {
-      // 파괴적 액션 — 경고 햅틱으로 주의 환기 (impeccable §17 삭제 경계).
       void triggerHaptic('warning');
-      Alert.alert('지원 취소', '지원을 취소하면 이 스케줄이 목록에서 사라져요.', [
-        { text: '계속 유지', style: 'cancel' },
-        {
-          text: '지원 취소',
-          style: 'destructive',
-          onPress: () => {
-            cancelApplication(applicationId);
-            // 목록 새로고침 (캐시 무효화로 자동 처리됨)
-            refresh();
-          },
-        },
-      ]);
+      cancelApplication(applicationId);
+      refresh();
     },
     [cancelApplication, refresh]
   );

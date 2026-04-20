@@ -38,6 +38,7 @@ import {
 import { STATUS } from '@/constants';
 import { APPLICATION_STATUS_LABELS } from '@/shared/status';
 import { WorkTimeDisplay } from '@/shared/time';
+import { useModalStore } from '@/stores/modalStore';
 import type { ScheduleEvent } from '@/types';
 
 export interface ScheduleCardProps {
@@ -59,6 +60,7 @@ export const ScheduleCard = memo(function ScheduleCard({
   const attendance = attendanceConfig[schedule.status];
   const ownerName = schedule.postingProjection?.ownerName;
   const hasPendingCancellation = Boolean(schedule.isCancellationPending);
+  const showConfirm = useModalStore((s) => s.showConfirm);
 
   const projectedSalary = useMemo(
     () =>
@@ -272,10 +274,15 @@ export const ScheduleCard = memo(function ScheduleCard({
                   onPress={(event) => {
                     event.stopPropagation();
                     if (!schedule.applicationId) return;
+                    const id = schedule.applicationId;
                     if (schedule.type === STATUS.SCHEDULE.APPLIED) {
-                      onCancelApplication?.(schedule.applicationId);
+                      showConfirm(
+                        '지원 취소',
+                        '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+                        () => onCancelApplication?.(id)
+                      );
                     } else if (schedule.type === STATUS.SCHEDULE.CONFIRMED) {
-                      onRequestCancellation?.(schedule.applicationId);
+                      onRequestCancellation?.(id);
                     }
                   }}
                   hitSlop={10}
