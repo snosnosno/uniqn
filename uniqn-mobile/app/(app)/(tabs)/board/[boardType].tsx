@@ -85,13 +85,17 @@ export default function BoardListScreen() {
             ) : (
               <EmptyState
                 icon={<DocumentTextOutlineIcon size={48} color={SECONDARY_PALETTE[400]} />}
-                title="아직 게시글이 없어요"
+                title={
+                  safeBoardType === 'notice' ? '아직 등록된 공지가 없어요' : '아직 게시글이 없어요'
+                }
                 description={
-                  boardType === 'schedule'
-                    ? '접근 가능한 일정 게시판이 아직 없어요.'
-                    : boardType === 'substitute'
-                      ? '현재 대타 구인 글이 없어요.'
-                      : '첫 게시글을 등록해 보세요.'
+                  safeBoardType === 'notice'
+                    ? '새로운 공지가 올라오면 이곳에 표시돼요.'
+                    : safeBoardType === 'schedule'
+                      ? '접근 가능한 일정 게시판이 아직 없어요.'
+                      : safeBoardType === 'substitute'
+                        ? '현재 대타 구인 글이 없어요.'
+                        : '첫 게시글을 등록해 보세요.'
                 }
                 actionLabel={isWritable ? '글쓰기' : undefined}
                 onAction={
