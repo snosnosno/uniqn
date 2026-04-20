@@ -505,7 +505,7 @@ export class SupabaseUserRepository implements IUserRepository {
           .eq('applicant_id', userId),
         supabase
           .from(TABLES.WORK_LOGS)
-          .select('id, date, check_in_time, check_out_time')
+          .select('id, date, check_in_time, check_in_ts, check_out_time, check_out_ts')
           .eq('staff_id', userId),
       ]);
 
