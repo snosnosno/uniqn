@@ -37,12 +37,13 @@
 - **EJ-002 템플릿 시드**: employer b2222222 소유 "주말 스태프 모집 템플릿" migration 추가
 - **AD-001 심사용 applicant**: 별도 staff 계정의 pending employer_application 시드 (현재는 admin 본인 계정)
 
-### FIX WINDOW 2 (copy fast-track)
+### FIX WINDOW 2B (copy fast-track) ✅ 2026-04-20
 
-- **ST-003** 리뷰 D-day 7일 vs 9일 (4/15 완료 + D-4 = 4/24 마감)
-- **ST-004** 공지 탭 empty copy 역할별 분기
-- **JS-001** 튜토리얼 "날짜 슬라이더" → "달력"
-- **ES-002** 정산 모달 퇴근 02:00 색상 중립 + "익일" 배지
+- [x] **ST-003** 리뷰 D-day 문구 "근무 완료 후" → "퇴근 후" (checkOutTime anchor 명확화) — fc0f8a48c
+- [x] **ST-004** 공지 탭 empty state notice 분기 추가 ("아직 등록된 공지가 없어요") — 16830bde5
+- [x] **JS-001** 튜토리얼 "날짜 슬라이더" → "달력" — 7c9e685f7
+- [x] **ES-002** 정산 모달 퇴근 시간 색상 중립 + "익일" 배지 — 78cf7d871
+- 상세: `.gstack/qa-reports/FIX-WINDOW-2B.md`
 
 ### FIX WINDOW 2 (코드 수정)
 
