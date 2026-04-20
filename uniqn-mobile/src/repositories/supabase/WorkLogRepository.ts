@@ -15,7 +15,6 @@ import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleSupabaseError, createRealtimeSubscription } from '@/utils/supabase';
 import { getTodayString } from '@/utils/date';
-import { TimeNormalizer } from '@/shared/time';
 import { STATUS } from '@/constants';
 import type { UnsubscribeFn } from '@/types/common';
 import type { WorkLog, PayrollStatus, QRCodeAction } from '@/types';
@@ -165,7 +164,7 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         .select(TABLE_COLUMNS)
         .eq('staff_id', staffId)
         .eq('date', date)
-        .order('check_in_time', { ascending: false });
+        .order('check_in_ts', { ascending: false, nullsFirst: false });
 
       if (error) handleSupabaseError(error, { operation: '날짜별 근무 기록 조회', table: TABLE });
 
@@ -305,11 +304,10 @@ export class SupabaseWorkLogRepository implements IWorkLogRepository {
         }
 
         if (workLog.checkInTime && workLog.checkOutTime) {
-          const checkInDate = TimeNormalizer.parseTime(workLog.checkInTime);
-          const checkOutDate = TimeNormalizer.parseTime(workLog.checkOutTime);
-          if (checkInDate && checkOutDate) {
-            const durationMs = checkOutDate.getTime() - checkInDate.getTime();
-            const durationHours = durationMs / (1000 * 60 * 60);
+          const checkInMs = Date.parse(String(workLog.checkInTime));
+          const checkOutMs = Date.parse(String(workLog.checkOutTime));
+          if (Number.isFinite(checkInMs) && Number.isFinite(checkOutMs)) {
+            const durationHours = (checkOutMs - checkInMs) / (1000 * 60 * 60);
             if (durationHours > 0) {
               stats.totalHoursWorked += durationHours;
             }
