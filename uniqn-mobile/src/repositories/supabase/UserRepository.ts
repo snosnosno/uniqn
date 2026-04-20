@@ -505,7 +505,7 @@ export class SupabaseUserRepository implements IUserRepository {
           .eq('applicant_id', userId),
         supabase
           .from(TABLES.WORK_LOGS)
-          .select('id, date, check_in_time, check_in_ts, check_out_time, check_out_ts')
+          .select('id, date, check_in_ts, check_out_ts')
           .eq('staff_id', userId),
       ]);
 
@@ -535,8 +535,8 @@ export class SupabaseUserRepository implements IUserRepository {
       const workLogs = ((workLogsResult.data ?? []) as Record<string, unknown>[]).map((row) => ({
         id: row.id as string,
         date: (row.date as string) ?? '',
-        checkInAt: (row.check_in_time as string) ?? undefined,
-        checkOutAt: (row.check_out_time as string) ?? undefined,
+        checkInAt: (row.check_in_ts as string) ?? undefined,
+        checkOutAt: (row.check_out_ts as string) ?? undefined,
       }));
 
       const exportData: UserDataExport = {

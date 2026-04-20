@@ -35,21 +35,33 @@ import type {
 
 const TABLE = 'work_logs';
 const TABLE_COLUMNS =
-  'id,application_id,assignment_group_id,check_in_time,check_out_time,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
+  'id,application_id,assignment_group_id,check_in_ts,check_out_ts,created_at,custom_allowances,custom_role,custom_salary_info,custom_tax_settings,date,has_time_modification_logs,is_fixed_posting,job_posting_id,modification_history,no_show_at,no_show_reason,notes,owner_id,payroll_amount,payroll_date,payroll_notes,payroll_status,role,role_change_history,settlement_modification_history,staff_id,staff_name,staff_nickname,staff_photo_url,staff_photo_url_blurhash,status,time_slot,updated_at' as const;
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
+// Phase D: ts 컬럼 → 도메인 `checkInTime`/`checkOutTime` 매핑.
+function applyTsPreference(camel: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...camel,
+    checkInTime: camel.checkInTs ?? null,
+    checkOutTime: camel.checkOutTs ?? null,
+  };
+}
+
 function rowsToWorkLogs(rows: Record<string, unknown>[]): WorkLog[] {
   return parseWorkLogDocuments(
-    rows.map((row) => ({ ...toCamelCase<Record<string, unknown>>(row), id: row.id }))
+    rows.map((row) => ({
+      ...applyTsPreference(toCamelCase<Record<string, unknown>>(row)),
+      id: row.id,
+    }))
   );
 }
 
 function toWorkLog(row: Record<string, unknown>): WorkLog | null {
   const camel = toCamelCase<Record<string, unknown>>(row);
-  return parseWorkLogDocument({ ...camel, id: row.id });
+  return parseWorkLogDocument({ ...applyTsPreference(camel), id: row.id });
 }
 
 /** 공통 catch 핸들러 */
