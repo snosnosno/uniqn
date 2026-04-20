@@ -247,10 +247,14 @@ export function buildPostingCompensationModel(
 ): PostingCompensationModel {
   const rows =
     options.display === 'card' ? source.salaryDisplay.previewRows : source.salaryDisplay.rows;
-  const primaryText =
-    source.defaultSalary !== undefined
-      ? formatSalaryValue(source.defaultSalary)
-      : rows[0]?.text || UNKNOWN_SALARY_LABEL;
+  const hasValidDefaultSalary =
+    source.defaultSalary !== undefined &&
+    source.defaultSalary.type !== 'other' &&
+    (source.defaultSalary.amount ?? 0) > 0;
+  const fallbackRowText = pickMaxSalaryRowText(rows) ?? rows[0]?.text;
+  const primaryText = hasValidDefaultSalary
+    ? formatSalaryValue(source.defaultSalary!)
+    : fallbackRowText || UNKNOWN_SALARY_LABEL;
 
   return {
     useSameSalary: source.salaryDisplay.useSameSalary,
@@ -261,6 +265,20 @@ export function buildPostingCompensationModel(
     overflowCount: options.display === 'card' ? source.salaryDisplay.overflowCount : 0,
     isPartial: primaryText === UNKNOWN_SALARY_LABEL,
   };
+}
+
+function pickMaxSalaryRowText(rows: readonly PostingSalaryRow[]): string | undefined {
+  if (rows.length === 0) return undefined;
+  let best: PostingSalaryRow | undefined;
+  let bestAmount = -1;
+  for (const row of rows) {
+    const amount = row.salary?.type === 'other' ? 0 : (row.salary?.amount ?? 0);
+    if (amount > bestAmount) {
+      bestAmount = amount;
+      best = row;
+    }
+  }
+  return best?.text;
 }
 
 function toRoleModels(roles: readonly RoleSource[]): PostingRoleDisplayModel[] {
