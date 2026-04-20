@@ -57,10 +57,13 @@
 - [x] **AD-002** 이미 구현됨(a5bd38440) → verified-closed
 - 상세: `.gstack/qa-reports/FIX-WINDOW-2C.md`
 
-### 기획 동의 후 반영
+### FIX WINDOW 2D (기획 동의) ✅ 2026-04-21
 
-- **ES-001** 정산 gross/afterTax copy 재설계 (employer 화면에도 "확정" 분리)
-- **ES-003 + WK-004** work_logs 스키마 정리 (custom_allowances snapshot + check_in/out_time 타입 정리)
+- [x] **AD-001** 심사용 pending employer_application 시드 (d4444444 / pending-employer-staff@uniqn.app) — 5a2a1ceae
+- [x] **ES-001** 정산 요약 '총 정산액(수당 포함)' 라벨 + staff '확정' 의미 차이 안내 — a6ed4b5f3
+- [x] **ES-003** 정산 완료 시점 customAllowances snapshot 자동 저장 (retro-active 차단) — 1475218d0
+- [x] **WK-004** work_logs.check_in/out_time 레거시 Firebase Timestamp → ISO string(jsonb) 정규화 — 1ee82ccaf
+- 상세: `.gstack/qa-reports/FIX-WINDOW-2D.md`
 
 ### 후속 세션
 
