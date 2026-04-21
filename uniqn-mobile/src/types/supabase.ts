@@ -1526,8 +1526,8 @@ export type Database = {
         Row: {
           application_id: string | null;
           assignment_group_id: string | null;
-          check_in_time: Json | null;
-          check_out_time: Json | null;
+          check_in_ts: string | null;
+          check_out_ts: string | null;
           created_at: string | null;
           custom_allowances: Json | null;
           custom_role: string | null;
@@ -1563,8 +1563,8 @@ export type Database = {
         Insert: {
           application_id?: string | null;
           assignment_group_id?: string | null;
-          check_in_time?: Json | null;
-          check_out_time?: Json | null;
+          check_in_ts?: string | null;
+          check_out_ts?: string | null;
           created_at?: string | null;
           custom_allowances?: Json | null;
           custom_role?: string | null;
@@ -1600,8 +1600,8 @@ export type Database = {
         Update: {
           application_id?: string | null;
           assignment_group_id?: string | null;
-          check_in_time?: Json | null;
-          check_out_time?: Json | null;
+          check_in_ts?: string | null;
+          check_out_ts?: string | null;
           created_at?: string | null;
           custom_allowances?: Json | null;
           custom_role?: string | null;
@@ -1674,7 +1674,7 @@ export type Database = {
         Args: { p_jp: Database['public']['Tables']['job_postings']['Row'] };
         Returns: string;
       };
-      _fmt_worklog_time: { Args: { v: Json }; Returns: string };
+      _fmt_worklog_time: { Args: { p_ts: string }; Returns: string };
       _format_compensation_label: {
         Args: { p_compensation: Json };
         Returns: string;
@@ -1757,6 +1757,24 @@ export type Database = {
         };
         Returns: Json;
       };
+      create_report: {
+        Args: {
+          p_description: string;
+          p_evidence_urls: string[];
+          p_job_posting_id: string;
+          p_job_posting_title: string;
+          p_reporter_id: string;
+          p_reporter_name: string;
+          p_reporter_type: string;
+          p_severity: Database['public']['Enums']['report_severity'];
+          p_target_id: string;
+          p_target_name: string;
+          p_type: string;
+          p_work_date?: string;
+          p_work_log_id?: string;
+        };
+        Returns: Json;
+      };
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
@@ -1828,6 +1846,15 @@ export type Database = {
         Returns: Json;
       };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
+      review_report: {
+        Args: {
+          p_report_id: string;
+          p_reviewer_id: string;
+          p_reviewer_notes?: string;
+          p_status: string;
+        };
+        Returns: undefined;
+      };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
       toggle_board_post_vote: {
         Args: { p_post_id: string; p_user_id: string; p_vote_type: string };
@@ -1840,6 +1867,10 @@ export type Database = {
           p_reaction_type: string;
           p_user_id: string;
         };
+        Returns: Json;
+      };
+      update_user_role: {
+        Args: { p_new_role: string; p_user_id: string };
         Returns: Json;
       };
     };
