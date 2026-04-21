@@ -1,9 +1,8 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { STATUS_COLORS } from '@/constants/colors';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
-import { CardStripe } from '@/components/ui/CardStripe';
 import {
   ChatbubbleEllipsesOutlineIcon,
   DocumentTextOutlineIcon,
@@ -32,27 +31,30 @@ function DashboardCard({
   bgColor,
 }: DashboardCardProps) {
   return (
-    <Link href={href as never} asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={title}
-        accessibilityHint={description}
-      >
-        <CardStripe tone="gold" thickness={2}>
-          <View className="rounded-md border border-secondary-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface">
-            <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
-              <Icon size={24} color={iconColor} />
-            </View>
-            <Text className="mb-1 text-lg font-display-semibold text-content-primary dark:text-off-white">
-              {title}
-            </Text>
-            <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
-              {description}
-            </Text>
-          </View>
-        </CardStripe>
-      </Pressable>
-    </Link>
+    <Pressable
+      onPress={() => router.push(href as never)}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={description}
+      className="relative rounded-md border border-secondary-100 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface"
+    >
+      {/* CardStripe tone="gold" thickness={2} 와 동일한 좌측 골드 스트라이프 (Pressable collapse 방지 위해 인라인) */}
+      <View
+        className="bg-primary-500 dark:bg-primary-400 rounded-sm"
+        style={{ position: 'absolute', left: 0, top: 12, bottom: 12, width: 2 }}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+      <View className={`mb-3 h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
+        <Icon size={24} color={iconColor} />
+      </View>
+      <Text className="mb-1 text-lg font-display-semibold text-content-primary dark:text-off-white">
+        {title}
+      </Text>
+      <Text className="text-sm text-secondary-500 dark:text-secondary-400 font-sans">
+        {description}
+      </Text>
+    </Pressable>
   );
 }
 
