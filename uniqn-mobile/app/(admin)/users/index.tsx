@@ -25,6 +25,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { CardStripe, NumericText, type CardStripeTone } from '@/components/ui';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
 import type { UserRole } from '@/types/role';
 
@@ -120,13 +121,18 @@ function UserCard({ user, onPress }: UserCardProps) {
           </View>
 
           <View className="flex-1">
-            <View className="flex-row items-center mb-1">
+            <View className="flex-row items-center mb-1 flex-wrap">
               <Text className="text-base font-sans-semibold text-content-primary dark:text-off-white mr-2">
                 {user.name}
               </Text>
               <Badge variant={getRoleBadgeVariant(user.role)} size="sm">
                 {getRoleLabel(user.role)}
               </Badge>
+              {user.bubbleScore && (
+                <View className="ml-2">
+                  <BubbleScoreBadge score={user.bubbleScore.score} size="sm" />
+                </View>
+              )}
             </View>
             <Text className="text-sm text-secondary-500 dark:text-secondary-400 mb-1 font-sans">
               {user.email}

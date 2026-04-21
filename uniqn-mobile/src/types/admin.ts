@@ -27,6 +27,14 @@ export interface AdminUser {
   updatedAt: Date;
   isActive: boolean;
   isVerified: boolean;
+  bubbleScore?: {
+    score: number;
+    totalReviewCount: number;
+    positiveCount: number;
+    neutralCount: number;
+    negativeCount: number;
+    lastUpdatedAt: Date;
+  };
 }
 
 /**

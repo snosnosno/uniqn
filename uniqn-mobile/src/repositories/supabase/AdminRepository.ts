@@ -34,13 +34,25 @@ const TABLES = {
   REPORTS: 'reports',
 } as const;
 const USER_COLUMNS =
-  'id,name,email,role,phone,photo_url,photo_url_blurhash,created_at,updated_at,is_active,phone_verified' as const;
+  'id,name,email,role,phone,photo_url,photo_url_blurhash,created_at,updated_at,is_active,phone_verified,bubble_score' as const;
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
 function rowToAdminUser(row: Record<string, unknown>): AdminUser {
+  const rawBubbleScore = row.bubble_score as
+    | {
+        score: number;
+        totalReviewCount: number;
+        positiveCount: number;
+        neutralCount: number;
+        negativeCount: number;
+        lastUpdatedAt: string | Date;
+      }
+    | null
+    | undefined;
+
   return {
     id: row.id as string,
     uid: (row.id as string) ?? '',
@@ -54,6 +66,18 @@ function rowToAdminUser(row: Record<string, unknown>): AdminUser {
     updatedAt: row.updated_at ? new Date(row.updated_at as string) : new Date(),
     isActive: row.is_active !== false,
     isVerified: row.phone_verified === true,
+    bubbleScore: rawBubbleScore
+      ? {
+          score: rawBubbleScore.score,
+          totalReviewCount: rawBubbleScore.totalReviewCount,
+          positiveCount: rawBubbleScore.positiveCount,
+          neutralCount: rawBubbleScore.neutralCount,
+          negativeCount: rawBubbleScore.negativeCount,
+          lastUpdatedAt: rawBubbleScore.lastUpdatedAt
+            ? new Date(rawBubbleScore.lastUpdatedAt as string)
+            : new Date(),
+        }
+      : undefined,
   };
 }
 
