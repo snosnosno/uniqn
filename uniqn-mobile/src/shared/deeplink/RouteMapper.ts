@@ -126,6 +126,13 @@ export class RouteMapper {
         return EXPO_ROUTES.adminInquiryDetail.replace('[id]', route.params.id);
       case 'admin/tournaments':
         return EXPO_ROUTES.adminTournaments;
+      case 'admin/employer-applications':
+        return EXPO_ROUTES.adminEmployerApplications;
+      case 'admin/employer-application':
+        return EXPO_ROUTES.adminEmployerApplicationDetail.replace('[id]', route.params.id);
+
+      case 'employer-application-status':
+        return EXPO_ROUTES.employerApplicationStatus;
 
       case 'reviews/detail':
         return EXPO_ROUTES.reviewDetail.replace('[workLogId]', route.params.workLogId);

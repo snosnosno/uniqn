@@ -55,6 +55,10 @@ export const EXPO_ROUTES = {
   adminTournaments: '/(admin)/tournaments',
   adminInquiries: '/(admin)/inquiries',
   adminInquiryDetail: '/(admin)/inquiries/[id]',
+  adminEmployerApplications: '/(admin)/employer-applications',
+  adminEmployerApplicationDetail: '/(admin)/employer-applications/[id]',
+
+  employerApplicationStatus: '/(app)/employer-application-status',
 
   reviewDetail: '/(app)/reviews/[workLogId]',
   reviewsPending: '/(app)/reviews/pending',
@@ -104,6 +108,7 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'postingCancellationRequests',
   'reviewDetail',
   'reviewsPending',
+  'employerApplicationStatus',
 ];
 
 export const EMPLOYER_REQUIRED_ROUTES: ExpoRouteName[] = [
@@ -131,4 +136,6 @@ export const ADMIN_REQUIRED_ROUTES: ExpoRouteName[] = [
   'adminTournaments',
   'adminInquiries',
   'adminInquiryDetail',
+  'adminEmployerApplications',
+  'adminEmployerApplicationDetail',
 ];

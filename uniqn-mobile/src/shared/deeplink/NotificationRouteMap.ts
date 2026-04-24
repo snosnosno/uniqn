@@ -131,6 +131,7 @@ export function isAdminOnlyNotification(type: NotificationType): boolean {
     NotificationType.NEW_INQUIRY,
     NotificationType.TOURNAMENT_APPROVAL_REQUEST,
     NotificationType.NEGATIVE_SETTLEMENT_ALERT,
+    NotificationType.NEW_EMPLOYER_APPLICATION,
   ];
 
   return adminTypes.includes(type);

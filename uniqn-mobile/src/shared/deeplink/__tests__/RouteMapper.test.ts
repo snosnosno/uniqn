@@ -107,11 +107,22 @@ describe('RouteMapper', () => {
         [{ name: 'admin/inquiries' }, EXPO_ROUTES.adminInquiries],
         [{ name: 'admin/inquiry', params: { id: 'inq-1' } }, '/(admin)/inquiries/inq-1'],
         [{ name: 'admin/tournaments' }, EXPO_ROUTES.adminTournaments],
+        [{ name: 'admin/employer-applications' }, EXPO_ROUTES.adminEmployerApplications],
+        [
+          { name: 'admin/employer-application', params: { id: 'app-1' } },
+          '/(admin)/employer-applications/app-1',
+        ],
       ];
 
       cases.forEach(([route, expected]) => {
         expect(RouteMapper.toExpoPath(route)).toBe(expected);
       });
+    });
+
+    it('maps employer application status route for the applicant surface', () => {
+      expect(RouteMapper.toExpoPath({ name: 'employer-application-status' })).toBe(
+        EXPO_ROUTES.employerApplicationStatus
+      );
     });
   });
 
@@ -151,6 +162,8 @@ describe('RouteMapper', () => {
       expect(RouteMapper.getRequiredRole('admin/stats')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/board-reports')).toBe('admin');
       expect(RouteMapper.getRequiredRole('admin/announcement-edit')).toBe('admin');
+      expect(RouteMapper.getRequiredRole('admin/employer-applications')).toBe('admin');
+      expect(RouteMapper.getRequiredRole('admin/employer-application')).toBe('admin');
     });
   });
 
@@ -159,6 +172,11 @@ describe('RouteMapper', () => {
       expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReports')).toBe(true);
       expect(RouteMapper.expoRouteRequiresAdmin('adminBoardReportDetail')).toBe(true);
       expect(RouteMapper.expoRouteRequiresAdmin('board')).toBe(false);
+    });
+
+    it('marks employer application admin routes as admin-only expo routes', () => {
+      expect(RouteMapper.expoRouteRequiresAdmin('adminEmployerApplications')).toBe(true);
+      expect(RouteMapper.expoRouteRequiresAdmin('adminEmployerApplicationDetail')).toBe(true);
     });
   });
 });

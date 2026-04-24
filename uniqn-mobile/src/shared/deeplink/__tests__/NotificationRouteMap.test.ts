@@ -166,7 +166,32 @@ describe('NotificationRouteMap', () => {
     expect(isAdminOnlyNotification(NotificationType.NEW_INQUIRY)).toBe(true);
     expect(isAdminOnlyNotification(NotificationType.TOURNAMENT_APPROVAL_REQUEST)).toBe(true);
     expect(isAdminOnlyNotification(NotificationType.NEGATIVE_SETTLEMENT_ALERT)).toBe(true);
+    expect(isAdminOnlyNotification(NotificationType.NEW_EMPLOYER_APPLICATION)).toBe(true);
     expect(isAdminOnlyNotification(NotificationType.ANNOUNCEMENT)).toBe(false);
+  });
+
+  it('routes employer application lifecycle notifications to the dedicated status screen', () => {
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.EMPLOYER_APP_SUBMITTED]()).toEqual({
+      name: 'employer-application-status',
+    });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.EMPLOYER_APP_APPROVED]()).toEqual({
+      name: 'employer-application-status',
+    });
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.EMPLOYER_APP_REJECTED]()).toEqual({
+      name: 'employer-application-status',
+    });
+  });
+
+  it('routes new employer application admin alert to detail or list', () => {
+    expect(
+      NOTIFICATION_ROUTE_MAP[NotificationType.NEW_EMPLOYER_APPLICATION]({
+        applicationId: 'app-42',
+      })
+    ).toEqual({ name: 'admin/employer-application', params: { id: 'app-42' } });
+
+    expect(NOTIFICATION_ROUTE_MAP[NotificationType.NEW_EMPLOYER_APPLICATION]()).toEqual({
+      name: 'admin/employer-applications',
+    });
   });
 
   it('identifies employer-only notification types', () => {
