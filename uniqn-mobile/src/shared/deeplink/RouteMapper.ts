@@ -139,8 +139,11 @@ export class RouteMapper {
       case 'reviews/pending':
         return EXPO_ROUTES.reviewsPending;
 
-      default:
+      default: {
+        const _exhaustive: never = route;
+        void _exhaustive;
         return EXPO_ROUTES.home;
+      }
     }
   }
 

@@ -5,6 +5,8 @@ import {
   isAdminOnlyNotification,
   isEmployerOnlyNotification,
 } from '../NotificationRouteMap';
+import { RouteMapper } from '../RouteMapper';
+import { EXPO_ROUTES } from '../RouteRegistry';
 
 describe('NotificationRouteMap', () => {
   it('covers every NotificationType', () => {
@@ -19,6 +21,28 @@ describe('NotificationRouteMap', () => {
       const route = NOTIFICATION_ROUTE_MAP[type]();
       expect(route).toBeDefined();
       expect(typeof route.name).toBe('string');
+    });
+  });
+
+  it('every NotificationType maps end-to-end without hitting default home fallback (drift guard)', () => {
+    const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
+    const intentionalHomeFallbackNames = new Set(['home', 'jobs']);
+
+    allNotificationTypes.forEach((type) => {
+      const route = NOTIFICATION_ROUTE_MAP[type]();
+      const expoPath = RouteMapper.toExpoPath(route);
+
+      expect(expoPath).toMatch(/^\//);
+
+      if (!intentionalHomeFallbackNames.has(route.name)) {
+        if (expoPath === EXPO_ROUTES.home) {
+          throw new Error(
+            `NotificationType ${type} → route '${route.name}' → fell through to EXPO_ROUTES.home. ` +
+              `This means RouteMapper has no case for '${route.name}'. ` +
+              `Drift between NotificationRouteMap, RouteMapper, and RouteRegistry.`
+          );
+        }
+      }
     });
   });
 
