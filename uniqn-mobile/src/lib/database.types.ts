@@ -1047,6 +1047,7 @@ export type Database = {
           categories: Json | null;
           created_at: string | null;
           enabled: boolean;
+          grouping: Json | null;
           id: string;
           push_enabled: boolean;
           quiet_hours: Json | null;
@@ -1057,6 +1058,7 @@ export type Database = {
           categories?: Json | null;
           created_at?: string | null;
           enabled?: boolean;
+          grouping?: Json | null;
           id?: string;
           push_enabled?: boolean;
           quiet_hours?: Json | null;
@@ -1067,6 +1069,7 @@ export type Database = {
           categories?: Json | null;
           created_at?: string | null;
           enabled?: boolean;
+          grouping?: Json | null;
           id?: string;
           push_enabled?: boolean;
           quiet_hours?: Json | null;

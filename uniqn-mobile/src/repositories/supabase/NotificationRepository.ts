@@ -51,7 +51,7 @@ const NOTIFICATION_REALTIME_LIMIT = 50;
 const NOTIFICATION_COLUMNS =
   'id,body,category,created_at,data,is_read,link,priority,read_at,recipient_id,title,type' as const;
 const NOTIFICATION_SETTINGS_COLUMNS =
-  'id,user_id,enabled,push_enabled,categories,quiet_hours,updated_at' as const;
+  'id,user_id,enabled,push_enabled,categories,quiet_hours,grouping,updated_at' as const;
 
 // ============================================================================
 // Helpers

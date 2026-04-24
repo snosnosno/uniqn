@@ -721,4 +721,32 @@ describe('parseNotificationSettingsDocument', () => {
     const result = parseNotificationSettingsDocument(null);
     expect(result).toBeNull();
   });
+
+  it('should preserve grouping field when present', () => {
+    const settingsWithGrouping = {
+      ...validSettings,
+      grouping: {
+        enabled: false,
+        minGroupSize: 3,
+        timeWindowHours: 12,
+      },
+    };
+    const result = parseNotificationSettingsDocument(settingsWithGrouping);
+    expect(result).not.toBeNull();
+    expect(result?.grouping).toEqual({
+      enabled: false,
+      minGroupSize: 3,
+      timeWindowHours: 12,
+    });
+  });
+
+  it('should accept null grouping from legacy rows', () => {
+    const settingsWithNullGrouping = {
+      ...validSettings,
+      grouping: null,
+    };
+    const result = parseNotificationSettingsDocument(settingsWithNullGrouping);
+    expect(result).not.toBeNull();
+    expect(result?.grouping).toBeNull();
+  });
 });

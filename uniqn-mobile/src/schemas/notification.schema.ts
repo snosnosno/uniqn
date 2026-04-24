@@ -255,6 +255,14 @@ export const notificationSettingsDocumentSchema = z
         end: z.string(),
       })
       .optional(),
+    grouping: z
+      .object({
+        enabled: z.boolean(),
+        minGroupSize: z.number(),
+        timeWindowHours: z.number(),
+      })
+      .optional()
+      .nullable(),
     updatedAt: optionalTimestampSchema,
   })
   .passthrough();
