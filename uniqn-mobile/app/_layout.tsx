@@ -1,5 +1,5 @@
 import '../global.css';
-import { Suspense, lazy, useCallback, useEffect, useRef } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { LogBox, Platform, View } from 'react-native';
@@ -120,7 +120,6 @@ const SUPPRESSED_WARNINGS = [
   'Image: style.tintColor is deprecated',
   'SafeAreaView has been deprecated',
 ];
-const TOUCH_THROTTLE_MS = 5_000;
 const AuthenticatedRuntime = lazy(() => import('@/components/app/AuthenticatedRuntime'));
 
 try {
@@ -149,31 +148,6 @@ function MainNavigator() {
   const user = useAuthStore((state) => state.user);
   const isDark = isDarkMode;
   const isAuthenticated = !!user;
-  const lastTouchRef = useRef(0);
-
-  const handleTouchActivity = useCallback(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastTouchRef.current <= TOUCH_THROTTLE_MS) {
-      return;
-    }
-
-    lastTouchRef.current = now;
-
-    void import('@/services/observability')
-      .then(({ recordActivity }) => {
-        recordActivity();
-      })
-      .catch((error) => {
-        logger.debug('Failed to load authenticated activity runtime', {
-          component: 'RootLayout',
-          error: error instanceof Error ? error.message : String(error),
-        });
-      });
-  }, [isAuthenticated]);
 
   useEffect(() => {
     const effectiveMode = mode === 'system' ? (isDark ? 'dark' : 'light') : mode;
@@ -193,7 +167,7 @@ function MainNavigator() {
   const cssVarStyle = Platform.OS !== 'web' ? vars(getCssVarTokens(isDark)) : undefined;
 
   return (
-    <View style={[{ flex: 1 }, cssVarStyle]} onTouchStart={handleTouchActivity}>
+    <View style={[{ flex: 1 }, cssVarStyle]}>
       {isAuthenticated ? (
         <Suspense fallback={null}>
           <AuthenticatedRuntime />

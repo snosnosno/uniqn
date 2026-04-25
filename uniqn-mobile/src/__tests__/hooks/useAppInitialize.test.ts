@@ -96,6 +96,9 @@ jest.mock('@/lib/supabase', () => ({
         return { data: { subscription: { unsubscribe: jest.fn() } } };
       }),
       signOut: jest.fn().mockResolvedValue({ error: null }),
+      startAutoRefresh: jest.fn(),
+      stopAutoRefresh: jest.fn(),
+      refreshSession: jest.fn(),
     },
   },
 }));

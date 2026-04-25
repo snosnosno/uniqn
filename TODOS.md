@@ -80,3 +80,15 @@
 - 알림 emitter 통합: notifications 중복 SQL fix 후 code path 레거시 참조 정리
 - **레거시 trigger 함수 본체 정리**: `tr_notify_*` trigger DROP 후 `fn_notify_*` 함수 참조 경로 최종 확인 → DROP FUNCTION (2026-04-20 감사 `.gstack/qa-reports/LEGACY-TRIGGERS-AUDIT.md`)
 - **tr_notify_tournament_approval 이관**: UPDATE(재제출) 경로를 `notify_on_job_posting_update` 또는 전용 신규 trigger로 이관 후 레거시 DROP — 현재는 INSERT 중복이지만 재제출 알림 유실 방지 위해 보존
+
+## 옵저버빌리티 (2026-04-25 plan-eng-review)
+
+### tokenRefreshService → fcmTokenRefreshService 이름 변경
+
+- **What**: `src/services/observability/tokenRefreshService.ts`의 파일명/심볼/주석을 FCM 토큰 전용임이 드러나도록 변경. 이름이 "auth token 갱신"으로 읽혀 새로 들어온 사람이 Supabase 세션 코드와 혼동하기 쉬움.
+- **Why**: 실제 책임은 FCM(푸시) 토큰 주기 갱신 + Exponential Backoff 재시도. 본 plan(`2026-04-25-session-keep-alive`) 작성 중 Supabase auth token과 별개임을 추론하느라 시간 낭비. 다음 사람도 같은 함정에 빠질 가능성 높음.
+- **Pros**: 코드 의도가 즉시 명확. 검색/grep 시 auth와 분리됨. CLAUDE.md/AGENTS.md 새 룰 불필요.
+- **Cons**: import 경로 변경되는 파일 ~10개. 별도 PR 필요 (`chore` 스코프).
+- **Context**: 파일 헤더 주석 (line 1-12): "FCM 토큰 갱신 서비스 (Exponential Backoff 기반)" — 이미 명확하나 파일명이 거짓말. `src/hooks/useFCMTokenManager.ts`가 주 호출자.
+- **Depends on / blocked by**: `2026-04-25-session-keep-alive` PR 머지 후 (충돌 회피).
+- **Status**: 후속 chore PR로 처리 예정.
