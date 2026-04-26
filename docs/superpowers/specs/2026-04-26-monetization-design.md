@@ -2,8 +2,8 @@
 
 - 작성일: 2026-04-26
 - 브랜치: `design/monetization-system`
-- 상태: Draft (사용자 검토 대기)
-- 후속: `writing-plans` 스킬로 implementation plan 생성 예정
+- 상태: **Locked** (11개 결정 사용자 승인 완료, 2026-04-26)
+- 후속: `writing-plans` 스킬로 implementation plan 생성 진행
 
 ---
 
@@ -565,10 +565,10 @@ uniqn-mobile/src/
 │   ├── usePurchaseDiamonds.ts     # 구매 mutation
 │   └── useDailyAttendance.ts      # 출석 RPC mutation
 ├── components/wallet/
-│   ├── BalanceBadge.tsx           # 헤더용 잔액 표시
+│   ├── BalanceBadge.tsx           # 헤더용 잔액 표시 + 7일 이내 만료 lot inline (decision #3)
 │   ├── PurchaseSheet.tsx          # 다이아 충전 시트
-│   ├── PaywallModal.tsx           # 잔액 부족 시 표시
-│   └── HeartExpiringBanner.tsx    # 7일 이내 만료 경고
+│   └── PaywallModal.tsx           # 잔액 부족 시 표시
+│   # HeartExpiringBanner.tsx 제거 — decision #3 (알림/배너 없음)
 └── stores/
     └── walletStore.ts             # 잔액 캐시 (optimistic update)
 ```
@@ -617,11 +617,17 @@ export async function purchaseDiamondPackage(pkg: PurchasesPackage) {
 // uniqn-mobile/src/services/jobs/jobManagementService.ts (수정)
 
 async function createJobPosting(input: CreateJobPostingInput) {
-  // 1. 가격 계산
+  // 1. 가격 계산 (decision #11: tournament=0)
   const priceMap = { regular: 1, urgent: 10, fixed: 5, tournament: 0 };
-  const cost = priceMap[input.type];
+  let cost = priceMap[input.type];
 
-  // 2. Feature flag 체크 (부분 유료화)
+  // 2. Tournament는 항상 무료 (admin/주최사 영업용)
+  //    추가 가드: tournament 공고는 admin role에 한정하는 RLS 별도 적용
+  if (input.type === 'tournament') {
+    cost = 0;
+  }
+
+  // 3. Feature flag 체크 (부분 유료화)
   if (cost > 0 && !await isMonetizationEnabledFor(input.type, currentUser.id)) {
     cost = 0;
   }
@@ -782,22 +788,27 @@ $$;
 
 ---
 
-## 11. 미해결 결정 (Open Questions)
+## 11. Locked Decisions (사용자 검토 완료, 2026-04-26)
 
-| 결정 | 옵션 | 권장 |
-|---|---|---|
-| **공고 취소 시 환불 정책** | (a) 전액 환불 (b) 부분 환불 (c) 환불 없음 | (b) 24시간 이내 100%, 이후 50% |
-| **wallets.diamond_balance 음수 허용** | (a) 절대 금지 (b) admin 보정 가능 | (a) — `CHECK >= 0` 강제. 환불이 잔액보다 크면 가능한 만큼만 차감 (§4.2 step 3). 단, ledger row delta는 음수 허용 (감사 추적용) |
-| **하트 만료 알림** | (a) 만료 7일 전 push (b) 앱 내 배너만 (c) 둘 다 | (c) — push 1회 + 영구 배너 |
-| **VIP 등급 시스템** | (a) 이번에 포함 (b) Phase 2 | (b) — 데이터 모이고 결정 |
-| **환불 시 ledger 처리** | (a) 새 row (b) 기존 row update | (a) — immutable 원칙 |
-| **Feature Flag 키** | (a) JSONB single config (b) 개별 row | (a) — 이미 `app_config` 있음 |
-| **첫 충전 보너스** | (a) +5💎 (레거시 v4.0) (b) 없음 | (a) — 전환율 부스터 |
-| **다이아 환불 시 ledger 음수** | (a) 음수 row 허용 (b) 부채 차감 후 0 floor | (a) — 감사 명확성 우선 (사용 가능 잔액은 GREATEST(0, balance) 표시) |
-| **RC webhook 재시도 정책** | (a) 5회 + 지수백오프 (RC 기본) (b) 자체 재처리 큐 | (a) — UNIQUE 제약으로 멱등성 보장되므로 RC 기본 신뢰 |
-| **Apple/Google 직접 환불 vs RC** | RC만 신뢰 vs 양쪽 webhook | RC만 — 단일 소스 |
+| # | 결정 | 채택 | 비고 |
+|---|---|---|---|
+| 1 | 공고 취소 환불 정책 | **24h 내 100% / 이후 50%** | 구현: `wallet_reason='refund_job_cancelled'` + 비율은 cancel RPC에서 계산 |
+| 2 | `wallets.diamond_balance` 음수 | **절대 금지** | `CHECK >= 0`, 환불 초과 시 가능한 만큼만 차감 (§4.2 step 3) |
+| 3 | 하트 만료 알림 | **알림 없음, 유효기간만 설정** | UI에서 `heart_lots.expires_at` 노출은 잔액 화면에 inline 표시만. 푸시/배너 제거 |
+| 4 | VIP 등급 시스템 | **Phase 2로 연기** | `lifetime_purchased_diamonds` 컬럼은 미리 두고 사용은 안 함 |
+| 5 | 환불 ledger 처리 | **새 음수 row** | immutable 원칙 |
+| 6 | Feature Flag 저장 | **`app_config` JSONB single row** | 이미 존재 |
+| 7 | 첫 충전 보너스 +5💎 | **채택** | `metadata.is_first_purchase=true` 시 ledger에 별도 +5 row 추가 |
+| 8 | 다이아 환불이 잔액보다 클 때 | **음수 row 허용 + wallets 캐시는 0 floor** | 감사 명확성 우선 |
+| 9 | RC webhook 재시도 | **RC 기본 (5회 지수백오프)** | UNIQUE 제약으로 멱등성 |
+| 10 | Apple/Google 직접 환불 | **RC만 단일 소스** | 별도 webhook 없음 |
+| 11 | Tournament 공고 가격 | **0원 (admin 영업 미끼)** | priceMap에 `tournament: 0` 유지, `consume_diamonds` 호출 skip |
 
-→ 사용자 검토 단계에서 결정.
+**파급 변경 사항** (이 결정에 따른 spec 수정):
+- §3.4 `heart_lots` — 만료 알림 trigger 제거, expiry cron만 유지
+- §6.1 컴포넌트 — `HeartExpiringBanner.tsx` **삭제**, `BalanceBadge.tsx`에 만료 임박 lot inline 표시로 통합
+- §6.3 priceMap — tournament 처리 명시
+- §10 모니터링 — 만료 손실 KPI는 유지 (UX 신호로)
 
 ---
 
@@ -809,7 +820,9 @@ $$;
 4. `20260427000300_create_wallet_triggers.sql` — 캐시 sync trigger
 5. `20260427000400_seed_diamond_products.sql` — 6개 패키지 시드
 6. `20260427000500_create_app_config_monetization.sql` — Feature flag 시드
-7. `20260427000600_create_heart_expiry_cron.sql` — pg_cron 매일 만료 처리
+7. `20260427000600_create_heart_expiry_cron.sql` — pg_cron 매일 KST 자정 만료 처리 (decision #3: 알림 발송 없음, 잔량 0 + ledger `expire_heart` row만)
+8. `20260427000700_create_first_purchase_bonus.sql` — credit RPC 확장 (decision #7: 첫 충전 시 +5💎 보너스 row)
+9. `20260427000800_create_refund_rpc.sql` — `refund_job_cancellation_atomically` (decision #1: 24h 100% / 이후 50% 비율)
 
 ---
 
