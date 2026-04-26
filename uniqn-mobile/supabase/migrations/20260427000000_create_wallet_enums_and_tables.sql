@@ -1,5 +1,8 @@
--- Wallet 시스템 기반: ENUM 2개 + 테이블 4개
--- Spec: docs/superpowers/specs/2026-04-26-monetization-design.md §3
+-- 목적: UNIQN 결제 시스템 wallet 기반 (Phase 1 Task 1)
+-- 배경: 그린필드 — 결제/포인트 코드 0%, 신규 ledger 모델 도입
+-- 스펙: docs/superpowers/specs/2026-04-26-monetization-design.md §3
+-- 패턴 차용: job_postings.stats trigger / cancel_application_atomically
+-- 후속: 20260427000001 (CHECK 보강), 20260427000100 (RLS), 20260427000200 (cache trigger)
 
 CREATE TYPE wallet_currency AS ENUM ('heart', 'diamond');
 
