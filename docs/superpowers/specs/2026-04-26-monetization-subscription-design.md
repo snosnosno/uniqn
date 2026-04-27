@@ -1,8 +1,8 @@
 # Monetization System (Track B) — Subscription Design Spec
 
-- 작성일: 2026-04-26 (v2: 가격 1/10 + 알바몬/잡코리아 모델 차용)
+- 작성일: 2026-04-26 (v3: **직업정보제공사업 범위로 재정렬**)
 - 브랜치: `design/monetization-subscription`
-- 상태: **Auto-mode draft v2** (사용자 검토 대기)
+- 상태: **Auto-mode draft v3** (사용자 검토 대기)
 - 자매 spec: `2026-04-26-monetization-design.md` (Track A — Consumable, Locked)
 - 비교 문서: `2026-04-26-monetization-comparison.md`
 - 후속: 사용자 승인 시 `writing-plans` 스킬로 implementation plan 생성 진행
@@ -11,67 +11,117 @@
 
 ## 0. Executive Summary
 
-UNIQN 매출 엔진의 **두 번째 가설** — 다이아 충전 대신 **저가 월정액 구독**으로 구인자에게 차등 기능을 판매한다. 모델은 **알바몬/잡코리아/사람인 패턴**을 차용한다: **공고 등록은 모든 tier 무제한**, 차등은 **노출 위치 / 지원자 검색 / 인재 DB / 매칭 알고리즘**에서 발생.
+UNIQN 매출 엔진의 **두 번째 가설** — **직업정보제공사업 범위 내**의 저가 월정액 구독.
+한국 직업안정법 §23 (직업정보제공사업, **신고제**)은 정보 매개만 허용하므로, **AI 매칭/인재 DB 검색/면접 제안 등 알선 행위는 차등 요소에서 모두 제외**. 차등은 **공고 노출 등급 + 광고 + 분석 + 브랜드 + 다중 매장 + CS**의 6개 영역에 국한.
 
-핵심 의사결정 (v2):
-1. **RevenueCat Offerings + Packages** — `purchasePackage()` + `customerInfo.entitlements.active` 패턴.
-2. **DB는 entitlement 캐시** — `subscriptions` 테이블이 최신 상태(현재 plan/만료일)만 보유, 변경 이력은 `subscription_events`.
-3. **공고 quota 없음** — 모든 tier 공고 등록 무제한. 카운터는 일부 기능(면접 제안, 인재 DB 검색)에만 적용.
-4. **4-tier 저가 (Free / Basic / Pro / Enterprise)** — Basic ₩3,900 / Pro ₩9,900 / Enterprise ₩29,900.
-5. **연간 할인 16.7%** (월 × 10).
-6. **Free trial 14일** — 신용카드 등록 X, 만료 후 Free 회귀.
+핵심 의사결정 (v3):
+1. **법적 범위**: 직업정보제공사업 (직업안정법 §23, 신고제) — 알선 행위 일체 금지. 직업소개사업(§19, 등록제) 진입 시 별도 spec 필요.
+2. **RevenueCat Offerings** + 4-tier 저가 구독.
+3. **공고 등록 무제한** — 모든 tier (Free 포함). 차등은 노출/광고/부가기능에서.
+4. **차등 dimension 8개** — 강조 / 긴급(broadcast) / 고정 / 우선검색 / 브랜드페이지 / 다중매장 / 분석 / 전담CS.
+5. **가격**: Basic ₩3,900 / Pro ₩9,900 / Enterprise ₩29,900 (v2 가격 유지).
+6. **연간 16.7% 할인** + **14일 trial** (신용카드 등록 X, 만료 시 Free 회귀).
 
 성공 지표 (M+1 ~ M+6):
-- M+1: 유료 전환 사용자 ≥ 30명, MRR ≥ 30만원
+- M+1: 유료 전환 사용자 ≥ 30명, MRR ≥ 25만원 (30 × 평균 ARPU 8,300원)
 - M+3: Free→Paid 전환율 ≥ 8%, churn ≤ 10%/월
-- M+6: MRR ≥ 100만원, 활성 구독자 ≥ 150명
+- M+6: MRR ≥ 80만원, 활성 구독자 ≥ 100명 (100 × 평균 ARPU 8,300원 ≈ 83만원)
+
+**v3 핵심 변화 vs v2**: AI 매칭 / 인재 DB 검색 / 면접 제안 등 알선 행위 dimension 4개 제거. feature_usage 테이블 제거 (rate-limited 기능 없음). RPC 1개로 단순화.
 
 ---
 
-## 1. 한국 구인구직 플랫폼 모델 분석 (Reference)
+## 1. 법적 범위 (Compliance — Critical)
 
-| 플랫폼 | 핵심 수익원 | 가격대 | 차용 요소 |
-|---|---|---|---|
-| **알바몬** | 공고 노출 등급 (스피드업/하이라이트) + 카테고리 상단 | 7~10일 ₩5천~5만 | **노출 등급제** |
-| **알바천국** | 공고 등록 무료 + 메인/카테고리 상단 노출 패키지 | 일/주/월 단위 | **노출 위치 차등** |
-| **잡코리아** | B2B 인재DB 정액 + 공고 패키지 (스타트/베이직/프리미엄) | 월 ₩30만~ | **tier별 패키지** |
-| **사람인** | 인재DB 열람권 + 광고 상품 + 채용 솔루션 | 월 ₩30~50만 | **이력서 검색권** |
-| **원티드** | 채용성공 보수 (성공 시 연봉 7%) + 매칭 알고리즘 | 채용당 | **AI 매칭 우선순위** |
-| **인디드** | 무료 노출 + Sponsored CPC 입찰 | 입찰가 | **Pay-for-performance (Phase 3 검토)** |
+### 1.1 직업정보제공사업 vs 직업소개사업
 
-**UNIQN 차별화 핵심**: 한국 포커펍/홀덤클럽 영세 사업자가 주 고객. 잡코리아 ₩30만/월은 부담 → **1/10 가격 (₩3.9k~29.9k) 진입장벽 제거**, 차등은 **기능/노출**에서.
+| | 직업정보제공사업 (§23) | 직업소개사업 (§19) |
+|---|---|---|
+| 등록 형태 | **신고제** (지방고용노동관서) | **등록제** (노동부 또는 시군구청) |
+| 허용 범위 | 정보 게시 + 매개 | 알선 + 매칭 + 추천 |
+| 수수료 | 광고/노출 수수료 | 알선 수수료 (상한 규제) |
+| UNIQN 적용 | **본 spec 채택** | 향후 별도 spec |
 
-### 1.1 UNIQN 적용 차등 요소 (10개 dimension)
+### 1.2 알선 vs 정보 제공 판별 기준
+
+| 행위 | 분류 | UNIQN 처리 |
+|---|---|---|
+| 공고 게시 | 정보 제공 | ✓ 모든 tier 무제한 |
+| 공고 노출 등급 (강조/긴급/고정) | 정보 제공 (광고) | ✓ 차등 가능 |
+| 검색 결과 우선 노출 | 정보 제공 (광고) | ✓ 차등 가능 |
+| 자기 공고 지원자 정보 열람 | 정보 제공 (지원 접수 확인) | ✓ 모든 tier |
+| 매장 브랜드 페이지 | 정보 제공 (광고) | ✓ 차등 가능 |
+| 분석 대시보드 (자기 공고) | 정보 제공 (게시자 통계) | ✓ 차등 가능 |
+| 긴급 공고 broadcast 푸시 | 정보 제공 (전체 알림) | ✓ 차등 가능 |
+| **AI 매칭 푸시** (개인 추천) | **알선** | ✗ **제거** |
+| **인재 DB 검색** (구직자 풀) | **알선** | ✗ **제거** |
+| **면접/근무 제안** (직접 메시지) | **알선** | ✗ **제거** |
+| **매칭 알고리즘 우선순위** | **알선** | ✗ **제거** |
+
+### 1.3 직업정보제공사업 신고 의무사항
+
+신고 시 그리고 운영 중 준수해야 할 사항 (직업안정법 시행령 §28 등):
+
+1. **신고증 비치/표시** — 사업장 또는 웹사이트에 게시
+2. **정보 진위 확인 노력** — 사업자등록번호 진위 확인 절차
+3. **청소년 유해 직종 차단** — 18세 미만 청소년에게 유해 직종 게시 금지
+4. **금지 직종 게시 금지** — 도박/성매매/마약/사행행위
+5. **거짓 정보 게재 금지** — 신고 채널 운영
+6. **개인정보 처리방침** — 구인자/구직자 분리 명시
+7. **수수료 한정** — 광고/노출 수수료만 가능 (알선 수수료 X)
+8. **사업자등록번호 표시** — 모든 페이지 (앱 푸터 등)
+
+### 1.4 UI/UX 컴플라이언스 가드
+
+- **추천**, **매칭**, **AI**, **자동 알선** 단어 사용 금지 (마케팅 카피 포함)
+- "강조 표시", "노출 강화", "광고", "프리미엄 게시" 등 광고 용어 사용
+- Push 알림 카피: "긴급 공고가 등록되었습니다" (broadcast) ✓ / "당신에게 맞는 공고" ✗
+
+---
+
+## 2. 한국 구인구직 플랫폼 모델 (참조, v2와 동일)
+
+알선 영역(원티드 매칭, 사람인 인재DB)을 **제외한** 항목만 차용:
+
+| 플랫폼 | 차용 요소 (정보 제공 영역만) |
+|---|---|
+| 알바몬 | **노출 등급제** (스피드업/하이라이트/카테고리 상단) |
+| 알바천국 | **메인/카테고리 노출 패키지** |
+| 잡코리아 | **공고 게시 패키지** (스타트/베이직/프리미엄) — 단, 인재DB 부분 제외 |
+| ~~사람인~~ | 인재DB/면접제안은 알선이라 차용 불가 |
+| ~~원티드~~ | 매칭/성공보수는 알선이라 차용 불가 |
+| 인디드 | **무료 노출 + 광고 입찰** (Phase 3 검토) |
+
+### 2.1 UNIQN 적용 차등 요소 (8개 dimension, v2의 10 → v3의 8)
 
 | # | 차등 요소 | 출처 | UNIQN 적용 |
 |---|---|---|---|
-| 1 | **공고 노출 위치** | 알바몬 스피드업 / 알바천국 메인 | 일반 / 강조 / 긴급(푸시) / 고정(상단) / 우선검색 |
-| 2 | **지원자 프로필 열람** | 잡코리아 베이직 | Free=내 공고만, Paid=무제한 |
-| 3 | **인재 DB 검색** (구직자 풀에서 직접) | 사람인 인재DB | Pro+ |
-| 4 | **면접/근무 제안** (미지원자 메시지) | 사람인 면접제안 | Pro 30건/월, Enterprise 무제한 |
-| 5 | **AI 매칭 푸시 알림** | 원티드 매칭 | Free X, Basic 5건, Pro 50건, Enterprise 무제한 |
-| 6 | **분석 대시보드** | 잡코리아 채용리포트 | Free 기본, Pro CSV export, Enterprise 인사이트 |
-| 7 | **브랜드 페이지** | 사람인 기업페이지 | Pro 미니, Enterprise 풀 (배너+사진갤러리) |
-| 8 | **다중 매장 관리** | (UNIQN 특화) | 1 / 1 / 5 / 무제한 |
-| 9 | **우선 검색 노출** | 알바몬 황금공고 | Enterprise만 |
-| 10 | **전담 매니저 / SLA** | 잡코리아 채용 컨설팅 | Enterprise만 |
+| 1 | **공고 강조 표시** | 알바몬 하이라이트 | Basic+ 별/색상 강조 |
+| 2 | **긴급 공고 (broadcast 푸시)** | 알바몬 스피드업 | Pro+ 모든 사용자에게 푸시 |
+| 3 | **고정 공고 (상단)** | 알바천국 카테고리 상단 | Pro+ 7일간 상단 고정 |
+| 4 | **검색 결과 우선 노출** | 알바몬 황금공고 | Enterprise만 |
+| 5 | **브랜드 페이지** | 사람인 기업페이지 (광고 영역) | Pro 미니, Enterprise 풀 |
+| 6 | **다중 매장 관리** | UNIQN 특화 | 1 / 1 / 5 / 무제한 |
+| 7 | **분석 대시보드** | 잡코리아 채용리포트 | Free 기본, Pro CSV, Enterprise 인사이트+API |
+| 8 | **전담 매니저 (CS SLA)** | 잡코리아 컨설팅 | Enterprise만 |
+
+**제거된 dimension** (v2 → v3): AI 매칭 푸시, 인재 DB 검색, 면접 제안 quota, 지원자 프로필 무제한 열람 (자기 공고 지원자만 → 모든 tier 가능).
 
 ---
 
-## 2. 현재 상태 진단
+## 3. 현재 상태 진단
 
 | 영역 | 현재 상태 | 근거 |
 |---|---|---|
 | 결제 코드 | **0%** | Track A spec과 동일 — 그린필드 |
-| 결제 DB 테이블 | **wallet 4종 존재** (Track A 구현 중) | `git log` → 5개 wallet 커밋 |
-| 결제 패키지 | **미설치** | `react-native-purchases` 없음 |
-| PortOne SDK | **본인인증 전용** | 충돌 없음 |
-
-**진단**: Track A wallet은 Track B에서 미사용. 별도 브랜치 작업 → Track A 영향 없음.
+| 결제 DB 테이블 | wallet 4종 존재 (Track A 진행) | `git log` → 5개 wallet 커밋 |
+| 결제 패키지 | 미설치 | `react-native-purchases` 없음 |
+| 직업정보제공사업 신고 | **미신고** | 출시 전 신고 필요 — §15 |
+| 사업자등록번호 노출 | 부분 (`uniqn-mobile/public/privacy.html`) | 앱 푸터 추가 필요 |
 
 ---
 
-## 3. 아키텍처 개요
+## 4. 아키텍처 개요
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -101,21 +151,20 @@ UNIQN 매출 엔진의 **두 번째 가설** — 다이아 충전 대신 **저�
 │   subscription_plans     subscriptions       subscription_events │
 │                          (entitlement)        (immutable history) │
 │                                                                   │
-│   feature_usage          (rate-limited 기능: 면접제안/인재검색)   │
-│                                                                   │
-│   RPCs:                                                           │
+│   RPCs (3개로 단순화):                                            │
 │   - sync_subscription_atomically (webhook)                        │
 │   - check_feature_access(user, feature) → boolean                 │
-│   - check_and_increment_feature_usage(user, feature) → JSONB     │
 │   - get_active_entitlement(user_id) → JSONB                       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**v2 → v3 단순화**: `feature_usage` 테이블 제거, `check_and_increment_feature_usage` RPC 제거. 알선 기능이 없으므로 rate-limited counter 불필요. 모든 차등이 boolean/integer 컬럼만으로 표현됨.
+
 ---
 
-## 4. DB 스키마
+## 5. DB 스키마
 
-### 4.1 `subscription_plans` — 플랜 카탈로그 (10개 차등 요소 컬럼)
+### 5.1 `subscription_plans` — 8 dimension 차등 컬럼
 
 ```sql
 CREATE TYPE subscription_tier AS ENUM ('free', 'basic', 'pro', 'enterprise');
@@ -127,59 +176,52 @@ CREATE TABLE public.subscription_plans (
   period                        subscription_period NOT NULL,
 
   -- 공고 노출 (boolean flags)
-  can_emphasize_post            BOOLEAN NOT NULL DEFAULT false,    -- 강조 표시
-  can_urgent_post               BOOLEAN NOT NULL DEFAULT false,    -- 긴급(푸시) 노출
-  can_pinned_post               BOOLEAN NOT NULL DEFAULT false,    -- 상단 고정
-  has_priority_search_rank      BOOLEAN NOT NULL DEFAULT false,    -- 검색 결과 우선
+  can_emphasize_post            BOOLEAN NOT NULL DEFAULT false,    -- 1. 강조
+  can_urgent_post               BOOLEAN NOT NULL DEFAULT false,    -- 2. 긴급(broadcast 푸시)
+  can_pinned_post               BOOLEAN NOT NULL DEFAULT false,    -- 3. 상단 고정
+  has_priority_search_rank      BOOLEAN NOT NULL DEFAULT false,    -- 4. 검색 우선
 
-  -- 지원자/인재
-  can_view_all_applicants       BOOLEAN NOT NULL DEFAULT false,    -- 내 공고 외 응시자 프로필
-  can_search_talent_db          BOOLEAN NOT NULL DEFAULT false,    -- 인재 DB 검색
-  monthly_outreach_quota        INT NOT NULL DEFAULT 0,            -- 면접/근무 제안 (-1=무제한)
-  monthly_ai_match_push         INT NOT NULL DEFAULT 0,            -- AI 매칭 푸시 (-1=무제한)
-
-  -- 분석/브랜드
-  has_advanced_analytics        BOOLEAN NOT NULL DEFAULT false,    -- 상세 대시보드 + CSV
-  has_brand_page                TEXT NOT NULL DEFAULT 'none',      -- 'none' | 'mini' | 'full'
+  -- 광고/브랜드
+  has_brand_page                TEXT NOT NULL DEFAULT 'none',      -- 5. 'none' | 'mini' | 'full'
 
   -- 매장
-  max_stores                    INT NOT NULL DEFAULT 1,            -- -1=무제한
+  max_stores                    INT NOT NULL DEFAULT 1,            -- 6. -1=무제한
 
-  -- 지원
-  has_dedicated_support         BOOLEAN NOT NULL DEFAULT false,
+  -- 분석
+  has_advanced_analytics        BOOLEAN NOT NULL DEFAULT false,    -- 7. CSV/API
+  has_insights_api              BOOLEAN NOT NULL DEFAULT false,    -- 7-2. Enterprise 전용 인사이트 API
+
+  -- CS
+  has_dedicated_support         BOOLEAN NOT NULL DEFAULT false,    -- 8. 전담 매니저
 
   -- 메타
   price_krw                     INT NOT NULL,
   display_order                 INT NOT NULL DEFAULT 0,
   active                        BOOLEAN NOT NULL DEFAULT true,
   created_at                    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT chk_quota_nonneg CHECK (
-    (monthly_outreach_quota = -1 OR monthly_outreach_quota >= 0)
-    AND (monthly_ai_match_push = -1 OR monthly_ai_match_push >= 0)
-    AND (max_stores = -1 OR max_stores >= 1)
-  ),
+
+  CONSTRAINT chk_max_stores CHECK (max_stores = -1 OR max_stores >= 1),
   CONSTRAINT chk_brand_page CHECK (has_brand_page IN ('none','mini','full'))
 );
 ```
 
-### 4.2 시드 데이터
+### 5.2 시드 데이터
 
-| plan_id | tier | period | emp | urg | pin | psr | view | tdb | out | ai | adv | brand | stores | sup | price |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `free` | free | monthly | F | F | F | F | F | F | 0 | 0 | F | none | 1 | F | 0 |
-| `basic_monthly` | basic | monthly | T | F | F | F | F | F | 0 | 5 | F | none | 1 | F | 3,900 |
-| `basic_annual` | basic | annual | T | F | F | F | F | F | 0 | 5 | F | none | 1 | F | 39,000 |
-| `pro_monthly` | pro | monthly | T | T | T | F | T | T | 30 | 50 | T | mini | 5 | F | 9,900 |
-| `pro_annual` | pro | annual | T | T | T | F | T | T | 30 | 50 | T | mini | 5 | F | 99,000 |
-| `enterprise_monthly` | enterprise | monthly | T | T | T | T | T | T | -1 | -1 | T | full | -1 | T | 29,900 |
-| `enterprise_annual` | enterprise | annual | T | T | T | T | T | T | -1 | -1 | T | full | -1 | T | 299,000 |
+| plan_id | tier | period | emp | urg | pin | psr | brand | stores | adv | api | sup | price |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `free` | free | monthly | F | F | F | F | none | 1 | F | F | F | 0 |
+| `basic_monthly` | basic | monthly | T | F | F | F | none | 1 | F | F | F | 3,900 |
+| `basic_annual` | basic | annual | T | F | F | F | none | 1 | F | F | F | 39,000 |
+| `pro_monthly` | pro | monthly | T | T | T | F | mini | 5 | T | F | F | 9,900 |
+| `pro_annual` | pro | annual | T | T | T | F | mini | 5 | T | F | F | 99,000 |
+| `enterprise_monthly` | enterprise | monthly | T | T | T | T | full | -1 | T | T | T | 29,900 |
+| `enterprise_annual` | enterprise | annual | T | T | T | T | full | -1 | T | T | T | 299,000 |
 
-**약어**: emp=can_emphasize_post, urg=can_urgent_post, pin=can_pinned_post, psr=has_priority_search_rank, view=can_view_all_applicants, tdb=can_search_talent_db, out=monthly_outreach_quota, ai=monthly_ai_match_push, adv=has_advanced_analytics, brand=has_brand_page, sup=has_dedicated_support.
+**약어**: emp=강조, urg=긴급(broadcast), pin=고정, psr=우선검색, brand=브랜드페이지, stores=매장수, adv=분석CSV, api=인사이트API, sup=전담CS.
 
-**할인율**: annual = monthly × 10 → 월환산 16.7% 절감.
-**핵심 변경**: 공고 등록 자체는 모든 tier에서 quota 없음. Free도 무제한 등록 가능. 차이는 노출/검색/제안에서만.
+**연간 할인**: monthly × 10 → 16.7% 절감.
 
-### 4.3 `subscriptions` — 사용자 현재 구독 (entitlement 캐시)
+### 5.3 `subscriptions` — 사용자 현재 구독
 
 ```sql
 CREATE TYPE subscription_status AS ENUM (
@@ -205,9 +247,7 @@ CREATE INDEX idx_subscriptions_status ON public.subscriptions(status)
 CREATE INDEX idx_subscriptions_period_end ON public.subscriptions(period_end);
 ```
 
-**Free 사용자**: row 없음 = Free로 간주.
-
-### 4.4 `subscription_events` — 변경 이력 (immutable 감사용)
+### 5.4 `subscription_events` — 변경 이력 (immutable)
 
 ```sql
 CREATE TYPE subscription_event_type AS ENUM (
@@ -231,49 +271,22 @@ CREATE TABLE public.subscription_events (
 CREATE INDEX idx_subscription_events_user ON public.subscription_events(user_id, occurred_at DESC);
 ```
 
-### 4.5 `feature_usage` — 차감 가능한 기능 카운터 (면접 제안 / 인재 DB 검색 등)
+### 5.5 RLS 정책
 
 ```sql
-CREATE TYPE rate_limited_feature AS ENUM ('outreach', 'ai_match_push', 'talent_search');
-
-CREATE TABLE public.feature_usage (
-  user_id          UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  feature          rate_limited_feature NOT NULL,
-  period_start     DATE NOT NULL,
-  used             INT NOT NULL DEFAULT 0 CHECK (used >= 0),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (user_id, feature, period_start)
-);
-
-CREATE INDEX idx_feature_usage_period ON public.feature_usage(period_start);
-```
-
-**핵심 변경 vs v1**: `usage_counters`가 `feature_usage`로 바뀌고 공고/조회 카운터는 제거됨. 카운터 적용 대상은:
-- `outreach` (면접/근무 제안 — 사람인 면접제안 차용)
-- `ai_match_push` (구직자에게 자동 매칭 푸시 — 원티드 차용)
-- `talent_search` (인재 DB 검색 — 사람인/잡코리아 차용, Phase 2부터 도입 가능)
-
-### 4.6 RLS 정책
-
-```sql
-ALTER TABLE subscriptions          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subscription_events    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE feature_usage          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subscription_plans     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscription_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscription_plans  ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY subscription_self_select ON subscriptions
   FOR SELECT USING ((SELECT auth.uid()) = user_id);
 CREATE POLICY subscription_events_self_select ON subscription_events
-  FOR SELECT USING ((SELECT auth.uid()) = user_id);
-CREATE POLICY feature_usage_self_select ON feature_usage
   FOR SELECT USING ((SELECT auth.uid()) = user_id);
 
 -- 모든 쓰기는 SECURITY DEFINER RPC만
 CREATE POLICY subscriptions_no_direct_write ON subscriptions
   FOR ALL USING (false) WITH CHECK (false);
 CREATE POLICY subscription_events_no_direct_write ON subscription_events
-  FOR ALL USING (false) WITH CHECK (false);
-CREATE POLICY feature_usage_no_direct_write ON feature_usage
   FOR ALL USING (false) WITH CHECK (false);
 
 CREATE POLICY plans_public_read ON subscription_plans
@@ -285,11 +298,11 @@ CREATE POLICY subscription_admin_all ON subscriptions
 
 ---
 
-## 5. RPC 함수
+## 6. RPC 함수 (3개로 단순화)
 
-### 5.1 `sync_subscription_atomically` — webhook entry point
+### 6.1 `sync_subscription_atomically` — webhook entry point
 
-(v1과 동일, 변경 없음)
+(v2와 동일)
 
 ```sql
 CREATE OR REPLACE FUNCTION public.sync_subscription_atomically(
@@ -357,20 +370,23 @@ REVOKE EXECUTE ON FUNCTION sync_subscription_atomically FROM PUBLIC, authenticat
 GRANT EXECUTE ON FUNCTION sync_subscription_atomically TO service_role;
 ```
 
-### 5.2 `check_feature_access` — boolean 권한 체크 (UI/RLS용)
+### 6.2 `check_feature_access` — boolean 권한 체크
 
 ```sql
 CREATE OR REPLACE FUNCTION public.check_feature_access(
   p_user_id UUID,
-  p_feature TEXT      -- 'emphasize_post' | 'urgent_post' | 'pinned_post' | 'priority_search'
-                      -- | 'view_all_applicants' | 'talent_search' | 'advanced_analytics'
-                      -- | 'brand_page_mini' | 'brand_page_full' | 'dedicated_support'
-) RETURNS BOOLEAN
+  p_feature TEXT
+                 -- 'emphasize_post' | 'urgent_post' | 'pinned_post' | 'priority_search'
+                 -- | 'brand_page_mini' | 'brand_page_full'
+                 -- | 'advanced_analytics' | 'insights_api'
+                 -- | 'dedicated_support' | 'multi_store'
+) RETURNS JSONB    -- { allowed: bool, current_tier, required_tier? }
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = 'public'
 AS $$
 DECLARE
   v_plan subscription_plans%ROWTYPE;
   v_sub  subscriptions%ROWTYPE;
+  v_allowed BOOLEAN;
 BEGIN
   SELECT * INTO v_sub FROM subscriptions WHERE user_id = p_user_id;
   IF NOT FOUND
@@ -382,104 +398,32 @@ BEGIN
     SELECT * INTO v_plan FROM subscription_plans WHERE plan_id = v_sub.plan_id;
   END IF;
 
-  RETURN CASE p_feature
+  v_allowed := CASE p_feature
     WHEN 'emphasize_post'      THEN v_plan.can_emphasize_post
     WHEN 'urgent_post'         THEN v_plan.can_urgent_post
     WHEN 'pinned_post'         THEN v_plan.can_pinned_post
     WHEN 'priority_search'     THEN v_plan.has_priority_search_rank
-    WHEN 'view_all_applicants' THEN v_plan.can_view_all_applicants
-    WHEN 'talent_search'       THEN v_plan.can_search_talent_db
-    WHEN 'advanced_analytics'  THEN v_plan.has_advanced_analytics
     WHEN 'brand_page_mini'     THEN v_plan.has_brand_page IN ('mini','full')
     WHEN 'brand_page_full'     THEN v_plan.has_brand_page = 'full'
+    WHEN 'advanced_analytics'  THEN v_plan.has_advanced_analytics
+    WHEN 'insights_api'        THEN v_plan.has_insights_api
     WHEN 'dedicated_support'   THEN v_plan.has_dedicated_support
+    WHEN 'multi_store'         THEN (v_plan.max_stores = -1 OR v_plan.max_stores > 1)
     ELSE false
   END;
+
+  RETURN jsonb_build_object(
+    'allowed', v_allowed,
+    'current_tier', v_plan.tier,
+    'feature', p_feature
+  );
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION check_feature_access TO authenticated;
 ```
 
-### 5.3 `check_and_increment_feature_usage` — rate-limited 기능 (면접 제안/AI 매칭/인재 검색)
-
-```sql
-CREATE OR REPLACE FUNCTION public.check_and_increment_feature_usage(
-  p_user_id UUID,
-  p_feature rate_limited_feature
-) RETURNS JSONB
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public'
-AS $$
-DECLARE
-  v_plan         subscription_plans%ROWTYPE;
-  v_sub          subscriptions%ROWTYPE;
-  v_period       DATE := date_trunc('month', now() AT TIME ZONE 'Asia/Seoul')::date;
-  v_quota        INT;
-  v_new_used     INT;
-BEGIN
-  SELECT * INTO v_sub FROM subscriptions WHERE user_id = p_user_id;
-  IF NOT FOUND
-     OR v_sub.status NOT IN ('active','in_trial','in_grace_period','cancelled')
-     OR (v_sub.status = 'cancelled' AND v_sub.period_end <= now())
-  THEN
-    SELECT * INTO v_plan FROM subscription_plans WHERE plan_id = 'free';
-  ELSE
-    SELECT * INTO v_plan FROM subscription_plans WHERE plan_id = v_sub.plan_id;
-  END IF;
-
-  v_quota := CASE p_feature
-    WHEN 'outreach'       THEN v_plan.monthly_outreach_quota
-    WHEN 'ai_match_push'  THEN v_plan.monthly_ai_match_push
-    WHEN 'talent_search'  THEN CASE WHEN v_plan.can_search_talent_db THEN -1 ELSE 0 END
-  END;
-
-  -- quota = 0 이면 plan 자체가 미지원
-  IF v_quota = 0 THEN
-    RAISE EXCEPTION 'FEATURE_NOT_IN_PLAN: % requires upgrade', p_feature;
-  END IF;
-
-  -- 무제한이면 카운터만 통계용으로 증가
-  IF v_quota = -1 THEN
-    INSERT INTO feature_usage(user_id, feature, period_start, used)
-    VALUES (p_user_id, p_feature, v_period, 1)
-    ON CONFLICT (user_id, feature, period_start)
-    DO UPDATE SET used = feature_usage.used + 1, updated_at = now();
-    RETURN jsonb_build_object('success', true, 'unlimited', true);
-  END IF;
-
-  -- 유한 quota: row UPSERT 후 quota 검증 + 증가
-  INSERT INTO feature_usage(user_id, feature, period_start, used)
-  VALUES (p_user_id, p_feature, v_period, 0)
-  ON CONFLICT (user_id, feature, period_start) DO NOTHING;
-
-  UPDATE feature_usage
-     SET used = used + 1, updated_at = now()
-   WHERE user_id = p_user_id
-     AND feature = p_feature
-     AND period_start = v_period
-     AND used < v_quota
-  RETURNING used INTO v_new_used;
-
-  IF v_new_used IS NULL THEN
-    RAISE EXCEPTION 'QUOTA_EXCEEDED: % used % of % for %',
-      v_plan.tier, v_quota, v_quota, p_feature;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'success', true,
-    'plan', v_plan.tier,
-    'feature', p_feature,
-    'quota', v_quota,
-    'used', v_new_used,
-    'remaining', v_quota - v_new_used
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION check_and_increment_feature_usage TO authenticated;
-```
-
-### 5.4 `get_active_entitlement` — UI 조회 (전체 권한 + 사용량 한 번에)
+### 6.3 `get_active_entitlement` — UI 조회 (전체 권한 한 번에)
 
 ```sql
 CREATE OR REPLACE FUNCTION public.get_active_entitlement(p_user_id UUID)
@@ -489,8 +433,6 @@ AS $$
 DECLARE
   v_sub      subscriptions%ROWTYPE;
   v_plan     subscription_plans%ROWTYPE;
-  v_period   DATE := date_trunc('month', now() AT TIME ZONE 'Asia/Seoul')::date;
-  v_usage    JSONB;
 BEGIN
   SELECT * INTO v_sub FROM subscriptions WHERE user_id = p_user_id;
   IF NOT FOUND
@@ -501,11 +443,6 @@ BEGIN
   ELSE
     SELECT * INTO v_plan FROM subscription_plans WHERE plan_id = v_sub.plan_id;
   END IF;
-
-  SELECT jsonb_object_agg(feature, used)
-    INTO v_usage
-    FROM feature_usage
-   WHERE user_id = p_user_id AND period_start = v_period;
 
   RETURN jsonb_build_object(
     'tier', v_plan.tier,
@@ -516,22 +453,16 @@ BEGIN
     'trial_end', v_sub.trial_end,
     'cancel_at', v_sub.cancel_at,
     'features', jsonb_build_object(
-      'emphasize_post', v_plan.can_emphasize_post,
-      'urgent_post', v_plan.can_urgent_post,
-      'pinned_post', v_plan.can_pinned_post,
-      'priority_search', v_plan.has_priority_search_rank,
-      'view_all_applicants', v_plan.can_view_all_applicants,
-      'talent_search', v_plan.can_search_talent_db,
+      'emphasize_post',     v_plan.can_emphasize_post,
+      'urgent_post',        v_plan.can_urgent_post,
+      'pinned_post',        v_plan.can_pinned_post,
+      'priority_search',    v_plan.has_priority_search_rank,
+      'brand_page',         v_plan.has_brand_page,
+      'max_stores',         v_plan.max_stores,
       'advanced_analytics', v_plan.has_advanced_analytics,
-      'brand_page', v_plan.has_brand_page,
-      'dedicated_support', v_plan.has_dedicated_support
-    ),
-    'quotas', jsonb_build_object(
-      'outreach', v_plan.monthly_outreach_quota,
-      'ai_match_push', v_plan.monthly_ai_match_push,
-      'max_stores', v_plan.max_stores
-    ),
-    'used', COALESCE(v_usage, '{}'::jsonb)
+      'insights_api',       v_plan.has_insights_api,
+      'dedicated_support',  v_plan.has_dedicated_support
+    )
   );
 END;
 $$;
@@ -539,59 +470,28 @@ $$;
 GRANT EXECUTE ON FUNCTION get_active_entitlement TO authenticated;
 ```
 
-### 5.5 `archive_old_feature_usage` — pg_cron (3개월 이상 row archive)
-
-```sql
-SELECT cron.schedule(
-  'archive_feature_usage',
-  '0 18 1 * *',    -- UTC 18:00 = KST 03:00 다음 날
-  $$ SELECT archive_old_feature_usage() $$
-);
-
-CREATE OR REPLACE FUNCTION archive_old_feature_usage()
-RETURNS INT LANGUAGE plpgsql AS $$
-DECLARE
-  v_cutoff DATE := (date_trunc('month', now() AT TIME ZONE 'Asia/Seoul') - interval '3 months')::date;
-  v_count  INT;
-BEGIN
-  DELETE FROM feature_usage WHERE period_start < v_cutoff;
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-  RETURN v_count;
-END;
-$$;
-```
+**v3 단순화**: feature_usage 관련 RPC 제거. archive cron도 불필요 (테이블 자체 없음).
 
 ---
 
-## 6. RevenueCat 통합
+## 7. RevenueCat 통합 (v2와 동일)
 
-### 6.1 SDK 차이점 (Track A vs B 동일, v1과 동일)
+### 7.1 SDK 차이점
 
-| 작업 | Track A (Consumable) | Track B (Subscription) |
+| 작업 | Track A | Track B v3 |
 |---|---|---|
 | 상품 조회 | `getProducts(NON_SUBSCRIPTION)` | `getOfferings()` |
 | 구매 | `purchaseStoreProduct` | `purchasePackage` |
 | 권한 확인 | DB 잔액 | `customerInfo.entitlements.active['pro']` |
-| 복원 | optional | 필수 (디바이스 변경) |
-| 변경 | N/A | `purchasePackage` proration 자동 |
+| 복원 | optional | 필수 |
 
-### 6.2 Webhook 이벤트 매핑
+### 7.2 Webhook 이벤트 매핑
 
-| RC Event | event_type | 액션 |
-|---|---|---|
-| `INITIAL_PURCHASE` | `created` | sync (active, period_end, trial_end) |
-| `RENEWAL` | `renewed` | sync |
-| `PRODUCT_CHANGE` | `plan_changed` | sync (proration RC 처리) |
-| `CANCELLATION` | `cancelled` | sync (cancel_at 설정) |
-| `UNCANCELLATION` | `reactivated` | sync (cancel_at=NULL) |
-| `EXPIRATION` | `expired` | sync (status=expired) |
-| `BILLING_ISSUE` | `billing_issue` | sync |
-| `REFUND` | `refunded` | sync (status=expired) |
-| `TRANSFER` | — | rc_customer_id 갱신만 |
+(v2와 동일 — INITIAL_PURCHASE / RENEWAL / PRODUCT_CHANGE / CANCELLATION / EXPIRATION / BILLING_ISSUE / REFUND / TRANSFER)
 
 ---
 
-## 7. 클라이언트 구조
+## 8. 클라이언트 구조
 
 ```
 uniqn-mobile/src/
@@ -602,218 +502,311 @@ uniqn-mobile/src/
 ├── repositories/supabase/
 │   └── SubscriptionRepository.ts
 ├── hooks/
-│   ├── useEntitlement.ts              # plan + features + quotas + usage
+│   ├── useEntitlement.ts              # plan + features
 │   ├── useFeatureAccess.ts            # 'urgent_post' 등 boolean
 │   ├── usePurchaseSubscription.ts
 │   ├── useChangePlan.ts
 │   └── useCancelSubscription.ts
 ├── components/subscription/
 │   ├── PlanCard.tsx                   # 4-tier 카드
-│   ├── PlanComparisonTable.tsx        # 10-feature 비교 그리드
+│   ├── PlanComparisonTable.tsx        # 8 dimension 비교 그리드
 │   ├── PaywallSheet.tsx               # 기능 락 시 표시
 │   ├── ManageSubscriptionScreen.tsx
-│   └── BrandPageEditor.tsx            # Pro+ 매장 페이지
+│   ├── BrandPageEditor.tsx            # Pro+ 매장 페이지
+│   └── AnalyticsDashboard.tsx         # Pro CSV / Enterprise 인사이트
 └── stores/
     └── subscriptionStore.ts
 ```
 
-### 7.1 공고 작성 통합
+### 8.1 공고 작성 통합 (v3)
 
 ```typescript
 async function createJobPosting(input: CreateJobPostingInput) {
-  // Free 사용자도 무제한 등록 가능
-  // 노출 옵션만 권한 체크
+  // 모든 사용자 무제한 등록 가능 (직업정보제공사업 범위 — 정보 매개)
+  // 옵션 권한만 체크
+  if (input.options?.emphasize) {
+    const { data } = await supa.rpc('check_feature_access', {
+      p_user_id: currentUser.id,
+      p_feature: 'emphasize_post',
+    });
+    if (!data?.allowed) throw new FeatureLockedError('emphasize_post', 'basic');
+  }
   if (input.options?.urgent) {
-    const ok = await supa.rpc('check_feature_access', {
+    const { data } = await supa.rpc('check_feature_access', {
       p_user_id: currentUser.id,
       p_feature: 'urgent_post',
     });
-    if (!ok.data) throw new FeatureLockedError('urgent_post', 'pro');
+    if (!data?.allowed) throw new FeatureLockedError('urgent_post', 'pro');
   }
   if (input.options?.pinned) {
-    const ok = await supa.rpc('check_feature_access', {
+    const { data } = await supa.rpc('check_feature_access', {
       p_user_id: currentUser.id,
       p_feature: 'pinned_post',
     });
-    if (!ok.data) throw new FeatureLockedError('pinned_post', 'pro');
+    if (!data?.allowed) throw new FeatureLockedError('pinned_post', 'pro');
   }
 
   return supa.from('job_postings').insert({...input}).select().single();
 }
 ```
 
-### 7.2 면접 제안 통합 (rate-limited 예시)
+### 8.2 긴급 공고 broadcast 푸시 (직업정보제공사업 범위)
 
 ```typescript
-async function sendOutreach(staffUserId: string, message: string) {
-  const { data, error } = await supa.rpc('check_and_increment_feature_usage', {
-    p_user_id: currentUser.id,
-    p_feature: 'outreach',
+// 긴급 공고 게시 시 모든 구독 알림 사용자에게 broadcast
+// 개인 추천이 아닌 카테고리 broadcast이므로 알선 X
+async function broadcastUrgentPost(postingId: string) {
+  // 푸시 본문: "긴급 공고가 등록되었습니다 — [매장이름] [공고제목]"
+  // ✗ 금지 카피: "당신에게 맞는 공고를 추천합니다"
+  // ✓ 허용 카피: "긴급 공고 등록 알림"
+  await sendPushNotification({
+    topic: 'urgent_postings',  // 사용자가 opt-in한 topic
+    title: '긴급 공고 등록',
+    body: `[${store.name}] ${posting.title}`,
+    deeplink: `uniqn://posting/${postingId}`,
   });
-  if (error) {
-    if (error.message.includes('FEATURE_NOT_IN_PLAN')) {
-      throw new FeatureLockedError('outreach', 'pro');
-    }
-    if (error.message.includes('QUOTA_EXCEEDED')) {
-      throw new QuotaExceededError('outreach', data?.quota);
-    }
-    throw error;
-  }
-  // 실제 메시지 INSERT
-  return supa.from('outreach_messages').insert({...});
 }
 ```
 
 ---
 
-## 8. Feature Flag 롤아웃
+## 9. Feature Flag 롤아웃
 
 ```sql
 INSERT INTO app_config(key, value) VALUES
   ('subscription.enabled', '{"enabled": false}'::jsonb),
-  ('subscription.enforced_features', '{"urgent_post": false, "pinned_post": false, "outreach": false}'::jsonb),
+  ('subscription.enforced_features', '{"urgent_post": false, "pinned_post": false, "priority_search": false}'::jsonb),
   ('subscription.rollout_percentage', '{"value": 0}'::jsonb);
 ```
 
 | Phase | 기간 | 전략 |
 |---|---|---|
 | Beta | M+0~1 | 모든 기능 Free 노출, 데이터 수집 |
-| Soft enforce | M+2 | 면접 제안만 quota 적용, 노출 옵션은 Free |
-| Paywall on (노출) | M+3 | urgent/pinned/emphasize Paid, rollout 10% |
+| Soft enforce | M+2 | 노출 옵션 paywall (Basic 강조 / Pro 긴급+고정) |
+| Paywall on | M+3 | rollout 10% |
 | Confidence ramp | M+4 | rollout 50% |
 | Full | M+6 | 전체 차등 100% 적용 |
 
-User bucket hash는 Track A spec과 동일 패턴 (`user_bucket(uuid) % 100`).
-
 ---
 
-## 9. 보안 위협 모델 (STRIDE)
+## 10. 보안 위협 모델 (STRIDE)
 
 | 위협 | 시나리오 | 완화 |
 |---|---|---|
 | Spoofing | 가짜 webhook | RC_WEBHOOK_SECRET |
-| Tampering (client) | 클라이언트가 entitlement 위조 | 서버 RPC + RLS |
+| Tampering (client) | entitlement 위조 | 서버 RPC + RLS |
 | Tampering (jailbreak) | SDK 조작 | RC 영수증 + DB source of truth |
 | Repudiation | "결제 안 됐다" | subscription_events immutable |
 | Info Disclosure | 다른 사용자 plan | RLS auth.uid() = user_id |
 | DoS | check_feature 무한 호출 | RC + Edge Function rate limit |
-| Elevation | 일반 user sync RPC 호출 | service_role only |
+| Elevation | 일반 user sync RPC | service_role only |
 | Idempotency | 같은 event 2회 | revenuecat_event_id UNIQUE |
-| Outreach abuse | 무한 면접 제안 | feature_usage UPDATE quota check |
-| Trial abuse | 같은 카드 trial 반복 | RC subscriptionGroup 단위 자동 차단 |
-| Free 어뷰징 | Free로 무제한 공고 + 인재 가로채기 | 공고는 무제한 OK, 면접 제안은 Free 차단 |
+| Trial abuse | 같은 카드 trial 반복 | RC subscriptionGroup 자동 차단 |
+| **컴플라이언스 위반** | **알선 행위가 코드에 들어감** | **§15 PR 체크리스트로 차단** |
 
 ---
 
-## 10. 테스트 전략 (TDD)
+## 11. 컴플라이언스 위협 모델 (직업안정법 위반 방지)
+
+| 위협 | 시나리오 | 완화 |
+|---|---|---|
+| 알선 기능 추가 | 누군가 PR로 매칭/추천 추가 | PR 체크리스트 + ESLint 룰 (§15) |
+| 마케팅 카피 위반 | "AI 매칭" 등 알선 단어 사용 | 카피 가이드 + 리뷰 |
+| 청소년 유해 직종 | 18세 미만 노출 | 가입 시 연령 확인 + 직종 필터링 |
+| 금지 직종 게시 | 도박/성매매 등 게시 | 신고 채널 + 자동 키워드 차단 |
+| 거짓 정보 | 사업자번호 도용 | 가입 시 사업자등록번호 진위 확인 (국세청 API) |
+| 신고 의무 위반 | 사업장 변경 미신고 | 운영 변경 시 신고 갱신 절차 (§15) |
+| 사업자번호 미표시 | 앱 푸터/웹 누락 | 의무 표시 (§15) |
+| 알선 수수료 수취 | 매칭 성공 시 수수료 | **비즈니스 로직 검토** (수수료는 광고/노출만) |
+
+---
+
+## 12. 테스트 전략 (TDD)
 
 - `sync_subscription_atomically` 멱등성
-- `check_feature_access` 모든 10개 feature × 4 tier matrix
-- `check_and_increment_feature_usage` race (10개 병렬, quota 정확성)
-- 무제한 (-1) 처리 분기
+- `check_feature_access` 4 tier × 10 feature 매트릭스
+- 무제한 max_stores (-1) 처리
 - cancelled status에서 period_end까지 통과
 - RC webhook 시나리오 (INITIAL/RENEWAL/CANCEL/EXPIRE/REFUND)
-- E2E: Free → Pro 구매 → 면접 제안 30건 → 31번째 paywall
+- E2E: Free → Pro 구매 → 긴급 공고 게시 → 노출 확인
+- **컴플라이언스 테스트** (§15): 알선 단어 grep, 푸시 카피 화이트리스트 검증
 
 ---
 
-## 11. 모니터링 / KPI
+## 13. 모니터링 / KPI
 
 - **MRR**: SUM(price_krw) WHERE status IN ('active','in_grace') GROUP BY month
 - **Plan mix**: Free/Basic/Pro/Enterprise 비율
-- **Feature adoption**: 각 feature_usage 분포
 - **Trial conversion**: trial_converted / trial_started
-- **Upsell signal**: 같은 사용자가 paywall hit한 feature 분포 → 어떤 기능이 결제 트리거인가
+- **Upsell signal**: paywall hit 분포 → 어떤 기능이 결제 트리거인가
+- **컴플라이언스 KPI** (§15): 신고 직종 위반 건수, 거짓 정보 신고 건수
 
 ---
 
-## 12. Open Questions
+## 14. Open Questions
 
-| # | 결정 | Auto-mode 가정 (v2) |
+| # | 결정 | Auto-mode 가정 (v3) |
 |---|---|---|
-| Q1 | Free row 명시 | row 없음 (가정 유지) |
-| Q2 | feature_usage 이월 | 안 됨 (RC 표준) |
-| Q3 | Trial 만료 시 | Free 회귀 |
-| Q4 | Outreach 후 거절/no-reply 시 카운트 환원 | 환원 X (남발 방지) |
-| Q5 | 환불 정책 | RC 표준 |
-| Q6 | Plan 변경 proration | RC 자동 |
-| Q7 | Downgrade 시점 | 다음 period |
-| Q8 | Annual cancel 시 | period_end까지 사용 |
-| Q9 | Enterprise 영업 | 일반 IAP + B2B 인보이스 병행 |
-| Q10 | Tournament 공고 | 모든 tier 무제한 (공고 등록 quota 자체 X) |
-| Q11 | 첫 결제 보너스 | annual 결제 시 14일 추가 trial |
-| Q12 (v2 신규) | Pro부터 인재 DB 전면 공개 vs Phase 2 | **Phase 2 도입** (v2 시드는 컬럼만 두고 Pro도 talent_search=true이지만 UI에서 "준비 중" 표시) |
-| Q13 (v2 신규) | 알바몬식 공고 노출 부스팅 (단발 ₩1,000 등) | **Phase 2 검토** (Hybrid로 Track A 미니 잔존 가능) |
+| Q1 | Free row 명시 | row 없음 |
+| Q2 | Trial 만료 시 | Free 회귀 |
+| Q3 | 환불 정책 | RC 표준 |
+| Q4 | Plan 변경 proration | RC 자동 |
+| Q5 | Downgrade 시점 | 다음 period |
+| Q6 | Annual cancel | period_end까지 사용 |
+| Q7 | Enterprise 영업 | 일반 IAP + B2B 인보이스 병행 |
+| Q8 | 첫 결제 보너스 | annual 결제 시 14일 추가 trial |
+| Q9 | 직업소개사업(§19) 등록 시점 | **현재는 안 함** — 향후 매칭 기능 추가 시 별도 검토 |
+| Q10 | 단발 광고 ₩1,000 추가 노출 강조 | Phase 3 검토 (Track A consumable 영역과 연결) |
 
 ---
 
-## 13. 마이그레이션 순서
+## 15. 컴플라이언스 — 직업정보제공사업 신고 체크리스트
 
-1. `20260427100000_create_subscription_tables.sql` — 5개 테이블 + 3개 ENUM
+### 15.1 출시 전 신고 준비
+
+- [ ] **사업자등록증 보유** (개인사업자 또는 법인)
+- [ ] **사업장 위치 결정** (서울/경기 관할 지방고용노동관서)
+- [ ] **신고서 작성** (직업안정법 시행규칙 별지 양식)
+- [ ] **수수료 납부** (신고 수수료)
+- [ ] **신고증 수령** 후 앱/웹에 게시
+- [ ] **개인정보처리방침 업데이트** — 구인자/구직자 분리 명시
+- [ ] **이용약관 업데이트** — 알선 행위 제외 명시, 분쟁 책임 한계
+
+### 15.2 운영 의무사항
+
+- [ ] **신고증 표시** — 앱 설정 > 회사정보 페이지 + 웹 푸터
+- [ ] **사업자등록번호 표시** — 모든 페이지 푸터
+- [ ] **사업자등록번호 진위 확인** — 가입 시 국세청 API 또는 수동 확인
+- [ ] **청소년 유해 직종 차단** — 18세 미만 가입자에게 비표시
+- [ ] **금지 직종 키워드 차단** — 자동 키워드 + 수동 모더레이션
+- [ ] **거짓 정보 신고 채널** — `app/(app)/support/report-job.tsx` 등 운영
+- [ ] **개인정보 처리방침** — `src/constants/legal/privacy.ts` 업데이트
+
+### 15.3 PR 체크리스트 (개발 가드)
+
+신규 PR 머지 전 체크:
+
+- [ ] **알선 기능 추가 안 함** — 매칭/추천/제안/검색 기반 알선 X
+- [ ] **마케팅 카피 검토** — "AI 매칭", "추천", "당신을 위한" 단어 미사용
+- [ ] **푸시 알림 카피** — broadcast 형태만, 개인 맞춤 X
+- [ ] **이력서 검색 미구현** — 구인자가 미지원자 정보를 검색하는 UI 없음
+- [ ] **직접 메시지 미구현** — 구인자→구직자 직접 메시지 (지원 후 외) 없음
+
+### 15.4 ESLint 룰 (자동 가드)
+
+```js
+// .eslintrc.js — 알선 단어 사용 금지
+{
+  "rules": {
+    "no-restricted-syntax": ["error", {
+      "selector": "Literal[value=/AI 매칭|매칭 추천|당신에게 맞는|맞춤 추천/]",
+      "message": "직업정보제공사업 범위 외 알선 카피입니다. /docs/superpowers/specs/2026-04-26-monetization-subscription-design.md §15 참조"
+    }]
+  }
+}
+```
+
+### 15.5 향후 직업소개사업(§19) 진입 시 (Phase 3+)
+
+직업소개사업 등록 시 고려사항:
+- 등록 형태 결정: 유료직업소개 vs 무료직업소개
+- 시설 요건: 사업장 면적 / 종사자 자격증 (직업상담사)
+- 수수료 상한 규제: 고용노동부 고시 (구인자 부담 / 구직자 부담 비율)
+- 별도 spec 작성 + 본 v3 spec과 통합 또는 분리
+
+---
+
+## 16. 마이그레이션 순서 (v3 — 5개로 단축)
+
+1. `20260427100000_create_subscription_tables.sql` — 3개 테이블 + 3개 ENUM (v2 5개 → v3 3개)
 2. `20260427100100_create_subscription_rls.sql`
-3. `20260427100200_create_subscription_rpcs.sql` — 4개 RPC
+3. `20260427100200_create_subscription_rpcs.sql` — 3개 RPC (v2 4개 → v3 3개)
 4. `20260427100300_seed_subscription_plans.sql` — 7개 plan
 5. `20260427100400_create_subscription_app_config.sql`
-6. `20260427100500_create_feature_usage_archive_cron.sql`
 
-총 6개 마이그레이션.
-
----
-
-## 14. 외부 작업
-
-1. **RC 계정** + 앱 등록
-2. **App Store Connect**: Auto-Renewable Subscription
-   - 3 group (basic/pro/enterprise) × 2 (monthly/annual) = **6 product**
-   - 가격: ₩3,900 / ₩39,000 / ₩9,900 / ₩99,000 / ₩29,900 / ₩299,000
-3. **Google Play Console**: 동일 6 product
-4. **RC Entitlements**: `basic`, `pro`, `enterprise`
-5. **RC Offering**: default offering에 6 package
-6. **Webhook URL**: `https://<project>.supabase.co/functions/v1/revenuecat-subscription-webhook`
-7. **법무 검토**: 자동 갱신 약관 + 14일 trial 명시 (한국 자동결제 고지 의무 — 전자상거래법)
-8. **B2B 영업**: Enterprise tax invoice 발행 인프라 (사업자등록번호 입력)
-9. **약관 업데이트**: 14일 trial + 자동 결제 + cancel 정책
+총 5개 마이그레이션. v2 (6개)에서 archive cron 마이그레이션 제거.
 
 ---
 
-## 15. 다음 단계
+## 17. 외부 작업
 
-1. **사용자 검토** — Q1~Q13 + v2 가정 lock
-2. **`writing-plans` 스킬 호출** — 6개 마이그레이션을 implementation plan으로
+### 17.1 RevenueCat / 스토어
+
+1. RC 계정 + 앱 등록
+2. App Store Auto-Renewable Subscription — 6 product (3 group × 2 period)
+3. Google Play Subscription — 6 product
+4. RC Entitlements: `basic`, `pro`, `enterprise`
+5. RC Offering + 6 package
+6. Webhook URL: `https://<project>.supabase.co/functions/v1/revenuecat-subscription-webhook`
+
+### 17.2 컴플라이언스 (v3 신규)
+
+1. **직업정보제공사업 신고** (§15.1) — 사업장 결정 후 즉시
+2. **사업자등록번호 진위 확인 API** 연동 (국세청 사업자등록 상태 조회 OpenAPI)
+3. **청소년 유해 직종 키워드 사전** 작성
+4. **금지 직종 차단 키워드 사전** 작성
+5. **신고 채널 페이지** — 거짓 정보 신고
+
+### 17.3 약관/법무
+
+1. 자동 갱신 약관 + 14일 trial 명시 (전자상거래법)
+2. 직업정보제공사업 약관 추가 (`src/constants/legal/`) — 알선 행위 제외, 분쟁 책임
+3. 개인정보처리방침 업데이트 — 구인자/구직자 분리, 사업자번호 처리
 
 ---
 
-## 부록 A — 비즈니스 가정 (v2)
+## 18. 다음 단계
 
-- 가격은 v1 (39k/99k/299k) 대비 **1/10**: 한국 포커펍 영세 사업자 진입장벽 제거
-- 공고 등록은 **모든 tier 무제한**: 알바몬/알바천국 패턴 차용
-- 차등은 **노출/검색/제안/분석/매장**에서: 잡코리아/사람인 패턴 차용
-- BEP: M+6 MRR 100만원 ≈ Pro 100명 또는 Basic 250명 mix
-- 앱스토어 수수료: small biz 1억 이하 둘 다 15%
+1. **사용자 검토** — Q1~Q10 + v3 가정 lock + §15 컴플라이언스 체크리스트 승인
+2. **`writing-plans` 스킬 호출** — 5개 마이그레이션을 implementation plan으로
+3. **법무 자문** — §15 운영 의무사항 검토 (특히 사업자번호 진위 확인 의무 범위)
 
-## 부록 B — Track A vs Track B (v2) 핵심 차이
+---
 
-| | Track A (Consumable) | Track B v2 (Subscription) |
+## 부록 A — 비즈니스 가정 (v3)
+
+- 가격: Basic ₩3,900 / Pro ₩9,900 / Enterprise ₩29,900 (v2 유지)
+- 차등 dimension: 8개 (v2 10개에서 알선 4개 제거 — AI 매칭 / 인재DB / 면접제안 / 지원자무제한열람)
+- 공고 등록: 모든 tier 무제한
+- 직업정보제공사업 범위 (§23 신고제) — 직업소개사업(§19 등록제) 진입 안 함
+- BEP: M+6 MRR 80만원 ≈ Pro 80명 또는 Basic 200명 mix
+
+## 부록 B — Track A vs Track B (v3) 핵심 차이
+
+| | Track A (Consumable) | Track B v3 (Subscription) |
 |---|---|---|
 | 가격대 | ₩1,000~100,000 충전 | ₩3,900~29,900 월정액 |
-| DB 테이블 | 4 (wallets/ledger/lots/products) | 4 (subs/events/usage/plans) |
-| 마이그레이션 | 9 | 6 |
-| 핵심 RPC | consume_diamonds_atomically | check_feature_access + check_and_increment_feature_usage |
-| 차등 단위 | 공고 1건당 (1~10💎) | 노출 위치 + 부가 기능 (월 정액) |
-| KPI 핵심 | ARPPU, 충전 funnel | MRR, churn, plan mix, feature adoption |
-| 영세 사업자 fit | ★★★★★ (₩1k 진입) | ★★★★ (₩3.9k 첫 결제 부담 낮음) |
+| DB 테이블 | 4 (wallets/ledger/lots/products) | 3 (plans/subs/events) |
+| 마이그레이션 | 9 | 5 (v3에서 1개 더 줄음) |
+| 핵심 RPC | consume_diamonds_atomically | check_feature_access |
+| 차등 단위 | 공고 1건당 (1~10💎) | 노출/광고/매장/CS (월 정액) |
+| 직업정보제공사업 부합 | ✓ (정보 매개 + 광고) | ✓ (정보 매개 + 광고) |
+| 알선 위험 | 낮음 (단발 광고 성격) | 낮음 (boolean flag로만 차등) |
 
 상세 비교 → `2026-04-26-monetization-comparison.md`.
 
-## 부록 C — 참고 자료
+## 부록 C — v2 → v3 변경 요약
 
-- 알바몬 광고 상품: 스피드업 / 하이라이트 / 강조
-- 알바천국 메인 노출 패키지
-- 잡코리아 인재DB 정액제
-- 사람인 면접제안 / 기업페이지
-- 원티드 매칭 알고리즘
+| 영역 | v2 | v3 |
+|---|---|---|
+| 차등 dimension 수 | 10 | **8** |
+| 제거된 dimension | — | AI 매칭, 인재DB, 면접제안, 지원자 무제한 열람 |
+| DB 테이블 | 4 (plans/subs/events/feature_usage) | **3 (feature_usage 제거)** |
+| RPC | 4 | **3 (check_and_increment 제거)** |
+| 마이그레이션 | 6 | **5** |
+| 컴플라이언스 §추가 | 없음 | **§15 직업정보제공사업** |
+| 가격 | 동일 | 동일 |
+| 매출 ceiling | 79k MRR (1k명) | ~66k MRR (1k명, plan mix Basic-heavy) |
+
+## 부록 D — 참고 자료
+
+- 직업안정법 §19 (직업소개사업), §23 (직업정보제공사업)
+- 직업안정법 시행령 §28 (정보 매개의 범위)
+- 직업안정법 시행규칙 별지 양식 (신고서)
+- 알바몬 / 알바천국 / 잡코리아 광고 상품 (정보 제공 영역만)
+- 국세청 사업자등록 상태 조회 OpenAPI
 - `react-native-purchases` — context7 ID: `/revenuecat/react-native-purchases`
 
 ---
 
-*Spec v2 종료 — 사용자 검토 대기.*
+*Spec v3 종료 — 사용자 검토 대기.*
