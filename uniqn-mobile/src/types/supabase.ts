@@ -646,6 +646,39 @@ export type Database = {
           },
         ];
       };
+      diamond_products: {
+        Row: {
+          active: boolean;
+          bonus_diamonds: number;
+          created_at: string;
+          diamonds: number;
+          display_order: number;
+          price_krw: number;
+          product_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          bonus_diamonds?: number;
+          created_at?: string;
+          diamonds: number;
+          display_order?: number;
+          price_krw: number;
+          product_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          bonus_diamonds?: number;
+          created_at?: string;
+          diamonds?: number;
+          display_order?: number;
+          price_krw?: number;
+          product_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       employer_applications: {
         Row: {
           agreements_snapshot: Json;
@@ -795,6 +828,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'fcm_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      heart_lots: {
+        Row: {
+          amount_initial: number;
+          amount_remaining: number;
+          expires_at: string;
+          granted_at: string;
+          id: string;
+          source: Database['public']['Enums']['wallet_reason'];
+          source_ref_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          amount_initial: number;
+          amount_remaining: number;
+          expires_at: string;
+          granted_at?: string;
+          id?: string;
+          source: Database['public']['Enums']['wallet_reason'];
+          source_ref_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          amount_initial?: number;
+          amount_remaining?: number;
+          expires_at?: string;
+          granted_at?: string;
+          id?: string;
+          source?: Database['public']['Enums']['wallet_reason'];
+          source_ref_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'heart_lots_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users';
@@ -1525,6 +1599,91 @@ export type Database = {
         };
         Relationships: [];
       };
+      wallet_ledger: {
+        Row: {
+          balance_after_diamond: number;
+          balance_after_heart: number;
+          created_at: string;
+          currency_type: Database['public']['Enums']['wallet_currency'];
+          delta: number;
+          id: string;
+          metadata: Json;
+          reason: Database['public']['Enums']['wallet_reason'];
+          ref_id: string | null;
+          ref_type: string | null;
+          revenuecat_transaction_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          balance_after_diamond: number;
+          balance_after_heart: number;
+          created_at?: string;
+          currency_type: Database['public']['Enums']['wallet_currency'];
+          delta: number;
+          id?: string;
+          metadata?: Json;
+          reason: Database['public']['Enums']['wallet_reason'];
+          ref_id?: string | null;
+          ref_type?: string | null;
+          revenuecat_transaction_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          balance_after_diamond?: number;
+          balance_after_heart?: number;
+          created_at?: string;
+          currency_type?: Database['public']['Enums']['wallet_currency'];
+          delta?: number;
+          id?: string;
+          metadata?: Json;
+          reason?: Database['public']['Enums']['wallet_reason'];
+          ref_id?: string | null;
+          ref_type?: string | null;
+          revenuecat_transaction_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'wallet_ledger_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      wallets: {
+        Row: {
+          diamond_balance: number;
+          heart_balance: number;
+          lifetime_purchased_diamonds: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          diamond_balance?: number;
+          heart_balance?: number;
+          lifetime_purchased_diamonds?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          diamond_balance?: number;
+          heart_balance?: number;
+          lifetime_purchased_diamonds?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'wallets_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       work_logs: {
         Row: {
           application_id: string | null;
@@ -1747,6 +1906,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      claim_daily_attendance: { Args: never; Returns: Json };
       confirm_application: {
         Args: {
           p_application_id: string;
@@ -1757,6 +1917,25 @@ export type Database = {
           p_notes?: string;
           p_original_application?: Json;
           p_owner_id: string;
+        };
+        Returns: Json;
+      };
+      consume_diamonds_atomically: {
+        Args: {
+          p_amount: number;
+          p_reason: Database['public']['Enums']['wallet_reason'];
+          p_ref_id: string;
+          p_ref_type: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
+      create_job_posting_with_payment_atomically: {
+        Args: {
+          p_cost_diamonds: number;
+          p_owner_id: string;
+          p_posting_payload: Json;
+          p_reason: Database['public']['Enums']['wallet_reason'];
         };
         Returns: Json;
       };
@@ -1778,6 +1957,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      credit_diamonds_atomically: {
+        Args: {
+          p_diamonds: number;
+          p_product_id: string;
+          p_revenuecat_transaction_id: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
@@ -1785,6 +1973,7 @@ export type Database = {
       fn_cleanup_rate_limits: { Args: never; Returns: number };
       fn_expire_by_last_work_date: { Args: never; Returns: number };
       fn_expire_fixed_postings_batch: { Args: never; Returns: number };
+      fn_expire_heart_lots: { Args: never; Returns: Json };
       fn_send_review_reminders: { Args: never; Returns: number };
       get_job_posting_stats: {
         Args: { p_owner_id: string };
@@ -1813,6 +2002,17 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: number;
       };
+      get_wallet_summary: { Args: { p_user_id?: string }; Returns: Json };
+      grant_heart_atomically: {
+        Args: {
+          p_amount: number;
+          p_expires_in_days?: number;
+          p_reason: Database['public']['Enums']['wallet_reason'];
+          p_source_ref_id?: string;
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       increment_announcement_view_count: {
         Args: { p_announcement_id: string };
         Returns: undefined;
@@ -1838,6 +2038,10 @@ export type Database = {
           p_staff_id: string;
           p_work_log_id: string;
         };
+        Returns: Json;
+      };
+      refund_job_cancellation_atomically: {
+        Args: { p_owner_id: string; p_posting_id: string };
         Returns: Json;
       };
       register_as_employer: {
@@ -1912,6 +2116,22 @@ export type Database = {
       review_sentiment: 'positive' | 'neutral' | 'negative';
       staff_role: 'dealer' | 'floor' | 'serving' | 'manager' | 'staff' | 'other';
       user_role: 'admin' | 'employer' | 'staff';
+      wallet_currency: 'heart' | 'diamond';
+      wallet_reason:
+        | 'purchase'
+        | 'consume_job_posting'
+        | 'consume_job_extend'
+        | 'consume_job_upgrade'
+        | 'refund_purchase'
+        | 'refund_job_cancelled'
+        | 'grant_signup'
+        | 'grant_daily_attendance'
+        | 'grant_streak_7d'
+        | 'grant_review'
+        | 'grant_referral'
+        | 'grant_admin'
+        | 'grant_first_purchase_bonus'
+        | 'expire_heart';
       work_log_status:
         | 'scheduled'
         | 'checked_in'
@@ -2081,6 +2301,23 @@ export const Constants = {
       review_sentiment: ['positive', 'neutral', 'negative'],
       staff_role: ['dealer', 'floor', 'serving', 'manager', 'staff', 'other'],
       user_role: ['admin', 'employer', 'staff'],
+      wallet_currency: ['heart', 'diamond'],
+      wallet_reason: [
+        'purchase',
+        'consume_job_posting',
+        'consume_job_extend',
+        'consume_job_upgrade',
+        'refund_purchase',
+        'refund_job_cancelled',
+        'grant_signup',
+        'grant_daily_attendance',
+        'grant_streak_7d',
+        'grant_review',
+        'grant_referral',
+        'grant_admin',
+        'grant_first_purchase_bonus',
+        'expire_heart',
+      ],
       work_log_status: [
         'scheduled',
         'checked_in',
