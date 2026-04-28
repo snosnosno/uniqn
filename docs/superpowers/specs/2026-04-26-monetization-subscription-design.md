@@ -1,8 +1,9 @@
 # Monetization System (Track B) — Subscription Design Spec
 
 - 작성일: 2026-04-26 (v3: **직업정보제공사업 범위로 재정렬**)
+- Lock 일자: 2026-04-29
 - 브랜치: `design/monetization-subscription`
-- 상태: **Auto-mode draft v3** (사용자 검토 대기)
+- 상태: **Locked v3** (Open Questions §14의 auto-mode 가정 모두 채택)
 - 자매 spec: `2026-04-26-monetization-design.md` (Track A — Consumable, Locked)
 - 비교 문서: `2026-04-26-monetization-comparison.md`
 - 후속: 사용자 승인 시 `writing-plans` 스킬로 implementation plan 생성 진행
@@ -643,20 +644,20 @@ INSERT INTO app_config(key, value) VALUES
 
 ---
 
-## 14. Open Questions
+## 14. Locked Decisions (2026-04-29)
 
-| # | 결정 | Auto-mode 가정 (v3) |
+| # | 결정 | 채택 |
 |---|---|---|
-| Q1 | Free row 명시 | row 없음 |
-| Q2 | Trial 만료 시 | Free 회귀 |
-| Q3 | 환불 정책 | RC 표준 |
+| Q1 | Free row 명시 | row 없음 (가입 시 INSERT 부담 회피) |
+| Q2 | Trial 만료 시 | Free 회귀 (자동 결제 X) |
+| Q3 | 환불 정책 | RC 표준 (스토어 정책 위임) |
 | Q4 | Plan 변경 proration | RC 자동 |
 | Q5 | Downgrade 시점 | 다음 period |
 | Q6 | Annual cancel | period_end까지 사용 |
 | Q7 | Enterprise 영업 | 일반 IAP + B2B 인보이스 병행 |
 | Q8 | 첫 결제 보너스 | annual 결제 시 14일 추가 trial |
-| Q9 | 직업소개사업(§19) 등록 시점 | **현재는 안 함** — 향후 매칭 기능 추가 시 별도 검토 |
-| Q10 | 단발 광고 ₩1,000 추가 노출 강조 | Phase 3 검토 (Track A consumable 영역과 연결) |
+| Q9 | 직업소개사업(§19) 등록 시점 | **현재는 안 함** — Year 2+ MAU 5,000 도달 시 별도 spec |
+| Q10 | 단발 광고 ₩1,000 추가 노출 강조 | Phase 3 검토 (Track A consumable과 연결) |
 
 ---
 

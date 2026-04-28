@@ -1,10 +1,11 @@
 # Monetization Model Comparison — Consumable vs Subscription (v3)
 
 - 작성일: 2026-04-26 (v3: 직업정보제공사업 범위 적용)
+- Lock 일자: 2026-04-29
 - 브랜치: `design/monetization-subscription`
 - 대응 spec:
   - Track A (Consumable): `2026-04-26-monetization-design.md` (Locked)
-  - Track B (Subscription v3): `2026-04-26-monetization-subscription-design.md` (Auto-mode draft)
+  - Track B (Subscription v3): `2026-04-26-monetization-subscription-design.md` (Locked v3)
 - 목적: 두 모델의 11개 축 비교 + 컴플라이언스 영향 + 수치 시뮬레이션 + UNIQN 단계별 추천
 
 ---
