@@ -341,3 +341,25 @@ export type {
 export { BoardJobSummarySchema, BoardPostMetadataSchema } from './boardMetadata.schema';
 
 export type { BoardJobSummarySchemaData, BoardPostMetadata } from './boardMetadata.schema';
+
+// 워크스페이스 협업 편집 (PR #2)
+export {
+  workspaceRoleSchema,
+  workspaceInvitationStatusSchema,
+  workspaceNameSchema,
+  createWorkspaceSchema,
+  updateWorkspaceNameSchema,
+  inviteWorkspaceMemberSchema,
+  removeWorkspaceMemberSchema,
+  respondInvitationSchema,
+} from './workspace.schema';
+
+export type {
+  WorkspaceRoleSchema,
+  WorkspaceInvitationStatusSchema,
+  CreateWorkspaceData,
+  UpdateWorkspaceNameData,
+  InviteWorkspaceMemberData,
+  RemoveWorkspaceMemberData,
+  RespondInvitationData,
+} from './workspace.schema';

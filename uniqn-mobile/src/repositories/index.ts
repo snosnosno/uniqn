@@ -466,3 +466,22 @@ export type {
   FetchApplicationsOptions,
   FetchApplicationsResult,
 } from './supabase/EmployerApplicationRepository';
+
+// ============================================================================
+// 워크스페이스 협업 편집 (PR #2)
+// ============================================================================
+
+export type {
+  IWorkspaceRepository,
+  IWorkspaceMemberRepository,
+  IWorkspaceInvitationRepository,
+} from './interfaces';
+
+export {
+  SupabaseWorkspaceRepository,
+  SupabaseWorkspaceMemberRepository,
+  SupabaseWorkspaceInvitationRepository,
+  workspaceRepository,
+  workspaceMemberRepository,
+  workspaceInvitationRepository,
+} from './supabase';
