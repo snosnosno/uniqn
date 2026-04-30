@@ -118,6 +118,10 @@ export const NotificationType = {
   REVIEW_RECEIVED: 'review_received',
   /** 평가 마감 리마인더 (D-2) */
   REVIEW_REMINDER: 'review_reminder',
+
+  // === 워크스페이스 협업 (PR #2) ===
+  /** 워크스페이스 초대 발송 (invitee 에게) */
+  WORKSPACE_INVITATION: 'workspace_invitation',
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
@@ -213,6 +217,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.REVIEW_REQUEST]: NotificationCategory.REVIEW,
   [NotificationType.REVIEW_RECEIVED]: NotificationCategory.REVIEW,
   [NotificationType.REVIEW_REMINDER]: NotificationCategory.REVIEW,
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: NotificationCategory.SYSTEM,
 };
 
 // ============================================================================
@@ -286,6 +293,9 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.REVIEW_REQUEST]: 'normal',
   [NotificationType.REVIEW_RECEIVED]: 'normal',
   [NotificationType.REVIEW_REMINDER]: 'high',
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: 'normal',
 };
 
 // ============================================================================
@@ -459,6 +469,9 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.REVIEW_REQUEST]: AndroidChannelId.DEFAULT,
   [NotificationType.REVIEW_RECEIVED]: AndroidChannelId.DEFAULT,
   [NotificationType.REVIEW_REMINDER]: AndroidChannelId.REMINDERS,
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: AndroidChannelId.DEFAULT,
 };
 
 // ============================================================================
@@ -525,6 +538,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.REVIEW_REQUEST]: '평가 요청',
   [NotificationType.REVIEW_RECEIVED]: '평가 도착',
   [NotificationType.REVIEW_REMINDER]: '평가 마감 임박',
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: '워크스페이스 초대',
 };
 
 /**

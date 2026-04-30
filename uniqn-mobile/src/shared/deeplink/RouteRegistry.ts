@@ -63,6 +63,11 @@ export const EXPO_ROUTES = {
   reviewDetail: '/(app)/reviews/[workLogId]',
   reviewsPending: '/(app)/reviews/pending',
 
+  // 워크스페이스 협업 (PR #2)
+  workspace: '/(employer)/workspace',
+  workspaceInvite: '/(employer)/workspace/invite',
+  workspaceInvitations: '/(employer)/workspace/invitations',
+
   publicJobs: '/(public)/jobs',
   publicJobDetail: '/jobs/[id]',
 
@@ -109,6 +114,10 @@ export const AUTH_REQUIRED_ROUTES: ExpoRouteName[] = [
   'reviewDetail',
   'reviewsPending',
   'employerApplicationStatus',
+  // 워크스페이스 협업 (PR #2)
+  'workspace',
+  'workspaceInvite',
+  'workspaceInvitations',
 ];
 
 export const EMPLOYER_REQUIRED_ROUTES: ExpoRouteName[] = [

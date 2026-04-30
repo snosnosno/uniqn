@@ -320,6 +320,19 @@ export const queryKeys = {
     stats: () => [...queryKeys.jobManagement.all, 'stats'] as const,
   },
 
+  // 워크스페이스 협업 (PR #2)
+  workspaces: {
+    all: ['workspaces'] as const,
+    listForUser: (userId: string) => [...queryKeys.workspaces.all, 'list', userId] as const,
+    detail: (workspaceId: string) => [...queryKeys.workspaces.all, 'detail', workspaceId] as const,
+    members: (workspaceId: string) =>
+      [...queryKeys.workspaces.all, 'members', workspaceId] as const,
+    invitationsSent: (workspaceId: string) =>
+      [...queryKeys.workspaces.all, 'invitations', 'workspace', workspaceId] as const,
+    invitationsReceived: (userId: string) =>
+      [...queryKeys.workspaces.all, 'invitations', 'received', userId] as const,
+  },
+
   // 공고 템플릿 (구인자)
   templates: {
     all: ['templates'] as const,
