@@ -96,14 +96,18 @@ describe('workspace schema (PR #1 — M1 migration)', () => {
     expect(typeof returnsValid).toBe('boolean');
   });
 
-  it('job_postings 테이블 — workspace_id 컬럼 추가 (nullable, PR #5 NOT NULL 전환 예정)', () => {
+  it('job_postings 테이블 — workspace_id NOT NULL (PR #5 M3 전환 완료)', () => {
     type Row = PublicTables['job_postings']['Row'];
-    // workspace_id nullable check — must accept null AND uuid
-    const withNullWorkspace: Pick<Row, 'workspace_id'> = { workspace_id: null };
-    const withWorkspace: Pick<Row, 'workspace_id'> = {
-      workspace_id: '00000000-0000-0000-0000-000000000010',
+    type Insert = PublicTables['job_postings']['Insert'];
+    // M3 후 workspace_id 는 string (nullable 아님)
+    const row: Pick<Row, 'workspace_id'> = {
+      workspace_id: '123e4567-e89b-42d3-a456-426614174010',
     };
-    expect(withNullWorkspace.workspace_id).toBeNull();
-    expect(withWorkspace.workspace_id).toBeTruthy();
+    expect(row.workspace_id).toBeTruthy();
+
+    // Insert 시에도 필수 — 빌드 타임 에러 방어
+    // @ts-expect-error — workspace_id 가 NOT NULL 이라 Insert 에서 null 거부
+    const _shouldFail: Pick<Insert, 'workspace_id'> = { workspace_id: null };
+    expect(_shouldFail).toBeDefined();
   });
 });

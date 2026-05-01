@@ -1015,7 +1015,7 @@ export type Database = {
           view_count: number | null;
           work_date: string | null;
           work_dates: string[] | null;
-          workspace_id: string | null;
+          workspace_id: string;
         };
         Insert: {
           closed_at?: string | null;
@@ -1052,7 +1052,7 @@ export type Database = {
           view_count?: number | null;
           work_date?: string | null;
           work_dates?: string[] | null;
-          workspace_id?: string | null;
+          workspace_id: string;
         };
         Update: {
           closed_at?: string | null;
@@ -1089,7 +1089,7 @@ export type Database = {
           view_count?: number | null;
           work_date?: string | null;
           work_dates?: string[] | null;
-          workspace_id?: string | null;
+          workspace_id?: string;
         };
         Relationships: [
           {
