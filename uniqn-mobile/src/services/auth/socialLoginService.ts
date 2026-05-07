@@ -30,12 +30,7 @@ import {
   setUserId,
   setUserProperties,
 } from '@/services/observability/analyticsService';
-import {
-  type UserProfile,
-  type AuthResult,
-  type SocialProfileData,
-  callVerifyAndSaveProfile,
-} from './authTypes';
+import { type UserProfile, type AuthResult, type SocialProfileData } from './authTypes';
 import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { requestAppleAuthorization } from './appleAuthService';
 import { getUserProfile } from './userProfileService';
@@ -588,28 +583,13 @@ export async function completeSocialProfile(
 
     protectAuthFlow(uid, 'social_signup', SOCIAL_SIGNUP_FLOW_PROTECTION_TTL_MS);
 
-    if (data.identityVerificationId) {
-      await callVerifyAndSavePortOneProfile({
-        identityVerificationId: data.identityVerificationId,
-        termsAgreed: data.termsAgreed,
-        privacyAgreed: data.privacyAgreed,
-        marketingAgreed: data.marketingAgreed ?? false,
-        mode: 'social',
-      });
-    } else {
-      await callVerifyAndSaveProfile({
-        verifiedPhone: data.phone,
-        name: data.name,
-        birthDate: data.birthDate,
-        gender: data.gender,
-        termsAgreed: data.termsAgreed,
-        privacyAgreed: data.privacyAgreed,
-        marketingAgreed: data.marketingAgreed ?? false,
-        mode: 'social',
-        verificationId: data.verificationId,
-        otpCode: data.otpCode,
-      });
-    }
+    await callVerifyAndSavePortOneProfile({
+      identityVerificationId: data.identityVerificationId,
+      termsAgreed: data.termsAgreed,
+      privacyAgreed: data.privacyAgreed,
+      marketingAgreed: data.marketingAgreed ?? false,
+      mode: 'social',
+    });
 
     // 업데이트된 프로필 조회
     const updatedProfile = await getUserProfile(uid);

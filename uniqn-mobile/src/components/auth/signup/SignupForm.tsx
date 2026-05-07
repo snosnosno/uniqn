@@ -149,16 +149,13 @@ export function SignupForm({
         // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
         email: isSocial ? '' : updatedFormData.account!.email,
         password: isSocial ? '' : updatedFormData.account!.password,
-        // 본인인증
+        // PortOne 본인인증 결과
         name: data.name,
         birthDate: data.birthDate,
         gender: data.gender,
         phoneVerified: data.phoneVerified as true,
         verifiedPhone: data.verifiedPhone,
         identityVerificationId: data.identityVerificationId,
-        // 서버사이드 OTP 검증 (소셜 로그인 link 모드)
-        verificationId: data.verificationId,
-        otpCode: data.otpCode,
         // 약관동의
         termsAgreed: updatedFormData.terms.termsAgreed,
         privacyAgreed: updatedFormData.terms.privacyAgreed,
@@ -213,7 +210,6 @@ export function SignupForm({
               isSocial && !formData.identity ? { name: socialData?.name || '' } : formData.identity
             }
             isLoading={isLoading}
-            phoneMode={isSocial ? 'link' : 'signIn'}
             isAppleUser={isSocial && socialData?.socialProvider === 'apple'}
             submitLabel={isSocial ? undefined : '가입완료'}
           />

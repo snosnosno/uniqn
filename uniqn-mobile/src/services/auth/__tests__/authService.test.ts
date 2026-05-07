@@ -106,11 +106,6 @@ jest.mock('../portOneIdentityService', () => ({
   callVerifyAndSavePortOneProfile: jest.fn().mockResolvedValue(undefined),
 }));
 
-jest.mock('../authTypes', () => ({
-  ...jest.requireActual('../authTypes'),
-  callVerifyAndSaveProfile: jest.fn().mockResolvedValue(undefined),
-}));
-
 jest.mock('../userProfileService', () => ({
   getUserProfile: jest.fn(),
 }));
@@ -122,9 +117,6 @@ const { getUserProfile: mockFetchUserProfile } = jest.requireMock('../userProfil
 const { callVerifyAndSavePortOneProfile: mockCallVerify } = jest.requireMock(
   '../portOneIdentityService'
 ) as { callVerifyAndSavePortOneProfile: jest.Mock };
-const { callVerifyAndSaveProfile: mockCallVerifyDirect } = jest.requireMock('../authTypes') as {
-  callVerifyAndSaveProfile: jest.Mock;
-};
 
 describe('authCoreService', () => {
   beforeEach(() => {
@@ -216,79 +208,20 @@ describe('authCoreService', () => {
     expect(mockTrackSignup).toHaveBeenCalledWith('email');
   });
 
-  it('signs up via direct phone path when identityVerificationId is absent', async () => {
-    const supabaseUser = {
-      id: 'user-2',
-      email: 'direct@example.com',
-      user_metadata: { name: 'Direct User' },
-      app_metadata: { providers: ['email'] },
-    };
-    const profile = {
-      uid: 'user-2',
-      email: 'direct@example.com',
-      name: 'Direct User',
-      role: 'staff',
-      phoneVerified: true,
-      createdAt: new Date() as never,
-      updatedAt: new Date() as never,
-    };
-
-    mockSignUp.mockResolvedValue({
-      data: { user: supabaseUser, session: { access_token: 'tok-direct' } },
-      error: null,
-    });
-    mockCallVerifyDirect.mockResolvedValue(undefined);
-    mockFetchUserProfile.mockResolvedValue(profile);
-
-    const result = await signUp({
-      email: 'direct@example.com',
-      password: 'Password123!',
-      name: 'Direct User',
-      verifiedPhone: '01012345678',
-      birthDate: '1990-01-01',
-      gender: 'male',
-      termsAgreed: true,
-      privacyAgreed: true,
-      marketingAgreed: false,
-    } as never);
-
-    expect(result).toEqual({ user: supabaseUser, profile });
-    expect(mockCallVerify).not.toHaveBeenCalled();
-    expect(mockCallVerifyDirect).toHaveBeenCalledWith(
-      expect.objectContaining({ verifiedPhone: '01012345678', mode: 'signup' }),
-      'tok-direct'
-    );
-  });
-
-  it('signs out and rethrows when direct phone verify-and-save fails', async () => {
-    const supabaseUser = {
-      id: 'user-3',
-      email: 'fail@example.com',
-      user_metadata: { name: 'Fail User' },
-      app_metadata: { providers: ['email'] },
-    };
-
-    mockSignUp.mockResolvedValue({
-      data: { user: supabaseUser, session: { access_token: 'tok-fail' } },
-      error: null,
-    });
-    mockCallVerifyDirect.mockRejectedValue(new Error('edge fn error'));
-
+  it('rejects signUp when identityVerificationId is missing', async () => {
     await expect(
       signUp({
-        email: 'fail@example.com',
+        email: 'no-portone@example.com',
         password: 'Password123!',
-        name: 'Fail User',
-        verifiedPhone: '01012345678',
-        birthDate: '1990-01-01',
-        gender: 'male',
+        name: 'No PortOne',
         termsAgreed: true,
         privacyAgreed: true,
         marketingAgreed: false,
       } as never)
     ).rejects.toThrow();
 
-    expect(mockSignOut).toHaveBeenCalled();
+    expect(mockSignUp).not.toHaveBeenCalled();
+    expect(mockCallVerify).not.toHaveBeenCalled();
   });
 
   it('cleans up on signup failure', async () => {

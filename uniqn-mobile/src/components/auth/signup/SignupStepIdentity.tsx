@@ -1,11 +1,12 @@
 /**
  * UNIQN Mobile - 회원가입 Step 2: 본인인증
  *
- * @description 이름/생년월일/성별 입력 + 포트원 KG이니시스 본인인증
- * @version 4.3.0
+ * @description PortOne KG이니시스 통합 본인인증.
+ *              인증 결과(이름/생년월일/성별/휴대폰)는 표시 전용으로 잠긴다.
+ * @version 5.0.0
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,22 +15,16 @@ import { Input } from '@/components/ui/Input';
 import { PortOneIdentityVerification } from '@/components/auth/PortOneIdentityVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
-import {
-  getLinkedPhoneNumber,
-  isPortOneInicisIdentityConfigured,
-  type VerifiedPortOneIdentity,
-} from '@/services/auth';
+import { type VerifiedPortOneIdentity } from '@/services/auth';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
-import { IDENTITY_VERIFICATION_ENABLED } from '@/constants/featureFlags';
 
 interface SignupStepIdentityProps {
   onNext: (data: SignUpIdentityData) => void;
   onBack: () => void;
   initialData?: Partial<SignUpIdentityData>;
   isLoading?: boolean;
-  phoneMode?: 'signIn' | 'link';
   isAppleUser?: boolean;
   submitLabel?: string;
 }
@@ -63,15 +58,9 @@ export function SignupStepIdentity({
   onBack,
   initialData,
   isLoading = false,
-  phoneMode = 'signIn',
   isAppleUser = false,
   submitLabel = '다음',
 }: SignupStepIdentityProps) {
-  // IDENTITY_VERIFICATION_ENABLED=false 이면 portOne 전체 비활성화
-  const usePortOneIdentity = IDENTITY_VERIFICATION_ENABLED && isPortOneInicisIdentityConfigured();
-  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
-    initialData?.verifiedPhone || null
-  );
   const [portOneIdentity, setPortOneIdentity] = useState<VerifiedPortOneIdentity | null>(() =>
     createInitialPortOneIdentity(initialData)
   );
@@ -95,7 +84,7 @@ export function SignupStepIdentity({
   });
 
   const watchedName = watch('name');
-  const isIdentityLocked = usePortOneIdentity && Boolean(portOneIdentity);
+  const isIdentityLocked = Boolean(portOneIdentity);
 
   const handlePortOneVerified = useCallback(
     (identity: VerifiedPortOneIdentity) => {
@@ -108,7 +97,6 @@ export function SignupStepIdentity({
       }
 
       setPortOneIdentity(identity);
-      setVerifiedPhone(identity.phoneNumber);
       setValue('name', identity.name, { shouldValidate: true });
       setValue('birthDate', identity.birthDate, { shouldValidate: true });
       setValue('gender', identity.gender, { shouldValidate: true });
@@ -117,36 +105,6 @@ export function SignupStepIdentity({
       setValue('identityVerificationId', identity.identityVerificationId, {
         shouldValidate: true,
       });
-      setValue('verificationId', undefined);
-      setValue('otpCode', undefined);
-    },
-    [setValue]
-  );
-
-  useEffect(() => {
-    if (phoneMode !== 'link' || usePortOneIdentity) return;
-
-    getLinkedPhoneNumber().then((linkedPhone) => {
-      if (!linkedPhone) return;
-
-      logger.info('Social signup linked phone restored', {
-        component: 'SignupStepIdentity',
-      });
-      setVerifiedPhone(linkedPhone);
-      setValue('phoneVerified', true, { shouldValidate: true });
-      setValue('verifiedPhone', linkedPhone, { shouldValidate: true });
-    });
-  }, [phoneMode, setValue, usePortOneIdentity]);
-
-  /** 수동 전화번호 입력 핸들러 (본인인증 비활성화 시 사용) */
-  const handleManualPhoneChange = useCallback(
-    (text: string) => {
-      const cleaned = text.replace(/[-\s]/g, '');
-      const isValid = /^\+82[0-9]{9,10}$/.test(cleaned) || /^01[0-9]{8,9}$/.test(cleaned);
-      // cleaned(대시 제거) 값을 저장해야 edge function과 DB 포맷이 일치
-      setValue('verifiedPhone', cleaned, { shouldValidate: true });
-      setValue('phoneVerified', isValid, { shouldValidate: true });
-      if (isValid) setVerifiedPhone(cleaned);
     },
     [setValue]
   );
@@ -225,47 +183,20 @@ export function SignupStepIdentity({
 
       <View>
         <Text className="mb-2 text-sm font-sans-medium text-content-secondary">본인인증</Text>
-
-        {IDENTITY_VERIFICATION_ENABLED ? (
-          /* PortOne 이니시스 통합인증 (정식 서비스) */
-          <PortOneIdentityVerification
-            onVerified={handlePortOneVerified}
-            onError={(error) =>
-              logger.error('PortOne identity verification error', error, {
-                component: 'SignupStepIdentity',
-              })
-            }
-            initialIdentity={portOneIdentity}
-            disabled={isLoading}
-            customerFullName={watchedName || undefined}
-          />
-        ) : (
-          /* 전화번호 직접 입력 (본인인증 심사 준비 중) */
-          <View className="rounded-md border border-warning-200 bg-warning-50 p-4 dark:border-warning-900/40 dark:bg-warning-900/10">
-            <Text className="mb-3 text-sm leading-5 text-warning-700 dark:text-warning-400 font-sans">
-              현재 본인인증 서비스 준비 중입니다. 전화번호를 직접 입력해주세요.
-            </Text>
-            <Controller
-              control={control}
-              name="verifiedPhone"
-              render={({ field: { onBlur, value } }) => (
-                <Input
-                  placeholder="010-1234-5678"
-                  value={value}
-                  onChangeText={handleManualPhoneChange}
-                  onBlur={onBlur}
-                  keyboardType="phone-pad"
-                  editable={!isLoading}
-                  accessibilityLabel="전화번호 입력"
-                  error={errors.verifiedPhone?.message}
-                />
-              )}
-            />
-          </View>
-        )}
+        <PortOneIdentityVerification
+          onVerified={handlePortOneVerified}
+          onError={(error) =>
+            logger.error('PortOne identity verification error', error, {
+              component: 'SignupStepIdentity',
+            })
+          }
+          initialIdentity={portOneIdentity}
+          disabled={isLoading}
+          customerFullName={watchedName || undefined}
+        />
       </View>
 
-      {errors.phoneVerified && !verifiedPhone && (
+      {errors.phoneVerified && !portOneIdentity && (
         <Text className="-mt-2 text-sm text-error-500 font-sans">
           {errors.phoneVerified.message}
         </Text>

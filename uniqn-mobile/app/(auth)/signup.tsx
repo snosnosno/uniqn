@@ -90,6 +90,11 @@ export default function SignUpScreen() {
           return;
         }
 
+        if (!data.identityVerificationId) {
+          addToast({ type: 'error', message: '본인인증을 완료해주세요.' });
+          return;
+        }
+
         const result = await completeSocialProfile(user.id, {
           name: data.name,
           birthDate: data.birthDate,
@@ -99,8 +104,6 @@ export default function SignUpScreen() {
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           marketingAgreed: data.marketingAgreed,
-          verificationId: data.verificationId,
-          otpCode: data.otpCode,
         });
 
         if (result.user) {
