@@ -27,11 +27,14 @@ import {
   LogOutIcon,
   ChevronRightIcon,
   TrashIcon,
+  BriefcaseIcon,
+  InboxIcon,
 } from '@/components/icons';
+import { useReceivedWorkspaceInvitations } from '@/hooks/workspace';
 import { pushNotificationService } from '@/services/notifications/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useHasRole } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import {
   useNotificationSettingsQuery,
@@ -102,6 +105,11 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 
 export default function SettingsScreen() {
   const { isAuthenticated, profile, user } = useAuth();
+
+  // 워크스페이스 협업 — employer 만 진입 (라우트 가드와 일치)
+  const isEmployer = useHasRole('employer');
+  const { invitations: pendingInvitations } = useReceivedWorkspaceInvitations();
+  const pendingInvitationsCount = pendingInvitations?.length ?? 0;
 
   // 테마 설정
   const { isDarkMode, setTheme } = useThemeStore();
@@ -299,6 +307,27 @@ export default function SettingsScreen() {
             }
           />
         </Card>
+
+        {/* 공고 협업 (워크스페이스) — employer 전용 */}
+        {isAuthenticated && isEmployer && (
+          <Card className="mb-4">
+            <Text className="text-[10px] uppercase tracking-wider text-content-muted font-sans-bold mb-2">
+              공고 협업
+            </Text>
+            <SettingItem
+              icon={<BriefcaseIcon size={22} color={SECONDARY_PALETTE[500]} />}
+              label="워크스페이스"
+              onPress={() => router.push('/(employer)/workspace')}
+            />
+            <Divider spacing="sm" />
+            <SettingItem
+              icon={<InboxIcon size={22} color={SECONDARY_PALETTE[500]} />}
+              label="받은 초대"
+              value={pendingInvitationsCount > 0 ? `${pendingInvitationsCount}건` : undefined}
+              onPress={() => router.push('/(employer)/workspace/invitations')}
+            />
+          </Card>
+        )}
 
         {/* 계정 설정 */}
         <Card className="mb-4">
