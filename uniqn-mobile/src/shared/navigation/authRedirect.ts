@@ -104,6 +104,7 @@ export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams
   }
 
   // 닉네임 미설정 — profile-setup
+  // (profileCompleted 의 의미는 "닉네임 입력 완료" 이지 본인인증과 별개. UserProfile 타입 주석 참고.)
   if (profileCompleted === false) {
     return AUTH_ENTRY_ROUTES.profileSetup;
   }

@@ -122,7 +122,16 @@ export interface UserProfile {
   // 프로필 상태
   /** 사용자 상태 */
   status?: 'active' | 'inactive' | 'suspended' | 'deleted';
-  /** 프로필 완성 여부 (닉네임 등 필수 프로필 입력 완료) */
+  /**
+   * 닉네임 설정 완료 여부.
+   *
+   * 본인인증 완료 여부(`identityVerified`)와는 별개의 개념이다.
+   * - `identityVerified`: KG이니시스 본인인증 완료 (이름/생년월일/성별/휴대폰 검증)
+   * - `profileCompleted`: 서비스 닉네임 입력 완료 (region/career 등 부가 정보 미입력이어도 true)
+   *
+   * 가입 → 닉네임 입력(profile-setup) → `profileCompleted = true` → 홈 진입.
+   * DB 컬럼명은 `profile_completed` 로 그대로 유지한다.
+   */
   profileCompleted?: boolean;
 
   // 메타데이터
