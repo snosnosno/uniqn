@@ -116,6 +116,12 @@ export const NOTIFICATION_ROUTE_MAP: Record<
     data?.workLogId
       ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
       : { name: 'reviews/pending' },
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: (data): DeepLinkRoute =>
+    data?.invitationId
+      ? { name: 'workspace/invitations', params: { invitationId: data.invitationId } }
+      : { name: 'workspace/invitations' },
 };
 
 export function getRouteForNotificationType(

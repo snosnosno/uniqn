@@ -94,6 +94,9 @@ const typeIcons: Partial<Record<NotificationType, IconComponent>> = {
   [NotificationType.REVIEW_REQUEST]: ChatBubbleLeftIcon,
   [NotificationType.REVIEW_RECEIVED]: CheckCircleIcon,
   [NotificationType.REVIEW_REMINDER]: ClockIcon,
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: BriefcaseIcon,
 };
 
 // 카테고리별 색상 (Black & Gold v3.0)

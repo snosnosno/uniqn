@@ -52,7 +52,11 @@ export type DeepLinkRoute =
   | { name: 'admin/employer-application'; params: { id: string } }
   | { name: 'employer-application-status' }
   | { name: 'reviews/detail'; params: { workLogId: string } }
-  | { name: 'reviews/pending' };
+  | { name: 'reviews/pending' }
+  // 워크스페이스 협업 (PR #2)
+  | { name: 'workspace' }
+  | { name: 'workspace/invite'; params: { workspaceId: string } }
+  | { name: 'workspace/invitations'; params?: { invitationId?: string } };
 
 export interface ParsedDeepLink {
   url: string;

@@ -370,6 +370,14 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     link: (d) => `/reviews/${d.workLogId}`,
     icon: '⏰',
   },
+
+  // 워크스페이스 협업 (PR #2)
+  [NotificationType.WORKSPACE_INVITATION]: {
+    title: (d) => `${d.inviterName ?? '누군가'}님이 워크스페이스에 초대했어요`,
+    body: (d) => `${d.workspaceName ?? '워크스페이스'} · 편집자 권한`,
+    link: () => `/workspace/invitations`,
+    icon: '🤝',
+  },
 };
 
 // ============================================================================

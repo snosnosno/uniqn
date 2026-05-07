@@ -1990,6 +1990,10 @@ export type Database = {
         Args: { p_compensation: Json };
         Returns: string;
       };
+      accept_workspace_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: Json;
+      };
       apply_with_capacity_check: {
         Args: {
           p_applicant_email?: string;
@@ -2118,6 +2122,7 @@ export type Database = {
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      expire_pending_workspace_invitations: { Args: never; Returns: number };
       fn_cleanup_expired_fcm_tokens: { Args: never; Returns: number };
       fn_cleanup_rate_limits: { Args: never; Returns: number };
       fn_expire_by_last_work_date: { Args: never; Returns: number };
@@ -2175,6 +2180,10 @@ export type Database = {
         Returns: undefined;
       };
       increment_view_count: { Args: { posting_id: string }; Returns: undefined };
+      invite_workspace_member: {
+        Args: { p_invitee_user_id: string; p_workspace_id: string };
+        Returns: string;
+      };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
       is_workspace_member: {
@@ -2205,6 +2214,14 @@ export type Database = {
         Args: { p_app_id: string; p_category?: string; p_reason?: string };
         Returns: Json;
       };
+      reject_workspace_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: undefined;
+      };
+      remove_workspace_member: {
+        Args: { p_user_id: string; p_workspace_id: string };
+        Returns: undefined;
+      };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
       review_report: {
         Args: {
@@ -2213,6 +2230,10 @@ export type Database = {
           p_reviewer_notes?: string;
           p_status: string;
         };
+        Returns: undefined;
+      };
+      revoke_workspace_invitation: {
+        Args: { p_invitation_id: string };
         Returns: undefined;
       };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };

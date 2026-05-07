@@ -46,3 +46,11 @@ export * from './reviewService';
 export * from './inquiryService';
 export * from './versionService';
 export * from './boardService';
+
+// 워크스페이스 협업 편집 (PR #2)
+export {
+  workspaceService,
+  workspaceInvitationService,
+  type InviteWorkspaceMemberOptions,
+  type InviteWorkspaceMemberResult,
+} from './workspace';

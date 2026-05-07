@@ -139,6 +139,14 @@ export class RouteMapper {
       case 'reviews/pending':
         return EXPO_ROUTES.reviewsPending;
 
+      // 워크스페이스 협업 (PR #2)
+      case 'workspace':
+        return EXPO_ROUTES.workspace;
+      case 'workspace/invite':
+        return EXPO_ROUTES.workspaceInvite;
+      case 'workspace/invitations':
+        return EXPO_ROUTES.workspaceInvitations;
+
       default: {
         const _exhaustive: never = route;
         void _exhaustive;

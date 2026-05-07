@@ -126,3 +126,10 @@ export type {
   FetchScheduleMembershipsOptions,
   FetchBoardReportsOptions,
 } from './IBoardRepository';
+
+// 워크스페이스 협업 편집 (PR #2)
+export type {
+  IWorkspaceRepository,
+  IWorkspaceMemberRepository,
+  IWorkspaceInvitationRepository,
+} from './IWorkspaceRepository';

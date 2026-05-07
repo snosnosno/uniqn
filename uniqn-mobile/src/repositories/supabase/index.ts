@@ -13,3 +13,14 @@ export { SupabaseInquiryRepository } from './InquiryRepository';
 export { SupabaseTemplateRepository } from './TemplateRepository';
 export { SupabaseEventQRRepository } from './EventQRRepository';
 export { SupabaseAdminRepository } from './AdminRepository';
+
+// 워크스페이스 협업 편집 (PR #2)
+export { SupabaseWorkspaceRepository, workspaceRepository } from './WorkspaceRepository';
+export {
+  SupabaseWorkspaceMemberRepository,
+  workspaceMemberRepository,
+} from './WorkspaceMemberRepository';
+export {
+  SupabaseWorkspaceInvitationRepository,
+  workspaceInvitationRepository,
+} from './WorkspaceInvitationRepository';
