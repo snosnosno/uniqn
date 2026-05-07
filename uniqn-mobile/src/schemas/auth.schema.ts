@@ -200,7 +200,9 @@ export const signupGenderSchema = z.enum(['male', 'female'], {
 /**
  * 회원가입 Identity 스키마 (본인인증 - 필수)
  *
- * 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
+ * PortOne KG이니시스 통합 본인인증 결과를 검증한다.
+ * - identityVerificationId: PortOne 발급 인증 ID (서버에서 PortOne API로 재조회)
+ * - name/birthDate/gender/verifiedPhone: PortOne 결과를 form 에 채워 넣은 사본 (서버는 신뢰하지 않음)
  */
 export const signUpIdentitySchema = z.object({
   name: nameSchema,
@@ -210,14 +212,7 @@ export const signUpIdentitySchema = z.object({
     message: '전화번호 인증이 필요합니다',
   }),
   verifiedPhone: phoneSchema,
-  identityVerificationId: z.string().min(1).max(200).optional(),
-  /** 서버사이드 OTP 검증용 (소셜 로그인 link 모드) */
-  verificationId: z.string().min(1).max(2000).optional(),
-  otpCode: z
-    .string()
-    .length(6, { message: '인증번호는 6자리입니다' })
-    .regex(/^\d{6}$/, { message: '숫자 6자리를 입력해주세요' })
-    .optional(),
+  identityVerificationId: z.string().min(1).max(200),
 });
 
 export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;

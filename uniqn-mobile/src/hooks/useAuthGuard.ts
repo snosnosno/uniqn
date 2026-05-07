@@ -115,11 +115,13 @@ export function useAuthGuard(): void {
   const socialProvider = profile?.socialProvider ?? null;
   const phoneVerified = profile?.phoneVerified ?? null;
   const profileCompleted = profile?.profileCompleted ?? null;
+  const identityVerified = profile?.identityVerified ?? null;
 
   const authenticatedEntryRoute = getAuthenticatedEntryRoute({
     socialProvider,
     phoneVerified,
     profileCompleted,
+    identityVerified,
   });
 
   const routerRef = useRef(router);
@@ -154,6 +156,7 @@ export function useAuthGuard(): void {
       socialProvider,
       phoneVerified,
       profileCompleted,
+      identityVerified,
       redirect: postAuthRedirect,
     });
     const phoneOnlySignupRoute = appendRedirectToRoute(
@@ -236,6 +239,7 @@ export function useAuthGuard(): void {
           socialProvider,
           phoneVerified,
           profileCompleted,
+          identityVerified,
           redirect: publicAliasRedirect,
         });
 
@@ -345,6 +349,7 @@ export function useAuthGuard(): void {
   }, [
     authenticatedEntryRoute,
     checkAuthState,
+    identityVerified,
     isAuthenticated,
     isLoading,
     isMountedRef,

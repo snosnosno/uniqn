@@ -133,7 +133,8 @@ export function getPortOneInicisIdentityConfig(): PortOneInicisIdentityConfig {
 
   const storeId = portOne?.storeId?.trim() ?? '';
   const channelKey = portOne?.inicisChannelKey?.trim() ?? '';
-  const directAgency = portOne?.inicisDirectAgency?.trim() as PortOneInicisDirectAgency | undefined;
+  const directAgencyRaw = portOne?.inicisDirectAgency?.trim();
+  const directAgency = directAgencyRaw ? (directAgencyRaw as PortOneInicisDirectAgency) : undefined;
   const logoUrl = portOne?.inicisLogoUrl?.trim() || undefined;
   const frgndInfo = portOne?.inicisFrgndInfo === 'Y' ? 'Y' : 'N';
 
@@ -175,6 +176,11 @@ export function buildPortOneInicisIdentityRequest(
     customer.phoneNumber = sanitizedPhoneNumber;
   }
 
+  // 빈 값을 SDK에 넘기면 KG이니시스가 "파라미터가 유효하지 않습니다"로 거부하므로
+  // 명시적으로 값이 있을 때만 키를 추가한다.
+  const resolvedDirectAgency = input.directAgency ?? config.directAgency;
+  const resolvedLogoUrl = input.logoUrl ?? config.logoUrl;
+
   return {
     storeId: config.storeId,
     channelKey: config.channelKey,
@@ -184,9 +190,9 @@ export function buildPortOneInicisIdentityRequest(
     bypass: {
       inicisUnified: {
         flgFixedUser: 'N',
-        directAgency: input.directAgency ?? config.directAgency,
-        logoUrl: input.logoUrl ?? config.logoUrl,
         FRGNDInfo: input.frgndInfo ?? config.frgndInfo,
+        ...(resolvedDirectAgency ? { directAgency: resolvedDirectAgency } : {}),
+        ...(resolvedLogoUrl ? { logoUrl: resolvedLogoUrl } : {}),
       },
     },
   };

@@ -109,10 +109,6 @@ jest.mock('../userProfileService', () => ({
   getUserProfile: (...args: unknown[]) => mockGetUserProfile(...args),
 }));
 
-jest.mock('../authTypes', () => ({
-  callVerifyAndSaveProfile: jest.fn(),
-}));
-
 jest.mock('../appleAuthService', () => ({
   requestAppleAuthorization: (...args: unknown[]) => mockRequestAppleAuthorization(...args),
 }));

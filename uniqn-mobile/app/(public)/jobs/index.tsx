@@ -25,6 +25,7 @@ export default function LegacyPublicJobsEntryRoute() {
         socialProvider: profile.socialProvider ?? null,
         phoneVerified: profile.phoneVerified ?? null,
         profileCompleted: profile.profileCompleted ?? null,
+        identityVerified: profile.identityVerified ?? null,
       })}
     />
   );

@@ -273,12 +273,16 @@ export interface CompleteProfileData {
 }
 
 /**
- * 프로필 완성 (회원가입 후 첫 진입 시)
+ * 닉네임 설정 완료 (회원가입 후 첫 진입 시 1회).
  *
  * @description
+ * 본인인증과 무관하게 "서비스 닉네임"을 처음 입력했을 때 호출된다.
+ * 이름과 의미가 달리 보일 수 있으나 `profileCompleted` 의 실질적 의미는
+ * "닉네임 입력 완료"이다. region/career/note 등은 미입력이어도 `true` 가 된다.
+ *
  * - 닉네임 필수 + 선택 필드 업데이트
- * - profileCompleted = true로 전환
- * - Firebase Auth displayName 업데이트
+ * - profileCompleted = true 로 전환 (DB 컬럼: profile_completed)
+ * - Supabase Auth displayName 업데이트
  */
 export async function completeProfile(data: CompleteProfileData): Promise<void> {
   const currentUser = await requireCurrentUser();

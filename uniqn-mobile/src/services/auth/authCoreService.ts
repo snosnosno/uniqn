@@ -29,7 +29,7 @@ import {
   resetLoginAttempts,
 } from '@/services/observability/sessionService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
-import { type UserProfile, type AuthResult, callVerifyAndSaveProfile } from './authTypes';
+import { type UserProfile, type AuthResult } from './authTypes';
 import { callVerifyAndSavePortOneProfile } from './portOneIdentityService';
 import { getUserProfile as fetchUserProfile } from './userProfileService';
 
@@ -235,16 +235,20 @@ export async function checkNicknameExists(nickname: string, excludeUid?: string)
 }
 
 /**
- * 회원가입 (PortOne 본인인증 기반)
+ * 회원가입 (PortOne 본인인증 필수)
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
     const identityVerificationId = data.identityVerificationId;
+    if (!identityVerificationId) {
+      throw new AuthError(ERROR_CODES.VALIDATION_REQUIRED, {
+        userMessage: '본인인증을 완료해주세요.',
+      });
+    }
 
     logger.info('회원가입 시도', {
       email: maskEmail(data.email),
       platform: Platform.OS,
-      identityMode: identityVerificationId ? 'portone' : 'direct',
     });
 
     // 1. Supabase Auth 계정 생성
@@ -280,38 +284,18 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     }
 
     try {
-      // 2. Edge Function 호출: 서버사이드 검증 + DB 저장 + role 설정
-      // TODO: KG이니시스 심사 통과 후 직접 입력 분기 제거 (featureFlags.ts 참고)
-      if (identityVerificationId) {
-        // PortOne 이니시스 본인인증 경로 (정식 서비스)
-        await callVerifyAndSavePortOneProfile(
-          {
-            identityVerificationId,
-            termsAgreed: data.termsAgreed,
-            privacyAgreed: data.privacyAgreed,
-            marketingAgreed: data.marketingAgreed,
-            email: data.email,
-            mode: 'signup',
-          },
-          accessToken
-        );
-      } else {
-        // 전화번호 직접 입력 경로 (본인인증 심사 준비 중)
-        await callVerifyAndSaveProfile(
-          {
-            verifiedPhone: data.verifiedPhone,
-            name: data.name,
-            birthDate: data.birthDate,
-            gender: data.gender ?? 'male',
-            termsAgreed: data.termsAgreed,
-            privacyAgreed: data.privacyAgreed,
-            marketingAgreed: data.marketingAgreed,
-            email: data.email,
-            mode: 'signup',
-          },
-          accessToken
-        );
-      }
+      // 2. Edge Function 호출: 서버사이드 PortOne 재조회 + DB 저장 + role 설정
+      await callVerifyAndSavePortOneProfile(
+        {
+          identityVerificationId,
+          termsAgreed: data.termsAgreed,
+          privacyAgreed: data.privacyAgreed,
+          marketingAgreed: data.marketingAgreed,
+          email: data.email,
+          mode: 'signup',
+        },
+        accessToken
+      );
 
       // 3. 저장된 프로필 조회
       const profile = await getUserProfile(user.id);
@@ -326,7 +310,21 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
       return { user, profile };
     } catch (error) {
-      // 실패 시 계정 정리
+      // 실패 시 계정 정리: orphan 마킹 → signOut.
+      // orphan 레코드는 같은 이메일/전화번호 재가입 진단·복구 단서.
+      try {
+        await markOrphanAccount(
+          user.id,
+          error instanceof Error ? error.message : 'signup failed',
+          data.verifiedPhone
+        );
+      } catch (markError) {
+        logger.warn('orphan 마킹 실패', {
+          component: 'authService',
+          uid: user.id,
+          error: markError instanceof Error ? markError.message : String(markError),
+        });
+      }
       try {
         await supabase.auth.signOut();
       } catch {

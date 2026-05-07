@@ -33,7 +33,7 @@ export default function SignUpScreen() {
   const postAuthRedirect = normalizePostAuthRedirect(redirect);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast, clearAllToasts } = useToastStore();
-  const { setUser, setProfile, profile } = useAuthStore();
+  const { setUser, setProfile } = useAuthStore();
 
   // 일반 회원가입 핸들러
   const handleSignUp = useCallback(
@@ -56,6 +56,7 @@ export default function SignUpScreen() {
               socialProvider: result.profile.socialProvider,
               phoneVerified: result.profile.phoneVerified,
               profileCompleted: result.profile.profileCompleted,
+              identityVerified: result.profile.identityVerified,
               redirect: postAuthRedirect,
             })
           );
@@ -89,6 +90,11 @@ export default function SignUpScreen() {
           return;
         }
 
+        if (!data.identityVerificationId) {
+          addToast({ type: 'error', message: '본인인증을 완료해주세요.' });
+          return;
+        }
+
         const result = await completeSocialProfile(user.id, {
           name: data.name,
           birthDate: data.birthDate,
@@ -98,8 +104,6 @@ export default function SignUpScreen() {
           termsAgreed: data.termsAgreed,
           privacyAgreed: data.privacyAgreed,
           marketingAgreed: data.marketingAgreed,
-          verificationId: data.verificationId,
-          otpCode: data.otpCode,
         });
 
         if (result.user) {
@@ -116,6 +120,7 @@ export default function SignUpScreen() {
               socialProvider: result.profile.socialProvider,
               phoneVerified: result.profile.phoneVerified,
               profileCompleted: result.profile.profileCompleted,
+              identityVerified: result.profile.identityVerified,
               redirect: postAuthRedirect,
             })
           );
@@ -157,11 +162,6 @@ export default function SignUpScreen() {
         onSubmit={isSocialMode ? handleSocialSignUp : handleSignUp}
         isLoading={isLoading}
         mode={isSocialMode ? 'social' : 'default'}
-        socialData={
-          isSocialMode
-            ? { name: profile?.name, socialProvider: profile?.socialProvider }
-            : undefined
-        }
       />
     </SafeAreaView>
   );

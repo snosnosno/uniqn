@@ -6,6 +6,7 @@ export const AUTH_ENTRY_ROUTES = {
   appHome: (featureFlags.home_dashboard_enabled ? '/(app)/home' : '/(app)/(tabs)') as string,
   signup: '/(auth)/signup',
   socialSignup: '/(auth)/signup?mode=social',
+  identityReverify: '/(auth)/signup?mode=reverify',
   profileSetup: '/(app)/profile-setup',
 } as const;
 
@@ -19,6 +20,12 @@ interface AuthenticatedEntryRouteParams {
   socialProvider?: UserProfile['socialProvider'] | null;
   phoneVerified?: boolean | null;
   profileCompleted?: boolean | null;
+  /**
+   * 본인인증(KG이니시스) 완료 여부.
+   * 명시적으로 false 일 때만 재인증을 강제한다 (undefined/null/true → 통과).
+   * 옛 가입자(컬럼이 NULL)는 영향 없도록 false 만 차단.
+   */
+  identityVerified?: boolean | null;
 }
 
 interface ResolvedAuthenticatedRouteParams extends AuthenticatedEntryRouteParams {
@@ -84,12 +91,20 @@ export function getLoginRoute(redirect?: string | null): string {
 }
 
 export function getAuthenticatedEntryRoute(params: AuthenticatedEntryRouteParams): AuthEntryRoute {
-  const { socialProvider, phoneVerified, profileCompleted } = params;
+  const { socialProvider, phoneVerified, profileCompleted, identityVerified } = params;
 
+  // 소셜 신규 사용자 — 본인인증 단계로 (signup?mode=social)
   if (socialProvider && phoneVerified !== true) {
     return AUTH_ENTRY_ROUTES.socialSignup;
   }
 
+  // 본인인증 명시적 false — KG이니시스 재인증 강제 (signup?mode=reverify)
+  if (identityVerified === false) {
+    return AUTH_ENTRY_ROUTES.identityReverify;
+  }
+
+  // 닉네임 미설정 — profile-setup
+  // (profileCompleted 의 의미는 "닉네임 입력 완료" 이지 본인인증과 별개. UserProfile 타입 주석 참고.)
   if (profileCompleted === false) {
     return AUTH_ENTRY_ROUTES.profileSetup;
   }

@@ -34,8 +34,6 @@ interface SignupFormProps {
   isLoading?: boolean;
   /** 모드: default(일반 회원가입), social(소셜 로그인 후 프로필 완성) */
   mode?: 'default' | 'social';
-  /** 소셜 로그인에서 받은 데이터 (이름 pre-fill 등) */
-  socialData?: { name?: string; socialProvider?: string };
 }
 
 /** 일반 회원가입 스텝 (3단계: 약관 → 계정 → 본인인증) */
@@ -61,12 +59,7 @@ interface FormDataState {
 // Component
 // ============================================================================
 
-export function SignupForm({
-  onSubmit,
-  isLoading = false,
-  mode = 'default',
-  socialData,
-}: SignupFormProps) {
+export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: SignupFormProps) {
   const isSocial = mode === 'social';
   // 양쪽 모두 Step 1(약관동의)부터 시작
   const [currentStep, setCurrentStep] = useState(1);
@@ -149,16 +142,13 @@ export function SignupForm({
         // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
         email: isSocial ? '' : updatedFormData.account!.email,
         password: isSocial ? '' : updatedFormData.account!.password,
-        // 본인인증
+        // PortOne 본인인증 결과
         name: data.name,
         birthDate: data.birthDate,
         gender: data.gender,
         phoneVerified: data.phoneVerified as true,
         verifiedPhone: data.verifiedPhone,
         identityVerificationId: data.identityVerificationId,
-        // 서버사이드 OTP 검증 (소셜 로그인 link 모드)
-        verificationId: data.verificationId,
-        otpCode: data.otpCode,
         // 약관동의
         termsAgreed: updatedFormData.terms.termsAgreed,
         privacyAgreed: updatedFormData.terms.privacyAgreed,
@@ -209,12 +199,8 @@ export function SignupForm({
           <SignupStepIdentity
             onNext={handleIdentityNext}
             onBack={handleIdentityBack}
-            initialData={
-              isSocial && !formData.identity ? { name: socialData?.name || '' } : formData.identity
-            }
+            initialData={formData.identity}
             isLoading={isLoading}
-            phoneMode={isSocial ? 'link' : 'signIn'}
-            isAppleUser={isSocial && socialData?.socialProvider === 'apple'}
             submitLabel={isSocial ? undefined : '가입완료'}
           />
         );

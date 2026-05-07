@@ -339,8 +339,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     buildDate: new Date().toISOString(),
     // Apple 로그인 kill switch (기본 활성화)
     appleLoginEnabled: process.env.EXPO_PUBLIC_ENABLE_APPLE_LOGIN !== 'false',
-    // KG이니시스 본인인증 (심사 완료 후 true로 변경)
-    identityVerificationEnabled: process.env.EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED !== 'false',
     // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
     recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
     // PortOne KG Inicis identity verification

@@ -33,7 +33,9 @@
       "env": {
         "APP_ENV": "staging",
         "EXPO_PUBLIC_RELEASE_CHANNEL": "staging",
-        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93",
+        "EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY": "channel-key-2dc155c9-46a1-4710-a687-245f45497b0c",
+        "EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO": "N"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -49,7 +51,9 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
-        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93",
+        "EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY": "channel-key-2dc155c9-46a1-4710-a687-245f45497b0c",
+        "EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO": "N"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -66,7 +70,9 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
-        "EXPO_PUBLIC_IDENTITY_VERIFICATION_ENABLED": "false"
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "store-c1b44e1c-7620-445b-bb6c-9b6b62e7ab93",
+        "EXPO_PUBLIC_PORTONE_INICIS_CHANNEL_KEY": "channel-key-2dc155c9-46a1-4710-a687-245f45497b0c",
+        "EXPO_PUBLIC_PORTONE_INICIS_FRGND_INFO": "N"
       },
       "ios": {
         "resourceClass": "m-medium"
