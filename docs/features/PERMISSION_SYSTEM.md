@@ -25,7 +25,6 @@
 
 백엔드 (Supabase):
 
-- `uniqn-mobile/supabase/functions/verify-and-save-profile/`
 - `uniqn-mobile/supabase/functions/scheduled-deletion/`
 - `uniqn-mobile/supabase/functions/login-notification/`
 - Auth: Supabase Auth `auth.users` + `raw_app_meta_data` / `raw_user_meta_data`
@@ -59,7 +58,7 @@
 
 - 회원가입 시 필수 동의: 이용약관, 개인정보처리방침
 - 선택 동의: 마케팅 수신
-- 백엔드 저장: Supabase `user_profiles` 테이블 + Edge Function `verify-and-save-profile`
+- 백엔드 저장: Supabase `user_profiles` 테이블
 - 앱 내 조회 경로:
   - `/(app)/settings/terms`
   - `/(app)/settings/privacy`

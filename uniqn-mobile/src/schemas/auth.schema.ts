@@ -152,9 +152,7 @@ export type SignUpAccountData = z.infer<typeof signUpAccountSchema>;
 /**
  * 생년월일 검증 스키마 (YYYYMMDD)
  *
- * @sync functions/src/auth/verifyAndSaveProfile.ts:174-218
- * 이 스키마를 변경할 때 반드시 CF 측 검증 로직도 함께 수정하세요.
- * 특히: MIN_SIGNUP_AGE(14), 생년월일 검증 범위
+ * 정책: MIN_SIGNUP_AGE(14), 생년월일 검증 범위(1900 ~ 현재 연도)
  */
 export const birthDateSchema = z
   .string()

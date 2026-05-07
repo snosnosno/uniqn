@@ -53,7 +53,7 @@ npm run quality
 - `authStore` hydrate 상태
 - `useAuth`, `useAuthGuard`
 - Apple 로그인 가용성
-- 전화번호 OTP / `checkPhoneExists` / `verifyAndSaveProfile`
+- 전화번호 OTP / `checkPhoneExists`
 
 ## 7. Functions 빌드 또는 테스트 실패
 
