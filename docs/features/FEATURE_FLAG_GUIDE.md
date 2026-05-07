@@ -25,9 +25,7 @@
 
 백엔드 (Supabase):
 
-- `uniqn-mobile/supabase/functions/verify-and-save-profile/`
-- `uniqn-mobile/supabase/functions/scheduled-deletion/`
-- `uniqn-mobile/supabase/functions/login-notification/`
+- `uniqn-mobile/supabase/functions/process-scheduled-deletions/`
 - Auth: Supabase Auth `auth.users` + `raw_app_meta_data` / `raw_user_meta_data`
 
 ## 현재 제공 기능
@@ -59,7 +57,7 @@
 
 - 회원가입 시 필수 동의: 이용약관, 개인정보처리방침
 - 선택 동의: 마케팅 수신
-- 백엔드 저장: Supabase `user_profiles` 테이블 + Edge Function `verify-and-save-profile`
+- 백엔드 저장: Supabase `user_profiles` 테이블
 - 앱 내 조회 경로:
   - `/(app)/settings/terms`
   - `/(app)/settings/privacy`
@@ -84,13 +82,8 @@
 
 - 경로: `uniqn-mobile/app/(app)/settings/delete-account.tsx`
 - 30일 유예 삭제 흐름을 사용합니다.
-- 백엔드 정리 작업은 Supabase Edge Function `scheduled-deletion`이 담당합니다.
+- 백엔드 정리 작업은 Supabase Edge Function `process-scheduled-deletions`이 담당합니다.
 - 실제 계정 삭제는 Supabase Admin API로 `auth.users` 레코드를 제거하고 연관 테이블(user_profiles 등)은 RLS 및 cascade로 정리됩니다.
-
-### 로그인 알림
-
-- 서버 구현: Supabase Edge Function `login-notification`
-- 새 로그인 기록과 알림 저장 흐름을 처리합니다(PostgreSQL `notifications` 테이블).
 
 ## 현재 설정 화면 기준 계정 관련 항목
 

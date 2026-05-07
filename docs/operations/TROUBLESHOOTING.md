@@ -1,7 +1,7 @@
 # 문제 해결 가이드
 
-최종 업데이트: 2026-03-30  
-기준 코드: `uniqn-mobile/`, `functions/`
+최종 업데이트: 2026-05-08  
+기준 코드: `uniqn-mobile/`
 
 ## 1. 앱 시작 실패
 
@@ -43,8 +43,8 @@ npm run quality
 - 기기 권한
 - `/(app)/settings`의 푸시 토글
 - `pushNotificationService`
-- `functions/src/utils/notificationUtils.ts`
-- unread counter 후처리 함수
+- `uniqn-mobile/supabase/functions/send-push-notification/`
+- unread counter 후처리 함수 (`reset-unread-counter`, `decrement-unread-counter`, `initialize-unread-counter`)
 
 ## 6. 인증 문제
 
@@ -53,21 +53,16 @@ npm run quality
 - `authStore` hydrate 상태
 - `useAuth`, `useAuthGuard`
 - Apple 로그인 가용성
-- 전화번호 OTP / `checkPhoneExists` / `verifyAndSaveProfile`
+- PortOne 본인인증 (`verify-portone-identity`, `verify-and-save-portone-profile`)
 
-## 7. Functions 빌드 또는 테스트 실패
+## 7. Edge Function 배포 또는 호출 실패
 
-```bash
-cd functions
-npm install
-npm run build
-npm test
-```
+확인:
 
-env 확인:
-
-- `RECAPTCHA_SECRET_KEY`
-- `WEB_API_KEY`
+- `uniqn-mobile/supabase/functions/<함수명>/index.ts` 존재 여부
+- Supabase Dashboard → Edge Functions 배포 상태
+- 함수 로그: `supabase functions logs <함수명> --project-ref <ref>`
+- `verify_jwt` 설정 (`uniqn-mobile/supabase/config.toml`)
 
 ## 8. Sentry 이벤트가 보이지 않음
 
