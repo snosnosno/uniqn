@@ -1500,7 +1500,8 @@ export type Database = {
           fcm_tokens: Json | null;
           gender: string | null;
           id: string;
-          identity: Json | null;
+          identity_ci_hash: string | null;
+          identity_data: Json | null;
           identity_provider: string | null;
           identity_verified: boolean | null;
           identity_verified_at: string | null;
@@ -1537,7 +1538,8 @@ export type Database = {
           fcm_tokens?: Json | null;
           gender?: string | null;
           id: string;
-          identity?: Json | null;
+          identity_ci_hash?: string | null;
+          identity_data?: Json | null;
           identity_provider?: string | null;
           identity_verified?: boolean | null;
           identity_verified_at?: string | null;
@@ -1574,7 +1576,8 @@ export type Database = {
           fcm_tokens?: Json | null;
           gender?: string | null;
           id?: string;
-          identity?: Json | null;
+          identity_ci_hash?: string | null;
+          identity_data?: Json | null;
           identity_provider?: string | null;
           identity_verified?: boolean | null;
           identity_verified_at?: string | null;
