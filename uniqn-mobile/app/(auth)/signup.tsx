@@ -56,6 +56,7 @@ export default function SignUpScreen() {
               socialProvider: result.profile.socialProvider,
               phoneVerified: result.profile.phoneVerified,
               profileCompleted: result.profile.profileCompleted,
+              identityVerified: result.profile.identityVerified,
               redirect: postAuthRedirect,
             })
           );
@@ -116,6 +117,7 @@ export default function SignUpScreen() {
               socialProvider: result.profile.socialProvider,
               phoneVerified: result.profile.phoneVerified,
               profileCompleted: result.profile.profileCompleted,
+              identityVerified: result.profile.identityVerified,
               redirect: postAuthRedirect,
             })
           );

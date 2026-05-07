@@ -41,6 +41,7 @@ export default function SplashScreen() {
     socialProvider: profile?.socialProvider ?? null,
     phoneVerified: profile?.phoneVerified ?? null,
     profileCompleted: profile?.profileCompleted ?? null,
+    identityVerified: profile?.identityVerified ?? null,
   });
   const isPhoneOnlySignupPending = isPhoneOnlySignupAuthUser(user);
 

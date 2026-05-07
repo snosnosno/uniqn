@@ -46,6 +46,43 @@ describe('getAuthenticatedEntryRoute', () => {
       })
     ).toBe(AUTH_ENTRY_ROUTES.appHome);
   });
+
+  it('routes users with identityVerified=false to identity reverify', () => {
+    expect(
+      getAuthenticatedEntryRoute({
+        socialProvider: null,
+        phoneVerified: true,
+        profileCompleted: true,
+        identityVerified: false,
+      })
+    ).toBe(AUTH_ENTRY_ROUTES.identityReverify);
+  });
+
+  it('treats legacy users without identityVerified column as verified (null/undefined → app home)', () => {
+    // 옛날에 가입한 사용자는 identity_verified 컬럼이 NULL이거나 undefined.
+    // 명시적으로 false 일 때만 차단해야 한다.
+    expect(
+      getAuthenticatedEntryRoute({
+        socialProvider: null,
+        phoneVerified: true,
+        profileCompleted: true,
+        identityVerified: null,
+      })
+    ).toBe(AUTH_ENTRY_ROUTES.appHome);
+  });
+
+  it('prioritizes social signup over identity reverify for incomplete social users', () => {
+    // 소셜 신규 사용자(phoneVerified=false)는 mode=social 흐름이 우선.
+    // identityVerified=false 도 함께 와도 socialSignup 으로 가야 한다.
+    expect(
+      getAuthenticatedEntryRoute({
+        socialProvider: 'apple',
+        phoneVerified: false,
+        profileCompleted: false,
+        identityVerified: false,
+      })
+    ).toBe(AUTH_ENTRY_ROUTES.socialSignup);
+  });
 });
 
 describe('normalizePostAuthRedirect', () => {

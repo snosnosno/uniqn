@@ -126,6 +126,7 @@ export default function LoginScreen() {
           socialProvider: result.profile.socialProvider,
           phoneVerified: result.profile.phoneVerified,
           profileCompleted: result.profile.profileCompleted,
+          identityVerified: result.profile.identityVerified,
           redirect: postAuthRedirect,
         })
       );
@@ -142,6 +143,7 @@ export default function LoginScreen() {
           socialProvider: profile?.socialProvider,
           phoneVerified: profile?.phoneVerified,
           profileCompleted: profile?.profileCompleted,
+          identityVerified: profile?.identityVerified,
           redirect: postAuthRedirect,
         })
       );
@@ -190,6 +192,7 @@ export default function LoginScreen() {
             socialProvider: result.profile.socialProvider,
             phoneVerified: result.profile.phoneVerified,
             profileCompleted: result.profile.profileCompleted,
+            identityVerified: result.profile.identityVerified,
             redirect: postAuthRedirect,
           })
         );

@@ -33,6 +33,7 @@ export default function AppLayout() {
       socialProvider: profile.socialProvider ?? null,
       phoneVerified: profile.phoneVerified ?? null,
       profileCompleted: profile.profileCompleted ?? null,
+      identityVerified: profile.identityVerified ?? null,
     }) === AUTH_ENTRY_ROUTES.appHome;
 
   const {
