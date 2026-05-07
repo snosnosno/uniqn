@@ -326,7 +326,21 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
       return { user, profile };
     } catch (error) {
-      // 실패 시 계정 정리
+      // 실패 시 계정 정리: orphan 마킹 → signOut.
+      // orphan 레코드는 같은 이메일/전화번호 재가입 진단·복구 단서.
+      try {
+        await markOrphanAccount(
+          user.id,
+          error instanceof Error ? error.message : 'signup failed',
+          data.verifiedPhone
+        );
+      } catch (markError) {
+        logger.warn('orphan 마킹 실패', {
+          component: 'authService',
+          uid: user.id,
+          error: markError instanceof Error ? markError.message : String(markError),
+        });
+      }
       try {
         await supabase.auth.signOut();
       } catch {
