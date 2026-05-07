@@ -9,6 +9,8 @@
  */
 
 import { workspaceRepository, workspaceMemberRepository } from '@/repositories';
+import { supabase } from '@/lib/supabase';
+import { handleSupabaseError } from '@/utils/supabase';
 import {
   createWorkspaceSchema,
   updateWorkspaceNameSchema,
@@ -83,5 +85,50 @@ export const workspaceService = {
       });
     }
     await workspaceMemberRepository.removeViaRpc(parsed.data.workspaceId, parsed.data.userId);
+  },
+
+  /**
+   * 초대용 사용자 lookup — 이메일 정확 매칭.
+   * (UI 검색 자동완성을 피하기 위해 정확 매칭. 등록된 사용자에게만 초대 발송 가능.)
+   */
+  async lookupUserByEmail(
+    email: string
+  ): Promise<{ id: string; name: string | null; email: string; photoUrl: string | null } | null> {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 5 || !trimmed.includes('@')) {
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, photo_url, is_active')
+        .eq('email', trimmed)
+        .maybeSingle();
+
+      if (error) {
+        handleSupabaseError(error, { operation: '사용자 조회', table: 'users' });
+      }
+
+      if (!data || data.is_active === false) {
+        return null;
+      }
+
+      const row = data as {
+        id: string;
+        name: string | null;
+        email: string;
+        photo_url: string | null;
+      };
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        photoUrl: row.photo_url ?? null,
+      };
+    } catch (error) {
+      logger.warn('lookupUserByEmail 실패', { email: trimmed, error: String(error) });
+      return null;
+    }
   },
 };
