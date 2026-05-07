@@ -9,7 +9,8 @@ import { Button, ConfirmModal, PostingSurfaceState } from '@/components';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { JobPostingCard, NonEmployerView } from '@/components/employer';
 import { TabHeader } from '@/components/headers';
-import { BriefcaseIcon, PlusIcon } from '@/components/icons';
+import { BriefcaseIcon, PlusIcon, UsersIcon } from '@/components/icons';
+import { getIconColor } from '@/constants';
 import { buildPostingFacts } from '@/domains/job-posting';
 import {
   useCloseJobPosting,
@@ -118,6 +119,7 @@ function EmployerView() {
   const { data: postings, isLoading, error, refetch, isRefetching } = useMyJobPostings();
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
+  const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
@@ -221,7 +223,20 @@ function EmployerView() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader title="내 공고" />
+        <TabHeader
+          title="내 공고"
+          rightAction={
+            <Pressable
+              onPress={() => router.push('/(employer)/workspace')}
+              className="rounded-sm p-2"
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="워크스페이스"
+            >
+              <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+            </Pressable>
+          }
+        />
         <PostingSurfaceState mode="loading" scope="detail" message="공고 목록을 불러오는 중..." />
       </SafeAreaView>
     );
@@ -230,7 +245,20 @@ function EmployerView() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-        <TabHeader title="내 공고" />
+        <TabHeader
+          title="내 공고"
+          rightAction={
+            <Pressable
+              onPress={() => router.push('/(employer)/workspace')}
+              className="rounded-sm p-2"
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="워크스페이스"
+            >
+              <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+            </Pressable>
+          }
+        />
         <PostingSurfaceState
           mode="error"
           scope="detail"
@@ -245,7 +273,20 @@ function EmployerView() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top']}>
-      <TabHeader title="내 공고" />
+      <TabHeader
+        title="내 공고"
+        rightAction={
+          <Pressable
+            onPress={() => router.push('/(employer)/workspace')}
+            className="rounded-sm p-2"
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="워크스페이스"
+          >
+            <UsersIcon size={22} color={getIconColor(isDarkMode, 'primary')} />
+          </Pressable>
+        }
+      />
 
       <View className="px-4 py-3">
         <Button
