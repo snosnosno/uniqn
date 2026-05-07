@@ -33,7 +33,7 @@ export default function SignUpScreen() {
   const postAuthRedirect = normalizePostAuthRedirect(redirect);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast, clearAllToasts } = useToastStore();
-  const { setUser, setProfile, profile } = useAuthStore();
+  const { setUser, setProfile } = useAuthStore();
 
   // 일반 회원가입 핸들러
   const handleSignUp = useCallback(
@@ -162,11 +162,6 @@ export default function SignUpScreen() {
         onSubmit={isSocialMode ? handleSocialSignUp : handleSignUp}
         isLoading={isLoading}
         mode={isSocialMode ? 'social' : 'default'}
-        socialData={
-          isSocialMode
-            ? { name: profile?.name, socialProvider: profile?.socialProvider }
-            : undefined
-        }
       />
     </SafeAreaView>
   );

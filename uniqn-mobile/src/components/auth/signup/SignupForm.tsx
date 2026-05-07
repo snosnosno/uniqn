@@ -34,8 +34,6 @@ interface SignupFormProps {
   isLoading?: boolean;
   /** 모드: default(일반 회원가입), social(소셜 로그인 후 프로필 완성) */
   mode?: 'default' | 'social';
-  /** 소셜 로그인에서 받은 데이터 (이름 pre-fill 등) */
-  socialData?: { name?: string; socialProvider?: string };
 }
 
 /** 일반 회원가입 스텝 (3단계: 약관 → 계정 → 본인인증) */
@@ -61,12 +59,7 @@ interface FormDataState {
 // Component
 // ============================================================================
 
-export function SignupForm({
-  onSubmit,
-  isLoading = false,
-  mode = 'default',
-  socialData,
-}: SignupFormProps) {
+export function SignupForm({ onSubmit, isLoading = false, mode = 'default' }: SignupFormProps) {
   const isSocial = mode === 'social';
   // 양쪽 모두 Step 1(약관동의)부터 시작
   const [currentStep, setCurrentStep] = useState(1);
@@ -206,11 +199,8 @@ export function SignupForm({
           <SignupStepIdentity
             onNext={handleIdentityNext}
             onBack={handleIdentityBack}
-            initialData={
-              isSocial && !formData.identity ? { name: socialData?.name || '' } : formData.identity
-            }
+            initialData={formData.identity}
             isLoading={isLoading}
-            isAppleUser={isSocial && socialData?.socialProvider === 'apple'}
             submitLabel={isSocial ? undefined : '가입완료'}
           />
         );
