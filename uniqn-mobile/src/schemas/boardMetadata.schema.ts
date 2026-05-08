@@ -13,7 +13,7 @@
  *   ## Forward-Compat (미활성)
  *
  *   - `BoardPostMetadataSchema` — 현재 DB에는 `metadata` JSONB 컬럼이 없다
- *     (database.types.ts 확인: board_posts는 job_summary만 보유).
+ *     (types/supabase.ts 확인: board_posts는 job_summary만 보유).
  *     향후 `metadata` 컬럼이 추가되면 `{ jobSummary, applicationId, …passthrough }`
  *     형태의 wrapper로 사용할 예정.
  *     - `jobSummary`: 대타 구인 글이 연결된 원 공고 요약 (BoardJobSummary 참조)

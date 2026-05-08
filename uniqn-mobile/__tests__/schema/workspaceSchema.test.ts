@@ -1,7 +1,7 @@
 /**
  * PR #1 — workspace 스키마 컴파일 시점 검증
  *
- * @description database.types.ts 에 workspace 3개 테이블 + is_workspace_member RPC 가
+ * @description types/supabase.ts 에 workspace 3개 테이블 + is_workspace_member RPC 가
  *              포함되어 있는지 컴파일 타임에 검증한다. 실제 DB RLS 통합 테스트는 PR #2
  *              Repository 와 함께 진행된다 (mock 기반 프로젝트 관행).
  *
@@ -11,7 +11,7 @@
  *  3. PR #5 owner_id rename 시 깨질 fixture 위치 식별
  */
 
-import type { Database } from '@/lib/database.types';
+import type { Database } from '@/types/supabase';
 
 type PublicTables = Database['public']['Tables'];
 type PublicEnums = Database['public']['Enums'];

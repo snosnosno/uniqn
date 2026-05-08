@@ -1015,6 +1015,7 @@ export type Database = {
           view_count: number | null;
           work_date: string | null;
           work_dates: string[] | null;
+          workspace_id: string;
         };
         Insert: {
           closed_at?: string | null;
@@ -1051,6 +1052,7 @@ export type Database = {
           view_count?: number | null;
           work_date?: string | null;
           work_dates?: string[] | null;
+          workspace_id: string;
         };
         Update: {
           closed_at?: string | null;
@@ -1087,6 +1089,7 @@ export type Database = {
           view_count?: number | null;
           work_date?: string | null;
           work_dates?: string[] | null;
+          workspace_id?: string;
         };
         Relationships: [
           {
@@ -1094,6 +1097,13 @@ export type Database = {
             columns: ['owner_id'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_postings_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
             referencedColumns: ['id'];
           },
         ];
@@ -1830,6 +1840,145 @@ export type Database = {
           },
         ];
       };
+      workspace_invitations: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          invited_by: string;
+          invitee_user_id: string;
+          responded_at: string | null;
+          role: Database['public']['Enums']['workspace_role'];
+          status: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by: string;
+          invitee_user_id: string;
+          responded_at?: string | null;
+          role?: Database['public']['Enums']['workspace_role'];
+          status?: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by?: string;
+          invitee_user_id?: string;
+          responded_at?: string | null;
+          role?: Database['public']['Enums']['workspace_role'];
+          status?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspace_invitations_invited_by_fkey';
+            columns: ['invited_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'workspace_invitations_invitee_user_id_fkey';
+            columns: ['invitee_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'workspace_invitations_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      workspace_members: {
+        Row: {
+          invited_by: string | null;
+          joined_at: string;
+          role: Database['public']['Enums']['workspace_role'];
+          user_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          invited_by?: string | null;
+          joined_at?: string;
+          role?: Database['public']['Enums']['workspace_role'];
+          user_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          invited_by?: string | null;
+          joined_at?: string;
+          role?: Database['public']['Enums']['workspace_role'];
+          user_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspace_members_invited_by_fkey';
+            columns: ['invited_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'workspace_members_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'workspace_members_workspace_id_fkey';
+            columns: ['workspace_id'];
+            isOneToOne: false;
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      workspaces: {
+        Row: {
+          created_at: string;
+          id: string;
+          member_count: number;
+          name: string;
+          owner_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          member_count?: number;
+          name: string;
+          owner_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          member_count?: number;
+          name?: string;
+          owner_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspaces_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1843,6 +1992,10 @@ export type Database = {
       _format_compensation_label: {
         Args: { p_compensation: Json };
         Returns: string;
+      };
+      accept_workspace_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: Json;
       };
       apply_with_capacity_check: {
         Args: {
@@ -1972,6 +2125,7 @@ export type Database = {
       decrement_unread_counter:
         | { Args: { p_notification_id: string }; Returns: undefined }
         | { Args: { p_delta?: number; p_user_id: string }; Returns: undefined };
+      expire_pending_workspace_invitations: { Args: never; Returns: number };
       fn_cleanup_expired_fcm_tokens: { Args: never; Returns: number };
       fn_cleanup_rate_limits: { Args: never; Returns: number };
       fn_expire_by_last_work_date: { Args: never; Returns: number };
@@ -2029,8 +2183,16 @@ export type Database = {
         Returns: undefined;
       };
       increment_view_count: { Args: { posting_id: string }; Returns: undefined };
+      invite_workspace_member: {
+        Args: { p_invitee_user_id: string; p_workspace_id: string };
+        Returns: string;
+      };
       is_admin: { Args: never; Returns: boolean };
       is_employer_or_admin: { Args: never; Returns: boolean };
+      is_workspace_member: {
+        Args: { _user_id: string; _workspace_id: string };
+        Returns: boolean;
+      };
       permanently_delete_user: { Args: { p_user_id: string }; Returns: Json };
       process_qr_checkin_atomically: {
         Args: {
@@ -2055,6 +2217,14 @@ export type Database = {
         Args: { p_app_id: string; p_category?: string; p_reason?: string };
         Returns: Json;
       };
+      reject_workspace_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: undefined;
+      };
+      remove_workspace_member: {
+        Args: { p_user_id: string; p_workspace_id: string };
+        Returns: undefined;
+      };
       reset_unread_counter: { Args: { p_user_id: string }; Returns: undefined };
       review_report: {
         Args: {
@@ -2063,6 +2233,10 @@ export type Database = {
           p_reviewer_notes?: string;
           p_status: string;
         };
+        Returns: undefined;
+      };
+      revoke_workspace_invitation: {
+        Args: { p_invitation_id: string };
         Returns: undefined;
       };
       sync_schedule_board: { Args: { p_job_posting_id: string }; Returns: Json };
@@ -2142,6 +2316,7 @@ export type Database = {
         | 'completed'
         | 'cancelled'
         | 'no_show';
+      workspace_role: 'editor';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -2329,6 +2504,7 @@ export const Constants = {
         'cancelled',
         'no_show',
       ],
+      workspace_role: ['editor'],
     },
   },
 } as const;
