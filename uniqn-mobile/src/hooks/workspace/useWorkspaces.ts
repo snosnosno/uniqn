@@ -304,7 +304,7 @@ export function useCreateWorkspace() {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   return useMutation({
-    mutationFn: (name: string) => workspaceService.createWorkspace({ name, ownerId: user!.uid }),
+    mutationFn: (name: string) => workspaceService.createWorkspace({ name }),
     onSuccess: () => {
       if (user?.uid) {
         queryClient.invalidateQueries({

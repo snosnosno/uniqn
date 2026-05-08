@@ -30,17 +30,19 @@ function toValidationError(error: unknown): never {
 
 export const workspaceService = {
   /**
-   * 새 워크스페이스 생성
-   * RLS 가 cap (10) 강제 — 도달 시 mapWorkspaceRpcError 가 WORKSPACE_CAP_REACHED 변환.
+   * 새 워크스페이스 생성 — `create_workspace` RPC 경유 (SECURITY DEFINER + public.users.role 조회).
+   *
+   * ownerId 는 RPC 가 auth.uid() 로 자동 결정 — 클라이언트 입력 무시.
+   * RPC 가 cap (10) 와 role(employer/admin) 검증 → mapWorkspaceRpcError 가 도메인 에러로 변환.
    */
-  async createWorkspace(input: { name: string; ownerId: string }): Promise<Workspace> {
+  async createWorkspace(input: { name: string }): Promise<Workspace> {
     const parsed = createWorkspaceSchema.safeParse({ name: input.name });
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? '입력값 오류';
       throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, { userMessage: message });
     }
 
-    return workspaceRepository.create(parsed.data.name, input.ownerId);
+    return workspaceRepository.create(parsed.data.name);
   },
 
   /**

@@ -73,13 +73,28 @@ describe('mapWorkspaceRpcError (PR #2)', () => {
     );
   });
 
-  it('RLS cap 도달 → CAP_REACHED', () => {
+  it('RLS cap 도달 (literal RLS 메시지) → CAP_REACHED', () => {
     const err = mapWorkspaceRpcError({
       message: 'new row violates row-level security policy',
     });
     expect(err).not.toBeNull();
     expect(err!.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED);
     expect(err!.userMessage).toContain('10개');
+  });
+
+  it('WORKSPACE_CAP_REACHED (RPC raise — create_workspace 경로) → CAP_REACHED', () => {
+    const err = mapWorkspaceRpcError({
+      message: 'P0001: WORKSPACE_CAP_REACHED',
+    });
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED);
+    expect(isBusinessError(err!)).toBe(true);
+  });
+
+  it('VALIDATION_REQUIRED (create_workspace 빈 name) → ValidationError', () => {
+    const err = mapWorkspaceRpcError({ message: 'VALIDATION_REQUIRED' });
+    expect(err).not.toBeNull();
+    expect(isValidationError(err!)).toBe(true);
   });
 
   it('알 수 없는 에러 → null (호출자가 일반 처리)', () => {

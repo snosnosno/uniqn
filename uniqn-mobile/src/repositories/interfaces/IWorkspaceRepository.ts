@@ -16,10 +16,10 @@ import type {
 
 export interface IWorkspaceRepository {
   /**
-   * 워크스페이스 생성
-   * @throws AppError E3 cap 도달 / E5 권한 부족 / E1 네트워크
+   * 워크스페이스 생성 (RPC create_workspace 경유 — auth.uid() 자동 사용)
+   * @throws AppError E3 검증 / E5 권한 부족 / E6 cap 도달 / E1 네트워크
    */
-  create(name: string, ownerId: string): Promise<Workspace>;
+  create(name: string): Promise<Workspace>;
 
   /** 단건 조회 — RLS 차단 시 undefined */
   findById(id: string): Promise<Workspace | undefined>;

@@ -87,6 +87,15 @@ export function mapWorkspaceRpcError(error: unknown): AppError | null {
       userMessage: '워크스페이스 편집 권한이 회수되었어요. 다시 로그인하면 최신 상태가 적용됩니다.',
     });
 
+  if (upper.includes('VALIDATION_REQUIRED'))
+    return new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '필수 입력 항목입니다.',
+    });
+
+  // create_workspace RPC 가 cap 도달 시 명시적으로 raise — RLS 우회 경로 (SECURITY DEFINER)
+  if (upper.includes('WORKSPACE_CAP_REACHED'))
+    return makeWorkspaceError(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED);
+
   if (upper.includes('SELF_INVITE_FORBIDDEN'))
     return makeWorkspaceError(WORKSPACE_ERROR_CODES.WORKSPACE_SELF_INVITE);
 

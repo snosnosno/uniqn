@@ -23,15 +23,24 @@ function rowToWorkspace(row: Record<string, unknown>): Workspace {
 }
 
 export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
-  async create(name: string, ownerId: string): Promise<Workspace> {
+  /**
+   * 워크스페이스 생성 — RPC `create_workspace` 경유.
+   *
+   * SECURITY DEFINER + public.users.role 조회로 JWT staleness 우회.
+   * (Edge Function 사후 setRole + refreshSession 누락으로 client JWT 의 app_metadata.role 이
+   *  비어 있어도 동작 — 2026-05-09 root cause fix)
+   *
+   * RPC 에러 코드:
+   *   AUTH_REQUIRED         → AppError E1
+   *   PERMISSION_DENIED     → AppError E5
+   *   VALIDATION_REQUIRED   → AppError E3
+   *   WORKSPACE_CAP_REACHED → BusinessError E6090
+   */
+  async create(name: string): Promise<Workspace> {
     try {
-      logger.info('워크스페이스 생성 시작', { ownerId, name });
+      logger.info('워크스페이스 생성 시작', { name });
 
-      const { data, error } = await supabase
-        .from(TABLE)
-        .insert({ name, owner_id: ownerId })
-        .select(COLUMNS)
-        .single();
+      const { data, error } = await supabase.rpc('create_workspace', { p_name: name });
 
       if (error) {
         const mapped = mapWorkspaceRpcError(error);
@@ -39,8 +48,16 @@ export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
         handleSupabaseError(error, { operation: '워크스페이스 생성', table: TABLE });
       }
 
-      logger.info('워크스페이스 생성 완료', { workspaceId: data!.id });
-      return rowToWorkspace(data as Record<string, unknown>);
+      const row = data as Record<string, unknown> | null;
+      if (!row) {
+        handleSupabaseError(new Error('create_workspace returned null'), {
+          operation: '워크스페이스 생성',
+          table: TABLE,
+        });
+      }
+
+      logger.info('워크스페이스 생성 완료', { workspaceId: row!.id });
+      return rowToWorkspace(row!);
     } catch (error) {
       if (isAppError(error)) throw error;
       handleSupabaseError(error, { operation: '워크스페이스 생성', table: TABLE });
