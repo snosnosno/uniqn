@@ -16,24 +16,27 @@ import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/componen
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import {
-  useWorkspaces,
+  useActiveWorkspace,
   useWorkspaceMembers,
   useWorkspaceOwnerProfile,
   useUpdateWorkspaceName,
   useRemoveWorkspaceMember,
   useCreateWorkspace,
+  useWorkspaces,
 } from '@/hooks/workspace';
+import { WorkspaceContextBar } from '@/components/workspace';
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
-import type { Workspace, WorkspaceMemberWithUser } from '@/types/workspace';
+import type { WorkspaceMemberWithUser } from '@/types/workspace';
 
 export default function WorkspaceSettingsScreen() {
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
-  const { workspaces, isLoading, error } = useWorkspaces();
+  // useActiveWorkspace 가 내부에서 useWorkspaces 를 호출 — TanStack Query 가 동일 키로
+  // 중복 조회 dedup. error 만 별도로 노출되지 않으므로 useWorkspaces 한 번 더 호출.
+  const { error } = useWorkspaces();
+  const { activeWorkspace, isLoading } = useActiveWorkspace();
 
-  // 첫 로그인 후 워크스페이스가 없으면 자동 안내, 1+ 있으면 첫 번째를 활성으로 표시
-  const activeWorkspace: Workspace | undefined = workspaces[0];
   const isOwner = !!user?.uid && activeWorkspace?.ownerId === user.uid;
 
   const {
@@ -158,6 +161,7 @@ export default function WorkspaceSettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-page dark:bg-surface" edges={['top', 'bottom']}>
       <StackHeader title="워크스페이스" />
+      <WorkspaceContextBar />
       <ScrollView contentContainerClassName="pb-8">
         {/* 워크스페이스 헤더 */}
         <View className="border-b border-secondary-200 bg-white px-4 py-5 dark:border-surface-overlay dark:bg-surface">
