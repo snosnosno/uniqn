@@ -22,6 +22,11 @@ interface SerializeJobPostingV3Options {
   current?: Partial<JobPosting>;
   createdAt?: Date;
   updatedAt?: Date;
+  /**
+   * 워크스페이스 ID (M3 NOT NULL 제약). 무료 공고 생성 경로는 Service 가
+   * owner 의 default workspace 를 lookup 하여 주입. update 경로는 current.workspaceId 를 보존.
+   */
+  workspaceId?: string;
 }
 
 export const FIXED_POSTING_DURATION_DAYS = 7 as const;
@@ -219,6 +224,9 @@ export function serializeJobPostingV3(
     authoritativeFilledPositions,
   });
 
+  // workspaceId 우선순위: options 명시 > current 보존 (update 경로 안전)
+  const resolvedWorkspaceId = options.workspaceId || current?.workspaceId || undefined;
+
   return {
     id: current?.id || '',
     schemaVersion: JOB_POSTING_SCHEMA_VERSION,
@@ -227,6 +235,7 @@ export function serializeJobPostingV3(
     status: options.status || current?.status || 'active',
     ownerId: options.ownerId,
     ownerName: options.ownerName ?? current?.ownerName,
+    ...(resolvedWorkspaceId ? { workspaceId: resolvedWorkspaceId } : {}),
     postingType,
     workDate: totals.workDate,
     ...(totals.workDates ? { workDates: totals.workDates } : {}),

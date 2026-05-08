@@ -46,6 +46,11 @@ export interface PostingTypeCounts {
 export interface CreateJobPostingContext {
   ownerId: string;
   ownerName: string;
+  /**
+   * Workspace ID — M3 NOT NULL 제약. Service 가 owner default workspace 를 lookup 후 주입.
+   * Phase 0 N1 hotfix (2026-05-08).
+   */
+  workspaceId: string;
 }
 
 /**

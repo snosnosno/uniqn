@@ -1,7 +1,9 @@
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import { workspaceService } from '@/services/workspace';
 import { supabase } from '@/lib/supabase';
+import { BusinessError, ERROR_CODES } from '@/errors';
 import type { TaxSettings } from '@/utils/settlement';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
@@ -49,15 +51,44 @@ export async function enqueueScheduleBoardSync(
   }
 }
 
+/**
+ * Postgres FK 제약 위반 (23503) 판별 — workspace_id 참조 무결성 깨진 경우.
+ *
+ * lookup ↔ INSERT 사이 race window 에서 owner 가 워크스페이스 삭제 시 발생.
+ * 사용자에게 친화적 메시지 변환을 위해 별도 분기.
+ */
+function isWorkspaceFkViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const obj = error as { code?: string; message?: string };
+  if (obj.code === '23503') return true;
+  return typeof obj.message === 'string' && obj.message.includes('workspace_id');
+}
+
 async function createSinglePosting(
   input: CreateJobPostingInput,
   ownerId: string,
   ownerName: string
 ): Promise<CreateJobPostingResult> {
-  return jobPostingRepository.createWithTransaction(input, {
-    ownerId,
-    ownerName,
-  });
+  // Phase 0 N1 hotfix: workspace_id NOT NULL 제약 충족
+  // M5 wallet RPC 와 동일 정책 (owner 의 가장 오래된 워크스페이스)
+  const workspaceId = await workspaceService.getDefaultWorkspaceIdForOwner(ownerId);
+  try {
+    return await jobPostingRepository.createWithTransaction(input, {
+      ownerId,
+      ownerName,
+      workspaceId,
+    });
+  } catch (error) {
+    // Race: lookup ↔ INSERT 사이 워크스페이스 삭제 → FK 23503
+    if (isWorkspaceFkViolation(error)) {
+      logger.warn('workspace FK race detected', { ownerId, workspaceId });
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '워크스페이스를 다시 확인해주세요. 잠시 후 다시 시도해주세요.',
+        metadata: { ownerId, workspaceId },
+      });
+    }
+    throw error;
+  }
 }
 
 export async function createJobPosting(
