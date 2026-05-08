@@ -194,3 +194,4 @@ claude-forge/
 
 # Dead code analysis reports
 .reports/
+.session-followups/
