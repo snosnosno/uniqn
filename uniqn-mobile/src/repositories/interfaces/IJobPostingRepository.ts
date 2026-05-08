@@ -130,6 +130,16 @@ export interface IJobPostingRepository {
   getByOwnerId(ownerId: string, status?: JobPostingStatus): Promise<JobPosting[]>;
 
   /**
+   * 호출자가 owner 이거나 활성 워크스페이스 멤버인 모든 공고를 RLS 통과로 조회.
+   *
+   * Phase 2A — 공고 공유 (editor 화면) 용도. RLS jp_select 가
+   * `owner_id = auth.uid() OR is_workspace_member(workspace_id, auth.uid())`
+   * 분기를 강제하므로 클라이언트는 status filter 만 추가하고 user_id WHERE 는
+   * 사용하지 않는다 (auth.uid() 단일 진실 — client uid 신뢰 불가).
+   */
+  getManagedJobPostings(status?: JobPostingStatus): Promise<JobPosting[]>;
+
+  /**
    * 공고 타입별 개수 조회
    * @param filters - 필터 조건 (status 등)
    * @returns 타입별 개수

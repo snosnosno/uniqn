@@ -301,8 +301,9 @@ export async function getMySettlementSummary(
   try {
     logger.info('전체 정산 요약 조회', { ownerId, dateRange });
 
-    // 1. 내 공고 조회 (Repository 사용)
-    const jobPostings = (await jobPostingRepository.getByOwnerId(ownerId)).filter(
+    // 1. 관리 가능 공고 조회 — owner 본인 + 워크스페이스 멤버 공고 (RLS 통과)
+    // Phase 2A: getByOwnerId → getManagedJobPostings 로 전환
+    const jobPostings = (await jobPostingRepository.getManagedJobPostings()).filter(
       isCanonicalDatedPosting
     );
 

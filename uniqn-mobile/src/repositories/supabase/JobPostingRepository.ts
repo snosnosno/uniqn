@@ -295,6 +295,29 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
+  /**
+   * Phase 2A — 호출자가 owner 또는 워크스페이스 멤버인 모든 공고 조회.
+   *
+   * RLS jp_select 가 `owner_id = auth.uid() OR is_workspace_member(workspace_id, auth.uid())`
+   * 분기를 강제하므로 client 는 status filter 만 추가. user_id WHERE 는
+   * 의도적으로 사용 안 함 (client uid 와 auth.uid() 가 다를 위험 — 보안상 신뢰 불가).
+   */
+  async getManagedJobPostings(status?: JobPostingStatus): Promise<JobPosting[]> {
+    try {
+      logger.info('관리 가능 공고 조회', { status });
+      let query = supabase.from(TABLE).select(TABLE_COLUMNS);
+      if (status) query = query.eq('status', status);
+      query = query.order('created_at', { ascending: false });
+      const { data, error } = await query;
+      if (error) handleSupabaseError(error, { operation: '관리 가능 공고 조회', table: TABLE });
+      const items = rowsToJobPostings((data ?? []) as Record<string, unknown>[]);
+      logger.info('관리 가능 공고 조회 완료', { count: items.length });
+      return items;
+    } catch (error) {
+      rethrowOrHandle(error, '관리 가능 공고 조회', { status });
+    }
+  }
+
   async getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });

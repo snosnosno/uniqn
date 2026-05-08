@@ -15,8 +15,9 @@ import { QRCodeIcon } from '@/components/icons';
 import { useAuthStore } from '@/stores/authStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { useToastStore } from '@/stores/toastStore';
+import { useWorkspaces } from '@/hooks/workspace';
 import { getLayoutColor, SECONDARY_PALETTE } from '@/constants/colors';
-import { isEmployerManageablePosting } from '@/utils/jobPostingVisibility';
+import { isEmployerManageablePosting, isManageableByUser } from '@/utils/jobPostingVisibility';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -109,6 +110,8 @@ export default function JobPostingDetailLayout() {
   const isDark = useThemeStore((s) => s.isDarkMode);
   const { addToast } = useToastStore();
   const { job } = useJobDetail(id || '', { realtime: true });
+  const { workspaces } = useWorkspaces();
+  const userWorkspaceIds = useMemo(() => workspaces.map((w) => w.id), [workspaces]);
   const [showQRModal, setShowQRModal] = useState(false);
 
   const isFixed = job?.schedule.kind === 'fixed';
@@ -134,10 +137,11 @@ export default function JobPostingDetailLayout() {
       return;
     }
 
-    if (currentUserId && job.ownerId !== currentUserId) {
+    // Phase 2A — owner OR 워크스페이스 멤버 가능. RLS 가 진짜 게이트.
+    if (currentUserId && !isManageableByUser(job, currentUserId, userWorkspaceIds)) {
       addToast({
         type: 'warning',
-        message: '내가 작성한 공고만 관리할 수 있습니다.',
+        message: '이 공고에 대한 관리 권한이 없어요.',
       });
       router.replace('/(app)/(tabs)/employer');
       return;
@@ -152,7 +156,7 @@ export default function JobPostingDetailLayout() {
       message: '현재 관리 화면에서 지원하지 않는 공고입니다.',
     });
     router.replace('/(app)/(tabs)/employer');
-  }, [addToast, currentUserId, job, router]);
+  }, [addToast, currentUserId, job, router, userWorkspaceIds]);
 
   const contextValue = useMemo<JobDetailContextValue>(
     () => ({
@@ -165,7 +169,8 @@ export default function JobPostingDetailLayout() {
 
   if (
     job &&
-    ((currentUserId && job.ownerId !== currentUserId) || !isEmployerManageablePosting(job))
+    ((currentUserId && !isManageableByUser(job, currentUserId, userWorkspaceIds)) ||
+      !isEmployerManageablePosting(job))
   ) {
     return null;
   }
