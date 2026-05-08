@@ -23,3 +23,5 @@ export {
   type UseReceivedInvitationsResult,
   type UseSentInvitationsResult,
 } from './useWorkspaces';
+
+export { useActiveWorkspace, type UseActiveWorkspaceResult } from './useActiveWorkspace';
