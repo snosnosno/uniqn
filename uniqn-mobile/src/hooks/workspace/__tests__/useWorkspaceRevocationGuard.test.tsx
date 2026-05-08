@@ -214,7 +214,9 @@ describe('useWorkspaceRevocationGuard', () => {
       mockCreateRealtimeSubscription.mockImplementation(
         (_table: string, _filter: string, cb: typeof capturedCallback) => {
           capturedCallback = cb;
-          return () => {};
+          return () => {
+            /* unsubscribe noop */
+          };
         }
       );
 
@@ -242,7 +244,9 @@ describe('useWorkspaceRevocationGuard', () => {
       mockCreateRealtimeSubscription.mockImplementation(
         (_table: string, _filter: string, cb: typeof capturedCallback) => {
           capturedCallback = cb;
-          return () => {};
+          return () => {
+            /* unsubscribe noop */
+          };
         }
       );
 
@@ -270,7 +274,9 @@ describe('useWorkspaceRevocationGuard', () => {
       mockCreateRealtimeSubscription.mockImplementation(
         (_table: string, _filter: string, cb: typeof capturedCallback) => {
           capturedCallback = cb;
-          return () => {};
+          return () => {
+            /* unsubscribe noop */
+          };
         }
       );
 
