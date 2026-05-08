@@ -6,11 +6,12 @@
  * @version 1.0.0
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { workspaceService, workspaceInvitationService } from '@/services/workspace';
+import { createRealtimeSubscription } from '@/utils/supabase';
 import type {
   Workspace,
   WorkspaceMemberWithUser,
@@ -80,6 +81,7 @@ export function useWorkspaceMembers(
   ownerId: string | undefined
 ): UseWorkspaceMembersResult {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: workspaceId
@@ -89,6 +91,24 @@ export function useWorkspaceMembers(
     enabled: !!workspaceId,
     staleTime: cachingPolicies.frequent,
   });
+
+  // Realtime 구독 — workspace_members row 변경 시 query invalidate.
+  // Phase 1A 의 RevocationGuard 가 같은 채널을 활용 (createRealtimeSubscription 가
+  // ref-counting + fan-out 으로 단일 채널만 유지).
+  useEffect(() => {
+    if (!workspaceId) return undefined;
+    return createRealtimeSubscription('workspace_members', `workspace_id=eq.${workspaceId}`, () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workspaces.members(workspaceId),
+      });
+      // listForUser 도 영향 — 새 멤버가 본인 워크스페이스 목록을 갱신해야 할 수 있음
+      if (user?.uid) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.workspaces.listForUser(user.uid),
+        });
+      }
+    });
+  }, [workspaceId, queryClient, user?.uid]);
 
   return {
     members: query.data ?? [],
