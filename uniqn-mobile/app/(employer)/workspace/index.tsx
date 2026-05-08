@@ -304,10 +304,20 @@ export default function WorkspaceSettingsScreen() {
                       onPress={() => handleRemoveMember(member)}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="멤버 제거"
-                      className="ml-3"
+                      accessibilityLabel={`${member.displayName ?? '멤버'} 제거`}
+                      className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-md"
                     >
-                      <Text className="text-sm text-danger-500">제거</Text>
+                      {({ pressed }) => (
+                        <View
+                          className={`rounded-md px-3 py-2 ${
+                            pressed ? 'bg-error-100 dark:bg-error-900/30' : ''
+                          }`}
+                        >
+                          <Text className="text-sm font-sans-medium text-error-600 dark:text-error-400">
+                            제거
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                   )}
                 </View>
