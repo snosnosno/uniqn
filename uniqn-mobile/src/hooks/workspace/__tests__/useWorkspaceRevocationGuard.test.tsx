@@ -6,7 +6,6 @@
  *              모두 검증.
  */
 
-import React from 'react';
 import { renderHook } from '@testing-library/react-native';
 
 import { useWorkspaceRevocationGuard } from '../useWorkspaceRevocationGuard';
