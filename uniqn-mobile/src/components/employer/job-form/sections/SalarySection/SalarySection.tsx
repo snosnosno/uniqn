@@ -17,7 +17,6 @@ import { DEFAULT_TAX_SETTINGS } from '@/domains/settlement';
 // Sub-components
 import { RoleSalaryInput } from './RoleSalaryInput';
 import { AllowanceInput } from './AllowanceInput';
-import { EstimatedCostCard } from './EstimatedCostCard';
 import type { SalarySectionProps } from './types';
 
 // Re-export types for backward compatibility
@@ -213,11 +212,6 @@ export const SalarySection = memo(function SalarySection({
         showPreview={true}
         className="mb-4"
       />
-
-      {/* 예상 총 비용 */}
-      {estimatedCost !== null && (
-        <EstimatedCostCard estimatedCost={estimatedCost} totalCount={totalCount} />
-      )}
 
       {/* 에러 메시지 */}
       {errors.salary && (

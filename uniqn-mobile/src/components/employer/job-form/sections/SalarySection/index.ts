@@ -10,15 +10,9 @@ export { SalarySection, default } from './SalarySection';
 // Sub-components
 export { RoleSalaryInput } from './RoleSalaryInput';
 export { AllowanceInput } from './AllowanceInput';
-export { EstimatedCostCard } from './EstimatedCostCard';
 
 // Types
-export type {
-  SalarySectionProps,
-  RoleSalaryInputProps,
-  AllowanceInputProps,
-  EstimatedCostCardProps,
-} from './types';
+export type { SalarySectionProps, RoleSalaryInputProps, AllowanceInputProps } from './types';
 
 // Constants
 export { SALARY_TYPES, ALLOWANCE_TYPES } from './constants';

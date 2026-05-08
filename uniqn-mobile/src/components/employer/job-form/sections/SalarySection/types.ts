@@ -44,13 +44,3 @@ export interface AllowanceInputProps {
   /** 수당 제공 토글 핸들러 */
   onAllowanceProvidedToggle: (key: string, isProvided: boolean) => void;
 }
-
-/**
- * 예상 비용 카드 Props
- */
-export interface EstimatedCostCardProps {
-  /** 예상 총 비용 */
-  estimatedCost: number;
-  /** 총 인원수 */
-  totalCount: number;
-}
