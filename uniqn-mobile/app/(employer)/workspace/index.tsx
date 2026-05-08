@@ -8,13 +8,14 @@
  */
 
 import { useCallback, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import { Avatar, Badge, Button, EmptyState, ErrorState, Input } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { useModalStore } from '@/stores/modalStore';
 import {
   useActiveWorkspace,
   useWorkspaceMembers,
@@ -32,6 +33,7 @@ import type { WorkspaceMemberWithUser } from '@/types/workspace';
 export default function WorkspaceSettingsScreen() {
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
+  const { showConfirm } = useModalStore();
   // useActiveWorkspace 가 내부에서 useWorkspaces 를 호출 — TanStack Query 가 동일 키로
   // 중복 조회 dedup. error 만 별도로 노출되지 않으므로 useWorkspaces 한 번 더 호출.
   const { error } = useWorkspaces();
@@ -72,29 +74,23 @@ export default function WorkspaceSettingsScreen() {
 
   const handleRemoveMember = useCallback(
     (member: WorkspaceMemberWithUser) => {
-      Alert.alert(
+      // showConfirm — native + web 양쪽 호환 (Alert.alert 은 web 에서 무음)
+      showConfirm(
         '멤버 제거',
-        `${member.displayName ?? member.email ?? '멤버'}님을 워크스페이스에서 제거할까요? 권한이 즉시 회수됩니다.`,
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '제거',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await removeMemberMutation.mutateAsync(member.userId);
-                addToast({ type: 'success', message: '멤버를 제거했어요' });
-              } catch (err) {
-                const message =
-                  isAppError(err) && err.userMessage ? err.userMessage : '제거에 실패했어요';
-                addToast({ type: 'error', message });
-              }
-            },
-          },
-        ]
+        `${member.displayName ?? member.email ?? '멤버'}님을 워크스페이스에서 제거할까요?\n권한이 즉시 회수됩니다.`,
+        async () => {
+          try {
+            await removeMemberMutation.mutateAsync(member.userId);
+            addToast({ type: 'success', message: '멤버를 제거했어요' });
+          } catch (err) {
+            const message =
+              isAppError(err) && err.userMessage ? err.userMessage : '제거에 실패했어요';
+            addToast({ type: 'error', message });
+          }
+        }
       );
     },
-    [removeMemberMutation, addToast]
+    [removeMemberMutation, addToast, showConfirm]
   );
 
   const handleCreateFirstWorkspace = useCallback(async () => {
@@ -304,10 +300,20 @@ export default function WorkspaceSettingsScreen() {
                       onPress={() => handleRemoveMember(member)}
                       hitSlop={8}
                       accessibilityRole="button"
-                      accessibilityLabel="멤버 제거"
-                      className="ml-3"
+                      accessibilityLabel={`${member.displayName ?? '멤버'} 제거`}
+                      className="ml-2 min-h-[44px] min-w-[44px] items-center justify-center rounded-md"
                     >
-                      <Text className="text-sm text-danger-500">제거</Text>
+                      {({ pressed }) => (
+                        <View
+                          className={`rounded-md px-3 py-2 ${
+                            pressed ? 'bg-error-100 dark:bg-error-900/30' : ''
+                          }`}
+                        >
+                          <Text className="text-sm font-sans-medium text-error-600 dark:text-error-400">
+                            제거
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                   )}
                 </View>
