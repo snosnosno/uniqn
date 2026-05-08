@@ -43,7 +43,7 @@ export const APPLICATION_COLUMNS =
 // JobPostingRepository.ts의 TABLE_COLUMNS와 동기화 유지
 // 제거된 컬럼: is_featured, last_work_date, og_image_url, rejection_reason (ISSUE-003)
 export const JOB_POSTING_COLUMNS =
-  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates' as const;
+  'id,closed_at,closed_reason,compensation,contact_phone,created_at,description,filled_positions,fixed_config,location,owner_id,owner_name,posting_type,questions,role_catalog,role_keys,schedule,schema_version,stats,status,tags,title,total_positions,tournament_config,updated_at,urgent_config,view_count,work_date,work_dates,workspace_id' as const;
 
 // ============================================================================
 // Mapping Functions

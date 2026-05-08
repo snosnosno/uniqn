@@ -33,6 +33,7 @@ function createValidDocument() {
     status: 'active' as const,
     ownerId: 'user-1',
     ownerName: 'Owner',
+    workspaceId: '123e4567-e89b-42d3-a456-426614174000',
     postingType: 'regular' as const,
     workDate: '2026-04-01',
     workDates: ['2026-04-01'],
@@ -447,6 +448,7 @@ describe('jobPosting schemas', () => {
         {
           ownerId: 'user-1',
           ownerName: 'Owner',
+          workspaceId: '123e4567-e89b-42d3-a456-426614174000',
           createdAt: new Date(),
           updatedAt: new Date(),
         }

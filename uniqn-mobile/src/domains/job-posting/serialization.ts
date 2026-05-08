@@ -375,6 +375,7 @@ export function deserializeJobPostingDocument(document: JobPostingDocumentV3): J
     status: document.status,
     ownerId: document.ownerId,
     ...(document.ownerName !== undefined ? { ownerName: document.ownerName } : {}),
+    ...(document.workspaceId !== undefined ? { workspaceId: document.workspaceId } : {}),
     postingType,
     workDate: derivedDates.workDate,
     ...(derivedDates.workDates ? { workDates: derivedDates.workDates } : {}),

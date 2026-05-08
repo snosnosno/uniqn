@@ -54,6 +54,7 @@ describe('SupabaseJobPostingRepository.updateWithTransaction (회귀: 22007 차�
     status: 'active',
     owner_id: 'owner-1',
     owner_name: 'Owner',
+    workspace_id: '123e4567-e89b-42d3-a456-426614174000',
     posting_type: 'regular',
     work_date: '2026-04-20',
     work_dates: ['2026-04-20'],

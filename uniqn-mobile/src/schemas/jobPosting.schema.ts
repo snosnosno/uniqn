@@ -462,6 +462,7 @@ export const jobPostingDocumentSchema = z
     ]),
     ownerId: z.string(),
     ownerName: z.string().optional(),
+    workspaceId: z.string().uuid({ message: '올바른 워크스페이스 ID 가 아닙니다' }),
     postingType: postingTypeSchema.optional().default('regular'),
     workDate: z.string().optional(), // fixed 공고는 work_date가 없음
     workDates: z.array(z.string()).optional(),
