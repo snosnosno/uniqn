@@ -38,7 +38,7 @@ interface PendingJoinRow {
   created_at: string;
   responded_at: string | null;
   workspaces: { name: string } | null;
-  inviter: { display_name: string | null } | null;
+  inviter: { nickname: string | null; name: string | null } | null;
 }
 
 function rowToReceivedInvitation(row: PendingJoinRow): ReceivedWorkspaceInvitation {
@@ -53,7 +53,7 @@ function rowToReceivedInvitation(row: PendingJoinRow): ReceivedWorkspaceInvitati
     createdAt: row.created_at,
     respondedAt: row.responded_at ?? null,
     workspaceName: row.workspaces?.name ?? '',
-    inviterDisplayName: row.inviter?.display_name ?? null,
+    inviterDisplayName: row.inviter?.nickname ?? row.inviter?.name ?? null,
   };
 }
 
@@ -157,7 +157,7 @@ export class SupabaseWorkspaceInvitationRepository implements IWorkspaceInvitati
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select(`${COLUMNS}, workspaces:workspace_id (name), inviter:invited_by (display_name)`)
+        .select(`${COLUMNS}, workspaces:workspace_id (name), inviter:invited_by (nickname, name)`)
         .eq('invitee_user_id', userId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });

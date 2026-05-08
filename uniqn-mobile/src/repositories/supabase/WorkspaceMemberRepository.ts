@@ -24,7 +24,8 @@ interface MemberJoinRow {
   invited_by: string | null;
   joined_at: string;
   users: {
-    display_name: string | null;
+    nickname: string | null;
+    name: string | null;
     email: string | null;
     photo_url: string | null;
   } | null;
@@ -37,7 +38,7 @@ function rowToMemberWithUser(row: MemberJoinRow): WorkspaceMemberWithUser {
     role: row.role,
     invitedBy: row.invited_by ?? null,
     joinedAt: row.joined_at,
-    displayName: row.users?.display_name ?? null,
+    displayName: row.users?.nickname ?? row.users?.name ?? null,
     email: row.users?.email ?? null,
     photoUrl: row.users?.photo_url ?? null,
   };
@@ -49,7 +50,7 @@ export class SupabaseWorkspaceMemberRepository implements IWorkspaceMemberReposi
       const { data, error } = await supabase
         .from(TABLE)
         .select(
-          'workspace_id, user_id, role, invited_by, joined_at, users:user_id (display_name, email, photo_url)'
+          'workspace_id, user_id, role, invited_by, joined_at, users:user_id (nickname, name, email, photo_url)'
         )
         .eq('workspace_id', workspaceId)
         .order('joined_at', { ascending: true });
