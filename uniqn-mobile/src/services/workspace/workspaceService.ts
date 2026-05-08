@@ -75,6 +75,16 @@ export const workspaceService = {
   },
 
   /**
+   * 워크스페이스 owner 의 public profile (nickname / name / photo).
+   * editor 도 호출 가능 — RLS 안전 RPC 경유.
+   */
+  async getOwnerProfile(
+    workspaceId: string
+  ): Promise<{ id: string; displayName: string | null; photoUrl: string | null } | null> {
+    return workspaceRepository.getOwnerProfile(workspaceId);
+  },
+
+  /**
    * 멤버 제거 (owner 만 — RPC 권한 체크)
    */
   async removeMember(input: { workspaceId: string; userId: string }): Promise<void> {

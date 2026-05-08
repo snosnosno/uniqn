@@ -18,6 +18,7 @@ import { useToastStore } from '@/stores/toastStore';
 import {
   useWorkspaces,
   useWorkspaceMembers,
+  useWorkspaceOwnerProfile,
   useUpdateWorkspaceName,
   useRemoveWorkspaceMember,
   useCreateWorkspace,
@@ -35,10 +36,12 @@ export default function WorkspaceSettingsScreen() {
   const activeWorkspace: Workspace | undefined = workspaces[0];
   const isOwner = !!user?.uid && activeWorkspace?.ownerId === user.uid;
 
-  const { members, isLoading: membersLoading } = useWorkspaceMembers(
-    activeWorkspace?.id,
-    activeWorkspace?.ownerId
-  );
+  const {
+    members,
+    isLoading: membersLoading,
+    error: membersError,
+  } = useWorkspaceMembers(activeWorkspace?.id, activeWorkspace?.ownerId);
+  const { ownerProfile } = useWorkspaceOwnerProfile(activeWorkspace?.id);
 
   const updateNameMutation = useUpdateWorkspaceName(activeWorkspace?.id);
   const removeMemberMutation = useRemoveWorkspaceMember(activeWorkspace?.id);
@@ -237,7 +240,14 @@ export default function WorkspaceSettingsScreen() {
 
           {membersLoading ? (
             <ActivityIndicator size="small" />
-          ) : members.length === 0 ? (
+          ) : membersError ? (
+            <View className="items-center py-8">
+              <ErrorState
+                title="멤버를 불러올 수 없어요"
+                message="네트워크 상태를 확인하고 다시 시도해주세요."
+              />
+            </View>
+          ) : !ownerProfile && members.length === 0 ? (
             <View className="items-center py-8">
               <EmptyState
                 title="아직 멤버가 없어요"
@@ -245,38 +255,60 @@ export default function WorkspaceSettingsScreen() {
               />
             </View>
           ) : (
-            members.map((member) => (
-              <View
-                key={member.userId}
-                className="mb-2 flex-row items-center rounded-md bg-white p-3 dark:bg-surface-elevated"
-              >
-                <Avatar
-                  source={member.photoUrl ?? undefined}
-                  name={member.displayName ?? member.email ?? '?'}
-                  size="md"
-                />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm font-sans-medium text-content-primary">
-                    {member.displayName ?? '익명'}
-                  </Text>
-                  <Text className="text-xs text-content-secondary">{member.email ?? ''}</Text>
+            <>
+              {ownerProfile && (
+                <View
+                  key={`owner-${ownerProfile.id}`}
+                  className="mb-2 flex-row items-center rounded-md bg-white p-3 dark:bg-surface-elevated"
+                >
+                  <Avatar
+                    source={ownerProfile.photoUrl ?? undefined}
+                    name={ownerProfile.displayName ?? '?'}
+                    size="md"
+                  />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm font-sans-medium text-content-primary">
+                      {ownerProfile.displayName ?? '소유자'}
+                    </Text>
+                  </View>
+                  <Badge variant="warning" size="sm">
+                    소유자
+                  </Badge>
                 </View>
-                <Badge variant="info" size="sm">
-                  편집자
-                </Badge>
-                {isOwner && (
-                  <Pressable
-                    onPress={() => handleRemoveMember(member)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="멤버 제거"
-                    className="ml-3"
-                  >
-                    <Text className="text-sm text-danger-500">제거</Text>
-                  </Pressable>
-                )}
-              </View>
-            ))
+              )}
+              {members.map((member) => (
+                <View
+                  key={member.userId}
+                  className="mb-2 flex-row items-center rounded-md bg-white p-3 dark:bg-surface-elevated"
+                >
+                  <Avatar
+                    source={member.photoUrl ?? undefined}
+                    name={member.displayName ?? member.email ?? '?'}
+                    size="md"
+                  />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm font-sans-medium text-content-primary">
+                      {member.displayName ?? '익명'}
+                    </Text>
+                    <Text className="text-xs text-content-secondary">{member.email ?? ''}</Text>
+                  </View>
+                  <Badge variant="info" size="sm">
+                    편집자
+                  </Badge>
+                  {isOwner && (
+                    <Pressable
+                      onPress={() => handleRemoveMember(member)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="멤버 제거"
+                      className="ml-3"
+                    >
+                      <Text className="text-sm text-danger-500">제거</Text>
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+            </>
           )}
         </View>
       </ScrollView>

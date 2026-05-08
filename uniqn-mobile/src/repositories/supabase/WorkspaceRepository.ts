@@ -106,6 +106,37 @@ export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
       handleSupabaseError(error, { operation: '워크스페이스 이름 변경', table: TABLE });
     }
   }
+
+  async getOwnerProfile(
+    workspaceId: string
+  ): Promise<{ id: string; displayName: string | null; photoUrl: string | null } | null> {
+    try {
+      const { data, error } = await supabase.rpc('get_workspace_owner_profile', {
+        _workspace_id: workspaceId,
+      });
+
+      if (error) {
+        handleSupabaseError(error, { operation: '워크스페이스 소유자 조회', table: TABLE });
+      }
+
+      const rows = (data ?? []) as {
+        id: string;
+        nickname: string | null;
+        name: string | null;
+        photo_url: string | null;
+      }[];
+      if (rows.length === 0) return null;
+      const row = rows[0]!;
+      return {
+        id: row.id,
+        displayName: row.nickname ?? row.name ?? null,
+        photoUrl: row.photo_url ?? null,
+      };
+    } catch (error) {
+      if (isAppError(error)) throw error;
+      handleSupabaseError(error, { operation: '워크스페이스 소유자 조회', table: TABLE });
+    }
+  }
 }
 
 export const workspaceRepository = new SupabaseWorkspaceRepository();

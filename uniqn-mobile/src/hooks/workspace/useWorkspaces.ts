@@ -99,6 +99,36 @@ export function useWorkspaceMembers(
 }
 
 // ============================================================================
+// useWorkspaceOwnerProfile — 워크스페이스 owner 의 public profile
+// editor 도 SECURITY DEFINER RPC 경유로 owner 정보 조회 가능 (RLS 안전 우회).
+// ============================================================================
+
+export interface UseWorkspaceOwnerProfileResult {
+  ownerProfile: { id: string; displayName: string | null; photoUrl: string | null } | null;
+  isLoading: boolean;
+  error: unknown;
+}
+
+export function useWorkspaceOwnerProfile(
+  workspaceId: string | undefined
+): UseWorkspaceOwnerProfileResult {
+  const query = useQuery({
+    queryKey: workspaceId
+      ? queryKeys.workspaces.ownerProfile(workspaceId)
+      : [...queryKeys.workspaces.all, 'owner', 'none'],
+    queryFn: () => workspaceService.getOwnerProfile(workspaceId!),
+    enabled: !!workspaceId,
+    staleTime: cachingPolicies.frequent,
+  });
+
+  return {
+    ownerProfile: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error,
+  };
+}
+
+// ============================================================================
 // useReceivedWorkspaceInvitations — 본인이 받은 pending 초대
 // ============================================================================
 
@@ -181,14 +211,22 @@ export function useAcceptWorkspaceInvitation() {
   const { user } = useAuthStore();
   return useMutation({
     mutationFn: (invitationId: string) => workspaceInvitationService.accept({ invitationId }),
-    onSuccess: () => {
-      // 받은 초대 + 워크스페이스 목록 둘 다 갱신
+    onSuccess: (result) => {
+      // 받은 초대 + 워크스페이스 목록 + (방금 합류한) 워크스페이스 멤버 목록 갱신
       if (user?.uid) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.workspaces.invitationsReceived(user.uid),
         });
         queryClient.invalidateQueries({
           queryKey: queryKeys.workspaces.listForUser(user.uid),
+        });
+      }
+      if (result.workspaceId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.workspaces.members(result.workspaceId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.workspaces.detail(result.workspaceId),
         });
       }
     },

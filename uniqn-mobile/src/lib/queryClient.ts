@@ -327,6 +327,8 @@ export const queryKeys = {
     detail: (workspaceId: string) => [...queryKeys.workspaces.all, 'detail', workspaceId] as const,
     members: (workspaceId: string) =>
       [...queryKeys.workspaces.all, 'members', workspaceId] as const,
+    ownerProfile: (workspaceId: string) =>
+      [...queryKeys.workspaces.all, 'owner', workspaceId] as const,
     invitationsSent: (workspaceId: string) =>
       [...queryKeys.workspaces.all, 'invitations', 'workspace', workspaceId] as const,
     invitationsReceived: (userId: string) =>

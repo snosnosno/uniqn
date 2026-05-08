@@ -29,6 +29,15 @@ export interface IWorkspaceRepository {
 
   /** 이름 변경 (owner 만 — RLS 가 강제) */
   updateName(id: string, name: string): Promise<Workspace>;
+
+  /**
+   * 워크스페이스 owner 의 public profile (nickname/name/photo).
+   * editor 도 호출 가능 — get_workspace_owner_profile RPC 가 권한 체크.
+   * 권한 없거나 워크스페이스 미존재 시 null.
+   */
+  getOwnerProfile(
+    workspaceId: string
+  ): Promise<{ id: string; displayName: string | null; photoUrl: string | null } | null>;
 }
 
 export interface IWorkspaceMemberRepository {

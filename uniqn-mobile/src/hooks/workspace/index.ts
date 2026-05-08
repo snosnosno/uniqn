@@ -7,6 +7,7 @@
 export {
   useWorkspaces,
   useWorkspaceMembers,
+  useWorkspaceOwnerProfile,
   useReceivedWorkspaceInvitations,
   useWorkspaceInvitationsSent,
   useInviteWorkspaceMember,
@@ -18,6 +19,7 @@ export {
   useUpdateWorkspaceName,
   type UseWorkspacesResult,
   type UseWorkspaceMembersResult,
+  type UseWorkspaceOwnerProfileResult,
   type UseReceivedInvitationsResult,
   type UseSentInvitationsResult,
 } from './useWorkspaces';
