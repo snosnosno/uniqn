@@ -44,9 +44,15 @@ jest.mock('@/errors/serviceErrorHandler', () => ({
   }),
 }));
 
-jest.mock('@/errors', () => ({
-  isAppError: jest.fn(() => false),
-}));
+jest.mock('@/errors', () => {
+  // Phase 0 N1 hotfix: jobManagementService 가 workspaceService 를 transitive 하게 import →
+  // ERROR_CODES 가 module-load 시점에 필요해짐. requireActual 로 실제 코드 그대로 사용.
+  const actual = jest.requireActual('@/errors');
+  return {
+    ...actual,
+    isAppError: jest.fn(() => false),
+  };
+});
 
 jest.mock('@/utils/logger', () => ({
   logger: {

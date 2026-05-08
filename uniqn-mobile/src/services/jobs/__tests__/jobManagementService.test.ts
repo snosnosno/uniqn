@@ -19,6 +19,7 @@ const mockGetStatsByOwnerId = jest.fn();
 const mockBulkUpdateStatus = jest.fn();
 const mockGetById = jest.fn();
 const mockUpdateStatus = jest.fn();
+const mockGetDefaultWorkspaceIdForOwner = jest.fn();
 
 jest.mock('@/repositories', () => ({
   jobPostingRepository: {
@@ -31,6 +32,13 @@ jest.mock('@/repositories', () => ({
     bulkUpdateStatus: (...args: unknown[]) => mockBulkUpdateStatus(...args),
     getById: (...args: unknown[]) => mockGetById(...args),
     updateStatus: (...args: unknown[]) => mockUpdateStatus(...args),
+  },
+}));
+
+jest.mock('@/services/workspace', () => ({
+  workspaceService: {
+    getDefaultWorkspaceIdForOwner: (...args: unknown[]) =>
+      mockGetDefaultWorkspaceIdForOwner(...args),
   },
 }));
 
@@ -151,6 +159,9 @@ function createPosting(overrides: Partial<JobPosting> = {}): JobPosting {
 describe('jobManagementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Phase 0 N1 hotfix: createJobPosting 은 항상 workspace lookup 을 먼저 수행.
+    // 각 테스트가 별도로 override 가능.
+    mockGetDefaultWorkspaceIdForOwner.mockResolvedValue('workspace-uuid-default');
   });
 
   describe('createJobPosting', () => {
@@ -162,10 +173,37 @@ describe('jobManagementService', () => {
       const result = await createJobPosting(input, 'employer-1', 'Owner');
 
       expect(Array.isArray(result)).toBe(false);
+      expect(mockGetDefaultWorkspaceIdForOwner).toHaveBeenCalledWith('employer-1');
       expect(mockCreateWithTransaction).toHaveBeenCalledWith(input, {
         ownerId: 'employer-1',
         ownerName: 'Owner',
+        workspaceId: 'workspace-uuid-default',
       });
+    });
+
+    it('Phase 0 N1 hotfix: workspace 23503 FK race 시 친화적 메시지로 변환', async () => {
+      const input = createInput();
+      const fkError = Object.assign(
+        new Error('null value in column "workspace_id" violates not-null constraint'),
+        {
+          code: '23503',
+        }
+      );
+      mockCreateWithTransaction.mockRejectedValue(fkError);
+
+      await expect(createJobPosting(input, 'employer-1', 'Owner')).rejects.toThrow(
+        /workspace|확인|시도/
+      );
+    });
+
+    it('Phase 0 N1 hotfix: workspace 가 없으면 lookup 단계에서 BUSINESS_INVALID_STATE', async () => {
+      const input = createInput();
+      mockGetDefaultWorkspaceIdForOwner.mockRejectedValue(
+        new Error('워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.')
+      );
+
+      await expect(createJobPosting(input, 'employer-1', 'Owner')).rejects.toThrow();
+      expect(mockCreateWithTransaction).not.toHaveBeenCalled();
     });
 
     it('keeps regular multi-date postings as a single canonical post', async () => {

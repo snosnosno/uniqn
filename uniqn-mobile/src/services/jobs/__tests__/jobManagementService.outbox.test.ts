@@ -38,6 +38,13 @@ jest.mock('@/repositories', () => ({
   },
 }));
 
+// Phase 0 N1 hotfix: createJobPosting 이 workspace lookup 을 먼저 호출
+jest.mock('@/services/workspace', () => ({
+  workspaceService: {
+    getDefaultWorkspaceIdForOwner: jest.fn().mockResolvedValue('workspace-uuid-default'),
+  },
+}));
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: jest.fn((table: string) => {

@@ -149,6 +149,8 @@ export interface JobPostingDocumentV3 extends FirebaseDocument {
   status: JobPostingStatus;
   ownerId: string;
   ownerName?: string;
+  /** 워크스페이스 협업 (M1+) — INSERT 시 owner 의 default workspace 자동 주입. M3 에서 NOT NULL */
+  workspaceId?: string;
   postingType?: PostingType;
   workDate: string;
   workDates?: string[];

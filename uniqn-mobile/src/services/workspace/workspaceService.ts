@@ -16,7 +16,7 @@ import {
   updateWorkspaceNameSchema,
   removeWorkspaceMemberSchema,
 } from '@/schemas/workspace.schema';
-import { ValidationError, ERROR_CODES, isAppError } from '@/errors';
+import { ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { logger } from '@/utils/logger';
 import type { Workspace, WorkspaceMemberWithUser } from '@/types/workspace';
 
@@ -65,6 +65,32 @@ export const workspaceService = {
       logger.warn('listWorkspacesForUser 실패', { userId, error: String(error) });
       toValidationError(error);
     }
+  },
+
+  /**
+   * Owner 의 default 워크스페이스 ID (가장 오래된 것).
+   *
+   * 무료 공고 생성 (`jobManagementService.createJobPosting`) 경로에서
+   * `workspace_id NOT NULL` 제약 (M3) 충족용. M5 wallet RPC 와 동일 정책 (created_at ASC).
+   *
+   * backfill 후 모든 active employer 는 워크스페이스 1+ 보유 가정.
+   * 0개인 경우 BUSINESS_INVALID_STATE — 사용자에게 재시도 안내.
+   *
+   * @throws BusinessError E6 워크스페이스 없음
+   */
+  async getDefaultWorkspaceIdForOwner(ownerId: string): Promise<string> {
+    const workspaces = await workspaceRepository.findAllByMember(ownerId);
+    const owned = workspaces
+      .filter((w) => w.ownerId === ownerId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    if (owned.length === 0) {
+      logger.warn('default workspace not found', { ownerId });
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '워크스페이스를 찾을 수 없어요. 잠시 후 다시 시도해주세요.',
+        metadata: { ownerId },
+      });
+    }
+    return owned[0]!.id;
   },
 
   /**

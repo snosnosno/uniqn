@@ -423,6 +423,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const serialized = serializeJobPostingV3(input, {
         ownerId: context.ownerId,
         ownerName: context.ownerName,
+        workspaceId: context.workspaceId,
         status: STATUS.JOB_POSTING.ACTIVE,
         current,
         createdAt: now,
