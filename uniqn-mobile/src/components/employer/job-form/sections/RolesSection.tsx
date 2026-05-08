@@ -52,7 +52,7 @@ const RoleCard = memo(function RoleCard({
   const isCustom = role.isCustom;
 
   return (
-    <View className="p-4 bg-white dark:bg-surface rounded-md border border-divider mb-3">
+    <View className="p-3 bg-white dark:bg-surface rounded-md border border-divider mb-3">
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
         <View className="w-10 h-10 rounded-sm bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
@@ -238,7 +238,7 @@ export const RolesSection = memo(function RolesSection({
 
       {/* 총 인원 표시 */}
       {totalCount > 0 && (
-        <View className="mt-4 flex-row items-center justify-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+        <View className="mt-3 flex-row items-center justify-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
           <BriefcaseIcon size={18} color="#B8962E" />
           <Text className="ml-2 text-base font-sans-bold text-primary-600 dark:text-primary-400">
             총 {totalCount}명 모집

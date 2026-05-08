@@ -136,7 +136,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       />
 
       {/* 제목 */}
-      <FormField label="공고 제목" required error={errors.title} className="mt-4">
+      <FormField label="공고 제목" required error={errors.title}>
         <Input
           placeholder="예: 강남 홀덤펍 딜러 구합니다"
           value={data.title}
@@ -151,7 +151,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       </FormField>
 
       {/* 장소명 입력 */}
-      <FormField label="근무 장소명" required error={errors.location} className="mt-4">
+      <FormField label="근무 장소명" required error={errors.location}>
         <Input
           placeholder="예: 홀덤펍 강남점"
           value={locationName}
@@ -164,7 +164,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       </FormField>
 
       {/* 장소 주소 입력 */}
-      <FormField label="근무 장소 주소" required error={errors.locationAddress} className="mt-4">
+      <FormField label="근무 장소 주소" required error={errors.locationAddress}>
         <Input
           placeholder="예: 서울시 강남구 테헤란로 123"
           value={locationAddress}
@@ -176,7 +176,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       </FormField>
 
       {/* 상세 주소 */}
-      <FormField label="상세 주소" error={errors.detailedAddress} className="mt-4">
+      <FormField label="상세 주소" error={errors.detailedAddress}>
         <Input
           placeholder="건물명, 층수 등 (선택)"
           value={getDetailedAddressValue(data)}
@@ -190,7 +190,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       </FormField>
 
       {/* 연락처 */}
-      <FormField label="문의 연락처" required error={errors.contactPhone} className="mt-4">
+      <FormField label="문의 연락처" required error={errors.contactPhone}>
         <Input
           placeholder="010-0000-0000"
           value={data.contactPhone}
@@ -204,7 +204,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
       </FormField>
 
       {/* 공고 설명 */}
-      <FormField label="공고 설명" error={errors.description} className="mt-4">
+      <FormField label="공고 설명" error={errors.description}>
         <TextInput
           placeholder="근무 환경, 우대 조건 등을 입력해주세요 (선택)"
           value={data.description}

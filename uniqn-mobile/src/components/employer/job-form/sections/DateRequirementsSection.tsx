@@ -203,7 +203,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
 
   return (
     <View>
-      <View className="mb-4">
+      <View className="mb-3">
         <Text className="text-sm text-content-muted dark:text-secondary-400 font-sans">
           최대 {constraints.maxDates}개 날짜 추가 가능
           {hasGroupedRequirements && totalGroupCount > 0 && (
@@ -227,7 +227,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           </Text>
         </View>
       ) : hasGroupedRequirements ? (
-        <View className="mb-4">
+        <View className="mb-3">
           {dateRangeGroups.map((group, groupIndex) => (
             <DateRangeCard
               key={group.id}
@@ -240,7 +240,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
           ))}
         </View>
       ) : (
-        <View className="mb-4">
+        <View className="mb-3">
           {dateRequirements.map((requirement, index) => (
             <DateRequirementCard
               key={index}

@@ -32,7 +32,7 @@ export const AllowanceInput = memo(function AllowanceInput({
   onAllowanceProvidedToggle,
 }: AllowanceInputProps) {
   return (
-    <View className="mb-4">
+    <View className="mb-3">
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color={SECONDARY_PALETTE[500]} />
         <Text className="ml-2 font-sans-semibold text-content-primary dark:text-off-white">

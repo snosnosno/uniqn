@@ -300,7 +300,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
   return (
     <View>
       {/* 안내 문구 */}
-      <View className="flex-row items-start mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+      <View className="flex-row items-start mb-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
         <InformationCircleIcon size={20} color="#B8962E" />
         <View className="ml-2 flex-1">
           <Text className="text-sm font-sans-medium text-primary-800 dark:text-primary-200">
@@ -313,7 +313,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       </View>
 
       {/* 사전질문 사용 토글 */}
-      <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-divider mb-4">
+      <View className="flex-row items-center justify-between p-3 bg-white dark:bg-surface rounded-lg border border-divider mb-3">
         <View>
           <Text className="text-content-primary dark:text-off-white font-sans-medium">
             사전질문 사용

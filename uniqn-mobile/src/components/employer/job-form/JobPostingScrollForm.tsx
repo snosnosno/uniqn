@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { Button } from '@/components';
 import {
   SectionCard,
@@ -16,6 +16,18 @@ import {
   validateAllSections,
   getFirstErrorSection,
 } from '@/utils/job-posting/validation';
+
+type SectionKey = 'basicInfo' | 'schedule' | 'roles' | 'salary' | 'preQuestions';
+
+type CollapsedState = Record<SectionKey, boolean>;
+
+const INITIAL_COLLAPSED: CollapsedState = {
+  basicInfo: false,
+  schedule: true,
+  roles: true,
+  salary: true,
+  preQuestions: true,
+};
 
 interface JobPostingScrollFormProps {
   data: JobPostingFormData;
@@ -44,8 +56,29 @@ export function JobPostingScrollForm({
     salary: {},
     preQuestions: {},
   });
+  const [collapsed, setCollapsed] = useState<CollapsedState>(INITIAL_COLLAPSED);
 
   const sectionPositions = useRef<Record<string, number>>({});
+
+  const handleToggleSection = useCallback((section: SectionKey) => {
+    setCollapsed((prev) => ({ ...prev, [section]: !prev[section] }));
+  }, []);
+
+  const isAllExpanded = useMemo(() => Object.values(collapsed).every((c) => !c), [collapsed]);
+
+  const handleToggleAll = useCallback(() => {
+    setCollapsed((prev) => {
+      const allExpanded = Object.values(prev).every((c) => !c);
+      const nextCollapsed = allExpanded;
+      return {
+        basicInfo: nextCollapsed,
+        schedule: nextCollapsed,
+        roles: nextCollapsed,
+        salary: nextCollapsed,
+        preQuestions: nextCollapsed,
+      };
+    });
+  }, []);
 
   const validateAll = useCallback((): boolean => {
     const newErrors = validateAllSections(data);
@@ -53,6 +86,15 @@ export function JobPostingScrollForm({
 
     const firstError = getFirstErrorSection(newErrors);
     if (firstError) {
+      setCollapsed((prev) => {
+        const next = { ...prev };
+        (Object.keys(newErrors) as SectionKey[]).forEach((key) => {
+          if (Object.keys(newErrors[key]).length > 0) {
+            next[key] = false;
+          }
+        });
+        return next;
+      });
       const position = sectionPositions.current[firstError];
       if (position !== undefined && scrollViewRef.current) {
         scrollViewRef.current.scrollTo({ y: position - 20, animated: true });
@@ -85,16 +127,33 @@ export function JobPostingScrollForm({
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View className="mb-2 flex-row justify-end">
+          <Pressable
+            onPress={handleToggleAll}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isAllExpanded ? '모든 섹션 접기' : '모든 섹션 펼치기'}
+            className="px-2 py-1"
+          >
+            <Text className="text-xs text-content-secondary font-sans">
+              {isAllExpanded ? '모두 접기' : '모두 펼치기'}
+            </Text>
+          </Pressable>
+        </View>
+
         <View onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}>
           <SectionCard
             title="기본 정보"
             required
             hasError={getErrorCount(errors.basicInfo) > 0}
             errorCount={getErrorCount(errors.basicInfo)}
+            collapsible
+            collapsed={collapsed.basicInfo}
+            onToggle={() => handleToggleSection('basicInfo')}
           >
             <BasicInfoSection data={data} onUpdate={onUpdate} errors={errors.basicInfo} />
           </SectionCard>
@@ -106,6 +165,9 @@ export function JobPostingScrollForm({
             required
             hasError={getErrorCount(errors.schedule) > 0}
             errorCount={getErrorCount(errors.schedule)}
+            collapsible
+            collapsed={collapsed.schedule}
+            onToggle={() => handleToggleSection('schedule')}
           >
             {isFixed ? (
               <ScheduleSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
@@ -122,6 +184,9 @@ export function JobPostingScrollForm({
               required
               hasError={getErrorCount(errors.roles) > 0}
               errorCount={getErrorCount(errors.roles)}
+              collapsible
+              collapsed={collapsed.roles}
+              onToggle={() => handleToggleSection('roles')}
             >
               <RolesSection data={data} onUpdate={onUpdate} errors={errors.roles} />
             </SectionCard>
@@ -134,6 +199,9 @@ export function JobPostingScrollForm({
             required
             hasError={getErrorCount(errors.salary) > 0}
             errorCount={getErrorCount(errors.salary)}
+            collapsible
+            collapsed={collapsed.salary}
+            onToggle={() => handleToggleSection('salary')}
           >
             <SalarySection data={data} onUpdate={onUpdate} errors={errors.salary} />
           </SectionCard>
@@ -145,6 +213,9 @@ export function JobPostingScrollForm({
             optional
             hasError={getErrorCount(errors.preQuestions) > 0}
             errorCount={getErrorCount(errors.preQuestions)}
+            collapsible
+            collapsed={collapsed.preQuestions}
+            onToggle={() => handleToggleSection('preQuestions')}
           >
             <PreQuestionsSection data={data} onUpdate={onUpdate} errors={errors.preQuestions} />
           </SectionCard>

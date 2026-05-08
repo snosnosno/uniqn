@@ -77,7 +77,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
   return (
     <View>
       {isUrgent && (
-        <View className="mb-4 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg border border-error-200 dark:border-error-800">
+        <View className="mb-3 p-3 bg-error-50 dark:bg-error-900/20 rounded-lg border border-error-200 dark:border-error-800">
           <Text className="text-sm text-error-700 dark:text-error-300 font-sans">
             긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
           </Text>
@@ -146,7 +146,7 @@ const FixedSchedule = memo(function FixedSchedule({
 
   return (
     <View>
-      <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+      <View className="mb-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
         <Text className="text-sm text-primary-800 dark:text-primary-200 font-sans">
           고정 공고는 장기 근무를 위한 공고입니다.{'\n'}
           게시 기간은 7일이며, 만료 후 재등록할 수 있습니다.
@@ -183,7 +183,7 @@ const FixedSchedule = memo(function FixedSchedule({
       </FormField>
 
       {/* 출근 시간 */}
-      <View className="mt-4">
+      <View className="mt-2">
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
             <Text className="text-sm font-sans-medium text-content-secondary">출근 시간</Text>

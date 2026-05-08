@@ -94,12 +94,17 @@ export const SectionCard = memo(function SectionCard({
     </View>
   );
 
+  const isContentVisible = !collapsible || !collapsed;
+  const headerBorder = isContentVisible
+    ? 'border-b border-secondary-100 dark:border-surface-overlay'
+    : '';
+
   return (
     <View
       className={`
         bg-white dark:bg-surface
         rounded-md border ${borderColor}
-        mb-4 overflow-hidden
+        mb-3 overflow-hidden
         ${className}
       `}
     >
@@ -107,20 +112,21 @@ export const SectionCard = memo(function SectionCard({
       {collapsible ? (
         <Pressable
           onPress={onToggle}
-          className="px-4 py-3 bg-surface-page dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay"
+          className={`px-3 py-2 bg-surface-page dark:bg-surface/50 ${headerBorder}`}
           accessibilityRole="button"
-          accessibilityLabel={`${resolvedTitle} 섹션 ${collapsed ? '펼치기' : '접기'}`}
+          accessibilityLabel={`${resolvedTitle} 섹션`}
+          accessibilityState={{ expanded: !collapsed }}
         >
           {HeaderContent}
         </Pressable>
       ) : (
-        <View className="px-4 py-3 bg-surface-page dark:bg-surface/50 border-b border-secondary-100 dark:border-surface-overlay">
+        <View className={`px-3 py-2 bg-surface-page dark:bg-surface/50 ${headerBorder}`}>
           {HeaderContent}
         </View>
       )}
 
       {/* 내용 */}
-      {(!collapsible || !collapsed) && <View className="p-4">{children}</View>}
+      {isContentVisible && <View className="p-3">{children}</View>}
     </View>
   );
 });
