@@ -25,3 +25,8 @@ export {
 } from './useWorkspaces';
 
 export { useActiveWorkspace, type UseActiveWorkspaceResult } from './useActiveWorkspace';
+
+export {
+  useWorkspaceRevocationGuard,
+  type UseWorkspaceRevocationGuardArgs,
+} from './useWorkspaceRevocationGuard';

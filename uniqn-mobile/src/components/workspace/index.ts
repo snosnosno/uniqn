@@ -6,3 +6,4 @@
 
 export { WorkspaceSwitcher } from './WorkspaceSwitcher';
 export { WorkspaceContextBar } from './WorkspaceContextBar';
+export { WorkspaceRevocationModal } from './WorkspaceRevocationModal';
