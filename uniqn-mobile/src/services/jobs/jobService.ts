@@ -221,6 +221,10 @@ export async function getUrgentJobPostings(pageSize: number = 10): Promise<JobPo
 
 /**
  * 내 공고 목록 조회 (구인자용)
+ *
+ * Phase 2A — owner 본인 공고 + 소속 워크스페이스 공유 공고를 함께 반환.
+ * RLS jp_select 가 (owner_id = auth.uid() OR workspace_member) 분기를 강제하므로
+ * client 는 status filter 만 추가. ownerId 파라미터는 logging context 에만 사용.
  */
 export async function getMyJobPostings(
   ownerId: string,
@@ -228,21 +232,21 @@ export async function getMyJobPostings(
 ): Promise<JobPosting[]> {
   try {
     const { status, includeAll = true } = options || {};
-    logger.info('내 공고 목록 조회', { ownerId, status, includeAll });
+    logger.info('관리 가능 공고 목록 조회', { ownerId, status, includeAll });
 
     // includeAll이 true면 모든 상태의 공고 조회 (active, closed)
     if (includeAll && !status) {
       const results = await Promise.all([
-        jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.ACTIVE),
-        jobPostingRepository.getByOwnerId(ownerId, STATUS.JOB_POSTING.CLOSED),
+        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.ACTIVE),
+        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.CLOSED),
       ]);
       return [...results[0], ...results[1]];
     }
 
-    return jobPostingRepository.getByOwnerId(ownerId, status || STATUS.JOB_POSTING.ACTIVE);
+    return jobPostingRepository.getManagedJobPostings(status || STATUS.JOB_POSTING.ACTIVE);
   } catch (error) {
     throw handleServiceError(error, {
-      operation: '내 공고 조회',
+      operation: '관리 가능 공고 조회',
       component: 'jobService',
       context: { ownerId }, // ownerId 자동 마스킹
     });
