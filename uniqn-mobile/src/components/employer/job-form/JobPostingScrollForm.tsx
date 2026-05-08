@@ -23,10 +23,10 @@ type CollapsedState = Record<SectionKey, boolean>;
 
 const INITIAL_COLLAPSED: CollapsedState = {
   basicInfo: false,
-  schedule: true,
-  roles: true,
-  salary: true,
-  preQuestions: true,
+  schedule: false,
+  roles: false,
+  salary: false,
+  preQuestions: false,
 };
 
 interface JobPostingScrollFormProps {
@@ -127,17 +127,17 @@ export function JobPostingScrollForm({
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 0, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-2 flex-row justify-end">
+        <View className="mb-1.5 flex-row justify-end">
           <Pressable
             onPress={handleToggleAll}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={isAllExpanded ? '모든 섹션 접기' : '모든 섹션 펼치기'}
-            className="px-2 py-1"
+            className="rounded-full border border-secondary-200 bg-secondary-100 px-3 py-1.5 dark:border-surface-overlay dark:bg-surface-overlay"
           >
             <Text className="text-xs text-content-secondary font-sans">
               {isAllExpanded ? '모두 접기' : '모두 펼치기'}

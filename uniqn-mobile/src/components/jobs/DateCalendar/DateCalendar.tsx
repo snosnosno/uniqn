@@ -2,7 +2,7 @@
  * UNIQN Mobile - DateCalendar
  *
  * @description 일반 공고 탭 날짜 필터의 상태머신 컴포넌트.
- *   - 마운트: selectedDate=null → expanded, selectedDate 있음 → collapsed
+ *   - 마운트: 항상 collapsed (selectedDate 무관 — 사용자가 명시적으로 펼쳐야 달력 노출)
  *   - 날짜 셀 탭 → onDateSelect + collapsed
  *   - CalendarHeader 월 이름 ▲ 탭 → collapsed (선택 유지)
  *   - CollapsedHeader 좌측 탭 → expanded 복귀
@@ -76,7 +76,7 @@ export const DateCalendar = memo(function DateCalendar({
   onDateSelect,
   className = '',
 }: DateCalendarProps) {
-  const [mode, setMode] = useState<Mode>(selectedDate ? 'collapsed' : 'expanded');
+  const [mode, setMode] = useState<Mode>('collapsed');
   const [visibleMonth, setVisibleMonth] = useState<Date>(
     selectedDate ? startOfMonth(selectedDate) : startOfMonth(new Date())
   );

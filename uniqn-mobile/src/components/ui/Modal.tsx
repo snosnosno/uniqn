@@ -45,6 +45,7 @@ export interface ModalProps {
   closeOnBackdrop?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'full';
   position?: 'center' | 'bottom';
+  footer?: React.ReactNode;
 }
 
 // ============================================================================
@@ -71,6 +72,7 @@ function WebModal({
   closeOnBackdrop = true,
   size = 'md',
   position = 'center',
+  footer,
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -189,14 +191,14 @@ function WebModal({
           >
             {/* Header */}
             {(title || showCloseButton) && (
-              <View className="flex-row items-center justify-between px-5 py-4 border-b border-divider">
-                <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
+              <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
+                <Text className="text-base font-display-semibold text-content-primary dark:text-off-white">
                   {title || ''}
                 </Text>
                 {showCloseButton && (
                   <Pressable
                     onPress={onClose}
-                    className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                    className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -217,6 +219,13 @@ function WebModal({
             >
               <View className="p-5">{children}</View>
             </ScrollView>
+
+            {/* Footer (sticky) */}
+            {footer && (
+              <View className="px-5 py-3 border-t border-divider bg-white dark:bg-surface">
+                {footer}
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -237,6 +246,7 @@ function NativeModal({
   closeOnBackdrop = true,
   size = 'md',
   position = 'center',
+  footer,
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
   const { height: windowHeight } = useWindowDimensions();
@@ -375,17 +385,17 @@ function NativeModal({
               edges={position === 'center' ? ['top', 'bottom'] : ['bottom']}
               style={{ flexShrink: 1 }}
             >
-              <View className={modalClassName}>
+              <View className={modalClassName} style={{ flexShrink: 1 }}>
                 {/* Header */}
                 {(title || showCloseButton) && (
-                  <View className="flex-row items-center justify-between px-5 py-4 border-b border-divider">
-                    <Text className="text-lg font-display-semibold text-content-primary dark:text-off-white">
+                  <View className="flex-row items-center justify-between px-5 py-2.5 border-b border-divider">
+                    <Text className="text-base font-display-semibold text-content-primary dark:text-off-white">
                       {title || ''}
                     </Text>
                     {showCloseButton && (
                       <Pressable
                         onPress={onClose}
-                        className="w-10 h-10 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
+                        className="w-9 h-9 items-center justify-center rounded-sm bg-surface-card dark:bg-surface active:bg-secondary-200 dark:active:bg-secondary-600"
                         accessibilityRole="button"
                         accessibilityLabel="닫기"
                         hitSlop={8}
@@ -398,6 +408,7 @@ function NativeModal({
 
                 {/* Content */}
                 <ScrollView
+                  style={{ flexShrink: 1 }}
                   contentContainerStyle={{ flexGrow: 1 }}
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
@@ -405,6 +416,13 @@ function NativeModal({
                 >
                   <View className="p-5">{children}</View>
                 </ScrollView>
+
+                {/* Footer (sticky) */}
+                {footer && (
+                  <View className="px-5 py-3 border-t border-divider bg-white dark:bg-surface">
+                    {footer}
+                  </View>
+                )}
               </View>
             </SafeAreaView>
           </Animated.View>

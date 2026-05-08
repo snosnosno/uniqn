@@ -73,16 +73,19 @@ describe('DateCalendar 상태머신', () => {
     jest.useRealTimers();
   });
 
-  it('마운트 시 selectedDate=null이면 expanded', async () => {
-    const { findByTestId } = renderWithClient(<ControlledParent />);
-    expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
+  it('마운트 시 항상 collapsed (selectedDate=null이어도 달력 셀 노출 안함)', async () => {
+    const { getByLabelText, queryByTestId } = renderWithClient(<ControlledParent />);
+    expect(getByLabelText(/달력 펼치기/)).toBeTruthy();
+    expect(queryByTestId('calendar-cell-2026-04-18')).toBeNull();
   });
 
-  it('날짜 셀 탭 → onDateSelect + collapsed 전환', async () => {
+  it('전체 보기 → 날짜 셀 탭 → onDateSelect + collapsed 전환', async () => {
     const onSelect = jest.fn();
     const { findByTestId, queryByTestId, getByLabelText, findByText } = renderWithClient(
       <ControlledParent onSelectSpy={onSelect} />
     );
+    // 마운트는 collapsed → 전체 보기 탭으로 펼치기
+    fireEvent.press(getByLabelText(/달력 펼치기/));
     // 카운트 데이터 로드 완료(뱃지 "12건" 등장)까지 대기 → 셀이 활성화(count>0)된 상태
     await findByText('12건');
     const cell = await findByTestId('calendar-cell-2026-04-18');
@@ -115,7 +118,8 @@ describe('DateCalendar 상태머신', () => {
 
   it('expanded + selectedDate=null 상태에서 월 이름 탭 → collapsed 전환(전체 보기 요약 노출)', async () => {
     const { findByText, getByLabelText, queryByTestId } = renderWithClient(<ControlledParent />);
-    // 초기 expanded — 달력 셀 노출
+    // 초기는 collapsed — 먼저 펼치기
+    fireEvent.press(getByLabelText(/달력 펼치기/));
     await findByText('12건');
     fireEvent.press(getByLabelText('달력 접기'));
     await waitFor(() => {
@@ -125,18 +129,18 @@ describe('DateCalendar 상태머신', () => {
   });
 
   it('collapsed(null) 전체 보기 요약 탭 → expanded 복귀', async () => {
-    const { findByText, getByLabelText, findByTestId } = renderWithClient(<ControlledParent />);
-    await findByText('12건');
-    fireEvent.press(getByLabelText('달력 접기'));
-    const header = await getByLabelText(/달력 펼치기/);
-    fireEvent.press(header);
+    const { getByLabelText, findByTestId } = renderWithClient(<ControlledParent />);
+    // 마운트가 이미 collapsed(null) — 곧바로 전체 보기 탭
+    fireEvent.press(getByLabelText(/달력 펼치기/));
     expect(await findByTestId('calendar-cell-2026-04-18')).toBeTruthy();
   });
 
   it('에러 상태에서 "다시 시도" 버튼 노출 및 탭 시 refetch 호출', async () => {
     mockGetRegularDateCounts.mockReset();
     mockGetRegularDateCounts.mockRejectedValue(new Error('RPC fail'));
-    const { findByLabelText } = renderWithClient(<ControlledParent />);
+    const { findByLabelText, getByLabelText } = renderWithClient(<ControlledParent />);
+    // 마운트는 collapsed — 에러 인라인은 expanded mode에서만 렌더, 먼저 펼치기
+    fireEvent.press(getByLabelText(/달력 펼치기/));
     expect(await findByLabelText('공고 개수 다시 불러오기')).toBeTruthy();
   });
 });
