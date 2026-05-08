@@ -29,14 +29,14 @@ interface WorkspaceSwitcherProps {
 }
 
 export function WorkspaceSwitcher({ onChange }: WorkspaceSwitcherProps) {
-  const { user } = useAuthStore();
+  const userId = useAuthStore((s) => s.user?.uid);
   const { activeWorkspace, workspaces, setActiveWorkspaceId } = useActiveWorkspace();
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
   const isOwnerOf = useCallback(
-    (w: Workspace) => Boolean(user?.uid) && w.ownerId === user!.uid,
-    [user?.uid]
+    (w: Workspace) => Boolean(userId) && w.ownerId === userId,
+    [userId]
   );
 
   const handleSelect = useCallback(
