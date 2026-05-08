@@ -9,6 +9,7 @@ import { Button, ConfirmModal, PostingSurfaceState } from '@/components';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { JobPostingCard, NonEmployerView } from '@/components/employer';
 import { TabHeader } from '@/components/headers';
+import { WorkspaceContextBar } from '@/components/workspace';
 import { BriefcaseIcon, PlusIcon, UsersIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { buildPostingFacts } from '@/domains/job-posting';
@@ -287,6 +288,7 @@ function EmployerView() {
           </Pressable>
         }
       />
+      <WorkspaceContextBar />
 
       <View className="px-4 py-3">
         <Button
