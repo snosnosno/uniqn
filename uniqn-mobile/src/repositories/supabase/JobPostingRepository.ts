@@ -299,14 +299,19 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
    * Phase 2A — 호출자가 owner 또는 워크스페이스 멤버인 모든 공고 조회.
    *
    * RLS jp_select 가 `owner_id = auth.uid() OR is_workspace_member(workspace_id, auth.uid())`
-   * 분기를 강제하므로 client 는 status filter 만 추가. user_id WHERE 는
-   * 의도적으로 사용 안 함 (client uid 와 auth.uid() 가 다를 위험 — 보안상 신뢰 불가).
+   * 분기를 제공하지만, jp_select 의 첫 분기 `status IN ('approved','active','closed')`
+   * 가 모든 인증 사용자에게 공개 공고 SELECT 권한을 주므로 employer my-postings 흐름은
+   * 클라이언트에서 workspace_id 로 명시적으로 좁혀야 한다 (Phase 2A.후속 — 2026-05-09).
    */
-  async getManagedJobPostings(status?: JobPostingStatus): Promise<JobPosting[]> {
+  async getManagedJobPostings(
+    status?: JobPostingStatus,
+    workspaceId?: string
+  ): Promise<JobPosting[]> {
     try {
-      logger.info('관리 가능 공고 조회', { status });
+      logger.info('관리 가능 공고 조회', { status, workspaceId });
       let query = supabase.from(TABLE).select(TABLE_COLUMNS);
       if (status) query = query.eq('status', status);
+      if (workspaceId) query = query.eq('workspace_id', workspaceId);
       query = query.order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) handleSupabaseError(error, { operation: '관리 가능 공고 조회', table: TABLE });
@@ -314,7 +319,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       logger.info('관리 가능 공고 조회 완료', { count: items.length });
       return items;
     } catch (error) {
-      rethrowOrHandle(error, '관리 가능 공고 조회', { status });
+      rethrowOrHandle(error, '관리 가능 공고 조회', { status, workspaceId });
     }
   }
 
