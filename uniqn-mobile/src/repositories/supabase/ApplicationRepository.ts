@@ -61,7 +61,7 @@ import {
   rethrowOrHandle,
   loadApplication,
   loadJobPosting,
-  loadAndVerifyJobPostingOwner,
+  loadAndVerifyJobPostingAccess,
   buildCanonicalFixedAssignment,
   buildApplicantListWithStats,
 } from './ApplicationRepositoryHelpers';
@@ -318,7 +318,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
     try {
       logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
 
-      const jobData = await loadAndVerifyJobPostingOwner(
+      const jobData = await loadAndVerifyJobPostingAccess(
         jobPostingId,
         ownerId,
         '취소 요청 목록 조회'
@@ -643,7 +643,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       logger.info('지원 거절 시작', { applicationId: input.applicationId, reviewerId });
 
       const applicationData = await loadApplication(input.applicationId);
-      const jobData = await loadAndVerifyJobPostingOwner(
+      const jobData = await loadAndVerifyJobPostingAccess(
         applicationData.jobPostingId,
         reviewerId,
         '지원 거절'
@@ -686,7 +686,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
       logger.info('지원 읽음 처리 시작', { applicationId, ownerId });
 
       const applicationData = await loadApplication(applicationId);
-      await loadAndVerifyJobPostingOwner(applicationData.jobPostingId, ownerId, '지원 읽음 처리');
+      await loadAndVerifyJobPostingAccess(applicationData.jobPostingId, ownerId, '지원 읽음 처리');
 
       const { error } = await supabase
         .from(TABLES.APPLICATIONS)
@@ -734,7 +734,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
     try {
       logger.info('지원자 목록 조회', { jobPostingId, ownerId, statusFilter });
 
-      const jobPosting = await loadAndVerifyJobPostingOwner(
+      const jobPosting = await loadAndVerifyJobPostingAccess(
         jobPostingId,
         ownerId,
         '지원자 목록 조회'
@@ -778,7 +778,7 @@ export class SupabaseApplicationRepository implements IApplicationRepository {
     const handleUpdate = async () => {
       try {
         if (!isOwnerVerified) {
-          cachedJobPosting = await loadAndVerifyJobPostingOwner(
+          cachedJobPosting = await loadAndVerifyJobPostingAccess(
             jobPostingId,
             ownerId,
             '지원자 실시간 구독'

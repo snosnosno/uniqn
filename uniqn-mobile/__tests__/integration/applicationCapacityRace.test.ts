@@ -33,7 +33,7 @@ jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
     throw error;
   },
   loadApplication: jest.fn(),
-  loadAndVerifyJobPostingOwner: jest.fn(),
+  loadAndVerifyJobPostingAccess: jest.fn(),
 }));
 
 jest.mock('@/domains/application', () => ({
@@ -178,7 +178,7 @@ describe('WF-06: 지원 정원 race condition', () => {
 
   // mock 함수 참조 — 런타임에 jest.mocked 없이 캐스팅
   let mockLoadApplication: MockFn;
-  let mockLoadAndVerifyJobPostingOwner: MockFn;
+  let mockLoadAndVerifyJobPostingAccess: MockFn;
   let mockValidateAssignmentSlotCapacity: MockFn;
 
   beforeEach(() => {
@@ -187,7 +187,7 @@ describe('WF-06: 지원 정원 race condition', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const helpers = require('@/repositories/supabase/ApplicationRepositoryHelpers');
     mockLoadApplication = helpers.loadApplication as MockFn;
-    mockLoadAndVerifyJobPostingOwner = helpers.loadAndVerifyJobPostingOwner as MockFn;
+    mockLoadAndVerifyJobPostingAccess = helpers.loadAndVerifyJobPostingAccess as MockFn;
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const domain = require('@/domains/application');
@@ -205,7 +205,7 @@ describe('WF-06: 지원 정원 race condition', () => {
       .mockResolvedValueOnce(makeApplication('app-1'))
       .mockResolvedValueOnce(makeApplication('app-2'));
 
-    mockLoadAndVerifyJobPostingOwner.mockResolvedValue(makeJobPosting(1, 0));
+    mockLoadAndVerifyJobPostingAccess.mockResolvedValue(makeJobPosting(1, 0));
 
     // 첫 번째 validateAssignmentSlotCapacity 호출: 정원 여유 있음
     // 두 번째 호출: 첫 번째가 이미 정원을 소비했다고 가정 (race 시뮬레이션)
@@ -256,7 +256,7 @@ describe('WF-06: 지원 정원 race condition', () => {
     let filledPositions = 0;
 
     mockLoadApplication.mockResolvedValue(makeApplication('app-1'));
-    mockLoadAndVerifyJobPostingOwner.mockImplementation(async () =>
+    mockLoadAndVerifyJobPostingAccess.mockImplementation(async () =>
       makeJobPosting(1, filledPositions)
     );
 
@@ -284,7 +284,7 @@ describe('WF-06: 지원 정원 race condition', () => {
       .mockResolvedValueOnce(makeApplication('app-2'))
       .mockResolvedValueOnce(makeApplication('app-3'));
 
-    mockLoadAndVerifyJobPostingOwner.mockImplementation(async () =>
+    mockLoadAndVerifyJobPostingAccess.mockImplementation(async () =>
       makeJobPosting(CAPACITY, filledPositions)
     );
 
@@ -321,7 +321,7 @@ describe('WF-06: 지원 정원 race condition', () => {
       .mockResolvedValueOnce(makeApplication('app-2'))
       .mockResolvedValueOnce(makeApplication('app-3'));
 
-    mockLoadAndVerifyJobPostingOwner.mockResolvedValue(makeJobPosting(CAPACITY, 0));
+    mockLoadAndVerifyJobPostingAccess.mockResolvedValue(makeJobPosting(CAPACITY, 0));
 
     // 처음 2번은 통과, 3번째는 정원 초과
     let validateCallCount = 0;
@@ -372,7 +372,7 @@ describe('WF-06: 지원 정원 race condition', () => {
   // ─────────────────────────────────────────────────────────────────────────
   it('validateAssignmentSlotCapacity unavailable 반환 시 capacity 에러 throw', async () => {
     mockLoadApplication.mockResolvedValue(makeApplication('app-1'));
-    mockLoadAndVerifyJobPostingOwner.mockResolvedValue(makeJobPosting(1, 1));
+    mockLoadAndVerifyJobPostingAccess.mockResolvedValue(makeJobPosting(1, 1));
 
     mockValidateAssignmentSlotCapacity.mockReturnValue({
       available: false,

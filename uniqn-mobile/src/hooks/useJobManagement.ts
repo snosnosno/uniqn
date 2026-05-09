@@ -55,6 +55,19 @@ function getMyJobPostingStatsQueryKey(userId?: string) {
   return [...queryKeys.jobManagement.stats(), userId ?? 'anonymous'] as const;
 }
 
+/**
+ * mutation hook 들이 optimistic update 의 cancel/get/set/rollback 에 사용하는 queryKey 헬퍼.
+ *
+ * 4 mutation hook (delete/close/reopen/bulkUpdate) 가 동일한 user.uid + activeWorkspace.id
+ * 조합으로 queryKey 를 만들었던 보일러플레이트를 추출. activeWorkspace 가 미전달인
+ * 호출자 (admin global view 등) 에서도 fallback 'no-workspace' 키로 ghost cache 회피.
+ */
+function useMyPostingsQueryKey() {
+  const { user } = useAuthStore();
+  const { activeWorkspace } = useActiveWorkspace();
+  return getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
+}
+
 export function useMyJobPostings() {
   const { user } = useAuthStore();
   const { activeWorkspace } = useActiveWorkspace();
@@ -143,8 +156,7 @@ export function useDeleteJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const { activeWorkspace } = useActiveWorkspace();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
+  const myPostingsQueryKey = useMyPostingsQueryKey();
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -195,8 +207,7 @@ export function useCloseJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const { activeWorkspace } = useActiveWorkspace();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
+  const myPostingsQueryKey = useMyPostingsQueryKey();
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -248,8 +259,7 @@ export function useReopenJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const { activeWorkspace } = useActiveWorkspace();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
+  const myPostingsQueryKey = useMyPostingsQueryKey();
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -301,8 +311,7 @@ export function useBulkUpdateStatus() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const { activeWorkspace } = useActiveWorkspace();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
+  const myPostingsQueryKey = useMyPostingsQueryKey();
 
   return useMutation({
     mutationFn: (params: BulkStatusParams) => {

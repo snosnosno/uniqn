@@ -10,7 +10,7 @@
 import { executeConfirmWithHistory } from '@/repositories/supabase/ApplicationRepositoryTransactions';
 import {
   loadApplication,
-  loadAndVerifyJobPostingOwner,
+  loadAndVerifyJobPostingAccess,
 } from '@/repositories/supabase/ApplicationRepositoryHelpers';
 import { BusinessError } from '@/errors';
 
@@ -37,7 +37,7 @@ jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
     throw error;
   },
   loadApplication: jest.fn(),
-  loadAndVerifyJobPostingOwner: jest.fn(),
+  loadAndVerifyJobPostingAccess: jest.fn(),
 }));
 
 jest.mock('@/domains/application', () => ({
@@ -136,8 +136,8 @@ const OWNER_ID = 'employer-333';
 
 describe('executeConfirmWithHistory — confirm_application RPC work_log 원자성', () => {
   const mockLoadApplication = loadApplication as jest.MockedFunction<typeof loadApplication>;
-  const mockLoadAndVerify = loadAndVerifyJobPostingOwner as jest.MockedFunction<
-    typeof loadAndVerifyJobPostingOwner
+  const mockLoadAndVerify = loadAndVerifyJobPostingAccess as jest.MockedFunction<
+    typeof loadAndVerifyJobPostingAccess
   >;
 
   beforeEach(() => {
@@ -219,7 +219,7 @@ describe('executeConfirmWithHistory — confirm_application RPC work_log 원자�
       status: 'confirmed',
     };
     mockLoadApplication.mockResolvedValueOnce(confirmedApplication as never);
-    // loadAndVerifyJobPostingOwner는 호출되지 않아야 함
+    // loadAndVerifyJobPostingAccess는 호출되지 않아야 함
 
     // Act & Assert
     await expect(executeConfirmWithHistory(APPLICATION_ID, undefined, OWNER_ID)).rejects.toThrow(

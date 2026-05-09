@@ -22,7 +22,7 @@ import {
   TABLES,
   rethrowOrHandle,
   loadApplication,
-  loadAndVerifyJobPostingOwner,
+  loadAndVerifyJobPostingAccess,
 } from './ApplicationRepositoryHelpers';
 
 // ============================================================================
@@ -56,7 +56,7 @@ export async function executeConfirmWithHistory(
       }
     }
 
-    const jobData = await loadAndVerifyJobPostingOwner(
+    const jobData = await loadAndVerifyJobPostingAccess(
       applicationData.jobPostingId,
       ownerId,
       '지원 확정'
@@ -162,7 +162,7 @@ export async function executeReviewCancellation(
     }
 
     const applicationData = await loadApplication(input.applicationId);
-    const jobData = await loadAndVerifyJobPostingOwner(
+    const jobData = await loadAndVerifyJobPostingAccess(
       applicationData.jobPostingId,
       reviewerId,
       '취소 요청 검토'

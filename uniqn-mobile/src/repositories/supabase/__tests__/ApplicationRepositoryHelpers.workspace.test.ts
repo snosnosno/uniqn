@@ -1,7 +1,7 @@
 /**
- * Phase 2A.후속 — loadAndVerifyJobPostingOwner workspace member + admin 호환
+ * Phase 2A.후속 — loadAndVerifyJobPostingAccess workspace member + admin 호환
  */
-import { loadAndVerifyJobPostingOwner } from '../ApplicationRepositoryHelpers';
+import { loadAndVerifyJobPostingAccess } from '../ApplicationRepositoryHelpers';
 import { supabase } from '@/lib/supabase';
 import { PermissionError } from '@/errors';
 
@@ -36,7 +36,7 @@ const fakeJobPosting = {
   status: 'active' as const,
 };
 
-describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
+describe('loadAndVerifyJobPostingAccess — workspace member + admin', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -57,7 +57,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
   });
 
   it('owner 본인 호출 시 통과 (RPC 호출 없음)', async () => {
-    const result = await loadAndVerifyJobPostingOwner('jp-1', 'owner-uid', '취소 요청 목록 조회');
+    const result = await loadAndVerifyJobPostingAccess('jp-1', 'owner-uid', '취소 요청 목록 조회');
 
     expect(result.id).toBe('jp-1');
     expect(mockSupabase.rpc).not.toHaveBeenCalled();
@@ -69,7 +69,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
       return Promise.resolve({ data: false, error: null });
     });
 
-    const result = await loadAndVerifyJobPostingOwner('jp-1', 'member-uid', '취소 요청 목록 조회');
+    const result = await loadAndVerifyJobPostingAccess('jp-1', 'member-uid', '취소 요청 목록 조회');
 
     expect(result.id).toBe('jp-1');
     expect(mockSupabase.rpc).toHaveBeenCalledWith('is_workspace_member', {
@@ -85,7 +85,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
       return Promise.resolve({ data: false, error: null });
     });
 
-    const result = await loadAndVerifyJobPostingOwner('jp-1', 'admin-uid', '취소 요청 목록 조회');
+    const result = await loadAndVerifyJobPostingAccess('jp-1', 'admin-uid', '취소 요청 목록 조회');
 
     expect(result.id).toBe('jp-1');
     expect(mockSupabase.rpc).toHaveBeenCalledWith('is_admin');
@@ -95,7 +95,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
     (mockSupabase.rpc as jest.Mock).mockResolvedValue({ data: false, error: null });
 
     await expect(
-      loadAndVerifyJobPostingOwner('jp-1', 'stranger-uid', '취소 요청 목록 조회')
+      loadAndVerifyJobPostingAccess('jp-1', 'stranger-uid', '취소 요청 목록 조회')
     ).rejects.toThrow(PermissionError);
   });
 
@@ -106,7 +106,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
     });
 
     await expect(
-      loadAndVerifyJobPostingOwner('jp-1', 'member-uid', '취소 요청 목록 조회')
+      loadAndVerifyJobPostingAccess('jp-1', 'member-uid', '취소 요청 목록 조회')
     ).rejects.toThrow();
   });
 
@@ -119,7 +119,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
       });
 
     await expect(
-      loadAndVerifyJobPostingOwner('jp-1', 'admin-uid', '취소 요청 목록 조회')
+      loadAndVerifyJobPostingAccess('jp-1', 'admin-uid', '취소 요청 목록 조회')
     ).rejects.toThrow();
   });
 
@@ -141,7 +141,7 @@ describe('loadAndVerifyJobPostingOwner — workspace member + admin', () => {
     });
 
     await expect(
-      loadAndVerifyJobPostingOwner('jp-1', 'someone-else', '취소 요청 목록 조회')
+      loadAndVerifyJobPostingAccess('jp-1', 'someone-else', '취소 요청 목록 조회')
     ).rejects.toThrow(PermissionError);
 
     // RPC should NOT have been called because the guard short-circuits

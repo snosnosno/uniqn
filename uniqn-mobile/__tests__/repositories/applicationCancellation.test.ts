@@ -40,7 +40,7 @@ jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
     throw error;
   },
   loadApplication: jest.fn(),
-  loadAndVerifyJobPostingOwner: jest.fn(),
+  loadAndVerifyJobPostingAccess: jest.fn(),
 }));
 
 describe('executeCancelConfirmation — cancel_application_atomically RPC', () => {
