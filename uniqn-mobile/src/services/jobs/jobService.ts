@@ -222,33 +222,35 @@ export async function getUrgentJobPostings(pageSize: number = 10): Promise<JobPo
 /**
  * 내 공고 목록 조회 (구인자용)
  *
- * Phase 2A — owner 본인 공고 + 소속 워크스페이스 공유 공고를 함께 반환.
- * RLS jp_select 가 (owner_id = auth.uid() OR workspace_member) 분기를 강제하므로
- * client 는 status filter 만 추가. ownerId 파라미터는 logging context 에만 사용.
+ * Phase 2A.후속 (2026-05-09) — active workspace 단위로 좁힌다. workspaceId 미지정
+ * 시 RLS 가 허용하는 범위 전체(소유 + 멤버 워크스페이스 합산)가 반환되며 이는
+ * Switcher 도입 전 레거시 호출자 호환을 위해서만 유지한다.
  */
 export async function getMyJobPostings(
   ownerId: string,
-  options?: { status?: JobPosting['status']; includeAll?: boolean }
+  options?: { status?: JobPosting['status']; includeAll?: boolean; workspaceId?: string }
 ): Promise<JobPosting[]> {
+  const { status, includeAll = true, workspaceId } = options || {};
   try {
-    const { status, includeAll = true } = options || {};
-    logger.info('관리 가능 공고 목록 조회', { ownerId, status, includeAll });
+    logger.info('관리 가능 공고 목록 조회', { ownerId, status, includeAll, workspaceId });
 
-    // includeAll이 true면 모든 상태의 공고 조회 (active, closed)
     if (includeAll && !status) {
       const results = await Promise.all([
-        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.ACTIVE),
-        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.CLOSED),
+        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.ACTIVE, workspaceId),
+        jobPostingRepository.getManagedJobPostings(STATUS.JOB_POSTING.CLOSED, workspaceId),
       ]);
       return [...results[0], ...results[1]];
     }
 
-    return jobPostingRepository.getManagedJobPostings(status || STATUS.JOB_POSTING.ACTIVE);
+    return jobPostingRepository.getManagedJobPostings(
+      status || STATUS.JOB_POSTING.ACTIVE,
+      workspaceId
+    );
   } catch (error) {
     throw handleServiceError(error, {
       operation: '관리 가능 공고 조회',
       component: 'jobService',
-      context: { ownerId }, // ownerId 자동 마스킹
+      context: { ownerId, workspaceId },
     });
   }
 }

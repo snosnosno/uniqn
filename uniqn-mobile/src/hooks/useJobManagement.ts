@@ -5,6 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { getJobDetailQueryKey } from '@/hooks/useJobDetail';
+import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
 import {
   createJobPosting,
   updateJobPosting,
@@ -42,8 +43,12 @@ interface BulkStatusParams {
   status: JobPostingStatus;
 }
 
-function getMyJobPostingsQueryKey(userId?: string) {
-  return [...queryKeys.jobManagement.myPostings(), userId ?? 'anonymous'] as const;
+function getMyJobPostingsQueryKey(userId?: string, workspaceId?: string) {
+  return [
+    ...queryKeys.jobManagement.myPostings(),
+    userId ?? 'anonymous',
+    workspaceId ?? 'no-workspace',
+  ] as const;
 }
 
 function getMyJobPostingStatsQueryKey(userId?: string) {
@@ -52,12 +57,13 @@ function getMyJobPostingStatsQueryKey(userId?: string) {
 
 export function useMyJobPostings() {
   const { user } = useAuthStore();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
+  const { activeWorkspace } = useActiveWorkspace();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
 
   return useQuery({
     queryKey: myPostingsQueryKey,
-    queryFn: () => getMyJobPostings(user!.uid),
-    enabled: !!user,
+    queryFn: () => getMyJobPostings(user!.uid, { workspaceId: activeWorkspace!.id }),
+    enabled: !!user && !!activeWorkspace?.id,
     staleTime: cachingPolicies.frequent,
   });
 }
@@ -137,7 +143,8 @@ export function useDeleteJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
+  const { activeWorkspace } = useActiveWorkspace();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -188,7 +195,8 @@ export function useCloseJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
+  const { activeWorkspace } = useActiveWorkspace();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -240,7 +248,8 @@ export function useReopenJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
+  const { activeWorkspace } = useActiveWorkspace();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
@@ -292,7 +301,8 @@ export function useBulkUpdateStatus() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
-  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid);
+  const { activeWorkspace } = useActiveWorkspace();
+  const myPostingsQueryKey = getMyJobPostingsQueryKey(user?.uid, activeWorkspace?.id);
 
   return useMutation({
     mutationFn: (params: BulkStatusParams) => {

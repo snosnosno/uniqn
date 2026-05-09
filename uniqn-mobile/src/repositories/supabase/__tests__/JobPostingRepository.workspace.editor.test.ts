@@ -135,4 +135,24 @@ describe('JobPostingRepository.getManagedJobPostings — Phase 2A editor contrac
 
     await expect(repo.getManagedJobPostings('active')).rejects.toThrow(/permission denied/);
   });
+
+  it('Phase 2A.후속 — workspaceId 가 주어지면 .eq("workspace_id", id) 를 호출한다', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValueOnce(chain);
+
+    await repo.getManagedJobPostings('active', 'ws-abc-123');
+
+    expect(chain.eq).toHaveBeenCalledWith('status', 'active');
+    expect(chain.eq).toHaveBeenCalledWith('workspace_id', 'ws-abc-123');
+  });
+
+  it('Phase 2A.후속 — workspaceId 가 undefined 이면 workspace_id 필터를 추가하지 않는다', async () => {
+    const chain = makeChain({ data: [], error: null });
+    mockFrom.mockReturnValueOnce(chain);
+
+    await repo.getManagedJobPostings('active');
+
+    const workspaceCall = chain.eq.mock.calls.find((c: unknown[]) => c[0] === 'workspace_id');
+    expect(workspaceCall).toBeUndefined();
+  });
 });
