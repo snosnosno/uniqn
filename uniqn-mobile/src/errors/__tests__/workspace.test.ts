@@ -73,12 +73,13 @@ describe('mapWorkspaceRpcError (PR #2)', () => {
     );
   });
 
-  it('RLS cap 도달 (literal RLS 메시지) → CAP_REACHED', () => {
+  it('RLS INSERT 거절 (literal RLS 메시지, 직접 INSERT 경로) → INSERT_DENIED (cap/role/owner_id 다중 원인 인식)', () => {
     const err = mapWorkspaceRpcError({
       message: 'new row violates row-level security policy',
     });
     expect(err).not.toBeNull();
-    expect(err!.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED);
+    expect(err!.code).toBe(WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED);
+    expect(err!.userMessage).toContain('권한이 부족하거나 최대 개수');
     expect(err!.userMessage).toContain('10개');
   });
 
