@@ -30,6 +30,8 @@ export const WORKSPACE_ERROR_CODES = {
   WORKSPACE_SELF_INVITE: 'E6088',
   WORKSPACE_CANNOT_REMOVE_OWNER: 'E6089',
   WORKSPACE_CAP_REACHED: 'E6090',
+  /** RLS INSERT 정책 위반 — cap/role/owner_id 중 어느 것이 fail 했는지 RPC 응답만으로 분간 불가 */
+  WORKSPACE_INSERT_DENIED: 'E6091',
 } as const;
 
 const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
@@ -48,6 +50,8 @@ const WORKSPACE_ERROR_USER_MESSAGES: Record<string, string> = {
     '워크스페이스 소유자는 멤버에서 제외할 수 없습니다.',
   [WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED]:
     '워크스페이스는 사용자당 최대 10개까지 만들 수 있어요. 사용하지 않는 워크스페이스를 정리해주세요.',
+  [WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED]:
+    '워크스페이스를 만들 수 없어요. 권한이 부족하거나 최대 개수(10개)에 도달했을 수 있어요. 잠시 후 다시 시도해주세요.',
 };
 
 function makeWorkspaceError(code: string): AppError {
@@ -118,11 +122,14 @@ export function mapWorkspaceRpcError(error: unknown): AppError | null {
   if (upper.includes('WORKSPACE_NOT_FOUND'))
     return makeWorkspaceError(WORKSPACE_ERROR_CODES.WORKSPACE_NOT_FOUND);
 
-  // RLS 위반 패턴 — INSERT 정책 거절 (cap 도달 등)
+  // RLS 위반 패턴 — INSERT 정책 거절
+  // workspaces_insert_employer_with_cap CHECK = (owner_id 일치) AND (role) AND (cap < 10)
+  // 셋 중 어느 것이 fail 했는지 RPC 응답으로 분간 불가 — multi-cause 메시지로 통합
+  // (사전 cap 체크는 호출자가 workspace_count_for_owner RPC 로 확인 후 분기 가능)
   if (upper.includes('NEW ROW VIOLATES ROW-LEVEL SECURITY POLICY')) {
-    return new BusinessError(WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED, {
+    return new BusinessError(WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED, {
       userMessage:
-        WORKSPACE_ERROR_USER_MESSAGES[WORKSPACE_ERROR_CODES.WORKSPACE_CAP_REACHED] ?? '권한 부족',
+        WORKSPACE_ERROR_USER_MESSAGES[WORKSPACE_ERROR_CODES.WORKSPACE_INSERT_DENIED] ?? '권한 부족',
     });
   }
 
