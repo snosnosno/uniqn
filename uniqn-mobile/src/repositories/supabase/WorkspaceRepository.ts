@@ -79,15 +79,17 @@ export class SupabaseWorkspaceRepository implements IWorkspaceRepository {
   }
 
   /**
-   * "내가 멤버인 모든 워크스페이스" — owner OR editor.
-   * RLS workspaces_select_owner_or_member 가 자동으로 필터링하므로 select * 만 호출.
+   * "내가 멤버인 모든 워크스페이스" — owner OR explicit editor (workspace_members).
+   *
+   * `list_my_workspaces` RPC 경유 — RLS workspaces_select_owner_or_member 의 `OR is_admin()`
+   * 분기를 우회하여 admin role 사용자가 비-소유 워크스페이스를 "공동관리/편집자" 로
+   * 잘못 보지 않도록 한다. admin global access 는 다른 컨텍스트 (admin 화면) 에서 보존.
+   *
+   * @param _userId 호출 시그니처 호환용. RPC 가 auth.uid() 사용.
    */
   async findAllByMember(_userId: string): Promise<Workspace[]> {
     try {
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select(COLUMNS)
-        .order('created_at', { ascending: true });
+      const { data, error } = await supabase.rpc('list_my_workspaces');
 
       if (error) {
         handleSupabaseError(error, { operation: '워크스페이스 목록 조회', table: TABLE });
