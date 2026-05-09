@@ -2,14 +2,27 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { CreateJobPostingInput, UpdateJobPostingInput } from '@/types';
 import {
   useCreateJobPosting,
+  useBulkUpdateStatus,
+  useCloseJobPosting,
+  useDeleteJobPosting,
   useMyJobPostings,
+  useReopenJobPosting,
   useUpdateJobPosting,
 } from '@/hooks/useJobManagement';
+import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
+
+jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
+  useActiveWorkspace: jest.fn(),
+}));
+const mockUseActiveWorkspace = useActiveWorkspace as jest.MockedFunction<typeof useActiveWorkspace>;
 
 const mockGetMyJobPostings = jest.fn();
 const mockCreateJobPosting = jest.fn();
 const mockUpdateJobPosting = jest.fn();
 const mockInvalidateQueries = jest.fn();
+const mockCancelQueries = jest.fn();
+const mockGetQueryData = jest.fn(() => undefined as unknown);
+const mockSetQueryData = jest.fn();
 const mockAddToast = jest.fn();
 
 let mockQueryData: unknown;
@@ -139,9 +152,9 @@ jest.mock('@tanstack/react-query', () => ({
   ),
   useQueryClient: () => ({
     invalidateQueries: mockInvalidateQueries,
-    cancelQueries: jest.fn(),
-    getQueryData: jest.fn(),
-    setQueryData: jest.fn(),
+    cancelQueries: mockCancelQueries,
+    getQueryData: mockGetQueryData,
+    setQueryData: mockSetQueryData,
   }),
 }));
 
@@ -182,6 +195,19 @@ describe('useJobManagement hooks', () => {
     mockQueryData = undefined;
     mockQueryError = null;
     mockQueryLoading = false;
+    // Re-set default return values for module-level spies after clearAllMocks
+    mockGetQueryData.mockReturnValue(undefined);
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: {
+        id: 'ws-default',
+        name: 'Default',
+        ownerId: 'employer-1',
+        memberCount: 1,
+      } as any,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
   });
 
   it('returns employer postings from useMyJobPostings', () => {
@@ -199,7 +225,65 @@ describe('useJobManagement hooks', () => {
       'jobManagement',
       'myPostings',
       'employer-1',
+      'ws-default',
     ]);
+  });
+
+  it('Phase 2A.후속 — activeWorkspace 가 없으면 enabled 가 false 다', () => {
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: undefined,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
+
+    renderHook(() => useMyJobPostings());
+
+    const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+      useQuery: jest.Mock;
+    };
+
+    expect(useQuery.mock.calls[0][0].enabled).toBe(false);
+  });
+
+  it('Phase 2A.후속 — activeWorkspace.id 가 query key 에 포함된다', () => {
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
+
+    renderHook(() => useMyJobPostings());
+
+    const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+      useQuery: jest.Mock;
+    };
+
+    expect(useQuery.mock.calls[0][0].queryKey).toEqual(
+      expect.arrayContaining(['myPostings', 'ws-abc'])
+    );
+  });
+
+  it('Phase 2A.후속 — getMyJobPostings 호출 시 workspaceId 옵션이 전달된다', async () => {
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
+    mockGetMyJobPostings.mockResolvedValue([]);
+
+    renderHook(() => useMyJobPostings());
+
+    const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+      useQuery: jest.Mock;
+    };
+
+    // queryFn を直接呼び出して workspaceId が渡されていることを確認
+    await useQuery.mock.calls[0][0].queryFn();
+
+    expect(mockGetMyJobPostings).toHaveBeenCalledWith('employer-1', { workspaceId: 'ws-abc' });
   });
 
   it('submits canonical create payloads and invalidates posting queries', async () => {
@@ -265,6 +349,92 @@ describe('useJobManagement hooks', () => {
     expect(mockAddToast).toHaveBeenCalledWith({
       type: 'error',
       message: 'create failed',
+    });
+  });
+
+  describe('Phase 2A.후속 — mutation hook query key alignment', () => {
+    // Verifies that each mutation hook passes activeWorkspace.id to
+    // getMyJobPostingsQueryKey so optimistic updates target the live cache key
+    // instead of the ghost key ['jobManagement', 'myPostings', userId, 'no-workspace'].
+    //
+    // Strategy: capture the `onMutate` closure from useMutation via mockImplementationOnce,
+    // then invoke it. The module-level mockCancelQueries spy (already wired into
+    // useQueryClient above) records which queryKey was passed.
+
+    beforeEach(() => {
+      mockCancelQueries.mockClear();
+      mockGetQueryData.mockClear();
+      mockSetQueryData.mockClear();
+    });
+
+    async function captureAndRunOnMutate(
+      hookFn: () => unknown,
+      mutateArg: unknown,
+      workspaceId: string
+    ) {
+      mockUseActiveWorkspace.mockReturnValue({
+        activeWorkspace: { id: workspaceId, name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
+        workspaces: [],
+        isLoading: false,
+        setActiveWorkspaceId: jest.fn(),
+      });
+
+      let capturedOnMutate: ((arg: unknown) => Promise<unknown>) | undefined;
+
+      const { useMutation } = jest.requireMock('@tanstack/react-query') as {
+        useMutation: jest.Mock;
+      };
+
+      useMutation.mockImplementationOnce(
+        (options: { onMutate?: (arg: unknown) => Promise<unknown>; mutationFn: () => void }) => {
+          capturedOnMutate = options.onMutate;
+          return { mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false, error: null };
+        }
+      );
+
+      renderHook(hookFn as () => void);
+
+      if (!capturedOnMutate) {
+        throw new Error(
+          'onMutate was not captured from useMutation — hook may not call useMutation'
+        );
+      }
+
+      await act(async () => {
+        await capturedOnMutate!(mutateArg);
+      });
+
+      expect(mockCancelQueries).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: expect.arrayContaining([workspaceId]),
+        })
+      );
+    }
+
+    it('useDeleteJobPosting — onMutate 가 activeWorkspace.id 포함 key 로 cancelQueries 를 호출한다', async () => {
+      // useDeleteJobPosting gates cancelQueries on shouldApplyOptimisticUpdate()
+      const { shouldApplyOptimisticUpdate } = jest.requireMock(
+        '@/services/offline/remoteMutationGuard'
+      ) as { shouldApplyOptimisticUpdate: jest.Mock };
+      shouldApplyOptimisticUpdate.mockReturnValueOnce(true);
+
+      await captureAndRunOnMutate(() => useDeleteJobPosting(), 'job-del-1', 'ws-delete');
+    });
+
+    it('useCloseJobPosting — onMutate 가 activeWorkspace.id 포함 key 로 cancelQueries 를 호출한다', async () => {
+      await captureAndRunOnMutate(() => useCloseJobPosting(), 'job-close-1', 'ws-close');
+    });
+
+    it('useReopenJobPosting — onMutate 가 activeWorkspace.id 포함 key 로 cancelQueries 를 호출한다', async () => {
+      await captureAndRunOnMutate(() => useReopenJobPosting(), 'job-reopen-1', 'ws-reopen');
+    });
+
+    it('useBulkUpdateStatus — onMutate 가 activeWorkspace.id 포함 key 로 cancelQueries 를 호출한다', async () => {
+      await captureAndRunOnMutate(
+        () => useBulkUpdateStatus(),
+        { jobPostingIds: ['job-1'], status: 'closed' },
+        'ws-bulk'
+      );
     });
   });
 });
