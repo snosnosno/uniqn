@@ -458,8 +458,8 @@ describe('JobService', () => {
       expect(result).toHaveLength(2);
       expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(2);
       // Phase 2A: ownerId 파라미터 제거 — RLS auth.uid() 가 단일 진실
-      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(1, 'active');
-      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(2, 'closed');
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(1, 'active', undefined);
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(2, 'closed', undefined);
     });
 
     it('should merge active and closed postings results', async () => {
@@ -512,7 +512,7 @@ describe('JobService', () => {
       await getMyJobPostings('owner-1', { status: 'active' as any });
 
       expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('active');
+      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('active', undefined);
     });
 
     it('should use active status as default when includeAll is false', async () => {
@@ -521,7 +521,7 @@ describe('JobService', () => {
       await getMyJobPostings('owner-1', { includeAll: false });
 
       expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('active');
+      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('active', undefined);
     });
 
     it('should only fetch specific status when both status and includeAll are set', async () => {
@@ -530,7 +530,7 @@ describe('JobService', () => {
       await getMyJobPostings('owner-1', { status: 'closed' as any, includeAll: true });
 
       expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(1);
-      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('closed');
+      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledWith('closed', undefined);
     });
 
     it('should return empty array when no postings found', async () => {
@@ -550,7 +550,7 @@ describe('JobService', () => {
       expect(mockHandleServiceError).toHaveBeenCalledWith(error, {
         operation: '관리 가능 공고 조회',
         component: 'jobService',
-        context: { ownerId: 'owner-1' },
+        context: { ownerId: 'owner-1', workspaceId: undefined },
       });
     });
 
@@ -562,6 +562,25 @@ describe('JobService', () => {
       expect(result).toEqual([]);
       // Default includeAll = true, no status => fetches both active and closed
       expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(2);
+    });
+
+    it('Phase 2A.후속 — workspaceId 옵션을 active/closed 두 호출 모두에 전달한다', async () => {
+      mockRepo.getManagedJobPostings.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      await getMyJobPostings('user-1', { workspaceId: 'ws-abc-123' });
+
+      expect(mockRepo.getManagedJobPostings).toHaveBeenCalledTimes(2);
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(1, 'active', 'ws-abc-123');
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(2, 'closed', 'ws-abc-123');
+    });
+
+    it('Phase 2A.후속 — workspaceId 미지정 시 두 번째 인자는 undefined 로 전달된다', async () => {
+      mockRepo.getManagedJobPostings.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+      await getMyJobPostings('user-1');
+
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(1, 'active', undefined);
+      expect(mockRepo.getManagedJobPostings).toHaveBeenNthCalledWith(2, 'closed', undefined);
     });
   });
 
@@ -698,8 +717,8 @@ describe('JobService', () => {
       await getMyJobPostings('owner-123');
 
       const calls = mockRepo.getManagedJobPostings.mock.calls;
-      expect(calls[0]).toEqual(['active']);
-      expect(calls[1]).toEqual(['closed']);
+      expect(calls[0]).toEqual(['active', undefined]);
+      expect(calls[1]).toEqual(['closed', undefined]);
     });
 
     it('should request active and closed statuses when includeAll', async () => {
@@ -708,8 +727,8 @@ describe('JobService', () => {
       await getMyJobPostings('owner-1');
 
       const calls = mockRepo.getManagedJobPostings.mock.calls;
-      expect(calls[0]).toEqual(['active']);
-      expect(calls[1]).toEqual(['closed']);
+      expect(calls[0]).toEqual(['active', undefined]);
+      expect(calls[1]).toEqual(['closed', undefined]);
     });
   });
 });
