@@ -153,18 +153,53 @@ export async function loadJobPosting(jobPostingId: string): Promise<JobPosting> 
   return jp;
 }
 
+/**
+ * 공고를 로드하고 호출자가 관리 권한을 가졌는지 확인.
+ *
+ * Phase 2A.후속 (2026-05-09) — owner 외에 워크스페이스 멤버 + admin 도 통과.
+ * Phase 2A 에서 applications/job_postings RLS 가 workspace_member 분기로 풀렸으나
+ * 클라이언트 헬퍼는 owner-only 였던 부분 마이그레이션을 일치시킨다.
+ *
+ * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin 이면 2회. 권한 에러 흐름은
+ * cancellation/리뷰 같은 흔하지 않은 employer-side 액션이라 허용 가능.
+ */
 export async function loadAndVerifyJobPostingOwner(
   jobPostingId: string,
-  ownerId: string,
+  callerId: string,
   operation: string
 ): Promise<JobPosting> {
   const jobData = await loadJobPosting(jobPostingId);
-  if (jobData.ownerId !== ownerId) {
+
+  // 1) owner 본인
+  if (jobData.ownerId === callerId) return jobData;
+
+  // workspaceId 없는 레거시 row 방어 (M3 이후 NOT NULL 이지만 schema migration 보장 안 됨)
+  if (!jobData.workspaceId) {
     throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `본인 공고만 관리할 수 있습니다: ${operation}`,
+      userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operation}`,
     });
   }
-  return jobData;
+
+  // 2) 워크스페이스 멤버 (Phase 2A backend 와 일관)
+  const memberResult = await supabase.rpc('is_workspace_member', {
+    _workspace_id: jobData.workspaceId,
+    _user_id: callerId,
+  });
+  if (memberResult.error) {
+    handleSupabaseError(memberResult.error, { operation, table: TABLES.JOB_POSTINGS });
+  }
+  if (memberResult.data === true) return jobData;
+
+  // 3) admin
+  const adminResult = await supabase.rpc('is_admin');
+  if (adminResult.error) {
+    handleSupabaseError(adminResult.error, { operation, table: TABLES.JOB_POSTINGS });
+  }
+  if (adminResult.data === true) return jobData;
+
+  throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+    userMessage: `워크스페이스 멤버만 관리할 수 있습니다: ${operation}`,
+  });
 }
 
 // ============================================================================
