@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 import { NextWorkWidget } from '@/components/home/widgets/NextWorkWidget';
 import { ApplicationStatusWidget } from '@/components/home/widgets/ApplicationStatusWidget';
 import { MonthSummaryWidget } from '@/components/home/widgets/MonthSummaryWidget';
+import { MonthlyPayrollWidget } from '@/components/home/widgets/MonthlyPayrollWidget';
 import { RecentNoticesWidget } from '@/components/home/widgets/RecentNoticesWidget';
 
 interface StaffDashboardProps {
@@ -15,6 +16,7 @@ export function StaffDashboard({ bottomPadding = 0 }: StaffDashboardProps) {
       <NextWorkWidget />
       <ApplicationStatusWidget />
       <MonthSummaryWidget />
+      <MonthlyPayrollWidget />
       <RecentNoticesWidget />
     </ScrollView>
   );
