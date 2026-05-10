@@ -717,6 +717,64 @@ describe('useSchedules hooks', () => {
     });
   });
 
+  // Phase 2A.후속 PR3-D 검증 (2026-05-10):
+  // useScheduleStats / useSchedulesByMonth 는 staff-only scope.
+  // queryKey 가 staffId 만 포함하고 workspace/employer dimension 이 없음을 잠금.
+  // service call 도 staffId 단일 인자 (workspace/owner 인자 없음).
+  describe('staff-only scope contract (PR3-D)', () => {
+    it('useScheduleStats query key contains staffId and no workspace dimension', () => {
+      mockQueryData = createMockStats();
+
+      renderHook(() => useScheduleStats());
+
+      const queryOptions = mockUseQuery.mock.calls.at(-1)?.[0] as
+        | { queryKey: readonly unknown[] }
+        | undefined;
+      expect(queryOptions?.queryKey).toEqual(['schedules', 'stats', 'staff-1']);
+      // workspace / ownerId / employer 같은 추가 차원이 없어야 함
+      expect(queryOptions?.queryKey).toHaveLength(3);
+    });
+
+    it('useScheduleStats queryFn calls service with staffId only (no workspace/owner)', async () => {
+      mockQueryData = createMockStats();
+
+      renderHook(() => useScheduleStats());
+
+      await waitFor(() => {
+        expect(mockGetScheduleStats).toHaveBeenCalled();
+      });
+      // staffId 단일 인자 — workspaceId / ownerId 추가 인자 없음
+      expect(mockGetScheduleStats).toHaveBeenCalledWith('staff-1');
+      expect(mockGetScheduleStats.mock.calls[0]).toHaveLength(1);
+    });
+
+    it('useSchedulesByMonth query key contains staffId and no workspace dimension', () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      const monthCall = mockUseQuery.mock.calls.find((call) => {
+        const opts = call[0] as { queryKey: readonly unknown[] };
+        return Array.isArray(opts.queryKey) && opts.queryKey[1] === 'byMonth';
+      });
+      const queryOptions = monthCall?.[0] as { queryKey: readonly unknown[] } | undefined;
+      expect(queryOptions?.queryKey).toEqual(['schedules', 'byMonth', 2024, 2, 'staff-1']);
+      expect(queryOptions?.queryKey).toHaveLength(5);
+    });
+
+    it('useSchedulesByMonth queryFn calls service with (staffId, year, month) only', async () => {
+      mockQueryData = { schedules: [], stats: createMockStats() };
+
+      renderHook(() => useSchedulesByMonth({ year: 2024, month: 2 }));
+
+      await waitFor(() => {
+        expect(mockGetSchedulesByMonth).toHaveBeenCalled();
+      });
+      expect(mockGetSchedulesByMonth).toHaveBeenCalledWith('staff-1', 2024, 2);
+      expect(mockGetSchedulesByMonth.mock.calls[0]).toHaveLength(3);
+    });
+  });
+
   describe('useCalendarView', () => {
     it('builds grouped calendar state from monthly schedules', async () => {
       const schedules = [

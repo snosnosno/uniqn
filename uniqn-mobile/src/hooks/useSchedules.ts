@@ -200,6 +200,13 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   };
 }
 
+/**
+ * 월별 스케줄 조회 hook.
+ *
+ * Phase 2A.후속 PR3-D 검증 (2026-05-10): staff-only scope. user.uid 기반 본인 work_logs 만 조회.
+ * active workspace 필터 불필요 — RLS 가 본인 work_logs 만 노출 + service 가 staff_id 로 query.
+ * staff 가 다른 워크스페이스 공고에 지원했어도 본인 work_logs 라면 모두 보임 (의도된 동작).
+ */
 export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const { year, month, enabled = true, realtime = false } = options;
   const queryClient = useQueryClient();
@@ -567,6 +574,13 @@ export function useUpcomingSchedules(days = 7, enabled = true) {
   };
 }
 
+/**
+ * 스케줄 통계 조회 hook.
+ *
+ * Phase 2A.후속 PR3-D 검증 (2026-05-10): staff-only scope. user.uid 기반 본인 work_logs 만 조회.
+ * active workspace 필터 불필요 — RLS 가 본인 work_logs 만 노출 + service 가 staff_id 로 query.
+ * staff 가 다른 워크스페이스 공고에 지원했어도 본인 work_logs 라면 모두 보임 (의도된 동작).
+ */
 export function useScheduleStats(enabled = true) {
   const user = useAuthStore((state) => state.user);
   const staffId = user?.uid;
@@ -597,6 +611,14 @@ interface UseCalendarViewOptions {
   realtime?: boolean;
 }
 
+/**
+ * 캘린더 뷰 상태 + 월별 스케줄 hook.
+ *
+ * Phase 2A.후속 PR3-D 검증 (2026-05-10): staff-only scope. 내부적으로 useSchedulesByMonth 를
+ * 사용하므로 user.uid 기반 본인 work_logs 만 조회.
+ * active workspace 필터 불필요 — RLS 가 본인 work_logs 만 노출 + service 가 staff_id 로 query.
+ * staff 가 다른 워크스페이스 공고에 지원했어도 본인 work_logs 라면 모두 보임 (의도된 동작).
+ */
 export function useCalendarView(options: UseCalendarViewOptions | CalendarView = 'month') {
   const normalizedOptions: UseCalendarViewOptions =
     typeof options === 'string' ? { initialView: options } : options;

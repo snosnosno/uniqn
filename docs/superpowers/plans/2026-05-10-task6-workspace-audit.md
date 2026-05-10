@@ -183,3 +183,17 @@ PR #71 (read-side workspace + cancellation 멤버)
 - 본 ADR 만 (코드 변경 0)
 - 다음 세션의 Sub-PR 진입점 명시
 - RLS 정책 매트릭스 snapshot (2026-05-10 기준)
+
+## PR3-D Resolution (2026-05-10)
+
+`useScheduleStats` (L570) 와 `useCalendarView` (L600) 의 employer 분기 audit 항목 검증 완료.
+
+**결론:** 두 hook 모두 **staff-only**. 코드 검증으로 확인:
+- `useScheduleStats` → `getScheduleStats(staffId)` (scheduleService.ts:727) — `staff_id` 로만 query.
+- `useCalendarView` → `useSchedulesByMonth` (L203) → `getSchedulesByMonth(staffId, year, month)` (scheduleService.ts:462) — `staff_id` 로만 query.
+
+employer 분기는 존재하지 않음. audit ADR §3.schedule 의 "dual (staff or employer 분기)" 분류는 잘못된 것이었음. RLS 가 staff 본인 work_logs 만 노출하므로 workspace 필터 불필요.
+
+**조치:** PR3-D 는 코드 변경 없이 staff-only 의도를 JSDoc + 테스트로 잠금. 실제 employer 스케줄 hook 이 향후 도입되면 그때 active workspace 필터 검토.
+
+(See PR #[NUMBER] for the verification + JSDoc + test additions.)
