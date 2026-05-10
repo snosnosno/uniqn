@@ -54,13 +54,42 @@ editor 도 가능하게 할지는 추후 사용 패턴 보고 결정. MVP 는 �
 
 ### D8: 마이그레이션은 PR3-A.2 머지 후 시작
 
-PR3-A.2 (admin RLS update/delete split, spec apply 대기 중) 가 job_postings RLS 를 수정 중일 가능성 → 충돌 회피를 위해 머지 후 본 작업 시작.
+PR3-A.2 (admin RLS update/delete split, spec apply 대기 중) 가 job_postings RLS 를 수정 중일 가능성 → 충돌 회피를 위해 머지 후 본 작업 시작. (Soft gate — 스펙/플랜은 지금 작성, 구현만 머지 후 시작.)
+
+### D9: Realtime subscription 활성화 (eng-review 추가)
+
+`job_posting_collaborators` 를 `supabase_realtime` publication 에 등록하고, owner 모달 + collaborator my-postings 의 "공유받은 공고" 섹션 모두 Realtime channel 구독. 이유:
+- 즉시 부여 + 푸시 알림 (D4) 의 UX 일관성 — 푸시 받은 직후 my-postings 가 이미 갱신되어 있어야 자연스러움
+- 메모리 학습 (PR #67 hotfix): "Realtime 새 테이블 사용 시 publication 등록 필수" — `pg_publication_tables` 사전 확인
+- 마이그레이션에 `ALTER PUBLICATION supabase_realtime ADD TABLE public.job_posting_collaborators` 1줄 추가
+
+### D10: Service / Repository 레이어 분리 (eng-review 추가)
+
+CLAUDE.md 아키텍처 규칙 (`Presentation → Hooks → Service → Repository → Supabase`) 준수. 기존 service 패턴 일관성. `src/repositories/jobPostingCollaboratorRepository.ts` 추가:
+- Repository: Supabase 직접 호출, snake_case ↔ camelCase 변환, Zod 검증
+- Service: 비즈니스 로직 (검증, 권한 체크, 알림 트리거)
+
+### D11: Audit log 테이블 포함 (eng-review 추가, scope 확장)
+
+`job_posting_collaborator_audit` 테이블 신설 + AFTER INSERT/DELETE 트리거. 보존 항목: actor_user_id, target_user_id, job_posting_id, action ('added'|'removed'), at. RLS: workspace owner 만 조회 (운영 가시성). 이유:
+- 워크스페이스 데이터 접근 권한 부여/회수 = 보안 중요 액션, 이력 보존 필수
+- DELETE 후 added_by/added_at 손실 방지
+- "누가 언제 협업자 추가/제거했는지" 운영자 질문 대응
+
+### D12: Edge case 테스트 포함 (eng-review 추가)
+
+다음 user flow 엣지 케이스를 hook/service 테스트 4건으로 추가:
+- 네트워크 끊김 상태에서 추가 → 낙관적 업데이트 후 롤백 + 친절 toast
+- 푸시 알림 받은 직후 앱 강제 종료 → 재실행 → my-postings 정상 노출 (deep link 큐잉)
+- 동시에 owner 두 명 (owner + 다른 PC owner 본인) 같은 사람 추가 → UNIQUE 충돌 → 친절 메시지
+- workspace 이양 직후 신규 owner 의 collaborator DELETE 권한 검증 (Section 1.4 권고도 흡수)
 
 ## 데이터 모델
 
-### 신규 테이블
+### 신규 테이블 (2개)
 
 ```sql
+-- 1. 협업자 본 테이블
 CREATE TABLE job_posting_collaborators (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   job_posting_id  uuid NOT NULL REFERENCES job_postings(id) ON DELETE CASCADE,
@@ -73,7 +102,42 @@ CREATE TABLE job_posting_collaborators (
 
 CREATE INDEX idx_jpc_user_id     ON job_posting_collaborators(user_id);
 CREATE INDEX idx_jpc_posting_id  ON job_posting_collaborators(job_posting_id);
+
+-- 2. 감사 로그 (D11 — eng-review 추가)
+CREATE TABLE job_posting_collaborator_audit (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_posting_id  uuid NOT NULL,                                  -- FK 안 검 (공고 삭제돼도 보존)
+  target_user_id  uuid NOT NULL,                                  -- FK 안 검 (탈퇴해도 보존)
+  actor_user_id   uuid NOT NULL,                                  -- FK 안 검
+  action          text NOT NULL CHECK (action IN ('added','removed')),
+  at              timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_jpca_posting_id ON job_posting_collaborator_audit(job_posting_id, at DESC);
+CREATE INDEX idx_jpca_target_id  ON job_posting_collaborator_audit(target_user_id, at DESC);
+
+-- AFTER INSERT/DELETE 트리거 → 자동 audit
+CREATE FUNCTION log_collaborator_audit() RETURNS trigger AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO job_posting_collaborator_audit
+      (job_posting_id, target_user_id, actor_user_id, action)
+    VALUES (NEW.job_posting_id, NEW.user_id, NEW.added_by, 'added');
+  ELSIF TG_OP = 'DELETE' THEN
+    INSERT INTO job_posting_collaborator_audit
+      (job_posting_id, target_user_id, actor_user_id, action)
+    VALUES (OLD.job_posting_id, OLD.user_id, COALESCE(auth.uid(), OLD.added_by), 'removed');
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+CREATE TRIGGER trg_jpca_log
+  AFTER INSERT OR DELETE ON job_posting_collaborators
+  FOR EACH ROW EXECUTE FUNCTION log_collaborator_audit();
 ```
+
+Audit 테이블 RLS: workspace owner 만 SELECT (`is_workspace_owner` via 공고 join). 다른 작업 차단.
 
 ### TypeScript 타입
 
@@ -222,8 +286,10 @@ app/(employer)/my-postings/[id]/collaborators.tsx       # 라우트 (~120줄)
 src/components/job-posting/CollaboratorSearch.tsx       # 검색+결과 (~150줄)
 src/components/job-posting/CollaboratorList.tsx         # 리스트 (~100줄)
 src/components/job-posting/CollaboratorRow.tsx          # 행 (~60줄)
-src/hooks/job-posting/useJobPostingCollaborators.ts     # TanStack Query (~80줄)
-src/services/job-posting/collaboratorService.ts         # CRUD + 검증 (~120줄)
+src/hooks/job-posting/useJobPostingCollaborators.ts     # TanStack Query + Realtime (~120줄)
+src/hooks/job-posting/useSharedJobPostings.ts           # 공유받은 공고 (~80줄)
+src/services/job-posting/collaboratorService.ts         # 비즈니스 로직 + 검증 (~120줄)
+src/repositories/jobPostingCollaboratorRepository.ts    # Supabase 직접 호출 + 변환 (~80줄)
 ```
 
 각 파일 200줄 이하 (golden principle #5 준수).
@@ -429,7 +495,7 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 
 ### 1. RLS 매트릭스 테스트 (가장 중요)
 
-5개 테이블 × 4 페르소나 × 4 작업 = 80 케이스. 자동 검증 SQL 작성 → CI 포함.
+5개 테이블 × 4 페르소나 × 4 작업 = **80 케이스**. **`supabase/tests/` 하위 .sql 파일 + pg_prove 로 CI 자동 실행** (eng-review 결정). plpgsql ASSERT 로 행 수 검증, GitHub Actions matrix job 으로 통과 여부 gate.
 
 | | owner | editor | collaborator | 외부인 |
 |---|-------|--------|--------------|--------|
@@ -437,8 +503,18 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 | job_postings (자기) UPDATE | ✅ | ✅ | ✅ | ❌ |
 | job_postings (자기) DELETE | ✅ | ❌ | ❌ | ❌ |
 | job_postings (다른 워크스페이스) SELECT | ❌ | ❌ | ❌ | ❌ |
-| applications (자기 공고) SELECT | ✅ | ✅ | ✅ | ❌ |
-| ... (5개 테이블 × 모든 작업) | | | | |
+| applications (자기 공고) SELECT/UPDATE | ✅ | ✅ | ✅ | ❌ |
+| staff_assignments (자기 공고) SELECT/UPDATE | ✅ | ✅ | ✅ | ❌ |
+| **work_logs (자기 공고) SELECT/UPDATE** | ✅ | ✅ | ✅ | ❌ |
+| **settlements (자기 공고) SELECT** | ✅ | ✅ | ✅ | ❌ |
+
+추가 cascade 시나리오 테스트:
+- workspace 삭제 → 공고 cascade → collaborators cascade
+- user 탈퇴 → 해당 user 의 collaborator 행 삭제
+- 공고 삭제 → 해당 공고의 collaborators 삭제
+
+추가 owner 이양 테스트:
+- workspace owner 변경 후 신규 owner 가 collaborator DELETE 권한 확보 검증
 
 ### 2. Service 레이어 테스트 (Jest)
 
@@ -470,6 +546,12 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 - 워크스페이스 정보(이름) JOIN
 - 빈 결과 시 빈 배열
 
+`useJobPostingCollaborators` Realtime:
+
+- INSERT 이벤트 수신 → 캐시에 추가
+- DELETE 이벤트 수신 → 캐시에서 제거
+- 채널 unsubscribe 정리 검증 (메모리 leak 방지)
+
 ### 4. UI 통합 테스트 (스모크)
 
 핵심 시나리오 3개:
@@ -488,19 +570,31 @@ last-write-wins (RN/Supabase 기본). MVP 에서 OT/CRDT 도입 안 함. 큰 충
 
 staging branch 에서 모든 신규 RLS 정책 4 페르소나 시드 → SELECT 실측. 헬퍼 함수는 `SELECT is_posting_collaborator(uuid, uuid) LIMIT 0` 호출 검증.
 
+### 7. Performance 모니터링 (eng-review 추가)
+
+마이그레이션 후 staging branch 에서 `EXPLAIN ANALYZE` 실측 항목:
+- `SELECT * FROM job_postings WHERE id = $1` (RLS OR 적용 후) — index 사용 확인
+- `SELECT * FROM applications WHERE job_posting_id = $1` (RLS OR 적용 후)
+- application INSERT trigger 의 UNION 쿼리 (3-way) — 행당 5ms 이하 목표
+- 1000 활성 공고 + 100 apps/공고 시나리오 시뮬레이션
+
+실측 결과 미달 시 인덱스 추가 (workspace_members.workspace_id, job_postings.workspace_id 사전 audit).
+
 ## 영향 범위 정량
 
 | 항목 | 수치 |
 |------|------|
-| 신규 마이그레이션 파일 | 3~4개 |
+| 신규 마이그레이션 파일 | 5~6개 (테이블/RLS/트리거/publication/audit/RLS OR 확장) |
 | 변경되는 RLS 정책 수 | 5~7개 (audit 후 확정) |
-| 신규 테이블 | 1개 (`job_posting_collaborators`) |
-| 신규 트리거 | 2개 (added/removed) |
+| 신규 테이블 | 2개 (`job_posting_collaborators`, `job_posting_collaborator_audit`) |
+| 신규 트리거 | 3개 (added/removed/audit) |
 | 변경되는 trigger | 1개 (신규 지원자 알림 — 수신자 UNION) |
 | 신규 헬퍼 함수 | 1개 (`is_posting_collaborator`) |
-| 신규 클라이언트 파일 | 6개 (라우트 1 + 컴포넌트 3 + hook 1 + service 1) |
+| 신규 publication entry | 1개 (`supabase_realtime` ADD TABLE) |
+| 신규 클라이언트 파일 | 8개 (라우트 1 + 컴포넌트 3 + hook 2 + service 1 + repository 1) |
 | 변경되는 클라이언트 파일 | 3개 (my-postings/index.tsx, my-postings/[id]/index.tsx, types/notification.ts) |
-| 신규 테스트 파일 | 4개 |
+| 신규 테스트 파일 | 5개 (RLS pg_prove .sql 1개 + service/hook/repo Jest 4개) |
+| 모니터링 항목 | 4개 (RLS index 사용, UNION trigger 시간, Realtime 채널 수, 푸시 도달률) |
 
 ## 미확정 / 후속 결정
 
@@ -509,6 +603,29 @@ staging branch 에서 모든 신규 RLS 정책 4 페르소나 시드 → SELECT 
 - 진입점 3 (워크스페이스 화면 "공유한 공고" 요약 카드) (MVP 제외)
 - collaborator cap (MVP 제외)
 - Workspace owner 이양 흐름 audit (별도 작업)
+- Audit log 테이블 (collaborator add/remove 이력) (TODOS 후보 — eng-review)
+- 푸시 알림 backward compat 명시 (구현 상세에 위임 — eng-review)
+- User flow 엣지 케이스 (네트워크 끊김, 강제 종료 후 재실행, UNIQUE 충돌 친절 메시지) (TODOS 후보)
+
+## NOT in scope (eng-review 명시)
+
+- **Realtime 외 동기화 모델** (CRDT, OT) — last-write-wins 로 충분
+- **Collaborator 권한 차등** (manager / viewer) — 풀 관리권만 (D2)
+- **Collaborator 본인이 다른 collaborator 추가** — owner 만 (D6)
+- **Workspace editor 의 collaborator 관리** — owner 만 (D6, MVP)
+- **외부 소셜 로그인을 통한 즉석 가입 + 초대** — UNIQN 가입자만 (D3)
+- **공고 템플릿 / 정산 등 다른 리소스 공유** — Approach C 기각, 추후 일반화 시 재검토 (D7)
+- **Cross-workspace collaborator 검색** (이메일 외 다른 사용자 발견 방법) — MVP 제외
+
+## What already exists (eng-review 명시)
+
+- **`is_workspace_member` / `is_workspace_owner` 헬퍼** — 같은 패턴으로 `is_posting_collaborator` 추가
+- **`workspaces.owner_id` + `workspace_members.role='editor'` 모델** — 변경 없이 그대로 사용
+- **`notification_outbox` + Edge Function `sync-schedule-board-outbox`** — 이벤트 타입만 추가, 인프라 그대로 재사용 (drift 수정 완료, end-to-end 200 검증)
+- **`workspace_invitations` 의 이메일 lookup 흐름 (`invite.tsx:55,74`)** — 검색 UI 재사용
+- **`workspace/index.tsx:225-318` 멤버 추가/제거 패턴** — UI 디자인 톤 재사용
+- **`createRealtimeSubscription` 헬퍼 (PR #67)** — Realtime hook 에서 재사용
+- **CLAUDE.md 아키텍처 규칙 (Service → Repository → Supabase)** — 신규 파일도 동일 적용
 
 ## 참조
 
