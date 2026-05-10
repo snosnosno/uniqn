@@ -28,6 +28,12 @@ import {
   useSettlement,
   useSettlementDashboard,
 } from '@/hooks/useSettlement';
+import { useActiveWorkspace } from '@/hooks/workspace/useActiveWorkspace';
+
+jest.mock('@/hooks/workspace/useActiveWorkspace', () => ({
+  useActiveWorkspace: jest.fn(),
+}));
+const mockUseActiveWorkspace = useActiveWorkspace as jest.MockedFunction<typeof useActiveWorkspace>;
 
 // createMockJobPosting is available for future tests
 // NOTE: Dynamic imports removed due to Jest compatibility issues
@@ -313,6 +319,17 @@ describe('useSettlement Hooks', () => {
     mockIsPending = false;
     mockData = undefined;
     mockError = null;
+    mockUseActiveWorkspace.mockReturnValue({
+      activeWorkspace: {
+        id: 'ws-default',
+        name: 'Default',
+        ownerId: 'employer-1',
+        memberCount: 1,
+      } as any,
+      workspaces: [],
+      isLoading: false,
+      setActiveWorkspaceId: jest.fn(),
+    });
   });
 
   // ==========================================================================
@@ -771,7 +788,7 @@ describe('useSettlement Hooks', () => {
       expect(result.current.data).toEqual(mockSummary);
     });
 
-    it('should scope my settlement summary query by user and date range', () => {
+    it('should scope my settlement summary query by user, date range, and active workspace', () => {
       const { useQuery } = jest.requireMock('@tanstack/react-query') as { useQuery: jest.Mock };
 
       renderHook(() =>
@@ -791,6 +808,7 @@ describe('useSettlement Hooks', () => {
           end: '2024-01-31',
           start: '2024-01-01',
         },
+        'ws-default',
       ]);
     });
 
@@ -802,6 +820,76 @@ describe('useSettlement Hooks', () => {
 
       expect(result.current.data).toBeUndefined();
       expect(result.current.isLoading).toBe(false);
+    });
+
+    // ========================================================================
+    // Phase 2A.후속 PR3-C — workspace 별 분리 contract 테스트
+    // ========================================================================
+
+    it('Phase 2A.후속 PR3-C — activeWorkspace 가 없으면 enabled 가 false 다', () => {
+      mockUseActiveWorkspace.mockReturnValue({
+        activeWorkspace: undefined,
+        workspaces: [],
+        isLoading: false,
+        setActiveWorkspaceId: jest.fn(),
+      });
+
+      renderHook(() => useMySettlementSummary());
+
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+
+      expect(useQuery.mock.calls.at(-1)?.[0]?.enabled).toBe(false);
+    });
+
+    it('Phase 2A.후속 PR3-C — activeWorkspace.id 가 query key 에 포함된다', () => {
+      mockUseActiveWorkspace.mockReturnValue({
+        activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
+        workspaces: [],
+        isLoading: false,
+        setActiveWorkspaceId: jest.fn(),
+      });
+
+      renderHook(() => useMySettlementSummary());
+
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+
+      expect(useQuery.mock.calls.at(-1)?.[0]?.queryKey).toEqual(
+        expect.arrayContaining(['mySummary', 'ws-abc'])
+      );
+    });
+
+    it('Phase 2A.후속 PR3-C — getMySettlementSummary 호출 시 workspaceId 가 3번째 인자로 전달된다', async () => {
+      mockUseActiveWorkspace.mockReturnValue({
+        activeWorkspace: { id: 'ws-abc', name: 'Test', ownerId: 'u1', memberCount: 1 } as any,
+        workspaces: [],
+        isLoading: false,
+        setActiveWorkspaceId: jest.fn(),
+      });
+      mockGetMySettlementSummary.mockResolvedValue({
+        totalJobPostings: 0,
+        totalWorkLogs: 0,
+        totalPendingAmount: 0,
+        totalCompletedAmount: 0,
+        summariesByJobPosting: [],
+      });
+
+      renderHook(() => useMySettlementSummary({ start: '2024-01-01', end: '2024-01-31' }));
+
+      const { useQuery } = jest.requireMock('@tanstack/react-query') as {
+        useQuery: jest.Mock;
+      };
+
+      await useQuery.mock.calls.at(-1)?.[0]?.queryFn();
+
+      expect(mockGetMySettlementSummary).toHaveBeenCalledWith(
+        'employer-1',
+        { start: '2024-01-01', end: '2024-01-31' },
+        'ws-abc'
+      );
     });
   });
 
