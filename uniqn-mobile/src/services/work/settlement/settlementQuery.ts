@@ -11,7 +11,6 @@
 import { getPostingSettlementContext } from '@/domains/job-posting';
 import { logger } from '@/utils/logger';
 import { isCanonicalDatedPosting } from '@/utils/jobPostingVisibility';
-import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
@@ -20,6 +19,7 @@ import {
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
+import { loadAndVerifyJobPostingAccess } from '@/repositories/supabase/ApplicationRepositoryHelpers';
 import { STATUS } from '@/constants';
 import type { WorkLog } from '@/types';
 import {
@@ -50,20 +50,12 @@ export async function getWorkLogsByJobPosting(
   try {
     logger.info('공고별 근무 기록 조회', { jobPostingId, ownerId, filters });
 
-    // 1. 공고 소유권 확인 (Repository 사용)
-    const jobPosting = await jobPostingRepository.getById(jobPostingId);
-
-    if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: '본인의 공고만 조회할 수 있습니다',
-      });
-    }
+    // 1. 공고 로드 + 관리 권한 확인 (owner|member|admin) — Phase 2A.후속 P0 hotfix (2026-05-10)
+    const jobPosting = await loadAndVerifyJobPostingAccess(
+      jobPostingId,
+      ownerId,
+      '공고별 근무 기록 조회'
+    );
 
     // 2. 근무 기록 조회 (Repository 사용)
     const parsedWorkLogs = (await workLogRepository.getByJobPostingId(jobPostingId)).filter(
@@ -152,20 +144,12 @@ export async function getJobPostingSettlementSummary(
   try {
     logger.info('공고별 정산 요약 조회', { jobPostingId, ownerId });
 
-    // 1. 공고 조회 및 소유권 확인 (Repository 사용)
-    const jobPosting = await jobPostingRepository.getById(jobPostingId);
-
-    if (!jobPosting) {
-      throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    if (jobPosting.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-        userMessage: '본인의 공고만 조회할 수 있습니다',
-      });
-    }
+    // 1. 공고 로드 + 관리 권한 확인 (owner|member|admin) — Phase 2A.후속 P0 hotfix (2026-05-10)
+    const jobPosting = await loadAndVerifyJobPostingAccess(
+      jobPostingId,
+      ownerId,
+      '공고별 정산 요약 조회'
+    );
 
     // 2. 근무 기록 조회 (Repository 사용)
     const workLogs = (await workLogRepository.getByJobPostingId(jobPostingId)).filter(

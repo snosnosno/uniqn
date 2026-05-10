@@ -9,6 +9,7 @@ import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { BusinessError, ERROR_CODES, isAppError, PermissionError, ValidationError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { applicationRepository, jobPostingRepository } from '@/repositories';
+import { loadAndVerifyJobPostingAccess } from '@/repositories/supabase/ApplicationRepositoryHelpers';
 import { rejectApplicationSchema } from '@/schemas';
 import { RealtimeManager } from '@/shared/realtime';
 import type {
@@ -356,17 +357,17 @@ export async function subscribeToApplicantsAsync(
   ownerId: string,
   callbacks: SubscribeToApplicantsCallbacks
 ): Promise<UnsubscribeFn> {
-  const isOwner = await verifyJobPostingOwnership(jobPostingId, ownerId);
-
-  if (!isOwner) {
-    const error = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: '해당 공고의 소유자가 아닙니다.',
-    });
-
-    logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
-    callbacks.onError?.(error);
-
-    return () => undefined;
+  // Phase 2A.후속 P0 hotfix (2026-05-10) — owner-only 가드 → owner|member|admin.
+  // PR #71 의 `loadAndVerifyJobPostingAccess` (read-side helper) 와 동일 시맨틱.
+  try {
+    await loadAndVerifyJobPostingAccess(jobPostingId, ownerId, '지원자 구독');
+  } catch (error) {
+    if (error instanceof PermissionError) {
+      logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
+      callbacks.onError?.(error);
+      return () => undefined;
+    }
+    throw error;
   }
 
   logger.info('구독 전 권한 검증 통과, 지원자 구독 시작', { jobPostingId, ownerId });
