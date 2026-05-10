@@ -9,6 +9,7 @@ import type {
   Application,
   ApplicationStats,
   ConfirmApplicationInput,
+  JobPosting,
   RejectApplicationInput,
   StaffRole,
 } from '@/types';
@@ -26,6 +27,7 @@ import {
   subscribeToApplicants,
   subscribeToApplicantsAsync,
 } from '@/services/jobs/applicantManagementService';
+import { PermissionError, ERROR_CODES } from '@/errors';
 
 // ============================================================================
 // Mock Setup (호이스팅을 위해 파일 최상단에 배치)
@@ -38,6 +40,7 @@ const mockMarkAsRead = jest.fn();
 const mockSubscribeByJobPosting = jest.fn();
 const mockVerifyOwnership = jest.fn();
 const mockRealtimeSubscribe = jest.fn();
+const mockLoadAndVerifyJobPostingAccess = jest.fn();
 
 jest.mock('@/repositories', () => ({
   applicationRepository: {
@@ -50,6 +53,10 @@ jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     verifyOwnership: (...args: unknown[]) => mockVerifyOwnership(...args),
   },
+}));
+
+jest.mock('@/repositories/supabase/ApplicationRepositoryHelpers', () => ({
+  loadAndVerifyJobPostingAccess: (...args: unknown[]) => mockLoadAndVerifyJobPostingAccess(...args),
 }));
 
 const mockConfirmApplicationWithHistory = jest.fn();
@@ -917,8 +924,15 @@ describe('applicantManagementService', () => {
   // ==========================================================================
 
   describe('subscribeToApplicantsAsync', () => {
-    it('권한 확인 후 구독을 시작해야 함', async () => {
-      mockVerifyOwnership.mockResolvedValue(true);
+    const fakeJobPosting = {
+      id: 'job-1',
+      ownerId: 'employer-1',
+      workspaceId: 'ws-1',
+      title: '테스트 공고',
+    } as unknown as JobPosting;
+
+    it('owner 본인 호출 시 권한 통과 후 구독을 시작해야 함', async () => {
+      mockLoadAndVerifyJobPostingAccess.mockResolvedValue(fakeJobPosting);
 
       const mockUnsubscribe = jest.fn();
       mockSubscribeByJobPosting.mockReturnValue(mockUnsubscribe);
@@ -930,7 +944,11 @@ describe('applicantManagementService', () => {
 
       const unsubscribe = await subscribeToApplicantsAsync('job-1', 'employer-1', callbacks);
 
-      expect(mockVerifyOwnership).toHaveBeenCalledWith('job-1', 'employer-1');
+      expect(mockLoadAndVerifyJobPostingAccess).toHaveBeenCalledWith(
+        'job-1',
+        'employer-1',
+        '지원자 구독'
+      );
       expect(mockSubscribeByJobPosting).toHaveBeenCalledWith(
         'job-1',
         'employer-1',
@@ -940,8 +958,52 @@ describe('applicantManagementService', () => {
       expect(typeof unsubscribe).toBe('function');
     });
 
-    it('권한이 없으면 에러를 호출하고 빈 unsubscribe를 반환해야 함', async () => {
-      mockVerifyOwnership.mockResolvedValue(false);
+    it('워크스페이스 멤버 호출 시 통과 (helper 가 통과하면 구독 시작)', async () => {
+      mockLoadAndVerifyJobPostingAccess.mockResolvedValue(fakeJobPosting);
+
+      const mockUnsubscribe = jest.fn();
+      mockSubscribeByJobPosting.mockReturnValue(mockUnsubscribe);
+
+      const callbacks = {
+        onUpdate: jest.fn(),
+        onError: jest.fn(),
+      };
+
+      // 호출자는 owner 가 아닌 워크스페이스 멤버 (helper 가 통과 처리)
+      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'member-uid', callbacks);
+
+      expect(mockLoadAndVerifyJobPostingAccess).toHaveBeenCalledWith(
+        'job-1',
+        'member-uid',
+        '지원자 구독'
+      );
+      expect(mockSubscribeByJobPosting).toHaveBeenCalled();
+      expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('admin 호출 시 통과 (helper 가 통과하면 구독 시작)', async () => {
+      mockLoadAndVerifyJobPostingAccess.mockResolvedValue(fakeJobPosting);
+
+      const mockUnsubscribe = jest.fn();
+      mockSubscribeByJobPosting.mockReturnValue(mockUnsubscribe);
+
+      const callbacks = {
+        onUpdate: jest.fn(),
+        onError: jest.fn(),
+      };
+
+      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'admin-uid', callbacks);
+
+      expect(mockLoadAndVerifyJobPostingAccess).toHaveBeenCalled();
+      expect(mockSubscribeByJobPosting).toHaveBeenCalled();
+      expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('외부인 호출 시 PermissionError 를 onError 로 호출하고 빈 unsubscribe 반환', async () => {
+      const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 지원자 구독',
+      });
+      mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 
       const onError = jest.fn();
       const callbacks = {
@@ -949,7 +1011,7 @@ describe('applicantManagementService', () => {
         onError,
       };
 
-      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'employer-1', callbacks);
+      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'stranger-uid', callbacks);
 
       expect(onError).toHaveBeenCalledWith(expect.objectContaining({ name: 'PermissionError' }));
       expect(mockSubscribeByJobPosting).not.toHaveBeenCalled();
@@ -959,17 +1021,39 @@ describe('applicantManagementService', () => {
       expect(() => unsubscribe()).not.toThrow();
     });
 
-    it('onError 콜백이 없어도 동작해야 함', async () => {
-      mockVerifyOwnership.mockResolvedValue(false);
+    it('onError 콜백이 없어도 권한 거절 시 빈 unsubscribe 반환', async () => {
+      const permissionError = new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+        userMessage: '워크스페이스 멤버만 관리할 수 있습니다: 지원자 구독',
+      });
+      mockLoadAndVerifyJobPostingAccess.mockRejectedValue(permissionError);
 
       const callbacks = {
         onUpdate: jest.fn(),
       };
 
-      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'employer-1', callbacks);
+      const unsubscribe = await subscribeToApplicantsAsync('job-1', 'stranger-uid', callbacks);
 
       expect(mockSubscribeByJobPosting).not.toHaveBeenCalled();
       expect(typeof unsubscribe).toBe('function');
+    });
+
+    it('PermissionError 가 아닌 에러는 propagate (onError 로 위임 안 함)', async () => {
+      // helper 내부 supabase RPC 에러 등은 callbacks.onError 가 아니라 throw 로 전달
+      const otherError = new Error('네트워크 에러');
+      mockLoadAndVerifyJobPostingAccess.mockRejectedValue(otherError);
+
+      const onError = jest.fn();
+      const callbacks = {
+        onUpdate: jest.fn(),
+        onError,
+      };
+
+      await expect(subscribeToApplicantsAsync('job-1', 'employer-1', callbacks)).rejects.toThrow(
+        '네트워크 에러'
+      );
+
+      expect(onError).not.toHaveBeenCalled();
+      expect(mockSubscribeByJobPosting).not.toHaveBeenCalled();
     });
   });
 });
