@@ -166,6 +166,12 @@ jest.mock('@/errors', () => ({
     NETWORK_REQUEST_FAILED: 'E1002',
   },
   toError: (error: unknown) => (error instanceof Error ? error : new Error(String(error))),
+  // scheduleService.ts:629 가 isAppError(error) 호출 — duck-typed 체크로 충분
+  // (실제 AppError.isAppError 는 instanceof AppError 또는 __isAppError 마커 검사)
+  isAppError: (error: unknown): boolean =>
+    error !== null &&
+    typeof error === 'object' &&
+    ('__isAppError' in error || 'isRetryable' in error || 'code' in error),
 }));
 
 jest.mock('@/utils/date', () => ({
