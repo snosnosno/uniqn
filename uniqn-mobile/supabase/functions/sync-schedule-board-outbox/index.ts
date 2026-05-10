@@ -170,10 +170,12 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // 인증: Authorization 헤더 확인 (cron 또는 admin only)
+  // 인증: service_role 키 일치 검증 (cron 또는 admin only)
+  // 헤더 존재만 체크하면 임의 인증 유저가 cron 함수 호출 가능 (CSO 2026-05-11 finding #1)
+  const expectedAuth = `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`;
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: '인증이 필요합니다' }), {
+  if (!authHeader || authHeader !== expectedAuth) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
