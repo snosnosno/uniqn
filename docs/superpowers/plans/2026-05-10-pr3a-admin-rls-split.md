@@ -451,6 +451,9 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.list_all_workspace_members(uuid) TO authenticated;
 
+-- PostgREST schema cache 강제 reload — 4 RPC 즉시 callable 보장
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
 ```
 
@@ -509,6 +512,9 @@ DROP FUNCTION IF EXISTS public.list_all_event_qr_codes(boolean);
 DROP FUNCTION IF EXISTS public.list_all_work_logs(public.work_log_status, date, date);
 DROP FUNCTION IF EXISTS public.list_all_workspace_members(uuid);
 
+-- PostgREST schema cache 강제 reload — RPC drop 즉시 반영
+NOTIFY pgrst, 'reload schema';
+
 COMMIT;
 ```
 
@@ -543,12 +549,14 @@ PR #76 의 `loadAndVerifyJobPostingAccess` 헬퍼는 owner|member|admin 호환�
 - [ ] **admin 누출 정량 검증** — review-admin 으로 4 테이블 직접 SELECT 시 본인/멤버십 row 만 노출 (모든 row 노출 차단)
 - [ ] **`list_all_<table>` RPC 호출 권한** — RAISE EXCEPTION 'PERMISSION_DENIED' 가 non-admin 호출자에게 정상 발생
 - [ ] **dual-role 확인** — admin + 워크스페이스 owner/member 인 사용자 가 RLS 일반 분기 (`*_id = auth.uid()`, `is_workspace_member`) 로 본인 row 정상 SELECT
-- [ ] **PR #76 헬퍼 admin 분기 동작** — `loadAndVerifyJobPostingAccess` 의 `is_admin` RPC 결과 true 일 때 후속 SELECT 가 RLS 통과 못해 PermissionError 발생하는 시나리오 검증 (admin RPC 사용 권장)
+- [ ] **PR #76 헬퍼 admin 분기 동작** — `loadAndVerifyJobPostingAccess` 의 `is_admin` RPC 결과 true 일 때 후속 SELECT 가 RLS 차단으로 **silent empty result** 반환 (RLS SELECT 는 row 필터링이라 exception 미발생). 현재 admin call site 부재로 즉시 영향 없음. 향후 admin 페이지 도입 시 `list_all_<table>` RPC 사용 강제 (admin RPC 사용 권장)
 - [ ] **UPDATE/DELETE admin 분기 잔존** — 본 PR 범위 외임을 spec 에 명시. 후속 PR3-A.2 로 분리.
 - [ ] **rollback SQL 검증** — staging branch DB 에 migration → rollback 왕복 1회 — pg_policies 스냅샷 비교
-- [ ] **PostgREST schema reload** — RPC 4개 등록 후 PostgREST 캐시 자동 invalidate 확인 (Supabase 자동, 보통 ~10초)
+- [ ] **PostgREST schema reload** — migration block 마지막에 `NOTIFY pgrst, 'reload schema'` 명시 발행 (Supabase 자동 invalidate ~10초 도 백업으로 작동). apply 직후 4 RPC 호출 1회로 callable 확인
 
 ## 6. 사용자 dogfooding 시나리오 (apply 후)
+
+### 6-A. 시나리오 표
 
 | 시나리오 | Before | After |
 |----------|--------|-------|
@@ -561,6 +569,28 @@ PR #76 의 `loadAndVerifyJobPostingAccess` 헬퍼는 owner|member|admin 호환�
 | review-admin → `list_all_workspace_members()` RPC | (없음) | 모든 멤버 노출 ✅ |
 | review-admin → 다른 user 의 work_logs SELECT | 노출 (잘못) | 차단 ✅ |
 | review-admin → `list_all_work_logs(p_status='completed')` | (없음) | filter 적용된 모든 work_logs ✅ |
+| **dual-role: admin + 워크스페이스 W1 owner → W1 의 applications SELECT** | OK (admin 분기) | OK (`is_workspace_member` 분기로 통과) ✅ |
+| **dual-role: admin + 워크스페이스 W1 member → W1 의 work_logs SELECT** | OK (admin 분기) | OK (`is_workspace_member` 분기로 통과) ✅ |
+
+### 6-B. 정량 측정 절차 (apply 직전·직후 1회씩 실행)
+
+각 row 의 Before / After count 를 SQL 측정해 evidence 로 PR comment 에 첨부. count diff 가 기대값과 일치하지 않으면 즉시 rollback.
+
+| # | 측정 SQL | Before 기대 | After 기대 |
+|---|---------|------------|------------|
+| 1 | `SELECT count(*) FROM applications WHERE applicant_id <> '<review-admin-uid>' AND job_posting_id NOT IN (SELECT id FROM job_postings WHERE owner_id = '<review-admin-uid>' OR is_workspace_member(workspace_id, '<review-admin-uid>'));` (review-admin JWT) | > 0 (admin 누출) | **0** (차단) |
+| 2 | `SELECT count(*) FROM event_qr_codes WHERE user_id <> '<review-admin-uid>' AND job_posting_id NOT IN (...같은 서브쿼리);` | > 0 | **0** |
+| 3 | `SELECT count(*) FROM work_logs WHERE staff_id <> '<review-admin-uid>' AND owner_id <> '<review-admin-uid>' AND job_posting_id NOT IN (SELECT id FROM job_postings WHERE is_workspace_member(workspace_id, '<review-admin-uid>'));` | > 0 | **0** |
+| 4 | `SELECT count(*) FROM workspace_members WHERE user_id <> '<review-admin-uid>' AND NOT is_workspace_member(workspace_id, '<review-admin-uid>');` | > 0 | **0** |
+| 5 | `SELECT count(*) FROM list_all_applications();` (review-admin JWT) | (없음) | DB 의 전체 applications count 와 일치 |
+| 6 | `SELECT count(*) FROM list_all_applications();` (review-employer JWT — non-admin) | (없음) | `PERMISSION_DENIED` exception |
+
+측정 시 JWT 세팅:
+```sql
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"<uid>","role":"authenticated"}'::jsonb;
+```
+또는 Supabase Studio SQL Editor 의 "Run as user" 기능 사용.
 
 ## 7. PR3-A vs PR #75 차이점
 
