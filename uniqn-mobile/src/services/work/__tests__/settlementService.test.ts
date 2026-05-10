@@ -20,6 +20,7 @@ import {
   bulkSettlement,
   updateSettlementStatus,
   getJobPostingSettlementSummary,
+  getMySettlementSummary,
 } from '@/services/work/settlement';
 import type { Allowances, SalaryInfo } from '@/types';
 
@@ -29,6 +30,7 @@ import type { Allowances, SalaryInfo } from '@/types';
 
 const mockJobPostingGetById = jest.fn();
 const mockJobPostingGetByOwnerId = jest.fn();
+const mockJobPostingGetManagedJobPostings = jest.fn();
 const mockWorkLogGetById = jest.fn();
 const mockWorkLogGetByJobPostingId = jest.fn();
 const mockSettleWorkLogWithTransaction = jest.fn();
@@ -40,6 +42,7 @@ jest.mock('@/repositories', () => ({
   jobPostingRepository: {
     getById: (...args: unknown[]) => mockJobPostingGetById(...args),
     getByOwnerId: (...args: unknown[]) => mockJobPostingGetByOwnerId(...args),
+    getManagedJobPostings: (...args: unknown[]) => mockJobPostingGetManagedJobPostings(...args),
   },
   workLogRepository: {
     getById: (...args: unknown[]) => mockWorkLogGetById(...args),
@@ -763,6 +766,28 @@ describe('settlementService', () => {
       await expect(getJobPostingSettlementSummary('job-1', 'employer-1')).rejects.toThrow(
         '본인의 공고만 조회할 수 있습니다'
       );
+    });
+  });
+
+  // ==========================================================================
+  // getMySettlementSummary — Phase 2A.후속 PR3-C workspace 별 분리
+  // ==========================================================================
+
+  describe('getMySettlementSummary', () => {
+    it('Phase 2A.후속 PR3-C — workspaceId 가 jobPostingRepository.getManagedJobPostings 에 pass-through 된다', async () => {
+      mockJobPostingGetManagedJobPostings.mockResolvedValue([]);
+
+      await getMySettlementSummary('employer-1', undefined, 'ws-abc');
+
+      expect(mockJobPostingGetManagedJobPostings).toHaveBeenCalledWith(undefined, 'ws-abc');
+    });
+
+    it('Phase 2A.후속 PR3-C — workspaceId 미전달 시 getManagedJobPostings 가 undefined 로 호출된다 (admin global view 호환)', async () => {
+      mockJobPostingGetManagedJobPostings.mockResolvedValue([]);
+
+      await getMySettlementSummary('employer-1');
+
+      expect(mockJobPostingGetManagedJobPostings).toHaveBeenCalledWith(undefined, undefined);
     });
   });
 });
