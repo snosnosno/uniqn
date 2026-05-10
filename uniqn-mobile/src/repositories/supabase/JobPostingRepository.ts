@@ -98,9 +98,8 @@ function rethrowOrHandle(
   handleSupabaseError(error, { operation, table: TABLE });
 }
 
-async function loadAndVerifyOwner(
+async function loadJobPostingForVerify(
   jobPostingId: string,
-  ownerId: string,
   operation: string
 ): Promise<JobPosting> {
   const { data, error } = await supabase
@@ -112,23 +111,95 @@ async function loadAndVerifyOwner(
   if (error) handleSupabaseError(error, { operation, table: TABLE });
   if (!data) {
     throw new BusinessError(ERROR_CODES.INFRA_NOT_FOUND, {
-      userMessage: 'Job posting does not exist.',
+      userMessage: '공고를 찾을 수 없습니다.',
     });
   }
 
   const jobPosting = toJobPosting(data as Record<string, unknown>);
   if (!jobPosting) {
     throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-      userMessage: 'Job posting data is invalid.',
-    });
-  }
-
-  if (jobPosting.ownerId !== ownerId) {
-    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
-      userMessage: `Only the owner can perform this action: ${operation}`,
+      userMessage: '공고 데이터가 올바르지 않습니다.',
     });
   }
   return jobPosting;
+}
+
+/**
+ * 공고를 로드하고 호출자가 update-style mutation 권한을 가졌는지 확인.
+ *
+ * Phase 2A.후속 (2026-05-10) — RLS jp_update_workspace_member (USING + WITH CHECK
+ * 모두 `is_workspace_member(workspace_id, auth.uid()) OR is_admin()`) 와 일치.
+ * 4 mutation flow (수정/마감/재오픈/정산설정) 가 본 헬퍼를 사용. owner-only 였던
+ * 이전 동작에서 editor + admin 까지 풀어 Phase 1A editor role 활성화.
+ *
+ * 호출 비용: owner 본인이면 RPC 0회, 멤버면 1회, admin 이면 2회.
+ *
+ * @see ApplicationRepositoryHelpers.loadAndVerifyJobPostingAccess (read-side 와 동일 분기)
+ */
+async function loadAndVerifyMutateAccess(
+  jobPostingId: string,
+  callerId: string,
+  operation: string
+): Promise<JobPosting> {
+  const jobPosting = await loadJobPostingForVerify(jobPostingId, operation);
+  if (jobPosting.ownerId === callerId) return jobPosting;
+
+  // workspaceId 없는 레거시 row 방어
+  if (!jobPosting.workspaceId) {
+    throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+      userMessage: `공고에 워크스페이스가 지정되지 않았습니다: ${operation}`,
+    });
+  }
+
+  const memberResult = await supabase.rpc('is_workspace_member', {
+    _workspace_id: jobPosting.workspaceId,
+    _user_id: callerId,
+  });
+  if (memberResult.error) {
+    handleSupabaseError(memberResult.error, { operation, table: TABLE });
+  }
+  if (memberResult.data === true) return jobPosting;
+
+  const adminResult = await supabase.rpc('is_admin');
+  if (adminResult.error) {
+    handleSupabaseError(adminResult.error, { operation, table: TABLE });
+  }
+  if (adminResult.data === true) return jobPosting;
+
+  throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+    userMessage: `워크스페이스 멤버만 수행할 수 있습니다: ${operation}`,
+  });
+}
+
+/**
+ * 공고를 로드하고 호출자가 delete 권한(더 엄격)을 가졌는지 확인.
+ *
+ * Phase 2A.후속 (2026-05-10) — RLS jp_delete_workspace_owner 의 의도(`workspace 소유자
+ * 또는 admin`) 를 본 클라이언트는 `job posting owner 또는 admin` 으로 근사. 워크스페이스
+ * 소유자와 공고 소유자가 일치하는 일반 케이스 모두 통과. member 는 거절(soft-delete
+ * 도 거부).
+ *
+ * 알려진 갭(out-of-scope): 본 클라이언트가 UPDATE status=cancelled (soft-delete) 를
+ * 쓰므로 RLS 는 jp_update_workspace_member 를 평가 → API 직접 호출 시 member 가 우회
+ * 가능. DB-level enforcement 는 별도 status 전이 trigger/함수로 강화 필요.
+ */
+async function loadAndVerifyDeleteAccess(
+  jobPostingId: string,
+  callerId: string,
+  operation: string
+): Promise<JobPosting> {
+  const jobPosting = await loadJobPostingForVerify(jobPostingId, operation);
+  if (jobPosting.ownerId === callerId) return jobPosting;
+
+  const adminResult = await supabase.rpc('is_admin');
+  if (adminResult.error) {
+    handleSupabaseError(adminResult.error, { operation, table: TABLE });
+  }
+  if (adminResult.data === true) return jobPosting;
+
+  throw new PermissionError(ERROR_CODES.INFRA_PERMISSION_DENIED, {
+    userMessage: `공고 소유자만 삭제할 수 있습니다: ${operation}`,
+  });
 }
 
 // ── Settlement Helpers ───────────────────────────────────────────────────────
@@ -485,7 +556,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   ): Promise<JobPosting> {
     try {
       logger.info('공고 수정', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyOwner(jobPostingId, ownerId, '공고 수정');
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 수정');
 
       if (
         (cur.filledPositions ?? 0) > 0 &&
@@ -516,11 +587,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { id: _id, ...rest } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
-      const { error } = await supabase
-        .from(TABLE)
-        .update(toSnakeCase(rest))
-        .eq('id', jobPostingId)
-        .eq('owner_id', ownerId);
+      const { error } = await supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 수정', table: TABLE });
       logger.info('공고 수정 완료', { jobPostingId });
       return validated;
@@ -532,7 +599,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async deleteWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 삭제', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyOwner(jobPostingId, ownerId, '공고 삭제');
+      const cur = await loadAndVerifyDeleteAccess(jobPostingId, ownerId, '공고 삭제');
       if ((cur.filledPositions ?? 0) > 0) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: 'Cannot delete a posting with confirmed applicants. Close it instead.',
@@ -541,8 +608,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { error } = await supabase
         .from(TABLE)
         .update({ status: STATUS.JOB_POSTING.CANCELLED, updated_at: new Date().toISOString() })
-        .eq('id', jobPostingId)
-        .eq('owner_id', ownerId);
+        .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 삭제', table: TABLE });
       logger.info('공고 삭제 완료', { jobPostingId });
     } catch (error) {
@@ -553,7 +619,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async closeWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 마감', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyOwner(jobPostingId, ownerId, '공고 마감');
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 마감');
       if (cur.status === STATUS.JOB_POSTING.CLOSED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: 'Job posting is already closed.',
@@ -568,8 +634,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
           closed_reason: 'manual',
           updated_at: now,
         })
-        .eq('id', jobPostingId)
-        .eq('owner_id', ownerId);
+        .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 마감', table: TABLE });
       logger.info('공고 마감 완료', { jobPostingId });
     } catch (error) {
@@ -580,7 +645,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   async reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 재오픈', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyOwner(jobPostingId, ownerId, '공고 재오픈');
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '공고 재오픈');
 
       if (cur.status === STATUS.JOB_POSTING.ACTIVE) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
@@ -605,8 +670,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { error } = await supabase
         .from(TABLE)
         .update({ status: STATUS.JOB_POSTING.ACTIVE, updated_at: new Date().toISOString() })
-        .eq('id', jobPostingId)
-        .eq('owner_id', ownerId);
+        .eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '공고 재오픈', table: TABLE });
       logger.info('공고 재오픈 완료', { jobPostingId });
     } catch (error) {
@@ -686,7 +750,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
   ): Promise<void> {
     try {
       logger.info('정산 설정 업데이트', { jobPostingId, ownerId });
-      const cur = await loadAndVerifyOwner(jobPostingId, ownerId, '정산 설정 업데이트');
+      const cur = await loadAndVerifyMutateAccess(jobPostingId, ownerId, '정산 설정 업데이트');
 
       const merged: CreateJobPostingInput = mergeJobPostingInput(cur, {
         roleCatalog: mergeSettlementRoles(cur.roleCatalog, data.roles),
@@ -715,11 +779,7 @@ export class SupabaseJobPostingRepository implements IJobPostingRepository {
       const { id: _id, ...rest } = removeUndefined(
         serialized as unknown as Record<string, unknown>
       );
-      const { error } = await supabase
-        .from(TABLE)
-        .update(toSnakeCase(rest))
-        .eq('id', jobPostingId)
-        .eq('owner_id', ownerId);
+      const { error } = await supabase.from(TABLE).update(toSnakeCase(rest)).eq('id', jobPostingId);
       if (error) handleSupabaseError(error, { operation: '정산 설정 업데이트', table: TABLE });
       logger.info('정산 설정 업데이트 완료', { jobPostingId });
     } catch (error) {
