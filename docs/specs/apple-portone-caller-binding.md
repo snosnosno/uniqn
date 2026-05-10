@@ -236,3 +236,32 @@ PortOne v2 `verifiedCustomer.di` 응답 여부는 PortOne support 직접 문의�
 - `tsconfig.json` `allowImportingTsExtensions: true` (Deno-style `.ts` 확장자 import 호환)
 - `npm run quality` + `npm test` (4054 pass) baseline 유지
 - 보류: Spec A (Sentry SDK 통합) / Spec B (Apple JWKS) / Spec C (di_hash dedup) — 트리거 충족 시 별도 진행
+
+---
+
+## Spec A 구현 완료 (2026-05-11)
+
+**가정 정정**: prod 검증 결과 `@sentry/react-native: ~7.11.0` 통합되어 있음(`rootSentry.ts:10` Sentry.init). v3 spec의 "Sentry 미통합" 가정은 outdated. `beforeSend`/`beforeBreadcrumb` redact filter만 부재한 상태였음.
+
+- `src/services/observability/sentryRedact.ts` 신규 — `REDACT_KEYS` (authorizationCode / identityVerificationId / id_token / refresh_token / access_token / authorization / ci(Hash) / password / apiKey / secret / portoneSecret), 깊은 traversal (depth 8 제한), CamelCase·snake_case 대소문자 무관 매칭, array 안 객체도 마스킹
+- `src/services/observability/rootSentry.ts` — Sentry.init에 `beforeSend: applyRedactToEvent` / `beforeBreadcrumb: applyRedactToBreadcrumb` wire-up
+- `__tests__/services/observability/sentryRedact.test.ts` unit 8건 통과 (key traversal / 대소문자 / array / event·breadcrumb 진입점 / REDACT_KEYS 회귀)
+
+## Spec B 구현 완료 (2026-05-11)
+
+**상황**: prod `auth.identities` Apple user 여전히 0건이지만 코드는 사전 작성. 첫 Apple user 등장 시 dead path 없이 즉시 caller binding 유효.
+
+- `supabase/functions/_shared/apple-jwks.ts` 신규 — jose remote JWKS resolver로 Apple id_token signature/iss/aud 검증, sub 반환 (Deno-only)
+- `supabase/functions/_shared/apple-identity-helpers.ts` 신규 — Pure TS helper (jose-independent): `extractAppleSubFromIdentities` + `isSubMatch` (fail-closed, identitySub undefined/empty 시 false)
+- `supabase/functions/revoke-apple-token/index.ts` — tokenResponse.id_token → `verifyAppleIdToken` → `admin.getUserById`의 identities apple sub과 비교, 불일치 시 403 `APPLE_SUB_MISMATCH`. id_token 누락 시 400 `APPLE_MISSING_ID_TOKEN`. 검증 실패 시 403 `APPLE_ID_TOKEN_INVALID`
+- `__tests__/supabase-shared/apple-identity-helpers.test.ts` unit 7건 통과 (sub extraction / null·undefined safe / mismatch fail-closed)
+- JWKS signature 검증 자체는 jose Deno 의존이라 jest 단위 테스트 어려움 → prod Apple user 등장 시 e2e/integration으로 추가 검증 권장
+
+## Spec C 진단 로그 진입 (2026-05-11)
+
+PortOne v2가 INICIS/KCP에서 `verifiedCustomer.di`를 응답에 포함하는지 prod 미검증. PortOne support 문의 대신 1-2주 운영 로그로 hasDi 비율 측정 후 `identity_di_hash` dedup 본 구현 결정. PII redact — di 값 자체는 로그에 안 적고 길이/타입만 기록.
+
+- `supabase/functions/_shared/idp-binding.ts` — `logDiDiagnostic(verifiedCustomer, context)` 헬퍼 추가, `[di-diagnostic]` prefix로 `{ context, hasDi, diLength, diType }` 만 console.log
+- `supabase/functions/verify-portone-identity/index.ts` + `verify-and-save-portone-profile/index.ts` — identityData 추출 직후 호출
+- `__tests__/supabase-shared/idp-binding.test.ts` unit 3건 추가 통과 (hasDi true/false / null safe / PII non-leak 검증)
+- **후속 결정 트리거**: 1-2주 운영 후 hasDi 비율 ≥ 50%면 dedup 본 구현 spec 작성, < 50%면 PortOne support 문의로 채널별 di 응답 정책 명확화 후 결정

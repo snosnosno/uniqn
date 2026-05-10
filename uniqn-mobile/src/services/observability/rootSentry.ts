@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import { applyRedactToBreadcrumb, applyRedactToEvent } from './sentryRedact';
 
 interface RootSentryOptions {
   dsn: string;
@@ -14,6 +15,8 @@ export function initializeRootSentry({ dsn, enabled, environment }: RootSentryOp
     tracesSampleRate: 0.2,
     enableNativeCrashHandling: enabled,
     enableNative: enabled,
+    beforeSend: applyRedactToEvent,
+    beforeBreadcrumb: applyRedactToBreadcrumb,
   });
 }
 
