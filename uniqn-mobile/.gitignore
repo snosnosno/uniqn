@@ -31,9 +31,12 @@ ios/
 .env.*.local
 e2e/.env.test
 
-# Firebase config
-# google-services.json, GoogleService-Info.plist는 EAS Build에 필요하므로 git에 포함
-# TODO: EAS Secrets로 전환 후 git에서 제거 예정
+# Firebase config (restored from EAS Secrets at build time — see scripts/eas-build-pre-install.sh)
+# Local devs keep these files untracked. CI builds receive them via:
+#   GOOGLE_SERVICES_JSON_BASE64
+#   GOOGLE_SERVICE_INFO_PLIST_BASE64
+google-services.json
+GoogleService-Info.plist
 firebase.json
 
 # Credentials (NEVER commit)

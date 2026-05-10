@@ -28,7 +28,8 @@
     "e2e:ui": "node scripts/run-e2e.js --ui",
     "e2e:headed": "node scripts/run-e2e.js --headed",
     "e2e:report": "npx playwright show-report",
-    "e2e:setup": "npx playwright install --with-deps chromium"
+    "e2e:setup": "npx playwright install --with-deps chromium",
+    "eas-build-pre-install": "bash ./scripts/eas-build-pre-install.sh"
   },
   "dependencies": {
     "@expo-google-fonts/outfit": "^0.4.3",
